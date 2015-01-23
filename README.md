@@ -1,5 +1,5 @@
 # THOR
-Open-source atmospheric fluid dynamics solver optimized for GPUs.
+*Atmospheric fluid dynamics solver optimized for GPUs*
 
 The Exoclime Simulation Platform ([ESP][1]) develops a set of open-source codes
 for research on exoplanets. The three parts of the ESP are
