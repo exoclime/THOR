@@ -85,6 +85,12 @@ Home website: http://software-oasis.com/
 
 *UBUNTU* *17.04*
 
+0- (First run?) Create two folders called "obj" and "results". 
+
+```sh
+   $ mkdir obj results
+```
+
 1- Set planet's parameters in "src/initial/planet.cu".
 
 2- Set model's parameter in "src/headers/define.h".
