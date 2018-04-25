@@ -88,6 +88,8 @@ output = ham.output(resultsf,simulation_ID,ntsi,nts,grid)
 # Sigma values for the plotting
 sigmaref = np.array([1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.05])
 
+if 'pause' in pview:
+    import pdb; pdb.set_trace()
 if 'uver' in pview:
     # Averaged zonal winds (latitude vs pressure)
     ham.u(input,grid,output,sigmaref)
@@ -115,5 +117,3 @@ if 'vring' in pview:
     #still in development...
     sigmaref = np.arange(1,0,-0.05)
     ham.vring(input,grid,output,sigmaref)
-if 'pause' in pview:
-    import pdb; pdb.set_trace()
