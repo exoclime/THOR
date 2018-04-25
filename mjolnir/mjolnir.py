@@ -47,7 +47,7 @@ parser.add_argument("-p","--pressure_lev",nargs=1,default=[2.5e4],help='Pressure
 args = parser.parse_args()
 pview = args.pview
 
-valid = ['uver','Tver','Tulev','PTver','ulev','PVver','PVlev','vring']
+valid = ['uver','Tver','Tulev','PTver','ulev','PVver','PVlev','vring','pause']
 if 'all' in pview:
     pview = valid
 else:
@@ -85,7 +85,6 @@ output = ham.output(resultsf,simulation_ID,ntsi,nts,grid)
 #########
 # Plots #
 #########
-import pdb; pdb.set_trace()
 # Sigma values for the plotting
 sigmaref = np.array([1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.05])
 
@@ -113,5 +112,8 @@ if 'PVver' in pview:
     sigmaref = np.arange(1,0,-0.05)
     ham.potential_vort_vert(input,grid,output,sigmaref)
 if 'vring' in pview:
+    #still in development...
     sigmaref = np.arange(1,0,-0.05)
     ham.vring(input,grid,output,sigmaref)
+if 'pause' in pview:
+    import pdb; pdb.set_trace()
