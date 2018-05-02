@@ -19,18 +19,18 @@
 //
 //
 // Description: Declares functions and main variables on the host and device
-//   
-// Method: - 
+//
+// Method: -
 //
 // Known limitations: None.
-//   
+//
 //
 // Known issues: None.
-//   
 //
-// If you use this code please cite the following reference: 
 //
-//       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016  
+// If you use this code please cite the following reference:
+//
+//       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016
 //
 // Current Code Owner: Joao Mendonca, EEG. joao.mendonca@csh.unibe.ch
 //
@@ -71,7 +71,7 @@ public:
     double *nvecte_h      ;
     double *areasT_h      ;
     double *areasTr_h     ;
-    
+
     double *div_h ;
     double *grad_h;
 
@@ -124,7 +124,7 @@ public:
     double *SlowWh_d      ;
     double *SlowRho_d     ;
     double *Slowpressure_d;
-    
+
     double *Rhos_d        ;
     double *pressures_d   ;
     double *Mhs_d         ;
@@ -140,7 +140,7 @@ public:
     double *v_d           ;
     double *pt_d          ;
     double *pth_d         ;
-    
+
     double *gtil_d        ;
     double *gtilh_d       ;
 
@@ -155,10 +155,22 @@ public:
     double *diffmh_d      ;
     double *diffw_d       ;
     double *diffrh_d      ;
-    
+
     double *diff_d        ;
     double *divg_Mh_d     ;
     bool   *check_d       ;
+
+//  Arrays used in RT code
+    double *fnet_up_d     ;
+    double *fnet_dn_d     ;
+    double *tau_d         ;
+
+//  These arrays are for temporary usage in RT code
+    double *dtemp         ;
+    double *phtemp        ;
+    double *ttemp         ;
+    double *thtemp        ;
+    
 ///////////////////////////
 
 //  Functions
@@ -179,11 +191,11 @@ public:
         int     ,
         int     ,
         int     ,
-        int     ); 
+        int     );
 
     void AllocData() ;
 
-    void InitialValues(bool  , 
+    void InitialValues(bool  ,
                        int   ,
                        double,
                        double,
@@ -243,4 +255,3 @@ public:
 
     ~ESP();
 };
-

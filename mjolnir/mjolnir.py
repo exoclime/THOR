@@ -35,8 +35,6 @@ reload(ham)
 #         2D Map Longitude Vs Latitude.
 ###########################################################################
 
-#nview    = np.int(sys.argv[1])   # type of plot
-
 parser = argparse.ArgumentParser()
 parser.add_argument('pview',metavar='nview',nargs='*',help='Type of plot to make (integer)')
 parser.add_argument("-f","--file",nargs=1,default=['results'],help='Results folder to use for plotting')

@@ -23,14 +23,14 @@
 // Method: -
 //
 // Known limitations: None
-//   
+//
 //
 // Known issues: None
-//   
 //
-// If you use this code please cite the following reference: 
 //
-//       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016  
+// If you use this code please cite the following reference:
+//
+//       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016
 //
 // Current Code Owner: Joao Mendonca, EEG. joao.mendonca@csh.unibe.ch
 //
@@ -43,8 +43,8 @@
 ////////////////////////////////////////////////////////////////////////
 
 // Integration time
-#define nsmax        48000 // Number of time steps
-#define timestep     1800  // Time step  [seconds]
+#define nsmax       1 // Number of time steps
+#define timestep     300  // Time step  [seconds]
 
 // Grid
 #define sprd   true       // Spring dynamics
@@ -53,21 +53,21 @@
 #define vlevel 32         // Number of vertical layers
 
 // Diffusion
-#define HyDiff       true    // Hyper-diffusion    
-#define DivDampP     true    // Divergence-damping 
+#define HyDiff       true    // Hyper-diffusion
+#define DivDampP     true    // Divergence-damping
 
 // Model options
-#define NonHydro  true       // Non-hydrostatic parameter 
+#define NonHydro  true       // Non-hydrostatic parameter
 #define DeepModel true       // Deep atmosphere
 
 // Initial conditions
 #define rest   true          // Starting from rest
 
 // Benchmark test
-#define hstest true          // Held-Suarez test
+#define hstest false         // Held-Suarez test
 
 // GPU ID
 #define GPU_ID_N 0        // Set GPU ID number
 
 // Output
-#define n_out 1000         // Print output every n_out steps 
+#define n_out 1000         // Print output every n_out steps
