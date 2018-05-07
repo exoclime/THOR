@@ -12,6 +12,8 @@ import numpy as np
 
 import math
 
+import matplotlib.pyplot as plt
+
 
 class GridPainter:
     def __init__(self):
@@ -40,11 +42,12 @@ class GridPainter:
 #            vertices[i, 1] = i/vertices.shape[0]
 #            vertices[i, 2] = 0.0
         for i in range(len(self.grid)//2):
-            lat = self.grid[2*i]
-            lon = self.grid[2*i+1]
-            vertices[i, 0] = r*math.sin(lat)*math.cos(lon)
-            vertices[i, 1] = r*math.sin(lat)*math.sin(lon)
-            vertices[i, 2] = r*math.cos(lat)
+            theta = self.grid[2*i] + math.pi/2.0     # -pi:pi -> 0:2*pi
+            # -pi/2: pi/2 -> 0:pi
+            phi = self.grid[2*i+1] + math.pi
+            vertices[i, 0] = r*math.cos(phi)*math.cos(theta)
+            vertices[i, 1] = r*math.cos(phi)*math.sin(theta)
+            vertices[i, 2] = r*math.sin(phi)
 
         print(vertices)
         self.grid_vertex_count = vertices.size
@@ -52,10 +55,26 @@ class GridPainter:
 
         elements = np.zeros((len(self.neighbours), 2), dtype=np.uint32)
 
+#        fig = plt.figure()
+#        ax = fig.add_subplot(1, 1, 1)
+
         for i in range(vertices.shape[0]):
             for j in range(6):
                 elements[i*6 + j, 0] = i
                 elements[i*6 + j, 1] = self.neighbours[i*6 + j]
+
+#                c1 = i
+#                c2 = self.neighbours[i*6 + j]
+#                p1_x = self.grid[2*c1]
+#                p1_y = self.grid[2*c1 + 1]
+#                p2_x = self.grid[2*c2]
+#                p2_y = self.grid[2*c2 + 1]
+
+#                l = plt.Line2D([p1_x, p2_x], [p1_y, p2_y])
+#                ax.add_line(l)
+#        ax.set_xlim((-4.0, 4.0))
+#        ax.set_ylim((-4.0, 4.0))
+#        plt.show()
 
         self.grid_elements_count = elements.size
 
