@@ -5,6 +5,8 @@
 # cmake -DCMAKE_CUDA_FLAGS='-arch=sm_30' ..
 # compile
 # make -j8
+# to debug makefile by showing commands
+# make VERBOSE=1
 
 
 
@@ -16,7 +18,7 @@ project (THOR C CXX CUDA)
 #set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_BUILD_TYPE Release)
 
-append(CMAKE_CUDA_FLAGS "-cudart shared")
+string (APPEND CMAKE_CUDA_FLAGS " -cudart shared")
 set(SRC
   src/esp.cu
   src/grid/grid.cu

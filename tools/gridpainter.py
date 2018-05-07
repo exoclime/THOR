@@ -17,8 +17,9 @@ class GridPainter:
     def __init__(self):
         pass
 
-    def set_grid(self, grid):
+    def set_grid(self, grid, neighbours):
         self.grid = grid
+        self.neighbours = neighbours
 
     def set_shader_manager(self, shader_manager):
         self.shader_manager = shader_manager

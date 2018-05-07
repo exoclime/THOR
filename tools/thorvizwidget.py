@@ -54,8 +54,8 @@ class ThorVizWidget(QOpenGLWidget):
         self.right_button_pressed = False
         self.left_button_pressed = False
 
-    def set_grid(self, grid):
-        self.grid_painter.set_grid(grid)
+    def set_grid(self, grid, neighbours):
+        self.grid_painter.set_grid(grid, neighbours)
 
     def initialize(self):
         self.shader_manager = ShaderManager(self)

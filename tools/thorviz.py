@@ -60,20 +60,34 @@ for planet, values in planets.items():
 
 
 grd = None
+neighbours = None
 for planet, files in planets.items():
     print("Planet: ", planet)
     print("Number of datafiles:", len(files['datasets']))
 
+    print("Planet def")
     planet_def = h5py.File(files['def'])
     for k, v in planet_def.items():
         print(k, v[0])
 
+    print("grid def")
     grid = h5py.File(files['grid'])
     for k, v in grid.items():
         print(k, v)
 
+    if len(files['datasets']) > 0:
+        print("datafiles def")
+        datafile0 = h5py.File(files['datasets'][0])
+        for k, v in datafile0.items():
+            print(k, v)
+
     if grd is None:
         grd = grid['lonlat']
+        neighbours = grid['pntloc']
+
+    for n in neighbours:
+        print(n)
+#    print(neighbours)
 
 
 class ThorVizWindow(QMainWindow):
@@ -81,7 +95,7 @@ class ThorVizWindow(QMainWindow):
         super(ThorVizWindow, self).__init__()
         uic.loadUi('VizWin.ui', self)
 
-        self.vizGL.set_grid(grd)
+        self.vizGL.set_grid(grd, neighbours)
         self.show()
 
 
