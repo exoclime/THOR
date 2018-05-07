@@ -75,19 +75,38 @@ for planet, files in planets.items():
     for k, v in grid.items():
         print(k, v)
 
+    num_levels = int(grid['nv'][0])
+    num_datas = 0
     if len(files['datasets']) > 0:
         print("datafiles def")
         datafile0 = h5py.File(files['datasets'][0])
+        num_datas = len(datafile0['Pressure'])
+
         for k, v in datafile0.items():
             print(k, v)
 
     if grd is None:
         grd = grid['lonlat']
         neighbours = grid['pntloc']
-
+    num_points = len(grd)//2
+    ground_moment = np.zeros(
+        (len(files['datasets']), num_datas//(num_levels), 3), dtype=np.float32)
+    print(ground_moment.shape)
+    for i in range(len(files['datasets'])):
+        d = h5py.File(files['datasets'][i])
+        ground_moment[i, :, :] = np.array(d['Mh']).reshape(
+            num_points, num_levels, 3)[:, 0, :]
 #    for n in neighbours:
 #        print(n)
 #    print(neighbours)
+
+n = 50
+colors = np.zeros((n, len(grid['lonlat'])//2, 3), dtype=np.float32)
+
+for i in range(n):
+    colors[i, :, 0] = i/n
+
+print(colors)
 
 
 class ThorVizWindow(QMainWindow):
@@ -95,8 +114,13 @@ class ThorVizWindow(QMainWindow):
         super(ThorVizWindow, self).__init__()
         uic.loadUi('VizWin.ui', self)
 
-        self.vizGL.set_grid(grd, neighbours)
+        self.vizGL.set_grid(grd, neighbours, ground_moment)
         self.show()
+
+        self.animation_slider.setMaximum(colors.shape[0])
+
+    def set_image(self, i):
+        pass
 
 
 app = QApplication([])

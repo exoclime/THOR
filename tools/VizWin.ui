@@ -22,6 +22,13 @@
       </item>
      </layout>
     </item>
+    <item row="1" column="0">
+     <widget class="QSlider" name="animation_slider">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+     </widget>
+    </item>
    </layout>
   </widget>
   <widget class="QMenuBar" name="menubar">
@@ -41,8 +48,28 @@
    <class>ThorVizWidget</class>
    <extends>QOpenGLWidget</extends>
    <header>thorvizwidget</header>
+   <slots>
+    <slot>set_image(int)</slot>
+   </slots>
   </customwidget>
  </customwidgets>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>animation_slider</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>vizGL</receiver>
+   <slot>set_image(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>459</x>
+     <y>556</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>476</x>
+     <y>505</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>

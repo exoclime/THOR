@@ -51,7 +51,7 @@ class ShaderManager:
                        float NdotL;
                        void main() {
                           // light dir
-                          lightdir = normalize(vec3(1.0,1.0,1.0));
+                          lightdir = normalize(vec3(1.0,1.0,-1.0));
                           normal = normals;
                           NdotL = max(dot(normal, lightdir), 0.0);
                           //normal = projection * \

@@ -51,13 +51,18 @@ class ThorVizWidget(QOpenGLWidget):
         self.cam_theta = 0.0
         self.cam_phi = 0.0
 
-        self.cam_r = -2.0
+        self.cam_r = -5.0
 
         self.right_button_pressed = False
         self.left_button_pressed = False
+        self.image = 0
 
-    def set_grid(self, grid, neighbours):
-        self.grid_painter.set_grid(grid, neighbours)
+    def set_grid(self, grid, neighbours, vertices_color_arrays):
+        self.grid_painter.set_grid(grid, neighbours, vertices_color_arrays)
+
+    def set_image(self, img):
+        self.image = img
+        self.update()
 
     def initialize(self):
         self.shader_manager = ShaderManager(self)
@@ -91,6 +96,7 @@ class ThorVizWidget(QOpenGLWidget):
         gl.glEnable(gl.GL_BLEND)
 
         gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
+        self.idx = 0
 
     def paintGL(self):
         # print(time.time())
@@ -120,7 +126,8 @@ class ThorVizWidget(QOpenGLWidget):
 #        model.scale(0.05, 0.05, 1.0)
         self.shader_manager.set_model(model)
 
-        self.grid_painter.paint_grid()
+        self.grid_painter.paint_grid(self.image)
+        self.idx = (self.idx+1) % 3
         self.shader_manager.end_paint()
 
         self.shader_manager.start_paint_pc()
