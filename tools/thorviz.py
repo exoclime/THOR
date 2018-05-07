@@ -85,8 +85,8 @@ for planet, files in planets.items():
         grd = grid['lonlat']
         neighbours = grid['pntloc']
 
-    for n in neighbours:
-        print(n)
+#    for n in neighbours:
+#        print(n)
 #    print(neighbours)
 
 
