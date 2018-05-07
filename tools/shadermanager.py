@@ -28,6 +28,8 @@ class ShaderManager:
                        }"""
     vertex_fragment_colour = """#version 400\n
                                 in vec3 colour;
+                                
+
                                 out vec4 frag_colour;
 
                                 void main() {
@@ -35,21 +37,40 @@ class ShaderManager:
                                 }"""
 
     vertex_shader = """#version 400\n
-                       in vec3 vp;
+                       layout(location = 0) in vec3 vp;
+                       layout(location = 1) in vec3 vertex_colour;
+                       layout(location = 2) in vec3 normals;
+                      
+                       out vec3 normal;
+                       out vec3 FragPos; 
+                       out vec3 colour_;
                        uniform highp mat4 view;
                        uniform highp mat4 projection;
                        uniform highp mat4 model;
+                       vec3 lightdir;
+                       float NdotL;
                        void main() {
+                          // light dir
+                          lightdir = normalize(vec3(1.0,1.0,1.0));
+                          normal = normals;
+                          NdotL = max(dot(normal, lightdir), 0.0);
+                          //normal = projection * \
+                          //    view * model *  vec4(normals, 1.0);
                           gl_Position = projection * \
                               view * model *  vec4(vp, 1.0);
+                         FragPos = vec3(model * vec4(vp, 1.0));
+                         colour_ = NdotL*vertex_colour;
                        }"""
 
     fragment_shader = """#version 400\n
+                        in vec3 normal;
+                        in vec3 FragPos;
+                        in vec3 colour_;
                         out vec4 frag_colour;
                         uniform highp vec4 colour;
                         void main() {
-
-                           frag_colour = colour;
+                           
+                           frag_colour = vec4(colour_, 1.0);
                         }"""
 
     def __init__(self, parent):
