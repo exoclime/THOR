@@ -1,12 +1,16 @@
 # to build with cmake
-# mkdir build
-# cd build
+# create a build directory and move into it
+# $ mkdir build
+# $ cd build
 # generate the makefile (to do only ones, if we don't add files or change makefiles)
-# cmake -DCMAKE_CUDA_FLAGS='-arch=sm_30' ..
-# compile
-# make -j8
+# don't forget the two points at the end of the command '..'.
+# It runs cmake in the 'build' directory
+# but with the data from the '..' directory
+# $ cmake -DCMAKE_CUDA_FLAGS='-arch=sm_30' ..
+# compile (-jX runs X jobs in parallel, useful with multiple cores to speed up)
+# $ make -j8
 # to debug makefile by showing commands
-# make VERBOSE=1
+# $ make VERBOSE=1
 
 
 
