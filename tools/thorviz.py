@@ -64,7 +64,7 @@ neighbours = None
 for planet, files in planets.items():
     print("Planet: ", planet)
     print("Number of datafiles:", len(files['datasets']))
-
+    num_samples = len(files['datasets'])
     print("Planet def")
     planet_def = h5py.File(files['def'])
     for k, v in planet_def.items():
@@ -96,15 +96,26 @@ for planet, files in planets.items():
         d = h5py.File(files['datasets'][i])
         ground_moment[i, :, :] = np.array(d['Mh']).reshape(
             num_points, num_levels, 3)[:, 0, :]
+
+    pressure = np.zeros(
+        (len(files['datasets']), num_datas//(num_levels)), dtype=np.float32)
+
+    for i in range(len(files['datasets'])):
+        d = h5py.File(files['datasets'][i])
+        pressure[i, :] = np.array(d['Pressure']).reshape(
+            num_points, num_levels)[:, 0]
+    print(pressure.shape)
 #    for n in neighbours:
 #        print(n)
 #    print(neighbours)
 
-n = 50
-colors = np.zeros((n, len(grid['lonlat'])//2, 3), dtype=np.float32)
-
-for i in range(n):
-    colors[i, :, 0] = i/n
+colors = np.zeros((num_samples, len(grid['lonlat'])//2, 3), dtype=np.float32)
+# colors[:, :, 0] = pressure/np.max(pressure)
+colors[:, :, 0] = ground_moment[:, :, 0]/np.max(ground_moment[:, :, 0])
+colors[:, :, 1] = ground_moment[:, :, 1]/np.max(ground_moment[:, :, 1])
+colors[:, :, 2] = ground_moment[:, :, 2]/np.max(ground_moment[:, :, 2])
+# for i in range(n):
+#     colors[i, :, 0] = i/n
 
 print(colors)
 
@@ -114,7 +125,7 @@ class ThorVizWindow(QMainWindow):
         super(ThorVizWindow, self).__init__()
         uic.loadUi('VizWin.ui', self)
 
-        self.vizGL.set_grid(grd, neighbours, ground_moment)
+        self.vizGL.set_grid(grd, neighbours, colors)
         self.show()
 
         self.animation_slider.setMaximum(colors.shape[0])
