@@ -1,6 +1,6 @@
 # Builds THOR executable
 
-sm:=50 # Streaming Multiprocessor version
+sm:=61 # Streaming Multiprocessor version
 arch := -arch sm_$(sm)
 
 path_hd  := $(shell pwd)/src/headers
@@ -12,20 +12,17 @@ headers := $(path_hd)/define.h $(path_hd)/grid.h $(path_hd)/planet.h $(path_hd)/
            $(path_hd)/dyn/thor_div.h $(path_hd)/phy/profx_auxiliary.h $(path_hd)/phy/profx_held_suarez.h
 flag := -g -G
 
-vvv := $(shell grep '^prefix' `which h5cc`)
-$(eval $(vvv))
+# define where to find sources 
+vpath %.cu src src/grid src/initial src/thor src/profx src/output
 
-vvv1 := $(shell grep '^exec_prefix' `which h5cc`)
-$(eval $(vvv1))
+h5libs := $(shell h5cc -show -shlib | awk -v ORS=" " '{ for ( n=1; n<=NF; n++ ) if ($$n ~ "^-lh") print $$n  }')
+h5libdir := $(shell h5cc -show -shlib | awk -v ORS=" " '{ for ( n=1; n<=NF; n++ ) if ($$n ~ "^-L") print $$n  }')
+h5include := $(shell h5cc -show -shlib | awk -v ORS=" " '{ for ( n=1; n<=NF; n++ ) if ($$n ~ "^-I") print $$n  }')
+$(info h5libs="$(h5libs)")
+$(info h5libdir="$(h5libdir)")
+$(info h5include="$(h5include)")
 
-vvv2 := $(shell grep '^libdir' `which h5cc`)
-$(eval $(vvv2))
-h5lib = -L$(libdir) -lhdf5
-
-vvv3 := $(shell grep '^includedir' `which h5cc`)
-$(eval $(vvv3))
-
-includehdf = -I$(includedir)
+includehdf = $(h5include)
 # Path where the hdf5 lib was installed,
 # should contain `include` and `lib`
 # hdf_dir := <hdf5 directory>
@@ -33,32 +30,28 @@ includehdf = -I$(includedir)
 # h5lib = -L$(hdf_dir)/lib -lhdf5
 # includehdf = -I$(hdf_dir)/include
 
-esp: $(obj) $(headers)
-	nvcc $(arch) $(includehdf) $(h5lib) -o bin/esp $(obj) $(flag)
-	mv *.o obj/
+OBJDIR = obj
+BINDIR = bin
+.PHONY: all clean
 
-grid.o: $(path_src)/grid/grid.cu
-	nvcc $(arch) $(includehdf) $(h5lib) -dc $(path_src)/grid/grid.cu $(flag)
+all: $(BINDIR)/esp
 
-esp_initial.o: $(path_src)/initial/esp_initial.cu
-	nvcc $(arch) $(includehdf) $(h5lib) -dc $(path_src)/initial/esp_initial.cu $(flag)
+# build *.cu CUDA objects
+$(OBJDIR)/%.o: %.cu|$(OBJDIR) 
+	@echo creating $@
+	nvcc $(arch) $(h5include) $(h5libdir) -dc -o $@ $< $(flag)
 
-planet.o: $(path_src)/initial/planet.cu
-	nvcc $(arch) $(includehdf) $(h5lib) -dc $(path_src)/initial/planet.cu $(flag)
+# create object directory if missing
+$(OBJDIR) $(BINDIR):
+	mkdir $@
 
-thor_driver.o: $(path_src)/thor/thor_driver.cu
-	nvcc $(arch) $(includehdf) $(h5lib) -dc $(path_src)/thor/thor_driver.cu $(flag)
+# link *.o objects
+$(BINDIR)/esp: $(addprefix $(OBJDIR)/,$(obj)) $(headers)
+	@echo creating $@
+	nvcc $(arch) $(h5libdir) $(h5libs) -o $(BINDIR)/esp $(addprefix $(OBJDIR)/,$(obj)) $(flag)
 
-profx_driver.o: $(path_src)/profx/profx_driver.cu
-	nvcc $(arch) $(includehdf) $(h5lib) -dc $(path_src)/profx/profx_driver.cu $(flag)
-
-esp.o: $(path_src)/esp.cu
-	nvcc $(arch) $(includehdf) $(h5lib) -dc $(path_src)/esp.cu $(flag)
-
-esp_output.o: $(path_src)/output/esp_output.cu
-	nvcc $(arch) $(includehdf) $(h5lib) -dc $(path_src)/output/esp_output.cu $(flag)
 
 .phony: clean, ar
 clean:
-	rm bin/esp obj/esp.o obj/grid.o obj/esp_initial.o obj/thor_driver.o \
-	                     obj/profx_driver.o obj/esp_output.o obj/planet.o
+	rm bin/esp $(addprefix $(OBJDIR)/,$(obj))
+
