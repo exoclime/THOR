@@ -114,8 +114,8 @@ class ThorVizWidget(QOpenGLWidget):
         view = QMatrix4x4()
         view.translate(0.0,  0.0, self.cam_r)
         print(self.cam_theta, self.cam_phi, self.cam_r)
-        view.rotate(self.cam_theta, 1.0, 0.0, 0.0)
-        view.rotate(self.cam_phi, 0.0, 1.0, 0.0)
+        view.rotate(-self.cam_theta, 0.0, 1.0, 0.0)
+        view.rotate(-self.cam_phi, 1.0, 0.0, 0.0)
         self.shader_manager.set_view(view)
 
         # projection transformation
@@ -188,11 +188,11 @@ class ThorVizWidget(QOpenGLWidget):
     def mouseMoveEvent(self, e):
         dx = e.x() - self.x
         dy = e.y() - self.y
-
+        k = 2.0
         if self.left_button_pressed:
 
-            dtheta = dx/self.width
-            dphi = dy/self.height
+            dtheta = k*dx/self.width
+            dphi = k*dy/self.height
 
             print(dtheta, dphi)
             self.cam_theta += dtheta
