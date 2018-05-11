@@ -16,12 +16,12 @@
 //     <http://www.gnu.org/licenses/>.
 // ==============================================================================
 //
-// 
+//
 //
 //
 // Description: DYNAMICAL CORE INTEGRATION
 //
-// Method: RK3 Method & Forward-Backward Method 
+// Method: RK3 Method & Forward-Backward Method
 //
 // Known limitations:
 //   - It does not include a shock capture scheme.
@@ -29,9 +29,9 @@
 // Known issues:
 //   - Operational in just one GPU.
 //
-// If you use this code please cite the following reference: 
+// If you use this code please cite the following reference:
 //
-//       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016  
+//       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016
 //
 // Current Code Owner: Joao Mendonca, EEG. joao.mendonca@csh.unibe.ch
 //
@@ -72,7 +72,7 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
     const int NTH = 256;
 
 //  Specify the block sizes.
-    const int LN = 16;               // Size of the inner region side. 
+    const int LN = 16;               // Size of the inner region side.
     dim3 NT(nl_region, nl_region, 1);// Number of threads in a block.
     dim3 NB(nr, nv , 1);             // Number of blocks.
     dim3 NBD(nr, nv, 6);             // Number of blocks in the diffusion routine.
@@ -86,7 +86,7 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
     double times        ;            // Sub-timestep.
 
 //  Initialize local variables used for the time integration.
-    cudaDeviceSynchronize();    
+    cudaDeviceSynchronize();
     cudaMemcpy(Mhk_d       , Mh_d       , point_num * nv * 3 * sizeof(double), cudaMemcpyDeviceToDevice);
     cudaMemcpy(Whk_d       , Wh_d       , point_num * nvi*     sizeof(double), cudaMemcpyDeviceToDevice);
     cudaMemcpy(Wk_d        , W_d        , point_num * nv *     sizeof(double), cudaMemcpyDeviceToDevice);
@@ -96,13 +96,13 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
 //  Loop for large time integration.
     for(int rk = 0; rk < 3; rk++){
 //      Local variables to define the length (times) and the number of the small steps (ns_it).
-        if(rk == 0) ns_it = 1           ; 
-        if(rk == 1) ns_it = ns_totali/2 ;        
+        if(rk == 0) ns_it = 1           ;
+        if(rk == 1) ns_it = ns_totali/2 ;
         if(rk == 2) ns_it = ns_totali   ;
 
         if(rk == 0) times = timestep_dyn/3.0      ;
-        if(rk == 1) times = timestep_dyn/ns_totald;        
-        if(rk == 2) times = timestep_dyn/ns_totald;    
+        if(rk == 1) times = timestep_dyn/ns_totald;
+        if(rk == 2) times = timestep_dyn/ns_totald;
 //
 //      Compute advection and coriolis terms.
         cudaMemset(Adv_d, 0, sizeof(double) * 3 * point_num * nv); // Sets every value of Adv_d to zero.
@@ -133,7 +133,8 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
                                               point_num    ,
                                               nv           ,
                                               DeepModel   );
-        
+
+
         cudaDeviceSynchronize();
         Compute_Advec_Cori2 <<<(point_num / NTH) + 1, NTH >>>(Adv_d      ,
                                                               v_d        ,
@@ -167,7 +168,16 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
                                                                           Altitude_d   ,
                                                                           Altitudeh_d  ,
                                                                           point_num    ,
-                                                                          nv           );            
+                                                                          nv           );
+
+        check_h = false;
+        cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
+        isnan_check_thor<<< 16, NTH >>>(temperature_d, nv, point_num, check_d);
+        cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
+        if(check_h){
+           printf("\n\n Error in NAN check after Thor:Compute_Temp!\n");
+           exit(EXIT_FAILURE);
+        }
 //      Initializes slow terms.
         cudaDeviceSynchronize();
         cudaMemset(SlowMh_d      , 0, sizeof(double) * 3 * point_num * nv);
@@ -175,7 +185,7 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
         cudaMemset(SlowRho_d     , 0, sizeof(double) *     point_num * nv);
         cudaMemset(Slowpressure_d, 0, sizeof(double) *     point_num * nv);
 //
-//      Hyper-Diffusion.    
+//      Hyper-Diffusion.
         if (HyDiff){
             cudaMemset(diff_d, 0, sizeof(double) *   6 * point_num * nv);
             cudaDeviceSynchronize();
@@ -414,8 +424,17 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
                                               point_num     ,
                                               DeepModel     ,
                                               NonHydro      );
-        
+
 //      Updates or initializes deviations.
+        check_h = false;
+        cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
+        isnan_check_thor<<< 16, NTH >>>(Slowpressure_d, nv, point_num, check_d);
+        cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
+        if(check_h){
+           printf("\n\n Error in NAN check after Thor:SlowModes!\n");
+           exit(EXIT_FAILURE);
+        }
+
         if (rk == 0){
             cudaMemset(Mhs_d       , 0, sizeof(double) * 3*point_num * nv);
             cudaMemset(Rhos_d      , 0, sizeof(double) * point_num * nv)  ;
@@ -551,8 +570,8 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
                                             point_local_d,
                                             nv           ,
                                             point_num    ,
-                                            DeepModel    );    
-            
+                                            DeepModel    );
+
 //          Vertical Momentum
             cudaDeviceSynchronize();
             Prepare_Implicit_Vertical <LN,LN>  <<<NB, NT >>>(Mhs_d         ,
@@ -663,8 +682,17 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
                                                      point_num    ,
                                                      nv           ,
                                                      DeepModel    );
-                                                     
-                                                     
+
+
+        }
+
+        check_h = false;
+        cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
+        isnan_check_thor<<< 16, NTH >>>(pressures_d, nv, point_num, check_d);
+        cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
+        if(check_h){
+           printf("\n\n Error in NAN check after Thor:FastModes!\n");
+           exit(EXIT_FAILURE);
         }
 //      Update quantities for the long loop.
         cudaDeviceSynchronize();
@@ -692,6 +720,3 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
     cudaMemcpy(pressure_d , pressurek_d , point_num * nv *     sizeof(double), cudaMemcpyDeviceToDevice);
 }
 //END OF THOR!
-
-
-

@@ -43,14 +43,14 @@
 ////////////////////////////////////////////////////////////////////////
 
 // Integration time
-#define nsmax       1 // Number of time steps
-#define timestep     300  // Time step  [seconds]
+#define nsmax       10000// Number of time steps
+#define timestep     50  // Time step  [seconds]
 
 // Grid
 #define sprd   true       // Spring dynamics
 #define glevel 4          // Horizontal resolution level.
 #define spring_beta 1.15  // Parameter beta for spring dynamics
-#define vlevel 32         // Number of vertical layers
+#define vlevel 40         // Number of vertical layers
 
 // Diffusion
 #define HyDiff       true    // Hyper-diffusion

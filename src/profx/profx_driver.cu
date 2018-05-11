@@ -47,6 +47,14 @@
 #include "../headers/phy/profx_held_suarez.h"
 #include "../headers/phy/profx_RT.h"
 
+
+// if (id == 60){
+//   FILE *fp;
+//   fp = fopen("temp_column.dat","a");
+//   fprintf(fp,"%d %f %f\n",lev,temperature_d[id*nv+lev],pt_d[id*nv+lev]);
+//   fclose(fp);
+// }
+
 __host__ void ESP::ProfX(int    planetnumber, // Planet ID
                          int    nstep       , // Step number
                          bool   hstest      , // Held-Suarez test option
@@ -67,6 +75,7 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
 
 //  Specify the block sizes.
     dim3 NB((point_num / NTH) + 1, nv, 1);
+    dim3 NBRT((point_num/NTH) + 1, 1, 1);
 
 //  Computes the initial temperature.
     Compute_temperature <<< NB, NTH >>> (temperature_d,
@@ -78,12 +87,15 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
                                          Cp           ,
                                          point_num    );
 //  Check for nan.
+
+
+
     check_h = false;
     cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
     isnan_check<<< 16, NTH >>>(temperature_d, nv, point_num, check_d);
     cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
     if(check_h){
-       printf("\n\n Error in NAN check!\n");
+       printf("\n\n Error in NAN check after Profx:CompTemp!\n");
        exit(EXIT_FAILURE);
     }
 
@@ -116,7 +128,9 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
     }
 
     if (!hstest) {
-        rtm_dual_band <<< NB, NTH >>> (pressure_d   ,
+        cudaDeviceSynchronize();
+        rtm_dual_band <<< NBRT, NTH >>> (pressure_d   ,
+      //rtm_dual_band <<< 1,1 >>> (pressure_d         ,
                                        Rho_d        ,
                                        temperature_d,
                                        fnet_up_d    ,
@@ -127,12 +141,27 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
                                        lonlat_d     ,
                                        Altitude_d   ,
                                        Altitudeh_d  ,
+                                       phtemp       ,
+                                       dtemp        ,
+                                       ttemp        ,
+                                       thtemp       ,
                                        time_step      ,
-                                       point_num              ,
+                                       point_num       ,
                                        nv               ,
                                        nvi              ,
                                        A             );
+        // isnan_loop <<< 1, 1 >>> (temperature_d, point_num, nv);
     }
+
+    check_h = false;
+    cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
+    isnan_check<<< 16, NTH >>>(temperature_d, nv, point_num, check_d);
+    cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
+    if(check_h){
+       printf("\n\n Error in NAN check after Profx:RT!\n");
+       exit(EXIT_FAILURE);
+    }
+
 
 //  Computes the new pressures.
     cudaDeviceSynchronize();
@@ -141,6 +170,17 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
                                       Rho_d        ,
                                       Rd           ,
                                       point_num    );
+
+    check_h = false;
+    cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
+    isnan_check<<< 16, NTH >>>(temperature_d, nv, point_num, check_d);
+    cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
+    if(check_h){
+       printf("\n\n Error in NAN check after Profx:CompPress!\n");
+       exit(EXIT_FAILURE);
+    }
+
+
 //
 //END OF INTEGRATION
 //

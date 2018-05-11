@@ -47,6 +47,7 @@
 
 #include "../headers/esp.h"
 #include "hdf5.h"
+#include <stdio.h>
 
 __host__ ESP::ESP(int *point_local_    ,
                   int *maps_           ,
@@ -203,6 +204,10 @@ __host__ void ESP::AllocData(){
     cudaMalloc((void **)&fnet_dn_d   , nvi * point_num *     sizeof(double));
     cudaMalloc((void **)&tau_d       , nv * point_num * 2 *  sizeof(double));
 
+    cudaMalloc((void **)&phtemp      , nvi * point_num *     sizeof(double));
+    cudaMalloc((void **)&thtemp      , nvi * point_num *     sizeof(double));
+    cudaMalloc((void **)&ttemp       , nv * point_num *     sizeof(double));
+    cudaMalloc((void **)&dtemp       , nv * point_num *     sizeof(double));
 }
 
 __host__ void ESP::InitialValues(bool rest          ,
@@ -366,6 +371,7 @@ __host__ void ESP::InitialValues(bool rest          ,
 
     delete [] Kdh4_h;
     delete [] Kdhz_h;
+
 }
 
 __host__ ESP::~ESP(){
