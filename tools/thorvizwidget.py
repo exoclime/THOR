@@ -28,6 +28,7 @@ import time
 from shadermanager import ShaderManager
 from gridpainter import GridPainter
 from axispainter import AxisPainter
+from vectorfieldpainter import FieldPainter
 
 
 class ThorVizWidget(QOpenGLWidget):
@@ -45,6 +46,7 @@ class ThorVizWidget(QOpenGLWidget):
 
         self.grid_painter = GridPainter()
         self.axis_painter = AxisPainter()
+        self.field_painter = FieldPainter()
 
         self.m_matrixUniform = 0
 
@@ -57,8 +59,10 @@ class ThorVizWidget(QOpenGLWidget):
         self.left_button_pressed = False
         self.image = 0
 
-    def set_grid(self, grid, neighbours, vertices_color_arrays):
-        self.grid_painter.set_grid(grid, neighbours, vertices_color_arrays)
+    def set_grid(self, grid, neighbours, vertices_color_arrays, moments):
+        self.grid_painter.set_grid(
+            grid, neighbours, vertices_color_arrays)
+        self.field_painter.set_field(grid, moments)
 
     def set_image(self, img):
         self.image = img
@@ -68,6 +72,7 @@ class ThorVizWidget(QOpenGLWidget):
         self.shader_manager = ShaderManager(self)
         self.grid_painter.set_shader_manager(self.shader_manager)
         self.axis_painter.set_shader_manager(self.shader_manager)
+        self.field_painter.set_shader_manager(self.shader_manager)
         self.projection = QMatrix4x4()
         self.projection.perspective(35.0, 1.0, -1.0, 15.0)
 
@@ -91,11 +96,13 @@ class ThorVizWidget(QOpenGLWidget):
 
         self.grid_painter.initializeGL()
         self.axis_painter.initializeGL()
+        self.field_painter.initializeGL()
         gl.glEnable(gl.GL_DEPTH_TEST)
 
         gl.glEnable(gl.GL_BLEND)
 
         gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
+        # gl.glPolygonMode(gl.GL_FRONT_AND_BACK, gl.GL_LINE)
         self.idx = 0
 
     def paintGL(self):
@@ -129,6 +136,28 @@ class ThorVizWidget(QOpenGLWidget):
         self.grid_painter.paint_grid(self.image)
         self.idx = (self.idx+1) % 3
         self.shader_manager.end_paint()
+
+        self.shader_manager.start_paint_field()
+
+        colour = QVector4D(1.0, 1.0, 1.0, 1.0)
+        self.shader_manager.set_colour_field(colour)
+        # view transformation
+        view = QMatrix4x4()
+        view.translate(0.0,  0.0, self.cam_r)
+        print(self.cam_theta, self.cam_phi, self.cam_r)
+        view.rotate(-self.cam_theta, 0.0, 1.0, 0.0)
+        view.rotate(-self.cam_phi, 1.0, 0.0, 0.0)
+        self.shader_manager.set_view_field(view)
+
+        # projection transformation
+        self.shader_manager.set_projection_field(self.projection)
+
+        model = QMatrix4x4()
+        self.shader_manager.set_model_field(model)
+
+        self.field_painter.paint_field(self.image)
+
+        self.shader_manager.end_paint_field()
 
         self.shader_manager.start_paint_pc()
         model = QMatrix4x4()

@@ -23,11 +23,22 @@
      </layout>
     </item>
     <item row="1" column="0">
-     <widget class="QSlider" name="animation_slider">
-      <property name="orientation">
-       <enum>Qt::Horizontal</enum>
-      </property>
-     </widget>
+     <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <item>
+       <widget class="QSlider" name="animation_slider">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QSpinBox" name="spinBox">
+        <property name="maximum">
+         <number>1000</number>
+        </property>
+       </widget>
+      </item>
+     </layout>
     </item>
    </layout>
   </widget>
@@ -37,7 +48,7 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>29</height>
+     <height>27</height>
     </rect>
    </property>
   </widget>
@@ -62,12 +73,28 @@
    <slot>set_image(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>459</x>
-     <y>556</y>
+     <x>466</x>
+     <y>449</y>
     </hint>
     <hint type="destinationlabel">
-     <x>476</x>
-     <y>505</y>
+     <x>483</x>
+     <y>299</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>animation_slider</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>spinBox</receiver>
+   <slot>setValue(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>571</x>
+     <y>441</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>773</x>
+     <y>440</y>
     </hint>
    </hints>
   </connection>

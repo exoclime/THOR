@@ -111,13 +111,23 @@ for planet, files in planets.items():
 
 colors = np.zeros((num_samples, len(grid['lonlat'])//2, 3), dtype=np.float32)
 # colors[:, :, 0] = pressure/np.max(pressure)
-colors[:, :, 0] = ground_moment[:, :, 0]/np.max(ground_moment[:, :, 0])
-colors[:, :, 1] = ground_moment[:, :, 1]/np.max(ground_moment[:, :, 1])
-colors[:, :, 2] = ground_moment[:, :, 2]/np.max(ground_moment[:, :, 2])
+k = 0.2
+colors[:, :, 0] = k + (1.0-k)*ground_moment[:, :, 0] / \
+    np.max(ground_moment[:, :, 0])
+colors[:, :, 1] = k + (1.0-k)*ground_moment[:, :, 1] / \
+    np.max(ground_moment[:, :, 1])
+colors[:, :, 2] = k + (1.0-k)*ground_moment[:, :, 2] / \
+    np.max(ground_moment[:, :, 2])
 # for i in range(n):
 #     colors[i, :, 0] = i/n
 
 print(colors)
+
+
+moments = np.zeros((num_samples, len(grid['lonlat'])//2, 3), dtype=np.float32)
+# colors[:, :, 0] = pressure/np.max(pressure)
+k = 0.2
+moments[:, :, :] = ground_moment[:, :, :]
 
 
 class ThorVizWindow(QMainWindow):
@@ -125,7 +135,7 @@ class ThorVizWindow(QMainWindow):
         super(ThorVizWindow, self).__init__()
         uic.loadUi('VizWin.ui', self)
 
-        self.vizGL.set_grid(grd, neighbours, colors)
+        self.vizGL.set_grid(grd, neighbours, colors, moments)
         self.show()
 
         self.animation_slider.setMaximum(colors.shape[0])

@@ -26,6 +26,7 @@ class ShaderManager:
                           gl_Position = projection * \
                               view * model *  vec4(vp, 1.0);
                        }"""
+
     vertex_fragment_colour = """#version 400\n
                                 in vec3 colour;
                                 
@@ -53,7 +54,7 @@ class ShaderManager:
                           // light dir
                           lightdir = normalize(vec3(1.0,1.0,-1.0));
                           normal = normals;
-                          NdotL = max(dot(normal, lightdir), 0.0);
+                          NdotL = 0.3+0.7*max(dot(normal, lightdir), 0.0);
                           //normal = projection * \
                           //    view * model *  vec4(normals, 1.0);
                           gl_Position = projection * \
@@ -71,6 +72,26 @@ class ShaderManager:
                         void main() {
                            
                            frag_colour = vec4(colour_, 1.0);
+                        }"""
+
+    vertex_shader_field = """#version 400\n
+                       layout(location = 0) in vec3 vp;
+                      
+                       uniform highp mat4 view;
+                       uniform highp mat4 projection;
+                       uniform highp mat4 model;
+                       void main() {
+                          gl_Position = projection * \
+                              view * model *  vec4(vp, 1.0);
+                       }"""
+
+    fragment_shader_field = """#version 400\n
+
+                               out vec4 colour_out;
+                               uniform highp vec3 colour;
+                               void main() {
+                           
+                                colour_out = vec4(colour, 1.0);
                         }"""
 
     def __init__(self, parent):
@@ -112,6 +133,33 @@ class ShaderManager:
         self.m_projectionUniform_pc = self.m_program_pc.uniformLocation(
             'projection')
         self.m_modelUniform_pc = self.m_program_pc.uniformLocation('model')
+        self.m_program_field = QOpenGLShaderProgram(parent)
+
+        if self.m_program_field.addShaderFromSourceCode(QOpenGLShader.Vertex,
+                                                        self.vertex_shader_field):
+            print("initialised vertex shader")
+        else:
+            print("vertex shader failed")
+
+        self.m_program_field.addShaderFromSourceCode(QOpenGLShader.Fragment,
+                                                     self.fragment_shader_field)
+
+        self.m_program_field.link()
+
+        self.m_viewUniform_field = self.m_program_field.uniformLocation('view')
+        self.m_projectionUniform_field = self.m_program_field.uniformLocation(
+            'projection')
+        self.m_modelUniform_field = self.m_program_field.uniformLocation(
+            'model')
+
+        self.m_colourUniform_field = self.m_program_field.uniformLocation(
+            'colour')
+
+    def start_paint_field(self):
+        self.m_program_field.bind()
+
+    def end_paint_field(self):
+        self.m_program_field.release()
 
     def start_paint(self):
         self.m_program.bind()
@@ -128,6 +176,10 @@ class ShaderManager:
     def set_colour(self, colour):
         self.m_program.setUniformValue(self.m_colourUniform, colour)
 
+    def set_colour_field(self, colour):
+        self.m_program_field.setUniformValue(
+            self.m_colourUniform_field, colour)
+
     def set_view(self, view):
         self.m_program.setUniformValue(
             self.m_viewUniform, view)
@@ -136,9 +188,17 @@ class ShaderManager:
         self.m_program_pc.setUniformValue(
             self.m_viewUniform_pc, view)
 
+    def set_view_field(self, view):
+        self.m_program_field.setUniformValue(
+            self.m_viewUniform_field, view)
+
     def set_projection(self, projection):
         self.m_program.setUniformValue(
             self.m_projectionUniform, projection)
+
+    def set_projection_field(self, projection):
+        self.m_program_field.setUniformValue(
+            self.m_projectionUniform_field, projection)
 
     def set_projection_pc(self, projection):
         self.m_program_pc.setUniformValue(
@@ -147,6 +207,10 @@ class ShaderManager:
     def set_model(self, model):
         self.m_program.setUniformValue(
             self.m_modelUniform, model)
+
+    def set_model_field(self, model):
+        self.m_program_field.setUniformValue(
+            self.m_modelUniform_field, model)
 
     def set_model_pc(self, model):
         self.m_program_pc.setUniformValue(
