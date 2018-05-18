@@ -44,7 +44,7 @@
 
 // Integration time
 #define nsmax       10000// Number of time steps
-#define timestep     50  // Time step  [seconds]
+#define timestep     100  // Time step  [seconds]
 
 // Grid
 #define sprd   true       // Spring dynamics
@@ -70,4 +70,4 @@
 #define GPU_ID_N 0        // Set GPU ID number
 
 // Output
-#define n_out 1000         // Print output every n_out steps
+#define n_out 100         // Print output every n_out steps
