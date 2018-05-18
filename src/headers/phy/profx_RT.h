@@ -105,7 +105,7 @@ __device__ double source_func_lin_up(double bb      ,
     return e;
 }
 
-__device__ double source_func_lin_down(double bb      ,
+__device__ double source_func_lin(double bb      ,
                                   double bl      ,
                                   double bt      ,
                                   double tau     ,
@@ -116,8 +116,8 @@ __device__ double source_func_lin_down(double bb      ,
     double e  = 0.0;
 
     if(tau >= 1e-10){
-        e1 = bb - bl - (bb+(diff_fac/(tau/2.0))*(bb-bl))*(1.0-exp(-(tau/2.0)/diff_fac));
-        e2 = bl - bt - (bl+(diff_fac/(tau/2.0))*(bl-bt))*(1.0-exp(-(tau/2.0)/diff_fac));
+        e1 = bb - bl + (bl-(diff_fac/(tau/2.0))*(bb-bl))*(1.0-exp(-(tau/2.0)/diff_fac));
+        e2 = bl - bt + (bt-(diff_fac/(tau/2.0))*(bl-bt))*(1.0-exp(-(tau/2.0)/diff_fac));
         e  = e1 + e2 *  exp(-(tau/2.0)/diff_fac);
     }
     else{
@@ -170,7 +170,7 @@ __device__ void radclw(double *phtemp         ,
         bl = bc*tl*tl*tl*tl;
         bt = bc*tt*tt*tt*tt;
 
-        ed = source_func_lin_down(bb, bl, bt, tau_d[id*nv*2 + 2*lev + 1], diff_fac);
+        ed = source_func_lin(bb, bl, bt, tau_d[id*nv*2 + 2*lev + 1], diff_fac);
 
         // printf("gridpt = %d, layer = %d, e_down = %f\n",id*nv, lev,ed);
         fnet_dn_d[id*(nv+1) + lev] = fabs(ed) + fnet_dn_d[id*(nv+1) + lev+1] * exp(-(1./diff_fac)*tau_d[id*nv*2 + 2*lev + 1]);
@@ -196,7 +196,7 @@ __device__ void radclw(double *phtemp         ,
         bl = bc*tl*tl*tl*tl;
         bt = bc*tt*tt*tt*tt;
 
-        eu = source_func_lin_up(bb, bl, bt, tau_d[id*nv*2 + 2*(lev-1) + 1], diff_fac);
+        eu = source_func_lin(bt, bl, bb, tau_d[id*nv*2 + 2*(lev-1) + 1], diff_fac);
 
         // printf("gridpt = %d, layer = %d, e_up = %f\n",id*nv, lev,eu);
         fnet_up_d[id*(nv+1) + lev] = eu + fnet_up_d[id*(nv+1) + lev-1] * exp(-(1./diff_fac)*tau_d[id*nv*2 + 2*(lev-1) + 1]);
