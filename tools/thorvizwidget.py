@@ -93,10 +93,15 @@ class ThorVizWidget(QOpenGLWidget):
         print("GLSL: " + str(gl.glGetString(gl.GL_SHADING_LANGUAGE_VERSION)))
 
         self.initialize()
-
+        # self.shader_manager.start_paint()
         self.grid_painter.initializeGL()
-        self.axis_painter.initializeGL()
+        # self.shader_manager.end_paint()
+        # self.shader_manager.start_paint_field()
         self.field_painter.initializeGL()
+        # self.shader_manager.end_paint_field()
+        # self.shader_manager.start_paint_pc()
+        self.axis_painter.initializeGL()
+        # self.shader_manager.end_paint_pc()
         gl.glEnable(gl.GL_DEPTH_TEST)
 
         gl.glEnable(gl.GL_BLEND)
@@ -112,7 +117,7 @@ class ThorVizWidget(QOpenGLWidget):
  #        gl.glLoadIdentity()
 
         self.resize()
-
+        ##############################################
         self.shader_manager.start_paint()
 
         colour = QVector4D(1.0, 1.0, 1.0, 1.0)
@@ -133,10 +138,10 @@ class ThorVizWidget(QOpenGLWidget):
 #        model.scale(0.05, 0.05, 1.0)
         self.shader_manager.set_model(model)
 
-        self.grid_painter.paint_grid(self.image)
+        # self.grid_painter.paint_grid(self.image)
         self.idx = (self.idx+1) % 3
         self.shader_manager.end_paint()
-
+        #################################
         self.shader_manager.start_paint_field()
 
         colour = QVector4D(1.0, 1.0, 1.0, 1.0)
@@ -144,12 +149,12 @@ class ThorVizWidget(QOpenGLWidget):
         # view transformation
         view = QMatrix4x4()
         view.translate(0.0,  0.0, self.cam_r)
-        print(self.cam_theta, self.cam_phi, self.cam_r)
+        # print(self.cam_theta, self.cam_phi, self.cam_r)
         view.rotate(-self.cam_theta, 0.0, 1.0, 0.0)
         view.rotate(-self.cam_phi, 1.0, 0.0, 0.0)
         self.shader_manager.set_view_field(view)
 
-        # projection transformation
+        # # projection transformation
         self.shader_manager.set_projection_field(self.projection)
 
         model = QMatrix4x4()
@@ -158,7 +163,7 @@ class ThorVizWidget(QOpenGLWidget):
         self.field_painter.paint_field(self.image)
 
         self.shader_manager.end_paint_field()
-
+        ############################################
         self.shader_manager.start_paint_pc()
         model = QMatrix4x4()
         self.shader_manager.set_model(model)
@@ -180,7 +185,6 @@ class ThorVizWidget(QOpenGLWidget):
 
         self.axis_painter.paint_axis()
 
-        gl.glViewport(0, 0, self.width, self.height)
         self.shader_manager.end_paint_pc()
 
     def resizeGL(self, width, height):

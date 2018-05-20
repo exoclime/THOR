@@ -88,10 +88,10 @@ class ShaderManager:
     fragment_shader_field = """#version 400\n
 
                                out vec4 colour_out;
-                               uniform highp vec3 colour;
+                               uniform highp vec4 colour;
                                void main() {
                            
-                                colour_out = vec4(colour, 1.0);
+                                colour_out = colour;
                         }"""
 
     def __init__(self, parent):
