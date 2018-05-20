@@ -35,14 +35,14 @@ class FieldPainter:
         vertices = np.zeros((num_images, len(self.grid)//2, 2, 3),
                             dtype=np.float32)
         print("vertices files", vertices.shape)
-        r = 1.2
+        r = 1.05
         #        for i in range(vertices.shape[0]):
         #            vertices[i, 0] = i/vertices.shape[0]
         #            vertices[i, 1] = i/vertices.shape[0]
         #            vertices[i, 2] = 0.0
 
-        # k = 1.0/(np.max(self.moments)*1.0)
-        k = 0.0
+        k = 1.0/(np.max(self.moments)*0.1)
+        # k = 1.0
         for m in range(num_images):
             for j in range(len(self.grid)//2):
                 theta = self.grid[2*j] + math.pi/2.0     # -pi:pi -> 0:2*pi
@@ -52,18 +52,28 @@ class FieldPainter:
                 r_1 = r*math.cos(phi)*math.sin(theta)
                 r_2 = r*math.sin(phi)
 
-                vertices[m, j, 0, 0] = 0
-                vertices[m, j, 0, 1] = 0
-                vertices[m, j, 0, 2] = 0
+                vertices[m, j, 0, 0] = 0.0
+                vertices[m, j, 0, 1] = 0.0
+                vertices[m, j, 0, 2] = 0.0
 
-                vertices[m, j, 1, 0] = r_0 + k*r_0
-                vertices[m, j, 1, 1] = r_1 + k*r_1
-                vertices[m, j, 1, 2] = r_2 + k*r_2
+                vertices[m, j, 1, 0] = k*self.moments[m, j, 0]
+                vertices[m, j, 1, 1] = k*self.moments[m, j, 1]
+                vertices[m, j, 1, 2] = k*self.moments[m, j, 2]
+
+                # vertices[m, j, 0, 0] = r_0
+                # vertices[m, j, 0, 1] = r_1
+                # vertices[m, j, 0, 2] = r_2
+
+                # vertices[m, j, 1, 0] = r_0 + k*r_0
+                # vertices[m, j, 1, 1] = r_1 + k*r_1
+                # vertices[m, j, 1, 2] = r_2 + k*r_2
 
                 # vertices[m, j, 1, 0] = r_0 + k*self.moments[m, j, 0]
                 # vertices[m, j, 1, 1] = r_1 + k*self.moments[m, j, 1]
                 # vertices[m, j, 1, 2] = r_2 + k*self.moments[m, j, 2]
-
+                # print(self.moments[m, j, 0],
+                #       self.moments[m, j, 1],
+                #       self.moments[m, j, 2])
         self.vao_vector_field = []
         self.field_vbos = []
         for c in range(num_images):
@@ -76,17 +86,28 @@ class FieldPainter:
             self.field_vbos.append(vbo)
             print("create field", vao_field)
             self.vao_vector_field.append(vao_field)
+            gl.glEnableVertexAttribArray(0)
+
+            print("check vertex array",
+                  vao_field,
+                  gl.glIsVertexArray(vao_field))
 
     def paint_field(self, idx):
         # display grid
         print("paint field", idx, self.field_vertex_count,
-              self.vao_vector_field[idx])
+              self.vao_vector_field[idx],
+              type(self.vao_vector_field[idx])
+              )
+
+        print("check vertex array",
+              self.vao_vector_field[idx],
+              gl.glIsVertexArray(int(self.vao_vector_field[idx])))
 
         gl.glBindVertexArray(self.vao_vector_field[idx])
 
         c = QVector4D(1.0, 1.0, 1.0, 1.0)
 
-        self.shader_manager.set_colour_field(c)
+        # self.shader_manager.set_colour_field(c)
         gl.glDrawArrays(gl.GL_LINES, 0,
                         self.field_vertex_count)
 
