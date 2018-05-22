@@ -53,6 +53,8 @@
 #include "../headers/dyn/thor_slowmodes.h"    // Slow terms.
 #include "../headers/dyn/thor_vertical_int.h" // Vertical momentum.
 
+#include "binary_test.h"
+
 __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
                         bool   HyDiff      , // Turn on/off hyper-diffusion.
                         bool   DivDampP    , // Turn on/off divergence damping.
@@ -93,6 +95,8 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
     cudaMemcpy(Rhok_d      , Rho_d      , point_num * nv *     sizeof(double), cudaMemcpyDeviceToDevice);
     cudaMemcpy(pressurek_d , pressure_d , point_num * nv *     sizeof(double), cudaMemcpyDeviceToDevice);
 
+    USE_BENCHMARK(*this)
+    
 //  Loop for large time integration.
     for(int rk = 0; rk < 3; rk++){
 //      Local variables to define the length (times) and the number of the small steps (ns_it).

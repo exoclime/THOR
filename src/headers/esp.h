@@ -41,6 +41,7 @@
 // 1.0     16/08/2017 Released version  (JM)
 //
 ////////////////////////////////////////////////////////////////////////
+#pragma once
 
 #include <stdio.h>
 #include <stdlib.h>

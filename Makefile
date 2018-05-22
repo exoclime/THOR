@@ -23,6 +23,7 @@ $(info h5libdir="$(h5libdir)")
 $(info h5include="$(h5include)")
 
 includehdf = $(h5include)
+includedir = ${path_hd}
 # Path where the hdf5 lib was installed,
 # should contain `include` and `lib`
 # hdf_dir := <hdf5 directory>
@@ -39,7 +40,7 @@ all: $(BINDIR)/esp
 # build *.cu CUDA objects
 $(OBJDIR)/%.o: %.cu|$(OBJDIR) 
 	@echo creating $@
-	nvcc $(arch) $(h5include) $(h5libdir) -dc -o $@ $< $(flag)
+	nvcc $(arch) $(h5include) $(h5libdir) -I$(includedir) -dc -o $@ $< $(flag)
 
 # create object directory if missing
 $(OBJDIR) $(BINDIR):
