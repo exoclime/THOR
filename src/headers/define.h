@@ -42,8 +42,17 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
+// benchmarking
+#define BENCHMARKING                 // if defined run benchmark functions
+#define BENCHMARK_COMPARE            // compare benchmark to
+                                     // references
+#define BENCHMARK_REF_PATH   "../results/binary_ref/"  // path to
+                                                       // benchmark
+                                                       // ref
+
+
 // Integration time
-#define nsmax        48000 // Number of time steps
+#define nsmax        1000 // Number of time steps
 #define timestep     1800  // Time step  [seconds]
 
 // Grid
@@ -70,4 +79,4 @@
 #define GPU_ID_N 0        // Set GPU ID number
 
 // Output
-#define n_out 1000         // Print output every n_out steps 
+#define n_out 200         // Print output every n_out steps 
