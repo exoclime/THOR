@@ -14,10 +14,14 @@
 
 
 
-cmake_minimum_required (VERSION 3.9 FATAL_ERROR)
+cmake_minimum_required (VERSION 3.5 FATAL_ERROR)
 
 project (THOR C CXX CUDA)
 
+find_package(CUDA REQUIRED)
+
+CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS Auto Maxwell)
+LIST(APPEND CUDA_NVCC_FLAGS ${ARCH_FLAGS})
 
 #set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_BUILD_TYPE Release)
