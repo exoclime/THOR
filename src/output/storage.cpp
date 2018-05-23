@@ -139,6 +139,8 @@ bool storage::read_table(const string & name,
                     std::unique_ptr<double[]> & data,
                     int & size)
 {
+    size = 0;
+    
     if (file != nullptr)
     {
         try
@@ -157,7 +159,8 @@ bool storage::read_table(const string & name,
             else
             {
                 data = nullptr;
-        
+                size = 0;
+                
                 return false;
             }
             
@@ -177,7 +180,8 @@ bool storage::read_table(const string & name,
             else
             {
                 data = nullptr;
-        
+                size = 0;
+                
                 return false;
             }
             size = int(dims_out[0]);
@@ -220,13 +224,15 @@ bool storage::read_table(const string & name,
         {
             error.printError();
             data = nullptr;
-        
+            size = 0;
+            
             return false;
         }
     }
     else
     {
         data = nullptr;
+        size = 0;
         
         return false;
     }

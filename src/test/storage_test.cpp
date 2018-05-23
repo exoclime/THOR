@@ -55,7 +55,7 @@ using namespace std;
 int main()
 {
     cout << "Storage test" << endl;
-/*
+
     {
         
         storage f("out.h5");
@@ -69,7 +69,7 @@ int main()
 
         f.append_table(d, s, "Numbers", "m");
     }
-*/
+
     {
         
         storage f("out.h5" , true);
