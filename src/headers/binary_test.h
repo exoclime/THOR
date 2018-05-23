@@ -91,6 +91,10 @@ public:
 private:
     ESP & esp;
 
+    string output_dir;
+    string output_base_name;
+    
+    
     // make constructor private, can only be instantiated through get_instance
     binary_test(ESP & esp_,
                 string output_dir,

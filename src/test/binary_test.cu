@@ -51,18 +51,31 @@
 //#include "planet.h"
 #include "../headers/esp.h"
 
-#include "H5Cpp.h"
+
 
 binary_test::binary_test(ESP & esp_,
-                         string output_dir,
-                         string output_base_name): esp(esp_) {
+                         string output_dir_,
+                         string output_base_name_):
+    esp(esp_),
+    output_dir(output_dir_),
+    output_base_name(output_base_name_)
+{
 
 }
 
 void binary_test::output_reference(const int & iteration,
                                    const string & ref_name,
                                    const binary_test_mode & mode) {
+// open file
+    string output_name = output_dir + output_base_name
+        + ref_name + "_" + std::to_string(iteration);
+    
+    if (mode == binary_test_mode::data)
+    {
+        
 
+    }
+    
 }
 
 binary_test & binary_test::get_instance(ESP & esp_) {

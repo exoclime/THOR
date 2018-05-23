@@ -17,7 +17,7 @@
 cmake_minimum_required (VERSION 3.5 FATAL_ERROR)
 
 project (THOR C CXX CUDA)
-set (CMAKE_CXX_STANDARD 11)
+set (CMAKE_CXX_STANDARD 14)
 set ( COMPILE_FLAGS --compiler-options;--Wall) 
 find_package(CUDA REQUIRED)
 
@@ -40,15 +40,23 @@ set(SRC
   src/thor/thor_driver.cu
   src/test/binary_test.cu)
 
+set(SRC_STORAGE
+  test/storage_test.cpp
+  src/output/storage.cpp)
 
-find_package(HDF5)
+
+
+
+find_package(HDF5 COMPONENTS CXX)
 if(HDF5_FOUND)
         include_directories(${HDF5_INCLUDE_DIR})
 	set(HDF5_LIBS hdf5 hdf5_cpp)
 endif()
 
+message(STATUS "HDF5 C++libraries " ${HDF5_LIBRARIES})
 include_directories("src/headers")
 add_executable(esp ${SRC})
 target_link_libraries (esp ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES}  )
-
+add_executable(test_storage ${SRC_STORAGE})
+target_link_libraries (test_storage ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES}  )
 
