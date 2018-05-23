@@ -38,10 +38,10 @@ set(SRC
   src/output/esp_output.cu
   src/profx/profx_driver.cu
   src/thor/thor_driver.cu
-  src/test/binary_test.cu)
+  src/devel/binary_test.cu)
 
 set(SRC_STORAGE
-  test/storage_test.cpp
+  src/test/storage_test.cpp
   src/output/storage.cpp)
 
 

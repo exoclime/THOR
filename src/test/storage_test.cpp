@@ -16,11 +16,10 @@
 //     <http://www.gnu.org/licenses/>.
 // ==============================================================================
 //
-// Description: Store binary arrays to file
+// Description: test for storage class
 //
-//   
 //
-// Method: Write to HDF5 files
+// Method: writes an array to a file and reloads it
 //
 // Known limitations: None.
 //      
@@ -42,39 +41,30 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
-#pragma once
 
-#include <string>
-#include <memory>
-#include "H5Cpp.h"
 
-using std::string;
-using namespace H5;
+#include <iostream>
 
-class storage
+#include "storage.h"
+
+using namespace std;
+
+
+
+int main()
 {
-public:
-    storage(const string & filename);
-    ~storage();
+    cout << "Storage test" << endl;
 
+    storage f("out.h5");
+
+    uint32_t s = 1024;
     
-    void append_table(double * data,
-                   const int & size,
-                   string name,
-                   string unit);
+    double d[s];
 
+    for (int i = 0; i < s; i++)
+        d[i] = double(i)/double(s);
 
-    void write();
-
-    bool read_table(string name,
-                    float * data,
-                    int & size);
-
+    f.append_table(d, s, "Numbers", "m");
     
-private:
-    std::unique_ptr<H5File> file;
-    
-                    
-};
-
-    
+        
+}

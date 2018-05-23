@@ -50,7 +50,7 @@
 
 
 
-storage::storage(string & filename)
+storage::storage(const string & filename)
     : file(nullptr)
 {
     file = std::make_unique<H5File>( filename, H5F_ACC_TRUNC );
