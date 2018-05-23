@@ -54,7 +54,7 @@ using namespace H5;
 class storage
 {
 public:
-    storage(const string & filename);
+    storage(const string & filename, const bool & read = false);
     ~storage();
 
     
@@ -63,11 +63,8 @@ public:
                    string name,
                    string unit);
 
-
-    void write();
-
-    bool read_table(string name,
-                    float * data,
+    bool read_table(const string & name,
+                    std::unique_ptr<double[]> & data,
                     int & size);
 
     

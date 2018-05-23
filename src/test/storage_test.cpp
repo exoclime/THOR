@@ -46,6 +46,7 @@
 #include <iostream>
 
 #include "storage.h"
+#include <memory>
 
 using namespace std;
 
@@ -54,17 +55,32 @@ using namespace std;
 int main()
 {
     cout << "Storage test" << endl;
-
-    storage f("out.h5");
-
-    uint32_t s = 1024;
-    
-    double d[s];
-
-    for (int i = 0; i < s; i++)
-        d[i] = double(i)/double(s);
-
-    f.append_table(d, s, "Numbers", "m");
-    
+/*
+    {
         
+        storage f("out.h5");
+
+        uint32_t s = 1024;
+    
+        double d[s];
+        
+        for (int i = 0; i < s; i++)
+            d[i] = double(i)/double(s);
+
+        f.append_table(d, s, "Numbers", "m");
+    }
+*/
+    {
+        
+        storage f("out.h5" , true);
+
+        int size_out = 0;
+
+        std::unique_ptr<double[]> data_ptr = nullptr;
+    
+        f.read_table("Numbers", data_ptr, size_out);
+        for (int i = 0; i < size_out; i++)
+            cout << i << "\t"<< data_ptr[i]<<endl;
+    }
+
 }

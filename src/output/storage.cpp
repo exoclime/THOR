@@ -45,15 +45,20 @@
 
 
 #include "storage.h"
+#include <iostream>
+
+using namespace std;
 
 
 
 
-
-storage::storage(const string & filename)
+storage::storage(const string & filename, const bool & read)
     : file(nullptr)
 {
-    file = std::make_unique<H5File>( filename, H5F_ACC_TRUNC );
+    if (read)
+        file = std::make_unique<H5File>( filename, H5F_ACC_RDONLY);
+    else
+        file = std::make_unique<H5File>( filename, H5F_ACC_TRUNC );
 
     
 }
@@ -130,16 +135,100 @@ void storage::append_table(double * data,
 }
 
 
-
-void storage::write()
-{
-
-}
-
-
-bool storage::read_table(string name,
-                    float * data,
+bool storage::read_table(const string & name,
+                    std::unique_ptr<double[]> & data,
                     int & size)
 {
-    return false;
+    if (file != nullptr)
+    {
+        try
+        {
+        
+            DataSet dataset = file->openDataSet( name );
+
+            // get type in dataset
+            DataType type = dataset.getDataType();
+
+                  
+            if( type == PredType::IEEE_F64LE )
+            {
+                cout << "Data set has IEEE Float 64 type" << endl;
+            }
+            else
+            {
+                data = nullptr;
+        
+                return false;
+            }
+            
+            // get dataspace
+            DataSpace dataspace = dataset.getSpace();
+            // get dimensions and rank
+            int rank = dataspace.getSimpleExtentNdims();
+            hsize_t dims_out[1];
+            if (rank == 1)
+            {
+                
+                
+                int ndims = dataspace.getSimpleExtentDims( dims_out, NULL);
+                cout << "rank " << rank << ", dimensions " <<
+                    (unsigned long)(dims_out[0]) << " x " << endl;
+            }
+            else
+            {
+                data = nullptr;
+        
+                return false;
+            }
+            size = int(dims_out[0]);
+            
+            // build output array
+            data = std::unique_ptr<double[]>(new double[(int)dims_out[0]], std::default_delete<double[]>());
+
+            
+            dataset.read(data.get(), PredType::IEEE_F64LE);
+            
+        }
+        
+        // end of try block
+        // catch failure caused by the H5File operations
+        catch( FileIException error )
+        {
+            error.printError();
+            data = nullptr;
+        
+            return false;
+        }
+        // catch failure caused by the DataSet operations
+        catch( DataSetIException error )
+        {
+            error.printError();
+            data = nullptr;
+        
+            return false;
+        }
+        // catch failure caused by the DataSpace operations
+        catch( DataSpaceIException error )
+        {
+            error.printError();
+            data = nullptr;
+        
+            return false;
+        }
+        // catch failure caused by the DataSpace operations
+        catch( DataTypeIException error )
+        {
+            error.printError();
+            data = nullptr;
+        
+            return false;
+        }
+    }
+    else
+    {
+        data = nullptr;
+        
+        return false;
+    }
+    
 }
