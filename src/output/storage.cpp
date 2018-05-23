@@ -63,8 +63,3 @@ storage::storage(const string & filename, const bool & read)
     
 }
 
-storage::~storage()
-{
-    
-}
-

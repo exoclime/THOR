@@ -50,7 +50,8 @@
 
 #include "../headers/debug.h"
 #include "../headers/esp.h"
-
+#include <memory>
+#include "storage.h"
 
 #ifdef BENCHMARKING
   #warning "Compiling with benchmarktest enabled"
@@ -100,7 +101,50 @@ private:
                 string output_dir,
                 string output_base_name);
 
+    // helper function to compare two arrays for equality
+    template<typename T>
+    bool compare_arrays(int s1, T * d1,
+                        int s2, T * d2);
+
+    // helper function to compare application array to saved array
+    template<typename T>
+    bool compare_to_saved_data(storage & s,
+                               const string & name,
+                               T * local_data,
+                               const int & data_size);
+    
+   
+    
 //    binary_test(binary_test const&);              // Don't Implement
 //    void operator=(binary_test const&); // Don't implement
   
 };
+
+template<typename T>
+bool binary_test::compare_to_saved_data(storage & s,
+                                        const string & name,
+                                        T * local_data,
+                                        const int & data_size) {
+    std::unique_ptr<T[]> saved_data = nullptr;
+    int size = 0;
+    
+    s.read_table(name, saved_data, size);
+    
+    return compare_arrays(size, saved_data.get(),
+                          data_size, local_data);
+}
+                          
+template<typename T>
+bool binary_test::compare_arrays(int s1, T * d1,
+                                 int s2, T * d2)
+{
+    if (s1 != s2)
+        return false;
+    
+    bool same = true;
+    
+    for (int i = 0; i < s1; i++)
+        if (d1[i] != d2[i])
+            same = false;
+    return same;
+}

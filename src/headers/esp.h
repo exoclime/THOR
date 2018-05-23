@@ -88,6 +88,9 @@ public:
     double *Kdhz_h        ;
     double *Kdh4_h        ;
     bool    check_h       ;
+
+    int current_step;
+    
 ///////////////////////////
 //  Device
     int *point_local_d    ;

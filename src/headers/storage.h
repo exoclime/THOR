@@ -60,7 +60,6 @@ class storage
 {
 public:
     storage(const string & filename, const bool & read = false);
-    ~storage();
     
 
     template<typename T>
@@ -77,18 +76,20 @@ public:
     template<typename T>
     DataType get_datatype(T & input)
     {
-        return PredType::STD_REF_OBJ;
-    };
+        throw std::runtime_error("data type not supported for storage");
+        
+        //       return PredType::STD_REF_OBJ;
+    }
     
     DataType get_datatype(double & input)
     {
         return PredType::IEEE_F64LE;
-    };
+    }
     
     DataType get_datatype(int & input)
     {
         return PredType::STD_I32LE;
-    };
+    }
 
 private:
     std::unique_ptr<H5File> file;
@@ -269,5 +270,8 @@ bool storage::read_table(const string & name,
         
         return false;
     }
+
+    return true;
+    
     
 }

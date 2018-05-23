@@ -193,7 +193,9 @@ int main (){
 //
 //  Main loop. nstep is the current step of the integration and nsmax the maximum
 //  number of steps in the integration.
-    for(int nstep = 1; nstep <= nsmax; ++nstep){    
+    for(int nstep = 1; nstep <= nsmax; ++nstep){
+        X.current_step = nstep;
+        
 //
 //      Dynamical Core Integration (THOR)
         X.Thor (timestep     , // Time-step [s]

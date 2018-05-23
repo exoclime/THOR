@@ -124,6 +124,8 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
                                               nl_region  ,
                                               DeepModel);
 
+        BENCH_POINT(current_step*3, "Compute_Advec_Cori")
+
         Compute_Advec_Cori_Poles<6><<<2, 1>>>(Adv_d        ,
                                               v_d          ,
                                               Mhk_d        ,
