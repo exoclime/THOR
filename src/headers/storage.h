@@ -46,7 +46,12 @@
 
 #include <string>
 #include <memory>
+#include <iostream>
+
 #include "H5Cpp.h"
+
+using std::cout;
+using std::endl;
 
 using std::string;
 using namespace H5;
@@ -56,22 +61,213 @@ class storage
 public:
     storage(const string & filename, const bool & read = false);
     ~storage();
-
     
-    void append_table(double * data,
+
+    template<typename T>
+    void append_table(T * data,
                    const int & size,
                    string name,
                    string unit);
-
+    
+    template<typename T>
     bool read_table(const string & name,
-                    std::unique_ptr<double[]> & data,
+                    std::unique_ptr<T[]> & data,
                     int & size);
 
+    template<typename T>
+    DataType get_datatype(T & input)
+    {
+        return PredType::STD_REF_OBJ;
+    };
     
+    DataType get_datatype(double & input)
+    {
+        return PredType::IEEE_F64LE;
+    };
+    
+    DataType get_datatype(int & input)
+    {
+        return PredType::STD_I32LE;
+    };
+
 private:
     std::unique_ptr<H5File> file;
     
                     
 };
 
+template<typename T>
+void storage::append_table(T * data,
+                   const int & size,
+                   string name,
+                   string unit)
+{
+    if (file != nullptr)
+    {
+        try
+        {
+
+            DataType dt = get_datatype(data[0]);
+            
+        
+            //create dataspace
+            hsize_t dims[] = {(hsize_t)size}; // dimensions of dataset
+            DataSpace dataspace( 1, dims );
+            
+            // create dataset with default properties
+            DataSet dataset(file->createDataSet("/" + name,
+                                                dt,
+                                                dataspace));
+
+            dataset.write(data,  dt);
+
+            {          
+                StrType strdatatype(PredType::C_S1, name.length());
+                hsize_t dims[] = {1}; // dimensions of attribute
+                DataSpace attrspace = H5::DataSpace(1, dims);
+                Attribute attr = dataset.createAttribute("Variable",
+                                                         strdatatype,
+                                                         attrspace);
+                attr.write(strdatatype, name.c_str());
+            }
+            {          
+                StrType strdatatype(PredType::C_S1, unit.length());
+                hsize_t dims[] = {1}; // dimensions of attribute
+                DataSpace attrspace = H5::DataSpace(1, dims);
+                Attribute attr = dataset.createAttribute("units",
+                                                         strdatatype,
+                                                         attrspace);
+                attr.write(strdatatype, unit.c_str());
+            }
+            
+            
+        }  // end of try block
+        // catch failure caused by the H5File operations
+        catch( FileIException error )
+        {
+            error.printError();
+        }
+        // catch failure caused by the DataSet operations
+        catch( DataSetIException error )
+        {
+            error.printError();      
+        }
+        // catch failure caused by the DataSpace operations
+        catch( DataSpaceIException error )
+        {
+            error.printError();
+        }
+        // catch failure caused by the DataSpace operations
+        catch( DataTypeIException error )
+        {
+            error.printError();
+        }
+    }
+}
+
+template<typename T>
+bool storage::read_table(const string & name,
+                    std::unique_ptr<T[]> & data,
+                    int & size)
+{
+    size = 0;
     
+    if (file != nullptr)
+    {
+        DataType dt = get_datatype(data[0]);
+        
+        try
+        {
+        
+            DataSet dataset = file->openDataSet( name );
+
+            // get type in dataset
+            DataType type = dataset.getDataType();
+
+                  
+            if( type == dt )
+            {
+                cout << "Data set has correct type" << endl;
+            }
+            else
+            {
+                data = nullptr;
+                size = 0;
+                
+                return false;
+            }
+            
+            // get dataspace
+            DataSpace dataspace = dataset.getSpace();
+            // get dimensions and rank
+            int rank = dataspace.getSimpleExtentNdims();
+            hsize_t dims_out[1];
+            if (rank == 1)
+            {
+                
+                
+                int ndims = dataspace.getSimpleExtentDims( dims_out, NULL);
+                cout << "rank " << rank << ", dimensions " <<
+                    (unsigned long)(dims_out[0]) << " x " << endl;
+            }
+            else
+            {
+                data = nullptr;
+                size = 0;
+                
+                return false;
+            }
+            size = int(dims_out[0]);
+            
+            // build output array
+            data = std::unique_ptr<T[]>(new T[(int)dims_out[0]], std::default_delete<T[]>());
+
+            
+            dataset.read(data.get(), dt);
+            
+        }
+        
+        // end of try block
+        // catch failure caused by the H5File operations
+        catch( FileIException error )
+        {
+            error.printError();
+            data = nullptr;
+        
+            return false;
+        }
+        // catch failure caused by the DataSet operations
+        catch( DataSetIException error )
+        {
+            error.printError();
+            data = nullptr;
+        
+            return false;
+        }
+        // catch failure caused by the DataSpace operations
+        catch( DataSpaceIException error )
+        {
+            error.printError();
+            data = nullptr;
+        
+            return false;
+        }
+        // catch failure caused by the DataSpace operations
+        catch( DataTypeIException error )
+        {
+            error.printError();
+            data = nullptr;
+            size = 0;
+            
+            return false;
+        }
+    }
+    else
+    {
+        data = nullptr;
+        size = 0;
+        
+        return false;
+    }
+    
+}
