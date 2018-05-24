@@ -23,14 +23,14 @@
 // Method: -
 //
 // Known limitations: None
-//   
+//
 //
 // Known issues: None
-//   
 //
-// If you use this code please cite the following reference: 
 //
-//       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016  
+// If you use this code please cite the following reference:
+//
+//       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016
 //
 // Current Code Owner: Joao Mendonca, EEG. joao.mendonca@csh.unibe.ch
 //
@@ -53,21 +53,24 @@
 #define vlevel 32         // Number of vertical layers
 
 // Diffusion
-#define HyDiff       true    // Hyper-diffusion    
-#define DivDampP     true    // Divergence-damping 
+#define HyDiff       true    // Hyper-diffusion
+#define DivDampP     true    // Divergence-damping
 
 // Model options
-#define NonHydro  true       // Non-hydrostatic parameter 
+#define NonHydro  true       // Non-hydrostatic parameter
 #define DeepModel true       // Deep atmosphere
 
 // Initial conditions
 #define rest   true          // Starting from rest
 
 // Benchmark test
-#define hstest true          // Held-Suarez test
+#define hstest 3          // Held-Suarez test for Earth == 1
+//  HS test for shallow hot Jupiter == 3
+//  HS test for tidally locked Earth == 2
+//  No HS test == 0
 
 // GPU ID
 #define GPU_ID_N 0        // Set GPU ID number
 
 // Output
-#define n_out 1000         // Print output every n_out steps 
+#define n_out 1000         // Print output every n_out steps
