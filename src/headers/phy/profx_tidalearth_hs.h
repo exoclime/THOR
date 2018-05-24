@@ -93,7 +93,7 @@ __global__ void tidalearth_hs(double *Mh_d         ,
         sigma = (pre/ps);
         sigma0= (pre/p0);
 
-//      Equilibrium temperature.
+//      Equilibrium temperature. From Equation 21 in Heng, Menou and Phillips 2011
         Teq_hs=  max(200.0, (315.0 + dTy *
                      cos(lon-M_PI)*cos(lat)  - dthetaz*log(sigma0)*
                      pow(cos(lat), 2.0)) * pow(sigma0,kappa));

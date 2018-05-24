@@ -16,11 +16,11 @@
 //     <http://www.gnu.org/licenses/>.
 // ==============================================================================
 //
-// 
+//
 //
 //
 // Description: Earth benchmark test.
-//   
+//
 //
 // Method: The temperature is forced using a Newtonian cooling code, and the
 //         boundary layer is represented by a Rayleigh friction scheme.
@@ -29,9 +29,9 @@
 //
 // Known issues: None.
 //
-// If you use this code please cite the following references: 
+// If you use this code please cite the following references:
 //
-//       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016  
+//       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016
 //
 //       [2] Held, I. M., & Suarez, M. J. 1994, Bullentin of the American
 //           Meteorological Society
