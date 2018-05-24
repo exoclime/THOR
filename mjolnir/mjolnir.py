@@ -42,6 +42,7 @@ parser.add_argument("-s","--simulation_ID",nargs=1,default=['Earth'],help='Name 
 parser.add_argument("-i","--initial_file",nargs=1,default=[10],type=int,help='Initial file id number (integer)')
 parser.add_argument("-l","--last_file",nargs=1,default=[10],type=int,help='Last file id number (integer)')
 parser.add_argument("-p","--pressure_lev",nargs=1,default=[2.5e4],help='Pressure level to plot in temperature/velocity/vorticity field')
+parser.add_argument("-pmin","--pressure_min",nargs=1,default=[100],help='Lowest pressure value to plot in vertical plots')
 args = parser.parse_args()
 pview = args.pview
 
@@ -84,7 +85,7 @@ output = ham.output(resultsf,simulation_ID,ntsi,nts,grid)
 # Plots #
 #########
 # Sigma values for the plotting
-sigmaref = np.array([1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.05])
+sigmaref = np.linspace(input.P_Ref,np.float(args.pressure_min[0]),20)/input.P_Ref
 
 if 'pause' in pview:
     import pdb; pdb.set_trace()

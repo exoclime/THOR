@@ -61,7 +61,7 @@
 #define DeepModel true       // Deep atmosphere
 
 // Initial conditions
-#define rest   true          // Starting from rest
+#define rest   false          // Starting from rest
 
 // Benchmark test
 #define hstest false         // Held-Suarez test
@@ -70,4 +70,4 @@
 #define GPU_ID_N 0        // Set GPU ID number
 
 // Output
-#define n_out 100         // Print output every n_out steps
+#define n_out 1         // Print output every n_out steps
