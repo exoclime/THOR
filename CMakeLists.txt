@@ -35,7 +35,7 @@ set(CMAKE_BUILD_TYPE Release)
 
 string (APPEND CMAKE_CUDA_FLAGS " -cudart shared")
 
-
+# source for esp main program
 set(SRC
   src/esp.cu
   src/grid/grid.cu
@@ -44,9 +44,10 @@ set(SRC
   src/output/esp_output.cu
   src/profx/profx_driver.cu
   src/thor/thor_driver.cu
-  src/devel/binary_test.cu
+  src/devel/binary_test.cpp
   src/output/storage.cpp)
 
+# source for test program for storage class
 set(SRC_STORAGE
   src/test/storage_test.cpp
   src/output/storage.cpp)
