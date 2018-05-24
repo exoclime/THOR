@@ -11,7 +11,10 @@ headers := $(path_hd)/define.h $(path_hd)/grid.h $(path_hd)/planet.h $(path_hd)/
            $(path_hd)/dyn/thor_vertical_int.h $(path_hd)/dyn/thor_slowmodes.h $(path_hd)/dyn/thor_diff.h \
            $(path_hd)/dyn/thor_div.h $(path_hd)/phy/profx_auxiliary.h $(path_hd)/phy/profx_held_suarez.h \
            $(path_hd)/storage.h $(path_hd)/binary_test.h $(path_hd)/debug.h
-flag := -g -G -std=c++11
+# define specific compiler
+# ccbin := 
+ccbin := -ccbin gcc-5
+flag := -g -G -std=c++11 $(ccbin)
 
 # define where to find sources
 source_dirs := src src/grid src/initial src/thor src/profx src/output src/devel

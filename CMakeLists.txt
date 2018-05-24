@@ -15,15 +15,21 @@
 
 
 cmake_minimum_required (VERSION 3.5 FATAL_ERROR)
+SET(CMAKE_CXX_COMPILER g++-5)
+SET(CMAKE_C_COMPILER gcc-5)
+project (THOR C CXX)
+set (CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set ( COMPILE_FLAGS --compiler-options;-Wall)
 
-project (THOR C CXX CUDA)
-set (CMAKE_CXX_STANDARD 14)
-set ( COMPILE_FLAGS --compiler-options;--Wall) 
 find_package(CUDA REQUIRED)
 
 CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS Auto)
 LIST(APPEND CUDA_NVCC_FLAGS ${ARCH_FLAGS})
 LIST(APPEND CUDA_NVCC_FLAGS ${COMPILE_FLAGS})
+LIST(APPEND CUDA_NVCC_FLAGS "-std c++11")
+
+#LIST(APPEND CUDA_NVCC_FLAGS "-ccbin gcc-5")
 #set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_BUILD_TYPE Release)
 
@@ -56,8 +62,8 @@ endif()
 
 message(STATUS "HDF5 C++libraries " ${HDF5_LIBRARIES})
 include_directories("src/headers")
-add_executable(esp ${SRC})
+cuda_add_executable(esp ${SRC})
 target_link_libraries (esp ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES}  )
-add_executable(test_storage ${SRC_STORAGE})
+cuda_add_executable(test_storage ${SRC_STORAGE})
 target_link_libraries (test_storage ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES}  )
 
