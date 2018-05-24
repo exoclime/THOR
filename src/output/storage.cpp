@@ -56,10 +56,8 @@ storage::storage(const string & filename, const bool & read)
     : file(nullptr)
 {
     if (read)
-        file = std::make_unique<H5File>( filename, H5F_ACC_RDONLY);
+        file = std::unique_ptr<H5File>(new H5File( filename, H5F_ACC_RDONLY));
     else
-        file = std::make_unique<H5File>( filename, H5F_ACC_TRUNC );
-
-    
+        file = std::unique_ptr<H5File>( new H5File( filename, H5F_ACC_TRUNC ));    
 }
 
