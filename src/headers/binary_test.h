@@ -48,19 +48,30 @@
 
 #include <string>
 
-#include "../headers/debug.h"
-#include "../headers/esp.h"
+#include "debug.h"
+#include "esp.h"
 #include <memory>
 #include "storage.h"
 
 #ifdef BENCHMARKING
   #warning "Compiling with benchmarktest enabled"
 #define USE_BENCHMARK(esp) binary_test & btester = binary_test::get_instance(esp);
-  #ifdef WRITE_BINARY // write reference mode
+  #ifdef BENCH_POINT_WRITE // write reference mode
     #define BENCH_POINT(iteration, name)  btester.output_reference(iteration, name);
-  #else // compare mode
-    #define BENCH_POINT(iteration, name) btester.compare_to_reference(iteration, name);
-  #endif 
+    #define BENCH_POINT_I(iteration, name)  btester.output_reference(std::to_string(iteration), name);
+    #define BENCH_POINT_I_S(iteration, subiteration, name)  btester.output_reference(std::to_string(iteration)\
+                                                                               +"-"\
+                                                                               +std::to_string(subiteration), \
+                                                                               name);
+  #endif
+  #ifdef BENCH_POINT_COMPARE // compare mode
+    #define BENCH_POINT(iteration, name)  btester.compare_to_reference(iteration, name);
+    #define BENCH_POINT_I(iteration, name)  btester.compare_to_reference(std::to_string(iteration), name);
+    #define BENCH_POINT_I_S(iteration, subiteration, name)  btester.compare_to_reference(std::to_string(iteration)\
+                                                                               +"-"\
+                                                                               +std::to_string(subiteration), \
+                                                                               name);
+  #endif
 #else // do nothing
   #define USE_BENCHMARK(esp)
   #define BENCH_POINT(iteration, name)
@@ -81,11 +92,11 @@ public:
     binary_test(binary_test const&) = delete;
     void operator=(binary_test const&) = delete; 
 
-    void output_reference(const int & iteration,
+    void output_reference(const string & iteration,
                           const string & ref_name,
                           const binary_test_mode & mode = binary_test_mode::data);
 
-    bool compare_to_reference(const int & iteration,
+    bool compare_to_reference(const string & iteration,
                               const string & ref_name,
                               const binary_test_mode & mode = binary_test_mode::data);
     
@@ -127,11 +138,18 @@ bool binary_test::compare_to_saved_data(storage & s,
                                         const int & data_size) {
     std::unique_ptr<T[]> saved_data = nullptr;
     int size = 0;
+
+//    cout << "Comparing " << name << " :\t";
     
     s.read_table(name, saved_data, size);
+
     
-    return compare_arrays(size, saved_data.get(),
+    
+    bool b = compare_arrays(size, saved_data.get(),
                           data_size, local_data);
+//    cout << b << endl;
+    return b;
+    
 }
                           
 template<typename T>

@@ -188,7 +188,7 @@ bool storage::read_table(const string & name,
                   
             if( type == dt )
             {
-                cout << "Data set has correct type" << endl;
+                // cout << "Data set has correct type" << endl;
             }
             else
             {
@@ -208,8 +208,8 @@ bool storage::read_table(const string & name,
                 
                 
                 int ndims = dataspace.getSimpleExtentDims( dims_out, NULL);
-                cout << "rank " << rank << ", dimensions " <<
-                    (unsigned long)(dims_out[0]) << " x " << endl;
+                // cout << "rank " << rank << ", dimensions " <<
+                //    (unsigned long)(dims_out[0]) << " x " << endl;
             }
             else
             {

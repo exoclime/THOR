@@ -45,8 +45,12 @@
 // benchmarking
 // if defined run benchmark functions
 #define BENCHMARKING
-// compare benchmark to references
-#define BENCHMARK_COMPARE            
+// compare benchmark point to references
+#define BENCH_POINT_COMPARE
+// write reference benchmark point
+//#define BENCH_POINT_WRITE
+
 
  // path to benchmark re
-#define BENCHMARK_REF_PATH   "../results/binary_ref/"
+#define BENCHMARK_DUMP_REF_PATH   "results/ref/"
+#define BENCHMARK_DUMP_BASENAME   "bindata_"

@@ -45,11 +45,12 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
-#include "../headers/binary_test.h"
+#include "binary_test.h"
+#include "debug.h"
 
 //#include "grid.h"
 //#include "planet.h"
-#include "../headers/esp.h"
+#include "esp.h"
 
 
 
@@ -64,12 +65,12 @@ binary_test::binary_test(ESP & esp_,
 
 }
 
-void binary_test::output_reference(const int & iteration,
+void binary_test::output_reference(const string & iteration,
                                    const string & ref_name,
                                    const binary_test_mode & mode) {
 // open file
     string output_name = output_dir + output_base_name
-        + ref_name + "_" + std::to_string(iteration);
+        + ref_name + "_" + iteration + ".h5";
     
     if (mode == binary_test_mode::data)
     {
@@ -102,26 +103,30 @@ void binary_test::output_reference(const int & iteration,
 }
 
 binary_test & binary_test::get_instance(ESP & esp_) {
-    static binary_test bt(esp_, "../ref/", "bindata_");
+    static binary_test bt(esp_,
+                          BENCHMARK_DUMP_REF_PATH,
+                          BENCHMARK_DUMP_BASENAME);
 
     
     return bt;
 }
 
 
-bool binary_test::compare_to_reference(const int & iteration,
+bool binary_test::compare_to_reference(const string & iteration,
                                        const string & ref_name,
                                        const binary_test_mode & mode) {
     
     string output_name = output_dir + output_base_name
-        + ref_name + "_" + std::to_string(iteration);
+        + ref_name + "_" + iteration + ".h5";
     
     if (mode == binary_test_mode::data)
     {
         esp.CopyToHost();
 
-        storage s(output_name);
-             
+        storage s(output_name, true);
+
+        //cout << "opening " << output_name << endl;
+        
         bool density_comp = compare_to_saved_data(s,
                                                   "Density",
                                                   esp.Rho_h,
@@ -144,11 +149,12 @@ bool binary_test::compare_to_reference(const int & iteration,
                                                      esp.Wh_h,
                                                      esp.nvi*esp.point_num);
 
-        cout << iteration << "\tref:\t" << ref_name 
-             << "\trho: " << density_comp
-            << "\tP: " << pressure_comp
-            << "\tM_h: " << h_momentum_comp
-             << "\tM_v: " << v_momentum_comp << endl;
+        if (! (density_comp && pressure_comp && h_momentum_comp && v_momentum_comp ))
+            cout << iteration << "\tref:\t" << ref_name 
+                 << "\trho: " << density_comp
+                 << "\tP: " << pressure_comp
+                 << "\tM_h: " << h_momentum_comp
+                 << "\tM_v: " << v_momentum_comp << endl;
         
     }
     
