@@ -5,19 +5,23 @@ arch := -arch sm_$(sm)
 
 path_hd  := $(shell pwd)/src/headers
 path_src := $(shell pwd)/src
-obj   := esp.o grid.o esp_initial.o planet.o thor_driver.o profx_driver.o esp_output.o
+obj   := esp.o grid.o esp_initial.o planet.o thor_driver.o profx_driver.o esp_output.o storage.o binary_test.o
 headers := $(path_hd)/define.h $(path_hd)/grid.h $(path_hd)/planet.h $(path_hd)/esp.h \
            $(path_hd)/dyn/thor_fastmodes.h $(path_hd)/dyn/thor_adv_cor.h $(path_hd)/dyn/thor_auxiliary.h \
            $(path_hd)/dyn/thor_vertical_int.h $(path_hd)/dyn/thor_slowmodes.h $(path_hd)/dyn/thor_diff.h \
-           $(path_hd)/dyn/thor_div.h $(path_hd)/phy/profx_auxiliary.h $(path_hd)/phy/profx_held_suarez.h
+           $(path_hd)/dyn/thor_div.h $(path_hd)/phy/profx_auxiliary.h $(path_hd)/phy/profx_held_suarez.h \
+           $(path_hd)/storage.h $(path_hd)/binary_test.h $(path_hd)/debug.h
 flag := -g -G
 
-# define where to find sources 
-vpath %.cu src src/grid src/initial src/thor src/profx src/output
+# define where to find sources
+source_dirs := src src/grid src/initial src/thor src/profx src/output src/devel
 
-h5libs := $(shell h5cc -show -shlib | awk -v ORS=" " '{ for ( n=1; n<=NF; n++ ) if ($$n ~ "^-lh") print $$n  }')
-h5libdir := $(shell h5cc -show -shlib | awk -v ORS=" " '{ for ( n=1; n<=NF; n++ ) if ($$n ~ "^-L") print $$n  }')
-h5include := $(shell h5cc -show -shlib | awk -v ORS=" " '{ for ( n=1; n<=NF; n++ ) if ($$n ~ "^-I") print $$n  }')
+vpath %.cu $(source_dirs)
+vpath %.cpp $(source_dirs)
+
+h5libs := $(shell h5c++ -show -shlib | awk -v ORS=" " '{ for ( n=1; n<=NF; n++ ) if ($$n ~ "^-lh") print $$n  }')
+h5libdir := $(shell h5c++ -show -shlib | awk -v ORS=" " '{ for ( n=1; n<=NF; n++ ) if ($$n ~ "^-L") print $$n  }')
+h5include := $(shell h5c++ -show -shlib | awk -v ORS=" " '{ for ( n=1; n<=NF; n++ ) if ($$n ~ "^-I") print $$n  }')
 $(info h5libs="$(h5libs)")
 $(info h5libdir="$(h5libdir)")
 $(info h5include="$(h5include)")
@@ -39,6 +43,10 @@ all: $(BINDIR)/esp
 
 # build *.cu CUDA objects
 $(OBJDIR)/%.o: %.cu|$(OBJDIR) 
+	@echo creating $@
+	nvcc $(arch) $(h5include) $(h5libdir) -I$(includedir) -dc -o $@ $< $(flag)
+
+$(OBJDIR)/%.o: %.cpp|$(OBJDIR) 
 	@echo creating $@
 	nvcc $(arch) $(h5include) $(h5libdir) -I$(includedir) -dc -o $@ $< $(flag)
 
