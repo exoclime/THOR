@@ -75,6 +75,8 @@
 #else // do nothing
   #define USE_BENCHMARK(esp)
   #define BENCH_POINT(iteration, name)
+  #define BENCH_POINT_I(iteration, name)
+  #define BENCH_POINT_I_S(iteration, subiteration, name)
 #endif
 
 

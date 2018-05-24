@@ -45,11 +45,11 @@ BINDIR = bin
 all: $(BINDIR)/esp
 
 # build *.cu CUDA objects
-$(OBJDIR)/%.o: %.cu|$(OBJDIR) 
+$(OBJDIR)/%.o: %.cu|$(OBJDIR) $(headers)
 	@echo creating $@
 	nvcc $(arch) $(h5include) $(h5libdir) -I$(includedir) -dc -o $@ $< $(flag)
 
-$(OBJDIR)/%.o: %.cpp|$(OBJDIR) 
+$(OBJDIR)/%.o: %.cpp|$(OBJDIR) $(headers)
 	@echo creating $@
 	nvcc $(arch) $(h5include) $(h5libdir) -I$(includedir) -dc -o $@ $< $(flag)
 
