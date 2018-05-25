@@ -19,20 +19,20 @@
 //
 //
 // Description: Defines planet parameters.
-//   
+//
 //
 // Method: -
 //
 //
 // Known limitations: None
-//   
+//
 //
 // Known issues: None
-//   
 //
-// If you use this code please cite the following reference: 
 //
-//       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016  
+// If you use this code please cite the following reference:
+//
+//       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016
 //
 // Current Code Owner: Joao Mendonca, EEG. joao.mendonca@csh.unibe.ch
 //
@@ -55,6 +55,7 @@
 
 #define planetnumber 1 // Planet ID
 
+
 class XPlanet{
 
 public:
@@ -65,21 +66,21 @@ public:
     // BULK     //
     //////////////
 
-    double A      ; 
-    double Omega  ; 
-    double Gravit ; 
+    double A      ;
+    double Omega  ;
+    double Gravit ;
 
     ////////////////
     // ATMOSPHERE //
     ////////////////
 
-    double Rd          ; 
-    double Cp          ; 
-    double Mmol        ; 
-    double Tmean       ; 
-    double P_Ref       ; 
-    double Top_altitude; 
-    double Diffc       ;  
+    double Rd          ;
+    double Cp          ;
+    double Mmol        ;
+    double Tmean       ;
+    double P_Ref       ;
+    double Top_altitude;
+    double Diffc       ;
 
     XPlanet();
 };
