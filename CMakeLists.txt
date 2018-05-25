@@ -14,15 +14,28 @@
 
 
 
-cmake_minimum_required (VERSION 3.9 FATAL_ERROR)
+cmake_minimum_required (VERSION 3.5 FATAL_ERROR)
+SET(CMAKE_CXX_COMPILER g++-5)
+SET(CMAKE_C_COMPILER gcc-5)
+project (THOR C CXX)
+set (CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set ( COMPILE_FLAGS --compiler-options;-Wall)
 
-project (THOR C CXX CUDA)
+find_package(CUDA REQUIRED)
 
+CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS Auto)
+LIST(APPEND CUDA_NVCC_FLAGS ${ARCH_FLAGS})
+LIST(APPEND CUDA_NVCC_FLAGS ${COMPILE_FLAGS})
+LIST(APPEND CUDA_NVCC_FLAGS "-std c++11")
 
+#LIST(APPEND CUDA_NVCC_FLAGS "-ccbin gcc-5")
 #set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_BUILD_TYPE Release)
 
 string (APPEND CMAKE_CUDA_FLAGS " -cudart shared")
+
+# source for esp main program
 set(SRC
   src/esp.cu
   src/grid/grid.cu
@@ -30,16 +43,28 @@ set(SRC
   src/initial/planet.cu
   src/output/esp_output.cu
   src/profx/profx_driver.cu
-  src/thor/thor_driver.cu)
+  src/thor/thor_driver.cu
+  src/devel/binary_test.cpp
+  src/output/storage.cpp)
+
+# source for test program for storage class
+set(SRC_STORAGE
+  src/test/storage_test.cpp
+  src/output/storage.cpp)
 
 
-find_package(HDF5)
+
+
+find_package(HDF5 COMPONENTS CXX)
 if(HDF5_FOUND)
         include_directories(${HDF5_INCLUDE_DIR})
 	set(HDF5_LIBS hdf5 hdf5_cpp)
 endif()
-      
-add_executable(esp ${SRC})
-target_link_libraries (esp ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES}  )
 
+message(STATUS "HDF5 C++libraries " ${HDF5_LIBRARIES})
+include_directories("src/headers")
+cuda_add_executable(esp ${SRC})
+target_link_libraries (esp ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES}  )
+cuda_add_executable(test_storage ${SRC_STORAGE})
+target_link_libraries (test_storage ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES}  )
 
