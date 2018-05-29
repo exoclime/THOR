@@ -95,7 +95,7 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
     cudaMemcpy(Rhok_d      , Rho_d      , point_num * nv *     sizeof(double), cudaMemcpyDeviceToDevice);
     cudaMemcpy(pressurek_d , pressure_d , point_num * nv *     sizeof(double), cudaMemcpyDeviceToDevice);
 
-    USE_BENCHMARK(*this)
+    USE_BENCHMARK()
     
 //  Loop for large time integration.
     for(int rk = 0; rk < 3; rk++){
@@ -156,7 +156,7 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
 //      Computes temperature, internal energy, potential temperature and effective gravity.
         cudaDeviceSynchronize();
         
-        BENCH_POINT_I(current_step, "Compute_Advec_Cori")
+        BENCH_POINT_I(*this, current_step, "Compute_Advec_Cori")
             
         Compute_Temperature_H_Pt_Geff <<< (point_num / NTH) + 1, NTH >>> (temperature_d,
                                                                           pressurek_d  ,
@@ -563,7 +563,8 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
             
 //          Vertical Momentum
             cudaDeviceSynchronize();
-            BENCH_POINT_I_S(current_step, ns, "Momentum_Eq")
+                
+            BENCH_POINT_I_S(*this, current_step, ns, "Momentum_Eq")
                 
             Prepare_Implicit_Vertical <LN,LN>  <<<NB, NT >>>(Mhs_d         ,
                                                              h_d           ,
@@ -625,7 +626,7 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
 //          Pressure and density equations.
             cudaDeviceSynchronize();
 
-            BENCH_POINT_I_S(current_step, ns, "Vertical_Eq")
+            BENCH_POINT_I_S(*this, current_step, ns, "Vertical_Eq")
                         
             Density_Pressure_Eqs <LN,LN>  <<<NB, NT >>>(pressures_d,
                                                         pressurek_d,
@@ -696,12 +697,12 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
                                                      point_num  ,
                                                      nv         );
 
-        BENCH_POINT_I(current_step, "RK2")
+        BENCH_POINT_I(*this, current_step, "RK2")
     }
 //  Update diagnostic variables.
     cudaDeviceSynchronize();
 
-    BENCH_POINT_I(current_step, "END")
+    BENCH_POINT_I(*this, current_step, "END")
         
     cudaMemcpy(Mh_d       , Mhk_d       , point_num * nv * 3 * sizeof(double), cudaMemcpyDeviceToDevice);
     cudaMemcpy(Wh_d       , Whk_d       , point_num * nvi*     sizeof(double), cudaMemcpyDeviceToDevice);

@@ -16,16 +16,19 @@
 //     <http://www.gnu.org/licenses/>.
 // ==============================================================================
 //
+// Description: test for grid setup
 //
-//
-// Description: Defines the main model's parameters
-//
-// Method: -
-//
-// Known limitations: None
 //   
 //
-// Known issues: None
+// Method: [1] - Dumps output to binary file on a flag
+//         [2] - Reads data from binary files on a flag and compare to
+//               dumped output
+//
+//
+//
+// Known limitations: None.
+//
+// Known issues: None.
 //   
 //
 // If you use this code please cite the following reference: 
@@ -42,18 +45,43 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
-// benchmarking
-// if defined run benchmark functions
-//#define BENCHMARKING
-// compare benchmark point to references
-//#define BENCH_POINT_COMPARE
-// write reference benchmark point
-// #define BENCH_POINT_WRITE
-
-
- // path to benchmark re
-#define BENCHMARK_DUMP_REF_PATH   "results/ref/"
-#define BENCHMARK_DUMP_BASENAME   "bindata_"
-
 #include "binary_test.h"
+#include "debug.h"
 
+#include "grid.h"
+
+#include <iostream>
+using namespace std;
+
+
+int main ()
+{
+    bool output = true;
+    bool compare = true;
+    
+    Icogrid Grid(true         , // Spring dynamics option
+                 1.15         , // Parameter beta for spring dynamics 
+                 4            , // Horizontal resolution level
+                 32           , // Number of vertical layers
+                 6371000.0    , // Planet radius
+                 36000.0     );// Top of the model's domain
+
+    binary_test & btester = binary_test::get_instance();
+    btester.set_output("grid_test", "./tmp/");
+    
+    if (output)
+        btester.output_reference_grid(Grid);
+
+    if (compare)
+    {
+        
+        bool result = btester.compare_to_reference_grid(Grid);
+        if (result)
+            cout << "grid compare SUCCESS" << endl;
+        else
+            cout << "grid compare FAIL" << endl;            
+    }
+    
+    
+    exit(0);
+}
