@@ -56,7 +56,7 @@ using namespace std;
 
 int main ()
 {
-    bool output = true;
+    bool output = false;
     bool compare = true;
     
     Icogrid Grid(true         , // Spring dynamics option
@@ -67,11 +67,11 @@ int main ()
                  36000.0     );// Top of the model's domain
 
     binary_test & btester = binary_test::get_instance();
-    btester.set_output("grid_test", "./tmp/");
+    btester.set_output("grid_test", "./results/grid_test/");
     
     if (output)
         btester.output_reference_grid(Grid);
-
+    
     if (compare)
     {
         
