@@ -53,6 +53,8 @@
 #include "../headers/dyn/thor_slowmodes.h"    // Slow terms.
 #include "../headers/dyn/thor_vertical_int.h" // Vertical momentum.
 
+#include "binary_test.h"
+
 __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
                         bool   HyDiff      , // Turn on/off hyper-diffusion.
                         bool   DivDampP    , // Turn on/off divergence damping.
@@ -93,6 +95,8 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
     cudaMemcpy(Rhok_d      , Rho_d      , point_num * nv *     sizeof(double), cudaMemcpyDeviceToDevice);
     cudaMemcpy(pressurek_d , pressure_d , point_num * nv *     sizeof(double), cudaMemcpyDeviceToDevice);
 
+    USE_BENCHMARK(*this)
+    
 //  Loop for large time integration.
     for(int rk = 0; rk < 3; rk++){
 //      Local variables to define the length (times) and the number of the small steps (ns_it).
@@ -135,6 +139,7 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
                                               DeepModel   );
         
         cudaDeviceSynchronize();
+            
         Compute_Advec_Cori2 <<<(point_num / NTH) + 1, NTH >>>(Adv_d      ,
                                                               v_d        ,
                                                               Whk_d      ,
@@ -150,6 +155,9 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
 //
 //      Computes temperature, internal energy, potential temperature and effective gravity.
         cudaDeviceSynchronize();
+        
+        BENCH_POINT_I(current_step, "Compute_Advec_Cori")
+            
         Compute_Temperature_H_Pt_Geff <<< (point_num / NTH) + 1, NTH >>> (temperature_d,
                                                                           pressurek_d  ,
                                                                           Rhok_d       ,
@@ -555,6 +563,8 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
             
 //          Vertical Momentum
             cudaDeviceSynchronize();
+            BENCH_POINT_I_S(current_step, ns, "Momentum_Eq")
+                
             Prepare_Implicit_Vertical <LN,LN>  <<<NB, NT >>>(Mhs_d         ,
                                                              h_d           ,
                                                              div_d         ,
@@ -614,6 +624,9 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
 
 //          Pressure and density equations.
             cudaDeviceSynchronize();
+
+            BENCH_POINT_I_S(current_step, ns, "Vertical_Eq")
+                        
             Density_Pressure_Eqs <LN,LN>  <<<NB, NT >>>(pressures_d,
                                                         pressurek_d,
                                                         Rhos_d     ,
@@ -682,9 +695,14 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
                                                      Altitudeh_d,
                                                      point_num  ,
                                                      nv         );
+
+        BENCH_POINT_I(current_step, "RK2")
     }
 //  Update diagnostic variables.
     cudaDeviceSynchronize();
+
+    BENCH_POINT_I(current_step, "END")
+        
     cudaMemcpy(Mh_d       , Mhk_d       , point_num * nv * 3 * sizeof(double), cudaMemcpyDeviceToDevice);
     cudaMemcpy(Wh_d       , Whk_d       , point_num * nvi*     sizeof(double), cudaMemcpyDeviceToDevice);
     cudaMemcpy(W_d        , Wk_d        , point_num * nv *     sizeof(double), cudaMemcpyDeviceToDevice);

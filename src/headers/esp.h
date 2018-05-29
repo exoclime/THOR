@@ -41,6 +41,7 @@
 // 1.0     16/08/2017 Released version  (JM)
 //
 ////////////////////////////////////////////////////////////////////////
+#pragma once
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -56,6 +57,10 @@ public:
     const int nvi         ;
     const int nl_region   ;
     const int nr          ;
+
+    // step counter for benchmark logging
+    int current_step;
+    
 ///////////////////////////
 //  Host
     int *point_local_h    ;
