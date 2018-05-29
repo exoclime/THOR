@@ -35,13 +35,13 @@ class FieldPainter:
         vertices = np.zeros((num_images, len(self.grid)//2, 2, 3),
                             dtype=np.float32)
         print("vertices files", vertices.shape)
-        r = 1.05
+        r = 1.0001
         #        for i in range(vertices.shape[0]):
         #            vertices[i, 0] = i/vertices.shape[0]
         #            vertices[i, 1] = i/vertices.shape[0]
         #            vertices[i, 2] = 0.0
 
-        k = 1.0/(np.max(self.moments)*0.1)
+        k = 1.0/(np.max(self.moments))*0.1
         # k = 1.0
         for m in range(num_images):
             for j in range(len(self.grid)//2):
@@ -52,13 +52,13 @@ class FieldPainter:
                 r_1 = r*math.cos(phi)*math.sin(theta)
                 r_2 = r*math.sin(phi)
 
-                vertices[m, j, 0, 0] = 0.0
-                vertices[m, j, 0, 1] = 0.0
-                vertices[m, j, 0, 2] = 0.0
+                vertices[m, j, 0, 0] = r_0
+                vertices[m, j, 0, 1] = r_1
+                vertices[m, j, 0, 2] = r_2
 
-                vertices[m, j, 1, 0] = k*self.moments[m, j, 0]
-                vertices[m, j, 1, 1] = k*self.moments[m, j, 1]
-                vertices[m, j, 1, 2] = k*self.moments[m, j, 2]
+                vertices[m, j, 1, 0] = r_0+k*self.moments[m, j, 2]
+                vertices[m, j, 1, 1] = r_1+k*self.moments[m, j, 0]
+                vertices[m, j, 1, 2] = r_2+k*self.moments[m, j, 1]
 
                 # vertices[m, j, 0, 0] = r_0
                 # vertices[m, j, 0, 1] = r_1

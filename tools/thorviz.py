@@ -75,7 +75,7 @@ for planet, files in planets.items():
     for k, v in grid.items():
         print(k, v)
 
-    num_levels = int(grid['nv'][0])
+    num_levels = int(grid['nv'][0]) + 8
     num_datas = 0
     if len(files['datasets']) > 0:
         print("datafiles def")
