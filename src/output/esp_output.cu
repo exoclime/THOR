@@ -200,6 +200,24 @@ __host__ void ESP::Output(int    ntstep         , // Number of integration steps
         H5Aclose(att);
         H5Sclose(dataspace_id);     
 
+//      point neighbours
+        dims[0] = 6*point_num;
+        dataspace_id = H5Screate_simple(1, dims, NULL);
+        dataset_id = H5Dcreate2(file_id, "/pntloc", H5T_STD_I32LE, dataspace_id, 
+                                H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+        H5Dwrite(dataset_id, H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, point_local_h);    
+        H5Tset_size(stringType, strlen("Neighbours indexes"));
+        att    = H5Acreate(dataset_id, "Variable", stringType, stringSpace, H5P_DEFAULT, H5P_DEFAULT);
+        H5Awrite(att, stringType, "Neighbours indexes");
+        H5Aclose(att);
+        H5Tset_size(stringType, strlen("-"));
+        att    = H5Acreate(dataset_id, "units", stringType, stringSpace, H5P_DEFAULT, H5P_DEFAULT);
+        H5Awrite(att, stringType, "-");
+        H5Dclose(dataset_id);
+        H5Aclose(att);
+        H5Sclose(dataspace_id);
+        
+        
 //      Close the file.
         H5Fflush(file_id, H5F_SCOPE_LOCAL);
         H5Fclose(file_id);

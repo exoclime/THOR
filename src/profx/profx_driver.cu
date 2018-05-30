@@ -16,11 +16,11 @@
 //     <http://www.gnu.org/licenses/>.
 // ==============================================================================
 //
-// 
+//
 //
 //
 // Description: Physics modules.
-//   
+//
 //
 // Method: This version just includes the held-suarez test.
 //
@@ -28,9 +28,9 @@
 //
 // Known issues: None
 //
-// If you use this code please cite the following reference: 
+// If you use this code please cite the following reference:
 //
-//       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016  
+//       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016
 //
 // Current Code Owner: Joao Mendonca, EEG. joao.mendonca@csh.unibe.ch
 //
@@ -45,10 +45,12 @@
 #include "../headers/esp.h"
 #include "../headers/phy/profx_auxiliary.h"
 #include "../headers/phy/profx_held_suarez.h"
+#include "../headers/phy/profx_shallowHJ_hs.h"
+#include "../headers/phy/profx_tidalearth_hs.h"
 
 __host__ void ESP::ProfX(int    planetnumber, // Planet ID
                          int    nstep       , // Step number
-                         bool   hstest      , // Held-Suarez test option
+                         int    hstest      , // Held-Suarez test option
                          double time_step   , // Time-step [s]
                          double Omega       , // Rotation rate [1/s]
                          double Cp          , // Specific heat capacity [J/kg/K]
@@ -59,7 +61,7 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
                          double P_Ref       , // Reference pressure [Pa]
                          double Gravit      , // Gravity [m/s^2]
                          double A           ){// Planet radius [m]
-    
+
 //
 //  Number of threads per block.
     const int NTH = 256;
@@ -68,7 +70,7 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
     dim3 NB((point_num / NTH) + 1, nv, 1);
 
 //  Computes the initial temperature.
-    Compute_temperature <<< NB, NTH >>> (temperature_d, 
+    Compute_temperature <<< NB, NTH >>> (temperature_d,
                                          pt_d         ,
                                          pressure_d   ,
                                          Rho_d        ,
@@ -85,12 +87,13 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
        printf("\n\n Error in NAN check!\n");
        exit(EXIT_FAILURE);
     }
-    
+
 ///////////////////////
 // HELD SUAREZ TEST  //
 ///////////////////////
 //
-    if(hstest && planetnumber == 1){
+    if (planetnumber == 1) {
+      if (hstest == 1) {
         cudaDeviceSynchronize();
         held_suarez<<< NB, NTH >>> (Mh_d         ,
                                     pressure_d   ,
@@ -104,19 +107,47 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
                                     lonlat_d     ,
                                     time_step    ,
                                     point_num    );
-
+      } else if (hstest == 2) {
+        cudaDeviceSynchronize();
+        tidalearth_hs<<< NB, NTH >>> (Mh_d         ,
+                                    pressure_d   ,
+                                    Rho_d        ,
+                                    temperature_d,
+                                    Gravit       ,
+                                    Cp           ,
+                                    Rd           ,
+                                    Altitude_d   ,
+                                    Altitudeh_d  ,
+                                    lonlat_d     ,
+                                    time_step    ,
+                                    point_num    );
+      } else if (hstest == 3) {
+        cudaDeviceSynchronize();
+        shallowHJ_hs<<< NB, NTH >>> (Mh_d         ,
+                                    pressure_d   ,
+                                    Rho_d        ,
+                                    temperature_d,
+                                    Gravit       ,
+                                    Cp           ,
+                                    Rd           ,
+                                    Altitude_d   ,
+                                    Altitudeh_d  ,
+                                    lonlat_d     ,
+                                    time_step    ,
+                                    point_num    );
+      }
     }
-//    
-////////////////////////        
-    
+//
+////////////////////////
+
     if(planetnumber != 1){
         printf("Planet value incorrect! (see in file planet.h)");
         exit(EXIT_FAILURE);
     }
-    
+
 //  Computes the new pressures.
     cudaDeviceSynchronize();
-    Compute_pressure <<< NB, NTH >>> (pressure_d   , 
+    Compute_pressure <<< NB, NTH >>> (pressure_d   ,
                                       temperature_d,
                                       Rho_d        ,
                                       Rd           ,
@@ -125,7 +156,3 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
 //END OF INTEGRATION
 //
 }
-
-
-
-

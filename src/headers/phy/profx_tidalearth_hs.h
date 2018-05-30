@@ -19,7 +19,7 @@
 //
 //
 //
-// Description: Earth benchmark test.
+// Description: Tidally-locked Earth benchmark test.
 //
 //
 // Method: The temperature is forced using a Newtonian cooling code, and the
@@ -46,7 +46,7 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
-__global__ void held_suarez(double *Mh_d         ,
+__global__ void tidalearth_hs(double *Mh_d         ,
                             double *pressure_d   ,
                             double *Rho_d        ,
                             double *temperature_d,
@@ -79,6 +79,7 @@ __global__ void held_suarez(double *Mh_d         ,
         double psm1;
         double p0  = 100000.0;
         double lat = lonlat_d[id*2 + 1];
+        double lon = lonlat_d[id*2];
 
         double Teq_hs;
         double kv_hs, kt_hs;
@@ -92,9 +93,9 @@ __global__ void held_suarez(double *Mh_d         ,
         sigma = (pre/ps);
         sigma0= (pre/p0);
 
-//      Equilibrium temperature.
-        Teq_hs=  max(200.0, (315.0 - dTy *
-                     pow(sin(lat), 2.0)  - dthetaz*log(sigma0)*
+//      Equilibrium temperature. From Equation 21 in Heng, Menou and Phillips 2011
+        Teq_hs=  max(200.0, (315.0 + dTy *
+                     cos(lon-M_PI)*cos(lat)  - dthetaz*log(sigma0)*
                      pow(cos(lat), 2.0)) * pow(sigma0,kappa));
 
 //      Temperature forcing constant.
