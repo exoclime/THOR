@@ -52,7 +52,16 @@ set(SRC_STORAGE
   src/test/storage_test.cpp
   src/output/storage.cpp)
 
-
+set(SRC_GRID
+  src/initial/esp_initial.cu
+  src/output/esp_output.cu
+  src/initial/planet.cu
+  src/profx/profx_driver.cu
+  src/thor/thor_driver.cu
+  src/grid/grid.cu
+  src/test/grid_test.cpp
+  src/output/storage.cpp
+  src/devel/binary_test.cpp)
 
 
 find_package(HDF5 COMPONENTS CXX)
@@ -68,3 +77,5 @@ target_link_libraries (esp ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES}  )
 cuda_add_executable(test_storage ${SRC_STORAGE})
 target_link_libraries (test_storage ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES}  )
 
+cuda_add_executable(test_grid ${SRC_GRID})
+target_link_libraries (test_grid ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES}  )

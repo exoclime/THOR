@@ -76,6 +76,8 @@ public:
     template<typename T>
     DataType get_datatype(T & input)
     {
+        cout << "data type not supported for storage" << endl;
+        
         throw std::runtime_error("data type not supported for storage");
         
         //       return PredType::STD_REF_OBJ;
@@ -139,28 +141,42 @@ void storage::append_table(T * data,
                                                          strdatatype,
                                                          attrspace);
                 attr.write(strdatatype, unit.c_str());
-            }
-            
-            
+            }            
         }  // end of try block
         // catch failure caused by the H5File operations
         catch( FileIException error )
         {
+            cout << "FileIException: " << name
+                 << "\t" << data
+                 << "\t" << size << endl;
+            
             error.printError();
         }
         // catch failure caused by the DataSet operations
         catch( DataSetIException error )
         {
+            cout << "DataSetIException: " << name
+                 << "\t" << data
+                 << "\t" << size << endl;
+
             error.printError();      
         }
         // catch failure caused by the DataSpace operations
         catch( DataSpaceIException error )
         {
+            cout << "DataSpaceIException: " << name
+                 << "\t" << data
+                 << "\t" << size << endl;
+
             error.printError();
         }
         // catch failure caused by the DataSpace operations
         catch( DataTypeIException error )
         {
+            cout << "DataTypeIException: " << name
+                 << "\t" << data
+                 << "\t" << size << endl;
+
             error.printError();
         }
     }

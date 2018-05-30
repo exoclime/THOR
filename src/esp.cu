@@ -58,6 +58,8 @@ using namespace std;
 #include "headers/planet.h"
 #include "headers/esp.h"
 
+#include "debug.h"
+
 int main (){
 
     printf("\n Starting ESP!");
@@ -102,6 +104,10 @@ int main (){
            Grid.nvi           , // Number of interfaces between layers
            Grid.point_num     );// Number of grid points
 
+    USE_BENCHMARK();
+    
+    BENCH_POINT_GRID(Grid);
+    
    printf(" Setting the initial conditions.\n\n");
 // Initial conditions
    X.InitialValues(rest         , // Option to start the atmosphere from rest
