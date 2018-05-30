@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3.6
 import numpy as np
 import matplotlib.pyplot as plt
 import hamarr as ham
@@ -110,9 +110,9 @@ if 'PVlev' in pview:
     PR_LV = np.float(args.pressure_lev[0])
     ham.potential_vort_lev(input,grid,output,PR_LV)
 if 'PVver' in pview:
-    sigmaref = np.arange(1,0,-0.05)
+    #sigmaref = np.arange(1,0,-0.05)
     ham.potential_vort_vert(input,grid,output,sigmaref)
-if 'vring' in pview:
+#if 'vring' in pview:
     #still in development...
-    sigmaref = np.arange(1,0,-0.05)
-    ham.vring(input,grid,output,sigmaref)
+    #sigmaref = np.arange(1,0,-0.05)
+    #ham.vring(input,grid,output,sigmaref)

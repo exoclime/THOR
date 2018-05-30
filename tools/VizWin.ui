@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>THORViz</class>
+ <widget class="QMainWindow" name="THORViz">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>800</width>
+    <height>600</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>THORViz</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QGridLayout" name="gridLayout">
+    <item row="0" column="0">
+     <layout class="QHBoxLayout" name="horizontalLayout">
+      <item>
+       <widget class="ThorVizWidget" name="vizGL"/>
+      </item>
+     </layout>
+    </item>
+    <item row="1" column="0">
+     <widget class="QSlider" name="animation_slider">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>800</width>
+     <height>29</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>ThorVizWidget</class>
+   <extends>QOpenGLWidget</extends>
+   <header>thorvizwidget</header>
+   <slots>
+    <slot>set_image(int)</slot>
+   </slots>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>animation_slider</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>vizGL</receiver>
+   <slot>set_image(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>459</x>
+     <y>556</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>476</x>
+     <y>505</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>

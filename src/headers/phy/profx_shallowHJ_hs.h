@@ -19,7 +19,7 @@
 //
 //
 //
-// Description: Earth benchmark test.
+// Description: Shallow hot jupiter benchmark test.
 //
 //
 // Method: The temperature is forced using a Newtonian cooling code, and the
@@ -46,7 +46,7 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
-__global__ void held_suarez(double *Mh_d         ,
+__global__ void shallowHJ_hs(double *Mh_d         ,
                             double *pressure_d   ,
                             double *Rho_d        ,
                             double *temperature_d,
@@ -67,18 +67,23 @@ __global__ void held_suarez(double *Mh_d         ,
 
 //      Parameters for the forcing and dissipation
         double sigma;
-        double sigma0;
         double sigmab = 0.7;
         double ka     = (1.0/40.0) * (1.0/86400.0);
-        double kf     = 1.0/86400.0;
         double ks     = (1.0/4.0) * (1.0/86400.0);
-        double kappa  = Rd/Cp;
-        double dTy    = 60.0;
-        double dthetaz= 10.0;
+        double dTy    = 300.0;
         double ps, pre  ;
         double psm1;
-        double p0  = 100000.0;
         double lat = lonlat_d[id*2 + 1];
+        double lon = lonlat_d[id*2];
+
+        // Hot Jupiter stuff....
+        double zstra = 2e6;
+        double sigma_stra = 0.12;
+        double Gamma_trop = 2e-4;
+        double T_surf = 1600;
+        double Delta_Tstra = 10;
+        double beta_trop;
+        double T_vert;
 
         double Teq_hs;
         double kv_hs, kt_hs;
@@ -90,19 +95,27 @@ __global__ void held_suarez(double *Mh_d         ,
         pre = pressure_d[id*nv + lev];
 
         sigma = (pre/ps);
-        sigma0= (pre/p0);
 
-//      Equilibrium temperature.
-        Teq_hs=  max(200.0, (315.0 - dTy *
-                     pow(sin(lat), 2.0)  - dthetaz*log(sigma0)*
-                     pow(cos(lat), 2.0)) * pow(sigma0,kappa));
+// Calculate T_vert from Equation 23 & 24 (Heng, Menou, and Phillips 2011)
+        if (Altitude_d[lev] <= zstra) {
+          beta_trop = sin( 0.5*M_PI*(sigma-sigma_stra)/(1.0-sigma_stra) );
+          T_vert = T_surf - Gamma_trop*(zstra+0.5*(Altitude_d[lev]-zstra)) +
+                   sqrt(pow(0.5*Gamma_trop*(Altitude_d[lev]-zstra),2) +
+                   Delta_Tstra*Delta_Tstra);
+        } else {
+          beta_trop = 0.0;
+          T_vert = T_surf - Gamma_trop*zstra + Delta_Tstra;
+        }
+
+//      Equilibrium temperature. Equation 25 from Heng, Menou, and Phillips 2011
+        Teq_hs=  T_vert + beta_trop * dTy * cos(lon-M_PI)*cos(lat);
 
 //      Temperature forcing constant.
         kt_hs =  ka + (ks - ka)*max(0.0, (sigma-sigmab)/(1.0-sigmab))*
                  pow(cos(lat), 4.0);
 
 //      Momentum dissipation constant.
-        kv_hs =  kf*max(0.0, (sigma-sigmab)/(1.0-sigmab));
+        kv_hs = 0.0;  //no boundary layer friction
 
 //      Update momenta
         for(int k = 0; k < 3; k++) Mh_d[id*3*nv + lev*3 + k] = Mh_d[id*3*nv + lev*3 + k]/(1.0 + kv_hs*time_step);;

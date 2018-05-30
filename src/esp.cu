@@ -58,6 +58,8 @@ using namespace std;
 #include "headers/planet.h"
 #include "headers/esp.h"
 
+#include "debug.h"
+
 int main (){
 
     printf("\n Starting ESP!");
@@ -102,6 +104,10 @@ int main (){
            Grid.nvi           , // Number of interfaces between layers
            Grid.point_num     );// Number of grid points
 
+    USE_BENCHMARK();
+    
+    BENCH_POINT_GRID(Grid);
+    
    printf(" Setting the initial conditions.\n\n");
 // Initial conditions
    X.InitialValues(rest         , // Option to start the atmosphere from rest
@@ -193,7 +199,9 @@ int main (){
 //
 //  Main loop. nstep is the current step of the integration and nsmax the maximum
 //  number of steps in the integration.
-    for(int nstep = 1; nstep <= nsmax; ++nstep){    
+    for(int nstep = 1; nstep <= nsmax; ++nstep){
+        X.current_step = nstep;
+        
 //
 //      Dynamical Core Integration (THOR)
         X.Thor (timestep     , // Time-step [s]

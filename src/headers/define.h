@@ -64,10 +64,13 @@
 #define rest   false          // Starting from rest
 
 // Benchmark test
-#define hstest false         // Held-Suarez test
+#define hstest 3          // Held-Suarez test for Earth == 1
+//  HS test for shallow hot Jupiter == 3
+//  HS test for tidally locked Earth == 2
+//  No HS test == 0
 
 // GPU ID
 #define GPU_ID_N 0        // Set GPU ID number
 
 // Output
-#define n_out 1         // Print output every n_out steps
+#define n_out 1000         // Print output every n_out steps

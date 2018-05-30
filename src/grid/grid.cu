@@ -82,7 +82,8 @@ __host__ Icogrid::Icogrid (bool sprd         ,  // Spring dynamics option
         printf("\nParameter not tested! Use the predefined divide_face values.\n");
         exit(EXIT_FAILURE);
     }
-
+    grid_level = glevel;
+    
 //  Rhombi
     int n_region = pow(2.0,glevel)*pow(2.0,glevel) ; //
     nl_region    = pow(2.0,glevel)                 ; // 
@@ -121,6 +122,7 @@ __host__ Icogrid::Icogrid (bool sprd         ,  // Spring dynamics option
                             point_num  );
 
 //  Generate halos.
+    nh = 10*nfaces*4*nlhalo;
     halo = (int*)malloc(10*nfaces*4*nlhalo * sizeof(int));
     generate_halos(halo       ,
                    point_local,
@@ -294,7 +296,7 @@ void Icogrid::sphere_ico (double *xyz        ,
 //  Output: - xyz       - the vertices coordinates (Cartesian; radius 1).
 //          - nl_region - nl_region^2 is the number of points in the faces.
 //          - kxl       - kxl^2 is the number of small rhombi inside the main rhombi.
-
+    
 //  Local variables
     int sizei = pow(2.0, glevel) ;
     double l                     ;

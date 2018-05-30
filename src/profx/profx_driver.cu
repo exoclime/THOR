@@ -45,6 +45,8 @@
 #include "../headers/esp.h"
 #include "../headers/phy/profx_auxiliary.h"
 #include "../headers/phy/profx_held_suarez.h"
+#include "../headers/phy/profx_shallowHJ_hs.h"
+#include "../headers/phy/profx_tidalearth_hs.h"
 #include "../headers/phy/profx_RT.h"
 
 
@@ -57,7 +59,7 @@
 
 __host__ void ESP::ProfX(int    planetnumber, // Planet ID
                          int    nstep       , // Step number
-                         bool   hstest      , // Held-Suarez test option
+                         int    hstest      , // Held-Suarez test option
                          double time_step   , // Time-step [s]
                          double Omega       , // Rotation rate [1/s]
                          double Cp          , // Specific heat capacity [J/kg/K]
@@ -103,7 +105,8 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
 // HELD SUAREZ TEST  //
 ///////////////////////
 //
-    if(hstest && planetnumber == 1){
+    if (planetnumber == 1) {
+      if (hstest == 1) {
         cudaDeviceSynchronize();
         held_suarez<<< NB, NTH >>> (Mh_d         ,
                                     pressure_d   ,
@@ -117,7 +120,35 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
                                     lonlat_d     ,
                                     time_step    ,
                                     point_num    );
-
+      } else if (hstest == 2) {
+        cudaDeviceSynchronize();
+        tidalearth_hs<<< NB, NTH >>> (Mh_d         ,
+                                    pressure_d   ,
+                                    Rho_d        ,
+                                    temperature_d,
+                                    Gravit       ,
+                                    Cp           ,
+                                    Rd           ,
+                                    Altitude_d   ,
+                                    Altitudeh_d  ,
+                                    lonlat_d     ,
+                                    time_step    ,
+                                    point_num    );
+      } else if (hstest == 3) {
+        cudaDeviceSynchronize();
+        shallowHJ_hs<<< NB, NTH >>> (Mh_d         ,
+                                    pressure_d   ,
+                                    Rho_d        ,
+                                    temperature_d,
+                                    Gravit       ,
+                                    Cp           ,
+                                    Rd           ,
+                                    Altitude_d   ,
+                                    Altitudeh_d  ,
+                                    lonlat_d     ,
+                                    time_step    ,
+                                    point_num    );
+      }
     }
 //
 ////////////////////////
