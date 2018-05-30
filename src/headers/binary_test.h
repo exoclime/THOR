@@ -50,33 +50,39 @@
 
 #include "debug.h"
 #include "esp.h"
+#include "grid.h"
 #include <memory>
 #include "storage.h"
 
 #ifdef BENCHMARKING
   #warning "Compiling with benchmarktest enabled"
-#define USE_BENCHMARK(esp) binary_test & btester = binary_test::get_instance(esp);
+  #define USE_BENCHMARK() binary_test & btester = binary_test::get_instance();
   #ifdef BENCH_POINT_WRITE // write reference mode
-    #define BENCH_POINT(iteration, name)  btester.output_reference(iteration, name);
-    #define BENCH_POINT_I(iteration, name)  btester.output_reference(std::to_string(iteration), name);
-    #define BENCH_POINT_I_S(iteration, subiteration, name)  btester.output_reference(std::to_string(iteration)\
-                                                                               +"-"\
-                                                                               +std::to_string(subiteration), \
-                                                                               name);
+    #define BENCH_POINT(esp, iteration, name)  btester.output_reference(esp, iteration, name);
+    #define BENCH_POINT_I(esp, iteration, name)  btester.output_reference(esp, std::to_string(iteration), name);
+    #define BENCH_POINT_I_S(esp, iteration, subiteration, name)  btester.output_reference(esp, \
+                                                                                          std::to_string(iteration) \
+                                                                                          +"-" \
+                                                                                          +std::to_string(subiteration), \
+                                                                                          name);
+    #define BENCH_POINT_GRID(grid)  btester.output_reference_grid(grid);
   #endif
   #ifdef BENCH_POINT_COMPARE // compare mode
-    #define BENCH_POINT(iteration, name)  btester.compare_to_reference(iteration, name);
-    #define BENCH_POINT_I(iteration, name)  btester.compare_to_reference(std::to_string(iteration), name);
-    #define BENCH_POINT_I_S(iteration, subiteration, name)  btester.compare_to_reference(std::to_string(iteration)\
-                                                                               +"-"\
-                                                                               +std::to_string(subiteration), \
-                                                                               name);
+    #define BENCH_POINT(esp, iteration, name)  btester.compare_to_reference(esp, iteration, name);
+    #define BENCH_POINT_I(esp, iteration, name)  btester.compare_to_reference(esp, std::to_string(iteration), name);
+    #define BENCH_POINT_I_S(esp, iteration, subiteration, name)  btester.compare_to_reference(esp, \
+std::to_string(iteration)                                               \
+                                                                                              +"-" \
+                                                                                              +std::to_string(subiteration), \
+                                                                                              name);
+     #define BENCH_POINT_GRID(grid)  btester.compare_to_reference_grid(grid);
   #endif
 #else // do nothing
-  #define USE_BENCHMARK(esp)
-  #define BENCH_POINT(iteration, name)
-  #define BENCH_POINT_I(iteration, name)
-  #define BENCH_POINT_I_S(iteration, subiteration, name)
+#define USE_BENCHMARK()
+  #define BENCH_POINT(esp, iteration, name)
+  #define BENCH_POINT_I(esp, iteration, name)
+  #define BENCH_POINT_I_S(esp, iteration, subiteration, name)
+  #define BENCH_POINT_GRID(grid)
 #endif
 
 
@@ -84,40 +90,54 @@
 
 using std::string;
 
-enum class binary_test_mode {grid, data};
-
 // singleton storing class for debug
 class binary_test
 {
 public:
-    static binary_test & get_instance(ESP & esp);
+    // make a singleton, so that the object exists only once
+    // use this to get a reference to the object
+    static binary_test & get_instance();
+    // no copy constructor and assignement operator
     binary_test(binary_test const&) = delete;
     void operator=(binary_test const&) = delete; 
 
-    void output_reference(const string & iteration,
-                          const string & ref_name,
-                          const binary_test_mode & mode = binary_test_mode::data);
+    // esp object reference dump
+    void output_reference(ESP & esp,
+                          const string & iteration,
+                          const string & ref_name);
 
-    bool compare_to_reference(const string & iteration,
-                              const string & ref_name,
-                              const binary_test_mode & mode = binary_test_mode::data);
+    // esp comparison
+    bool compare_to_reference(ESP & esp,
+                              const string & iteration,
+                              const string & ref_name);
+
+    // grid object reference dump
+    void output_reference_grid(Icogrid & grid);
+    bool compare_to_reference_grid(Icogrid & grid);
+
+    void set_output(string base_name, string dir)
+    {
+        output_dir = dir;
+        output_base_name = base_name;
+    }
     
+        
 private:
-    ESP & esp;
 
     string output_dir;
     string output_base_name;
     
     
     // make constructor private, can only be instantiated through get_instance
-    binary_test(ESP & esp_,
-                string output_dir,
+    binary_test(string output_dir,
                 string output_base_name);
 
     // helper function to compare two arrays for equality
     template<typename T>
     bool compare_arrays(int s1, T * d1,
-                        int s2, T * d2);
+                        int s2, T * d2,
+                        string array = string(""),
+                        bool print = false);
 
     // helper function to compare application array to saved array
     template<typename T>
@@ -125,11 +145,6 @@ private:
                                const string & name,
                                T * local_data,
                                const int & data_size);
-    
-   
-    
-//    binary_test(binary_test const&);              // Don't Implement
-//    void operator=(binary_test const&); // Don't implement
   
 };
 
@@ -148,7 +163,8 @@ bool binary_test::compare_to_saved_data(storage & s,
     
     
     bool b = compare_arrays(size, saved_data.get(),
-                          data_size, local_data);
+                            data_size, local_data,
+                            name, true);
 //    cout << b << endl;
     return b;
     
@@ -156,15 +172,28 @@ bool binary_test::compare_to_saved_data(storage & s,
                           
 template<typename T>
 bool binary_test::compare_arrays(int s1, T * d1,
-                                 int s2, T * d2)
+                                 int s2, T * d2, string array, bool print)
 {
     if (s1 != s2)
+    {
+        if (print)
+            cout << array << ":\tdifferent sized arrays (" << s1
+                 << ":" << s2 << endl;
+        
         return false;
+    }
+    
     
     bool same = true;
     
     for (int i = 0; i < s1; i++)
         if (d1[i] != d2[i])
+        {
+            if (print)
+                cout << array << "["<<i<<"]:\tdifferent value ("<<d1[i]<<":"<<d2[i]<<")"<<endl;
+            
             same = false;
+        }
+    
     return same;
 }

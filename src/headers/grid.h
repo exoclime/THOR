@@ -43,6 +43,7 @@
 // 1.0     16/08/2017 Released version  (JM)
 //
 ////////////////////////////////////////////////////////////////////////
+#pragma once
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -58,39 +59,44 @@ class Icogrid{
 public:
 
     // Variables associated with the grid
-    int    point_num;       
-    int    nv       ;              
-    int    nvi      ;             
-    int    nl_region;
-    int    nr       ;
+    int    point_num;      // number of horizontal points 
+    int    nv       ;      // number of vertical layers
+    int    nvi      ;      // number of interfaces between leyers       
+    int    nl_region;      // number of  points in one side of a rhombus
+    int    nr       ;      // number of rombi
 
+    
+    int    grid_level;// Number of recursive iterations to increase horizontal resolution.
+
+    int    nh       ;      // number of points in halo
+    
     double *point_xyz ;  
     double *point_xyzq;
 
     int *pent_ind;
     int *halo    ;
-    int *maps    ;
+    int *maps    ;          // Grid domains 
 
-    double *Altitude; 
-    double *Altitudeh; 
+    double *Altitude;       // Altitudes
+    double *Altitudeh;      // Altitude at the interfaces between layers
 
-    double *lonlat;
+    double *lonlat;         // Longitude and latitude of the grid points
 
     double *areas  ;
-    double *areasT ;
-    double *areasTr;
+    double *areasT ;        // Areas of the main cells
+    double *areasTr;        // Areas of the triangles 
 
-    double *nvec  ;
-    double *nvecoa;
-    double *nvecte;
-    double *nvecti;
+    double *nvec  ;           
+    double *nvecoa;         // Normal vectors for diffusion 1
+    double *nvecte;         // Normal vectors for diffusion 3
+    double *nvecti;         // Normal vectors for diffusion 2
 
-    double *div ;
-    double *grad;
+    double *div ;           // Divergence operator
+    double *grad;           // Gradient operator
 
-    int    *point_local;
+    int    *point_local;    // First neighbours
 
-    double *func_r;
+    double *func_r;         // Normalised vector
 
     Icogrid (bool, double, int, int, double, double);
     
