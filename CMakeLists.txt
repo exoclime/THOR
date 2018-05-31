@@ -33,7 +33,7 @@ LIST(APPEND CUDA_NVCC_FLAGS "-std c++11")
 #set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_BUILD_TYPE Release)
 
-string (APPEND CMAKE_CUDA_FLAGS " -cudart shared")
+string (APPEND CMAKE_CUDA_FLAGS " -cudart shared" )
 
 # source for esp main program
 set(SRC
@@ -63,6 +63,9 @@ set(SRC_GRID
   src/output/storage.cpp
   src/devel/binary_test.cpp)
 
+set(SRC_CONFIG
+  src/test/config_test.cpp
+  src/input/config_file.cpp)
 
 find_package(HDF5 COMPONENTS CXX)
 if(HDF5_FOUND)
@@ -72,10 +75,22 @@ endif()
 
 message(STATUS "HDF5 C++libraries " ${HDF5_LIBRARIES})
 include_directories("src/headers")
+
+
+# build application
 cuda_add_executable(esp ${SRC})
+target_compile_definitions(esp PRIVATE -DBUILD_LEVEL="release")
 target_link_libraries (esp ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES}  )
+
+# build tests
 cuda_add_executable(test_storage ${SRC_STORAGE})
 target_link_libraries (test_storage ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES}  )
 
+
+add_executable(test_config ${SRC_CONFIG})
+target_link_libraries (test_config )
+
+
 cuda_add_executable(test_grid ${SRC_GRID})
+target_compile_definitions (test_grid  PRIVATE -DBENCHMARKING -DBENCH_POINT_COMPARE)
 target_link_libraries (test_grid ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES}  )
