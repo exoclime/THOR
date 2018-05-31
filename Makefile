@@ -1,7 +1,7 @@
 # Builds THOR executable
 CC = nvcc
 
-sm:=61 # Streaming Multiprocessor version
+sm:=30 # Streaming Multiprocessor version
 arch := -arch sm_$(sm)
 
 path_hd  := $(shell pwd)/src/headers
@@ -17,7 +17,11 @@ headers := $(path_hd)/define.h $(path_hd)/grid.h $(path_hd)/planet.h $(path_hd)/
 # define specific compiler. if if fails on newer installations, get it to use g++-5
 # ccbin := 
 # ccbin := -ccbin g++-5
-flag := $(ccbin) --compiler-options -Wall
+# define debug flags
+debug := 
+# debug := -g -G
+flag := $(ccbin) $(debug) --compiler-options -Wall -std=c++11 
+
 
 # define where to find sources
 source_dirs := src src/grid src/initial src/thor src/profx src/output src/devel
