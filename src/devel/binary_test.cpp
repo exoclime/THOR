@@ -48,6 +48,7 @@
 #include "binary_test.h"
 #include "debug.h"
 
+#ifdef BENCHMARKING
 //#include "grid.h"
 //#include "planet.h"
 #include "esp.h"
@@ -357,3 +358,4 @@ bool binary_test::compare_to_reference_grid(Icogrid & grid) {
     return out;    
 }
 
+#endif // BENCHMARKING

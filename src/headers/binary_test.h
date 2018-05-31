@@ -49,10 +49,6 @@
 #include <string>
 
 #include "debug.h"
-#include "esp.h"
-#include "grid.h"
-#include <memory>
-#include "storage.h"
 
 #ifdef BENCHMARKING
   #warning "Compiling with benchmarktest enabled"
@@ -85,7 +81,11 @@ std::to_string(iteration)                                               \
   #define BENCH_POINT_GRID(grid)
 #endif
 
-
+#ifdef BENCHMARKING
+#include "esp.h"
+#include "grid.h"
+#include <memory>
+#include "storage.h"
 
 
 using std::string;
@@ -197,3 +197,4 @@ bool binary_test::compare_arrays(int s1, T * d1,
     
     return same;
 }
+#endif // BENCHMARKING

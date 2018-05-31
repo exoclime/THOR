@@ -17,7 +17,7 @@ headers := $(path_hd)/define.h $(path_hd)/grid.h $(path_hd)/planet.h $(path_hd)/
 # define specific compiler. if if fails on newer installations, get it to use g++-5
 # ccbin := 
 # ccbin := -ccbin g++-5
-flag := $(ccbin) -g -G -std=c++11
+flag := $(ccbin) --compiler-options -Wall
 
 # define where to find sources
 source_dirs := src src/grid src/initial src/thor src/profx src/output src/devel
