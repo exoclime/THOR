@@ -21,7 +21,7 @@ ccbin :=
 
 # define common flags
 flags := $(ccbin) --compiler-options -Wall -std=c++11
-
+dep_flags := $(ccbin) -std=c++11
 # define debug flags
 debug_flags := -g -G
 
@@ -58,57 +58,91 @@ BINDIR = bin
 RESDIR = results
 .PHONY: all clean
 
+$(info goals: $(MAKECMDGOALS))
+
+# default target
+OUTPUTDIR := default
+MODE := UNDEF
+
 # profiling target
-profiling: flags += $(profiling_flags)
-profiling: all
+ifeq "$(findstring prof, $(MAKECMDGOALS))" "prof"
+	flags += $(profiling_flags) -DBUILD_LEVEL="\"profiling\""
+	MODE := prof
+	OUTPUTDIR := prof
+endif
 
 # debug target
-debug: flags += $(debug_flags)
-debug: all
+ifeq "$(findstring debug, $(MAKECMDGOALS))" "debug"
+	flags += $(debug_flags) -DBUILD_LEVEL="\"debug\""
+	MODE := debug
+	OUTPUTDIR := debug
+endif
 
 # release target
-release: flags += $(release_flags)
+ifeq "$(findstring release, $(MAKECMDGOALS))" "release"
+	flags += $(release_flags) -DBUILD_LEVEL="\"release\""
+	MODE := release
+	OUTPUTDIR := release
+endif
+debug: all
 release: all
+prof: all
 
-all: $(BINDIR)/esp
+
+all: $(BINDIR)/$(OUTPUTDIR)/esp
+
+$(info Compile mode: $(MODE))
+$(info Output objects to: $(OBJDIR)/$(OUTPUTDIR))
+$(info flags: $(flags))
 
 # create object directory if missing
-$(OBJDIR) $(BINDIR) $(RESDIR):
+$(BINDIR) $(RESDIR) $(OBJDIR):
 	mkdir $@
 
+$(BINDIR)/${OUTPUTDIR}: $(BINDIR)
+	mkdir -p $(BINDIR)/$(OUTPUTDIR)
+
+$(OBJDIR)/${OUTPUTDIR}: $(OBJDIR)
+	mkdir -p $(OBJDIR)/$(OUTPUTDIR)
+
 # make dependency lists
-$(OBJDIR)/%.d: %.cu |$(OBJDIR)
+$(OBJDIR)/${OUTPUTDIR}/%.d: %.cu | $(OBJDIR)/$(OUTPUTDIR) $(OBJDIR)
 	@set -e; rm -f $@; \
-	$(CC) $(arch) $(flags) $(h5include) $(h5libdir) -I$(includedir) --generate-dependencies $< > $@.$$$$; \
+	$(CC) $(arch) $(dep_flags) $(h5include) $(h5libdir) -I$(includedir) --generate-dependencies $< > $@.$$$$; \
 	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
 	rm -f $@.$$$$
 
-$(OBJDIR)/%.d: %.cpp |$(OBJDIR)
+$(OBJDIR)/${OUTPUTDIR}/%.d: %.cpp | $(OBJDIR)/$(OUTPUTDIR) $(OBJDIR)
 	@set -e; rm -f $@; \
-	$(CC) $(arch) $(flags) $(h5include) $(h5libdir) -I$(includedir)  --generate-dependencies  $< > $@.$$$$; \
+	$(CC) $(arch) $(dep_flags) $(h5include) $(h5libdir) -I$(includedir)  --generate-dependencies  $< > $@.$$$$; \
 	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
 	rm -f $@.$$$$
 
 # build *.cu CUDA objects
-$(OBJDIR)/%.o: %.cu $(OBJDIR)/%.d|$(OBJDIR)
+$(OBJDIR)/${OUTPUTDIR}/%.o: %.cu $(OBJDIR)/$(OUTPUTDIR)/%.d| $(OBJDIR)/$(OUTPUTDIR) $(OBJDIR)
 	@echo creating $@
 	$(CC) $(arch)  $(flags) $(h5include) $(h5libdir) -I$(includedir) -dc -o $@ $<
 	@echo done $@
 
-$(OBJDIR)/%.o: %.cpp $(OBJDIR)/%.d|$(OBJDIR)
+$(OBJDIR)/${OUTPUTDIR}/%.o: %.cpp $(OBJDIR)/$(OUTPUTDIR)/%.d| $(OBJDIR)/$(OUTPUTDIR) $(OBJDIR)
 	@echo creating $@
 	$(CC) $(arch)  $(flags) $(h5include) $(h5libdir) -I$(includedir) -dc -o $@ $< 
 	@echo done $@
 
 # link *.o objects
-$(BINDIR)/esp: $(addprefix $(OBJDIR)/,$(obj)) | $(BINDIR) $(RESDIR)
+$(BINDIR)/${OUTPUTDIR}/esp: $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj)) | $(BINDIR) $(RESDIR) $(BINDIR)/$(OUTPUTDIR)  $(OBJDIR)
 	@echo creating $@
-	$(CC) $(arch) $(flags) -o $(BINDIR)/esp $(addprefix $(OBJDIR)/,$(obj))  $(h5libdir) $(h5libs)
-
+	$(CC) $(arch) $(flags) -o $(BINDIR)/$(OUTPUTDIR)/esp $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj))  $(h5libdir) $(h5libs)
+	rm -f bin/esp
+	ln -s bin/$(OUTPUTDIR)/esp -r -t bin
 
 .phony: clean,ar
 clean:
-	-rm bin/esp $(addprefix $(OBJDIR)/,$(obj)) $(obj:%.o=$(OBJDIR)/%.d)
+	-rm -f bin/default/esp $(addprefix $(OBJDIR)/default/,$(obj)) $(obj:%.o=$(OBJDIR)/default/%.d)
+	-rm -f bin/debug/esp $(addprefix $(OBJDIR)/debug/,$(obj)) $(obj:%.o=$(OBJDIR)/debug/%.d)
+	-rm -f bin/release/esp $(addprefix $(OBJDIR)/release/,$(obj)) $(obj:%.o=$(OBJDIR)/release/%.d)
+	-rm -f bin/prof/esp $(addprefix $(OBJDIR)/prof/,$(obj)) $(obj:%.o=$(OBJDIR)/prof/%.d)
+	-rm -f bin/esp
 
-include $(obj:%.o=$(OBJDIR)/%.d)
+include $(obj:%.o=$(OBJDIR)/$(OUTPUTDIR)/%.d)
 

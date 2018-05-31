@@ -63,8 +63,8 @@ using namespace std;
 int main (){
 
     printf("\n Starting ESP!");
-    printf("\n\n version 1.0\n\n");
-
+    printf("\n\n version 1.0\n");
+    printf(" build level: " BUILD_LEVEL "\n");
 //
 //  Set the GPU device.    
     cudaError_t error;
