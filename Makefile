@@ -1,7 +1,7 @@
 # Builds THOR executable
 CC = nvcc
 
-sm:=30 # Streaming Multiprocessor version
+sm:=61 # Streaming Multiprocessor version
 arch := -arch sm_$(sm)
 
 path_hd  := $(shell pwd)/src/headers
@@ -14,14 +14,22 @@ headers := $(path_hd)/define.h $(path_hd)/grid.h $(path_hd)/planet.h $(path_hd)/
            $(path_hd)/dyn/thor_vertical_int.h $(path_hd)/dyn/thor_slowmodes.h $(path_hd)/dyn/thor_diff.h \
            $(path_hd)/dyn/thor_div.h $(path_hd)/phy/profx_auxiliary.h $(path_hd)/phy/profx_held_suarez.h \
            $(path_hd)/storage.h $(path_hd)/binary_test.h $(path_hd)/debug.h
-# define specific compiler. if if fails on newer installations, get it to use g++-5
-# ccbin := 
-# ccbin := -ccbin g++-5
-# define debug flags
-debug := 
-# debug := -g -G
-flag := $(ccbin) $(debug) --compiler-options -Wall -std=c++11 
 
+# define specific compiler. if if fails on newer installations, get it to use g++-5
+ccbin := 
+# ccbin := -ccbin g++-5
+
+# define common flags
+flags := $(ccbin) --compiler-options -Wall -std=c++11
+
+# define debug flags
+debug_flags := -g -G
+
+# define release flags
+release_flags := -O3
+
+# define profiling flags
+profiling_flags := -pg
 
 # define where to find sources
 source_dirs := src src/grid src/initial src/thor src/profx src/output src/devel
@@ -50,6 +58,18 @@ BINDIR = bin
 RESDIR = results
 .PHONY: all clean
 
+# profiling target
+profiling: flags += $(profiling_flags)
+profiling: all
+
+# debug target
+debug: flags += $(debug_flags)
+debug: all
+
+# release target
+release: flags += $(release_flags)
+release: all
+
 all: $(BINDIR)/esp
 
 # create object directory if missing
@@ -65,25 +85,25 @@ $(OBJDIR)/%.d: %.cu |$(OBJDIR)
 
 $(OBJDIR)/%.d: %.cpp |$(OBJDIR)
 	@set -e; rm -f $@; \
-	$(CC) $(arch) $(flag) $(h5include) $(h5libdir) -I$(includedir)  --generate-dependencies  $< > $@.$$$$; \
+	$(CC) $(arch) $(flags) $(h5include) $(h5libdir) -I$(includedir)  --generate-dependencies  $< > $@.$$$$; \
 	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
 	rm -f $@.$$$$
 
 # build *.cu CUDA objects
 $(OBJDIR)/%.o: %.cu $(OBJDIR)/%.d|$(OBJDIR)
 	@echo creating $@
-	$(CC) $(arch)  $(flag) $(h5include) $(h5libdir) -I$(includedir) -dc -o $@ $<
+	$(CC) $(arch)  $(flags) $(h5include) $(h5libdir) -I$(includedir) -dc -o $@ $<
 	@echo done $@
 
 $(OBJDIR)/%.o: %.cpp $(OBJDIR)/%.d|$(OBJDIR)
 	@echo creating $@
-	$(CC) $(arch)  $(flag) $(h5include) $(h5libdir) -I$(includedir) -dc -o $@ $< 
+	$(CC) $(arch)  $(flags) $(h5include) $(h5libdir) -I$(includedir) -dc -o $@ $< 
 	@echo done $@
 
 # link *.o objects
 $(BINDIR)/esp: $(addprefix $(OBJDIR)/,$(obj)) | $(BINDIR) $(RESDIR)
 	@echo creating $@
-	$(CC) $(arch) $(flag) -o $(BINDIR)/esp $(addprefix $(OBJDIR)/,$(obj))  $(h5libdir) $(h5libs)
+	$(CC) $(arch) $(flags) -o $(BINDIR)/esp $(addprefix $(OBJDIR)/,$(obj))  $(h5libdir) $(h5libs)
 
 
 .phony: clean,ar
