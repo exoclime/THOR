@@ -61,27 +61,83 @@ int main()
 
     config_file cf;
 
-    string config = "test = 0\n"
+    string config = "int1 = 0\n"
+        " int2=  1234567890 \n"
+        "int3\t=-1234567890\t\n"
         "# comment line\n"
-        "other = TRUE\n"
+        "other = false\n"
         " # moar comments\n"
         "othertest = icle\n"
+        "onemore = true # line with comment\n" 
         "   \t  \n"
-        "\t# undefined, check default value\n";
+        "\t# undefined, check default value\n"
+        "double1 = 1.0\n"
+        "double2 = -3.14e19\n"
+        "double3 = 1242E+32\n"
+        ;
     
         
     cout << config << endl;
 
-    int test = -1;
-    config_entry<int> c(test, 2);
+
+    cout << "appending configurations" << endl;
+    int int1 = -1;
+    cf.append_config_var("int1", int1, 2);
+    int int2 = -1;
+    cf.append_config_var("int2", int2, 2);
+    int int3 = -1;
+    cf.append_config_var("int3", int3, 2);
     
-//    cf.append_config_var<int>("test", c);
+    double double1 = 0.0;
+    cf.append_config_var("double1", double1, -1.0);
+    double double2 = 0.0;
+    cf.append_config_var("double2", double2, -1.0);
+    double double3 = 0.0;
+    cf.append_config_var("double3", double3, -1.0);
+
+    bool onemore = false;
+    cf.append_config_var("onemore", onemore, false);
+    bool other = true;
+    cf.append_config_var("other", other, true);
+    string othertest("fart");
+    cf.append_config_var("othertest", othertest, string("tickle"));
+
+    // default values
+    bool def_bool = false;
+    cf.append_config_var("def_bool", def_bool, true);
+    int def_int= -2;
+    cf.append_config_var("def_int", def_int, 42);
+    double def_double = 3.14;
+    cf.append_config_var("def_double", def_double, 2.18);
+    string def_string("wrong");
+    cf.append_config_var("def_string", def_string, string("default"));
+    
+    
+                         
+    cout << "start parsing" << endl << endl;
+
     
     cf.parse_config(std::basic_istringstream<char>(config));
 
-    if (test_val<int>("test var", test, 0) )
-        cout << "Test SUCCESS" << endl;
-    else
+    bool success = true;
+    
+    success = success & test_val<int>("int1", int1, 0);
+    success = success & test_val<int>("int2", int2, 1234567890);
+    success = success & test_val<int>("int3", int3, -1234567890);
+    success = success & test_val<double>("double1", double1, 1.0);
+    success = success & test_val<double>("double2", double2, -3.14e19);
+    success = success & test_val<double>("double3", double3, 1242e32);
+    success = success & test_val<bool>("onemore", onemore, true);
+    success = success & test_val<bool>("other", other, false);
+    success = success & test_val<string>("othertest", othertest, string("icle"));
+    success = success & test_val<bool>("def_bool", def_bool, true);
+    success = success & test_val<int>("def_int", def_int, 42);
+    success = success & test_val<double>("def_double", def_double, 2.18);
+    success = success & test_val<string>("def_string", def_string, string("default"));
+        
+    if (success)
+        cout << "Test PASS" << endl;
+    else 
         cout << "Test FAIL" << endl;
             
 

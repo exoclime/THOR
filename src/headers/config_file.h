@@ -44,8 +44,10 @@
 
 #include <string>
 #include <map>
-
+#include <memory>
 #include <iostream>
+#include <regex>
+
 using namespace std;
 
 using std::string;
@@ -55,9 +57,87 @@ using std::map;
 class config_entry_interface
 {
 public:
-    virtual void set();
+    virtual bool parse(string value) = 0;
+
+    virtual void set_default() = 0;
     
 };
+
+
+template< typename T>
+bool parse_data(const string & value, T & target)
+{
+
+    return false;
+}
+
+
+template<>
+inline bool parse_data(const string & value, bool & target )
+{
+    regex bool_regex("^(true|false)$");
+
+    std::smatch match;
+
+    if (regex_match(value, match, bool_regex))
+    {
+        target = (match[1] == "true");
+        // cout << "parsed [" << value << "] as [" << target << "]" << endl;
+
+        return true;
+    }
+
+    return false;
+}
+
+template<>
+inline bool parse_data(const string & value, int & target )
+{
+    regex int_regex("^((-|\\+)?[0-9]+)$");
+
+    std::smatch match;
+
+    if (regex_match(value, match, int_regex))
+    {
+        target = std::stoi(match[1]);
+        // cout << "parsed [" << value << "] as [" << target << "]" << endl;
+
+        return true;
+    }
+
+    return false;
+}
+    
+template<>
+inline bool parse_data(const string & value, double & target )
+{
+
+    regex double_regex("^((-|\\+)?[0-9]+(\\.[0-9]+)?((E|e)(-|\\+)?[0-9]+)?)$");
+
+
+
+    std::smatch match;
+
+    if (regex_match(value, match, double_regex))
+    {
+        target = std::stod(match[1]);
+        // cout << "parsed [" << value << "] as [" << target << "]" << endl;
+
+        return true;
+    }
+
+    return false;
+}
+    
+
+template<>
+inline bool parse_data(const string & value, string & target )
+{
+    target = value;
+    
+    return true;
+}
+    
 
 template <typename T>
 class config_entry : public config_entry_interface {
@@ -69,12 +149,26 @@ public:
         
     }
     
-    void set() 
+    bool parse(string value)
     {
-
+        if (parse_data(value, target))
+        {
+            return true;
+        }
+        else
+        {
+            target = default_val;
+            
+            return false;
+        }
     }
 
-
+    void set_default()
+    {
+        target = default_val;
+    }
+    
+    
         
 private:
     T & target;
@@ -82,39 +176,32 @@ private:
     
 };
 
-
 class config_file
 {
 public:
     config_file();
     enum var_type { INT, DOUBLE, BOOL, FLOAT, STRING };
     
-        
-    template<typename T>
-    void append_config_var(const string & name,
-                           config_entry_interface entry);
+    bool append_config_var(const string & name,
+                           std::unique_ptr<config_entry_interface> entry);
 
+
+    template<typename T>
+    bool append_config_var(const string & name, T & target_, const T & default_val_);
+    
     bool parse_config(istringstream config);
 private:
-    map<string, config_entry_interface> config_vars;
+    map<string, std::unique_ptr<config_entry_interface>> config_vars;
     
     
 };
 
-    
 template<typename T>
-void config_file::append_config_var(const string & name,
-                                    config_entry_interface entry)
+bool config_file::append_config_var(const string & name,
+                                    T & target_,
+                                    const T & default_val_)
 {
-    std::map<string,config_entry_interface>::iterator it;
-
-    // check if entry exists
-    it = config_vars.find(name);
-    if (it != config_vars.end())
-        // append entry
-        config_vars[name] = entry;
-    else
-        cout << "entry " << name << " already exists"<< endl;
+    append_config_var(name, std::unique_ptr<config_entry<T>>(new config_entry<T>(target_, default_val_)));
 }
 
-
+ 

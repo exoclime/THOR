@@ -43,6 +43,9 @@
 #include "config_file.h"
 
 #include <regex>
+#include <iomanip>
+
+using namespace std;
 
 
 
@@ -51,57 +54,89 @@ config_file::config_file()
 {
     
 }
-    
-
-    
         
 
 bool config_file::parse_config(std::istringstream config)
 {
-    // read input line by line
-    regex comment_regex("^[[:blank:]]\\w?#.*$");
-    regex empty_line_regex("^[[:blank:]]*$");
-    regex key_value_pair_regex("^[[:blank:]]*([A-Za-z0-9_]+)[[:blank:]]*=[[:blank:]]*(.+)[[:blank:]]*$");
+    // initialise key value pairs
+    for (auto&&  it=config_vars.begin(); it!=config_vars.end(); ++it)
+        it->second->set_default();
+    
 
+
+    // read input line by line
+    regex comment_regex("^[[:blank:]]?#.*$");
+    regex empty_line_regex("^[[:blank:]]*$");
+    regex key_value_pair_regex("^[[:blank:]]*([A-Za-z0-9_]+)[[:blank:]]*="
+                               "[[:blank:]]*(([[:alnum:]]|[[:punct:]])+)[[:blank:]]*(#.*)?$");
+    
     int cnt = 1;
     for (std::string line; std::getline(config, line); ) {
 
-        cout << "line("<<cnt<<"): [" << line << "]" << "\t\t";
+        //cout << left << "line("<<setw(4)<<right<<cnt<<"): [" << line << "]" << setw(45 - line.length()) << " ";
+        
         std::smatch match;
         
         if (regex_match(line, match, empty_line_regex))
         {
-            cout << "empty line" << endl;
+            //  cout << "empty line" << endl;
         }
         else if (regex_match(line, match, comment_regex))
         {
-            cout << "comment" << endl;
+            // cout << "comment"<<endl;
         }
         else if (regex_match(line, match, key_value_pair_regex))
         {
-            cout << "key value pair matched: (" << match[1] << ":" << match[2] <<")"<< endl;
+            // cout << "key value pair matched: (" << match[1] << ":" << match[2] <<")"<< endl;
+
+            string key(match[1]);
+            string value(match[2]);
+
+            auto && it = config_vars.find(key);
+            if (it != config_vars.end())
+            {
+                bool parsed = it->second->parse(value);
+                if (!parsed)
+                {
+                    // cout << "parsing of value ["<<value<<"] failed for key ["<<key<<"] "<<endl;                    
+                }                
+            }
+            else
+            {
+                cout << "config file key ["<< key << "] does not exist" << endl;
+                // return false;                
+            }
         }
         else
         {
             cout << "error in config file at line " << cnt << endl;
             
-
+            //return false;
         }
-        cnt++;
-        
-        
-        // split line into key, value
-
-        
-//        string key = "test";
-//        string value = "0";
-
-        
-//        it = config_vars.find(key);
-//        if (it != config_vars.end())
-//            it->parse(value);         
+        cnt++;     
     }
     
+    return true;
     
 }
     
+bool config_file::append_config_var(const string & name,
+                                    std::unique_ptr<config_entry_interface> entry)
+{
+    // check if entry exists
+    auto && it = config_vars.find(name);
+    if (it != config_vars.end())
+    {
+        cout << "config entry " << name << " already exists"<< endl;
+        return false;
+    }
+    else
+    {
+        // append entry
+        config_vars[name] = std::move(entry);
+        return true;
+    }
+    
+}
+
+

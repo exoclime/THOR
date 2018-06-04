@@ -44,7 +44,7 @@
 #include <iostream>
 
 template <typename T>
-bool test_val(const string & txt, T val, T ref)
+bool test_val(const string & txt, const T & val, const T & ref)
 {
     if (val == ref)
         return true;
