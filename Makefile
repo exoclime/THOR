@@ -1,19 +1,19 @@
 # Builds THOR executable
 CC = nvcc
 
-sm:=61 # Streaming Multiprocessor version
+sm:=30 # Streaming Multiprocessor version
 arch := -arch sm_$(sm)
 
 path_hd  := $(shell pwd)/src/headers
 path_src := $(shell pwd)/src
 obj_cuda   := esp.o grid.o esp_initial.o planet.o thor_driver.o profx_driver.o esp_output.o 
-obj_cpp := storage.o binary_test.o
+obj_cpp := storage.o binary_test.o config_file.o
 obj := $(obj_cpp) $(obj_cuda)
 headers := $(path_hd)/define.h $(path_hd)/grid.h $(path_hd)/planet.h $(path_hd)/esp.h \
            $(path_hd)/dyn/thor_fastmodes.h $(path_hd)/dyn/thor_adv_cor.h $(path_hd)/dyn/thor_auxiliary.h \
            $(path_hd)/dyn/thor_vertical_int.h $(path_hd)/dyn/thor_slowmodes.h $(path_hd)/dyn/thor_diff.h \
            $(path_hd)/dyn/thor_div.h $(path_hd)/phy/profx_auxiliary.h $(path_hd)/phy/profx_held_suarez.h \
-           $(path_hd)/storage.h $(path_hd)/binary_test.h $(path_hd)/debug.h
+           $(path_hd)/storage.h $(path_hd)/binary_test.h $(path_hd)/debug.h $(path_hd)/config_file.h
 
 # define specific compiler. if if fails on newer installations, get it to use g++-5
 ccbin := 
@@ -32,7 +32,7 @@ release_flags := -O3
 profiling_flags := -pg
 
 # define where to find sources
-source_dirs := src src/grid src/initial src/thor src/profx src/output src/devel
+source_dirs := src src/grid src/initial src/thor src/profx src/output src/devel src/input
 
 vpath %.cu $(source_dirs)
 vpath %.cpp $(source_dirs)

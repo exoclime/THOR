@@ -45,7 +45,8 @@ set(SRC
   src/profx/profx_driver.cu
   src/thor/thor_driver.cu
   src/devel/binary_test.cpp
-  src/output/storage.cpp)
+  src/output/storage.cpp
+  src/input/config_file.cpp)
 
 # source for test program for storage class
 set(SRC_STORAGE

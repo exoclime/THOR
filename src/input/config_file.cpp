@@ -44,7 +44,7 @@
 
 #include <regex>
 #include <iomanip>
-
+#include <fstream>
 using namespace std;
 
 
@@ -52,15 +52,36 @@ using namespace std;
 
 config_file::config_file()
 {
-    
+    append_config_var("config_version", version, -1);
+
 }
         
-
-bool config_file::parse_config(std::istringstream config)
+bool config_file::parse_file(const string & filename)
 {
+    ifstream file(filename, std::ifstream::in);
+
+    if (file.is_open())
+    {
+        return parse_config( file );
+    }
+    else
+    {
+        file.close();
+        return false;
+    }
+}
+
+    
+bool config_file::parse_config(basic_istream<char> & config)
+{
+    
     // initialise key value pairs
     for (auto&&  it=config_vars.begin(); it!=config_vars.end(); ++it)
+    {
         it->second->set_default();
+        // cout << it->first  << "\t" << it->second->to_str() << endl;
+    }
+    
     
 
 
@@ -73,13 +94,13 @@ bool config_file::parse_config(std::istringstream config)
     int cnt = 1;
     for (std::string line; std::getline(config, line); ) {
 
-        //cout << left << "line("<<setw(4)<<right<<cnt<<"): [" << line << "]" << setw(45 - line.length()) << " ";
+        // cout << left << "line("<<setw(4)<<right<<cnt<<"): [" << line << "]" << setw(45 - line.length()) << " ";
         
         std::smatch match;
         
         if (regex_match(line, match, empty_line_regex))
         {
-            //  cout << "empty line" << endl;
+            // cout << "empty line" << endl;
         }
         else if (regex_match(line, match, comment_regex))
         {
@@ -98,7 +119,7 @@ bool config_file::parse_config(std::istringstream config)
                 bool parsed = it->second->parse(value);
                 if (!parsed)
                 {
-                    // cout << "parsing of value ["<<value<<"] failed for key ["<<key<<"] "<<endl;                    
+                     cout << "parsing of value ["<<value<<"] failed for key ["<<key<<"] "<<endl;                    
                 }                
             }
             else

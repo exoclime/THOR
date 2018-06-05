@@ -116,8 +116,9 @@ int main()
                          
     cout << "start parsing" << endl << endl;
 
+    std::basic_istringstream<char> istr(config);
     
-    cf.parse_config(std::basic_istringstream<char>(config));
+    cf.parse_config(istr);
 
     bool success = true;
     

@@ -16,7 +16,7 @@
 //     <http://www.gnu.org/licenses/>.
 // ==============================================================================
 //
-// Description: basic config file class
+// Description: basic config file parsing class
 //
 //
 // Method: parses a config file and reads it's value to defined variables
@@ -53,17 +53,20 @@ using namespace std;
 using std::string;
 using std::map;
 
-
+// Base interface class for config storage class
 class config_entry_interface
 {
 public:
     virtual bool parse(string value) = 0;
 
     virtual void set_default() = 0;
+
+    virtual string to_str() = 0;
     
 };
 
-
+// Parsing functions to parse string to value, on same
+// interface. Functions should recognise 
 template< typename T>
 bool parse_data(const string & value, T & target)
 {
@@ -71,7 +74,7 @@ bool parse_data(const string & value, T & target)
     return false;
 }
 
-
+// bool template specialisation
 template<>
 inline bool parse_data(const string & value, bool & target )
 {
@@ -90,6 +93,7 @@ inline bool parse_data(const string & value, bool & target )
     return false;
 }
 
+// int template specialisation
 template<>
 inline bool parse_data(const string & value, int & target )
 {
@@ -100,14 +104,15 @@ inline bool parse_data(const string & value, int & target )
     if (regex_match(value, match, int_regex))
     {
         target = std::stoi(match[1]);
-        // cout << "parsed [" << value << "] as [" << target << "]" << endl;
+        cout << "parsed [" << value << "] as [" << target << "]" << endl;
 
         return true;
     }
 
     return false;
 }
-    
+
+// double template specialisation
 template<>
 inline bool parse_data(const string & value, double & target )
 {
@@ -121,7 +126,7 @@ inline bool parse_data(const string & value, double & target )
     if (regex_match(value, match, double_regex))
     {
         target = std::stod(match[1]);
-        // cout << "parsed [" << value << "] as [" << target << "]" << endl;
+        cout << "parsed [" << value << "] as [" << target << "]" << endl;
 
         return true;
     }
@@ -129,7 +134,7 @@ inline bool parse_data(const string & value, double & target )
     return false;
 }
     
-
+// string template specialisation
 template<>
 inline bool parse_data(const string & value, string & target )
 {
@@ -137,8 +142,15 @@ inline bool parse_data(const string & value, string & target )
     
     return true;
 }
-    
 
+template<typename T> inline string to_strg(T & val) {    return std::to_string(val);  }
+template<> inline string to_strg(string & val) {    return val;  }
+template<> inline string to_strg(bool & val) {    return val?"1":"0";  }
+
+
+    
+// config entry class, storing data, default value  and calling the
+// parsing function
 template <typename T>
 class config_entry : public config_entry_interface {
 public:
@@ -152,11 +164,11 @@ public:
     bool parse(string value)
     {
         if (parse_data(value, target))
-        {
+        {            
             return true;
         }
         else
-        {
+        {   
             target = default_val;
             
             return false;
@@ -167,32 +179,42 @@ public:
     {
         target = default_val;
     }
+
+    string to_str()
+    {
+        return to_strg(target);
+    }
     
     
         
 private:
     T & target;
     T default_val;
-    
 };
 
+// Config file parsing class ,storing the entries and parsing files
 class config_file
 {
 public:
     config_file();
-    enum var_type { INT, DOUBLE, BOOL, FLOAT, STRING };
-    
-    bool append_config_var(const string & name,
-                           std::unique_ptr<config_entry_interface> entry);
 
-
+    // config vars definition functions
     template<typename T>
     bool append_config_var(const string & name, T & target_, const T & default_val_);
+
+    // parsing functions
+    bool parse_config(basic_istream<char> & config);
+    bool parse_file(const string & filename);
     
-    bool parse_config(istringstream config);
 private:
+    // internal parsing function
+    bool append_config_var(const string & name,
+                           std::unique_ptr<config_entry_interface> entry);
+    
+    // Storage map as key value pair
     map<string, std::unique_ptr<config_entry_interface>> config_vars;
     
+    int version = -1;
     
 };
 
@@ -201,7 +223,35 @@ bool config_file::append_config_var(const string & name,
                                     T & target_,
                                     const T & default_val_)
 {
-    append_config_var(name, std::unique_ptr<config_entry<T>>(new config_entry<T>(target_, default_val_)));
+    return append_config_var(name, std::unique_ptr<config_entry<T>>(new config_entry<T>(target_, default_val_)));
 }
 
- 
+// helpers to check coherence of
+
+    
+template<typename T>
+bool check_greater(  string name, T val, T min_)
+{
+    if (val > min_)
+        return true;
+    else
+    {
+        cout << "Bad range for " << name << " (cond: min("<<min_<<") < " << val << endl;
+        
+        return false;
+    }
+}
+
+
+template<typename T>
+bool check_range( const string & name, T val, T min_, T max_)
+{
+    if (val > min_ && val < max_)
+        return true;
+    else
+    {
+        cout << "Bad range for " << name << " (cond: min("<<min_<<") < "<<val<<") < max("<<max_<<"))"<<endl;
+        
+        return false;
+    }  
+}

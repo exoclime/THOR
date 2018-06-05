@@ -60,20 +60,90 @@ using namespace std;
 
 #include "debug.h"
 
+#include "config_file.h"
+
 int main (){
 
     printf("\n Starting ESP!");
     printf("\n\n version 1.0\n");
+    printf(" Compiled on " __DATE__ " at " __TIME__ "\n");
+    
     printf(" build level: " BUILD_LEVEL "\n");
-//
+
+    // Initial conditions
+    config_file config_reader;
+
+    // Set config variables
+    
+    //  planet // initialises to default earth
+    XPlanet Planet;
+    
+    int timestep = 1000;
+    int nsmax = 48000;
+    string simulation_ID = "Earth";
+    
+
+    config_reader.append_config_var("timestep", timestep, timestep_default);
+    config_reader.append_config_var("num_steps", nsmax, nsmax_default);
+    config_reader.append_config_var("simulation_ID", simulation_ID, string(Planet.simulation_ID));
+    config_reader.append_config_var("radius", Planet.A, Planet.A);
+    config_reader.append_config_var("rotation_rate", Planet.Omega, Planet.Omega);
+    config_reader.append_config_var("gravitation", Planet.Gravit, Planet.Gravit);
+    config_reader.append_config_var("Mmol", Planet.Mmol, Planet.Mmol);
+    config_reader.append_config_var("Rd", Planet.Rd, Planet.Rd);
+    config_reader.append_config_var("Cp", Planet.Cp, Planet.Cp);
+    config_reader.append_config_var("Tmean", Planet.Tmean, Planet.Tmean);
+    config_reader.append_config_var("P_ref", Planet.P_Ref, Planet.P_Ref);
+    config_reader.append_config_var("Top_altitude", Planet.Top_altitude, Planet.Top_altitude);
+    config_reader.append_config_var("Diffc", Planet.Diffc, Planet.Diffc);
+    // Read config file
+    // TODO: should check some default path
+    // TODO: If nothing given, should fall back to 
+    // TODO: should be overridable by command line options
+    string initial_filename = "ifile/earth.thr";
+
+    if (config_reader.parse_file(initial_filename))
+        printf(" Config file %s read\n", initial_filename.c_str());
+    else
+    {
+        printf(" Config file %s reading failed, aborting\n", initial_filename.c_str());
+        exit(EXIT_FAILURE);
+    }
+    
+    // Test config variables for coherence
+    bool config_OK = true;    
+    config_OK &= check_greater( "timestep", timestep, 0);
+    config_OK &= check_greater( "nsmax", nsmax, 0);
+    config_OK &= check_greater( "gravitation", Planet.Gravit, 0.0);
+    config_OK &= check_greater( "Mmol", Planet.Mmol, 0.0);
+    config_OK &= check_greater( "Rd", Planet.Rd, 0.0);
+    config_OK &= check_greater( "T_mean", Planet.Tmean, 0.0);
+    config_OK &= check_greater( "P_Ref", Planet.P_Ref, 0.0);
+    config_OK &= check_greater( "Top_altitude", Planet.Top_altitude, 0.0);
+
+    if (simulation_ID.length() < 160)
+    {
+        sprintf(Planet.simulation_ID, "%s", simulation_ID.c_str());
+    }
+    else
+    {
+        printf("Bad value for config variable simulation_ID: [%s]\n", simulation_ID.c_str());
+        
+        config_OK = false;
+    }
+    
+    
+    
+    if (!config_OK)
+    {
+        printf("Error in configuration file\n");
+        exit(0);
+    }
+    
 //  Set the GPU device.    
     cudaError_t error;
     cudaSetDevice(GPU_ID_N);
     
-//
-//  Building planet
-    XPlanet Planet;
-
 //
 //  Make the icosahedral grid
     Icogrid Grid(sprd               , // Spring dynamics option

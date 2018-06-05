@@ -1,0 +1,39 @@
+# config file for THOR
+# config format version
+config_version = 1
+
+# earth model
+
+# number of steps
+num_steps = 10
+
+# length of timesteps imn seconds
+timestep = 1800
+
+# keys to add
+# TODO: output_dir # relative to working directory
+
+# name of simulation for output files
+simulation_ID = Earth
+# Radius [m]
+radius = 6371000.0
+# Rotation rate [s-1]
+rotation_rate = 7.292E-5
+# Gravitational acceleration [m/s^2]
+gravitation = 9.8
+# Mean molecular mass of dry air [kg]
+Mmol = 28.964
+# Gas constant [J/(Kg K)]
+Rd = 287.0
+# Specific heat capacities [J/(Kg K)]
+Cp = 1005.0
+# Mean atmospheric temperature [K]
+Tmean = 300.0
+# Reference surface pressure [Pa] 
+P_ref = 100000.0
+# Altitude of the top of the model domain [m]
+Top_altitude = 36000.0
+# Strength of diffusion
+Diffc = 0.007
+
+

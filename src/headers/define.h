@@ -43,8 +43,8 @@
 ////////////////////////////////////////////////////////////////////////
 
 // Integration time
-#define nsmax        48000 // Number of time steps
-#define timestep     1800  // Time step  [seconds]
+#define nsmax_default        48000 // Number of time steps
+#define timestep_default     1800  // Time step  [seconds]
 
 // Grid
 #define sprd   true       // Spring dynamics
@@ -64,7 +64,7 @@
 #define rest   true          // Starting from rest
 
 // Benchmark test
-#define hstest 3          // Held-Suarez test for Earth == 1
+#define hstest 1          // Held-Suarez test for Earth == 1
 //  HS test for shallow hot Jupiter == 3
 //  HS test for tidally locked Earth == 2
 //  No HS test == 0
