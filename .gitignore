@@ -2,3 +2,6 @@ build/*
 *.pyc
 *.py~
 *__pycache__/*
+*~
+obj/*
+bin/*
