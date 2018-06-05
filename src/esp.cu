@@ -75,16 +75,18 @@ int main (){
 
     // Set config variables
     
-    //  planet // initialises to default earth
-    XPlanet Planet;
-    
+     // Integration time
     int timestep = 1000;
     int nsmax = 48000;
-    string simulation_ID = "Earth";
     
-
     config_reader.append_config_var("timestep", timestep, timestep_default);
     config_reader.append_config_var("num_steps", nsmax, nsmax_default);
+
+    // Planet
+    // initialises to default earth
+    XPlanet Planet;
+    string simulation_ID = "Earth";
+    
     config_reader.append_config_var("simulation_ID", simulation_ID, string(Planet.simulation_ID));
     config_reader.append_config_var("radius", Planet.A, Planet.A);
     config_reader.append_config_var("rotation_rate", Planet.Omega, Planet.Omega);
@@ -96,6 +98,44 @@ int main (){
     config_reader.append_config_var("P_ref", Planet.P_Ref, Planet.P_Ref);
     config_reader.append_config_var("Top_altitude", Planet.Top_altitude, Planet.Top_altitude);
     config_reader.append_config_var("Diffc", Planet.Diffc, Planet.Diffc);
+
+    // grid
+    bool spring_dynamics = true;
+    int glevel = 4;
+    double spring_beta = 1.15;
+    int vlevel = 32;
+    
+    config_reader.append_config_var("spring_dynamics", spring_dynamics, sprd_default);
+    config_reader.append_config_var("glevel", glevel, glevel_default);
+    config_reader.append_config_var("spring_beta", spring_beta, spring_beta_default);
+    config_reader.append_config_var("vlevel", vlevel, vlevel_default);
+
+    // Diffusion
+    bool HyDiff = true;
+    bool DivDampP = true;
+    config_reader.append_config_var("HyDiff", HyDiff, HyDiff_default);
+    config_reader.append_config_var("DivDampP", DivDampP, DivDampP_default);
+
+    // Model options
+    bool NonHydro = true;
+    bool DeepModel = true;
+    config_reader.append_config_var("NonHydro", NonHydro, NonHydro_default);
+    config_reader.append_config_var("DeepModel", DeepModel, DeepModel_default);
+
+    // Initial conditions
+    bool rest = true;
+    config_reader.append_config_var("rest", rest, rest_default);
+    
+    // Benchmark test
+    int hstest = 1;
+    config_reader.append_config_var("hstest", hstest, hstest_default);
+
+    int GPU_ID_N = 0;
+    config_reader.append_config_var("GPU_ID_N", GPU_ID_N, GPU_ID_N_default);
+
+    int n_out = 1000;
+    config_reader.append_config_var("n_out", n_out, n_out_default);
+
     // Read config file
     // TODO: should check some default path
     // TODO: If nothing given, should fall back to 
@@ -120,6 +160,13 @@ int main (){
     config_OK &= check_greater( "T_mean", Planet.Tmean, 0.0);
     config_OK &= check_greater( "P_Ref", Planet.P_Ref, 0.0);
     config_OK &= check_greater( "Top_altitude", Planet.Top_altitude, 0.0);
+
+    config_OK &= check_range( "glevel", glevel, 3, 8);
+    config_OK &= check_greater( "vlevel", vlevel, 0);
+    config_OK &= check_range( "hstest", hstest, -1, 5);
+    
+    config_OK &= check_greater( "GPU_ID_N", GPU_ID_N, -1);
+    config_OK &= check_greater( "n_out", n_out, 0);
 
     if (simulation_ID.length() < 160)
     {
@@ -146,7 +193,7 @@ int main (){
     
 //
 //  Make the icosahedral grid
-    Icogrid Grid(sprd               , // Spring dynamics option
+    Icogrid Grid(spring_dynamics    , // Spring dynamics option
                  spring_beta        , // Parameter beta for spring dynamics 
                  glevel             , // Horizontal resolution level
                  vlevel             , // Number of vertical layers
@@ -236,7 +283,7 @@ int main (){
     printf("   ********** \n");
     printf("   Grid - Icosahedral\n");
     printf("   Glevel          = %d.\n", glevel);
-    printf("   Spring dynamics = %d.\n",sprd);
+    printf("   Spring dynamics = %d.\n",spring_dynamics);
     printf("   Beta            = %f.\n", spring_beta);
     printf("   Resolution      = %f deg.\n", (180/M_PI)*sqrt(2*M_PI/5)/pow(2,glevel));
     printf("   Vertical layers = %d.\n",Grid.nv);

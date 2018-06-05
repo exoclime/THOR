@@ -104,7 +104,7 @@ inline bool parse_data(const string & value, int & target )
     if (regex_match(value, match, int_regex))
     {
         target = std::stoi(match[1]);
-        cout << "parsed [" << value << "] as [" << target << "]" << endl;
+        // cout << "parsed [" << value << "] as [" << target << "]" << endl;
 
         return true;
     }
@@ -126,7 +126,7 @@ inline bool parse_data(const string & value, double & target )
     if (regex_match(value, match, double_regex))
     {
         target = std::stod(match[1]);
-        cout << "parsed [" << value << "] as [" << target << "]" << endl;
+        //cout << "parsed [" << value << "] as [" << target << "]" << endl;
 
         return true;
     }
