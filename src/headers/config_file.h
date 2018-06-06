@@ -26,8 +26,8 @@
 //
 // Known issues: None.
 //   
-//
-// Current Code Owner: Joao Mendonca, EEG. joao.mendonca@csh.unibe.ch
+// Authors: Joao Mendonca, EEG. joao.mendonca@csh.unibe.ch
+//          Urs Schroffenegger, Russel Deitrick
 //
 // If you use this code please cite the following reference: 
 //
@@ -48,6 +48,8 @@
 #include <iostream>
 #include <regex>
 
+#include "parser_helpers.h"
+
 using namespace std;
 
 using std::string;
@@ -64,89 +66,6 @@ public:
     virtual string to_str() = 0;
     
 };
-
-// Parsing functions to parse string to value, on same
-// interface. Functions should recognise 
-template< typename T>
-bool parse_data(const string & value, T & target)
-{
-
-    return false;
-}
-
-// bool template specialisation
-template<>
-inline bool parse_data(const string & value, bool & target )
-{
-    regex bool_regex("^(true|false)$");
-
-    std::smatch match;
-
-    if (regex_match(value, match, bool_regex))
-    {
-        target = (match[1] == "true");
-        // cout << "parsed [" << value << "] as [" << target << "]" << endl;
-
-        return true;
-    }
-
-    return false;
-}
-
-// int template specialisation
-template<>
-inline bool parse_data(const string & value, int & target )
-{
-    regex int_regex("^((-|\\+)?[0-9]+)$");
-
-    std::smatch match;
-
-    if (regex_match(value, match, int_regex))
-    {
-        target = std::stoi(match[1]);
-        // cout << "parsed [" << value << "] as [" << target << "]" << endl;
-
-        return true;
-    }
-
-    return false;
-}
-
-// double template specialisation
-template<>
-inline bool parse_data(const string & value, double & target )
-{
-
-    regex double_regex("^((-|\\+)?[0-9]+(\\.[0-9]+)?((E|e)(-|\\+)?[0-9]+)?)$");
-
-
-
-    std::smatch match;
-
-    if (regex_match(value, match, double_regex))
-    {
-        target = std::stod(match[1]);
-        //cout << "parsed [" << value << "] as [" << target << "]" << endl;
-
-        return true;
-    }
-
-    return false;
-}
-    
-// string template specialisation
-template<>
-inline bool parse_data(const string & value, string & target )
-{
-    target = value;
-    
-    return true;
-}
-
-template<typename T> inline string to_strg(T & val) {    return std::to_string(val);  }
-template<> inline string to_strg(string & val) {    return val;  }
-template<> inline string to_strg(bool & val) {    return val?"1":"0";  }
-
 
     
 // config entry class, storing data, default value  and calling the
@@ -224,34 +143,4 @@ bool config_file::append_config_var(const string & name,
                                     const T & default_val_)
 {
     return append_config_var(name, std::unique_ptr<config_entry<T>>(new config_entry<T>(target_, default_val_)));
-}
-
-// helpers to check coherence of
-
-    
-template<typename T>
-bool check_greater(  string name, T val, T min_)
-{
-    if (val > min_)
-        return true;
-    else
-    {
-        cout << "Bad range for " << name << " (cond: min("<<min_<<") < " << val << endl;
-        
-        return false;
-    }
-}
-
-
-template<typename T>
-bool check_range( const string & name, T val, T min_, T max_)
-{
-    if (val > min_ && val < max_)
-        return true;
-    else
-    {
-        cout << "Bad range for " << name << " (cond: min("<<min_<<") < "<<val<<") < max("<<max_<<"))"<<endl;
-        
-        return false;
-    }  
 }

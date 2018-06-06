@@ -68,6 +68,11 @@ set(SRC_CONFIG
   src/test/config_test.cpp
   src/input/config_file.cpp)
 
+set(SRC_CMDARGS
+  src/test/cmdargs_test.cpp
+  src/input/cmdargs.cpp)
+
+
 find_package(HDF5 COMPONENTS CXX)
 if(HDF5_FOUND)
         include_directories(${HDF5_INCLUDE_DIR})
@@ -88,9 +93,8 @@ cuda_add_executable(test_storage ${SRC_STORAGE})
 target_link_libraries (test_storage ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES}  )
 
 
+add_executable(test_args ${SRC_CMDARGS})
 add_executable(test_config ${SRC_CONFIG})
-target_link_libraries (test_config )
-
 
 cuda_add_executable(test_grid ${SRC_GRID})
 target_compile_definitions (test_grid  PRIVATE -DBENCHMARKING -DBENCH_POINT_COMPARE)
