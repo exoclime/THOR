@@ -72,7 +72,7 @@ public:
 
     virtual int get_nargs() = 0;
 
-    virtual int parse_narg(const string & str) = 0;
+    virtual void parse_narg(const string & str) = 0;
 
     virtual bool is_key(const string & str) = 0;
     
@@ -81,7 +81,7 @@ public:
 
 // interface class 
 template<typename T>
-class arg
+class arg : public arg_interface
 {
 public:
     arg( const string & short_form_,
@@ -90,7 +90,7 @@ public:
         short_form(short_form_),
         long_form(long_form_),
         value(value_),
-        is_set(false)
+        has_value(false)
     {
     };
 
@@ -114,6 +114,20 @@ public:
         else
             return false;
     }
+
+    T get()
+    {
+        return value;
+    }
+
+    bool is_set()
+    {
+        return has_value;
+        
+    }
+    
+        
+    
     
 
 private:
@@ -125,7 +139,8 @@ private:
     // TODO: check, do we need this? Or always use default?
     // might be needed to know if we want to override values from
     // config file.
-    bool is_set;
+    bool has_value;
+    
     
 };
 
@@ -142,14 +157,18 @@ public:
                  const string & long_form,
                  const T & value );
 
+    template<typename T>
+    bool get_arg(const string & long_form,
+                 T & value );
+
     // parsing arguments
     bool parse(int argc, char ** argv);
-
-    // find argument from long key
-    arg_interface * operator[](string idx);
     
         
 private:
+     // find argument from long key
+    arg_interface * operator[](string idx);
+    
     // Storage map as key value pair
     vector<std::unique_ptr<arg_interface>> args;
 
@@ -165,12 +184,11 @@ private:
 
     bool parser_state_machine(const string & str);
 
-    // search predicates for keys in vectors
-    //string search_key;
-    /*
-    bool long_pred(const std::unique_ptr<arg_interface> &a);
-    bool short_pred(const std::unique_ptr<arg_interface> &a);
-    */
+    void add_arg(std::unique_ptr<arg_interface> arg)
+    {
+        args.push_back(std::move(arg));
+    }
+    
 };
 
 // setup by adding arguments
@@ -180,8 +198,61 @@ bool cmdargs::add_arg(const string & short_form,
                       const T & value
     )    
 {
+    // check that the key wasn't already added
+
+    // check short form
+    //const string s = short_form;
+    auto && it = std::find_if(args.begin(),
+                              args.end(),
+                              [short_form](const std::unique_ptr<arg_interface>  & m)
+                              -> bool { return m->is_key(short_form); });
+    
+                              
+    if (it != args.end())
+    {
+        char error[256];
+        sprintf(error,
+                "%s:(%d) key %s already exists in argument parser",
+                __FILE__,
+                __LINE__,
+                short_form);
+        
+        throw std::range_error(error );        
+    }
+    auto && it2 = std::find_if(args.begin(),
+                               args.end(),
+                               [long_form](const std::unique_ptr<arg_interface>  & m)
+                               -> bool { return m->is_key(long_form); });
+    if (it2 != args.end())
+    {
+        char error[256];
+        sprintf(error,
+                "%s:(%d) key %s already exists in argument parser",
+                __FILE__,
+                __LINE__,
+                long_form);
+        
+        throw std::range_error(error );        
+    }
+
+    // add the new key
+    add_arg(std::unique_ptr<arg<T>>(new arg<T>(short_form, long_form, value)));
+    
+    
+    return true;
+}
+
+// setup by adding arguments
+template<typename T>
+bool cmdargs::get_arg(const string & long_form,
+                      T & value    )    
+{
+    arg<T> * argument  = (arg<T> *)(*this)[long_form];
+
+    value = argument->get();
+    
     
 
-    return true;
+    return argument->is_set();
 }
 

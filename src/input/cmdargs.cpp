@@ -49,6 +49,8 @@
 #include <iostream>
 #include <stdexcept>
 
+#include <cstdio>
+
 cmdargs::cmdargs()
 {
 
@@ -94,17 +96,13 @@ std::find_if(v.begin(), v.end(),
     }
     else
     {
-        /*
-        auto && it = std::find_if(args.begin(), args.end(), short_pred );
-        if (it != args.end())
-        {
-            return *it;
-        }
-        else
-        {
-            throw std::invalid_argument( __FILE__ ":(" __LINE__ ") key not found in argument list" );
-        }
-        */
+        char error[256];
+        sprintf(error,
+                "%s:(%d) key not found in argument list",
+                __FILE__,
+                __LINE__);
+        
+        throw std::runtime_error(error );        
     }
 }
 

@@ -65,9 +65,11 @@ int main(int argc,  char** argv)
 
     argparser.parse(argc, argv);
 
-    //std::unique_ptr<arg_interface> test_arg = argparser["test"];
+    int test_arg = -1;
 
-    //printf("test %d\n", test_arg->value);
+    bool test_arg_set = argparser.get_arg("test", test_arg);
+
+    printf("test: %d\n", test_arg);
     
 
     bool success = true;
