@@ -72,11 +72,10 @@ public:
 
     virtual int get_nargs() = 0;
 
-    virtual void parse_narg(const string & str) = 0;
+    virtual bool parse_narg(const string & str) = 0;
 
     virtual bool is_key(const string & str) = 0;
-    
-    
+    virtual string get_name() = 0;    
 };
 
 // interface class 
@@ -94,15 +93,25 @@ public:
     {
     };
 
-    void parse_narg(const string & str)
+    bool parse_narg(const string & str)
     {
-
+        if (parse_data(str, value))
+        {
+            has_value = true;
+            return true;
+        }
+        else
+        {
+            has_value = false;
+            return false;
+        }
+        
     }
     
 
     int get_nargs()
     {
-        return 0;
+        return 1;
     }
 
     bool is_key(const string & str)
@@ -125,8 +134,12 @@ public:
         return has_value;
         
     }
+
+    string get_name() 
+    {
+        return long_form;
+    }
     
-        
     
     
 
@@ -201,7 +214,7 @@ bool cmdargs::add_arg(const string & short_form,
     // check that the key wasn't already added
 
     // check short form
-    //const string s = short_form;
+
     auto && it = std::find_if(args.begin(),
                               args.end(),
                               [short_form](const std::unique_ptr<arg_interface>  & m)

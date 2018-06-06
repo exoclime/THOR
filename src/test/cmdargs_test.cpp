@@ -61,30 +61,29 @@ int main(int argc,  char** argv)
     cout << "commandline file test" << endl;
     
     cmdargs argparser;
-    argparser.add_arg("t", "test", 0);
-
+    
+    
+    argparser.add_arg("i", "int", -1);
+    argparser.add_arg("b", "bool", false);
+    argparser.add_arg("d", "double", 1e-5);
+    argparser.add_arg("s", "string", string("test"));
     argparser.parse(argc, argv);
 
-    int test_arg = -1;
-
-    bool test_arg_set = argparser.get_arg("test", test_arg);
-
-    printf("test: %d\n", test_arg);
+    int test_arg_int = -100;
+    bool test_arg_int_set = argparser.get_arg("int", test_arg_int);
+    printf("int - value: %d\tset: %d\n", test_arg_int, test_arg_int_set);
     
+    bool test_arg_bool = false;
+    bool test_arg_bool_set = argparser.get_arg("bool", test_arg_bool);
+    printf("bool - value: %d\tset: %d\n", test_arg_bool, test_arg_bool_set);
+     
+    double test_arg_double = -1e5;
+    bool test_arg_double_set = argparser.get_arg("double", test_arg_double);
+    printf("double - value: %g\tset: %d\n", test_arg_double, test_arg_double_set);
 
-    bool success = true;
-    /*
-    success = success & test_val<int>("int1", int1, 0);
-        
-    if (success)
-    {
-        cout << "Test PASS" << endl;
-        exit(-1);
-    }
-    else
-    {
-        cout << "Test FAIL" << endl;
-        exit(-1);
-    }    
-    */
+    string test_arg_string = "fart";
+    bool test_arg_string_set = argparser.get_arg("string", test_arg_string);
+    printf("string - value: %s\tset: %d\n", test_arg_string.c_str(), test_arg_string_set);
+
+    
 }

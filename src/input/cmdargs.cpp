@@ -66,7 +66,7 @@ bool cmdargs::parse(int argc, char ** argv)
     parser_state_nargs = 0;
     current_arg_interface = args.end();
     
-    for (int i = 0; i < argc; i++)
+    for (int i = 1; i < argc; i++)
     {
         out &= parser_state_machine(argv[i]);
     }
@@ -112,23 +112,74 @@ bool cmdargs::parser_state_machine(const string & str)
     switch(parser_state) {
     case PARSE_FOR_KEY:
         {
-            regex short_key_regex("^-[A-Za-z0-9]$");
-            regex long_key_regex("^--[A-Za-z0-9]+$");
+            regex short_key_regex("^-([A-Za-z0-9])$");
+            regex long_key_regex("^--([A-Za-z0-9]+)$");
             std::smatch match;
+
+            current_arg_interface = args.end();
+            
         
             if (regex_match(str, match, short_key_regex))
             {
+                string ma = match[1];
                 
+                current_arg_interface  = std::find_if(args.begin(),
+                                                      args.end(),
+                                                      [ma](const std::unique_ptr<arg_interface>  & m)
+                                                      -> bool { return m->is_key(ma); });
+  
             }
-            else if (regex_match(str, match, short_key_regex))
+            else if (regex_match(str, match, long_key_regex))
             {
+                string ma = match[1];
+                current_arg_interface  = std::find_if(args.begin(),
+                                                      args.end(),
+                                                      [ma](const std::unique_ptr<arg_interface>  & m)
+                                                      -> bool { return m->is_key(ma); });
+            }
+            else
+            {
+                cout << "command line: error parsing option: "<< str << endl;
+                
+                // not a key, return error
+                return false;                
+            }
 
+            if (current_arg_interface != args.end())
+            {
+                parser_state = GOT_KEY;
+                parser_state_nargs = (*current_arg_interface)->get_nargs();
+                
+                
+                return true;
+            }
+            else
+            {
+                cout << "command line: error finding key: "<< str << endl;
+                
+                // not a key, return error
+                return false;                
             }
             
             break;
         }
     case GOT_KEY:
         {
+            bool parsed = (*current_arg_interface)->parse_narg(str);
+            if (!parsed)
+            {
+                cout << "error parsing value " << str << " for key " << (*current_arg_interface)->get_name() << endl;
+                
+            }
+            parser_state_nargs--;
+
+            if (parser_state_nargs == 0)
+                parser_state = PARSE_FOR_KEY;
+            
+            return parsed;
+            
+                
+            
             break;
             
         }
@@ -139,16 +190,5 @@ bool cmdargs::parser_state_machine(const string & str)
         
    return false;
 }
-/*
- // search predicates for keys in vectors 
-bool cmdargs::long_pred(const std::unique_ptr<arg_interface> &a)
-{
-    return a.long_form = search_key;
-}
 
-bool cmdargs::short_pred(const std::unique_ptr<arg_interface> &a)
-{
-    return a.short_form = search_key;
-}
-*/
     
