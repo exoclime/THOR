@@ -5,8 +5,11 @@
 # generate the makefile (to do only ones, if we don't add files or change makefiles)
 # don't forget the two points at the end of the command '..'.
 # It runs cmake in the 'build' directory
-# but with the data from the '..' directory
-# $ cmake -DCMAKE_CUDA_FLAGS='-arch=sm_30' ..
+# but with the data from the '..' directory.
+# the script should autodetect the CUDA architecture, when run alone
+# $ cmake ..
+# You can specify the architecture with the SM variable:
+# $ cmake -DSM=30 ..
 # compile (-jX runs X jobs in parallel, useful with multiple cores to speed up)
 # $ make -j8
 # to debug makefile by showing commands
@@ -22,9 +25,51 @@ set (CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set ( COMPILE_FLAGS --compiler-options;-Wall)
 
+# Find CUDA
 find_package(CUDA REQUIRED)
 
-CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS Auto)
+
+set(SM "0" CACHE STRING "GPU SM value")
+# check CUDA for CMake 3.5
+# from here:
+# https://wagonhelm.github.io/articles/2018-03/detecting-cuda-capability-with-cmake
+if (CUDA_FOUND AND SM MATCHES "0")
+  #Get CUDA compute capability
+  set(OUTPUTFILE ${CMAKE_CURRENT_SOURCE_DIR}/build/cuda_script) # No suffix required
+  set(CUDAFILE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/check_cuda.cu)
+  execute_process(COMMAND nvcc -lcuda ${CUDAFILE} -o ${OUTPUTFILE})
+  execute_process(COMMAND ${OUTPUTFILE}
+                  RESULT_VARIABLE CUDA_RETURN_CODE
+                  OUTPUT_VARIABLE ARCH)
+
+  if(${CUDA_RETURN_CODE} EQUAL 0)
+    set(CUDA_SUCCESS "TRUE")
+  else()
+    set(CUDA_SUCCESS "FALSE")
+  endif()
+
+  if (${CUDA_SUCCESS})
+    message(STATUS "CUDA Architecture: ${ARCH}")
+    message(STATUS "CUDA Version: ${CUDA_VERSION_STRING}")
+    message(STATUS "CUDA Path: ${CUDA_TOOLKIT_ROOT_DIR}")
+    message(STATUS "CUDA Libraries: ${CUDA_LIBRARIES}")
+    message(STATUS "CUDA Performance Primitives: ${CUDA_npp_LIBRARY}")
+
+    set(ARCH_FLAGS "${ARCH}")
+    add_definitions(-DGPU) #You may not require this
+
+  else()
+    message(WARNING ${ARCH})
+  endif()
+else()
+  message(STATUS "CUDA Architecture manually set to: -arch=sm_${SM}")
+  set(ARCH_FLAGS "-arch=sm_${SM}")
+endif()
+
+
+
+
+#CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS Auto)
 LIST(APPEND CUDA_NVCC_FLAGS ${ARCH_FLAGS})
 LIST(APPEND CUDA_NVCC_FLAGS ${COMPILE_FLAGS})
 LIST(APPEND CUDA_NVCC_FLAGS "-std c++11")
@@ -46,7 +91,8 @@ set(SRC
   src/thor/thor_driver.cu
   src/devel/binary_test.cpp
   src/output/storage.cpp
-  src/input/config_file.cpp)
+  src/input/config_file.cpp
+  src/input/cmdargs.cpp)
 
 # source for test program for storage class
 set(SRC_STORAGE

@@ -1,8 +1,15 @@
+# for release build and SM=35
+# $ make release -j8 SM=35
+# for debug build and default SM
+# $ make debug -j8
+# default build builds release and SM=30
+# $ make -j8
+
 # Builds THOR executable
 CC = nvcc
 
-sm:=30 # Streaming Multiprocessor version
-arch := -arch sm_$(sm)
+SM:=30 # Streaming Multiprocessor version
+arch := -arch sm_$(SM)
 
 path_hd  := $(shell pwd)/src/headers
 path_src := $(shell pwd)/src
@@ -40,6 +47,7 @@ source_dirs := src src/grid src/initial src/thor src/profx src/output src/devel 
 vpath %.cu $(source_dirs)
 vpath %.cpp $(source_dirs)
 
+# Path where the hdf5 lib was installed,
 h5libs := $(shell h5c++ -show -shlib | awk -v ORS=" " '{ for ( n=1; n<=NF; n++ ) if ($$n ~ "^-lh") print $$n  }')
 h5libdir := $(shell h5c++ -show -shlib | awk -v ORS=" " '{ for ( n=1; n<=NF; n++ ) if ($$n ~ "^-L") print $$n  }')
 h5include := $(shell h5c++ -show -shlib | awk -v ORS=" " '{ for ( n=1; n<=NF; n++ ) if ($$n ~ "^-I") print $$n  }')
@@ -49,13 +57,8 @@ $(info h5include="$(h5include)")
 
 includehdf = $(h5include)
 includedir = ${path_hd}
-# Path where the hdf5 lib was installed,
-# should contain `include` and `lib`
-# hdf_dir := <hdf5 directory>
-#
-# h5lib = -L$(hdf_dir)/lib -lhdf5
-# includehdf = -I$(hdf_dir)/include
 
+# directory names 
 OBJDIR = obj
 BINDIR = bin
 RESDIR = results
@@ -65,8 +68,9 @@ TESTDIR = tests
 
 $(info goals: $(MAKECMDGOALS))
 
-# default target
-OUTPUTDIR := default
+# set some build values depending on target
+# default target value, falls back to release below
+OUTPUTDIR := UNDEF
 MODE := UNDEF
 
 # profiling target
@@ -97,18 +101,27 @@ ifeq "$(findstring tests, $(MAKECMDGOALS))" "tests"
 	OUTPUTDIR := debug
 endif
 
+# by default, build release target
+ifeq "$(MODE)" "UNDEF"
+	flags += $(release_flags) -DBUILD_LEVEL="\"release\""
+	MODE := release
+	OUTPUTDIR := release
+endif
+
 debug: all
 release: all
 prof: all
 
 #######################################################################
 # main binary
-all: $(BINDIR)/$(OUTPUTDIR)/esp
+all: $(BINDIR)/$(OUTPUTDIR)/esp $(BINDIR)/esp
 
 $(info Compile mode: $(MODE))
 $(info Output objects to: $(OBJDIR)/$(OUTPUTDIR))
 $(info Output tests to: $(BINDIR)/$(TESTDIR))
 $(info flags: $(flags))
+$(info arch: $(arch))
+
 
 # create object directory if missing
 $(BINDIR) $(RESDIR) $(OBJDIR):
@@ -174,7 +187,6 @@ $(BINDIR)/$(TESTDIR)/cmdargs_test:  $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_te
 # Cleanup 
 .phony: clean,ar
 clean:
-	-rm -f bin/default/esp $(addprefix $(OBJDIR)/default/,$(obj)) $(obj:%.o=$(OBJDIR)/default/%.d)
 	-rm -f bin/debug/esp $(addprefix $(OBJDIR)/debug/,$(obj)) $(obj:%.o=$(OBJDIR)/debug/%.d)
 	-rm -f bin/release/esp $(addprefix $(OBJDIR)/release/,$(obj)) $(obj:%.o=$(OBJDIR)/release/%.d)
 	-rm -f bin/prof/esp $(addprefix $(OBJDIR)/prof/,$(obj)) $(obj:%.o=$(OBJDIR)/prof/%.d)

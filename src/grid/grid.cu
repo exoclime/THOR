@@ -1047,18 +1047,20 @@ void Icogrid::generate_halos(int *halo       ,
     int kxl = sqrt(nfaces*1.0)                ;
     int nh = 4*(nl_region+2)                  ;
 
-    //            //\\
-    // Side 4    //%%\\  Side 3
-    //          //%%%%\\
-    //          \\%%%%//
-    // Side 1    \\%%//  Side 2
-    //            \\//
+    /*
+                  //\\
+       Side 4    //%%\\  Side 3
+                //%%%%\\
+                \\%%%%//
+       Side 1    \\%%//  Side 2
+                  \\//
+    */
 
     int index_value1, index_value2;
     int v1, v2;
 
     int out_ind;
-    int ind_nei;
+    int ind_nei = 0;
 
     for (int i = 0; i < 10*nfaces*4*(nl_region+2); i++)halo[i] = -1;
 
