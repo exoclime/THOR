@@ -43,34 +43,36 @@
 ////////////////////////////////////////////////////////////////////////
 
 // Integration time
-#define nsmax        48000 // Number of time steps
-#define timestep     1800  // Time step  [seconds]
+#define nsmax_default        48000 // Number of time steps
+#define timestep_default     1800  // Time step  [seconds]
 
 // Grid
-#define sprd   true       // Spring dynamics
-#define glevel 4          // Horizontal resolution level.
-#define spring_beta 1.15  // Parameter beta for spring dynamics
-#define vlevel 32         // Number of vertical layers
+#define sprd_default   true       // Spring dynamics2
+#define glevel_default 4          // Horizontal resolution level.
+#define spring_beta_default 1.15  // Parameter beta for spring dynamics
+#define vlevel_default 32         // Number of vertical layers
 
 // Diffusion
-#define HyDiff       true    // Hyper-diffusion
-#define DivDampP     true    // Divergence-damping
+#define HyDiff_default       true    // Hyper-diffusion
+#define DivDampP_default     true    // Divergence-damping
 
 // Model options
-#define NonHydro  true       // Non-hydrostatic parameter
-#define DeepModel true       // Deep atmosphere
+#define NonHydro_default  true       // Non-hydrostatic parameter
+#define DeepModel_default true       // Deep atmosphere
 
 // Initial conditions
-#define rest   true          // Starting from rest
+#define rest_default   true          // Starting from rest
 
 // Benchmark test
-#define hstest 3          // Held-Suarez test for Earth == 1
+#define hstest_default 1          // Held-Suarez test for Earth == 1
 //  HS test for shallow hot Jupiter == 3
 //  HS test for tidally locked Earth == 2
 //  No HS test == 0
 
 // GPU ID
-#define GPU_ID_N 0        // Set GPU ID number
+#define GPU_ID_N_default 0        // Set GPU ID number
 
 // Output
-#define n_out 1000         // Print output every n_out steps
+#define n_out_default 1000         // Print output every n_out steps
+
+
