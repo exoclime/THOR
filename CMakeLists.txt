@@ -143,5 +143,5 @@ add_executable(test_args ${SRC_CMDARGS})
 add_executable(test_config ${SRC_CONFIG})
 
 cuda_add_executable(test_grid ${SRC_GRID})
-target_compile_definitions (test_grid  PRIVATE -DBENCHMARKING -DBENCH_POINT_COMPARE)
+target_compile_definitions (test_grid  PRIVATE -DBENCHMARKING -DBENCH_POINT_COMPARE  -DBUILD_LEVEL="test")
 target_link_libraries (test_grid ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES}  )
