@@ -61,19 +61,55 @@ using namespace std;
 #include "debug.h"
 
 #include "config_file.h"
+#include "cmdargs.h"
 
-int main (){
+int main (int argc,  char** argv){
 
+
+
+    //*****************************************************************
+    // Parse input arguments
+    cmdargs argparser("esp", "run THOR GCM simulation");
+    
+    // define arguments
+    // format:
+    // * short form: e.g. "i" for -i
+    // * long form: e.g. "int" for --int
+    // * default value, defines type of variable: e.g. -1 for int,
+    //   value -1
+    // argparser.add_arg("i", "int", -1);
+    // argparser.add_arg("b", "bool", false);
+    // argparser.add_arg("d", "double", 1e-5);
+    // argparser.add_arg("s", "string", string("value"));
+
+    string default_config_filename("ifile/earth.thr");
+     
+    argparser.add_positional_arg(default_config_filename, "config filename");
+    argparser.add_arg("g", "gpu_id", 0, "GPU_ID to run on");
+    
+
+    // Parse arguments
+    argparser.parse(argc, argv);
+
+    // get config file path if present in argument
+    string config_filename = "";
+    argparser.get_positional_arg(config_filename);
+        
+    //*****************************************************************
     printf("\n Starting ESP!");
     printf("\n\n version 1.0\n");
     printf(" Compiled on " __DATE__ " at " __TIME__ "\n");
     
     printf(" build level: " BUILD_LEVEL "\n");
 
+
+    //*****************************************************************
     // Initial conditions
     config_file config_reader;
 
-    // Set config variables
+    
+    //*****************************************************************
+    // Setup config variables
     
      // Integration time
     int timestep = 1000;
@@ -136,19 +172,23 @@ int main (){
     int n_out = 1000;
     config_reader.append_config_var("n_out", n_out, n_out_default);
 
+    //*****************************************************************    
     // Read config file
-    // TODO: should check some default path
-    // TODO: If nothing given, should fall back to 
-    // TODO: should be overridable by command line options
-    string initial_filename = "ifile/earth.thr";
 
-    if (config_reader.parse_file(initial_filename))
-        printf(" Config file %s read\n", initial_filename.c_str());
+    if (config_reader.parse_file(config_filename))
+        printf(" Config file %s read\n", config_filename.c_str());
     else
     {
-        printf(" Config file %s reading failed, aborting\n", initial_filename.c_str());
-        exit(EXIT_FAILURE);
+        printf(" Config file %s reading failed, aborting\n", config_filename.c_str());
+        exit(-1);
     }
+
+    //*****************************************************************
+    // Override config file variables from command line if set
+    int GPU_ID_N_arg;
+    if (argparser.get_arg("gpu_id", GPU_ID_N_arg))
+        GPU_ID_N = GPU_ID_N_arg;
+    
     
     // Test config variables for coherence
     bool config_OK = true;    
@@ -186,7 +226,7 @@ int main (){
         printf("Error in configuration file\n");
         exit(0);
     }
-    
+    //*****************************************************************
 //  Set the GPU device.    
     cudaError_t error;
     cudaSetDevice(GPU_ID_N);

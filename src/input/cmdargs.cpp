@@ -96,9 +96,10 @@ arg_interface * cmdargs::operator[](string idx)
     {
         char error[256];
         sprintf(error,
-                "%s:(%d) key not found in argument list",
+                "%s:(%d) key [%s] not found in argument list",
                 __FILE__,
-                __LINE__);
+                __LINE__,
+                idx.c_str());
         
         throw std::runtime_error(error );        
     }

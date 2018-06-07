@@ -164,12 +164,8 @@ private:
     
     T value;
 
-    // TODO: check, do we need this? Or always use default?
-    // might be needed to know if we want to override values from
-    // config file.
+    // to test if value has been set
     bool has_value;
-    
-    
 };
 
 
