@@ -62,6 +62,7 @@ int main(int argc,  char** argv)
     
     cmdargs argparser;
     
+    argparser.add_positional_arg(string("positional"));
     
     argparser.add_arg("i", "int", -1);
     argparser.add_arg("b", "bool", false);
@@ -69,6 +70,13 @@ int main(int argc,  char** argv)
     argparser.add_arg("s", "string", string("test"));
     argparser.parse(argc, argv);
 
+    // positional args
+    string positional_arg_string = "fart";
+    bool positional_arg_string_set = argparser.get_positional_arg(positional_arg_string);
+    printf("# positional argument - value: %s\tset: %d\n", positional_arg_string.c_str(), positional_arg_string_set);
+
+    
+    // keyqord args
     int test_arg_int = -100;
     bool test_arg_int_set = argparser.get_arg("int", test_arg_int);
     printf("int - value: %d\tset: %d\n", test_arg_int, test_arg_int_set);
@@ -84,6 +92,7 @@ int main(int argc,  char** argv)
     string test_arg_string = "fart";
     bool test_arg_string_set = argparser.get_arg("string", test_arg_string);
     printf("string - value: %s\tset: %d\n", test_arg_string.c_str(), test_arg_string_set);
+
 
     
 }

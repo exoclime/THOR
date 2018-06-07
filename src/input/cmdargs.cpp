@@ -74,16 +74,11 @@ bool cmdargs::parse(int argc, char ** argv)
     return out;
 }
 
-
+// Access operator
 arg_interface * cmdargs::operator[](string idx)
 {
     const string s = idx;
 
-    /*
-    const int n = find_me();
-std::find_if(v.begin(), v.end(),
-             [n](const MyClass & m) -> bool { return m.myInt == n; });
-    */
     auto && it = std::find_if(args.begin(),
                               args.end(),
                               [s](const std::unique_ptr<arg_interface>  & m)
@@ -106,7 +101,7 @@ std::find_if(v.begin(), v.end(),
     }
 }
 
-
+// Main state machine to parse arguments
 bool cmdargs::parser_state_machine(const string & str)
 {
     switch(parser_state) {
@@ -117,6 +112,7 @@ bool cmdargs::parser_state_machine(const string & str)
             std::smatch match;
 
             current_arg_interface = args.end();
+            bool match_arg = false;
             
         
             if (regex_match(str, match, short_key_regex))
@@ -127,7 +123,7 @@ bool cmdargs::parser_state_machine(const string & str)
                                                       args.end(),
                                                       [ma](const std::unique_ptr<arg_interface>  & m)
                                                       -> bool { return m->is_key(ma); });
-  
+                match_arg = true;
             }
             else if (regex_match(str, match, long_key_regex))
             {
@@ -136,30 +132,42 @@ bool cmdargs::parser_state_machine(const string & str)
                                                       args.end(),
                                                       [ma](const std::unique_ptr<arg_interface>  & m)
                                                       -> bool { return m->is_key(ma); });
+                match_arg = true;
+            }
+            
+            if (match_arg)
+            {
+                // is a keyword argument, parse its value
+                
+                if (current_arg_interface != args.end())
+                {
+                    parser_state = GOT_KEY;
+                    parser_state_nargs = (*current_arg_interface)->get_nargs();
+                    
+                    
+                    return true;
+                }
+                else
+                {
+                    cout << "command line: error finding key: "<< str << endl;
+                    
+                    // not a key, return error
+                    return false;                
+                }
             }
             else
             {
-                cout << "command line: error parsing option: "<< str << endl;
+                // positional argument, append to list of arguments
                 
-                // not a key, return error
-                return false;                
+                bool parsed = positional_arg->parse_narg(str);
+                if (!parsed)
+                {
+                    cout << "error parsing value " << str << " for positional argument" << endl;                    
+                }
+                return parsed;
             }
-
-            if (current_arg_interface != args.end())
-            {
-                parser_state = GOT_KEY;
-                parser_state_nargs = (*current_arg_interface)->get_nargs();
-                
-                
-                return true;
-            }
-            else
-            {
-                cout << "command line: error finding key: "<< str << endl;
-                
-                // not a key, return error
-                return false;                
-            }
+            
+            
             
             break;
         }

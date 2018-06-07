@@ -174,6 +174,13 @@ public:
     bool get_arg(const string & long_form,
                  T & value );
 
+    // positional argument
+    template<typename T>
+    bool add_positional_arg(const T & value );
+
+    template<typename T>
+    bool get_positional_arg( T & value );
+
     // parsing arguments
     bool parse(int argc, char ** argv);
     
@@ -185,6 +192,9 @@ private:
     // Storage map as key value pair
     vector<std::unique_ptr<arg_interface>> args;
 
+    // Storage for positional argument
+    std::unique_ptr<arg_interface> positional_arg = nullptr;
+    
     enum e_parser_state {
         PARSE_FOR_KEY,
         GOT_KEY
@@ -203,6 +213,35 @@ private:
     }
     
 };
+
+// setup by adding argumentspositional argument
+template<typename T>
+bool cmdargs::add_positional_arg(
+    const T & value
+    )    
+{
+    positional_arg = std::unique_ptr<arg<T>>(new arg<T>("", "", value));
+    
+    return true;
+}
+
+template<typename T>
+bool cmdargs::get_positional_arg( T & value    )    
+{
+
+    if (positional_arg != nullptr)
+    {
+        arg<T> * argument  = (arg<T>* )(positional_arg.get());
+
+        value = argument->get();
+
+        return argument->is_set();
+    }
+    else
+    {
+        throw std::runtime_error( "no positional argument defined" );
+    }
+}
 
 // setup by adding arguments
 template<typename T>
