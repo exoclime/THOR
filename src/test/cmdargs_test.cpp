@@ -60,14 +60,14 @@ int main(int argc,  char** argv)
 {
     cout << "commandline file test" << endl;
     
-    cmdargs argparser;
+    cmdargs argparser("cmdargs_test", "tester for argument parser");
     
-    argparser.add_positional_arg(string("positional"));
+    argparser.add_positional_arg(string("positional"), "positional argument");
     
-    argparser.add_arg("i", "int", -1);
-    argparser.add_arg("b", "bool", false);
-    argparser.add_arg("d", "double", 1e-5);
-    argparser.add_arg("s", "string", string("test"));
+    argparser.add_arg("i", "int", -1, "int argument");
+    argparser.add_arg("b", "bool", false, "booolean argument");
+    argparser.add_arg("d", "double", 1e-5, "double argument");
+    argparser.add_arg("s", "string", string("test"), "string argument");
     argparser.parse(argc, argv);
 
     // positional args

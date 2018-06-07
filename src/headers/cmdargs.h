@@ -62,6 +62,7 @@
 #include <vector>
 #include <memory>
 #include <string>
+#include <iomanip>
 
 #include "parser_helpers.h"
 
@@ -75,7 +76,8 @@ public:
     virtual bool parse_narg(const string & str) = 0;
 
     virtual bool is_key(const string & str) = 0;
-    virtual string get_name() = 0;    
+    virtual string get_name() = 0;
+    virtual void print_desc() = 0;
 };
 
 // interface class 
@@ -85,11 +87,13 @@ class arg : public arg_interface
 public:
     arg( const string & short_form_,
          const string & long_form_,
-         const T & value_):
+         const T & value_,
+        const string & help_string_):
         short_form(short_form_),
         long_form(long_form_),
+        help_string(help_string_),
         value(value_),
-        has_value(false)
+        has_value(false)        
     {
     };
 
@@ -140,13 +144,24 @@ public:
         return long_form;
     }
     
+    void print_desc()
+    {
+        if (short_form == "")
+            cout << setw(28) << " " 
+                 << setw( 0) << help_string << endl;
+        else
+            cout << " -" << short_form <<" / --" << setw(20) << left << long_form
+                 << setw( 0) << help_string << endl;
+
+    }
     
     
 
 private:
     string short_form;
     string long_form;
-
+    string help_string;
+    
     T value;
 
     // TODO: check, do we need this? Or always use default?
@@ -162,13 +177,14 @@ private:
 class cmdargs
 {
 public:
-    cmdargs();
+    cmdargs(const string & app_name,
+            const string & app_desc);
 
     // setup by adding arguments
     template<typename T>
     bool add_arg(const string & short_form,
                  const string & long_form,
-                 const T & value );
+                 const T & value, const string & help );
 
     template<typename T>
     bool get_arg(const string & long_form,
@@ -176,15 +192,16 @@ public:
 
     // positional argument
     template<typename T>
-    bool add_positional_arg(const T & value );
+    bool add_positional_arg(const T & value, const string & help );
 
     template<typename T>
     bool get_positional_arg( T & value );
 
     // parsing arguments
     bool parse(int argc, char ** argv);
+
+    void print_help();
     
-        
 private:
      // find argument from long key
     arg_interface * operator[](string idx);
@@ -211,16 +228,20 @@ private:
     {
         args.push_back(std::move(arg));
     }
+
+
+    string app_name;
+    string app_desc;
     
 };
 
 // setup by adding argumentspositional argument
 template<typename T>
 bool cmdargs::add_positional_arg(
-    const T & value
+    const T & value, const string & help 
     )    
 {
-    positional_arg = std::unique_ptr<arg<T>>(new arg<T>("", "", value));
+    positional_arg = std::unique_ptr<arg<T>>(new arg<T>("", "", value, help));
     
     return true;
 }
@@ -247,7 +268,8 @@ bool cmdargs::get_positional_arg( T & value    )
 template<typename T>
 bool cmdargs::add_arg(const string & short_form,
                       const string & long_form,
-                      const T & value
+                      const T & value,
+                      const string & help
     )    
 {
     // check that the key wasn't already added
@@ -267,7 +289,7 @@ bool cmdargs::add_arg(const string & short_form,
                 "%s:(%d) key %s already exists in argument parser",
                 __FILE__,
                 __LINE__,
-                short_form);
+                short_form.c_str());
         
         throw std::range_error(error );        
     }
@@ -282,13 +304,13 @@ bool cmdargs::add_arg(const string & short_form,
                 "%s:(%d) key %s already exists in argument parser",
                 __FILE__,
                 __LINE__,
-                long_form);
+                long_form.c_str());
         
         throw std::range_error(error );        
     }
 
     // add the new key
-    add_arg(std::unique_ptr<arg<T>>(new arg<T>(short_form, long_form, value)));
+    add_arg(std::unique_ptr<arg<T>>(new arg<T>(short_form, long_form, value, help)));
     
     
     return true;

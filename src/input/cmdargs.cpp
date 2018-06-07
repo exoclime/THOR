@@ -51,7 +51,10 @@
 
 #include <cstdio>
 
-cmdargs::cmdargs()
+cmdargs::cmdargs(const string & app_name_,
+                 const string & app_desc_)
+    : app_name(app_name_),
+      app_desc(app_desc_)
 {
 
 }
@@ -101,6 +104,23 @@ arg_interface * cmdargs::operator[](string idx)
     }
 }
 
+void cmdargs::print_help()
+{
+    cout << "Usage: " << app_name << " [OPTION]... [CONFIGFILE]" << endl;
+    cout << app_desc << endl;
+    
+    cout << endl;
+    cout << "Positional argument:" << endl;
+    positional_arg->print_desc();
+    cout << endl;
+
+    cout << "Keyword arguments:" << endl;
+
+    for (auto && a: args)
+        a->print_desc();
+}
+
+
 // Main state machine to parse arguments
 bool cmdargs::parser_state_machine(const string & str)
 {
@@ -118,6 +138,12 @@ bool cmdargs::parser_state_machine(const string & str)
             if (regex_match(str, match, short_key_regex))
             {
                 string ma = match[1];
+
+                if (ma == "h")
+                {
+                    print_help();
+                    exit(0);
+                }                        
                 
                 current_arg_interface  = std::find_if(args.begin(),
                                                       args.end(),
@@ -128,6 +154,13 @@ bool cmdargs::parser_state_machine(const string & str)
             else if (regex_match(str, match, long_key_regex))
             {
                 string ma = match[1];
+                                
+                if (ma == "help")
+                {
+                    print_help();
+                    exit(0);
+                }                                
+
                 current_arg_interface  = std::find_if(args.begin(),
                                                       args.end(),
                                                       [ma](const std::unique_ptr<arg_interface>  & m)
