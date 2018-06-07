@@ -229,7 +229,9 @@ int main (int argc,  char** argv){
     //*****************************************************************
 //  Set the GPU device.    
     cudaError_t error;
+    printf(" Using GPU #%d\n", GPU_ID_N);
     cudaSetDevice(GPU_ID_N);
+    
     
 //
 //  Make the icosahedral grid
