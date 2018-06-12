@@ -80,7 +80,7 @@ public:
     virtual void print_desc() = 0;
 };
 
-// interface class 
+// base template interface class 
 template<typename T>
 class arg : public arg_interface
 {
@@ -97,6 +97,8 @@ public:
     {
     };
 
+    // parse argument string to internal value
+    // calls template function to convert to correct value
     bool parse_narg(const string & str)
     {
         if (parse_data(str, value))
@@ -112,12 +114,13 @@ public:
         
     }
     
-
+    // Number of arguments following this key
     int get_nargs()
     {
         return 1;
     }
 
+    // check if this argument matches the key
     bool is_key(const string & str)
     {
         if (short_form == str)
@@ -128,22 +131,26 @@ public:
             return false;
     }
 
+    // return the value
     T get()
     {
         return value;
     }
 
+    // returns if this argument has been set through command line
     bool is_set()
     {
         return has_value;
         
     }
 
+    // name of argument
     string get_name() 
     {
         return long_form;
     }
-    
+
+    // description for help string
     void print_desc()
     {
         if (short_form == "")
@@ -173,6 +180,8 @@ private:
 class cmdargs
 {
 public:
+    // Constructor, takes app name and description string as argument
+    // for help string
     cmdargs(const string & app_name,
             const string & app_desc);
 
@@ -193,21 +202,29 @@ public:
     template<typename T>
     bool get_positional_arg( T & value );
 
-    // parsing arguments
+    // parse argument array
     bool parse(int argc, char ** argv);
 
+    // print out help string
     void print_help();
     
 private:
      // find argument from long key
     arg_interface * operator[](string idx);
+
+    // helper to add argument
+    void add_arg(std::unique_ptr<arg_interface> arg)
+    {
+        args.push_back(std::move(arg));
+    }
     
     // Storage map as key value pair
     vector<std::unique_ptr<arg_interface>> args;
 
     // Storage for positional argument
     std::unique_ptr<arg_interface> positional_arg = nullptr;
-    
+
+    // Parsing state machine
     enum e_parser_state {
         PARSE_FOR_KEY,
         GOT_KEY
@@ -220,18 +237,13 @@ private:
 
     bool parser_state_machine(const string & str);
 
-    void add_arg(std::unique_ptr<arg_interface> arg)
-    {
-        args.push_back(std::move(arg));
-    }
-
-
+    
     string app_name;
     string app_desc;
     
 };
 
-// setup by adding argumentspositional argument
+// setup by adding positional argument
 template<typename T>
 bool cmdargs::add_positional_arg(
     const T & value, const string & help 

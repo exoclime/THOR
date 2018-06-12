@@ -50,6 +50,12 @@
 
 #include "debug.h"
 
+
+// precompiler macros to enable binary testing of simulation output
+// BENCHMARKING enables the binary testing. if not set, those
+// functions are empty and ignored by the compiler.
+// BENCH_POINT_WRITE enables writing data out to reference files
+// BENCH_POINT_COMPARE enables comparing current value with reference files
 #ifdef BENCHMARKING
   #warning "Compiling with benchmarktest enabled"
   #define USE_BENCHMARK() binary_test & btester = binary_test::get_instance();
@@ -113,6 +119,7 @@ public:
 
     // grid object reference dump
     void output_reference_grid(Icogrid & grid);
+    // grid object comparison
     bool compare_to_reference_grid(Icogrid & grid);
 
     void set_output(string base_name, string dir)
@@ -148,6 +155,7 @@ private:
   
 };
 
+// Compare binary table to saved table in storage output
 template<typename T>
 bool binary_test::compare_to_saved_data(storage & s,
                                         const string & name,
@@ -169,7 +177,8 @@ bool binary_test::compare_to_saved_data(storage & s,
     return b;
     
 }
-                          
+
+// Binary comparison of two arrays d1 of size s1 and d2 of size s2
 template<typename T>
 bool binary_test::compare_arrays(int s1, T * d1,
                                  int s2, T * d2, string array, bool print)

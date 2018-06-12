@@ -50,8 +50,12 @@ using namespace std;
 
 
 
-// Parsing functions to parse string to value, on same
-// interface. Functions should recognise 
+// Parsing functions to parse string to a value, on same
+// interface. Functions should recognise the output type we want to
+// parse to from their argument.
+// Used by config file parser and argument parser
+
+// base function prototype
 template< typename T>
 bool parse_data(const string & value, T & target)
 {
@@ -128,6 +132,7 @@ inline bool parse_data(const string & value, string & target )
     return true;
 }
 
+// Conversion from value to string, recognising input type
 template<typename T> inline string to_strg(T & val) {    return std::to_string(val);  }
 template<> inline string to_strg(string & val) {    return val;  }
 template<> inline string to_strg(bool & val) {    return val?"1":"0";  }
