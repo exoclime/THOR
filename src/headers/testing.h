@@ -43,6 +43,9 @@
 #include <string>
 #include <iostream>
 
+
+// helper function to check a variable against a reference and write
+// out to console if they are not equaly.
 template <typename T>
 bool test_val(const string & txt, const T & val, const T & ref)
 {
