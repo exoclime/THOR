@@ -5,7 +5,7 @@ config_version = 1
 # earth model
 
 # number of steps
-num_steps = 10
+num_steps = 200
 
 # length of timesteps imn seconds
 timestep = 1800
@@ -30,7 +30,7 @@ Rd = 287.0
 Cp = 1005.0
 # Mean atmospheric temperature [K]
 Tmean = 300.0
-# Reference surface pressure [Pa] 
+# Reference surface pressure [Pa]
 P_ref = 100000.0
 # Altitude of the top of the model domain [m]
 Top_altitude = 36000.0
@@ -57,8 +57,8 @@ DivDampP =    true
 # Non-hydrostatic parameter
 NonHydro = true
 # Deep atmosphere
-DeepModel = true    
-# Initial conditions 
+DeepModel = true
+# Initial conditions
 rest = true
 
 # Benchmark test
@@ -74,4 +74,4 @@ hstest = 1
 n_out = 200
 
 # GPU ID number
-GPU_ID_N = 0 
+GPU_ID_N = 0
