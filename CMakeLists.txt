@@ -18,8 +18,8 @@
 
 
 cmake_minimum_required (VERSION 3.5 FATAL_ERROR)
-SET(CMAKE_CXX_COMPILER g++-5)
-SET(CMAKE_C_COMPILER gcc-5)
+#SET(CMAKE_CXX_COMPILER g++-5)
+#SET(CMAKE_C_COMPILER gcc-5)
 project (THOR C CXX)
 set (CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -130,8 +130,7 @@ include_directories("src/headers")
 
 
 # build application
-cuda_add_executable(esp ${SRC})
-target_compile_definitions(esp PRIVATE -DBUILD_LEVEL="release")
+cuda_add_executable(esp ${SRC} OPTIONS -DBUILD_LEVEL="release")
 target_link_libraries (esp ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES}  )
 
 # build tests
@@ -142,6 +141,5 @@ target_link_libraries (test_storage ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES}  )
 add_executable(test_args ${SRC_CMDARGS})
 add_executable(test_config ${SRC_CONFIG})
 
-cuda_add_executable(test_grid ${SRC_GRID})
-target_compile_definitions (test_grid  PRIVATE -DBENCHMARKING -DBENCH_POINT_COMPARE  -DBUILD_LEVEL="test")
+cuda_add_executable(test_grid ${SRC_GRID} OPTIONS "-DBENCHMARKING -DBENCH_POINT_COMPARE")
 target_link_libraries (test_grid ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES}  )
