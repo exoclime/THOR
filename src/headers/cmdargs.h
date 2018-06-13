@@ -63,6 +63,7 @@
 #include <memory>
 #include <string>
 #include <iomanip>
+#include <algorithm>
 
 #include "parser_helpers.h"
 
