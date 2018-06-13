@@ -51,6 +51,7 @@
 #define glevel_default 4          // Horizontal resolution level.
 #define spring_beta_default 1.15  // Parameter beta for spring dynamics
 #define vlevel_default 32         // Number of vertical layers
+#define nlat_default   20         // Number of latitude rings for mean zonal wind (sponge layer)
 
 // Diffusion
 #define HyDiff_default       true    // Hyper-diffusion
@@ -59,6 +60,7 @@
 // Model options
 #define NonHydro_default  true       // Non-hydrostatic parameter
 #define DeepModel_default true       // Deep atmosphere
+#define SpongeLayer_default false    // use sponge layer at top of model
 
 // Initial conditions
 #define rest_default   true          // Starting from rest
@@ -74,5 +76,3 @@
 
 // Output
 #define n_out_default 1000         // Print output every n_out steps
-
-

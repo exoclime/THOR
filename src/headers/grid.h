@@ -19,20 +19,20 @@
 //
 //
 // Description: Defines the icosahedral standard grid: variables and functions
-//   
+//
 //
 // Method: -
 //
 //
 // Known limitations: None.
-//   
+//
 //
 // Known issues: None.
-//   
 //
-// If you use this code please cite the following reference: 
 //
-//       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016  
+// If you use this code please cite the following reference:
+//
+//       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016
 //
 // Current Code Owner: Joao Mendonca, EEG. joao.mendonca@csh.unibe.ch
 //
@@ -59,23 +59,22 @@ class Icogrid{
 public:
 
     // Variables associated with the grid
-    int    point_num;      // number of horizontal points 
+    int    point_num;      // number of horizontal points
     int    nv       ;      // number of vertical layers
-    int    nvi      ;      // number of interfaces between leyers       
+    int    nvi      ;      // number of interfaces between leyers
     int    nl_region;      // number of  points in one side of a rhombus
     int    nr       ;      // number of rombi
 
-    
     int    grid_level;// Number of recursive iterations to increase horizontal resolution.
 
     int    nh       ;      // number of points in halo
-    
-    double *point_xyz ;  
+
+    double *point_xyz ;
     double *point_xyzq;
 
     int *pent_ind;
     int *halo    ;
-    int *maps    ;          // Grid domains 
+    int *maps    ;          // Grid domains
 
     double *Altitude;       // Altitudes
     double *Altitudeh;      // Altitude at the interfaces between layers
@@ -84,9 +83,9 @@ public:
 
     double *areas  ;
     double *areasT ;        // Areas of the main cells
-    double *areasTr;        // Areas of the triangles 
+    double *areasTr;        // Areas of the triangles
 
-    double *nvec  ;           
+    double *nvec  ;
     double *nvecoa;         // Normal vectors for diffusion 1
     double *nvecte;         // Normal vectors for diffusion 3
     double *nvecti;         // Normal vectors for diffusion 2
@@ -98,15 +97,17 @@ public:
 
     double *func_r;         // Normalised vector
 
-    Icogrid (bool, double, int, int, double, double);
-    
+    int *zonal_mean_tab;  //something something
+
+    Icogrid (bool, double, int, int, int, double, double, bool);
+
 private:
     // Functions to build the grid
-    void sphere_ico (double *, int, int, int, int, int, int, int *, int, int);                  
-    void neighbors_indx ( int *, double *, int *, int);                                         
-    void reorder_neighbors_indx (int *, double *, int*, int );                                  
-    void neighbors_indx_pl(int *, double *, int *, int);                                        
-    void reorder_neighbors_indx_pl(int *, double *, int*, int);                                 
+    void sphere_ico (double *, int, int, int, int, int, int, int *, int, int);
+    void neighbors_indx ( int *, double *, int *, int);
+    void reorder_neighbors_indx (int *, double *, int*, int );
+    void neighbors_indx_pl(int *, double *, int *, int);
+    void reorder_neighbors_indx_pl(int *, double *, int*, int);
     void generate_halos(int *, int *, int, int);
     void reorder_neighbors_indx_rhombi (int *, int *,int *, int, int, int, int, int);
     void produce_maps(int *, int *, int, int);
@@ -114,12 +115,12 @@ private:
     void find_qpoints (int *, double *, double *, int *, int);
     void relocate_centres (int *, double *, double *, int *, int);
     void set_altitudes(double *, double *, double, int);
-    void cart2sphe ( double *, double *, int); 
+    void cart2sphe ( double *, double *, int);
     void correct_xyz_points (double , double *, double *, int *, int);
     void control_areas(double *, double *, double *, int *, double *, double *, int *, int);
     void control_vec(double *, double *, double *, double *, double *, double *, double *, int *, int *, int);
     void compute_func(double *, double *, int);
     void div_operator(double *, double *, double *, double *, int *, int);
     void gra_operator(double *, double *, double *, double *, int *, int);
+    void zonal_mean_tab_f(int *, double *, int, int);
 };
-

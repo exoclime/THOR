@@ -47,6 +47,7 @@
 #include "../headers/phy/profx_held_suarez.h"
 #include "../headers/phy/profx_shallowHJ_hs.h"
 #include "../headers/phy/profx_tidalearth_hs.h"
+#include "../headers/phy/apocalypse_sponge.h"
 
 __host__ void ESP::ProfX(int    planetnumber, // Planet ID
                          int    nstep       , // Step number
@@ -60,14 +61,48 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
                          double kb          , // Boltzmann constant [J/K]
                          double P_Ref       , // Reference pressure [Pa]
                          double Gravit      , // Gravity [m/s^2]
-                         double A           ){// Planet radius [m]
-
+                         double A           ,// Planet radius [m]
+                         bool   sponge      ){
 //
 //  Number of threads per block.
     const int NTH = 256;
 
 //  Specify the block sizes.
     dim3 NB((point_num / NTH) + 1, nv, 1);
+
+    if (sponge==true) {
+      dim3 NBT((point_num / NTH) + 1, nv, 1);
+
+      cudaMemset(vbar_d, 0, sizeof(double) * 3 * nlat * nv);
+      zonal_v <<<NBT,NTH >>>(Mh_d                     ,
+                             W_d                       ,
+                             Rho_d                    ,
+                             vbar_d                    ,
+                             zonal_mean_tab_d,
+                             lonlat_d                  ,
+                             point_num                        );
+
+      cudaDeviceSynchronize();
+  // temporary to set up code. Need to move to config file eventually.
+      double Rv_sponge = 1e-4;
+      double ns_sponge = 0.5;
+
+      sponge_layer <<< NB,NTH >>>(Mh_d                      ,
+                                  Rho_d                    ,
+                                  W_d                       ,
+                                  Wh_d                     ,
+                                  vbar_d                    ,
+                                  zonal_mean_tab_d,
+                                  lonlat_d                  ,
+                                  Altitude_d               ,
+                                  Altitudeh_d             ,
+                                  Rv_sponge             ,
+                                  ns_sponge              ,
+                                  time_step                  ,
+                                  nlat                          ,
+                                  point_num                         ,
+                                  nv                           );
+    }
 
 //  Computes the initial temperature.
     Compute_temperature <<< NB, NTH >>> (temperature_d,

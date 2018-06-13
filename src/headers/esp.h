@@ -57,10 +57,11 @@ public:
     const int nvi         ;
     const int nl_region   ;
     const int nr          ;
+    const int nlat        ;
 
     // step counter for benchmark logging
     int current_step;
-    
+
 ///////////////////////////
 //  Host
     int *point_local_h    ;
@@ -164,6 +165,10 @@ public:
     double *diff_d        ;
     double *divg_Mh_d     ;
     bool   *check_d       ;
+
+    double *vbar_d        ;
+    int *zonal_mean_tab_d ;
+
 ///////////////////////////
 
 //  Functions
@@ -180,6 +185,7 @@ public:
         double *,
         double *,
         double *,
+        int     ,
         int     ,
         int     ,
         int     ,
@@ -201,7 +207,9 @@ public:
                        double,
                        double,
                        double,
-                       double);
+                       double,
+                       int * ,
+                       bool  );
 
     void Thor(double,
               bool  ,
@@ -230,7 +238,8 @@ public:
                double,
                double,
                double,
-               double);
+               double,
+               bool  );
 
     void CopyToHost();
 
