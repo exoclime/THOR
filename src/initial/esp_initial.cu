@@ -394,7 +394,7 @@ __host__ void ESP::RTSetup(double Tstar_           ,
    tausw = tausw_;
    taulw = taulw_;
    double resc_flx = pow(radius_star/planet_star_dist,2.0);
-   incflx = resc_flx*bc*tstar*tstar*tstar*tstar;
+   incflx = resc_flx*bc*Tstar*Tstar*Tstar*Tstar;
 }
 
 __host__ ESP::~ESP(){
