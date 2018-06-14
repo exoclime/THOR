@@ -355,9 +355,11 @@ inline bool parse_data(const string & value, int & target )
 
         return true;
     }
+
+    return false;
 #endif // NO_REGEX_SUPPORT
     
-    return false;
+  
 }
 
 // double template specialisation
@@ -388,9 +390,9 @@ inline bool parse_data(const string & value, double & target )
 
         return true;
     }
-#endif // NO_REGEX_SUPPORT
-    
+
     return false;
+#endif // NO_REGEX_SUPPORT
 }
     
 // string template specialisation
