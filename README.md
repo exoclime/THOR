@@ -6,34 +6,122 @@
 
 If you use this code please cite: [Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016](http://iopscience.iop.org/article/10.3847/0004-637X/829/2/115/meta)
 
-###### Copyright (C) 2017 João Mendonça ######
+###### Copyright (C) 2017-2018 João Mendonça ######
 
 ### BUILD & RUN THOR
 
 Main instructions to compile and run *THOR*. This version uses only a __single__ __GPU__.
 
-Current code owner: Joao Mendonca: joao.mendonca@space.dtu.dk
+Current code owners: Joao Mendonca: joao.mendonca@space.dtu.dk, Russel Deitrick: russel.deitrick@csh.unibe.ch, Urs Schroffenegger: urs.schroffenegger@csh.unibe.ch
+
 
 Home website: http://software-oasis.com/
 
 ### INSTALL
 
-*UBUNTU* *17.04*
+Tested on *UBUNTU* *17.04* *Debian unstable*
 
 1- Install cuda. 
 
 ```sh
-   $ sudo apt install nvidia-cuda-toolkit
+   $ sudo apt-get install nvidia-cuda-toolkit
 ```
-2- Downgrade g++ because cuda 8 conflicts with the latest g++.
+2- Downgrade g++ because cuda 8/9 conflicts with the latest g++ and asks for g++-5
 
 ```sh
-   $ sudo apt install g++-5
+   $ sudo apt-get install g++-5
+```
+3- Install HDF5, from your package manager if possible or by hand (see below)
+```sh
+   $ sudo apt-get install libhdf5-dev libhdf5-100  libhdf5-serial-dev libhdf5-cpp-100 python-h5py
+```
+The python package is for analysis scripts.
+
+### COMPILE THOR
+#### Find your SM number
+
+This depends on the GPU you are using. SM stands for Streaming Multiprocessor and the number indicates the features supported by the architecture. See https://developer.nvidia.com/cuda-gpus.
+   Example: Tesla K20 -> 35. To get information on your GPU, type in the terminal: 
+
+```sh
+   $ nvidia-smi 
 ```
 
-3- Restart your pc.
+(cmake will try to guess that for you, if you compile with Makefile, you need to set this).
 
-4- Install hdf5 (https://support.hdfgroup.org/HDF5/release/obtainsrc.html). 
+#### Using makefile
+
+Set your SM number in the makefile.
+```
+SM:=30 # Streaming Multiprocessor version
+```
+Or as argument on the command line.
+
+Compile, for release build:
+
+```sh
+   $ make release -j8
+```
+
+for debug build:
+
+```sh
+   $ make debug -j8
+```
+
+* TRICK *
+You can specify the SM number on the command line:
+```sh
+   $ make release -j8 SM=35
+```
+
+default build builds release and SM=30
+```sh
+   $ make -j8
+```
+
+To show commands echoed
+```sh
+   $ make VERBOSE=1
+```
+
+If if fails, check the makefile variables output at the beginning of the compilation, it shows the variables and the path detected for h5, which is a common cause of issue during compilation.
+
+#### Alternative: Using CMake
+Thor also provides a CMake script to try to configure the SM and find the libraries for CUDA and HDF5 automatically.
+Create a build directory and move into it:
+```sh
+   $ mkdir build
+   $ cd build
+```
+Generate the makefile (don't forget the two points at the end of the command)
+
+```sh
+   $ cmake ..
+```
+
+Compile:
+```sh
+   $ make -j8
+```
+
+To recompile, run the make command again, no need to rerun cmake as long as you don't add files or change the build process.
+
+* TRICKS *
+
+To specify the SM architecture:
+```sh
+   $ cmake -DSM=30 ..
+```
+
+For more verbosity to debug makefile by showing commands:
+```sh
+   $ make VERBOSE=1
+```
+
+### INSTALL HDF5 from source
+
+1- Install hdf5 (https://support.hdfgroup.org/HDF5/release/obtainsrc.html). 
    Download the source code.
    Follow all the steps from the instructions, for example:
 
@@ -55,17 +143,8 @@ Home website: http://software-oasis.com/
    $ sudo apt install hdf5-helpers
 ```
 
-5- Go to THOR home directory.
-   Open Makefile file and set "hdf_install" and "h5lib" paths correctly.
-
-6- Set the value SM correctly, this depends on the GPU you are using. SM stands for Streaming Multiprocessor and the number indicates the features supported by the architecture. See https://developer.nvidia.com/cuda-gpus.
-   Example: Tesla K20 -> 35. To get information on your GPU, type in the terminal: 
-
-```sh
-   $ nvidia-smi 
-```
    
-7- Create a config file in "/etc/ld.so.config.d" called for example "mylib.conf" with the following line:
+2- Create a config file in "/etc/ld.so.config.d" called for example "mylib.conf" with the following line:
 
    > /path_to_hdf5_libs
    
@@ -75,38 +154,34 @@ Home website: http://software-oasis.com/
    $ sudo ldconfig 
 ```
 
-8- Type: 
-
-```sh
-   $ make -j8
-```
-
 ### RUN
 
 *UBUNTU* *17.04*
 
-0- (First run?) Create two folders called "obj" and "results". 
+1- Configure the initial conditions. Template of configuration is in "ifile/earth.thr".
+Copy that file where you'd like as an initial condition file. e.g.: "init/myplanet.thr"
+
+1- Set the planet's and model's parameters in "init/myplanet.thr".
+
+2- Run 
 
 ```sh
-   $ mkdir obj results
+   $ ./bin/esp init/myplanet.thr
 ```
 
-1- Set planet's parameters in "src/initial/planet.cu".
+3- Press enter and go grab a coffee. Or lunch.
 
-2- Set model's parameter in "src/headers/define.h".
+* command line arguments * 
+Positional argument: config filename
 
-3- Run 
-
+Keyword argument:
 ```sh
-   $ ./bin/esp
+ -g / --gpu_id              GPU_ID to run on
 ```
-
-4- Press enter and relax.
-
 
 ### Results
 
 * Output is written in "results" folder.
 * Very useful command lines to quickly explore the hdf5 files can be found in support.hdfgroup.org/HDFS/Tutor/cmdtools.html
   or type the command ">> man h5dump".
-* You can find some Matlab routines to explore the results in "mjolnir" folder.
+* You can find some Matlab and Python routines to explore the results in "mjolnir" folder.

@@ -60,23 +60,182 @@ using namespace std;
 
 #include "debug.h"
 
-int main (){
+#include "config_file.h"
+#include "cmdargs.h"
 
+int main (int argc,  char** argv){
+
+
+
+    //*****************************************************************
+    // Parse input arguments
+    cmdargs argparser("esp", "run THOR GCM simulation");
+    
+    // define arguments
+    // format:
+    // * short form: e.g. "i" for -i
+    // * long form: e.g. "int" for --int
+    // * default value, defines type of variable: e.g. -1 for int,
+    //   value -1
+    // argparser.add_arg("i", "int", -1);
+    // argparser.add_arg("b", "bool", false);
+    // argparser.add_arg("d", "double", 1e-5);
+    // argparser.add_arg("s", "string", string("value"));
+
+    string default_config_filename("ifile/earth.thr");
+     
+    argparser.add_positional_arg(default_config_filename, "config filename");
+    argparser.add_arg("g", "gpu_id", 0, "GPU_ID to run on");
+    
+
+    // Parse arguments
+    argparser.parse(argc, argv);
+
+    // get config file path if present in argument
+    string config_filename = "";
+    argparser.get_positional_arg(config_filename);
+        
+    //*****************************************************************
     printf("\n Starting ESP!");
-    printf("\n\n version 1.0\n\n");
+    printf("\n\n version 1.0\n");
+    printf(" Compiled on " __DATE__ " at " __TIME__ "\n");
+    
+    printf(" build level: " BUILD_LEVEL "\n");
 
-//
+
+    //*****************************************************************
+    // Initial conditions
+    config_file config_reader;
+
+    
+    //*****************************************************************
+    // Setup config variables
+    
+     // Integration time
+    int timestep = 1000;
+    int nsmax = 48000;
+    
+    config_reader.append_config_var("timestep", timestep, timestep_default);
+    config_reader.append_config_var("num_steps", nsmax, nsmax_default);
+
+    // Planet
+    // initialises to default earth
+    XPlanet Planet;
+    string simulation_ID = "Earth";
+    
+    config_reader.append_config_var("simulation_ID", simulation_ID, string(Planet.simulation_ID));
+    config_reader.append_config_var("radius", Planet.A, Planet.A);
+    config_reader.append_config_var("rotation_rate", Planet.Omega, Planet.Omega);
+    config_reader.append_config_var("gravitation", Planet.Gravit, Planet.Gravit);
+    config_reader.append_config_var("Mmol", Planet.Mmol, Planet.Mmol);
+    config_reader.append_config_var("Rd", Planet.Rd, Planet.Rd);
+    config_reader.append_config_var("Cp", Planet.Cp, Planet.Cp);
+    config_reader.append_config_var("Tmean", Planet.Tmean, Planet.Tmean);
+    config_reader.append_config_var("P_ref", Planet.P_Ref, Planet.P_Ref);
+    config_reader.append_config_var("Top_altitude", Planet.Top_altitude, Planet.Top_altitude);
+    config_reader.append_config_var("Diffc", Planet.Diffc, Planet.Diffc);
+
+    // grid
+    bool spring_dynamics = true;
+    int glevel = 4;
+    double spring_beta = 1.15;
+    int vlevel = 32;
+    
+    config_reader.append_config_var("spring_dynamics", spring_dynamics, sprd_default);
+    config_reader.append_config_var("glevel", glevel, glevel_default);
+    config_reader.append_config_var("spring_beta", spring_beta, spring_beta_default);
+    config_reader.append_config_var("vlevel", vlevel, vlevel_default);
+
+    // Diffusion
+    bool HyDiff = true;
+    bool DivDampP = true;
+    config_reader.append_config_var("HyDiff", HyDiff, HyDiff_default);
+    config_reader.append_config_var("DivDampP", DivDampP, DivDampP_default);
+
+    // Model options
+    bool NonHydro = true;
+    bool DeepModel = true;
+    config_reader.append_config_var("NonHydro", NonHydro, NonHydro_default);
+    config_reader.append_config_var("DeepModel", DeepModel, DeepModel_default);
+
+    // Initial conditions
+    bool rest = true;
+    config_reader.append_config_var("rest", rest, rest_default);
+    
+    // Benchmark test
+    int hstest = 1;
+    config_reader.append_config_var("hstest", hstest, hstest_default);
+
+    int GPU_ID_N = 0;
+    config_reader.append_config_var("GPU_ID_N", GPU_ID_N, GPU_ID_N_default);
+
+    int n_out = 1000;
+    config_reader.append_config_var("n_out", n_out, n_out_default);
+
+    //*****************************************************************    
+    // Read config file
+
+    if (config_reader.parse_file(config_filename))
+        printf(" Config file %s read\n", config_filename.c_str());
+    else
+    {
+        printf(" Config file %s reading failed, aborting\n", config_filename.c_str());
+        exit(-1);
+    }
+
+    //*****************************************************************
+    // Override config file variables from command line if set
+    int GPU_ID_N_arg;
+    if (argparser.get_arg("gpu_id", GPU_ID_N_arg))
+        GPU_ID_N = GPU_ID_N_arg;
+    
+    
+    // Test config variables for coherence
+    bool config_OK = true;    
+    config_OK &= check_greater( "timestep", timestep, 0);
+    config_OK &= check_greater( "nsmax", nsmax, 0);
+    config_OK &= check_greater( "gravitation", Planet.Gravit, 0.0);
+    config_OK &= check_greater( "Mmol", Planet.Mmol, 0.0);
+    config_OK &= check_greater( "Rd", Planet.Rd, 0.0);
+    config_OK &= check_greater( "T_mean", Planet.Tmean, 0.0);
+    config_OK &= check_greater( "P_Ref", Planet.P_Ref, 0.0);
+    config_OK &= check_greater( "Top_altitude", Planet.Top_altitude, 0.0);
+
+    config_OK &= check_range( "glevel", glevel, 3, 8);
+    config_OK &= check_greater( "vlevel", vlevel, 0);
+    config_OK &= check_range( "hstest", hstest, -1, 5);
+    
+    config_OK &= check_greater( "GPU_ID_N", GPU_ID_N, -1);
+    config_OK &= check_greater( "n_out", n_out, 0);
+
+    if (simulation_ID.length() < 160)
+    {
+        sprintf(Planet.simulation_ID, "%s", simulation_ID.c_str());
+    }
+    else
+    {
+        printf("Bad value for config variable simulation_ID: [%s]\n", simulation_ID.c_str());
+        
+        config_OK = false;
+    }
+    
+    
+    
+    if (!config_OK)
+    {
+        printf("Error in configuration file\n");
+        exit(0);
+    }
+    //*****************************************************************
 //  Set the GPU device.    
     cudaError_t error;
+    printf(" Using GPU #%d\n", GPU_ID_N);
     cudaSetDevice(GPU_ID_N);
     
-//
-//  Building planet
-    XPlanet Planet;
-
+    
 //
 //  Make the icosahedral grid
-    Icogrid Grid(sprd               , // Spring dynamics option
+    Icogrid Grid(spring_dynamics    , // Spring dynamics option
                  spring_beta        , // Parameter beta for spring dynamics 
                  glevel             , // Horizontal resolution level
                  vlevel             , // Number of vertical layers
@@ -166,7 +325,7 @@ int main (){
     printf("   ********** \n");
     printf("   Grid - Icosahedral\n");
     printf("   Glevel          = %d.\n", glevel);
-    printf("   Spring dynamics = %d.\n",sprd);
+    printf("   Spring dynamics = %d.\n",spring_dynamics);
     printf("   Beta            = %f.\n", spring_beta);
     printf("   Resolution      = %f deg.\n", (180/M_PI)*sqrt(2*M_PI/5)/pow(2,glevel));
     printf("   Vertical layers = %d.\n",Grid.nv);
