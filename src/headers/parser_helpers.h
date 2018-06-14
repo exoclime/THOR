@@ -49,7 +49,7 @@
 using namespace std;
 
 // To compile without regex lib
-#define NO_REGEX_SUPPORT
+//#define NO_REGEX_SUPPORT
 
 // check if we use GCC and if version is below 4.9, define
 // NO_REGEX_SUPPORT
