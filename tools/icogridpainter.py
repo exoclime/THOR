@@ -28,6 +28,10 @@ class IcoGridPainter:
     def __init__(self):
         self.level = 0
 
+    def set_grid_data(self, xyz, colors):
+        self.xyz = xyz
+        self.colors = colors
+
     def set_shader_manager(self, shader_manager):
         self.shader_manager = shader_manager
 
@@ -35,51 +39,59 @@ class IcoGridPainter:
 
         # create
 
-        num_vertices = 12
+        # num_vertices = 12
 
-        vertices = np.zeros((num_vertices, 3),
+        # vertices = np.zeros((num_vertices, 3),
+        #                     dtype=np.float32)
+        vertices = np.zeros((int(len(self.xyz)/3), 3),
                             dtype=np.float32)
 
-        r = 1.2
-        w = 2.0*math.acos(1.0/(2.0*sin(pi/5.0)))
+        # r = 1.2
+        # w = 2.0*math.acos(1.0/(2.0*sin(pi/5.0)))
 
-        angles = [
-            [0.0, pi/2.0],
-            [0.0, -pi/2.0],
-            [-pi/5.0, pi/2.0-w],
-            [pi/5.0, pi/2.0-w],
-            [3.0*pi/5.0, pi/2.0-w],
-            [pi, pi/2.0-w],
-            [-3.0*pi/5.0, pi/2.0-w],
-            [0.0, -(pi/2.0-w)],
-            [2.0*pi/5.0, -(pi/2.0-w)],
-            [4.0*pi/5.0, -(pi/2.0-w)],
-            [-4.0*pi/5.0, -(pi/2.0-w)],
-            [-2.0*pi/5.0, -(pi/2.0-w)]
-        ]
+        # angles = [
+        #     [0.0, pi/2.0],
+        #     [0.0, -pi/2.0],
+        #     [-pi/5.0, pi/2.0-w],
+        #     [pi/5.0, pi/2.0-w],
+        #     [3.0*pi/5.0, pi/2.0-w],
+        #     [pi, pi/2.0-w],
+        #     [-3.0*pi/5.0, pi/2.0-w],
+        #     [0.0, -(pi/2.0-w)],
+        #     [2.0*pi/5.0, -(pi/2.0-w)],
+        #     [4.0*pi/5.0, -(pi/2.0-w)],
+        #     [-4.0*pi/5.0, -(pi/2.0-w)],
+        #     [-2.0*pi/5.0, -(pi/2.0-w)]
+        # ]
 
-        for i, a in enumerate(angles):
-            vertices[i, :] = spherical(r, a[0], a[1])
+        # for i, a in enumerate(angles):
+        #     vertices[i, :] = spherical(r, a[0], a[1])
 
+        vertices_colors = np.zeros((vertices.shape[0], 3), dtype=np.float32)
         elements = np.zeros(vertices.shape[0], dtype=np.uint32)
 
+        R = 6371000.0
         for i in range(vertices.shape[0]):
+            vertices[i][0] = self.xyz[i*3 + 0]/R
+            vertices[i][1] = self.xyz[i*3 + 1]/R
+            vertices[i][2] = self.xyz[i*3 + 2]/R
             elements[i] = i
+
+            vertices_colors[i][0] = self.colors[i][0]
+            vertices_colors[i][1] = self.colors[i][1]
+            vertices_colors[i][2] = self.colors[i][2]
 
         self.grid_elements_count = elements.size
 
-        self.vao_grid = []
-
-        gl.glEnableVertexAttribArray(0)
         self.vao_grid = gl.glGenVertexArrays(1)
         gl.glBindVertexArray(self.vao_grid)
+        gl.glEnableVertexAttribArray(0)
 
         self.grid_vertex_count = vertices.size
         self.grid_vbo = self.create_vbo(vertices)
 
         #self.grid_normals_vbo = self.create_normals_vbo(vertices)
-        # self.grid_colors_vbo = self.create_colors_vbo(
-        #    self.vertices_colors_arrays[c])
+        self.grid_colors_vbo = self.create_colors_vbo(vertices_colors)
         # elements = np.zeros((len(self.neighbours), 2), dtype=np.uint32)
 
         #        fig = plt.figure()
@@ -94,7 +106,7 @@ class IcoGridPainter:
 
         c = QVector4D(1.0, 1.0, 1.0, 1.0)
 
-        # self.shader_manager.set_colour(c)
+        self.shader_manager.set_colour(c)
         # gl.glDrawArrays(gl.GL_POINTS, 0,
         #                self.grid_vertex_count)
 
@@ -113,9 +125,9 @@ class IcoGridPainter:
                         elements,
                         gl.GL_STATIC_DRAW)
 
-        # gl.glVertexAttribPointer(0, 3,
-        #                          gl.GL_FLOAT, False,
-        #                          0, None)
+        # gl.glVertexAttribPointer(0, 1,
+        #                         gl.GL_INT, False,
+        #                         0, None)
 
         # gl.glEnableVertexAttribArray(0)
 

@@ -61,6 +61,9 @@ class ThorVizWidget(QOpenGLWidget):
         self.left_button_pressed = False
         self.image = 0
 
+    def set_grid_data(self, *args):
+        self.ico_grid_painter.set_grid_data(*args)
+
     def set_grid(self, grid, neighbours, vertices_color_arrays, moments):
         self.grid_painter.set_grid(
             grid, neighbours, vertices_color_arrays)
@@ -98,13 +101,15 @@ class ThorVizWidget(QOpenGLWidget):
         self.initialize()
         # self.shader_manager.start_paint()
         # self.grid_painter.initializeGL()
-        self.ico_grid_painter.initializeGL()
+
         # self.shader_manager.end_paint()
         # self.shader_manager.start_paint_field()
         # self.field_painter.initializeGL()
+        self.ico_grid_painter.initializeGL()
         # self.shader_manager.end_paint_field()
         # self.shader_manager.start_paint_pc()
         self.axis_painter.initializeGL()
+
         # self.shader_manager.end_paint_pc()
         gl.glEnable(gl.GL_DEPTH_TEST)
 
@@ -122,29 +127,30 @@ class ThorVizWidget(QOpenGLWidget):
 
         self.resize()
         ##############################################
-        # self.shader_manager.start_paint()
+        self.shader_manager.start_paint_pc()
 
-#         colour = QVector4D(1.0, 1.0, 1.0, 1.0)
-#         self.shader_manager.set_colour(colour)
-#         # view transformation
-#         view = QMatrix4x4()
-#         view.translate(0.0,  0.0, self.cam_r)
-#         print(self.cam_theta, self.cam_phi, self.cam_r)
-#         view.rotate(-self.cam_theta, 0.0, 1.0, 0.0)
-#         view.rotate(-self.cam_phi, 1.0, 0.0, 0.0)
-#         self.shader_manager.set_view(view)
+        colour = QVector4D(1.0, 1.0, 1.0, 1.0)
+        # self.shader_manager.set_colour_pc(colour)
+        # view transformation
+        view = QMatrix4x4()
+        view.translate(0.0,  0.0, self.cam_r)
+        print(self.cam_theta, self.cam_phi, self.cam_r)
+        view.rotate(-self.cam_theta, 0.0, 1.0, 0.0)
+        view.rotate(-self.cam_phi, 1.0, 0.0, 0.0)
+        self.shader_manager.set_view_pc(view)
 
-#         # projection transformation
-#         self.shader_manager.set_projection(self.projection)
+        # projection transformation
+        self.shader_manager.set_projection_pc(self.projection)
 
-#         model = QMatrix4x4()
-# #        model.translate(-0.4, -0.8, 0.0)
-# #        model.scale(0.05, 0.05, 1.0)
-#         self.shader_manager.set_model(model)
+        model = QMatrix4x4()
+        #        model.translate(-0.4, -0.8, 0.0)
+        #        model.scale(0.05, 0.05, 1.0)
+        self.shader_manager.set_model_pc(model)
 
-#         self.grid_painter.paint_grid(self.image)
-#         self.idx = (self.idx+1) % 3
-#         self.shader_manager.end_paint()
+        self.ico_grid_painter.paint_grid()
+        #         self.grid_painter.paint_grid(self.image)
+        #         self.idx = (self.idx+1) % 3
+        self.shader_manager.end_paint_pc()
         #################################
         # self.shader_manager.start_paint_field()
 
