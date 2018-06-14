@@ -248,6 +248,16 @@ __global__ void rtm_dual_band (double *pressure_d   ,
                                double *ttemp        ,
                                double *thtemp       ,
                                double timestep      ,
+                               double Tstar         ,
+                               double planet_star_dist,
+                               double radius_star   ,
+                               double diff_fac      ,
+                               double Tlow          ,
+                               double albedo        ,
+                               double tausw         ,
+                               double taulw         ,
+                               double incflx        ,
+                               double ps0           ,
                                int num              ,
                                int nv               ,
                                int nvi              ,
@@ -279,18 +289,18 @@ __global__ void rtm_dual_band (double *pressure_d   ,
     double bc = 5.677036E-8; // Stefan–Boltzmann constant [W m−2 K−4]
 
 	//Star
-	double tstar = 4520; //10170;                                   // Star effective temperature [K]
-    double planet_star_dist = 0.015*149597870.7; //0.03462*149597870.7;          // Planet-star distance [km]
-    double radius_star = 0.667*695508; //2.362*695508;                      // Star radius [km]
-    double resc_flx = pow(radius_star/planet_star_dist,2.0);//
-    double incflx = resc_flx*bc*tstar*tstar*tstar*tstar;                // Incoming stellar flux [W m-2]
-	//Planet
-	double diff_fac = 0.5;         // Diffusivity factor: 0.5-1.0
-	double tlow       = 970; // 3500;        // Lower boundary temperature: upward flux coming from the planet's interior
-    double alb      = 0.18; //0.1;         // Bond albedo
-    double tausw    = 532.0;       // Absorption coefficient for the shortwaves
-    double taulw    = 1064.0;      // Absorption coefficient for the longwaves
-    double ps0      = 10000000;    // Reference bottom pressure
+	// double tstar = 4520; //10170;                                   // Star effective temperature [K]
+  //   double planet_star_dist = 0.015*149597870.7; //0.03462*149597870.7;          // Planet-star distance [km]
+  //   double radius_star = 0.667*695508; //2.362*695508;                      // Star radius [km]
+  //   double resc_flx = pow(radius_star/planet_star_dist,2.0);//
+  //   double incflx = resc_flx*bc*tstar*tstar*tstar*tstar;                // Incoming stellar flux [W m-2]
+	// //Planet
+	// double diff_fac = 0.5;         // Diffusivity factor: 0.5-1.0
+	// double tlow       = 970; // 3500;        // Lower boundary temperature: upward flux coming from the planet's interior
+  //   double alb      = 0.18; //0.1;         // Bond albedo
+  //   double tausw    = 532.0;       // Absorption coefficient for the shortwaves
+  //   double taulw    = 1064.0;      // Absorption coefficient for the longwaves
+  //   double ps0      = 10000000;    // Reference bottom pressure
 
     double xi, xip, xim, a, b;
 

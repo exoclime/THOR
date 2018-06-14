@@ -176,10 +176,18 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
                                        dtemp        ,
                                        ttemp        ,
                                        thtemp       ,
-                                       time_step      ,
-                                       point_num       ,
-                                       nv               ,
-                                       nvi              ,
+                                       time_step    ,
+                                       Tstar        ,
+                                       planet_star_dist,
+                                       radius_star  ,
+                                       diff_fac     ,
+                                       Tlow         ,
+                                       albedo       ,
+                                       tausw        ,
+                                       taulw        ,
+                                       P_Ref        ,
+                                       nv           ,
+                                       nvi          ,
                                        A             );
         // isnan_loop <<< 1, 1 >>> (temperature_d, point_num, nv);
     }
