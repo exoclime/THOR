@@ -49,7 +49,16 @@
 using namespace std;
 
 // To compile without regex lib
-//#define NO_REGEX_SUPPORT
+#define NO_REGEX_SUPPORT
+
+// check if we use GCC and if version is below 4.9, define
+// NO_REGEX_SUPPORT
+#ifdef __GNUC__ 
+#if ( (__GNUC__ == 4 && __GNUC_MINOR__ < 9) \
+      || (__GNUC__ < 4 ))
+   #define NO_REGEX_SUPPORT
+#endif // GCC version check
+#endif // __GNUC__
 
 #ifdef NO_REGEX_SUPPORT
 #else // NO_REGEX_SUPPORT
@@ -88,10 +97,14 @@ inline bool is_comment_line(const string & line)
         // is it a whitespace character
         is_empty &= (line[i] == ' ' || line[i] == '\t');
 
-        if (!is_empty && line[i] == '#')
-            return true;
-        else
-            return false;
+
+        if (!is_empty)
+        {
+            if (line[i] == '#')
+                return true;
+            else
+                return false;
+        }
     }
     
     return is_empty;

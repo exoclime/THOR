@@ -45,6 +45,7 @@
 
 #include <iostream>
 #include <sstream>
+#include <iomanip>
 
 #include "config_file.h"
 #include "testing.h"
@@ -76,8 +77,17 @@ int main()
         "double3 = 1242E+32\n"
         ;
     
+    int i = 1;
+    istringstream iss(config);
+    
+
+    for (string line; getline(iss, line); )
+    {
         
-    cout << config << endl;
+        cout << setw(4) << i << ":\t" << line << endl;
+        i++;            
+    }
+
 
 
     cout << "appending configurations" << endl;
@@ -118,23 +128,23 @@ int main()
 
     std::basic_istringstream<char> istr(config);
     
-    cf.parse_config(istr);
+    
 
     bool success = true;
-    
-    success = success & test_val<int>("int1", int1, 0);
-    success = success & test_val<int>("int2", int2, 1234567890);
-    success = success & test_val<int>("int3", int3, -1234567890);
-    success = success & test_val<double>("double1", double1, 1.0);
-    success = success & test_val<double>("double2", double2, -3.14e19);
-    success = success & test_val<double>("double3", double3, 1242e32);
-    success = success & test_val<bool>("onemore", onemore, true);
-    success = success & test_val<bool>("other", other, false);
-    success = success & test_val<string>("othertest", othertest, string("icle"));
-    success = success & test_val<bool>("def_bool", def_bool, true);
-    success = success & test_val<int>("def_int", def_int, 42);
-    success = success & test_val<double>("def_double", def_double, 2.18);
-    success = success & test_val<string>("def_string", def_string, string("default"));
+    success &= cf.parse_config(istr);
+    success &= test_val<int>("int1", int1, 0);
+    success &= test_val<int>("int2", int2, 1234567890);
+    success &= test_val<int>("int3", int3, -1234567890);
+    success &= test_val<double>("double1", double1, 1.0);
+    success &= test_val<double>("double2", double2, -3.14e19);
+    success &= test_val<double>("double3", double3, 1242e32);
+    success &= test_val<bool>("onemore", onemore, true);
+    success &= test_val<bool>("other", other, false);
+    success &= test_val<string>("othertest", othertest, string("icle"));
+    success &= test_val<bool>("def_bool", def_bool, true);
+    success &= test_val<int>("def_int", def_int, 42);
+    success &= test_val<double>("def_double", def_double, 2.18);
+    success &= test_val<string>("def_string", def_string, string("default"));
         
     if (success)
         cout << "Test PASS" << endl;

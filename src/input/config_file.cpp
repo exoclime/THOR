@@ -87,6 +87,7 @@ bool config_file::parse_config(basic_istream<char> & config)
 
     // read input line by line
    
+    bool parse_success = true;
     
     
     
@@ -117,25 +118,26 @@ bool config_file::parse_config(basic_istream<char> & config)
                 bool parsed = it->second->parse(value);
                 if (!parsed)
                 {
-                     cout << "parsing of value ["<<value<<"] failed for key ["<<key<<"] "<<endl;                    
+                     cout << "parsing of value ["<<value<<"] failed for key ["<<key<<"] "<<endl;
+                     parse_success &= false;
                 }                
             }
             else
             {
                 cout << "config file key ["<< key << "] does not exist" << endl;
-                // return false;                
+                parse_success &= false;
+
             }
         }
         else
         {
-            cout << "error in config file at line " << cnt << endl;
-            
-            //return false;
+            cout << "error in config file at line " << cnt << " :\t [" << line << "]" << endl;
+            parse_success &= false;
         }
         cnt++;     
     }
     
-    return true;
+    return parse_success;
     
 }
     
