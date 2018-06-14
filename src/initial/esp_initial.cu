@@ -166,7 +166,7 @@ __host__ void ESP::AllocData(){
 
 
 //  Deviations
-    cudaMalloc((void **)&pressures_d   , nvi * point_num *     sizeof(double));
+    cudaMalloc((void **)&pressures_d   , nv * point_num *     sizeof(double));
     cudaMalloc((void **)&Rhos_d        , nv * point_num *     sizeof(double));
     cudaMalloc((void **)&Mhs_d         , nv * point_num * 3 * sizeof(double));
     cudaMalloc((void **)&Ws_d          , nv * point_num *     sizeof(double));
@@ -175,7 +175,7 @@ __host__ void ESP::AllocData(){
 
 
 //  RK-Method
-    cudaMalloc((void **)&pressurek_d   , nvi * point_num *     sizeof(double));
+    cudaMalloc((void **)&pressurek_d   , nv * point_num *     sizeof(double));
     cudaMalloc((void **)&Rhok_d        , nv * point_num *     sizeof(double));
     cudaMalloc((void **)&Mhk_d         , nv * point_num * 3 * sizeof(double));
     cudaMalloc((void **)&Wk_d          , nv * point_num *     sizeof(double));

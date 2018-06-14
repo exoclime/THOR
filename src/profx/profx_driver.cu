@@ -97,7 +97,7 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
     isnan_check<<< 16, NTH >>>(temperature_d, nv, point_num, check_d);
     cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
     if(check_h){
-       printf("\n\n Error in NAN check after Profx:CompTemp!\n");
+       printf("\n\n Error in NAN check!\n");
        exit(EXIT_FAILURE);
     }
 
@@ -184,16 +184,6 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
         // isnan_loop <<< 1, 1 >>> (temperature_d, point_num, nv);
     }
 
-    check_h = false;
-    cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
-    isnan_check<<< 16, NTH >>>(temperature_d, nv, point_num, check_d);
-    cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
-    if(check_h){
-       printf("\n\n Error in NAN check after Profx:RT!\n");
-       exit(EXIT_FAILURE);
-    }
-
-
 //  Computes the new pressures.
     cudaDeviceSynchronize();
     Compute_pressure <<< NB, NTH >>> (pressure_d   ,
@@ -201,15 +191,6 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
                                       Rho_d        ,
                                       Rd           ,
                                       point_num    );
-
-    check_h = false;
-    cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
-    isnan_check<<< 16, NTH >>>(temperature_d, nv, point_num, check_d);
-    cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
-    if(check_h){
-       printf("\n\n Error in NAN check after Profx:CompPress!\n");
-       exit(EXIT_FAILURE);
-    }
 
 
 //
