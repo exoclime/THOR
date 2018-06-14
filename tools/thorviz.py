@@ -68,11 +68,16 @@ for k, v in grid.items():
     print(k, v)
 
 xyz = grid['xyz']
+maps = grid['maps']
 
 num_points = int(len(xyz)/3)
 colors = np.zeros((num_points, 3), dtype=np.float32)
 for i in range(num_points):
+    #idx = maps[i]
+    #c = [0.0, 0.0, 0.0]
     c = HSV_to_RGB(360.0*i/(num_points - 1), 1.0, 1.0)
+    #c[0] = i/(num_points-1)
+    #c[1] = idx/(num_points-1)
     colors[i][0] = c[0]
     colors[i][1] = c[1]
     colors[i][2] = c[2]
