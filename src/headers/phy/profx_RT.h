@@ -248,12 +248,12 @@ __global__ void rtm_dual_band (double *pressure_d   ,
                                double *ttemp        ,
                                double *thtemp       ,
                                double timestep      ,
-                               double Tstar         ,
+                               double tstar         ,
                                double planet_star_dist,
                                double radius_star   ,
                                double diff_fac      ,
-                               double Tlow          ,
-                               double albedo        ,
+                               double tlow          ,
+                               double alb           ,
                                double tausw         ,
                                double taulw         ,
                                double incflx        ,
@@ -286,7 +286,7 @@ __global__ void rtm_dual_band (double *pressure_d   ,
 
 
     // RTM parameters
-    double bc = 5.677036E-8; // Stefan–Boltzmann constant [W m−2 K−4]
+    // double bc = 5.677036E-8; // Stefan–Boltzmann constant [W m−2 K−4]
 
 	//Star
 	// double tstar = 4520; //10170;                                   // Star effective temperature [K]

@@ -185,7 +185,9 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
                                        albedo       ,
                                        tausw        ,
                                        taulw        ,
+                                       incflx       ,
                                        P_Ref        ,
+                                       point_num    ,
                                        nv           ,
                                        nvi          ,
                                        A             );
