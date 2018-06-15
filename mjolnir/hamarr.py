@@ -274,7 +274,7 @@ def uv_lev(input,grid,output,Plev):
     if not os.path.exists(input.resultsf+'/figures'):
         os.mkdir(input.resultsf+'/figures')
     plt.tight_layout()
-    plt.savefig(input.resultsf+'/figures/u_lev%d_i%d_l%d.pdf'%((Plev/input.P_Ref*1000),output.ntsi,output.nts))
+    plt.savefig(input.resultsf+'/figures/u_lev%#.3fmbar_i%d_l%d.pdf'%((Plev/100),output.ntsi,output.nts))
     plt.close()
 
     plt.figure()
