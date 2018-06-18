@@ -165,7 +165,7 @@ __host__ void ESP::Output(int    ntstep         , // Number of integration steps
         H5Sclose(dataspace_id);
 
 //      Number of horizontal points
-        double point_num_a[] = {point_num};
+        double point_num_a[] = {(double)point_num};
         dims[0] = 1;
         dataspace_id = H5Screate_simple(1, dims, NULL);
         dataset_id = H5Dcreate2(file_id, "/point_num", H5T_IEEE_F64LE, dataspace_id, 
@@ -183,7 +183,7 @@ __host__ void ESP::Output(int    ntstep         , // Number of integration steps
         H5Sclose(dataspace_id);
 
 //      Number of vertical layers
-        double nv_a[] = {nv};
+        double nv_a[] = {(double)nv};
         dims[0] = 1;
         dataspace_id = H5Screate_simple(1, dims, NULL);
         dataset_id = H5Dcreate2(file_id, "/nv", H5T_IEEE_F64LE, dataspace_id, 

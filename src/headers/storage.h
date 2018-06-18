@@ -62,17 +62,21 @@ public:
     storage(const string & filename, const bool & read = false);
     
 
+    // Store a table of type T - double or int, in output file
     template<typename T>
     void append_table(T * data,
                    const int & size,
                    string name,
                    string unit);
-    
+
+    // read table of type T from output file
     template<typename T>
     bool read_table(const string & name,
                     std::unique_ptr<T[]> & data,
                     int & size);
 
+
+    // Template functions for data type detection in append_table function.
     template<typename T>
     DataType get_datatype(T & input)
     {
@@ -223,7 +227,7 @@ bool storage::read_table(const string & name,
             {
                 
                 
-                int ndims = dataspace.getSimpleExtentDims( dims_out, NULL);
+                // int ndims = dataspace.getSimpleExtentDims( dims_out, NULL);
                 // cout << "rank " << rank << ", dimensions " <<
                 //    (unsigned long)(dims_out[0]) << " x " << endl;
             }
