@@ -8,6 +8,8 @@ import pathlib
 import argparse
 import re
 
+from math import sqrt
+
 from PyQt5 import QtGui, QtCore, uic
 from PyQt5.QtWidgets import QMainWindow, QApplication
 
@@ -60,7 +62,7 @@ args = parser.parse_args()
 
 folder = pathlib.Path(args.folder)
 
-grid_dataset = "../results/grid_ref/grid_test_4_grid.h5"
+grid_dataset = "../results/grid_ref/grid_test_6_grid.h5"
 
 print("grid def")
 grid = h5py.File(grid_dataset)
@@ -72,6 +74,8 @@ maps = grid['maps']
 
 num_points = int(len(xyz)/3)
 colors = np.zeros((num_points, 3), dtype=np.float32)
+
+
 for i in range(num_points):
     #idx = maps[i]
     #c = [0.0, 0.0, 0.0]
@@ -81,6 +85,53 @@ for i in range(num_points):
     colors[i][0] = c[0]
     colors[i][1] = c[1]
     colors[i][2] = c[2]
+
+# grid color indexing
+# indexing function through rhombis
+# level
+g = 6
+num_rhombi = 10
+# nfaces
+num_subrhombi = int(pow(4.0, g - 4))
+nfaces = num_subrhombi
+num_points_side_region = int(pow(2, 4))
+nl_reg = num_points_side_region
+nl2 = int(pow(num_points_side_region, 2))
+kxl = int(sqrt(num_subrhombi))
+
+
+def idx(fc, kx, ky, i, j):
+    return nl2*(fc*nfaces + ky*kxl + kx) + j*nl_reg + i
+
+
+num_color_points = 0
+for fc in range(num_rhombi):
+    # sub rhombis
+    for kx in range(kxl):
+        for ky in range(kxl):
+            # inside one rombi
+            # horizontal
+            for i in range(nl_reg):
+                for j in range(nl_reg):
+                    H = num_color_points/num_points
+                    #H = i/(nl_reg-1)*0.5
+                    #H = (i*nl_reg + j) / (2*nl_reg*nl_reg)
+                    #S = 1.0
+                    V = 1.0
+                    #H = fc/(num_rhombi-1)*0.5
+                    #S = (i + j) / (nl_reg*2)
+                    #V = 1.0
+                    S = 1.0  # i/(nl_reg-1)*0.5+0.5
+                    #V = j/(nl_reg-1)
+
+                    c = HSV_to_RGB(360.0*H, S, V)
+                    #c[0] = i/(num_points-1)
+                    #c[1] = idx/(num_points-1)
+                    colors[num_color_points][0] = c[0]
+                    colors[num_color_points][1] = c[1]
+                    colors[num_color_points][2] = c[2]
+
+                    num_color_points += 1
 
 
 # read and sort all files
