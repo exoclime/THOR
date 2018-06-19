@@ -201,6 +201,7 @@ __host__ void ESP::AllocData(){
 }
 
 __host__ void ESP::InitialValues(bool rest          ,
+                                 const std::string & initial_conditions,
                                  int glevel         ,
                                  double timestep_dyn,
                                  double A           ,
@@ -255,7 +256,7 @@ __host__ void ESP::InitialValues(bool rest          ,
 
         char FILE_NAME1[160];
         
-        sprintf(FILE_NAME1, "ifile/esp_initial.h5");
+        sprintf(FILE_NAME1, initial_conditions.c_str());
         file_id = H5Fopen(FILE_NAME1, H5F_ACC_RDONLY, H5P_DEFAULT);
 //      Density
         dataset_id = H5Dopen(file_id, "/Rho",H5P_DEFAULT);

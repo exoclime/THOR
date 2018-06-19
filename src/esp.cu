@@ -91,6 +91,9 @@ int main (int argc,  char** argv){
     argparser.add_arg("g", "gpu_id", 0, "GPU_ID to run on");
     argparser.add_arg("o", "output_dir", string("results"), "results directory to store output");
 
+    argparser.add_arg("i", "initial", string("initialfilename"), "start from this initial condition instead of rest");
+
+    
     // Parse arguments
     argparser.parse(argc, argv);
 
@@ -162,8 +165,15 @@ int main (int argc,  char** argv){
     config_reader.append_config_var("DeepModel", DeepModel, DeepModel_default);
 
     // Initial conditions
+    // rest supersedes initial condition entry,
+    // but if initial condition set from  command line, it overrides
+    // rest variable
     bool rest = true;
     config_reader.append_config_var("rest", rest, rest_default);
+
+    string initial_conditions = "initialfilename.h5";
+    config_reader.append_config_var("initial", initial_conditions,
+                                    string(initial_conditions_default));
     
     // Benchmark test
     int hstest = 1;
@@ -199,6 +209,21 @@ int main (int argc,  char** argv){
     
     if (argparser.get_arg("output_dir", output_dir_arg))
         output_path = output_dir_arg;
+
+    string inital_conditions_arg;
+
+    if (argparser.get_arg("initial", inital_conditions_arg))
+    {
+        rest = false;
+        initial_conditions = inital_conditions_arg;
+
+        if (!path_exists(initial_conditions))
+        {
+            printf("Initial conditions file \"%s\" not found", initial_conditions.c_str());
+            exit(-1);
+        }       
+    }
+    
     
     // Test config variables for coherence
     bool config_OK = true;    
@@ -234,7 +259,7 @@ int main (int argc,  char** argv){
     if (!config_OK)
     {
         printf("Error in configuration file\n");
-        exit(0);
+        exit(-1);
     }
     //*****************************************************************
     // check output config directory
@@ -242,7 +267,7 @@ int main (int argc,  char** argv){
     {
         printf("Error creating output result directory: %s\n",
                output_path.c_str());
-        exit(0);
+        exit(-1);
     }
     
     //*****************************************************************
@@ -288,7 +313,10 @@ int main (int argc,  char** argv){
     
    printf(" Setting the initial conditions.\n\n");
 // Initial conditions
-   X.InitialValues(rest         , // Option to start the atmosphere from rest
+   X.InitialValues(rest         , // Option to start the atmosphere
+                                  // from rest
+                   initial_conditions, // initial conditions if not
+                                       // started from rest
                    glevel       , // Horizontal resolution level
                    timestep     , // Time-step [s]
                    Planet.A     , // Planet radius [m]

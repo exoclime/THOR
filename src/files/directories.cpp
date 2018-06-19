@@ -67,10 +67,10 @@ vector<string> split(const string& s, char delimiter)
    return tokens;
 }
 
-bool dir_exists(const string & dir)
+bool path_exists(const string & path)
 {
     struct stat st;
-    if(stat(dir.c_str(),&st) == 0)
+    if(stat(path.c_str(),&st) == 0)
         return true;
     else
         return false;
@@ -103,7 +103,7 @@ bool create_output_dir(const string & output_dir)
             path += string("/");
         path += dir;
 
-        if (dir_exists(path))
+        if (path_exists(path))
         {
             //cout << path << " exists"<<endl;
             

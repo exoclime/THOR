@@ -191,6 +191,7 @@ public:
     void AllocData() ;
 
     void InitialValues(bool  ,
+                       const std::string & initial_conditions,
                        int   ,
                        double,
                        double,

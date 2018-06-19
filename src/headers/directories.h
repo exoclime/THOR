@@ -46,3 +46,5 @@ using namespace std;
 
 
 bool create_output_dir(const string & output_dir);
+
+bool path_exists(const string & path);
