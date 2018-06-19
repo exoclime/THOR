@@ -157,11 +157,15 @@ int main (int argc,  char** argv){
     bool DeepModel = true;
     bool SpongeLayer = false;
     int nlat = 20;
+    double Rv_sponge = 1e-4;
+    double ns_sponge = 0.75;
 
     config_reader.append_config_var("NonHydro", NonHydro, NonHydro_default);
     config_reader.append_config_var("DeepModel", DeepModel, DeepModel_default);
     config_reader.append_config_var("SpongeLayer", SpongeLayer, SpongeLayer_default);
     config_reader.append_config_var("nlat", nlat, nlat_default);
+    config_reader.append_config_var("Rv_sponge", Rv_sponge, Rv_sponge_default);
+    config_reader.append_config_var("ns_sponge", ns_sponge, ns_sponge_default);
 
     // Initial conditions
     bool rest = true;
@@ -286,6 +290,8 @@ int main (int argc,  char** argv){
            Grid.nv            , // Number of vertical layers
            Grid.nvi           , // Number of interfaces between layer
            nlat               , // Number of latitude rings for zonal mean wind
+           Rv_sponge          , // Maximum damping of sponge layer
+           ns_sponge          , // lowest level of sponge layer (fraction of model)
            Grid.point_num     );// Number of grid points
 
     USE_BENCHMARK();
@@ -431,7 +437,7 @@ int main (int argc,  char** argv){
                Planet.P_Ref , // Reference pressure [Pa]
                Planet.Gravit, // Gravity [m/s^2]
                Planet.A     ,// Planet radius [m]
-               SpongeLayer  ); 
+               SpongeLayer  );
 
 //
 //      Prints output every nout steps

@@ -51,7 +51,11 @@
 #define glevel_default 4          // Horizontal resolution level.
 #define spring_beta_default 1.15  // Parameter beta for spring dynamics
 #define vlevel_default 32         // Number of vertical layers
+
+// Sponge layer
 #define nlat_default   20         // Number of latitude rings for mean zonal wind (sponge layer)
+#define Rv_sponge_default 1e-4    // Maximum damping (top of model)
+#define ns_sponge_default 0.75    // Lowest level of sponge layer
 
 // Diffusion
 #define HyDiff_default       true    // Hyper-diffusion

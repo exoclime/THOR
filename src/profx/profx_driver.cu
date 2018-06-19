@@ -86,8 +86,8 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
 
       cudaDeviceSynchronize();
   // temporary to set up code. Need to move to config file eventually.
-      double Rv_sponge = 1e-4;
-      double ns_sponge = 0.5;
+      // double Rv_sponge = 1e-4;
+      // double ns_sponge = 0.75;
 
       sponge_layer <<< NB,NTH >>>(Mh_d                      ,
                                   Rho_d                    ,
@@ -101,8 +101,8 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
                                   Rv_sponge             ,
                                   ns_sponge              ,
                                   time_step                  ,
-                                  nlat                          ,
-                                  point_num                         ,
+                                  nlat                       ,
+                                  point_num                  ,
                                   nv                           );
     }
 

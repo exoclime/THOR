@@ -93,6 +93,9 @@ public:
     double *Kdhz_h        ;
     double *Kdh4_h        ;
     bool    check_h       ;
+
+    double Rv_sponge      ;
+    double ns_sponge      ;
 ///////////////////////////
 //  Device
     int *point_local_d    ;
@@ -212,6 +215,8 @@ public:
         int     ,
         int     ,
         int     ,
+        double  ,
+        double  ,
         int     );
 
     void AllocData() ;

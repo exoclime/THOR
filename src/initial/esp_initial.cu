@@ -67,6 +67,8 @@ __host__ ESP::ESP(int *point_local_    ,
                   int nv_              ,
                   int nvi_             ,
                   int nlat_            ,
+                  double Rv_sponge_    ,
+                  double ns_sponge_    ,
                   int point_num_    ): nl_region(nl_region_), nr(nr_), point_num(point_num_), nv(nv_), nvi(nvi_), nlat(nlat_){
 
     point_local_h = point_local_;
@@ -88,6 +90,8 @@ __host__ ESP::ESP(int *point_local_    ,
 
     func_r_h = func_r_ ;
 
+    Rv_sponge = Rv_sponge_;
+    ns_sponge = ns_sponge_;
 //
 //  Allocate Data
     AllocData();
