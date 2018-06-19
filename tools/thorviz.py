@@ -117,11 +117,12 @@ for fc in range(num_rhombi):
                     #H = i/(nl_reg-1)*0.5
                     #H = (i*nl_reg + j) / (2*nl_reg*nl_reg)
                     #S = 1.0
-                    V = 1.0
+                    #V = 1.0
                     #H = fc/(num_rhombi-1)*0.5
                     #S = (i + j) / (nl_reg*2)
                     #V = 1.0
-                    S = 1.0  # i/(nl_reg-1)*0.5+0.5
+                    S = i/(nl_reg-1)*0.5+0.25
+                    V = j/(nl_reg-1)*0.5+0.25
                     #V = j/(nl_reg-1)
 
                     c = HSV_to_RGB(360.0*H, S, V)
