@@ -46,7 +46,7 @@
 
 #include <stdio.h>              
 #include <stdlib.h>             
-#include <string.h>             
+#include <string>             
 #include "../headers/esp.h"
 #include "hdf5.h"
 
@@ -72,7 +72,8 @@ __host__ void ESP::Output(int    ntstep         , // Number of integration steps
                           double Top_altitude   , // Top of the model's domain [m]
                           double A              , // Planet radius [m]
                           char  *simulation_ID  , // Planet ID
-                          double simulation_time){// Option for deep atmosphere
+                          double simulation_time, // Option for deep atmosphere
+                          const std::string & output_dir){
 
 //
 //  Description: Model output.
@@ -88,7 +89,7 @@ __host__ void ESP::Output(int    ntstep         , // Number of integration steps
           
 //  GRID OUTPUT
     if(ntstep == 0){           
-       sprintf(FILE_NAME1, "results/esp_output_grid_%s.h5", simulation_ID);
+        sprintf(FILE_NAME1, "%s/esp_output_grid_%s.h5", output_dir.c_str(), simulation_ID);
 
 //      Create a new file using default properties. 
         file_id = H5Fcreate(FILE_NAME1, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);  
@@ -225,7 +226,7 @@ __host__ void ESP::Output(int    ntstep         , // Number of integration steps
   
 //  PLANET
     if(ntstep == 0){           
-        sprintf(FILE_NAME1, "results/esp_output_%s.h5", simulation_ID);
+        sprintf(FILE_NAME1, "%s/esp_output_%s.h5", output_dir.c_str(), simulation_ID);
         file_id = H5Fcreate(FILE_NAME1, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);    
                    
         double A_a[]            = {A           };
@@ -378,7 +379,7 @@ __host__ void ESP::Output(int    ntstep         , // Number of integration steps
     }       
        
 //  ESP OUTPUT
-    sprintf(FILE_NAME1, "results/esp_output_%s_%d.h5", simulation_ID, ntstep);
+    sprintf(FILE_NAME1, "%s/esp_output_%s_%d.h5", output_dir.c_str(), simulation_ID, ntstep);
     file_id = H5Fcreate(FILE_NAME1, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
        
 //  Simulation time

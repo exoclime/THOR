@@ -50,6 +50,7 @@
 #include <stdlib.h>
 #include <cmath>
 #include <iostream>
+#include <string>
 
 using namespace std;
 
@@ -62,6 +63,7 @@ using namespace std;
 
 #include "config_file.h"
 #include "cmdargs.h"
+#include "directories.h"
 
 int main (int argc,  char** argv){
 
@@ -172,6 +174,9 @@ int main (int argc,  char** argv){
     int n_out = 1000;
     config_reader.append_config_var("n_out", n_out, n_out_default);
 
+    string output_path  = "results";
+    config_reader.append_config_var("results_path", output_path, string(output_path_default));
+    
     //*****************************************************************    
     // Read config file
 
@@ -226,6 +231,15 @@ int main (int argc,  char** argv){
         printf("Error in configuration file\n");
         exit(0);
     }
+    //*****************************************************************
+    // check output config directory
+    if (!create_output_dir(output_path))
+    {
+        printf("Error creating output result directory: %s\n",
+               output_path.c_str());
+        exit(0);
+    }
+    
     //*****************************************************************
 //  Set the GPU device.    
     cudaError_t error;
@@ -335,6 +349,9 @@ int main (int argc,  char** argv){
     printf("   Time integration =  %d s.\n", nsmax*timestep);
     printf("   Large time-step  =  %d s.\n", timestep);
     printf("    \n");
+
+    printf("   Output directory = %s \n", output_path.c_str());
+    
     
 //
 //  Writes initial conditions
@@ -349,7 +366,8 @@ int main (int argc,  char** argv){
              Planet.Top_altitude , // Top of the model's domain [m]
              Planet.A            , // Planet Radius [m]
              Planet.simulation_ID, // Simulation ID (e.g., "Earth")
-             simulation_time     );// Time of the simulation [s]
+             simulation_time     , // Time of the simulation [s]
+             output_path);         // directory to save output
 
 //
 //  Starting model Integration.
@@ -408,7 +426,8 @@ int main (int argc,  char** argv){
                      Planet.Top_altitude , // Top of the model's domain [m]
                      Planet.A            , // Planet radius [m]
                      Planet.simulation_ID, // Planet ID
-                     simulation_time     );// Simulation time [s]
+                     simulation_time     , // Simulation time [s]  
+                     output_path);         // Directory to save output
         }
         printf("\n Time step number = %d || Time = %f days.", nstep, nstep*timestep/86400.);
     }

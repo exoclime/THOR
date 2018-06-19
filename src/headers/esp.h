@@ -47,6 +47,8 @@
 #include <stdlib.h>
 #include <math.h>
 
+#include <string>
+
 class ESP{
 
 public:
@@ -244,7 +246,8 @@ public:
                 double,
                 double,
                 char* ,
-                double);
+                double,
+                const std::string & output_dir);
 
     ~ESP();
 };

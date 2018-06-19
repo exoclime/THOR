@@ -73,6 +73,5 @@
 #define GPU_ID_N_default 0        // Set GPU ID number
 
 // Output
-#define n_out_default 1000         // Print output every n_out steps
-
-
+#define n_out_default 1000                 // Print output every n_out steps
+#define output_path_default  "results"     // Output directory
