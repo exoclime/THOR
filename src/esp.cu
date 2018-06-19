@@ -79,16 +79,17 @@ int main (int argc,  char** argv){
     // * long form: e.g. "int" for --int
     // * default value, defines type of variable: e.g. -1 for int,
     //   value -1
-    // argparser.add_arg("i", "int", -1);
-    // argparser.add_arg("b", "bool", false);
-    // argparser.add_arg("d", "double", 1e-5);
-    // argparser.add_arg("s", "string", string("value"));
+    // * help string
+    // argparser.add_arg("i", "int", -1, "This is an int");
+    // argparser.add_arg("b", "bool", false, "this is a bool");
+    // argparser.add_arg("d", "double", 1e-5, "this is a double");
+    // argparser.add_arg("s", "string", string("value"), "this is a string");
 
     string default_config_filename("ifile/earth.thr");
      
     argparser.add_positional_arg(default_config_filename, "config filename");
     argparser.add_arg("g", "gpu_id", 0, "GPU_ID to run on");
-    
+    argparser.add_arg("o", "output_dir", string("results"), "results directory to store output");
 
     // Parse arguments
     argparser.parse(argc, argv);
@@ -193,7 +194,11 @@ int main (int argc,  char** argv){
     int GPU_ID_N_arg;
     if (argparser.get_arg("gpu_id", GPU_ID_N_arg))
         GPU_ID_N = GPU_ID_N_arg;
+
+    string output_dir_arg;
     
+    if (argparser.get_arg("output_dir", output_dir_arg))
+        output_path = output_dir_arg;
     
     // Test config variables for coherence
     bool config_OK = true;    
