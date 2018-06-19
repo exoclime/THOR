@@ -18,7 +18,7 @@
 //
 // ESP -  Exoclimes Simulation Platform. (version 1.0)
 //
-//   
+//
 //
 // Method: [1] - Builds the icosahedral grid (Mendonca et al., 2016).
 //         Iteration:
@@ -30,11 +30,11 @@
 // Known limitations: - Runs in a single GPU.
 //
 // Known issues: None
-//   
 //
-// If you use this code please cite the following reference: 
 //
-//       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016  
+// If you use this code please cite the following reference:
+//
+//       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016
 //
 // Current Code Owner: Joao Mendonca, EEG. joao.mendonca@csh.unibe.ch
 //
@@ -70,7 +70,7 @@ int main (int argc,  char** argv){
     //*****************************************************************
     // Parse input arguments
     cmdargs argparser("esp", "run THOR GCM simulation");
-    
+
     // define arguments
     // format:
     // * short form: e.g. "i" for -i
@@ -83,10 +83,10 @@ int main (int argc,  char** argv){
     // argparser.add_arg("s", "string", string("value"));
 
     string default_config_filename("ifile/earth.thr");
-     
+
     argparser.add_positional_arg(default_config_filename, "config filename");
     argparser.add_arg("g", "gpu_id", 0, "GPU_ID to run on");
-    
+
 
     // Parse arguments
     argparser.parse(argc, argv);
@@ -94,12 +94,12 @@ int main (int argc,  char** argv){
     // get config file path if present in argument
     string config_filename = "";
     argparser.get_positional_arg(config_filename);
-        
+
     //*****************************************************************
     printf("\n Starting ESP!");
     printf("\n\n version 1.0\n");
     printf(" Compiled on " __DATE__ " at " __TIME__ "\n");
-    
+
     printf(" build level: " BUILD_LEVEL "\n");
 
 
@@ -107,14 +107,14 @@ int main (int argc,  char** argv){
     // Initial conditions
     config_file config_reader;
 
-    
+
     //*****************************************************************
     // Setup config variables
-    
+
      // Integration time
     int timestep = 1000;
     int nsmax = 48000;
-    
+
     config_reader.append_config_var("timestep", timestep, timestep_default);
     config_reader.append_config_var("num_steps", nsmax, nsmax_default);
 
@@ -122,7 +122,7 @@ int main (int argc,  char** argv){
     // initialises to default earth
     XPlanet Planet;
     string simulation_ID = "Earth";
-    
+
     config_reader.append_config_var("simulation_ID", simulation_ID, string(Planet.simulation_ID));
     config_reader.append_config_var("radius", Planet.A, Planet.A);
     config_reader.append_config_var("rotation_rate", Planet.Omega, Planet.Omega);
@@ -140,7 +140,7 @@ int main (int argc,  char** argv){
     int glevel = 4;
     double spring_beta = 1.15;
     int vlevel = 32;
-    
+
     config_reader.append_config_var("spring_dynamics", spring_dynamics, sprd_default);
     config_reader.append_config_var("glevel", glevel, glevel_default);
     config_reader.append_config_var("spring_beta", spring_beta, spring_beta_default);
@@ -161,7 +161,7 @@ int main (int argc,  char** argv){
     // Initial conditions
     bool rest = true;
     config_reader.append_config_var("rest", rest, rest_default);
-    
+
     // Benchmark test
     int hstest = 1;
     config_reader.append_config_var("hstest", hstest, hstest_default);
@@ -172,7 +172,7 @@ int main (int argc,  char** argv){
     int n_out = 1000;
     config_reader.append_config_var("n_out", n_out, n_out_default);
 
-    //*****************************************************************    
+    //*****************************************************************
     // Read config file
 
     if (config_reader.parse_file(config_filename))
@@ -188,10 +188,10 @@ int main (int argc,  char** argv){
     int GPU_ID_N_arg;
     if (argparser.get_arg("gpu_id", GPU_ID_N_arg))
         GPU_ID_N = GPU_ID_N_arg;
-    
-    
+
+
     // Test config variables for coherence
-    bool config_OK = true;    
+    bool config_OK = true;
     config_OK &= check_greater( "timestep", timestep, 0);
     config_OK &= check_greater( "nsmax", nsmax, 0);
     config_OK &= check_greater( "gravitation", Planet.Gravit, 0.0);
@@ -203,8 +203,8 @@ int main (int argc,  char** argv){
 
     config_OK &= check_range( "glevel", glevel, 3, 8);
     config_OK &= check_greater( "vlevel", vlevel, 0);
-    config_OK &= check_range( "hstest", hstest, -1, 5);
-    
+    config_OK &= check_range( "hstest", hstest, -1, 6);
+
     config_OK &= check_greater( "GPU_ID_N", GPU_ID_N, -1);
     config_OK &= check_greater( "n_out", n_out, 0);
 
@@ -215,28 +215,28 @@ int main (int argc,  char** argv){
     else
     {
         printf("Bad value for config variable simulation_ID: [%s]\n", simulation_ID.c_str());
-        
+
         config_OK = false;
     }
-    
-    
-    
+
+
+
     if (!config_OK)
     {
         printf("Error in configuration file\n");
         exit(0);
     }
     //*****************************************************************
-//  Set the GPU device.    
+//  Set the GPU device.
     cudaError_t error;
     printf(" Using GPU #%d\n", GPU_ID_N);
     cudaSetDevice(GPU_ID_N);
-    
-    
+
+
 //
 //  Make the icosahedral grid
     Icogrid Grid(spring_dynamics    , // Spring dynamics option
-                 spring_beta        , // Parameter beta for spring dynamics 
+                 spring_beta        , // Parameter beta for spring dynamics
                  glevel             , // Horizontal resolution level
                  vlevel             , // Number of vertical layers
                  Planet.A           , // Planet radius
@@ -264,9 +264,9 @@ int main (int argc,  char** argv){
            Grid.point_num     );// Number of grid points
 
     USE_BENCHMARK();
-    
+
     BENCH_POINT_GRID(Grid);
-    
+
    printf(" Setting the initial conditions.\n\n");
 // Initial conditions
    X.InitialValues(rest         , // Option to start the atmosphere from rest
@@ -277,7 +277,7 @@ int main (int argc,  char** argv){
                    Planet.P_Ref , // Reference pressure [Pa]
                    Planet.Gravit, // Gravity [m/s^2]
                    Planet.Omega , // Rotation rate [1/s]
-                   Planet.Diffc , // Strength of diffusion 
+                   Planet.Diffc , // Strength of diffusion
                    kb           , // Boltzmann constant [J/kg]
                    Planet.Tmean , // Isothermal atmosphere (at temperature Tmean)
                    Planet.Mmol  , // Mean molecular mass of dry air [kg]
@@ -335,7 +335,7 @@ int main (int argc,  char** argv){
     printf("   Time integration =  %d s.\n", nsmax*timestep);
     printf("   Large time-step  =  %d s.\n", timestep);
     printf("    \n");
-    
+
 //
 //  Writes initial conditions
     double simulation_time = 0.0;
@@ -360,7 +360,7 @@ int main (int argc,  char** argv){
 //  number of steps in the integration.
     for(int nstep = 1; nstep <= nsmax; ++nstep){
         X.current_step = nstep;
-        
+
 //
 //      Dynamical Core Integration (THOR)
         X.Thor (timestep     , // Time-step [s]
@@ -380,7 +380,7 @@ int main (int argc,  char** argv){
 
 //
 //     Physical Core Integration (ProfX)
-       X.ProfX(planetnumber , // Planet ID 
+       X.ProfX(planetnumber , // Planet ID
                nstep        , // Step number
                hstest       , // Held-Suarez test option
                timestep     , // Time-step [s]
@@ -404,7 +404,7 @@ int main (int argc,  char** argv){
                      Planet.Omega        , // Rotation rate [s-1]
                      Planet.Gravit       , // Gravitational acceleration [m/s2]
                      Planet.Mmol         , // Mean molecular mass of dry air [kg]
-                     Planet.P_Ref        , // Reference surface pressure [Pa] 
+                     Planet.P_Ref        , // Reference surface pressure [Pa]
                      Planet.Top_altitude , // Top of the model's domain [m]
                      Planet.A            , // Planet radius [m]
                      Planet.simulation_ID, // Planet ID
@@ -415,7 +415,7 @@ int main (int argc,  char** argv){
 //
 //  Prints the duration of the integration.
     long finishTime = clock();
-    cout << "\n\n Integration time = " << (finishTime - startTime)/CLOCKS_PER_SEC 
+    cout << "\n\n Integration time = " << (finishTime - startTime)/CLOCKS_PER_SEC
                                        << " seconds" << endl;
 
 //

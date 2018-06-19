@@ -46,6 +46,7 @@
 #include "../headers/phy/profx_auxiliary.h"
 #include "../headers/phy/profx_held_suarez.h"
 #include "../headers/phy/profx_shallowHJ_hs.h"
+#include "../headers/phy/profx_deepHJ_hs.h"
 #include "../headers/phy/profx_tidalearth_hs.h"
 
 __host__ void ESP::ProfX(int    planetnumber, // Planet ID
@@ -124,6 +125,20 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
       } else if (hstest == 3) {
         cudaDeviceSynchronize();
         shallowHJ_hs<<< NB, NTH >>> (Mh_d         ,
+                                    pressure_d   ,
+                                    Rho_d        ,
+                                    temperature_d,
+                                    Gravit       ,
+                                    Cp           ,
+                                    Rd           ,
+                                    Altitude_d   ,
+                                    Altitudeh_d  ,
+                                    lonlat_d     ,
+                                    time_step    ,
+                                    point_num    );
+      } else if (hstest == 4) {
+        cudaDeviceSynchronize();
+        deepHJ_hs<<< NB, NTH >>> (Mh_d         ,
                                     pressure_d   ,
                                     Rho_d        ,
                                     temperature_d,
