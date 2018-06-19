@@ -44,8 +44,8 @@ class IcoGridPainter:
     def __init__(self):
         self.level = 0
 
-    def set_grid_data(self, xyz, colors):
-        self.xyz = xyz
+    def set_grid_data(self, lonlat, colors):
+        self.lonlat = lonlat
         self.colors = colors
 
     def set_shader_manager(self, shader_manager):
@@ -59,7 +59,8 @@ class IcoGridPainter:
 
         # vertices = np.zeros((num_vertices, 3),
         #                     dtype=np.float32)
-        vertices = np.zeros((int(len(self.xyz)/3), 3),
+        num_points = int(len(self.lonlat)/2)
+        vertices = np.zeros((num_points, 3),
                             dtype=np.float32)
 
         # r = 1.2
@@ -88,7 +89,7 @@ class IcoGridPainter:
 
         # indexing function through rhombis
         # level
-        g = 6
+        g = int(pow((num_points - 2)/10, 1/4))
         num_rhombi = 10
         # nfaces
         num_subrhombi = int(pow(4.0, g - 4))
@@ -303,12 +304,22 @@ class IcoGridPainter:
 
         print("number of created triangles:", triangle_idx)
 
-        R = 6371000.0
+        # R = 6371000.0
+        # for i in range(vertices.shape[0]):
+        #     vertices[i][0] = self.xyz[i*3 + 0]/R
+        #     vertices[i][1] = self.xyz[i*3 + 1]/R
+        #     vertices[i][2] = self.xyz[i*3 + 2]/R
+        #     elements[i] = i
+
+        #     vertices_colors[i][0] = self.colors[i][0]
+        #     vertices_colors[i][1] = self.colors[i][1]
+        #     vertices_colors[i][2] = self.colors[i][2]
+
+        r = 1.0
         for i in range(vertices.shape[0]):
-            vertices[i][0] = self.xyz[i*3 + 0]/R
-            vertices[i][1] = self.xyz[i*3 + 1]/R
-            vertices[i][2] = self.xyz[i*3 + 2]/R
-            elements[i] = i
+            vertices[i, :] = spherical(r,
+                                       self.lonlat[2*i+0],
+                                       self.lonlat[2*i+1])
 
             vertices_colors[i][0] = self.colors[i][0]
             vertices_colors[i][1] = self.colors[i][1]

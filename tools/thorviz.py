@@ -62,17 +62,24 @@ args = parser.parse_args()
 
 folder = pathlib.Path(args.folder)
 
-grid_dataset = "../results/grid_ref/grid_test_6_grid.h5"
+#grid_dataset = "../results/grid_ref/grid_test_6_grid.h5"
 
-print("grid def")
+#print("grid def")
+#grid = h5py.File(grid_dataset)
+# for k, v in grid.items():
+#    print(k, v)
+
+#xyz = grid['xyz']
+#maps = grid['maps']
+
+#num_points = int(len(xyz)/3)
+
+grid_dataset = "../results/esp_output_grid_Earth.h5"
+
+#print("grid def")
 grid = h5py.File(grid_dataset)
-for k, v in grid.items():
-    print(k, v)
-
-xyz = grid['xyz']
-maps = grid['maps']
-
-num_points = int(len(xyz)/3)
+lonlat = grid['lonlat']
+num_points = int(len(lonlat)/2)
 colors = np.zeros((num_points, 3), dtype=np.float32)
 
 
@@ -89,7 +96,9 @@ for i in range(num_points):
 # grid color indexing
 # indexing function through rhombis
 # level
-g = 6
+print("num points", num_points)
+g = int(pow((num_points - 2)/10, 1/4))
+print("level: ", g)
 num_rhombi = 10
 # nfaces
 num_subrhombi = int(pow(4.0, g - 4))
@@ -242,7 +251,7 @@ class ThorVizWindow(QMainWindow):
         super(ThorVizWindow, self).__init__()
         uic.loadUi('VizWin.ui', self)
 
-        self.vizGL.set_grid_data(xyz, colors)
+        self.vizGL.set_grid_data(lonlat, colors)
         #self.vizGL.set_grid(grd, neighbours, colors, moments)
         self.show()
 
