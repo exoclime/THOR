@@ -61,6 +61,11 @@ DeepModel = true
 # Initial conditions
 rest = true
 
+# Spongebob
+SpongeLayer = true
+# latitude rings
+nlat = 20
+
 # Benchmark test
 # Held-Suarez test for Earth == 1
 # HS test for shallow hot Jupiter == 3
