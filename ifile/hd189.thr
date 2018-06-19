@@ -5,10 +5,10 @@ config_version = 1
 # earth model
 
 # number of steps
-num_steps = 345600
+num_steps = 5184000
 
 # length of timesteps imn seconds
-timestep = 300
+timestep = 20
 
 # keys to add
 # TODO: output_dir # relative to working directory
@@ -33,7 +33,7 @@ Tmean = 1800.0
 # Reference surface pressure [Pa]
 P_ref = 1000000.0
 # Altitude of the top of the model domain [m]
-Top_altitude = 3.5e6
+Top_altitude = 2.7e6
 # Strength of diffusion
 Diffc = 0.009973
 
@@ -67,11 +67,15 @@ rest = true
 # HS test for tidally locked Earth == 2
 # No HS test == 0
 
-hstest = 3
+hstest = 0
+
+Tstar = 4875
+planet_star_dist = 0.03099
+radius_star = 0.805
 
 # output
 # output every n steps
-n_out = 10000
+n_out = 300
 
 # GPU ID number
 GPU_ID_N = 0

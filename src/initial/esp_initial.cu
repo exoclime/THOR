@@ -47,6 +47,7 @@
 
 #include "../headers/esp.h"
 #include "hdf5.h"
+#include <stdio.h>
 
 __host__ ESP::ESP(int *point_local_    ,
                   int *maps_           ,
@@ -200,9 +201,17 @@ __host__ void ESP::AllocData(){
 //  Extras-nan
     cudaMalloc((void **)&check_d, sizeof (bool));
 
-//  Spongebob layer
     cudaMalloc((void **)&vbar_d          , 3 * nv * point_num *sizeof(double));
     cudaMalloc((void **)&zonal_mean_tab_d, 2 * point_num * sizeof(int));
+//  Rad Transfer
+    cudaMalloc((void **)&fnet_up_d   , nvi * point_num *     sizeof(double));
+    cudaMalloc((void **)&fnet_dn_d   , nvi * point_num *     sizeof(double));
+    cudaMalloc((void **)&tau_d       , nv * point_num * 2 *  sizeof(double));
+
+    cudaMalloc((void **)&phtemp      , nvi * point_num *     sizeof(double));
+    cudaMalloc((void **)&thtemp      , nvi * point_num *     sizeof(double));
+    cudaMalloc((void **)&ttemp       , nv * point_num *     sizeof(double));
+    cudaMalloc((void **)&dtemp       , nv * point_num *     sizeof(double));
 }
 
 __host__ void ESP::InitialValues(bool rest          ,
@@ -368,9 +377,32 @@ __host__ void ESP::InitialValues(bool rest          ,
 
     if (sponge==true) cudaMemcpy(zonal_mean_tab_d      ,zonal_mean_tab, 2*point_num * sizeof(int), cudaMemcpyHostToDevice);
 
-
     delete [] Kdh4_h;
     delete [] Kdhz_h;
+
+}
+
+__host__ void ESP::RTSetup(double Tstar_           ,
+                           double planet_star_dist_,
+                           double radius_star_     ,
+                           double diff_fac_        ,
+                           double Tlow_            ,
+                           double albedo_          ,
+                           double tausw_           ,
+                           double taulw_           ) {
+
+   double bc = 5.677036E-8; // Stefan–Boltzmann constant [W m−2 K−4]
+
+   Tstar = Tstar_;
+   planet_star_dist = planet_star_dist_*149597870.7;
+   radius_star = radius_star_*695508;
+   diff_fac = diff_fac_;
+   Tlow = Tlow_;
+   albedo = albedo_;
+   tausw = tausw_;
+   taulw = taulw_;
+   double resc_flx = pow(radius_star/planet_star_dist,2.0);
+   incflx = resc_flx*bc*Tstar*Tstar*Tstar*Tstar;
 }
 
 __host__ ESP::~ESP(){

@@ -48,6 +48,7 @@
 #include "../headers/phy/profx_shallowHJ_hs.h"
 #include "../headers/phy/profx_tidalearth_hs.h"
 #include "../headers/phy/apocalypse_sponge.h"
+#include "../headers/phy/profx_RT.h"
 
 __host__ void ESP::ProfX(int    planetnumber, // Planet ID
                          int    nstep       , // Step number
@@ -69,6 +70,7 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
 
 //  Specify the block sizes.
     dim3 NB((point_num / NTH) + 1, nv, 1);
+    dim3 NBRT((point_num/NTH) + 1, 1, 1);
 
     if (sponge==true) {
       dim3 NBT((point_num / NTH) + 1, nv, 1);
@@ -114,6 +116,9 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
                                          Cp           ,
                                          point_num    );
 //  Check for nan.
+
+
+
     check_h = false;
     cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
     isnan_check<<< 16, NTH >>>(temperature_d, nv, point_num, check_d);
@@ -180,6 +185,42 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
         exit(EXIT_FAILURE);
     }
 
+    if (!hstest) {
+        cudaDeviceSynchronize();
+        rtm_dual_band <<< NBRT, NTH >>> (pressure_d   ,
+      //rtm_dual_band <<< 1,1 >>> (pressure_d         ,
+                                       Rho_d        ,
+                                       temperature_d,
+                                       fnet_up_d    ,
+                                       fnet_dn_d    ,
+                                       tau_d        ,
+                                       Gravit       ,
+                                       Cp           ,
+                                       lonlat_d     ,
+                                       Altitude_d   ,
+                                       Altitudeh_d  ,
+                                       phtemp       ,
+                                       dtemp        ,
+                                       ttemp        ,
+                                       thtemp       ,
+                                       time_step    ,
+                                       Tstar        ,
+                                       planet_star_dist,
+                                       radius_star  ,
+                                       diff_fac     ,
+                                       Tlow         ,
+                                       albedo       ,
+                                       tausw        ,
+                                       taulw        ,
+                                       incflx       ,
+                                       P_Ref        ,
+                                       point_num    ,
+                                       nv           ,
+                                       nvi          ,
+                                       A             );
+        // isnan_loop <<< 1, 1 >>> (temperature_d, point_num, nv);
+    }
+
 //  Computes the new pressures.
     cudaDeviceSynchronize();
     Compute_pressure <<< NB, NTH >>> (pressure_d   ,
@@ -187,6 +228,8 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
                                       Rho_d        ,
                                       Rd           ,
                                       point_num    );
+
+
 //
 //END OF INTEGRATION
 //

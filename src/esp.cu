@@ -171,6 +171,24 @@ int main (int argc,  char** argv){
     int hstest = 1;
     config_reader.append_config_var("hstest", hstest, hstest_default);
 
+    // Rad Trans options
+    double Tstar            = 4520;       // Star effective temperature [K]
+    double planet_star_dist = 0.015;      // Planet-star distance [au]
+    double radius_star      = 0.667;      // Star radius [Rsun]
+  	double diff_fac         = 0.5;        // Diffusivity factor: 0.5-1.0
+  	double Tlow             = 970;        // Lower boundary temperature: upward flux coming from the planet's interior
+    double albedo           = 0.18;       // Bond albedo
+    double tausw            = 532.0;      // Absorption coefficient for the shortwaves
+    double taulw            = 1064.0;     // Absorption coefficient for the longwaves
+    config_reader.append_config_var("Tstar", Tstar, Tstar_default);
+    config_reader.append_config_var("planet_star_dist", planet_star_dist, planet_star_dist_default);
+    config_reader.append_config_var("radius_star", radius_star, radius_star_default);
+    config_reader.append_config_var("diff_fac", diff_fac, diff_fac_default);
+    config_reader.append_config_var("Tlow", Tlow, Tlow_default);
+    config_reader.append_config_var("albedo", albedo, albedo_default);
+    config_reader.append_config_var("tausw", tausw, tausw_default);
+    config_reader.append_config_var("taulw", taulw, taulw_default);
+
     int GPU_ID_N = 0;
     config_reader.append_config_var("GPU_ID_N", GPU_ID_N, GPU_ID_N_default);
 
@@ -292,6 +310,17 @@ int main (int argc,  char** argv){
                    Planet.Rd    ,// Gas constant [J/kg/K]
                    Grid.zonal_mean_tab,
                    SpongeLayer);
+
+    if (hstest == 0) {
+      X.RTSetup(Tstar            ,
+                planet_star_dist ,
+                radius_star      ,
+                diff_fac         ,
+                Tlow             ,
+                albedo           ,
+                tausw            ,
+                taulw            );
+    }
 
     long startTime = clock();
 
