@@ -44,12 +44,14 @@
 
 #include "cmdargs.h"
 
-#include <regex>
+
 #include <algorithm>
 #include <iostream>
 #include <stdexcept>
 
 #include <cstdio>
+
+#include "parser_helpers.h"
 
 cmdargs::cmdargs(const string & app_name_,
                  const string & app_desc_)
@@ -128,18 +130,17 @@ bool cmdargs::parser_state_machine(const string & str)
     switch(parser_state) {
     case PARSE_FOR_KEY:
         {
-            regex short_key_regex("^-([A-Za-z0-9])$");
-            regex long_key_regex("^--([A-Za-z0-9]+)$");
-            std::smatch match;
+            
+           
+            
 
             current_arg_interface = args.end();
             bool match_arg = false;
             
-        
-            if (regex_match(str, match, short_key_regex))
+            string ma = "";
+            
+            if (is_short_cmdargs(str, ma))
             {
-                string ma = match[1];
-
                 if (ma == "h")
                 {
                     print_help();
@@ -152,10 +153,8 @@ bool cmdargs::parser_state_machine(const string & str)
                                                       -> bool { return m->is_key(ma); });
                 match_arg = true;
             }
-            else if (regex_match(str, match, long_key_regex))
-            {
-                string ma = match[1];
-                                
+            else if (is_long_cmdargs(str, ma))
+            {                                
                 if (ma == "help")
                 {
                     print_help();
