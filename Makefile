@@ -25,13 +25,14 @@ arch := -arch sm_$(SM)
 
 # objects
 obj_cuda   := esp.o grid.o esp_initial.o planet.o thor_driver.o profx_driver.o esp_output.o 
-obj_cpp := storage.o binary_test.o config_file.o cmdargs.o
+obj_cpp := storage.o binary_test.o config_file.o cmdargs.o directories.o
 obj := $(obj_cpp) $(obj_cuda)
 
 #objects for tests
 obj_tests_cmdargs := cmdargs_test.o cmdargs.o
 obj_tests_config := config_test.o config_file.o
 obj_tests_storage := storage_test.o storage.o
+obj_tests_directories := directories_test.o directories.o
 
 
 
@@ -56,7 +57,7 @@ profiling_flags := -pg
 
 #######################################################################
 # define where to find sources
-source_dirs := src src/grid src/initial src/thor src/profx src/output src/devel src/input src/test
+source_dirs := src src/grid src/initial src/thor src/profx src/output src/devel src/input src/files src/test
 
 vpath %.cu $(source_dirs)
 vpath %.cpp $(source_dirs)
@@ -215,7 +216,7 @@ symlink: $(BINDIR)/$(OUTPUTDIR)/esp
 #	$(CC) $(arch) $(flags) $(debug_flags) -o $(BINDIR)/$(TESTDIR)/cmdargs_test $(addprefix #$(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_cmdargs))
 #endef
 
-tests: ${BINDIR}/${TESTDIR}/cmdargs_test ${BINDIR}/${TESTDIR}/config_test ${BINDIR}/${TESTDIR}/storage_test
+tests: ${BINDIR}/${TESTDIR}/cmdargs_test ${BINDIR}/${TESTDIR}/config_test ${BINDIR}/${TESTDIR}/storage_test ${BINDIR}/${TESTDIR}/directories_test
 
 $(BINDIR)/$(TESTDIR)/cmdargs_test:  $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_cmdargs)) | $(BINDIR)/${OUTPUTDIR} $(BINDIR)/$(TESTDIR) $(BINDIR) $(RESDIR) 
 	@echo $(YELLOW)creating $@ $(END)
@@ -225,6 +226,9 @@ $(BINDIR)/$(TESTDIR)/config_test:  $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tes
 	@echo $(YELLOW)creating $@ $(END)
 	$(CC) $(arch) $(flags) $(debug_flags) -o $(BINDIR)/$(TESTDIR)/config_test $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_config))
 
+$(BINDIR)/$(TESTDIR)/directories_test:  $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_directories)) | $(BINDIR)/${OUTPUTDIR} $(BINDIR)/$(TESTDIR) $(BINDIR) $(RESDIR) 
+	@echo $(YELLOW)creating $@ $(END)
+	$(CC) $(arch) $(flags) $(debug_flags) -o $(BINDIR)/$(TESTDIR)/directories_test $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_directories))
 
 $(BINDIR)/$(TESTDIR)/storage_test:  $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_storage)) | $(BINDIR)/${OUTPUTDIR} $(BINDIR)/$(TESTDIR) $(BINDIR) $(RESDIR) 
 	@echo $(YELLOW)creating $@ $(END)
@@ -247,14 +251,17 @@ clean:
 	-rm -f $(BINDIR)/tests/cmdargs_test
 	-rm -f $(BINDIR)/tests/storage_test
 	-rm -f $(BINDIR)/tests/config_test
+	-rm -f $(BINDIR)/tests/directories_test
 	@echo $(CYAN)clean up test object files $(END)
 	-rm -f $(addprefix $(OBJDIR)/debug/,$(obj_tests_storage))
 	-rf -f $(addprefix $(OBJDIR)/debug/,$(obj_tests_config))
 	-rm -f $(addprefix $(OBJDIR)/debug/,$(obj_tests_cmdargs))
+	-rm -f $(addprefix $(OBJDIR)/debug/,$(obj_tests_directories))
 	@echo $(CYAN)clean up test dependencies $(END)
 	-rm -f $(obj_tests_cmdargs:%.o=$(OBJDIR)/debug/%.d)
 	-rm -f $(obj_tests_storage:%.o=$(OBJDIR)/debug/%.d)
 	-rm -f $(obj_tests_config:%.o=$(OBJDIR)/debug/%.d)
+	-rm -f $(obj_tests_directories:%.o=$(OBJDIR)/debug/%.d)
 	@echo $(CYAN)clean up symlink $(END)
 	-rm -f $(BINDIR)/esp
 	@echo $(CYAN)clean up directories $(END)
@@ -271,6 +278,7 @@ ifeq "${MODE}" "tests"
 include $(obj_tests_config:%.o=$(OBJDIR)/$(OUTPUTDIR)/%.d)
 include $(obj_tests_cmdargs:%.o=$(OBJDIR)/$(OUTPUTDIR)/%.d)
 include $(obj_tests_storage:%.o=$(OBJDIR)/$(OUTPUTDIR)/%.d)
+include $(obj_tests_directories:%.o=$(OBJDIR)/$(OUTPUTDIR)/%.d)
 else
 include $(obj:%.o=$(OBJDIR)/$(OUTPUTDIR)/%.d)
 endif

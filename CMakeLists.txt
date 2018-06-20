@@ -141,7 +141,8 @@ set(SRC
   src/devel/binary_test.cpp
   src/output/storage.cpp
   src/input/config_file.cpp
-  src/input/cmdargs.cpp)
+  src/input/cmdargs.cpp
+  src/files/directories.cpp)
 
 # source for test program for storage class
 set(SRC_STORAGE
@@ -167,6 +168,9 @@ set(SRC_CMDARGS
   src/test/cmdargs_test.cpp
   src/input/cmdargs.cpp)
 
+set(SRC_DIRECTORIES
+  src/test/directories_test.cpp
+  src/files/directories.cpp)
 ######################################################################
 # FIND HDF5
 find_package(HDF5 COMPONENTS CXX)
@@ -190,6 +194,7 @@ target_link_libraries (test_storage ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES}  )
 
 add_executable(test_args ${SRC_CMDARGS})
 add_executable(test_config ${SRC_CONFIG})
+add_executable(test_directories ${SRC_DIRECTORIES})
 
 cuda_add_executable(test_grid ${SRC_GRID} OPTIONS -DBENCHMARKING -DBENCH_POINT_COMPARE)
 target_compile_definitions(test_grid PRIVATE -DBENCHMARKING -DBENCH_POINT_COMPARE)

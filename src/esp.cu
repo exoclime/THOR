@@ -50,6 +50,7 @@
 #include <stdlib.h>
 #include <cmath>
 #include <iostream>
+#include <string>
 
 using namespace std;
 
@@ -62,6 +63,7 @@ using namespace std;
 
 #include "config_file.h"
 #include "cmdargs.h"
+#include "directories.h"
 
 int main (int argc,  char** argv){
 
@@ -77,17 +79,21 @@ int main (int argc,  char** argv){
     // * long form: e.g. "int" for --int
     // * default value, defines type of variable: e.g. -1 for int,
     //   value -1
-    // argparser.add_arg("i", "int", -1);
-    // argparser.add_arg("b", "bool", false);
-    // argparser.add_arg("d", "double", 1e-5);
-    // argparser.add_arg("s", "string", string("value"));
+    // * help string
+    // argparser.add_arg("i", "int", -1, "This is an int");
+    // argparser.add_arg("b", "bool", false, "this is a bool");
+    // argparser.add_arg("d", "double", 1e-5, "this is a double");
+    // argparser.add_arg("s", "string", string("value"), "this is a string");
 
     string default_config_filename("ifile/earth.thr");
      
     argparser.add_positional_arg(default_config_filename, "config filename");
     argparser.add_arg("g", "gpu_id", 0, "GPU_ID to run on");
-    
+    argparser.add_arg("o", "output_dir", string("results"), "results directory to store output");
 
+    argparser.add_arg("i", "initial", string("initialfilename"), "start from this initial condition instead of rest");
+
+    
     // Parse arguments
     argparser.parse(argc, argv);
 
@@ -159,8 +165,15 @@ int main (int argc,  char** argv){
     config_reader.append_config_var("DeepModel", DeepModel, DeepModel_default);
 
     // Initial conditions
+    // rest supersedes initial condition entry,
+    // but if initial condition set from  command line, it overrides
+    // rest variable
     bool rest = true;
     config_reader.append_config_var("rest", rest, rest_default);
+
+    string initial_conditions = "initialfilename.h5";
+    config_reader.append_config_var("initial", initial_conditions,
+                                    string(initial_conditions_default));
     
     // Benchmark test
     int hstest = 1;
@@ -172,6 +185,9 @@ int main (int argc,  char** argv){
     int n_out = 1000;
     config_reader.append_config_var("n_out", n_out, n_out_default);
 
+    string output_path  = "results";
+    config_reader.append_config_var("results_path", output_path, string(output_path_default));
+    
     //*****************************************************************    
     // Read config file
 
@@ -188,6 +204,25 @@ int main (int argc,  char** argv){
     int GPU_ID_N_arg;
     if (argparser.get_arg("gpu_id", GPU_ID_N_arg))
         GPU_ID_N = GPU_ID_N_arg;
+
+    string output_dir_arg;
+    
+    if (argparser.get_arg("output_dir", output_dir_arg))
+        output_path = output_dir_arg;
+
+    string inital_conditions_arg;
+
+    if (argparser.get_arg("initial", inital_conditions_arg))
+    {
+        rest = false;
+        initial_conditions = inital_conditions_arg;
+
+        if (!path_exists(initial_conditions))
+        {
+            printf("Initial conditions file \"%s\" not found", initial_conditions.c_str());
+            exit(-1);
+        }       
+    }
     
     
     // Test config variables for coherence
@@ -224,8 +259,17 @@ int main (int argc,  char** argv){
     if (!config_OK)
     {
         printf("Error in configuration file\n");
-        exit(0);
+        exit(-1);
     }
+    //*****************************************************************
+    // check output config directory
+    if (!create_output_dir(output_path))
+    {
+        printf("Error creating output result directory: %s\n",
+               output_path.c_str());
+        exit(-1);
+    }
+    
     //*****************************************************************
 //  Set the GPU device.    
     cudaError_t error;
@@ -269,7 +313,10 @@ int main (int argc,  char** argv){
     
    printf(" Setting the initial conditions.\n\n");
 // Initial conditions
-   X.InitialValues(rest         , // Option to start the atmosphere from rest
+   X.InitialValues(rest         , // Option to start the atmosphere
+                                  // from rest
+                   initial_conditions, // initial conditions if not
+                                       // started from rest
                    glevel       , // Horizontal resolution level
                    timestep     , // Time-step [s]
                    Planet.A     , // Planet radius [m]
@@ -335,6 +382,12 @@ int main (int argc,  char** argv){
     printf("   Time integration =  %d s.\n", nsmax*timestep);
     printf("   Large time-step  =  %d s.\n", timestep);
     printf("    \n");
+
+    printf("   Start from rest: %s \n", rest?"true":"false");
+    if (!rest)
+        printf("   Loading initial conditions from: %s \n", initial_conditions.c_str());
+    printf("   Output directory = %s \n", output_path.c_str());
+    
     
 //
 //  Writes initial conditions
@@ -349,7 +402,8 @@ int main (int argc,  char** argv){
              Planet.Top_altitude , // Top of the model's domain [m]
              Planet.A            , // Planet Radius [m]
              Planet.simulation_ID, // Simulation ID (e.g., "Earth")
-             simulation_time     );// Time of the simulation [s]
+             simulation_time     , // Time of the simulation [s]
+             output_path);         // directory to save output
 
 //
 //  Starting model Integration.
@@ -408,7 +462,8 @@ int main (int argc,  char** argv){
                      Planet.Top_altitude , // Top of the model's domain [m]
                      Planet.A            , // Planet radius [m]
                      Planet.simulation_ID, // Planet ID
-                     simulation_time     );// Simulation time [s]
+                     simulation_time     , // Simulation time [s]  
+                     output_path);         // Directory to save output
         }
         printf("\n Time step number = %d || Time = %f days.", nstep, nstep*timestep/86400.);
     }

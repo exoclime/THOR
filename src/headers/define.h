@@ -62,6 +62,12 @@
 
 // Initial conditions
 #define rest_default   true          // Starting from rest
+#define initial_conditions_default   "ifile/esp_initial.h5" // start
+                                                            // from
+                                                            // this
+                                                            // initial
+                                                            // conditions
+                                                            // file
 
 // Benchmark test
 #define hstest_default 1          // Held-Suarez test for Earth == 1
@@ -73,6 +79,5 @@
 #define GPU_ID_N_default 0        // Set GPU ID number
 
 // Output
-#define n_out_default 1000         // Print output every n_out steps
-
-
+#define n_out_default 1000                 // Print output every n_out steps
+#define output_path_default  "results"     // Output directory
