@@ -201,7 +201,7 @@ __host__ void ESP::AllocData(){
 }
 
 __host__ void ESP::InitialValues(bool rest          ,
-                                 const std::string & initial_conditions,
+                                 const std::string & initial_conditions_filename,
                                  int glevel         ,
                                  double timestep_dyn,
                                  double A           ,
@@ -253,11 +253,7 @@ __host__ void ESP::InitialValues(bool rest          ,
 //
 //      Restart from an existing simulation.
         hid_t       file_id, dataset_id;
-
-        char FILE_NAME1[160];
-        
-        sprintf(FILE_NAME1, initial_conditions.c_str());
-        file_id = H5Fopen(FILE_NAME1, H5F_ACC_RDONLY, H5P_DEFAULT);
+        file_id = H5Fopen(initial_conditions_filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
 //      Density
         dataset_id = H5Dopen(file_id, "/Rho",H5P_DEFAULT);
         H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, Rho_h);     
