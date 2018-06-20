@@ -9,7 +9,7 @@ from PyQt5.QtGui import (QOpenGLShader,
 
 import OpenGL.GL as gl
 import numpy as np
-
+import ctypes
 import math
 from math import cos, sin, pi, pow, sqrt
 
@@ -43,10 +43,14 @@ def spherical(r, theta, phi):
 class IcoGridPainter:
     def __init__(self):
         self.level = 0
+        self.wireframe = False
+        self.draw_idx = 0
+        self.altitude = 0
 
-    def set_grid_data(self, lonlat, colors):
+    def set_grid_data(self, lonlat, mesh_colors, data_colors):
         self.lonlat = lonlat
-        self.colors = colors
+        self.mesh_colors = mesh_colors
+        self.data_colors = data_colors
 
     def set_shader_manager(self, shader_manager):
         self.shader_manager = shader_manager
@@ -321,48 +325,107 @@ class IcoGridPainter:
                                        self.lonlat[2*i+0],
                                        self.lonlat[2*i+1])
 
-            vertices_colors[i][0] = self.colors[i][0]
-            vertices_colors[i][1] = self.colors[i][1]
-            vertices_colors[i][2] = self.colors[i][2]
+            vertices_colors[i][0] = self.mesh_colors[i][0]
+            vertices_colors[i][1] = self.mesh_colors[i][1]
+            vertices_colors[i][2] = self.mesh_colors[i][2]
+
+        # build VAOs for all input data
+        self.vao_list = []
 
         # self.grid_elements_count = elements.size
         # self.grid_elements_count = lines.size
         self.grid_elements_count = triangles.size
 
-        self.vao_grid = gl.glGenVertexArrays(1)
-        gl.glBindVertexArray(self.vao_grid)
-        gl.glEnableVertexAttribArray(0)
+        # self.vao_grid = gl.glGenVertexArrays(1)
+        # gl.glBindVertexArray(self.vao_grid)
+        # gl.glEnableVertexAttribArray(0)
 
         self.grid_vertex_count = vertices.size
-        self.grid_vbo = self.create_vbo(vertices)
+        # self.grid_vbo = self.create_vbo(vertices)
 
-        # self.grid_normals_vbo = self.create_normals_vbo(vertices)
-        self.grid_colors_vbo = self.create_colors_vbo(vertices_colors)
-        # elements = np.zeros((len(self.neighbours), 2), dtype=np.uint32)
+        # # self.grid_normals_vbo = self.create_normals_vbo(vertices)
+        # self.grid_colors_vbo = self.create_colors_vbo(vertices_colors)
+        # # elements = np.zeros((len(self.neighbours), 2), dtype=np.uint32)
 
-        #        fig = plt.figure()
-        #        ax = fig.add_subplot(1, 1, 1)
+        # #        fig = plt.figure()
+        # #        ax = fig.add_subplot(1, 1, 1)
 
-        # self.grid_elements_vbo = self.create_elements_vbo(lines)
-        self.grid_elements_vbo = self.create_elements_vbo(triangles)
+        # # self.grid_elements_vbo = self.create_elements_vbo(lines)
+        # self.grid_elements_vbo = self.create_elements_vbo(triangles)
+
+        self.vao_grid = self.create_sphere_vao(
+            vertices, triangles, vertices_colors)
+
+        print(self.data_colors.shape)
+        num_samples = self.data_colors.shape[0]
+        num_levels = self.data_colors.shape[1]
+        num_points = self.data_colors.shape[2]
+        all_vertices = np.zeros((num_samples, num_levels,  num_points, 3),
+                                dtype=np.float32)
+
+        all_triangles = np.zeros((num_samples, num_levels,  triangles.shape[0], 3),
+                                 dtype=np.uint32)
+        cnt = 0
+        for sample in range(num_samples):
+            for level in range(num_levels):
+
+                all_vertices[sample, level, :, :] = (
+                    1.0+level*0.01) * vertices
+
+                all_triangles[sample, level, :, :] = triangles + \
+                    cnt*vertices.shape[0]
+                cnt += 1
+
+        print(triangles.shape, vertices.shape, cnt, self.data_colors.shape)
+        # for sample in range(num_samples):
+        #     for level in range(num_levels):
+        #         for n in range(num_points):
+        #             print(all_triangles[sample, level, n, :])
+        #             print(all_vertices[sample, level, n, :])
+        self.vao_list = self.create_sphere_vao(
+            all_vertices, all_triangles, self.data_colors)
+        print(all_vertices.size, self.data_colors.size)
+        self.num_levels = num_levels
+
+    def create_sphere_vao(self, vertices, triangles, colors):
+        vao = gl.glGenVertexArrays(1)
+
+        gl.glBindVertexArray(vao)
+        gl.glEnableVertexAttribArray(0)
+
+        self.create_vbo(vertices)
+
+        self.create_colors_vbo(colors)
+
+        self.create_elements_vbo(triangles)
+
+        return vao
 
     def paint_grid(self):
         # display grid
-        #gl.glPolygonMode(gl.GL_FRONT_AND_BACK, gl.GL_LINE)
-        print("paint grid", self.vao_grid, self.grid_vertex_count)
-        gl.glBindVertexArray(self.vao_grid)
+        if self.wireframe:
+            gl.glPolygonMode(gl.GL_FRONT_AND_BACK, gl.GL_LINE)
+        #        print("paint grid",
+        #              self.vao_list[self.draw_idx], self.grid_vertex_count)
 
-        c = QVector4D(1.0, 1.0, 1.0, 1.0)
+        if self.draw_idx == 0:
+            gl.glBindVertexArray(self.vao_grid)
+            gl.glDrawElements(gl.GL_TRIANGLES,
+                              self.grid_elements_count,
+                              gl.GL_UNSIGNED_INT,
+                              None)
+        else:
+            gl.glBindVertexArray(self.vao_list)
 
-        self.shader_manager.set_colour(c)
-        # gl.glDrawArrays(gl.GL_POINTS, 0,
-        #                self.grid_vertex_count)
+            idx = 4*self.grid_elements_count * \
+                (self.num_levels*(self.draw_idx-1) + self.altitude)
 
-        gl.glDrawElements(gl.GL_TRIANGLES,
-                          self.grid_elements_count,
-                          gl.GL_UNSIGNED_INT,
-                          None)
-        #gl.glPolygonMode(gl.GL_FRONT_AND_BACK, gl.GL_FILL)
+            gl.glDrawElements(gl.GL_TRIANGLES,
+                              int(self.grid_elements_count),
+                              gl.GL_UNSIGNED_INT,
+                              ctypes.c_void_p(idx))
+        if self.wireframe:
+            gl.glPolygonMode(gl.GL_FRONT_AND_BACK, gl.GL_FILL)
 
     def create_elements_vbo(self, elements):
         vbo = gl.glGenBuffers(1)

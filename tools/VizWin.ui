@@ -18,25 +18,115 @@
     <item row="0" column="0">
      <layout class="QHBoxLayout" name="horizontalLayout">
       <item>
-       <widget class="ThorVizWidget" name="vizGL"/>
+       <widget class="ThorVizWidget" name="vizGL">
+        <property name="minimumSize">
+         <size>
+          <width>100</width>
+          <height>100</height>
+         </size>
+        </property>
+       </widget>
       </item>
      </layout>
     </item>
     <item row="1" column="0">
      <layout class="QHBoxLayout" name="horizontalLayout_2">
       <item>
-       <widget class="QSlider" name="animation_slider">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
+       <layout class="QVBoxLayout" name="verticalLayout">
+        <property name="rightMargin">
+         <number>19</number>
         </property>
-       </widget>
+        <item>
+         <widget class="QRadioButton" name="show_data_radiobutton">
+          <property name="enabled">
+           <bool>true</bool>
+          </property>
+          <property name="text">
+           <string>&amp;Data</string>
+          </property>
+          <property name="checked">
+           <bool>false</bool>
+          </property>
+          <attribute name="buttonGroup">
+           <string notr="true">buttonGroup</string>
+          </attribute>
+         </widget>
+        </item>
+        <item>
+         <widget class="QRadioButton" name="show_grid_radiobutton">
+          <property name="text">
+           <string>&amp;Grid</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+          <attribute name="buttonGroup">
+           <string notr="true">buttonGroup</string>
+          </attribute>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="show_wireframe_checkbox">
+          <property name="text">
+           <string>Wireframe</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </item>
       <item>
-       <widget class="QSpinBox" name="spinBox">
-        <property name="maximum">
-         <number>1000</number>
+       <layout class="QHBoxLayout" name="horizontalLayout_4">
+        <property name="rightMargin">
+         <number>0</number>
         </property>
-       </widget>
+        <item>
+         <layout class="QVBoxLayout" name="verticalLayout_3">
+          <property name="rightMargin">
+           <number>13</number>
+          </property>
+          <item>
+           <widget class="QSlider" name="level_slider">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QSpinBox" name="spinBox_2"/>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_3">
+        <property name="rightMargin">
+         <number>8</number>
+        </property>
+        <item>
+         <widget class="QSlider" name="animation_slider">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QSpinBox" name="spinBox">
+          <property name="maximum">
+           <number>1000</number>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </item>
      </layout>
     </item>
@@ -61,6 +151,10 @@
    <header>thorvizwidget</header>
    <slots>
     <slot>set_image(int)</slot>
+    <slot>show_data(bool)</slot>
+    <slot>show_grid(bool)</slot>
+    <slot>show_wireframe(bool)</slot>
+    <slot>set_level(int)</slot>
    </slots>
   </customwidget>
  </customwidgets>
@@ -98,5 +192,109 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>show_grid_radiobutton</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>vizGL</receiver>
+   <slot>show_grid(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>28</x>
+     <y>443</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>346</x>
+     <y>257</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>show_data_radiobutton</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>vizGL</receiver>
+   <slot>show_data(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>79</x>
+     <y>361</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>181</x>
+     <y>231</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>show_wireframe_checkbox</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>vizGL</receiver>
+   <slot>show_wireframe(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>58</x>
+     <y>515</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>283</x>
+     <y>246</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>show_data_radiobutton</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>THORViz</receiver>
+   <slot>show_data(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>82</x>
+     <y>375</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>219</x>
+     <y>391</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>level_slider</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>spinBox_2</receiver>
+   <slot>setValue(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>133</x>
+     <y>415</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>157</x>
+     <y>563</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>level_slider</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>vizGL</receiver>
+   <slot>set_level(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>134</x>
+     <y>379</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>225</x>
+     <y>287</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
+ <slots>
+  <slot>show_wireframe(bool)</slot>
+  <slot>show_data(bool)</slot>
+  <slot>show_grid(bool)</slot>
+ </slots>
+ <buttongroups>
+  <buttongroup name="buttonGroup"/>
+ </buttongroups>
 </ui>

@@ -69,8 +69,28 @@ class ThorVizWidget(QOpenGLWidget):
             grid, neighbours, vertices_color_arrays)
         self.field_painter.set_field(grid, moments)
 
+    def set_level(self, level):
+        self.ico_grid_painter.altitude = level
+        self.update()
+
     def set_image(self, img):
         self.image = img
+        self.ico_grid_painter.draw_idx = self.image+1
+        self.update()
+
+    def show_data(self, b):
+        if b:
+            self.ico_grid_painter.draw_idx = self.image + 1
+
+            self.update()
+
+    def show_grid(self, b):
+        if b:
+            self.ico_grid_painter.draw_idx = 0
+            self.update()
+
+    def show_wireframe(self, b):
+        self.ico_grid_painter.wireframe = b
         self.update()
 
     def initialize(self):
