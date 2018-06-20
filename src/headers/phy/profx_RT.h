@@ -90,8 +90,8 @@ __device__ double source_func_lin(double bb      ,
     }
     else{
         for(int i = 0; i < 5; i++){
-            int fac = factorial_num(i);
-            e1 = e1 + (pow(-1.0,i+1.0))*((bb + i*bt)/fac)*pow((tau)/diff_fac,i);
+            int fac = factorial_num(i+2);
+            e1 = e1 + (pow(-1.0,i+2.0))*((bb + (i+1)*bt)/fac)*pow((tau)/diff_fac,i+1.0);
         //    e2 = e2 + (pow(-1.0,i+1.0))*((bl + i*bt)/fac)*pow((tau/2.0)/diff_fac,i);
         }
         //e = e1 + e2*exp(-(tau/2.0)/diff_fac);
