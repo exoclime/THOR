@@ -66,9 +66,9 @@ __global__ void deepHJ_hs(double *Mh_d         ,
     if (id < num){
 
 //      Parameters for the forcing and dissipation
-        double sigma;
-        double ps, pre;
-        double psm1;
+        //double sigma;
+        double pre;
+        //double psm1;
         double lat = lonlat_d[id*2 + 1];
         double lon = lonlat_d[id*2];
 
@@ -78,18 +78,18 @@ __global__ void deepHJ_hs(double *Mh_d         ,
         double kv_hs, kt_hs;
 
         double Tnight, Tday;
-        double Ptil
+        double Ptil;
         double logtrad;
 
 ////////////
 //      Calculates surface pressure
-        psm1 = pressure_d[id*nv + 1] - Rho_d[id*nv + 0] * Gravit * (-Altitude_d[0] - Altitude_d[1]);
-        ps = 0.5*(pressure_d[id*nv + 0] + psm1);
+        //psm1 = pressure_d[id*nv + 1] - Rho_d[id*nv + 0] * Gravit * (-Altitude_d[0] - Altitude_d[1]);
+        //ps = 0.5*(pressure_d[id*nv + 0] + psm1);
 
         pre = pressure_d[id*nv + lev];
 
-        sigma = (pre/ps);
-        Ptil = log10(pre/100000) // log of pressure in bars
+        //sigma = (pre/ps);
+        Ptil = log10(pre/100000); // log of pressure in bars
 
         if (pre<=1e6) { //pressure less than ten bars
           Tnight = 1388.2145 + 267.66586*Ptil - 215.53357*Ptil*Ptil \
