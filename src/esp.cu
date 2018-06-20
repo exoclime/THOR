@@ -230,11 +230,7 @@ int main (int argc,  char** argv){
 
     config_OK &= check_range( "glevel", glevel, 3, 8);
     config_OK &= check_greater( "vlevel", vlevel, 0);
-<<<<<<< HEAD
-    config_OK &= check_range( "hstest", hstest, -1, 5);
-=======
     config_OK &= check_range( "hstest", hstest, -1, 6);
->>>>>>> 22822d34b4727034e8f403bd1680a58c4f62c1a1
 
     config_OK &= check_greater( "GPU_ID_N", GPU_ID_N, -1);
     config_OK &= check_greater( "n_out", n_out, 0);
