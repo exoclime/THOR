@@ -99,7 +99,8 @@ __global__ void tidalearth_hs(double *Mh_d         ,
                      pow(cos(lat), 2.0)) * pow(sigma0,kappa));
 
 //      Temperature forcing constant.
-        kt_hs =  1./15.0 * (1./86400.);
+        kt_hs =  ka + (ks - ka)*max(0.0, (sigma-sigmab)/(1.0-sigmab))*
+                 pow(cos(lat), 4.0);
 
 //      Momentum dissipation constant.
         kv_hs =  kf*max(0.0, (sigma-sigmab)/(1.0-sigmab));

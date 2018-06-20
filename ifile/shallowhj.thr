@@ -73,6 +73,10 @@ hstest = 3
 #planet_star_dist = 0.03099
 #radius_star = 0.805
 
+# output directory (relative to current working directory)
+# defaults to 'results'
+results_path = shallowhj_results
+
 # output
 # output every n steps
 n_out = 3456
