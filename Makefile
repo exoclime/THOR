@@ -20,7 +20,7 @@ END := "\033[0m"
 # Builds THOR executable
 CC = nvcc
 
-SM:=30 # Streaming Multiprocessor version
+SM:=35 # Streaming Multiprocessor version
 arch := -arch sm_$(SM)
 
 # objects
