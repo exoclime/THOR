@@ -383,6 +383,9 @@ int main (int argc,  char** argv){
     printf("   Large time-step  =  %d s.\n", timestep);
     printf("    \n");
 
+    printf("   Start from rest: %s \n", rest?"true":"false");
+    if (!rest)
+        printf("   Loading initial conditions from: %s \n", initial_conditions.c_str());
     printf("   Output directory = %s \n", output_path.c_str());
     
     
