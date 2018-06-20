@@ -268,7 +268,7 @@ def uv_lev(input,grid,output,Plev):
     for cc in C.collections:
         cc.set_edgecolor("face") #fixes a stupid bug in matplotlib 2.0
     plt.ylabel('Latitude (deg)')
-    plt.xlabel('Longitude (deg))')
+    plt.xlabel('Longitude (deg)')
 
     clb = plt.colorbar(C)
     if not os.path.exists(input.resultsf+'/figures'):
@@ -284,7 +284,7 @@ def uv_lev(input,grid,output,Plev):
     for cc in C.collections:
         cc.set_edgecolor("face") #fixes a stupid bug in matplotlib 2.0
     plt.ylabel('Latitude (deg)')
-    plt.xlabel('Longitude (deg))')
+    plt.xlabel('Longitude (deg)')
 
     clb = plt.colorbar(C)
     if not os.path.exists(input.resultsf+'/figures'):

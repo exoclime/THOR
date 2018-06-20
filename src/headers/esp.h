@@ -47,6 +47,8 @@
 #include <stdlib.h>
 #include <math.h>
 
+#include <string>
+
 class ESP{
 
 public:
@@ -222,6 +224,7 @@ public:
     void AllocData() ;
 
     void InitialValues(bool  ,
+                       const std::string & initial_conditions,
                        int   ,
                        double,
                        double,
@@ -289,7 +292,8 @@ public:
                 double,
                 double,
                 char* ,
-                double);
+                double,
+                const std::string & output_dir);
 
     ~ESP();
 };

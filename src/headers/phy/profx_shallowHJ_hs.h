@@ -111,8 +111,7 @@ __global__ void shallowHJ_hs(double *Mh_d         ,
         Teq_hs=  T_vert + beta_trop * dTy * cos(lon-M_PI)*cos(lat);
 
 //      Temperature forcing constant.
-        kt_hs =  ka + (ks - ka)*max(0.0, (sigma-sigmab)/(1.0-sigmab))*
-                 pow(cos(lat), 4.0);
+        kt_hs =  1/(1.5e5);
 
 //      Momentum dissipation constant.
         kv_hs = 0.0;  //no boundary layer friction
