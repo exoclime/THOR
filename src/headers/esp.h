@@ -204,7 +204,8 @@ public:
                        double,
                        double,
                        double,
-                       double);
+                       double,
+                       double & simulation_start_time);
 
     void Thor(double,
               bool  ,

@@ -214,7 +214,8 @@ __host__ void ESP::InitialValues(bool rest          ,
                                  double Tmean       ,
                                  double Mmol        ,
                                  double mu          ,
-                                 double Rd          ){
+                                 double Rd          ,
+                                 double & simulation_start_time){
 //
 //  Description: 
 //   
@@ -248,6 +249,8 @@ __host__ void ESP::InitialValues(bool rest          ,
             }
             Wh_h[i*(nv + 1) + nv] = 0.0;
         }
+
+        simulation_start_time = 0.0;
     }
     else{
 //
@@ -266,6 +269,13 @@ __host__ void ESP::InitialValues(bool rest          ,
 //      Vertical momentum
         dataset_id = H5Dopen(file_id, "/Wh",H5P_DEFAULT);
         H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, Wh_h);
+
+//      Simulation start time
+        double simulation_time_a[]           = {0.0};
+        dataset_id = H5Dopen(file_id, "/simulation_time",H5P_DEFAULT);
+        H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, simulation_time_a);
+        simulation_start_time = simulation_time_a[0];
+        
         
         H5Dclose(dataset_id);
         H5Fclose(file_id);
