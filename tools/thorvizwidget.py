@@ -213,7 +213,7 @@ class ThorVizWidget(QOpenGLWidget):
 #        model.scale(0.05, 0.05, 1.0)
         self.shader_manager.set_model_pc(model)
 
-        self.axis_painter.paint_axis()
+        # self.axis_painter.paint_axis()
 
         self.shader_manager.end_paint_pc()
 

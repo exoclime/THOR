@@ -15,26 +15,85 @@ class ShaderManager:
     vertex_shader_colour = """#version 400\n
                        layout(location = 0) in vec3 vp;
                        layout(location = 1) in vec3 vertex_colour;
-                       out vec3 colour;
+
+
+                       out VS_OUT {
+                           out vec3 colour;
+                       } vs_out;
+                       
 
                        uniform highp mat4 view;
                        uniform highp mat4 projection;
                        uniform highp mat4 model;
                        void main() {
-                         colour = vertex_colour;
+                         vs_out.colour = vertex_colour;
                           //colour = vec3(1.0,1.0,0.0);
                           gl_Position = projection * \
                               view * model *  vec4(vp, 1.0);
                        }"""
 
-    vertex_fragment_colour = """#version 400\n
-                                in vec3 colour;
-                                
+    geometry_colour = """#version 400\n
 
+                         layout (triangles) in;
+                         layout (triangle_strip, max_vertices = 3) out;
+
+                         in VS_OUT {
+                           vec3 colour;
+                         } gs_in[];  
+
+                         out GS_OUT {
+                          vec3 fcolor;
+                          vec3 dist;
+} gs_out;
+
+                         void main(void)
+                         {
+                           float WIN_SCALE = 800.0;
+                           // taken from 'Single-Pass Wireframe Rendering'
+                           vec2 p0 = WIN_SCALE * gl_in[0].gl_Position.xy/gl_in[0].gl_Position.w;
+                           vec2 p1 = WIN_SCALE * gl_in[1].gl_Position.xy/gl_in[1].gl_Position.w;
+                           vec2 p2 = WIN_SCALE * gl_in[2].gl_Position.xy/gl_in[2].gl_Position.w;
+                           vec2 v0 = p2-p1;
+                           vec2 v1 = p2-p0;
+                           vec2 v2 = p1-p0;
+                           float area = abs(v1.x*v2.y - v1.y * v2.x);
+
+                           gs_out.fcolor = gs_in[0].colour;
+                           
+                           gs_out.dist = vec3(area/length(v0),0,0);
+                           gl_Position = 1.5*gl_in[0].gl_Position;
+                           EmitVertex();
+                           gs_out.fcolor = gs_in[1].colour;
+                           gs_out.dist = vec3(0,area/length(v1),0);
+                           gl_Position = gl_in[1].gl_Position;
+                           EmitVertex();
+                           gs_out.fcolor = gs_in[2].colour;
+                           gs_out.dist = vec3(0,0,area/length(v2));
+                           gl_Position = gl_in[2].gl_Position;
+                           EmitVertex();
+                           EndPrimitive();
+                         }"""
+
+    vertex_fragment_colour = """#version 400\n
+ in GS_OUT {
+                          vec3 fcolor;
+                          vec3 dist;
+} fs_in;
+                 
                                 out vec4 frag_colour;
 
                                 void main() {
-                                   frag_colour = vec4(colour, 1.0);
+
+                                   float nearD = min(min(fs_in.dist[0],fs_in.dist[1]),fs_in.dist[2]);
+                                   float edgeIntensity = exp2(-1.0*nearD*nearD);
+                                   if (nearD < 0.00001)
+                                       frag_colour = vec4( 0.1, 0.1, 0.1, 1.0 );
+                                   else
+                                       frag_colour = vec4(fs_in.fcolor, 1.0);
+    //frag_colour = vec4(fs_in.fcolor, 1.0);
+//frag_colour = vec4(1.0,0.0,0.0, 1.0);
+//                                   frag_colour = (edgeIntensity * vec4( 0.1, 0.1, 0.1, 1.0 )) + 
+//                                                 (1.0-edgeIntensity)*vec4(colour, 1.0);
                                 }"""
 
     vertex_shader = """#version 400\n
@@ -124,6 +183,11 @@ class ShaderManager:
         else:
             print("vertex shader color failed")
 
+        if self.m_program_pc.addShaderFromSourceCode(QOpenGLShader.Geometry,
+                                                     self.geometry_colour):
+            print("initialised geometryshader")
+        else:
+            print("geometry shader failed")
         self.m_program_pc.addShaderFromSourceCode(QOpenGLShader.Fragment,
                                                   self.vertex_fragment_colour)
 
