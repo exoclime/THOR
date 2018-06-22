@@ -108,7 +108,7 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
     }
 
 //  Computes the initial temperature.
-    Compute_temperature <<< NB, NTH >>> (temperature_d,
+    Compute_temperature <<< NBRT, NTH >>> (temperature_d,
                                          pt_d         ,
                                          pressure_d   ,
                                          Rho_d        ,
