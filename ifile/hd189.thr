@@ -8,7 +8,7 @@ config_version = 1
 num_steps = 5184000
 
 # length of timesteps imn seconds
-timestep = 20
+timestep = 50
 
 # keys to add
 # TODO: output_dir # relative to working directory
@@ -85,4 +85,4 @@ n_out = 10
 results_path = hd189
 
 # GPU ID number
-GPU_ID_N = 0
+GPU_ID_N = 2

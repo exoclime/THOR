@@ -239,7 +239,8 @@ public:
                        double,
                        double,
                        int * ,
-                       bool  );
+                       bool  ,
+                     double & simulation_start_time);
 
     void RTSetup(double,
                  double,

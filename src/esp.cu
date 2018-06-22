@@ -92,7 +92,7 @@ int main (int argc,  char** argv){
     argparser.add_arg("o", "output_dir", string("results"), "results directory to store output");
 
     argparser.add_arg("i", "initial", string("initialfilename"), "start from this initial condition instead of rest");
-
+    argparser.add_arg("N", "numsteps", 48000, "number of steps to run");
 
     // Parse arguments
     argparser.parse(argc, argv);
@@ -251,6 +251,10 @@ int main (int argc,  char** argv){
         }
     }
 
+    int nsmax_arg;
+    if (argparser.get_arg("numsteps", nsmax_arg))
+        nsmax = nsmax_arg;
+
 
     // Test config variables for coherence
     bool config_OK = true;
@@ -343,6 +347,9 @@ int main (int argc,  char** argv){
     BENCH_POINT_GRID(Grid);
 
    printf(" Setting the initial conditions.\n\n");
+
+   double simulation_start_time = 0.0;
+
 // Initial conditions
    X.InitialValues(rest         , // Option to start the atmosphere
                                   // from rest
@@ -362,7 +369,8 @@ int main (int argc,  char** argv){
                    mu           , // Atomic mass unit [kg]
                    Planet.Rd    ,// Gas constant [J/kg/K]
                    Grid.zonal_mean_tab,
-                   SpongeLayer);
+                   SpongeLayer,
+                 simulation_start_time );
 
     if (hstest == 0) {
       X.RTSetup(Tstar            ,
@@ -425,17 +433,19 @@ int main (int argc,  char** argv){
     printf("   FV = Central finite volume \n");
     printf("   Time integration =  %d s.\n", nsmax*timestep);
     printf("   Large time-step  =  %d s.\n", timestep);
+    printf("   Start time       =  %f s.\n", simulation_start_time);
+
     printf("    \n");
 
-    printf("   Start from rest: %s \n", rest?"true":"false");
+    printf("   Start from rest = %s \n", rest?"true":"false");
     if (!rest)
-        printf("   Loading initial conditions from: %s \n", initial_conditions.c_str());
+        printf("   Loading initial conditions from = %s \n", initial_conditions.c_str());
     printf("   Output directory = %s \n", output_path.c_str());
 
 
 //
 //  Writes initial conditions
-    double simulation_time = 0.0;
+    double simulation_time = simulation_start_time;
     X.Output(0                   ,
              Planet.Cp           , // Specific heat capacity [J/(Kg K)]
              Planet.Rd           , // Gas constant [J/(Kg K)]
@@ -493,6 +503,10 @@ int main (int argc,  char** argv){
                Planet.A     ,// Planet radius [m]
                SpongeLayer  );
 
+       // compute simulation time
+       simulation_time = simulation_start_time + nstep*timestep;
+       bool file_output = false;
+
 //
 //      Prints output every nout steps
         if(nstep % n_out == 0) {
@@ -509,8 +523,13 @@ int main (int argc,  char** argv){
                      Planet.simulation_ID, // Planet ID
                      simulation_time     , // Simulation time [s]
                      output_path);         // Directory to save output
+            file_output = true;
+
         }
-        printf("\n Time step number = %d || Time = %f days.", nstep, nstep*timestep/86400.);
+        printf("\n Time step number = %d || Time = %f days. %s",
+               nstep,
+               nstep*timestep/86400.,
+               file_output?"saved output":"");
     }
 //
 //  Prints the duration of the integration.
