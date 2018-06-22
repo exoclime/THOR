@@ -33,7 +33,7 @@ Tmean = 1800.0
 # Reference surface pressure [Pa]
 P_ref = 1000000.0
 # Altitude of the top of the model domain [m]
-Top_altitude = 2.7e6
+Top_altitude = 3.7e6
 # Strength of diffusion
 Diffc = 0.009973
 
@@ -65,6 +65,7 @@ rest = true
 SpongeLayer = true
 # latitude rings
 nlat = 20
+ns_sponge = 0.75
 
 # Benchmark test
 # Held-Suarez test for Earth == 1
@@ -80,7 +81,8 @@ radius_star = 0.805
 
 # output
 # output every n steps
-n_out = 300
+n_out = 10
+results_path = hd189
 
 # GPU ID number
 GPU_ID_N = 0
