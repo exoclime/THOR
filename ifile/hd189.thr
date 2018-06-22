@@ -29,11 +29,11 @@ Rd = 3779
 # Specific heat capacities [J/(Kg K)]
 Cp = 13226.82
 # Mean atmospheric temperature [K]
-Tmean = 1800.0
+Tmean = 1200.0
 # Reference surface pressure [Pa]
 P_ref = 1000000.0
 # Altitude of the top of the model domain [m]
-Top_altitude = 3.7e6
+Top_altitude = 2.5e6
 # Strength of diffusion
 Diffc = 0.009973
 
