@@ -29,11 +29,11 @@ Rd = 3714
 # Specific heat capacities [J/(Kg K)]
 Cp = 13000
 # Mean atmospheric temperature [K]
-Tmean = 1800.0
+Tmean = 1400.0
 # Reference surface pressure [Pa]
-P_ref = 100000.0
+P_ref = 10000000.0
 # Altitude of the top of the model domain [m]
-Top_altitude = 3.5e6
+Top_altitude = 1.63e6
 # Strength of diffusion
 Diffc = 0.009973
 
@@ -76,7 +76,7 @@ hstest = 0
 
 # output
 # output every n steps
-n_out = 1000
+n_out = 10
 
 # output directory (relative to current working directory)
 # defaults to 'results'

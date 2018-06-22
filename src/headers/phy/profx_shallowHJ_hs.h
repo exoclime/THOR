@@ -67,9 +67,9 @@ __global__ void shallowHJ_hs(double *Mh_d         ,
 
 //      Parameters for the forcing and dissipation
         double sigma;
-        double sigmab = 0.7;
-        double ka     = (1.0/40.0) * (1.0/86400.0);
-        double ks     = (1.0/4.0) * (1.0/86400.0);
+        //double sigmab = 0.7;
+        //double ka     = (1.0/40.0) * (1.0/86400.0);
+        //double ks     = (1.0/4.0) * (1.0/86400.0);
         double dTy    = 300.0;
         double ps, pre  ;
         double psm1;
