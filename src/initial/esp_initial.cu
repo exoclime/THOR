@@ -218,7 +218,7 @@ __host__ void ESP::AllocData(){
     cudaMalloc((void **)&dtemp       , nv * point_num *     sizeof(double));
 }
 
-__host__ void ESP::InitialValues(bool rest          ,
+__host__ bool ESP::InitialValues(bool rest          ,
                                  const std::string & initial_conditions_filename,
                                  int glevel         ,
                                  double timestep_dyn,
@@ -274,21 +274,52 @@ __host__ void ESP::InitialValues(bool rest          ,
         simulation_start_time = 0.0;
     }
     else{
+        bool load_error = false;
+        
 //
 //      Restart from an existing simulation.
         hid_t       file_id, dataset_id;
         file_id = H5Fopen(initial_conditions_filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
 //      Density
         dataset_id = H5Dopen(file_id, "/Rho",H5P_DEFAULT);
+<<<<<<< HEAD
         H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, Rho_h);
+=======
+        hid_t dspace = H5Dget_space(dataset_id);
+        hsize_t data_space =  H5Sget_simple_extent_npoints(dspace);
+        if (data_space != (unsigned int)(point_num * nv)) {
+            load_error = true;
+            printf("Initial condition load error for data: rho.\n");
+        }
+        H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, Rho_h);     
+>>>>>>> compare size of grid to size of initial conditions for coherence
 //      Pressure
         dataset_id = H5Dopen(file_id, "/Pressure",H5P_DEFAULT);
+        dspace = H5Dget_space(dataset_id);
+        data_space =  H5Sget_simple_extent_npoints(dspace);
+        if (data_space != (unsigned int)(point_num * nv)) {
+            load_error = true;
+            printf("Initial condition load error for data: pressure.\n");
+        }
         H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, pressure_h);
 //      Horizontal momentum
         dataset_id = H5Dopen(file_id, "/Mh",H5P_DEFAULT);
+        dspace = H5Dget_space(dataset_id);
+        data_space =  H5Sget_simple_extent_npoints(dspace);
+        if (data_space != (unsigned int)(point_num * nv * 3)) {
+            load_error = true;
+            printf("Initial condition load error for data: Mh.\n");
+        }
         H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, Mh_h);
+        
 //      Vertical momentum
         dataset_id = H5Dopen(file_id, "/Wh",H5P_DEFAULT);
+        dspace = H5Dget_space(dataset_id);
+        data_space =  H5Sget_simple_extent_npoints(dspace);
+        if (data_space != (unsigned int)(point_num * nvi)) {
+            load_error = true;
+            printf("Initial condition load error for data: Wh.\n");
+        }
         H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, Wh_h);
 
 //      Simulation start time
@@ -301,6 +332,9 @@ __host__ void ESP::InitialValues(bool rest          ,
         H5Dclose(dataset_id);
         H5Fclose(file_id);
 
+        if (load_error)
+            return false;
+        
         for(int lev = 0; lev < nv+1; lev++)
             for(int i = 0; i < point_num; i++)
                 temperature_h[i*nv + lev] = pressure_h[i*nv + lev]/(Rd*Rho_h[i*nv + lev]);
@@ -392,6 +426,7 @@ __host__ void ESP::InitialValues(bool rest          ,
     delete [] Kdh4_h;
     delete [] Kdhz_h;
 
+    return true;
 }
 
 __host__ void ESP::RTSetup(double Tstar_           ,

@@ -351,7 +351,7 @@ int main (int argc,  char** argv){
    double simulation_start_time = 0.0;
 
 // Initial conditions
-   X.InitialValues(rest         , // Option to start the atmosphere
+    bool load_initial = X.InitialValues(rest         , // Option to start the atmosphere
                                   // from rest
                    initial_conditions, // initial conditions if not
                                        // started from rest
@@ -368,9 +368,10 @@ int main (int argc,  char** argv){
                    Planet.Mmol  , // Mean molecular mass of dry air [kg]
                    mu           , // Atomic mass unit [kg]
                    Planet.Rd    ,// Gas constant [J/kg/K]
-                   Grid.zonal_mean_tab,
-                   SpongeLayer,
-                 simulation_start_time );
+                   Grid.zonal_mean_tab,  // table of zonal means for sponge layer
+                   SpongeLayer,          // Enable sponge layer
+                 simulation_start_time );// return value for
+                                                                // simulation start time
 
     if (hstest == 0) {
       X.RTSetup(Tstar            ,
@@ -383,6 +384,12 @@ int main (int argc,  char** argv){
                 taulw            );
     }
 
+    if (!load_initial)
+    {
+        printf("error loading initial conditions from %s.\n", initial_conditions.c_str());
+        return -1;       
+    }
+   
     long startTime = clock();
 
 //

@@ -223,7 +223,7 @@ public:
 
     void AllocData() ;
 
-    void InitialValues(bool  ,
+    bool InitialValues(bool  ,
                        const std::string & initial_conditions,
                        int   ,
                        double,
