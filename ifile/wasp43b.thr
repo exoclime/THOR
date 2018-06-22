@@ -33,7 +33,7 @@ Tmean = 1400.0
 # Reference surface pressure [Pa]
 P_ref = 10000000.0
 # Altitude of the top of the model domain [m]
-Top_altitude = 1.63e6
+Top_altitude = 1.25e6
 # Strength of diffusion
 Diffc = 0.009973
 
