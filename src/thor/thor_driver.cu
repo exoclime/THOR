@@ -96,7 +96,7 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
     cudaMemcpy(pressurek_d , pressure_d , point_num * nv *     sizeof(double), cudaMemcpyDeviceToDevice);
 
     USE_BENCHMARK()
-    
+
 //  Loop for large time integration.
     for(int rk = 0; rk < 3; rk++){
 //      Local variables to define the length (times) and the number of the small steps (ns_it).
@@ -140,7 +140,7 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
 
 
         cudaDeviceSynchronize();
-            
+
         Compute_Advec_Cori2 <<<(point_num / NTH) + 1, NTH >>>(Adv_d      ,
                                                               v_d        ,
                                                               Whk_d      ,
@@ -156,9 +156,9 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
 //
 //      Computes temperature, internal energy, potential temperature and effective gravity.
         cudaDeviceSynchronize();
-        
+
         BENCH_POINT_I(*this, current_step, "Compute_Advec_Cori")
-            
+
         Compute_Temperature_H_Pt_Geff <<< (point_num / NTH) + 1, NTH >>> (temperature_d,
                                                                           pressurek_d  ,
                                                                           Rhok_d       ,
@@ -178,14 +178,14 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
                                                                           point_num    ,
                                                                           nv           );
 
-        check_h = false;
-        cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
-        isnan_check_thor<<< 16, NTH >>>(temperature_d, nv, point_num, check_d);
-        cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
-        if(check_h){
-           printf("\n\n Error in NAN check after Thor:Compute_Temp!\n");
-           exit(EXIT_FAILURE);
-        }
+        // check_h = false;
+        // cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
+        // isnan_check_thor<<< 16, NTH >>>(temperature_d, nv, point_num, check_d);
+        // cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
+        // if(check_h){
+        //    printf("\n\n Error in NAN check after Thor:Compute_Temp!\n");
+        //    exit(EXIT_FAILURE);
+        // }
 //      Initializes slow terms.
         cudaDeviceSynchronize();
         cudaMemset(SlowMh_d      , 0, sizeof(double) * 3 * point_num * nv);
@@ -434,14 +434,14 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
                                               NonHydro      );
 
 //      Updates or initializes deviations.
-        check_h = false;
-        cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
-        isnan_check_thor<<< 16, NTH >>>(Slowpressure_d, nv, point_num, check_d);
-        cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
-        if(check_h){
-           printf("\n\n Error in NAN check after Thor:SlowModes!\n");
-           exit(EXIT_FAILURE);
-        }
+        // check_h = false;
+        // cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
+        // isnan_check_thor<<< 16, NTH >>>(Slowpressure_d, nv, point_num, check_d);
+        // cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
+        // if(check_h){
+        //    printf("\n\n Error in NAN check after Thor:SlowModes!\n");
+        //    exit(EXIT_FAILURE);
+        // }
 
         if (rk == 0){
             cudaMemset(Mhs_d       , 0, sizeof(double) * 3*point_num * nv);
@@ -582,9 +582,9 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
 
 //          Vertical Momentum
             cudaDeviceSynchronize();
-                
+
             BENCH_POINT_I_S(*this, current_step, ns, "Momentum_Eq")
-                
+
             Prepare_Implicit_Vertical <LN,LN>  <<<NB, NT >>>(Mhs_d         ,
                                                              h_d           ,
                                                              div_d         ,
@@ -646,7 +646,7 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
             cudaDeviceSynchronize();
 
             BENCH_POINT_I_S(*this, current_step, ns, "Vertical_Eq")
-                        
+
             Density_Pressure_Eqs <LN,LN>  <<<NB, NT >>>(pressures_d,
                                                         pressurek_d,
                                                         Rhos_d     ,
@@ -700,14 +700,14 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
 
         }
 
-        check_h = false;
-        cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
-        isnan_check_thor<<< 16, NTH >>>(pressures_d, nv, point_num, check_d);
-        cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
-        if(check_h){
-           printf("\n\n Error in NAN check after Thor:FastModes!\n");
-           exit(EXIT_FAILURE);
-        }
+        // check_h = false;
+        // cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
+        // isnan_check_thor<<< 16, NTH >>>(pressures_d, nv, point_num, check_d);
+        // cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
+        // if(check_h){
+        //    printf("\n\n Error in NAN check after Thor:FastModes!\n");
+        //    exit(EXIT_FAILURE);
+        // }
 //      Update quantities for the long loop.
         cudaDeviceSynchronize();
         UpdateRK2<<< (point_num / NTH) + 1, NTH >>> (Mhs_d      ,
@@ -731,7 +731,7 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
     cudaDeviceSynchronize();
 
     BENCH_POINT_I(*this, current_step, "END")
-        
+
     cudaMemcpy(Mh_d       , Mhk_d       , point_num * nv * 3 * sizeof(double), cudaMemcpyDeviceToDevice);
     cudaMemcpy(Wh_d       , Whk_d       , point_num * nvi*     sizeof(double), cudaMemcpyDeviceToDevice);
     cudaMemcpy(W_d        , Wk_d        , point_num * nv *     sizeof(double), cudaMemcpyDeviceToDevice);
