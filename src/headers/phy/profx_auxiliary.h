@@ -62,13 +62,6 @@ __global__ void Compute_temperature (double *temperature_d,
     // Computes absolute and potential temperature
     if(id < num) temperature_d[id*nv + lev] = pressure_d[id*nv + lev]/(Rd*Rho_d[id*nv + lev]);
     if(id < num) pt_d[id * nv + lev] = (P_Ref / (Rd * Rho_d[id*nv + lev]))*pow(pressure_d[id*nv + lev] / P_Ref, CvoCp);
-
-    // if (id == 1286) {
-    //   printf("CompTemp: %d %f %f %f\n",lev, pressure_d[id*nv+lev]/100000, temperature_d[id*nv+lev]);
-    // }
-    // // if (isnan(temperature_d[id*nv+lev])){
-    //   printf("id = %d, lev = %d, temperature_d = %f\n",id,lev,temperature_d[id*nv+lev]);
-    // }
 }
 
 __global__ void Compute_pressure    (double *pressure_d   ,
@@ -84,18 +77,10 @@ __global__ void Compute_pressure    (double *pressure_d   ,
 
     // Computes absolute pressure
     if (id < num) pressure_d[id*nv + lev] = temperature_d[id*nv + lev] * Rd*Rho_d[id*nv + lev];
-    // if (id == 1286) {
-    //   printf("CompPres: %d %f %f %f\n",lev, pressure_d[id*nv+lev]/100000, temperature_d[id*nv+lev]);
-    // }
-
-    // if (isnan(pressure_d[id*nv+lev])){
-    //   printf("id = %d, lev = %d, temperature_d = %f\n",id,lev,temperature_d[id*nv+lev]);
-    // }
-
 }
 
 
-__global__ void isnan_check(double *array, int width, int height, bool *check){
+__global__ void isnan_check(double *array, int height, int width, bool *check){
 
 //
 //  Description: Check for nan in the temperature array.

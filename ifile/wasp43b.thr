@@ -29,11 +29,11 @@ Rd = 3714
 # Specific heat capacities [J/(Kg K)]
 Cp = 13000
 # Mean atmospheric temperature [K]
-Tmean = 1400.0
+Tmean = 1800.0
 # Reference surface pressure [Pa]
 P_ref = 10000000.0
 # Altitude of the top of the model domain [m]
-Top_altitude = 1.25e6
+Top_altitude = 1.4e6
 # Strength of diffusion
 Diffc = 0.009973
 
@@ -59,7 +59,13 @@ NonHydro = true
 # Deep atmosphere
 DeepModel = true
 # Initial conditions
-rest = true
+rest = false
+
+# initial conditions file, used if rest is set to false
+# (path relative to current working directory)
+# defaults to 'ifile/esp.initial.h5'
+initial = wasp43_results/esp_output_Wasp43b_711.h5
+
 # Spongebob
 SpongeLayer = true
 # latitude rings
