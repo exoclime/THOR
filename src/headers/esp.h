@@ -59,10 +59,11 @@ public:
     const int nvi         ;
     const int nl_region   ;
     const int nr          ;
+    const int nlat        ;
 
     // step counter for benchmark logging
     int current_step;
-    
+
 ///////////////////////////
 //  Host
     int *point_local_h    ;
@@ -94,6 +95,9 @@ public:
     double *Kdhz_h        ;
     double *Kdh4_h        ;
     bool    check_h       ;
+
+    double Rv_sponge      ;
+    double ns_sponge      ;
 ///////////////////////////
 //  Device
     int *point_local_d    ;
@@ -166,6 +170,32 @@ public:
     double *diff_d        ;
     double *divg_Mh_d     ;
     bool   *check_d       ;
+
+    double *vbar_d        ;
+    int *zonal_mean_tab_d ;
+//  Arrays used in RT code
+    double *fnet_up_d     ;
+    double *fnet_dn_d     ;
+    double *tau_d         ;
+
+//  Input values used in RT
+    double Tstar          ;
+    double planet_star_dist;      // Planet-star distance [au]
+    double radius_star    ;      // Star radius [Rsun]
+    double diff_fac       ;        // Diffusivity factor: 0.5-1.0
+    double Tlow           ;        // Lower boundary temperature: upward flux coming from the planet's interior
+    double albedo         ;       // Bond albedo
+    double tausw          ;      // Absorption coefficient for the shortwaves
+    double taulw          ;
+    double resc_flx       ;
+    double incflx         ;
+
+//  These arrays are for temporary usage in RT code
+    double *dtemp         ;
+    double *phtemp        ;
+    double *ttemp         ;
+    double *thtemp        ;
+
 ///////////////////////////
 
 //  Functions
@@ -186,6 +216,9 @@ public:
         int     ,
         int     ,
         int     ,
+        int     ,
+        double  ,
+        double  ,
         int     );
 
     void AllocData() ;
@@ -205,7 +238,18 @@ public:
                        double,
                        double,
                        double,
-                       double & simulation_start_time);
+                       int * ,
+                       bool  ,
+                     double & simulation_start_time);
+
+    void RTSetup(double,
+                 double,
+                 double,
+                 double,
+                 double,
+                 double,
+                 double,
+                 double);
 
     void Thor(double,
               bool  ,
@@ -234,7 +278,8 @@ public:
                double,
                double,
                double,
-               double);
+               double,
+               bool  );
 
     void CopyToHost();
 

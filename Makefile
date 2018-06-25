@@ -24,7 +24,7 @@ SM:=35 # Streaming Multiprocessor version
 arch := -arch sm_$(SM)
 
 # objects
-obj_cuda   := esp.o grid.o esp_initial.o planet.o thor_driver.o profx_driver.o esp_output.o 
+obj_cuda   := esp.o grid.o esp_initial.o planet.o thor_driver.o profx_driver.o esp_output.o
 obj_cpp := storage.o binary_test.o config_file.o cmdargs.o directories.o
 obj := $(obj_cpp) $(obj_cuda)
 
@@ -39,7 +39,7 @@ obj_tests_directories := directories_test.o directories.o
 #######################################################################
 # flags
 # define specific compiler. if if fails on newer installations, get it to use g++-5
-ccbin := 
+ccbin :=
 # ccbin := -ccbin g++-5
 
 # define common flags
@@ -74,7 +74,7 @@ includehdf = $(h5include)
 includedir = src/headers
 
 #######################################################################
-# directory names 
+# directory names
 OBJDIR = obj
 BINDIR = bin
 RESDIR = results
@@ -128,7 +128,7 @@ ifeq "$(MODE)" "UNDEF"
 endif
 
 debug: symlink
-release: symlink 
+release: symlink
 prof: symlink
 
 #######################################################################
@@ -193,17 +193,17 @@ $(OBJDIR)/${OUTPUTDIR}/%.o: %.cu $(OBJDIR)/$(OUTPUTDIR)/%.d| $(OBJDIR)/$(OUTPUTD
 # C++ files
 $(OBJDIR)/${OUTPUTDIR}/%.o: %.cpp $(OBJDIR)/$(OUTPUTDIR)/%.d| $(OBJDIR)/$(OUTPUTDIR) $(OBJDIR)
 	@echo $(YELLOW)creating $@ $(END)
-	$(CC) $(arch)  $(flags) $(h5include) $(h5libdir) -I$(includedir) -dc -o $@ $< 
+	$(CC) $(arch)  $(flags) $(h5include) $(h5libdir) -I$(includedir) -dc -o $@ $<
 
 
 # link *.o objects
-$(BINDIR)/${OUTPUTDIR}/esp: $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj)) | $(BINDIR) $(RESDIR) $(BINDIR)/$(OUTPUTDIR)  $(OBJDIR) 
+$(BINDIR)/${OUTPUTDIR}/esp: $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj)) | $(BINDIR) $(RESDIR) $(BINDIR)/$(OUTPUTDIR)  $(OBJDIR)
 	@echo $(YELLOW)creating $@ $(END)
 	$(CC) $(arch) $(link_flags) -o $(BINDIR)/$(OUTPUTDIR)/esp $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj))  $(h5libdir) $(h5libs)
 
 # phony so that it will always be run
 .PHONY: symlink
-symlink: $(BINDIR)/$(OUTPUTDIR)/esp 
+symlink: $(BINDIR)/$(OUTPUTDIR)/esp
 	@echo $(BLUE)make link from $(BINDIR)/$(OUTPUTDIR)/esp to $(BINDIR)/esp  $(END)
 	rm -f $(BINDIR)/esp
 	ln -s $(BINDIR)/$(OUTPUTDIR)/esp -r -t bin
@@ -218,31 +218,31 @@ symlink: $(BINDIR)/$(OUTPUTDIR)/esp
 
 tests: ${BINDIR}/${TESTDIR}/cmdargs_test ${BINDIR}/${TESTDIR}/config_test ${BINDIR}/${TESTDIR}/storage_test ${BINDIR}/${TESTDIR}/directories_test
 
-$(BINDIR)/$(TESTDIR)/cmdargs_test:  $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_cmdargs)) | $(BINDIR)/${OUTPUTDIR} $(BINDIR)/$(TESTDIR) $(BINDIR) $(RESDIR) 
+$(BINDIR)/$(TESTDIR)/cmdargs_test:  $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_cmdargs)) | $(BINDIR)/${OUTPUTDIR} $(BINDIR)/$(TESTDIR) $(BINDIR) $(RESDIR)
 	@echo $(YELLOW)creating $@ $(END)
 	$(CC) $(arch) $(flags) $(debug_flags) -o $(BINDIR)/$(TESTDIR)/cmdargs_test $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_cmdargs))
 
-$(BINDIR)/$(TESTDIR)/config_test:  $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_config)) | $(BINDIR)/${OUTPUTDIR} $(BINDIR)/$(TESTDIR) $(BINDIR) $(RESDIR) 
+$(BINDIR)/$(TESTDIR)/config_test:  $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_config)) | $(BINDIR)/${OUTPUTDIR} $(BINDIR)/$(TESTDIR) $(BINDIR) $(RESDIR)
 	@echo $(YELLOW)creating $@ $(END)
 	$(CC) $(arch) $(flags) $(debug_flags) -o $(BINDIR)/$(TESTDIR)/config_test $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_config))
 
-$(BINDIR)/$(TESTDIR)/directories_test:  $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_directories)) | $(BINDIR)/${OUTPUTDIR} $(BINDIR)/$(TESTDIR) $(BINDIR) $(RESDIR) 
+$(BINDIR)/$(TESTDIR)/directories_test:  $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_directories)) | $(BINDIR)/${OUTPUTDIR} $(BINDIR)/$(TESTDIR) $(BINDIR) $(RESDIR)
 	@echo $(YELLOW)creating $@ $(END)
 	$(CC) $(arch) $(flags) $(debug_flags) -o $(BINDIR)/$(TESTDIR)/directories_test $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_directories))
 
-$(BINDIR)/$(TESTDIR)/storage_test:  $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_storage)) | $(BINDIR)/${OUTPUTDIR} $(BINDIR)/$(TESTDIR) $(BINDIR) $(RESDIR) 
+$(BINDIR)/$(TESTDIR)/storage_test:  $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_storage)) | $(BINDIR)/${OUTPUTDIR} $(BINDIR)/$(TESTDIR) $(BINDIR) $(RESDIR)
 	@echo $(YELLOW)creating $@ $(END)
 	$(CC) $(arch) $(flags) $(debug_flags) -o $(BINDIR)/$(TESTDIR)/storage_test $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_storage))  $(h5libdir) $(h5libs)
 
 
 #######################################################################
-# Cleanup 
+# Cleanup
 .phony: clean,ar
 clean:
 	@echo $(CYAN)clean up binaries $(END)
-	-rm -f $(BINDIR)/debug/esp 
-	-rm -f $(BINDIR)/release/esp 
-	-rm -f $(BINDIR)/prof/esp 
+	-rm -f $(BINDIR)/debug/esp
+	-rm -f $(BINDIR)/release/esp
+	-rm -f $(BINDIR)/prof/esp
 	@echo $(CYAN)clean up objects files and dependencies $(END)
 	-rm -f $(addprefix $(OBJDIR)/debug/,$(obj)) $(obj:%.o=$(OBJDIR)/debug/%.d)
 	-rm -f $(addprefix $(OBJDIR)/release/,$(obj)) $(obj:%.o=$(OBJDIR)/release/%.d)

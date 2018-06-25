@@ -52,6 +52,11 @@
 #define spring_beta_default 1.15  // Parameter beta for spring dynamics
 #define vlevel_default 32         // Number of vertical layers
 
+// Sponge layer
+#define nlat_default   20         // Number of latitude rings for mean zonal wind (sponge layer)
+#define Rv_sponge_default 1e-4    // Maximum damping (top of model)
+#define ns_sponge_default 0.75    // Lowest level of sponge layer
+
 // Diffusion
 #define HyDiff_default       true    // Hyper-diffusion
 #define DivDampP_default     true    // Divergence-damping
@@ -59,6 +64,7 @@
 // Model options
 #define NonHydro_default  true       // Non-hydrostatic parameter
 #define DeepModel_default true       // Deep atmosphere
+#define SpongeLayer_default false    // use sponge layer at top of model
 
 // Initial conditions
 #define rest_default   true          // Starting from rest
@@ -79,5 +85,15 @@
 #define GPU_ID_N_default 0        // Set GPU ID number
 
 // Output
-#define n_out_default 1000                 // Print output every n_out steps
+#define n_out_default 1000         // Print output every n_out steps
+
+// RT parameter defaults
+#define Tstar_default 4520.0             // Star effective temperature [K]
+#define planet_star_dist_default 0.015 // Planet-star distance [au]
+#define radius_star_default 0.667      // Star radius [km]
+#define diff_fac_default 0.5           // Diffusivity factor: 0.5-1.0
+#define Tlow_default 970.0   // Lower boundary temperature: upward flux coming from the planet's interior
+#define albedo_default 0.18            // Bond albedo
+#define tausw_default 532.0      // Absorption coefficient for the shortwaves
+#define taulw_default 1064.0     // Absorption coefficient for the longwaves
 #define output_path_default  "results"     // Output directory

@@ -30,9 +30,9 @@
 // Known issues: None
 //
 //
-// If you use this code please cite the following reference: 
+// If you use this code please cite the following reference:
 //
-//       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016  
+//       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016
 //
 // Current Code Owner: Joao Mendonca, EEG. joao.mendonca@csh.unibe.ch
 //
@@ -60,18 +60,18 @@ XPlanet::XPlanet(){
         //////////////
         // BULK     //
         //////////////
-        A = 6371000.0    ; // Radius [m]
-        Omega = 7.292E-5 ; // Rotation rate [s-1]
-        Gravit= 9.8      ; // Gravitational acceleration [m/s^2]
+        A = 72427000.0    ; // Radius [m]
+        Omega = 9.09E-5 ; // Rotation rate [s-1]
+        Gravit= 47.0      ; // Gravitational acceleration [m/s^2]
         ////////////////
         // ATMOSPHERE //
         ////////////////
-        Mmol = 28.964         ; // Mean molecular mass of dry air [kg]
-        Rd   = 287.0          ; // Gas constant [J/(Kg K)]
-        Cp   = 1005.0         ; // Specific heat capacities [J/(Kg K)]
-        Tmean= 300.0          ; // Mean atmospheric temperature [K]
-        P_Ref = 100000.0      ; // Reference surface pressure [Pa] 
-        Top_altitude = 36000.0; // Altitude of the top of the model domain [m]
-        Diffc = 0.007         ; // Strength of diffusion
-    }    
+        Mmol = 2.24        ; // Mean molecular mass of dry air [kg]
+        Rd   = 3714          ; // Gas constant [J/(Kg K)]
+        Cp   = 13000        ; // Specific heat capacities [J/(Kg K)]
+        Tmean= 1400          ; // Mean atmospheric temperature [K]
+        P_Ref = 10000000.0      ; // Reference surface pressure [Pa]
+        Top_altitude = 1235376.0; // Altitude of the top of the model domain [m]
+        Diffc = 0.009973         ; // Strength of diffusion
+    }
 }

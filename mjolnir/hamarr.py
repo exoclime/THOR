@@ -268,13 +268,13 @@ def uv_lev(input,grid,output,Plev):
     for cc in C.collections:
         cc.set_edgecolor("face") #fixes a stupid bug in matplotlib 2.0
     plt.ylabel('Latitude (deg)')
-    plt.xlabel('Longitude (deg))')
+    plt.xlabel('Longitude (deg)')
 
     clb = plt.colorbar(C)
     if not os.path.exists(input.resultsf+'/figures'):
         os.mkdir(input.resultsf+'/figures')
     plt.tight_layout()
-    plt.savefig(input.resultsf+'/figures/u_lev%d_i%d_l%d.pdf'%((Plev/input.P_Ref*1000),output.ntsi,output.nts))
+    plt.savefig(input.resultsf+'/figures/u_lev%#.3fmbar_i%d_l%d.pdf'%((Plev/100),output.ntsi,output.nts))
     plt.close()
 
     plt.figure()
@@ -284,13 +284,13 @@ def uv_lev(input,grid,output,Plev):
     for cc in C.collections:
         cc.set_edgecolor("face") #fixes a stupid bug in matplotlib 2.0
     plt.ylabel('Latitude (deg)')
-    plt.xlabel('Longitude (deg))')
+    plt.xlabel('Longitude (deg)')
 
     clb = plt.colorbar(C)
     if not os.path.exists(input.resultsf+'/figures'):
         os.mkdir(input.resultsf+'/grid.figures')
     plt.tight_layout()
-    plt.savefig(input.resultsf+'/figures/v_lev%d_i%d_l%d.pdf'%((Plev/input.P_Ref*1000),output.ntsi,output.nts))
+    plt.savefig(input.resultsf+'/figures/v_lev%#.3fmbar_i%d_l%d.pdf'%((Plev/100),output.ntsi,output.nts))
     plt.close()
 
 def temperature_u_lev(input,grid,output,Plev):
@@ -380,14 +380,14 @@ def temperature_u_lev(input,grid,output,Plev):
     for cc in C.collections:
         cc.set_edgecolor("face") #fixes a stupid bug in matplotlib 2.0
     plt.ylabel('Latitude (deg)')
-    plt.xlabel('Longitude (deg))')
+    plt.xlabel('Longitude (deg)')
     plt.quiver(lonq*180/np.pi,latq*180/np.pi,U,V,color='0.5')
 
     clb = plt.colorbar(C)
     if not os.path.exists(input.resultsf+'/figures'):
         os.mkdir(input.resultsf+'/figures')
     plt.tight_layout()
-    plt.savefig(input.resultsf+'/figures/temperature-uv_lev%d_i%d_l%d.pdf'%(Plev/input.P_Ref*1000,output.ntsi,output.nts))
+    plt.savefig(input.resultsf+'/figures/temperature-uv_lev%#.3fmbar_i%d_l%d.pdf'%(Plev/100,output.ntsi,output.nts))
     plt.close()
 
 def potential_temp(input,grid,output,sigmaref):

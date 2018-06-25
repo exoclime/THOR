@@ -46,7 +46,10 @@
 #include "../headers/phy/profx_auxiliary.h"
 #include "../headers/phy/profx_held_suarez.h"
 #include "../headers/phy/profx_shallowHJ_hs.h"
+#include "../headers/phy/profx_deepHJ_hs.h"
 #include "../headers/phy/profx_tidalearth_hs.h"
+#include "../headers/phy/apocalypse_sponge.h"
+#include "../headers/phy/profx_RT.h"
 
 __host__ void ESP::ProfX(int    planetnumber, // Planet ID
                          int    nstep       , // Step number
@@ -60,14 +63,49 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
                          double kb          , // Boltzmann constant [J/K]
                          double P_Ref       , // Reference pressure [Pa]
                          double Gravit      , // Gravity [m/s^2]
-                         double A           ){// Planet radius [m]
-
+                         double A           ,// Planet radius [m]
+                         bool   sponge      ){
 //
 //  Number of threads per block.
     const int NTH = 256;
 
 //  Specify the block sizes.
     dim3 NB((point_num / NTH) + 1, nv, 1);
+    dim3 NBRT((point_num/NTH) + 1, 1, 1);
+
+    if (sponge==true) {
+      dim3 NBT((point_num / NTH) + 1, nv, 1);
+
+      cudaMemset(vbar_d, 0, sizeof(double) * 3 * nlat * nv);
+      zonal_v <<<NBT,NTH >>>(Mh_d                     ,
+                             W_d                       ,
+                             Rho_d                    ,
+                             vbar_d                    ,
+                             zonal_mean_tab_d,
+                             lonlat_d                  ,
+                             point_num                        );
+
+      cudaDeviceSynchronize();
+  // temporary to set up code. Need to move to config file eventually.
+      // double Rv_sponge = 1e-4;
+      // double ns_sponge = 0.75;
+
+      sponge_layer <<< NB,NTH >>>(Mh_d                      ,
+                                  Rho_d                    ,
+                                  W_d                       ,
+                                  Wh_d                     ,
+                                  vbar_d                    ,
+                                  zonal_mean_tab_d,
+                                  lonlat_d                  ,
+                                  Altitude_d               ,
+                                  Altitudeh_d             ,
+                                  Rv_sponge             ,
+                                  ns_sponge              ,
+                                  time_step                  ,
+                                  nlat                       ,
+                                  point_num                  ,
+                                  nv                           );
+    }
 
 //  Computes the initial temperature.
     Compute_temperature <<< NB, NTH >>> (temperature_d,
@@ -79,6 +117,9 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
                                          Cp           ,
                                          point_num    );
 //  Check for nan.
+
+
+
     check_h = false;
     cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
     isnan_check<<< 16, NTH >>>(temperature_d, nv, point_num, check_d);
@@ -135,6 +176,20 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
                                     lonlat_d     ,
                                     time_step    ,
                                     point_num    );
+      } else if (hstest == 4) {
+        cudaDeviceSynchronize();
+        deepHJ_hs<<< NB, NTH >>> (Mh_d         ,
+                                    pressure_d   ,
+                                    Rho_d        ,
+                                    temperature_d,
+                                    Gravit       ,
+                                    Cp           ,
+                                    Rd           ,
+                                    Altitude_d   ,
+                                    Altitudeh_d  ,
+                                    lonlat_d     ,
+                                    time_step    ,
+                                    point_num    );
       }
     }
 //
@@ -145,6 +200,42 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
         exit(EXIT_FAILURE);
     }
 
+    if (!hstest) {
+        cudaDeviceSynchronize();
+        rtm_dual_band <<< NBRT, NTH >>> (pressure_d   ,
+      //rtm_dual_band <<< 1,1 >>> (pressure_d         ,
+                                       Rho_d        ,
+                                       temperature_d,
+                                       fnet_up_d    ,
+                                       fnet_dn_d    ,
+                                       tau_d        ,
+                                       Gravit       ,
+                                       Cp           ,
+                                       lonlat_d     ,
+                                       Altitude_d   ,
+                                       Altitudeh_d  ,
+                                       phtemp       ,
+                                       dtemp        ,
+                                       ttemp        ,
+                                       thtemp       ,
+                                       time_step    ,
+                                       Tstar        ,
+                                       planet_star_dist,
+                                       radius_star  ,
+                                       diff_fac     ,
+                                       Tlow         ,
+                                       albedo       ,
+                                       tausw        ,
+                                       taulw        ,
+                                       incflx       ,
+                                       P_Ref        ,
+                                       point_num    ,
+                                       nv           ,
+                                       nvi          ,
+                                       A             );
+        // isnan_loop <<< 1, 1 >>> (temperature_d, point_num, nv);
+    }
+
 //  Computes the new pressures.
     cudaDeviceSynchronize();
     Compute_pressure <<< NB, NTH >>> (pressure_d   ,
@@ -152,6 +243,8 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
                                       Rho_d        ,
                                       Rd           ,
                                       point_num    );
+
+
 //
 //END OF INTEGRATION
 //

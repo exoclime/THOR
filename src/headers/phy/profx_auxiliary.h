@@ -20,18 +20,18 @@
 //
 //
 // Description: Computes temperature and pressure.
-//  
+//
 //
 // Method: We use the assumption that the atmosphere can be treated as an ideal gas.
 //
 // Known limitations: None
-//   
+//
 // Known issues: None.
-//   
 //
-// If you use this code please cite the following reference: 
 //
-//       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016  
+// If you use this code please cite the following reference:
+//
+//       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016
 //
 // Current Code Owner: Joao Mendonca, EEG. joao.mendonca@csh.unibe.ch
 //
@@ -55,13 +55,20 @@ __global__ void Compute_temperature (double *temperature_d,
     int id = blockIdx.x * blockDim.x + threadIdx.x;
     int nv = gridDim.y;
     int lev = blockIdx.y;
-    
+
     double Cv = Cp - Rd;
-    double CvoCp = Cv / Cp;    
-    
+    double CvoCp = Cv / Cp;
+
     // Computes absolute and potential temperature
     if(id < num) temperature_d[id*nv + lev] = pressure_d[id*nv + lev]/(Rd*Rho_d[id*nv + lev]);
     if(id < num) pt_d[id * nv + lev] = (P_Ref / (Rd * Rho_d[id*nv + lev]))*pow(pressure_d[id*nv + lev] / P_Ref, CvoCp);
+
+    // if (id == 1286) {
+    //   printf("CompTemp: %d %f %f %f\n",lev, pressure_d[id*nv+lev]/100000, temperature_d[id*nv+lev]);
+    // }
+    // // if (isnan(temperature_d[id*nv+lev])){
+    //   printf("id = %d, lev = %d, temperature_d = %f\n",id,lev,temperature_d[id*nv+lev]);
+    // }
 }
 
 __global__ void Compute_pressure    (double *pressure_d   ,
@@ -77,6 +84,14 @@ __global__ void Compute_pressure    (double *pressure_d   ,
 
     // Computes absolute pressure
     if (id < num) pressure_d[id*nv + lev] = temperature_d[id*nv + lev] * Rd*Rho_d[id*nv + lev];
+    // if (id == 1286) {
+    //   printf("CompPres: %d %f %f %f\n",lev, pressure_d[id*nv+lev]/100000, temperature_d[id*nv+lev]);
+    // }
+
+    // if (isnan(pressure_d[id*nv+lev])){
+    //   printf("id = %d, lev = %d, temperature_d = %f\n",id,lev,temperature_d[id*nv+lev]);
+    // }
+
 }
 
 
@@ -84,13 +99,25 @@ __global__ void isnan_check(double *array, int width, int height, bool *check){
 
 //
 //  Description: Check for nan in the temperature array.
-//    
-    
+//
+
   int idx = threadIdx.x+blockDim.x*blockIdx.x;
 
   while (idx < width){
     for (int i = 0; i < height; i++)
-      if (isnan(array[(i*width) + idx])) *check = true;
+      if (isnan(array[(i*width) + idx])) {
+        *check = true;
+      }
       idx += gridDim.x+blockDim.x;
     }
+}
+
+__global__ void isnan_loop(double *t, int num, int nv) {
+  int i;
+
+  for (i=0;i<num;i++) {
+    if (isnan(t[i*nv])) {
+      printf("id = %d, lev = %d, t = %f\n",i,0,t[i*nv]);
+    }
+  }
 }

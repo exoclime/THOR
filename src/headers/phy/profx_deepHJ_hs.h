@@ -19,7 +19,7 @@
 //
 //
 //
-// Description: Shallow hot jupiter benchmark test.
+// Description: Deep hot jupiter benchmark test (Heng+ 2011)
 //
 //
 // Method: The temperature is forced using a Newtonian cooling code, and the
@@ -46,7 +46,7 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
-__global__ void shallowHJ_hs(double *Mh_d         ,
+__global__ void deepHJ_hs(double *Mh_d         ,
                             double *pressure_d   ,
                             double *Rho_d        ,
                             double *temperature_d,
@@ -66,57 +66,70 @@ __global__ void shallowHJ_hs(double *Mh_d         ,
     if (id < num){
 
 //      Parameters for the forcing and dissipation
-        double sigma;
-        //double sigmab = 0.7;
-        //double ka     = (1.0/40.0) * (1.0/86400.0);
-        //double ks     = (1.0/4.0) * (1.0/86400.0);
-        double dTy    = 300.0;
-        double ps, pre  ;
-        double psm1;
+        //double sigma;
+        double pre;
+        //double psm1;
         double lat = lonlat_d[id*2 + 1];
         double lon = lonlat_d[id*2];
 
-        // Hot Jupiter stuff....
-        double zstra = 2e6;
-        double sigma_stra = 0.12;
-        double Gamma_trop = 2e-4;
-        double T_surf = 1600;
-        double Delta_Tstra = 10;
-        double beta_trop;
-        double T_vert;
+        // Deeeeeep Hot Jupiter stuff....
 
         double Teq_hs;
         double kv_hs, kt_hs;
+
+        double Tnight, Tday;
+        double Ptil;
+        double logtrad;
+
 ////////////
 //      Calculates surface pressure
-        psm1 = pressure_d[id*nv + 1] - Rho_d[id*nv + 0] * Gravit * (-Altitude_d[0] - Altitude_d[1]);
-        ps = 0.5*(pressure_d[id*nv + 0] + psm1);
+        //psm1 = pressure_d[id*nv + 1] - Rho_d[id*nv + 0] * Gravit * (-Altitude_d[0] - Altitude_d[1]);
+        //ps = 0.5*(pressure_d[id*nv + 0] + psm1);
 
         pre = pressure_d[id*nv + lev];
 
-        sigma = (pre/ps);
+        //sigma = (pre/ps);
+        Ptil = log10(pre/100000); // log of pressure in bars
 
-// Calculate T_vert from Equation 23 & 24 (Heng, Menou, and Phillips 2011)
-        if (Altitude_d[lev] <= zstra) {
-          beta_trop = sin( 0.5*M_PI*(sigma-sigma_stra)/(1.0-sigma_stra) );
-          T_vert = T_surf - Gamma_trop*(zstra+0.5*(Altitude_d[lev]-zstra)) +
-                   sqrt(pow(0.5*Gamma_trop*(Altitude_d[lev]-zstra),2) +
-                   Delta_Tstra*Delta_Tstra);
+        if (pre<=1e6) { //pressure less than ten bars
+          Tnight = 1388.2145 + 267.66586*Ptil - 215.53357*Ptil*Ptil \
+                   + 61.814807*Ptil*Ptil*Ptil + 135.68661*Ptil*Ptil*Ptil*Ptil\
+                   + 2.01149044*Ptil*Ptil*Ptil*Ptil*Ptil \
+                   - 40.907246*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil\
+                   - 19.015628*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil \
+                   - 3.8771634*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil \
+                   - 0.38413901*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil \
+                   - 0.015089084*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil;
+          Tday = 2149.9581 + 4.1395571*Ptil - 186.24851*Ptil*Ptil \
+                 + 135.52524*Ptil*Ptil*Ptil + 106.20433*Ptil*Ptil*Ptil*Ptil \
+                 - 35.851966*Ptil*Ptil*Ptil*Ptil*Ptil \
+                 - 50.022826*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil \
+                 - 18.462489*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil \
+                 - 3.3319965*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil \
+                 - 0.30295925*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil \
+                 - 0.011122316*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil;
+          logtrad = 5.4659686 + 1.4940124*Ptil + 0.66079196*Ptil*Ptil \
+                    + 0.16475329*Ptil*Ptil*Ptil + 0.014241552*Ptil*Ptil*Ptil*Ptil;
+          kt_hs = pow(10,-logtrad); //      Temperature forcing constant.
         } else {
-          beta_trop = 0.0;
-          T_vert = T_surf - Gamma_trop*zstra + Delta_Tstra;
+          Tnight = 5529.7168 - 6869.6504*Ptil + 4142.7231*Ptil*Ptil \
+                   - 936.23053*Ptil*Ptil*Ptil + 87.120975*Ptil*Ptil*Ptil*Ptil;
+          Tday = Tnight;
+          kt_hs = 0.0; //      Temperature forcing constant.
         }
 
-//      Equilibrium temperature. Equation 25 from Heng, Menou, and Phillips 2011
-        Teq_hs=  T_vert + beta_trop * dTy * cos(lon-M_PI)*cos(lat);
-
-//      Temperature forcing constant.
-        kt_hs =  1/(1.5e5);
+// Calculate Teq from eqn 26 (Heng, Menou, and Phillips 2011)
+        if ((lon>=M_PI/2) && (lon<3*M_PI/2)) {
+          Teq_hs = pow(Tnight*Tnight*Tnight*Tnight + (Tday*Tday*Tday*Tday -
+                       Tnight*Tnight*Tnight*Tnight)*cos(lon-M_PI)*cos(lat) ,0.25);
+        } else {
+          Teq_hs = Tnight;
+        }
 
 //      Momentum dissipation constant.
         kv_hs = 0.0;  //no boundary layer friction
 
-//      Update momentasigmab
+//      Update momenta
         for(int k = 0; k < 3; k++) Mh_d[id*3*nv + lev*3 + k] = Mh_d[id*3*nv + lev*3 + k]/(1.0 + kv_hs*time_step);;
 //      Update temperature
         temperature_d[id*nv + lev] -= kt_hs * time_step * (temperature_d[id*nv + lev] - Teq_hs);

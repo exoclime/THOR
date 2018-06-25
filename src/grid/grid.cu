@@ -37,7 +37,7 @@
 //
 // Current Code Owner: Joao Mendonca, EEG. joao.mendonca@csh.unibe.ch
 //
-// If you use this code please cite the following reference: 
+// If you use this code please cite the following reference:
 //
 // [1] - João M. Mendonça, Simon L. Grimm, Luc Grosheintz and Kevin Heng, 2016, Apj,
 //       "THOR: A New and Flexible Global Circulation Model to Explore Planetary Atmospheres",
@@ -62,8 +62,10 @@ __host__ Icogrid::Icogrid (bool sprd         ,  // Spring dynamics option
                            double spring_beta,  // Parameter beta for spring dynamics
                            int glevel        ,  // Horizontal resolution level
                            int vlevel        ,  // Number of vertical layers
+                           int nlat          ,
                            double A          ,  // Planet radius [m]
-                           double Top_altitude){// Top model's domain [m]
+                           double Top_altitude, // Top model's domain [m]
+                           bool sponge){
 
     printf("\n\n Building icosahedral grid!");
 
@@ -72,7 +74,7 @@ __host__ Icogrid::Icogrid (bool sprd         ,  // Spring dynamics option
     nv        = vlevel                    ; // Vertical
     nvi       = vlevel + 1                ; // Interfaces between layers
 
-//  Number of times the main rhombi are divided.  
+//  Number of times the main rhombi are divided.
     int divide_face; // Used to split memory on the GPU
     if (glevel == 4) divide_face = 0;
     else if (glevel == 5) divide_face = 1;
@@ -83,16 +85,16 @@ __host__ Icogrid::Icogrid (bool sprd         ,  // Spring dynamics option
         exit(EXIT_FAILURE);
     }
     grid_level = glevel;
-    
+
 //  Rhombi
     int n_region = pow(2.0,glevel)*pow(2.0,glevel) ; //
-    nl_region    = pow(2.0,glevel)                 ; // 
-    nl_region    = nl_region/(pow(2.0,divide_face)); // 
-    int nl2      = nl_region*nl_region             ; // 
+    nl_region    = pow(2.0,glevel)                 ; //
+    nl_region    = nl_region/(pow(2.0,divide_face)); //
+    int nl2      = nl_region*nl_region             ; //
     int nfaces   = pow(4.0,divide_face)            ; //
-    int nlhalo   = nl_region+2                     ; // 
+    int nlhalo   = nl_region+2                     ; //
     int kxl      = sqrt(nfaces*1.0)                ; //
-    nr           = (point_num-2)/nl2               ; //  
+    nr           = (point_num-2)/nl2               ; //
 
 //  Compute standard grid.
     point_xyz  = (double*)malloc(3*point_num * sizeof(double));
@@ -150,7 +152,7 @@ __host__ Icogrid::Icogrid (bool sprd         ,  // Spring dynamics option
                               point_xyz  ,
                               pent_ind   ,
                               point_num  );
-    
+
 //  Produce rhombus' maps.
     maps = (int*)malloc( (nl_region+2)*(nl_region+2)*nr * sizeof(int));
     produce_maps(maps     ,
@@ -167,7 +169,7 @@ __host__ Icogrid::Icogrid (bool sprd         ,  // Spring dynamics option
                         spring_beta,
                         point_xyz  ,
                         point_num  );
-        
+
         //  Finds the q points.
         point_xyzq = (double*)malloc(6*3*point_num * sizeof(double));
         find_qpoints (point_local ,
@@ -245,7 +247,7 @@ __host__ Icogrid::Icogrid (bool sprd         ,  // Spring dynamics option
                   nv         );
 
 //  Converting to spherical coordinates.
-    lonlat  = (double*)malloc(2*point_num * sizeof(double)); 
+    lonlat  = (double*)malloc(2*point_num * sizeof(double));
     cart2sphe ( lonlat    ,
                 point_xyz ,
                 point_num );
@@ -267,6 +269,15 @@ __host__ Icogrid::Icogrid (bool sprd         ,  // Spring dynamics option
                  nvec     ,
                  pent_ind ,
                  point_num);
+
+//  Computes zonal mean for sponge layer operations
+    if (sponge == true) {
+      zonal_mean_tab = (int*)malloc(2 * point_num * sizeof(int));
+      zonal_mean_tab_f(zonal_mean_tab    ,
+                     lonlat            ,
+                     nlat              ,
+                     point_num         );
+    }
 
     printf(" GRID DONE!\n\n");
 }
@@ -296,7 +307,7 @@ void Icogrid::sphere_ico (double *xyz        ,
 //  Output: - xyz       - the vertices coordinates (Cartesian; radius 1).
 //          - nl_region - nl_region^2 is the number of points in the faces.
 //          - kxl       - kxl^2 is the number of small rhombi inside the main rhombi.
-    
+
 //  Local variables
     int sizei = pow(2.0, glevel) ;
     double l                     ;
@@ -317,7 +328,7 @@ void Icogrid::sphere_ico (double *xyz        ,
     double w = 2.0 * acos(1.0/(2.0*sin(M_PI/5.0)));
 
 //  First icosahedron coordinates (pentagons)
-//  Poles    
+//  Poles
 //  North
     xyzi[0*3 + 0] = 0.0;
     xyzi[0*3 + 1] = 0.0;
@@ -327,7 +338,7 @@ void Icogrid::sphere_ico (double *xyz        ,
     xyzi[1*3 + 1] = 0.0;
     xyzi[1*3 + 2] =-1.0;
 //  Other points of the icosahedron.
-//  3 
+//  3
     xyzi[2*3 + 0] = cos(-M_PI/5.0)*cos(M_PI/2.0-w);
     xyzi[2*3 + 1] = sin(-M_PI/5.0)*cos(M_PI/2.0-w);
     xyzi[2*3 + 2] = sin(M_PI/2.0-w)           ;
@@ -337,49 +348,49 @@ void Icogrid::sphere_ico (double *xyz        ,
     xyzi[3*3 + 1] = sin(M_PI/5.0)*cos(M_PI/2.0-w);
     xyzi[3*3 + 2] = sin(M_PI/2.0-w)          ;
     rhombi[1] = 3;
-//  5 
+//  5
     xyzi[4*3 + 0] = cos(3.0*M_PI/5.0)*cos(M_PI/2.0-w);
     xyzi[4*3 + 1] = sin(3.0*M_PI/5.0)*cos(M_PI/2.0-w);
     xyzi[4*3 + 2] = sin(M_PI/2-w)            ;
     rhombi[2] = 4;
-//  6 
+//  6
     xyzi[5*3 + 0] = cos(M_PI)*cos(M_PI/2.0-w);
     xyzi[5*3 + 1] = sin(M_PI)*cos(M_PI/2.0-w);
     xyzi[5*3 + 2] = sin(M_PI/2.0-w)           ;
     rhombi[3] = 5;
-//  7 
+//  7
     xyzi[6*3 + 0] = cos(-(3.0/5.0)*M_PI)*cos(M_PI/2.0-w);
     xyzi[6*3 + 1] = sin(-(3.0/5.0)*M_PI)*cos(M_PI/2.0-w);
     xyzi[6*3 + 2] = sin(M_PI/2.0-w);
     rhombi[4] = 6;
-//  8 
+//  8
     xyzi[7*3 + 0] = cos(0.0)*cos(w-M_PI/2.0);
     xyzi[7*3 + 1] = sin(0.0)*cos(w-M_PI/2.0);
     xyzi[7*3 + 2] = sin(w-M_PI/2.0);
     rhombi[5] = 7;
-//  9 
+//  9
     xyzi[8*3 + 0] = cos(2.0*M_PI/5.0)*cos(w-M_PI/2.0);
     xyzi[8*3 + 1] = sin(2.0*M_PI/5.0)*cos(w-M_PI/2.0);
     xyzi[8*3 + 2] = sin(w-M_PI/2.0);
     rhombi[6] = 8;
-//  10 
+//  10
     xyzi[9*3 + 0] = cos(4.0*M_PI/5.0)*cos(w-M_PI/2.0);
     xyzi[9*3 + 1] = sin(4.0*M_PI/5.0)*cos(w-M_PI/2.0);
     xyzi[9*3 + 2] = sin(w-M_PI/2.0);
     rhombi[7] = 9;
-//  11 
+//  11
     xyzi[10*3 + 0] = cos(-4.0*M_PI/5.0)*cos(w-M_PI/2.0);
     xyzi[10*3 + 1] = sin(-4.0*M_PI/5.0)*cos(w-M_PI/2.0);
     xyzi[10*3 + 2] = sin(w-M_PI/2.0);
     rhombi[8] = 10;
-//  12 
+//  12
     xyzi[11*3 + 0] = cos(-2.0*M_PI/5.0)*cos(w-M_PI/2.0);
     xyzi[11*3 + 1] = sin(-2.0*M_PI/5.0)*cos(w-M_PI/2.0);
     xyzi[11*3 + 2] = sin(w-M_PI/2.0);
     rhombi[9] = 11;
 //
 //  Standard grid points.
-// 
+//
     for (int faces = 0; faces < 10; faces++){
         if(faces == 0){
             rhombi[faces]                               = 2;
@@ -734,7 +745,7 @@ void Icogrid::neighbors_indx (int *point_local,
                            point_local[i*6 + 4] != j && point_local[i*6 + 5] != j){
                            small = distance[j];
                            position = j;
-                        }                        
+                        }
                     }
                 }
             }
@@ -1485,8 +1496,8 @@ void Icogrid::produce_maps(int *maps     ,
                            int nl_region ){
 
 //
-//  Description: 
-//                 
+//  Description:
+//
 //  Produces regions that contain the halos.
 //
 //  Input:  - halo         - halos of the main rhombi.
@@ -1495,7 +1506,7 @@ void Icogrid::produce_maps(int *maps     ,
 //
 //  Output: - maps - indexes of the maps that contain the main rhombi and halos.
 //
-    
+
     // Local variables
     int nl2 = nl_region + 2;
     int nl22 = nl2*nl2;
@@ -1535,8 +1546,8 @@ void Icogrid::spring_dynamics(int *point_local    ,
                               int point_num       ){
 
 //
-//  Description: 
-//                 
+//  Description:
+//
 //  Method developed in Tomita et al. 2002.
 //
 //  Input:  - xyz         - Standard icosahedral points;
@@ -1602,7 +1613,7 @@ void Icogrid::spring_dynamics(int *point_local    ,
         vely[i] = 0.0;
         velz[i] = 0.0;
     }
-    
+
     for (int i = 0; i < 12; i++){
         xyzi[i * 3 + 0] = xyz[pent_ind[i] * 3 + 0];
         xyzi[i * 3 + 1] = xyz[pent_ind[i] * 3 + 1];
@@ -1612,7 +1623,7 @@ void Icogrid::spring_dynamics(int *point_local    ,
 
     // Solving spring dynamics.
     for (int it = 0; it < lim; it++){
-        
+
         for (int i = 0; i < point_num; i++){
             Px[i] = xyz[i*3 + 0];
             Py[i] = xyz[i*3 + 1];
@@ -1636,9 +1647,9 @@ void Icogrid::spring_dynamics(int *point_local    ,
 
                 //norm
                 l = sqrt(Vx*Vx + Vy*Vy + Vz*Vz);
-        
+
                 d = acos(Px[i]*Px_Nei[i*6 + j] + Py[i]*Py_Nei[i*6 + j] + Pz[i]*Pz_Nei[i*6 + j]);
-            
+
                 Fx_Nei[i*6 + j] = (d - dbar) * Vx;
                 Fy_Nei[i*6 + j] = (d - dbar) * Vy;
                 Fz_Nei[i*6 + j] = (d - dbar) * Vz;
@@ -1694,7 +1705,7 @@ void Icogrid::spring_dynamics(int *point_local    ,
             velx_val = velx[i] + Fx[i]*tstep;
             vely_val = vely[i] + Fy[i]*tstep;
             velz_val = velz[i] + Fz[i]*tstep;
-        
+
             H = xyz[i*3 + 0]*velx_val + xyz[i*3 + 1]*vely_val + xyz[i*3 + 2]*velz_val;
 
             // Remove radial component (if any).
@@ -1794,7 +1805,7 @@ void Icogrid::find_qpoints (int    *point_local,
                 vc1[0] = v1[1]*v2[2] - v1[2]*v2[1];
                 vc1[1] = v1[2]*v2[0] - v1[0]*v2[2];
                 vc1[2] = v1[0]*v2[1] - v1[1]*v2[0];
-                
+
                 l2 = sqrt(vc1[0] * vc1[0] + vc1[1] * vc1[1] + vc1[2] * vc1[2]);
 
                 vc1[0] = vc1[0] / l2 * atan2(l2, l1);
@@ -2100,7 +2111,7 @@ void Icogrid::relocate_centres(int    *point_local,
     vc3  = new double[3]();
     vc4  = new double[3]();
     vc5  = new double[3]();
-    vc6  = new double[3]();    
+    vc6  = new double[3]();
     vgc  = new double[3]();
 
     for (int i = 0; i < point_num; i++){
@@ -2363,13 +2374,13 @@ void Icogrid::set_altitudes(double *Altitude    ,
 //
 //  Input:  - nv - Number of vertical layers.
 //          - top_altitude - Altitude of the top model domain.
-//         
+//
 //  Output: - Altitude  - Layers altitudes.
 //          - Altitudeh - Interfaces altitudes.
 //
 
     double res_vert = Top_altitude / nv;
-    Altitudeh[0] = 0.0;    
+    Altitudeh[0] = 0.0;
     for (int lev = 0; lev < nv; lev++)  Altitudeh[lev + 1] = Altitudeh[lev] + res_vert;
     for (int lev = 0; lev < nv; lev++)  Altitude[lev] = (Altitudeh[lev] + Altitudeh[lev+1])/2.0;
 }
@@ -2441,8 +2452,8 @@ void Icogrid::correct_xyz_points ( double A     ,
             xyz[i*3 + 1] = xyz[i*3 + 1]*A;
             xyz[i*3 + 2] = xyz[i*3 + 2]*A;
         }
-    }    
-}    
+    }
+}
 
 
 void Icogrid::control_areas ( double *areasT  ,
@@ -2510,7 +2521,7 @@ void Icogrid::control_areas ( double *areasT  ,
     for (int i = 0; i < point_num*6*3; i++) areas[i] = 0.0;
 
     for (int i = 0; i < point_num; i++){
-//    
+//
 // Areas - Alpha, Beta, Gamma
 //
         geo = 6; // Hexagons.
@@ -2592,16 +2603,16 @@ void Icogrid::control_areas ( double *areasT  ,
                         v01[v] = a[v];
                         v02[v] = b[v];
                         v03[v] = c[v];
-    
+
                         v11[v] = b[v] - a[v];
                         v12[v] = a[v] - b[v];
                         v13[v] = a[v] - c[v];
-            
+
                         v21[v] = c[v] - a[v];
                         v22[v] = c[v] - b[v];
                         v23[v] = b[v] - c[v];
                     }
-    
+
                     t11 = 1/(v01[0]*v01[0] + v01[1]*v01[1] + v01[2]*v01[2]);
 
                     fac11       = (v01[0]*v11[0] + v01[1]*v11[1] + v01[2]*v11[2])*t11;
@@ -2610,64 +2621,64 @@ void Icogrid::control_areas ( double *areasT  ,
                     w11[0] = v11[0] - fac11*v01[0];
                     w11[1] = v11[1] - fac11*v01[1];
                     w11[2] = v11[2] - fac11*v01[2];
-    
+
                     w21[0] = v21[0] - fac21*v01[0];
                     w21[1] = v21[1] - fac21*v01[1];
                     w21[2] = v21[2] - fac21*v01[2];
-    
+
                     ang[0] = (w11[0]*w21[0] + w11[1]*w21[1] + w11[2]*w21[2])/
                         (sqrt(w11[0]*w11[0] + w11[1]*w11[1] + w11[2]*w11[2])*
                          sqrt(w21[0]*w21[0] + w21[1]*w21[1] + w21[2]*w21[2]));
-    
+
                     if (ang[0] > 1) ang[0] =  1;
                     if (ang[0] < -1)ang[0] = -1;
-    
+
                     ang[0] = acos(ang[0]);
-    
+
                     t22 = 1/(v02[0]*v02[0] + v02[1]*v02[1] + v02[2]*v02[2]);
 
                     fac12       = (v02[0]*v12[0] + v02[1]*v12[1] + v02[2]*v12[2])*t22;
                     fac22       = (v02[0]*v22[0] + v02[1]*v22[1] + v02[2]*v22[2])*t22;
 
-                    w12[0] = v12[0] - fac12*v02[0];    
+                    w12[0] = v12[0] - fac12*v02[0];
                     w12[1] = v12[1] - fac12*v02[1];
                     w12[2] = v12[2] - fac12*v02[2];
-    
+
                     w22[0] = v22[0] - fac22*v02[0];
                     w22[1] = v22[1] - fac22*v02[1];
                     w22[2] = v22[2] - fac22*v02[2];
-    
+
                     ang[1] = (w12[0]*w22[0] + w12[1]*w22[1] + w12[2]*w22[2])/
                         (sqrt(w12[0]*w12[0] + w12[1]*w12[1] + w12[2]*w12[2])*
                          sqrt(w22[0]*w22[0] + w22[1]*w22[1] + w22[2]*w22[2]));
-    
+
                     if ( ang[1] > 1) ang[1] =  1;
                     if ( ang[1] < -1)ang[1] = -1;
-    
+
                     ang[1] = acos(ang[1]);
 
                     t33 = 1/(v03[0]*v03[0] + v03[1]*v03[1] + v03[2]*v03[2]);
 
                     fac13       = (v03[0]*v13[0] + v03[1]*v13[1] + v03[2]*v13[2])*t33;
                     fac23       = (v03[0]*v23[0] + v03[1]*v23[1] + v03[2]*v23[2])*t33;
-    
+
                     w13[0] = v13[0] - fac13*v03[0];
                     w13[1] = v13[1] - fac13*v03[1];
                     w13[2] = v13[2] - fac13*v03[2];
-    
+
                     w23[0] = v23[0] - fac23*v03[0];
                     w23[1] = v23[1] - fac23*v03[1];
                     w23[2] = v23[2] - fac23*v03[2];
-    
+
                     ang[2] = (w13[0]*w23[0] + w13[1]*w23[1] + w13[2]*w23[2])/
                         (sqrt(w13[0]*w13[0] + w13[1]*w13[1] + w13[2]*w13[2])*
                          sqrt(w23[0]*w23[0] + w23[1]*w23[1] + w23[2]*w23[2]));
-    
+
                     if (ang[2] > 1)    ang[2] =  1;
                     if (ang[2] < -1)ang[2] = -1;
-    
+
                     ang[2] = acos(ang[2]);
-                              
+
                     radius = sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]) ;
                     areasq[i*6*3 + j*3 + k] = (ang[0] + ang[1] + ang[2] - M_PI)*pow(radius,2);
                 }
@@ -2757,78 +2768,78 @@ void Icogrid::control_areas ( double *areasT  ,
                         v11[v] = b[v] - a[v];
                         v12[v] = a[v] - b[v];
                         v13[v] = a[v] - c[v];
-            
+
                         v21[v] = c[v] - a[v];
                         v22[v] = c[v] - b[v];
                         v23[v] = b[v] - c[v];
                     }
-    
+
                     t11 = 1/(v01[0]*v01[0] + v01[1]*v01[1] + v01[2]*v01[2]);
 
                     fac11       = (v01[0]*v11[0] + v01[1]*v11[1] + v01[2]*v11[2])*t11;
                     fac21       = (v01[0]*v21[0] + v01[1]*v21[1] + v01[2]*v21[2])*t11;
-    
+
                     w11[0] = v11[0] - fac11*v01[0];
                     w11[1] = v11[1] - fac11*v01[1];
                     w11[2] = v11[2] - fac11*v01[2];
-    
+
                     w21[0] = v21[0] - fac21*v01[0];
                     w21[1] = v21[1] - fac21*v01[1];
                     w21[2] = v21[2] - fac21*v01[2];
-    
+
                     ang[0] = (w11[0]*w21[0] + w11[1]*w21[1] + w11[2]*w21[2])/
                         (sqrt(w11[0]*w11[0] + w11[1]*w11[1] + w11[2]*w11[2])*
                          sqrt(w21[0]*w21[0] + w21[1]*w21[1] + w21[2]*w21[2]));
-    
+
                     if (ang[0] > 1)    ang[0] =  1;
                     if (ang[0] < -1)ang[0] = -1;
-    
+
                     ang[0] = acos(ang[0]);
-    
+
                     t22 = 1/(v02[0]*v02[0] + v02[1]*v02[1] + v02[2]*v02[2]);
 
                     fac12       = (v02[0]*v12[0] + v02[1]*v12[1] + v02[2]*v12[2])*t22;
                     fac22       = (v02[0]*v22[0] + v02[1]*v22[1] + v02[2]*v22[2])*t22;
-    
+
                     w12[0] = v12[0] - fac12*v02[0];
                     w12[1] = v12[1] - fac12*v02[1];
                     w12[2] = v12[2] - fac12*v02[2];
-    
+
                     w22[0] = v22[0] - fac22*v02[0];
                     w22[1] = v22[1] - fac22*v02[1];
                     w22[2] = v22[2] - fac22*v02[2];
-    
+
                     ang[1] = (w12[0]*w22[0] + w12[1]*w22[1] + w12[2]*w22[2])/
                         (sqrt(w12[0]*w12[0] + w12[1]*w12[1] + w12[2]*w12[2])*
                          sqrt(w22[0]*w22[0] + w22[1]*w22[1] + w22[2]*w22[2]));
-    
+
                     if ( ang[1] > 1) ang[1] =  1;
                     if ( ang[1] < -1)ang[1] = -1;
-    
+
                     ang[1] = acos(ang[1]);
-    
+
                     t33 = 1/(v03[0]*v03[0] + v03[1]*v03[1] + v03[2]*v03[2]);
 
                     fac13       = (v03[0]*v13[0] + v03[1]*v13[1] + v03[2]*v13[2])*t33;
                     fac23       = (v03[0]*v23[0] + v03[1]*v23[1] + v03[2]*v23[2])*t33;
-    
+
                     w13[0] = v13[0] - fac13*v03[0];
                     w13[1] = v13[1] - fac13*v03[1];
                     w13[2] = v13[2] - fac13*v03[2];
-    
+
                     w23[0] = v23[0] - fac23*v03[0];
                     w23[1] = v23[1] - fac23*v03[1];
                     w23[2] = v23[2] - fac23*v03[2];
-    
+
                     ang[2] = (w13[0]*w23[0] + w13[1]*w23[1] + w13[2]*w23[2])/
                         (sqrt(w13[0]*w13[0] + w13[1]*w13[1] + w13[2]*w13[2])*
                          sqrt(w23[0]*w23[0] + w23[1]*w23[1] + w23[2]*w23[2]));
-    
+
                     if (ang[2] > 1)    ang[2] =  1;
                     if (ang[2] < -1)ang[2] = -1;
-    
+
                     ang[2] = acos(ang[2]);
-    
+
                     radius = sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]) ;
                     areasq[i*6*3 + j*3 + k] =
                         (ang[0] + ang[1] + ang[2] - M_PI)*pow(radius,2);
@@ -2888,18 +2899,18 @@ void Icogrid::control_areas ( double *areasT  ,
                 v01[v] = a[v];
                 v02[v] = b[v];
                 v03[v] = c[v];
-                
+
                 v11[v] = b[v] - a[v];
                 v12[v] = a[v] - b[v];
                 v13[v] = a[v] - c[v];
-                
+
                 v21[v] = c[v] - a[v];
                 v22[v] = c[v] - b[v];
                 v23[v] = b[v] - c[v];
             }
 
             t11 = 1/(v01[0]*v01[0] + v01[1]*v01[1] + v01[2]*v01[2]);
-            
+
             fac11       = (v01[0]*v11[0] + v01[1]*v11[1] + v01[2]*v11[2])*t11;
             fac21       = (v01[0]*v21[0] + v01[1]*v21[1] + v01[2]*v21[2])*t11;
 
@@ -2940,7 +2951,7 @@ void Icogrid::control_areas ( double *areasT  ,
             if (ang[1] <-1)    ang[1] = -1;
 
             ang[1] = acos(ang[1]);
-            
+
             t33 = 1/(v03[0]*v03[0] + v03[1]*v03[1] + v03[2]*v03[2]);
             fac13 = (v03[0]*v13[0] + v03[1]*v13[1] + v03[2]*v13[2])*t33;
             fac23 = (v03[0]*v23[0] + v03[1]*v23[1] + v03[2]*v23[2])*t33;
@@ -2964,7 +2975,7 @@ void Icogrid::control_areas ( double *areasT  ,
 
             radius = sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]) ;
             areav  = (ang[0] + ang[1] + ang[2] - M_PI)*pow(radius,2);
-            
+
             areasT[i] += areav;
         }
     }
@@ -2999,7 +3010,7 @@ void Icogrid::control_vec(double *nvec    ,
                           int point_num   ){
 
 //
-//  Description: 
+//  Description:
 //
 //  Compute normal and tangential vectors.
 //
@@ -3053,7 +3064,7 @@ void Icogrid::control_vec(double *nvec    ,
                     v1[1] = xyzq[i*6*3 + 4*3 + 1];
                     v1[2] = xyzq[i*6*3 + 4*3 + 2];
                 }
-                
+
                 vec_l = sqrt(v1[0]*v1[0] + v1[1]*v1[1] + v1[2]*v1[2]);
 
                 l = acos((v1[0]*v2[0] + v1[1]*v2[1] + v1[2]*v2[2])/(pow(vec_l,2.0)))*vec_l;
@@ -3061,7 +3072,7 @@ void Icogrid::control_vec(double *nvec    ,
                 nv[0] = v1[1]*v2[2] - v1[2]*v2[1];
                 nv[1] = v1[2]*v2[0] - v1[0]*v2[2];
                 nv[2] = v1[0]*v2[1] - v1[1]*v2[0];
-       
+
                 fac_nv = l/sqrt(nv[0]*nv[0] + nv[1]*nv[1] + nv[2]*nv[2]);
 
                 nvec[i*6*3 + j*3 + 0] = nv[0]*fac_nv;
@@ -3102,15 +3113,15 @@ void Icogrid::control_vec(double *nvec    ,
                     v1[1] = xyzq[i*6*3 + 5*3 + 1];
                     v1[2] = xyzq[i*6*3 + 5*3 + 2];
                 }
-                
+
                 vec_l = sqrt(v1[0]*v1[0] + v1[1]*v1[1] + v1[2]*v1[2]);
 
                 l = acos((v1[0]*v2[0] + v1[1]*v2[1] + v1[2]*v2[2])/(pow(vec_l,2.0)))*vec_l;
-                
+
                 nv[0] = v1[1]*v2[2] - v1[2]*v2[1];
                 nv[1] = v1[2]*v2[0] - v1[0]*v2[2];
                 nv[2] = v1[0]*v2[1] - v1[1]*v2[0];
-       
+
                 fac_nv = l/sqrt(nv[0]*nv[0] + nv[1]*nv[1] + nv[2]*nv[2]);
 
                 nvec[i*6*3 + j*3 + 0] = nv[0]*fac_nv;
@@ -3136,7 +3147,7 @@ void Icogrid::control_vec(double *nvec    ,
                 v2[2] = xyz[i*3 + 2];
 
                 vec_l = sqrt(v1[0]*v1[0] + v1[1]*v1[1] + v1[2]*v1[2]);
-                
+
                 l = acos((v1[0]*v2[0] + v1[1]*v2[1] + v1[2]*v2[2])/(pow(vec_l,2.0)))*vec_l;
 
                 nv[0] = v1[1]*v2[2] - v1[2]*v2[1];
@@ -3161,9 +3172,9 @@ void Icogrid::control_vec(double *nvec    ,
                 v2[0] = xyz[i*3 + 0];
                 v2[1] = xyz[i*3 + 1];
                 v2[2] = xyz[i*3 + 2];
-                    
+
                 vec_l = sqrt(v1[0]*v1[0] + v1[1]*v1[1] + v1[2]*v1[2]);
-                
+
                 l = acos((v1[0]*v2[0] + v1[1]*v2[1] + v1[2]*v2[2])/(pow(vec_l,2.0)))*vec_l;
 
                 nv[0] = v1[1]*v2[2] - v1[2]*v2[1];
@@ -3198,15 +3209,15 @@ void Icogrid::control_vec(double *nvec    ,
                     v2[1] = xyz[point_local[i*6 + 0]*3 + 1];
                     v2[2] = xyz[point_local[i*6 + 0]*3 + 2];
                 }
-                
+
                 vec_l = sqrt(v1[0]*v1[0] + v1[1]*v1[1] + v1[2]*v1[2]);
 
                 l = acos((v1[0]*v2[0] + v1[1]*v2[1] + v1[2]*v2[2])/(pow(vec_l,2.0)))*vec_l;
-                
+
                 nv[0] = v1[1]*v2[2] - v1[2]*v2[1];
                 nv[1] = v1[2]*v2[0] - v1[0]*v2[2];
                 nv[2] = v1[0]*v2[1] - v1[1]*v2[0];
-        
+
                 fac_nv = l/sqrt(nv[0]*nv[0] + nv[1]*nv[1] + nv[2]*nv[2]);
 
                 nvecte[i*6*3 + j*3 + 0] = nv[0]*fac_nv;
@@ -3236,22 +3247,22 @@ void Icogrid::control_vec(double *nvec    ,
                     v2[1] = xyz[point_local[i*6 + 0]*3 + 1];
                     v2[2] = xyz[point_local[i*6 + 0]*3 + 2];
                 }
-                
+
                 vec_l = sqrt(v1[0]*v1[0] + v1[1]*v1[1] + v1[2]*v1[2]);
 
                 l = acos((v1[0]*v2[0] + v1[1]*v2[1] + v1[2]*v2[2])/(pow(vec_l,2.0)))*vec_l;
-                
+
                 nv[0] = v1[1]*v2[2] - v1[2]*v2[1];
                 nv[1] = v1[2]*v2[0] - v1[0]*v2[2];
                 nv[2] = v1[0]*v2[1] - v1[1]*v2[0];
-    
+
                 fac_nv = l/sqrt(nv[0]*nv[0] + nv[1]*nv[1] + nv[2]*nv[2]);
 
                 nvecte[i*6*3 + j*3 + 0] = nv[0]*fac_nv;
                 nvecte[i*6*3 + j*3 + 1] = nv[1]*fac_nv;
                 nvecte[i*6*3 + j*3 + 2] = nv[2]*fac_nv;
             }
-        }                
+        }
     }
 
     delete [] v1;
@@ -3265,7 +3276,7 @@ void Icogrid::compute_func(double *func_r,
                            int point_num ){
 
 //
-//  Description: 
+//  Description:
 //
 //  Creates radial vectors with norm 1 at the center of each control volume.
 //
@@ -3297,7 +3308,7 @@ void Icogrid::div_operator(double *areasT,
                            int point_num){
 
 //
-//  Description: 
+//  Description:
 //
 //  Computes the divergence operator from equations 15 and 16 of M. Satoh et al. 2008.
 //
@@ -3344,8 +3355,8 @@ void Icogrid::div_operator(double *areasT,
                 areas[i * 6 * 3 + 4 * 3 + 2];
 
         if (geo == 5) area6 = 0;
-        else area6 = areas[i * 6 * 3 + 5 * 3 + 0] + 
-                     areas[i * 6 * 3 + 5 * 3 + 1] + 
+        else area6 = areas[i * 6 * 3 + 5 * 3 + 0] +
+                     areas[i * 6 * 3 + 5 * 3 + 1] +
                      areas[i * 6 * 3 + 5 * 3 + 2];
 
         for (int k = 0; k < 3; k++){
@@ -3358,7 +3369,7 @@ void Icogrid::div_operator(double *areasT,
             else areasq2[i * 6 * 3 + 5 * 3 + k] =    areas[i * 6 * 3 + 5 * 3 + k] / area6;
         }
     }
-    
+
     for (int i = 0; i < point_num; i++){
 
         geo = 6; // Hexagons.
@@ -3391,7 +3402,7 @@ void Icogrid::div_operator(double *areasT,
                 div[i * 7 * 3 + 5 * 3 + k] = nvec[i * 6 * 3 + 3 * 3 + k] * (areasq2[i * 6 * 3 + 4 * 3 + 1] + areasq2[i * 6 * 3 + 3 * 3 + 2]) +
                                              nvec[i * 6 * 3 + 2 * 3 + k] * areasq2[i * 6 * 3 + 3 * 3 + 2] +
                                              nvec[i * 6 * 3 + 4 * 3 + k] * areasq2[i * 6 * 3 + 4 * 3 + 1];
-                                             
+
                 div[i * 7 * 3 + 6 * 3 + k] = 0.0;
             }
             else{
@@ -3405,23 +3416,23 @@ void Icogrid::div_operator(double *areasT,
                 div[i * 7 * 3 + 1 * 3 + k] = nvec[i * 6 * 3 + 5 * 3 + k] * (areasq2[i * 6 * 3 + 0 * 3 + 1] + areasq2[i * 6 * 3 + 5 * 3 + 2]) +
                                              nvec[i * 6 * 3 + 4 * 3 + k] * areasq2[i * 6 * 3 + 5 * 3 + 2] +
                                              nvec[i * 6 * 3 + 0 * 3 + k] * areasq2[i * 6 * 3 + 0 * 3 + 1];
-            
+
                 div[i * 7 * 3 + 2 * 3 + k] = nvec[i * 6 * 3 + 0 * 3 + k] * (areasq2[i * 6 * 3 + 1 * 3 + 1] + areasq2[i * 6 * 3 + 0 * 3 + 2]) +
                                              nvec[i * 6 * 3 + 5 * 3 + k] * areasq2[i * 6 * 3 + 0 * 3 + 2] +
                                              nvec[i * 6 * 3 + 1 * 3 + k] * areasq2[i * 6 * 3 + 1 * 3 + 1];
-                
+
                 div[i * 7 * 3 + 3 * 3 + k] = nvec[i * 6 * 3 + 1 * 3 + k] * (areasq2[i * 6 * 3 + 2 * 3 + 1] + areasq2[i * 6 * 3 + 1 * 3 + 2]) +
                                              nvec[i * 6 * 3 + 0 * 3 + k] * areasq2[i * 6 * 3 + 1 * 3 + 2] +
                                              nvec[i * 6 * 3 + 2 * 3 + k] * areasq2[i * 6 * 3 + 2 * 3 + 1];
-                
+
                 div[i * 7 * 3 + 4 * 3 + k] = nvec[i * 6 * 3 + 2 * 3 + k] * (areasq2[i * 6 * 3 + 3 * 3 + 1] + areasq2[i * 6 * 3 + 2 * 3 + 2]) +
                                              nvec[i * 6 * 3 + 1 * 3 + k] * areasq2[i * 6 * 3 + 2 * 3 + 2] +
                                              nvec[i * 6 * 3 + 3 * 3 + k] * areasq2[i * 6 * 3 + 3 * 3 + 1];
-                
+
                 div[i * 7 * 3 + 5 * 3 + k] = nvec[i * 6 * 3 + 3 * 3 + k] * (areasq2[i * 6 * 3 + 4 * 3 + 1] + areasq2[i * 6 * 3 + 3 * 3 + 2]) +
                                              nvec[i * 6 * 3 + 2 * 3 + k] * areasq2[i * 6 * 3 + 3 * 3 + 2] +
                                              nvec[i * 6 * 3 + 4 * 3 + k] * areasq2[i * 6 * 3 + 4 * 3 + 1];
-                
+
                 div[i * 7 * 3 + 6 * 3 + k] = nvec[i * 6 * 3 + 4 * 3 + k] * (areasq2[i * 6 * 3 + 5 * 3 + 1] + areasq2[i * 6 * 3 + 4 * 3 + 2]) +
                                              nvec[i * 6 * 3 + 3 * 3 + k] * areasq2[i * 6 * 3 + 4 * 3 + 2] +
                                              nvec[i * 6 * 3 + 5 * 3 + k] * areasq2[i * 6 * 3 + 5 * 3 + 1];
@@ -3439,7 +3450,7 @@ void Icogrid::gra_operator(double *areasT,
                            int *pent_ind ,
                            int point_num ){
 //
-//  Description: 
+//  Description:
 //
 //  Computes the divergence operator from equations 15 and 16 of M. Satoh et al. 2008.
 //
@@ -3484,7 +3495,7 @@ void Icogrid::gra_operator(double *areasT,
         area5 = areas[i * 6 * 3 + 4 * 3 + 0] +
                 areas[i * 6 * 3 + 4 * 3 + 1] +
                 areas[i * 6 * 3 + 4 * 3 + 2];
-        
+
         if (geo == 5) area6 = 0;
         else area6 = areas[i * 6 * 3 + 5 * 3 + 0] +
                      areas[i * 6 * 3 + 5 * 3 + 1] +
@@ -3504,7 +3515,7 @@ void Icogrid::gra_operator(double *areasT,
     for (int i = 0; i < point_num; i++){
 
         geo = 6; // Hexagons.
-        
+
         for (int k = 0; k < 12; k++) if (i == pent_ind[k]) geo = 5; // Pentagons.
         for (int k = 0; k < 3; k++){
             if (geo == 5){    //Pentagons.
@@ -3549,11 +3560,11 @@ void Icogrid::gra_operator(double *areasT,
                 grad[i * 7 * 3 + 0 * 3 + k] = grad[i * 7 * 3 + 0 * 3 + k] -
                                               2 * (nvec[i * 6 * 3 + 0 * 3 + k] + nvec[i * 6 * 3 + 1 * 3 + k] + nvec[i * 6 * 3 + 2 * 3 + k] +
                                               nvec[i * 6 * 3 + 3 * 3 + k] + nvec[i * 6 * 3 + 4 * 3 + k] + nvec[i * 6 * 3 + 5 * 3 + k]);
-                    
+
                 grad[i * 7 * 3 + 1 * 3 + k] = nvec[i * 6 * 3 + 5 * 3 + k] * (areasq2[i * 6 * 3 + 0 * 3 + 1] + areasq2[i * 6 * 3 + 5 * 3 + 2]) +
                                               nvec[i * 6 * 3 + 4 * 3 + k] * areasq2[i * 6 * 3 + 5 * 3 + 2] +
                                               nvec[i * 6 * 3 + 0 * 3 + k] * areasq2[i * 6 * 3 + 0 * 3 + 1];
-                
+
                 grad[i * 7 * 3 + 2 * 3 + k] = nvec[i * 6 * 3 + 0 * 3 + k] * (areasq2[i * 6 * 3 + 1 * 3 + 1] + areasq2[i * 6 * 3 + 0 * 3 + 2]) +
                                               nvec[i * 6 * 3 + 5 * 3 + k] * areasq2[i * 6 * 3 + 0 * 3 + 2] +
                                               nvec[i * 6 * 3 + 1 * 3 + k] * areasq2[i * 6 * 3 + 1 * 3 + 1];
@@ -3579,5 +3590,57 @@ void Icogrid::gra_operator(double *areasT,
     }
     delete[] areasq2;
 }
+
+void Icogrid::zonal_mean_tab_f(int    *zonal_mean_tab,
+							   double *lonlat        ,
+							   int nlat              ,
+						       int point_num         ){
+
+//
+//  Description:
+//
+//  .
+//
+//  Input: - .
+//         - point_num - Number of vertices.
+//
+//  Output: - .
+//
+	// Local variables:
+
+	double des_lat = M_PI/nlat;
+	int *count_num;
+	double *lat_array;
+
+	count_num   = new int[nlat]();
+	lat_array   = new double[nlat+1]();
+
+	for (int i = 0; i < point_num; i++)	for (int k = 0; k < 2; k++) zonal_mean_tab[i*2 + k]	= 0;
+
+	for (int j = 0; j < nlat; j++)	count_num[j] = 0;
+	lat_array[0] = -M_PI/2.0;
+	for (int j = 1; j < nlat+1; j++) lat_array[j] = lat_array[j-1] + des_lat;
+	for (int i = 0; i < point_num; i++){
+		for (int j = 0; j < nlat; j++){
+			if(lonlat[i*2 + 1] >= lat_array[j] && lonlat[i*2 + 1] < lat_array[j+1]){
+				zonal_mean_tab[i*2] = j;
+				count_num[j] = count_num[j] + 1;
+				break;
+			}
+		}
+		if(lonlat[i*2 + 1] >= lat_array[nlat]){
+			zonal_mean_tab[i*2] = nlat-1;
+			count_num[nlat-1] = count_num[nlat-1] + 1;
+		}
+	}
+	for (int i = 0; i < point_num; i++){
+		int ind = zonal_mean_tab[i*2];
+		zonal_mean_tab[i*2 + 1] = count_num[ind];
+	}
+
+	delete[] count_num;
+	delete[] lat_array;
+}
+
 
 //END OF GRID.CU
