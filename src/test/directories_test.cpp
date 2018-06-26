@@ -46,24 +46,239 @@
 #include <iostream>
 #include <sstream>
 #include <iomanip>
+#include <vector>
 
 #include "directories.h"
 #include "testing.h"
 
+
 using namespace std;
 
+template<typename T>
+bool print_compare(const string &  msg,
+                   const vector<T> & val,
+                   const vector<T> & ref)
+{
+    bool test = true;
 
+    if (ref.size() != val.size())
+    {
+        test = false;
+        cout  << "\033[1;31m" "ERROR" "\033[0m: "
+              << "wrong array sizes for comparison expected: "
+              << ref.size() << " got: "<<val.size() << endl;
+    }
+    else
+    {
+        for (int i = 0; i < ref.size(); i++)
+        {
+            if (ref[i] != val[i])
+            {
+                cout << "\033[1;31m" "ERROR" "\033[0m: "
+                     << "wrong value for element["<< i
+                     << "] expected: " << ref[i]
+                     << "\t got: " << val[i] << endl;
+                test = false;
+            }
+        }
+    }
+        
+    cout << "[" << ((test)?"\033[1;32m" "PASS" "\033[0m"
+                    :"[" "\033[1;31m" "FAIL" "\033[0m" )
+         << "] " << msg << endl;
     
+    return test;
+}
+
+
+
+bool print_compare(const string &  msg,
+                       const string & val,
+                       const string & ref)
+{
+    bool test = ref == val;
+
+    if (!test)
+    {
+          cout << "\033[1;31m" "ERROR" "\033[0m: "
+                     << "wrong value" 
+                     << " expected: " << ref
+               << "\t got: "<<val << endl;
+    }
+
+    cout << "[" << ((test)?"\033[1;32m" "PASS" "\033[0m"
+                    :"[" "\033[1;31m" "FAIL" "\033[0m" )
+         << "] " << msg << endl;
+    
+    return test;
+}
+    
+
+template<typename T>
+bool print_compare(const string &  msg,
+                       const T & val,
+                       const T & ref)
+{
+    bool test = ref == val;
+
+    if (!test)
+    {
+          cout << "\033[1;31m" "ERROR" "\033[0m: "
+                     << "wrong value" 
+                     << " expected: " << ref
+               << "\t got: "<<val <<endl;
+    }    
+
+    cout << "[" << ((test)?"\033[1;32m" "PASS" "\033[0m"
+                    :"[" "\033[1;31m" "FAIL" "\033[0m" )
+         << "] " << msg << endl;
+
+    return test;
+}
     
 
 int main()
 {
-    cout << "directories file test" << endl;
+    bool success = true;
+    // ***************************************************************
+    cout << "path file test" << endl;
 
-    bool success = false;
-
-    success = create_output_dir("test_dir/subtest_dir/");
+    bool path_test  = true;
     
+    {        
+        // absolute
+        path p("/usr/share/docs/");
+         
+        success &= print_compare("/usr/share/docs/" " absolute path", p.is_absolute(), true);
+        
+        vector<string> parts = p.parts();
+        success &= print_compare("/usr/share/docs/" " parts", parts, {"usr","share","docs"});
+        success &= print_compare("/usr/share/docs/" " name", p.name(), "docs");
+    }
+    
+    {        
+        // relative
+        path p("temp/bin.exe");
+
+        success &= print_compare("relative path", p.is_absolute(), false);
+        vector<string> parts = p.parts();
+        success &= print_compare("parts", parts, {"temp","bin.exe"});
+        success &= print_compare("name", p.name(), "bin.exe");
+    }
+    
+    {        
+        // relative
+        path p("./temp/bin.exe");
+
+        success &= print_compare("relative path with .", p.is_absolute(), false);
+        vector<string> parts = p.parts();
+        success &= print_compare("parts", parts, {".", "temp","bin.exe"});
+        success &= print_compare("name", p.name(), "bin.exe");
+    }
+    
+    {
+        path p("temp/subfolder/myfile.tar.gz");
+
+        success &= print_compare("name", p.name(), "myfile.tar.gz");
+        success &= print_compare("suffix", p.suffix(), "gz");
+        success &= print_compare("stem", p.stem(), "myfile.tar");
+
+        vector<string> parts = p.parts();
+        success &= print_compare("parts", parts, {"temp","subfolder","myfile.tar.gz"});
+
+        
+        vector<string> suffixes = p.suffixes();
+        success &= print_compare("suffixes", suffixes, {"tar", "gz"});
+    }
+    
+
+    {
+        path p("results/esp_output_Earth_5.h5");
+
+
+        success &= print_compare("suffix", p.suffix(), "h5");
+        success &= print_compare("name", p.name(), "esp_output_Earth_5.h5");
+        success &= print_compare("stem", p.stem(), "esp_output_Earth_5");
+        
+        //      int number = -1;
+//        string stem = "";
+        
+        //      bool numbered_stem = p.numbered_stem(stem, number);
+        
+//        print_state(numbered_stem == true, "numbered stem - check");
+//        print_state(stem == "esp_output_Earth", numbered stem - stem);
+//        print_state(number == 5, "numbered stem - number");
+    }
+
+    {
+        string  basename ("");
+        int number = -1;
+        
+            
+        bool match = match_output_file_numbering_scheme("esp_output_Earth_5.h5",
+                                                        basename,
+                                                        number );
+
+        success &= print_compare("match check", match, true);
+        success &= print_compare("match name", basename, "Earth");
+        success &= print_compare("match number", number, 5);
+
+    }
+
+    {
+        string  basename ("");
+        int number = -1;
+        
+            
+        bool match = match_output_file_numbering_scheme("esp_output_super_hot_planet_42.h5",
+                                                        basename,
+                                                        number );
+
+        success &= print_compare("match check", match, true);
+        success &= print_compare("match name", basename, "super_hot_planet");
+        success &= print_compare("match number", number, 42);
+
+    }
+    
+    {
+        string  basename ("");
+        int number = -1;
+        
+            
+        bool match = match_output_file_numbering_scheme("esp_ofvgaput_Earth.h5",
+                                                        basename,
+                                                        number );
+
+        success &= print_compare("match check", match, false);
+
+    }
+    
+    {
+        string  basename ("");
+        int number = -1;
+        
+            
+        bool match = match_output_file_numbering_scheme("esp_output_Earth_ret.h5",
+                                                        basename,
+                                                        number );
+
+        success &= print_compare("match check", match, false);
+    }
+    
+
+    // ***************************************************************
+    cout << "directories file test" << endl;
+    
+    bool directory_success = false;
+    
+    directory_success = create_output_dir("test_dir/subtest_dir/");
+    if (!directory_success)
+    {
+        success = false;
+        cout << "directory creation failed"<<endl;
+    }
+    // ***************************************************************
+        
 
     if (success)
         cout << "Test PASS" << endl;

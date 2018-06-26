@@ -56,6 +56,26 @@ using std::endl;
 using std::string;
 using namespace H5;
 
+
+
+bool write_double_table_to_h5file(hid_t       file_id,
+                                  const string & tablename,
+                                  double * double_table,
+                                  int size,
+                                  const string & name,
+                                  const string & unit);
+
+    
+bool load_double_table_from_h5file(hid_t       file_id,
+                                   const string & tablename,
+                                   double * double_table,
+                                   int expected_size );
+
+bool load_double_value_from_h5file(hid_t       file_id,
+                                   const string & tablename,
+                                   double & out_value);
+
+    
 class storage
 {
 public:

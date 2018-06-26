@@ -63,8 +63,11 @@ int main ()
                  1.15         , // Parameter beta for spring dynamics 
                  4            , // Horizontal resolution level
                  32           , // Number of vertical layers
+                 5            ,
                  6371000.0    , // Planet radius
-                 36000.0     );// Top of the model's domain
+                 36000.0      , // Top of the model's domain
+                 false);        // sponge layer  
+     
 
     binary_test & btester = binary_test::get_instance();
     btester.set_output("grid_test", "./results/grid_test/");

@@ -92,10 +92,19 @@ int main (int argc,  char** argv){
     argparser.add_arg("o", "output_dir", string("results"), "results directory to store output");
 
     argparser.add_arg("i", "initial", string("initialfilename"), "start from this initial condition instead of rest");
+    argparser.add_arg("c", "continue", string("continuefilename"), "continue simulation from this output file");
     argparser.add_arg("N", "numsteps", 48000, "number of steps to run");
 
-    // Parse arguments
-    argparser.parse(argc, argv);
+    // Parse arguments, exit on fail
+    bool parse_ok = argparser.parse(argc, argv);
+    if (!parse_ok)
+    {
+        printf("error parsing arguments\n");
+        
+        argparser.print_help();
+        exit(-1);
+    }
+    
 
     // get config file path if present in argument
     string config_filename = "";
@@ -192,8 +201,8 @@ int main (int argc,  char** argv){
     double Tstar            = 4520;       // Star effective temperature [K]
     double planet_star_dist = 0.015;      // Planet-star distance [au]
     double radius_star      = 0.667;      // Star radius [Rsun]
-  	double diff_fac         = 0.5;        // Diffusivity factor: 0.5-1.0
-  	double Tlow             = 970;        // Lower boundary temperature: upward flux coming from the planet's interior
+    double diff_fac         = 0.5;        // Diffusivity factor: 0.5-1.0
+    double Tlow             = 970;        // Lower boundary temperature: upward flux coming from the planet's interior
     double albedo           = 0.18;       // Bond albedo
     double tausw            = 532.0;      // Absorption coefficient for the shortwaves
     double taulw            = 1064.0;     // Absorption coefficient for the longwaves
@@ -238,18 +247,52 @@ int main (int argc,  char** argv){
         output_path = output_dir_arg;
 
     string inital_conditions_arg;
-
+    bool initial_condition_arg_set = false;
+    
+    
     if (argparser.get_arg("initial", inital_conditions_arg))
     {
         rest = false;
         initial_conditions = inital_conditions_arg;
-
+        initial_condition_arg_set = true;
+        
         if (!path_exists(initial_conditions))
         {
-            printf("Initial conditions file \"%s\" not found", initial_conditions.c_str());
+            printf("Initial conditions file \"%s\" not found\n", initial_conditions.c_str());
             exit(-1);
         }
     }
+
+    string continue_filename = "";
+    bool continue_sim = false;
+    
+    
+    if (argparser.get_arg("continue", continue_filename))
+    {
+        rest = false;
+        continue_sim = true;
+
+        if (initial_condition_arg_set)
+        {
+            printf("--continue and --initial options set, must set only one\n");
+            
+            exit(-1);
+        }
+                
+        if (!path_exists(continue_filename))
+        {
+            printf("Continuation start condition file \"%s\" not found\n", continue_filename.c_str());
+            exit(-1);
+        }
+
+
+    }
+
+    // if initial condition or continue
+    // find planet file
+    
+
+    
 
     int nsmax_arg;
     if (argparser.get_arg("numsteps", nsmax_arg))
@@ -337,7 +380,9 @@ int main (int argc,  char** argv){
            Grid.nr            , // Number of rhombi
            Grid.nv            , // Number of vertical layers
            Grid.nvi           , // Number of interfaces between layer
-           nlat               , // Number of latitude rings for zonal mean wind
+           nlat               , // Number of latitude rings for zonal
+                                // mean wind
+           Grid.zonal_mean_tab,  // table of zonal means for sponge layer
            Rv_sponge          , // Maximum damping of sponge layer
            ns_sponge          , // lowest level of sponge layer (fraction of model)
            Grid.point_num     );// Number of grid points
@@ -351,26 +396,40 @@ int main (int argc,  char** argv){
    double simulation_start_time = 0.0;
 
 // Initial conditions
-    bool load_initial = X.InitialValues(rest         , // Option to start the atmosphere
-                                  // from rest
-                   initial_conditions, // initial conditions if not
-                                       // started from rest
-                   glevel       , // Horizontal resolution level
-                   timestep     , // Time-step [s]
-                   Planet.A     , // Planet radius [m]
-                   Planet.Cp    , // Specific heat capacity [J /(kg K)]
-                   Planet.P_Ref , // Reference pressure [Pa]
-                   Planet.Gravit, // Gravity [m/s^2]
-                   Planet.Omega , // Rotation rate [1/s]
-                   Planet.Diffc , // Strength of diffusion
-                   kb           , // Boltzmann constant [J/kg]
-                   Planet.Tmean , // Isothermal atmosphere (at temperature Tmean)
-                   Planet.Mmol  , // Mean molecular mass of dry air [kg]
-                   mu           , // Atomic mass unit [kg]
-                   Planet.Rd    ,// Gas constant [J/kg/K]
-                   Grid.zonal_mean_tab,  // table of zonal means for sponge layer
-                   SpongeLayer,          // Enable sponge layer
-                 simulation_start_time );// return value for
+    bool load_initial = X.InitialValues(rest         , // Option to
+                                                       // start the
+                                                       // atmosphere
+                                                       // from rest
+                                        initial_conditions, // initial conditions if not
+                                                       // started from
+                                                       // rest
+                                        continue_sim , // if we
+                                                       // specify
+                                                       // initial
+                                                       // conditions,
+                                                       // continue or
+                                                       // start at 0?
+                                        glevel       , // Horizontal
+                                                       // resolution
+                                                       // level
+                                        spring_dynamics    , // Spring dynamics option
+                                        spring_beta        , // Parameter beta for spring dynamics
+                                        timestep     , // Time-step [s]
+                                        Planet.A     , // Planet radius [m]
+                                        Planet.Cp    , // Specific heat capacity [J /(kg K)]
+                                        Planet.P_Ref , // Reference pressure [Pa]
+                                        Planet.Gravit, // Gravity [m/s^2]
+                                        Planet.Omega , // Rotation rate [1/s]
+                                        Planet.Diffc , // Strength of diffusion
+                                        kb           , // Boltzmann constant [J/kg]
+                                        Planet.Tmean , // Isothermal atmosphere (at temperature Tmean)
+                                        Planet.Mmol  , // Mean molecular mass of dry air [kg]
+                                        mu           , // Atomic mass unit [kg]
+                                        Planet.Rd    , // Gas constant [J/kg/K]
+                                        SpongeLayer  ,          // Enable
+                                                              // sponge
+                                                              // layer
+                                        simulation_start_time );// return value for
                                                                 // simulation start time
 
     if (hstest == 0) {

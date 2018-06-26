@@ -96,6 +96,7 @@ public:
     double *Kdh4_h        ;
     bool    check_h       ;
 
+    int *zonal_mean_tab_h ;
     double Rv_sponge      ;
     double ns_sponge      ;
 ///////////////////////////
@@ -217,31 +218,34 @@ public:
         int     ,
         int     ,
         int     ,
+        int *   ,
         double  ,
         double  ,
         int     );
 
     void AllocData() ;
 
-    bool InitialValues(bool  ,
-                       const std::string & initial_conditions,
-                       int   ,
-                       double,
-                       double,
-                       double,
-                       double,
-                       double,
-                       double,
-                       double,
-                       double,
-                       double,
-                       double,
-                       double,
-                       double,
-                       int * ,
-                       bool  ,
-                     double & simulation_start_time);
-
+    bool InitialValues(bool          ,
+                       const std::string & initial_conditions_filename,
+                       const bool & continue_sim,
+                       int           ,
+                       bool          ,
+                       double        ,
+                       double        ,
+                       double        ,
+                       double        ,
+                       double        ,
+                       double        ,
+                       double        ,
+                       double        ,
+                       double        ,
+                       double        ,
+                       double        ,
+                       double        ,
+                       double        ,
+                       bool sponge   ,
+                       double & simulation_start_time);
+    
     void RTSetup(double,
                  double,
                  double,

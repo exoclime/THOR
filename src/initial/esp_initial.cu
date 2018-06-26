@@ -48,6 +48,8 @@
 #include "../headers/esp.h"
 #include "hdf5.h"
 #include <stdio.h>
+#include "storage.h"
+#include "directories.h"
 
 __host__ ESP::ESP(int *point_local_    ,
                   int *maps_           ,
@@ -67,6 +69,7 @@ __host__ ESP::ESP(int *point_local_    ,
                   int nv_              ,
                   int nvi_             ,
                   int nlat_            ,
+                  int *zonal_mean_tab  ,
                   double Rv_sponge_    ,
                   double ns_sponge_    ,
                   int point_num_    ): nl_region(nl_region_), nr(nr_), point_num(point_num_), nv(nv_), nvi(nvi_), nlat(nlat_){
@@ -90,6 +93,8 @@ __host__ ESP::ESP(int *point_local_    ,
 
     func_r_h = func_r_ ;
 
+    zonal_mean_tab_h = zonal_mean_tab;
+    
     Rv_sponge = Rv_sponge_;
     ns_sponge = ns_sponge_;
 //
@@ -217,10 +222,13 @@ __host__ void ESP::AllocData(){
     cudaMalloc((void **)&ttemp       , nv * point_num *     sizeof(double));
     cudaMalloc((void **)&dtemp       , nv * point_num *     sizeof(double));
 }
-
+    
 __host__ bool ESP::InitialValues(bool rest          ,
                                  const std::string & initial_conditions_filename,
+                                 const bool & continue_sim,
                                  int glevel         ,
+                                 bool spring_dynamics,
+                                 double spring_beta ,
                                  double timestep_dyn,
                                  double A           ,
                                  double Cp          ,
@@ -233,12 +241,11 @@ __host__ bool ESP::InitialValues(bool rest          ,
                                  double Mmol        ,
                                  double mu          ,
                                  double Rd          ,
-                                 int *zonal_mean_tab,
                                  bool sponge        ,
                                  double & simulation_start_time){
 //
 //  Description:
-
+    
 //
 //  Set initial conditions.
 //
@@ -274,57 +281,37 @@ __host__ bool ESP::InitialValues(bool rest          ,
         simulation_start_time = 0.0;
     }
     else{
-        bool load_error = false;
+        bool load_OK = true;
+        // build planet filename
+        string planet_filename;
+
+        path p(initial_conditions_filename);
+
+        
+        
+        // check existence of file
+        
+        
+        // Load planet data
         
 //
 //      Restart from an existing simulation.
+
+        // Load athmospheric data
         hid_t       file_id, dataset_id;
         file_id = H5Fopen(initial_conditions_filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
 //      Density
-        dataset_id = H5Dopen(file_id, "/Rho",H5P_DEFAULT);
-<<<<<<< HEAD
-        H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, Rho_h);
-=======
-        hid_t dspace = H5Dget_space(dataset_id);
-        hsize_t data_space =  H5Sget_simple_extent_npoints(dspace);
-        if (data_space != (unsigned int)(point_num * nv)) {
-            load_error = true;
-            printf("Initial condition load error for data: rho.\n");
-        }
-        H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, Rho_h);     
->>>>>>> compare size of grid to size of initial conditions for coherence
+        load_OK &= load_double_table_from_h5file(file_id, "/Rho",  Rho_h, point_num*nv);
 //      Pressure
-        dataset_id = H5Dopen(file_id, "/Pressure",H5P_DEFAULT);
-        dspace = H5Dget_space(dataset_id);
-        data_space =  H5Sget_simple_extent_npoints(dspace);
-        if (data_space != (unsigned int)(point_num * nv)) {
-            load_error = true;
-            printf("Initial condition load error for data: pressure.\n");
-        }
-        H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, pressure_h);
+        load_OK &= load_double_table_from_h5file(file_id, "/Pressure", pressure_h, point_num*nv);
 //      Horizontal momentum
-        dataset_id = H5Dopen(file_id, "/Mh",H5P_DEFAULT);
-        dspace = H5Dget_space(dataset_id);
-        data_space =  H5Sget_simple_extent_npoints(dspace);
-        if (data_space != (unsigned int)(point_num * nv * 3)) {
-            load_error = true;
-            printf("Initial condition load error for data: Mh.\n");
-        }
-        H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, Mh_h);
-        
+        load_OK &= load_double_table_from_h5file(file_id, "/Mh", Mh_h, point_num*nv*3);        
 //      Vertical momentum
-        dataset_id = H5Dopen(file_id, "/Wh",H5P_DEFAULT);
-        dspace = H5Dget_space(dataset_id);
-        data_space =  H5Sget_simple_extent_npoints(dspace);
-        if (data_space != (unsigned int)(point_num * nvi)) {
-            load_error = true;
-            printf("Initial condition load error for data: Wh.\n");
-        }
-        H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, Wh_h);
+        load_OK &= load_double_table_from_h5file(file_id, "/Wh", Wh_h, point_num*nvi);
 
 //      Simulation start time
         double simulation_time_a[]           = {0.0};
-        dataset_id = H5Dopen(file_id, "/simulation_time",H5P_DEFAULT);
+        dataset_id = H5Dopen(file_id, "/simulation_time", H5P_DEFAULT);
         H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, simulation_time_a);
         simulation_start_time = simulation_time_a[0];
 
@@ -332,7 +319,7 @@ __host__ bool ESP::InitialValues(bool rest          ,
         H5Dclose(dataset_id);
         H5Fclose(file_id);
 
-        if (load_error)
+        if (!load_OK)
             return false;
         
         for(int lev = 0; lev < nv+1; lev++)
@@ -387,6 +374,9 @@ __host__ bool ESP::InitialValues(bool rest          ,
     cudaMemcpy(grad_d,grad_h,7 * 3 * point_num * sizeof(double), cudaMemcpyHostToDevice);
     cudaMemcpy(Kdhz_d      ,Kdhz_h, nv     * sizeof(double), cudaMemcpyHostToDevice);
     cudaMemcpy(Kdh4_d      ,Kdh4_h, nv     * sizeof(double), cudaMemcpyHostToDevice);
+    
+    if (sponge==true)
+        cudaMemcpy(zonal_mean_tab_d      ,zonal_mean_tab_h, 2*point_num * sizeof(int), cudaMemcpyHostToDevice);
 
 //  Initialize arrays
     cudaMemset(Adv_d, 0, sizeof(double) * 3 * point_num * nv);
@@ -420,9 +410,7 @@ __host__ bool ESP::InitialValues(bool rest          ,
     cudaMemset(diffrh_d    , 0, sizeof(double) * nv * point_num);
     cudaMemset(diff_d       , 0, sizeof(double) * 6 * nv * point_num);
     cudaMemset(divg_Mh_d    , 0, sizeof(double) * 3 * nv * point_num);
-
-    if (sponge==true) cudaMemcpy(zonal_mean_tab_d      ,zonal_mean_tab, 2*point_num * sizeof(int), cudaMemcpyHostToDevice);
-
+    
     delete [] Kdh4_h;
     delete [] Kdhz_h;
 

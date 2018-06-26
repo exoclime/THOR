@@ -43,15 +43,17 @@
 
 #include "directories.h"
 
-#include <vector>
+
 #include <istream>
 #include <iostream>
 #include <sstream>
+#include <utility>
+#include <vector>
 
 #include <sys/stat.h>
 
-using namespace std;
 
+using namespace std;
 
 
 vector<string> split(const string& s, char delimiter)
@@ -136,3 +138,141 @@ bool create_output_dir(const string & output_dir)
     
     return true;
 }
+
+
+string path::suffix()
+{
+    if (elements.size() > 0)
+    {
+        vector<string> tokens = split(elements.back(), '.');
+        return tokens.back();        
+    }
+    else
+        return "";
+}
+
+vector<string> path::suffixes()
+{
+    vector<string> out;
+
+    if (elements.size() > 0)
+    {
+        vector<string> tokens = split(elements.back(), '.');
+        for (int i = 1; i < tokens.size(); i++)
+            out.push_back(tokens[i]);
+    }
+    
+    return out;
+}
+
+
+vector<string> path::parts()
+{
+    
+    return elements;
+}
+
+string path::name()
+{
+    if (elements.size() > 0)
+        return elements.back();
+    else
+        return "";    
+}
+
+string path::stem()
+{
+    string out("");
+
+    if (elements.size() > 0)
+    {
+        vector<string> tokens = split(elements.back(), '.');
+        if (tokens.size() > 0)
+            out = tokens[0];
+        
+        for (int i = 1; i < tokens.size() - 1; i++)
+            out += "." + tokens[i];
+    }
+    
+    return out;
+}
+
+path::path(const string & p)
+{    
+    vector<string> tokens = split(p, '/');
+    if (tokens.size() > 0 && tokens[0] == "")
+        is_absolute_path = true;
+    
+    for (auto el : tokens)
+    {
+        if (el != "")
+            elements.push_back(el);
+    }
+    
+    
+}
+
+
+
+vector<string> get_files_in_directory(const string & dir)
+{
+    return vector<string>();    
+}
+
+
+// match filename to output pattern
+// esp_output_[PLANETNAME]_[OUTPUT_NUMBER].h5
+// returns planet name and output number
+bool match_output_file_numbering_scheme(const string & file_path, string & basename, int & number )
+{
+    path p(file_path);
+    basename = "";
+    number = -1;
+    
+    if (p.suffix() != "h5")
+        return false;
+
+    string filename_base = p.stem();
+
+    // split through underscores
+    vector<string> split_underscores = split(filename_base, '_');
+
+    if (split_underscores.size() >= 4 )
+    {
+        try
+        {
+            number = stoi(split_underscores.back() );
+            
+            
+        }
+        catch(...)
+        {
+            number = -1;
+            
+            return false;
+        }
+        
+        
+            
+        if (split_underscores[0] == "esp"
+            && split_underscores[1] == "output"
+            && number > -1)
+        {
+            basename = split_underscores[2];
+
+            for (int i = 3; i < split_underscores.size() -1; i++)
+            {
+                basename += "_" + split_underscores[i];
+            }
+
+            return true;
+        }
+        else
+            return false;        
+    }
+    else
+    {
+        return false;
+    }
+}
+

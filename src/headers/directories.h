@@ -42,9 +42,50 @@
 ////////////////////////////////////////////////////////////////////////
 
 #include <string>
+#include <vector>
+
 using namespace std;
 
+bool match_output_file_numbering_scheme(const string & file_path, string & basename, int & number );
 
 bool create_output_dir(const string & output_dir);
 
 bool path_exists(const string & path);
+
+
+class path
+{
+public:
+    path(const string & path);
+
+    bool is_absolute() 
+    {
+        return is_absolute_path;
+    }
+
+    // last file extension separated by a '.'
+    string suffix();
+    // vector of file extensions separated by a '.' 
+    vector<string> suffixes();
+    // parts
+    vector<string> parts();
+    
+    // final part of the path
+    string name();
+    // final part of path, without suffix
+    string stem();
+    // final part without numbering separated by underscore
+    //   bool numbered_stem(string & stem, int & number);
+//    // match stem to wildcard
+//    bool match_stem(const string & stem, string & addition);
+    
+    
+private:
+
+    string element_name;
+    vector<string> elements;
+
+    bool is_absolute_path = false;
+    
+};
+
