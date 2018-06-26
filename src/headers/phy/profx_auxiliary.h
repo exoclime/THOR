@@ -80,7 +80,7 @@ __global__ void Compute_pressure    (double *pressure_d   ,
 }
 
 
-__global__ void isnan_check(double *array, int height, int width, bool *check){
+__global__ void isnan_check(double *array, int width, int height, bool *check){
 
 //
 //  Description: Check for nan in the temperature array.
