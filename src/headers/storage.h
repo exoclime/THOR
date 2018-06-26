@@ -242,12 +242,12 @@ bool storage::read_table(const string & name,
             DataSpace dataspace = dataset.getSpace();
             // get dimensions and rank
             int rank = dataspace.getSimpleExtentNdims();
-            hsize_t dims_out[1];
+            hsize_t dims_out[1] = {0};
             if (rank == 1)
             {
                 
                 
-                // int ndims = dataspace.getSimpleExtentDims( dims_out, NULL);
+                dataspace.getSimpleExtentDims( dims_out, NULL);
                 // cout << "rank " << rank << ", dimensions " <<
                 //    (unsigned long)(dims_out[0]) << " x " << endl;
             }

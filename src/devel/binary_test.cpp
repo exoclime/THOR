@@ -240,11 +240,17 @@ bool binary_test::compare_to_reference(ESP & esp,
                                                      esp.nvi*esp.point_num);
 
         if (! (density_comp && pressure_comp && h_momentum_comp && v_momentum_comp ))
+        {
             cout << iteration << "\tref:\t" << ref_name 
                  << "\trho: " << density_comp
                  << "\tP: " << pressure_comp
                  << "\tM_h: " << h_momentum_comp
                  << "\tM_v: " << v_momentum_comp << endl;
+            return false;
+        }
+        else
+            return true;
+        
         
 }
 
