@@ -374,6 +374,9 @@ int main (int argc,  char** argv){
            Grid.nr            , // Number of rhombi
            Grid.nv            , // Number of vertical layers
            Grid.nvi           , // Number of interfaces between layer
+           glevel             , // Horizontal resolution level
+           spring_dynamics    , // Spring dynamics option
+           spring_beta        , // Parameter beta for spring dynamics
            nlat               , // Number of latitude rings for zonal
                                 // mean wind
            Grid.zonal_mean_tab,  // table of zonal means for sponge layer
@@ -385,11 +388,13 @@ int main (int argc,  char** argv){
 
     BENCH_POINT_GRID(Grid);
 
-   printf(" Setting the initial conditions.\n\n");
-
-   double simulation_start_time = 0.0;
-
-// Initial conditions
+    printf(" Setting the initial conditions.\n\n");
+    
+    double simulation_start_time = 0.0;
+    
+    // Initial conditions
+    int output_file_idx = 0;
+    
     bool load_initial = X.InitialValues(rest         , // Option to
                                                        // start the
                                                        // atmosphere
@@ -403,27 +408,26 @@ int main (int argc,  char** argv){
                                                        // conditions,
                                                        // continue or
                                                        // start at 0?
-                                        glevel       , // Horizontal
-                                                       // resolution
-                                                       // level
-                                        spring_dynamics    , // Spring dynamics option
-                                        spring_beta        , // Parameter beta for spring dynamics
                                         timestep     , // Time-step [s]
-                                        Planet.A     , // Planet radius [m]
+                                        Planet.A     , // Planet
+                                                       // radius [m]
+                                        Planet.Top_altitude, // Planet
+                                                             // top altitude
                                         Planet.Cp    , // Specific heat capacity [J /(kg K)]
                                         Planet.P_Ref , // Reference pressure [Pa]
                                         Planet.Gravit, // Gravity [m/s^2]
                                         Planet.Omega , // Rotation rate [1/s]
                                         Planet.Diffc , // Strength of diffusion
-                                        kb           , // Boltzmann constant [J/kg]
+                                        kb_constant  , // Boltzmann constant [J/kg]
                                         Planet.Tmean , // Isothermal atmosphere (at temperature Tmean)
                                         Planet.Mmol  , // Mean molecular mass of dry air [kg]
-                                        mu           , // Atomic mass unit [kg]
+                                        mu_constant  , // Atomic mass unit [kg]
                                         Planet.Rd    , // Gas constant [J/kg/K]
                                         SpongeLayer  ,          // Enable
                                                               // sponge
                                                               // layer
-                                        simulation_start_time );// return value for
+                                        simulation_start_time,
+                                        output_file_idx);// return value for
                                                                 // simulation start time
 
     if (hstest == 0) {
@@ -501,23 +505,28 @@ int main (int argc,  char** argv){
     if (!rest)
         printf("   Loading initial conditions from = %s \n", initial_conditions.c_str());
     printf("   Output directory = %s \n", output_path.c_str());
-
+    printf("   Start output numbering at %d.\n", output_file_idx);
 
 //
 //  Writes initial conditions
     double simulation_time = simulation_start_time;
-    X.Output(0                   ,
-             Planet.Cp           , // Specific heat capacity [J/(Kg K)]
-             Planet.Rd           , // Gas constant [J/(Kg K)]
-             Planet.Omega        , // Rotation rate [s-1]
-             Planet.Gravit       , // Gravitational acceleration [m/s2]
-             Planet.Mmol         , // Mean molecular mass of dry air [kg]
-             Planet.P_Ref        , // Reference surface pressure [Pa]
-             Planet.Top_altitude , // Top of the model's domain [m]
-             Planet.A            , // Planet Radius [m]
-             Planet.simulation_ID, // Simulation ID (e.g., "Earth")
-             simulation_time     , // Time of the simulation [s]
-             output_path);         // directory to save output
+    if (!continue_sim)
+    {
+        X.Output(output_file_idx     ,
+                 Planet.Cp           , // Specific heat capacity [J/(Kg K)]
+                 Planet.Rd           , // Gas constant [J/(Kg K)]
+                 Planet.Omega        , // Rotation rate [s-1]
+                 Planet.Gravit       , // Gravitational acceleration [m/s2]
+                 Planet.Mmol         , // Mean molecular mass of dry air [kg]
+                 Planet.P_Ref        , // Reference surface pressure [Pa]
+                 Planet.Top_altitude , // Top of the model's domain [m]
+                 Planet.A            , // Planet Radius [m]
+                 Planet.simulation_ID, // Simulation ID (e.g., "Earth")
+                 simulation_time     , // Time of the simulation [s]
+                 output_path);         // directory to save output
+        output_file_idx++;
+    }
+    
 
 //
 //  Starting model Integration.
@@ -538,8 +547,8 @@ int main (int argc,  char** argv){
                 Planet.Cp    , // Specific heat capacity [J/kg/K]
                 Planet.Rd    , // Gas constant [J/kg/K]
                 Planet.Mmol  , // Mean molecular mass of dry air [kg]
-                mu           , // Atomic mass unit [kg]
-                kb           , // Boltzmann constant [J/K]
+                mu_constant  , // Atomic mass unit [kg]
+                kb_constant  , // Boltzmann constant [J/K]
                 Planet.P_Ref , // Reference pressure [Pa]
                 Planet.Gravit, // Gravity [m/s^2]
                 Planet.A     , // Planet radius [m]
@@ -556,8 +565,8 @@ int main (int argc,  char** argv){
                Planet.Cp    , // Specific heat capacity [J/kg/K]
                Planet.Rd    , // Gas constant [J/kg/K]
                Planet.Mmol  , // Mean molecular mass of dry air [kg]
-               mu           , // Atomic mass unit [kg]
-               kb           , // Boltzmann constant [J/K]
+               mu_constant  , // Atomic mass unit [kg]
+               kb_constant  , // Boltzmann constant [J/K]
                Planet.P_Ref , // Reference pressure [Pa]
                Planet.Gravit, // Gravity [m/s^2]
                Planet.A     ,// Planet radius [m]
@@ -571,7 +580,7 @@ int main (int argc,  char** argv){
 //      Prints output every nout steps
         if(nstep % n_out == 0) {
             X.CopyToHost();
-            X.Output(nstep/n_out         ,
+            X.Output(output_file_idx     ,
                      Planet.Cp           , // Specific heat capacity [J/(Kg K)]
                      Planet.Rd           , // Gas constant [J/(Kg K)]
                      Planet.Omega        , // Rotation rate [s-1]
@@ -583,6 +592,9 @@ int main (int argc,  char** argv){
                      Planet.simulation_ID, // Planet ID
                      simulation_time     , // Simulation time [s]
                      output_path);         // Directory to save output
+            // increment output file index
+            output_file_idx++;
+            
             file_output = true;
 
         }

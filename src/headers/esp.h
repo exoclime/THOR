@@ -60,7 +60,10 @@ public:
     const int nl_region   ;
     const int nr          ;
     const int nlat        ;
-
+    const int glevel      ;
+    const bool spring_dynamics;
+    const double spring_beta;
+        
     // step counter for benchmark logging
     int current_step;
 
@@ -200,51 +203,54 @@ public:
 ///////////////////////////
 
 //  Functions
-    ESP(int *   ,
-        int *   ,
-        double *,
-        double *,
-        double *,
-        double *,
-        double *,
-        double *,
-        double *,
-        double *,
-        double *,
-        double *,
-        double *,
-        int     ,
-        int     ,
-        int     ,
-        int     ,
-        int     ,
-        int *   ,
-        double  ,
-        double  ,
-        int     );
+    // Constructor, receives all grid parameters
+    ESP(int * point_local_   ,
+        int * maps_          ,
+        double * lonlat_     ,
+        double * Altitude_   ,
+        double * Altitudeh_  ,
+        double * nvecoa_     ,
+        double * nvecti_     ,
+        double * nvecte_     ,
+        double * areasT_     ,
+        double * areasTr_    ,
+        double * div_        ,
+        double * grad_       ,
+        double * func_r_     ,
+        int nl_region_       ,
+        int nr_              ,
+        int nv_              ,
+        int nvi_             ,
+        int glevel_          ,
+        bool spring_dynamics_,
+        double spring_beta_  ,
+        int nlat_            ,
+        int * zonal_mean_tab ,
+        double Rv_sponge_    ,
+        double ns_sponge_    ,
+        int point_num_       );
 
     void AllocData() ;
 
-    bool InitialValues(bool          ,
+    bool InitialValues(bool rest                ,  
                        const std::string & initial_conditions_filename,
                        const bool & continue_sim,
-                       int           ,
-                       bool          ,
-                       double        ,
-                       double        ,
-                       double        ,
-                       double        ,
-                       double        ,
-                       double        ,
-                       double        ,
-                       double        ,
-                       double        ,
-                       double        ,
-                       double        ,
-                       double        ,
-                       double        ,
-                       bool sponge   ,
-                       double & simulation_start_time);
+                       double timestep_dyn      ,
+                       double A                 ,
+                       double Top_altitude      ,
+                       double Cp                ,
+                       double P_Ref             ,
+                       double Gravit            ,
+                       double Omega             ,
+                       double Diffc             ,
+                       double kb                ,
+                       double Tmean             ,
+                       double Mmol              ,
+                       double mu                ,
+                       double Rd                ,
+                       bool sponge              ,
+                       double & simulation_start_time,
+                       int & output_file_idx);
     
     void RTSetup(double,
                  double,

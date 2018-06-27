@@ -57,7 +57,13 @@ using std::string;
 using namespace H5;
 
 
+bool write_double_value_to_h5file(hid_t       file_id,
+                                   const string & tablename,
+                                  const double & out_value,
+                                  const string & name,
+                                  const string & unit );
 
+    
 bool write_double_table_to_h5file(hid_t       file_id,
                                   const string & tablename,
                                   double * double_table,

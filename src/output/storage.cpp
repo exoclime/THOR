@@ -101,6 +101,17 @@ bool write_double_table_to_h5file(hid_t       file_id,
     
 }
 
+bool write_double_value_to_h5file(hid_t       file_id,
+                                  const string & tablename,
+                                  const double & double_value,
+                                  const string & name,
+                                  const string & unit)
+{
+    double val[] = {double_value};
+    
+    return write_double_table_to_h5file(file_id, tablename, val, 1, name, unit);
+}
+
 
 
 bool load_double_table_from_h5file(hid_t       file_id,

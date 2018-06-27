@@ -228,33 +228,32 @@ __host__ void ESP::Output(int    ntstep         , // Number of integration steps
 //  PLANET
     if(ntstep == 0){           
         sprintf(FILE_NAME1, "%s/esp_output_planet_%s.h5", output_dir.c_str(), simulation_ID);
-        file_id = H5Fcreate(FILE_NAME1, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);    
-                   
-        double A_a[]            = {A           };
-        double Rd_a[]           = {Rd          };
-        double Omega_a[]        = {Omega       };
-        double Gravit_a[]       = {Gravit      };
-        double Mmol_a[]         = {Mmol        };
-        double P_Ref_a[]        = {P_Ref       };
-        double Top_altitude_a[] = {Top_altitude};
-        double Cp_a[]           = {Cp          };
+        file_id = H5Fcreate(FILE_NAME1, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 
-//      A
-        write_double_table_to_h5file(file_id, "/A", A_a, 1, "Planet radius", "m");        
-//      Rd
-        write_double_table_to_h5file(file_id, "/Rd", Rd_a, 1, "Gas constant", "J/(Kg K)");
-//      Omega
-        write_double_table_to_h5file(file_id, "/Omega", Omega_a, 1, "Rotation rate", "1/s");
-//      Gravit
-        write_double_table_to_h5file(file_id, "/Gravit", Gravit_a, 1,"Surface gravity" , "m/s^2");  
-//      Mmol
-        write_double_table_to_h5file(file_id, "/Mmol", Mmol_a, 1,"Mean molecular mass of dry air" , "kg");        
-//      P_Ref
-        write_double_table_to_h5file(file_id, "/P_Ref", P_Ref_a, 1, "Reference pressure","Pa" );
-//      Top_altitude
-        write_double_table_to_h5file(file_id, "/Top_altitude", Top_altitude_a, 1, "Top of the model's domain", "m");
-//      CP
-        write_double_table_to_h5file(file_id, "/Cp", Cp_a, 1, "Specific heat capacity", "J/(Kg K)");  
+        // glevel
+        write_double_value_to_h5file(file_id, "/glevel", glevel, "Horizontal subdivision level", "-");
+        // vlevel
+        write_double_value_to_h5file(file_id, "/vlevel", nv, "Vertical subdivision level", "-");
+        // spring_dynamics
+        write_double_value_to_h5file(file_id, "/spring_dynamics", spring_dynamics?1.0:0.0, "Spring dynamics", "-");
+        // spring beta
+        write_double_value_to_h5file(file_id, "/spring_beta", spring_beta, "Spring Beta", "-");        
+        //      A
+        write_double_value_to_h5file(file_id, "/A", A, "Planet radius", "m");        
+        //      Rd
+        write_double_value_to_h5file(file_id, "/Rd", Rd, "Gas constant", "J/(Kg K)");
+        //      Omega
+        write_double_value_to_h5file(file_id, "/Omega", Omega, "Rotation rate", "1/s");
+        //      Gravit
+        write_double_value_to_h5file(file_id, "/Gravit", Gravit,"Surface gravity" , "m/s^2");  
+        //      Mmol
+        write_double_value_to_h5file(file_id, "/Mmol", Mmol,"Mean molecular mass of dry air" , "kg");        
+        //      P_Ref
+        write_double_value_to_h5file(file_id, "/P_Ref", P_Ref, "Reference pressure","Pa" );
+        //      Top_altitude
+        write_double_value_to_h5file(file_id, "/Top_altitude", Top_altitude, "Top of the model's domain", "m");
+        //      CP
+        write_double_value_to_h5file(file_id, "/Cp", Cp, "Specific heat capacity", "J/(Kg K)");  
             
         H5Fflush(file_id, H5F_SCOPE_LOCAL);
         H5Fclose(file_id);
