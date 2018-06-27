@@ -94,6 +94,8 @@ int main (int argc,  char** argv){
     argparser.add_arg("i", "initial", string("initialfilename"), "start from this initial condition instead of rest");
     argparser.add_arg("c", "continue", string("continuefilename"), "continue simulation from this output file");
     argparser.add_arg("N", "numsteps", 48000, "number of steps to run");
+    argparser.add_arg("w", "overwrite", true, "Force overwrite of output file if they exist");
+    
 
     // Parse arguments, exit on fail
     bool parse_ok = argparser.parse(argc, argv);
@@ -288,6 +290,12 @@ int main (int argc,  char** argv){
         initial_conditions = continue_filename;
     }
 
+    bool force_overwrite_arg = false;
+    bool force_overwrite = false;
+    
+    if (argparser.get_arg("overwrite", force_overwrite_arg))
+        force_overwrite = force_overwrite_arg;
+    
     int nsmax_arg;
     if (argparser.get_arg("numsteps", nsmax_arg))
         nsmax = nsmax_arg;
@@ -321,8 +329,6 @@ int main (int argc,  char** argv){
 
         config_OK = false;
     }
-
-
 
     if (!config_OK)
     {
@@ -379,7 +385,7 @@ int main (int argc,  char** argv){
            spring_beta        , // Parameter beta for spring dynamics
            nlat               , // Number of latitude rings for zonal
                                 // mean wind
-           Grid.zonal_mean_tab,  // table of zonal means for sponge layer
+           Grid.zonal_mean_tab, // table of zonal means for sponge layer
            Rv_sponge          , // Maximum damping of sponge layer
            ns_sponge          , // lowest level of sponge layer (fraction of model)
            Grid.point_num     );// Number of grid points
@@ -446,7 +452,45 @@ int main (int argc,  char** argv){
         printf("error loading initial conditions from %s.\n", initial_conditions.c_str());
         return -1;       
     }
-   
+
+    // Check presence of output files
+    path results(output_path);
+    
+    vector<string> result_files = get_files_in_directory(results.to_string());
+    vector<pair<string,int>> matching_name_result_files;
+    for (const auto & r : result_files)
+    {
+        string basename = "";
+        int file_number = 0;
+        if (match_output_file_numbering_scheme(r, basename, file_number))
+        {
+            if (basename == simulation_ID && file_number >= output_file_idx)
+                matching_name_result_files.emplace_back(r, file_number);
+        }
+    }    
+    std::sort(matching_name_result_files.begin(),
+              matching_name_result_files.end(),
+              [](const std::pair<string,int> &left, const std::pair<string,int> &right) {
+                  return left.second < right.second;
+              });
+    
+    if (matching_name_result_files.size() > 0)
+    {
+        if (!force_overwrite)
+        {
+            printf("output files already exist and would be overwritten \n"
+                   "when running simulation. \n"
+                   "Files found:\n");
+            for (const auto & f: matching_name_result_files)
+                printf("\t%s\n", f.first.c_str());
+            
+            printf(" Aborting. \n"
+                   "use --overwrite to overwrite existing files.\n");
+            return -1;
+        }
+    }
+    
+    
     long startTime = clock();
 
 //
@@ -488,7 +532,7 @@ int main (int argc,  char** argv){
     printf("   ********** \n");
     printf("   Grid - Icosahedral\n");
     printf("   Glevel          = %d.\n", glevel);
-    printf("   Spring dynamics = %d.\n",spring_dynamics);
+    printf("   Spring dynamics = %d.\n", spring_dynamics);
     printf("   Beta            = %f.\n", spring_beta);
     printf("   Resolution      = %f deg.\n", (180/M_PI)*sqrt(2*M_PI/5)/pow(2,glevel));
     printf("   Vertical layers = %d.\n",Grid.nv);

@@ -144,7 +144,6 @@ bool load_double_table_from_h5file(hid_t       file_id,
     H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, double_table);
 
     return true;
-    
 }
 
 bool load_double_value_from_h5file(hid_t       file_id,

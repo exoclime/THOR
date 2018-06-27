@@ -51,6 +51,7 @@
 #include <vector>
 
 #include <sys/stat.h>
+#include <dirent.h>
 
 
 using namespace std;
@@ -255,9 +256,24 @@ path::path(const string & p)
 
 
 
-vector<string> get_files_in_directory(const string & dir)
+vector<string> get_files_in_directory(const string & dir_name)
 {
-    return vector<string>();    
+    vector<string> files;
+
+    DIR *dir;
+    struct dirent *ent;
+    if ((dir = opendir (dir_name.c_str() ) ) != NULL)
+    {
+        /* print all the files and directories within directory */
+        while ((ent = readdir (dir)) != NULL)
+        {
+            files.push_back(dir_name + "/" + ent->d_name);
+        }
+        closedir (dir);
+    } else {
+        printf("Could not open directory %s.", dir_name.c_str());
+    }
+    return files;
 }
 
 

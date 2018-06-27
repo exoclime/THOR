@@ -46,6 +46,8 @@
 
 using namespace std;
 
+vector<string> get_files_in_directory(const string & dir_name);
+
 bool match_output_file_numbering_scheme(const string & file_path, string & basename, int & number );
 
 bool create_output_dir(const string & output_dir);
