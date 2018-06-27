@@ -149,46 +149,72 @@ int main()
         // absolute
         path p("/usr/share/docs/");
          
-        success &= print_compare("/usr/share/docs/" " absolute path", p.is_absolute(), true);
+        success &= print_compare("/usr/share/docs/" " | absolute path", p.is_absolute(), true);
         
         vector<string> parts = p.parts();
-        success &= print_compare("/usr/share/docs/" " parts", parts, {"usr","share","docs"});
-        success &= print_compare("/usr/share/docs/" " name", p.name(), "docs");
+        success &= print_compare("/usr/share/docs/" " | parts", parts, {"usr","share","docs"});
+        success &= print_compare("/usr/share/docs/" " | name", p.name(), "docs");
+        success &= print_compare("/usr/share/docs/" " | parent", p.parent(), "/usr/share");
+        success &= print_compare("/usr/share/docs/" " | to_string", p.to_string(), "/usr/share/docs");
+        p /= "test";
+        success &= print_compare("/usr/share/docs/ + test" " | parts", p.parts(), {"usr","share","docs", "test"});
+        path p2 = p / "subtest";
+        success &= print_compare("/usr/share/docs/test/ + subtest" " | parts", p2.parts(), {"usr","share","docs", "test", "subtest"});
+        // test integrity of original
+        success &= print_compare("/usr/share/docs/test" " | parts", p.parts(), {"usr","share","docs", "test"});
+    }
+    
+    {        
+        // absolute
+        path p("/usr/share/docs");
+         
+        success &= print_compare("/usr/share/docs" " | absolute path", p.is_absolute(), true);
+        
+        vector<string> parts = p.parts();
+        success &= print_compare("/usr/share/docs" " | parts", parts, {"usr","share","docs"});
+        success &= print_compare("/usr/share/docs" " | name", p.name(), "docs");
+        success &= print_compare("/usr/share/docs" " | parent", p.parent(), "/usr/share");
+        success &= print_compare("/usr/share/docs" " | to_string", p.to_string(), "/usr/share/docs");
     }
     
     {        
         // relative
         path p("temp/bin.exe");
 
-        success &= print_compare("relative path", p.is_absolute(), false);
+        success &= print_compare("temp/bin.exe" " | relative path", p.is_absolute(), false);
         vector<string> parts = p.parts();
-        success &= print_compare("parts", parts, {"temp","bin.exe"});
-        success &= print_compare("name", p.name(), "bin.exe");
+        success &= print_compare("temp/bin.exe" " | parts", parts, {"temp","bin.exe"});
+        success &= print_compare("temp/bin.exe" " | name", p.name(), "bin.exe");
+        success &= print_compare("temp/bin.exe" " | parent", p.parent(), "temp");
+        success &= print_compare("temp/bin.exe" " | to_string", p.to_string(), "temp/bin.exe");
     }
     
     {        
         // relative
         path p("./temp/bin.exe");
 
-        success &= print_compare("relative path with .", p.is_absolute(), false);
+        success &= print_compare("./temp/bin.exe" " | relative path with .", p.is_absolute(), false);
         vector<string> parts = p.parts();
-        success &= print_compare("parts", parts, {".", "temp","bin.exe"});
-        success &= print_compare("name", p.name(), "bin.exe");
+        success &= print_compare("./temp/bin.exe" " | parts", parts, {".", "temp","bin.exe"});
+        success &= print_compare("./temp/bin.exe" " | name", p.name(), "bin.exe");
+        success &= print_compare("./temp/bin.exe" " | parent", p.parent(), "./temp");
+        success &= print_compare("./temp/bin.exe" " | to_string", p.to_string(), "./temp/bin.exe");
     }
     
     {
         path p("temp/subfolder/myfile.tar.gz");
 
-        success &= print_compare("name", p.name(), "myfile.tar.gz");
-        success &= print_compare("suffix", p.suffix(), "gz");
-        success &= print_compare("stem", p.stem(), "myfile.tar");
-
+        success &= print_compare("temp/subfolder/myfile.tar.gz" " | name", p.name(), "myfile.tar.gz");
+        success &= print_compare("temp/subfolder/myfile.tar.gz" " | suffix", p.suffix(), "gz");
+        success &= print_compare("temp/subfolder/myfile.tar.gz" " | stem", p.stem(), "myfile.tar");
+        
+        success &= print_compare("temp/subfolder/myfile.tar.gz" " | parent", p.parent(), "temp/subfolder");
         vector<string> parts = p.parts();
-        success &= print_compare("parts", parts, {"temp","subfolder","myfile.tar.gz"});
+        success &= print_compare("temp/subfolder/myfile.tar.gz" " | parts", parts, {"temp","subfolder","myfile.tar.gz"});
 
         
         vector<string> suffixes = p.suffixes();
-        success &= print_compare("suffixes", suffixes, {"tar", "gz"});
+        success &= print_compare("temp/subfolder/myfile.tar.gz" " | suffixes", suffixes, {"tar", "gz"});
     }
     
 
@@ -196,18 +222,10 @@ int main()
         path p("results/esp_output_Earth_5.h5");
 
 
-        success &= print_compare("suffix", p.suffix(), "h5");
-        success &= print_compare("name", p.name(), "esp_output_Earth_5.h5");
-        success &= print_compare("stem", p.stem(), "esp_output_Earth_5");
-        
-        //      int number = -1;
-//        string stem = "";
-        
-        //      bool numbered_stem = p.numbered_stem(stem, number);
-        
-//        print_state(numbered_stem == true, "numbered stem - check");
-//        print_state(stem == "esp_output_Earth", numbered stem - stem);
-//        print_state(number == 5, "numbered stem - number");
+        success &= print_compare("results/esp_output_Earth_5.h5" " | suffix", p.suffix(), "h5");
+        success &= print_compare("results/esp_output_Earth_5.h5" " | name", p.name(), "esp_output_Earth_5.h5");
+        success &= print_compare("results/esp_output_Earth_5.h5" " | stem", p.stem(), "esp_output_Earth_5");
+        success &= print_compare("results/esp_output_Earth_5.h5" " | parent", p.parent(), "results");
     }
 
     {

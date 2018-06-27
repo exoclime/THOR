@@ -286,10 +286,54 @@ __host__ bool ESP::InitialValues(bool rest          ,
         string planet_filename;
 
         path p(initial_conditions_filename);
+        int file_number = 0;
+        string basename = "";
+
+        string parent_path  =  p.parent();
+        
+        if (continue_sim)
+        {
+            if (!match_output_file_numbering_scheme(initial_conditions_filename,
+                                                   basename,
+                                                   file_number))
+            {
+                printf("Loading initial conditions: "
+                       "Could not recognise file numbering scheme "
+                       "for input %s: (found base: %s, num: %d) \n",
+                       initial_conditions_filename.c_str(),
+                       basename.c_str(),
+                       file_number);
+                return false;                
+            }
+            
+            
+            planet_filename = p.parent() + "/esp_output_planet_" + basename + ".h5";
+        }
+        else
+        {
+            planet_filename = p.parent() + "/" + p.stem() + "_planet.h5";
+        }
+
+        // check existence of files
+        if (!path_exists(initial_conditions_filename))
+        {
+            printf("initial condition file %s not found.\n", initial_conditions_filename.c_str());
+            return false;
+        }
+
+        if (!path_exists(planet_filename))
+        {
+            printf("planet_file %s not found.\n", planet_filename.c_str());
+            return false;
+        }
 
         
+        printf("Loading planet from: %s\n", planet_filename.c_str());
+        printf("Loading initial conditions from: %s\n", initial_conditions_filename.c_str());        
         
-        // check existence of file
+            
+        
+
         
         
         // Load planet data

@@ -285,14 +285,8 @@ int main (int argc,  char** argv){
             exit(-1);
         }
 
-
+        initial_conditions = continue_filename;
     }
-
-    // if initial condition or continue
-    // find planet file
-    
-
-    
 
     int nsmax_arg;
     if (argparser.get_arg("numsteps", nsmax_arg))

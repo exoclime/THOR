@@ -74,11 +74,28 @@ public:
     string name();
     // final part of path, without suffix
     string stem();
-    // final part without numbering separated by underscore
-    //   bool numbered_stem(string & stem, int & number);
-//    // match stem to wildcard
-//    bool match_stem(const string & stem, string & addition);
+
+    // parent of last element
+    string parent();
+
+    string to_string();
+    const char * c_str();
     
+    
+    path& operator/=(const string& rhs) // compound assignment (does not need to be a member,
+    {                           // but often is, to modify the private members)
+        elements.push_back(rhs);
+    
+        return *this; // return the result by reference
+    }
+ 
+    // friends defined inside class body are inline and are hidden from non-ADL lookup
+    friend path operator/(path lhs,        // passing lhs by value helps optimize chained a+b+c
+                          const string& rhs) // otherwise, both parameters may be const references
+    {
+        lhs /= rhs; // reuse compound assignment
+        return lhs; // return the result by value (uses move constructor)
+    }
     
 private:
 
