@@ -132,7 +132,12 @@ bool load_double_table_from_h5file(hid_t       file_id,
     hid_t dspace = H5Dget_space(dataset_id);
     hsize_t data_space =  H5Sget_simple_extent_npoints(dspace);
     if (data_space != (unsigned int)(expected_size)) {
-        printf("Initial condition load error for data: %s.\n", tablename.c_str());
+        printf("Initial condition load error for data: %s "
+               "expected size: %u, got: %llu.\n",
+               tablename.c_str(),
+               (unsigned int)expected_size,
+               data_space
+            );
 
         return false;
     }
@@ -146,29 +151,5 @@ bool load_double_value_from_h5file(hid_t       file_id,
                                    const string & tablename,
                                    double & out_value)
 {
-    hid_t dataset_id;
-
-    dataset_id = H5Dopen(file_id, tablename.c_str(), H5P_DEFAULT);
-
-    if (dataset_id < 0)
-    {
-        printf("Could not open dataset: %s.\n", tablename.c_str());
-        return false;
-    }
-        
-    hid_t dspace = H5Dget_space(dataset_id);
-    hsize_t data_space =  H5Sget_simple_extent_npoints(dspace);
-    double value[] = {0.0};
-    
-    
-    if (data_space != (unsigned int)(1)) {
-        printf("Initial condition load error for data: %s.\n", tablename.c_str());
-
-        return false;
-    }
-    H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, value);
-
-    out_value = value[0];
-    
-    return true;
+    return load_double_table_from_h5file( file_id, tablename, &out_value, 1);
 }
