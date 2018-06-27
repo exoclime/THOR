@@ -80,8 +80,8 @@ __device__ double source_func_lin(double bb      ,
                                   double diff_fac){
 
     double e1 = 0.0;
-  //  double e2 = 0.0;
-  //  double e  = 0.0;
+    double e2 = 0.0;
+    double e  = 0.0;
 
     if(tau >= 1e-10){
         e1 = bb - bt + (bt-(diff_fac/(tau))*(bb-bt))*(1.0-exp(-(tau)/diff_fac));

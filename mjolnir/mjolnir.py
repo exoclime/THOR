@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.6
+#!/usr/bin/env python3
 import numpy as np
 import matplotlib.pyplot as plt
 import hamarr as ham
@@ -7,7 +7,9 @@ import argparse
 import h5py
 from imp import reload
 reload(ham)
+import time
 
+first = time.time()
 ###########################################################################
 #
 # Options
@@ -46,7 +48,7 @@ parser.add_argument("-pmin","--pressure_min",nargs=1,default=[100],help='Lowest 
 args = parser.parse_args()
 pview = args.pview
 
-valid = ['uver','Tver','Tulev','PTver','ulev','PVver','PVlev','vring','pause']
+valid = ['uver','Tver','Tulev','PTver','ulev','PVver','PVlev','vring','TP','pause']
 if 'all' in pview:
     pview = valid
 else:
@@ -112,7 +114,12 @@ if 'PVlev' in pview:
 if 'PVver' in pview:
     #sigmaref = np.arange(1,0,-0.05)
     ham.potential_vort_vert(input,grid,output,sigmaref)
-#if 'vring' in pview:
-    #still in development...
-    #sigmaref = np.arange(1,0,-0.05)
-    #ham.vring(input,grid,output,sigmaref)
+# if 'vring' in pview:
+#     #still in development...
+#     sigmaref = np.arange(1,0,-0.05)
+#     ham.vring(input,grid,output,sigmaref)
+if 'TP' in pview:
+    ham.TPprof(input,grid,output,sigmaref,1902)
+
+last = time.time()
+print(last-first)

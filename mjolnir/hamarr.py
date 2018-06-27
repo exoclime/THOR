@@ -864,3 +864,28 @@ def vring(input,grid,output,sigmaref):
     plt.plot(lati,XM[:,1,0,0]+vrotX,'b.')
     plt.plot(lati,vrotX,'g.')
     plt.show()
+
+def TPprof(input,grid,output,sigmaref,column):
+    Pref = input.P_Ref*sigmaref
+    d_sig = np.size(sigmaref)
+
+    tsp = output.nts-output.ntsi+1
+
+    if tsp > 1:
+        P = np.mean(output.Pressure[column,:,:],axis=2)
+        T = np.mena(output.Pressure[column,:,:]/input.Rd/output.Rho[column,:,:],axis=2)
+    else:
+        P = output.Pressure[column,:,0]
+        T = output.Pressure[column,:,0]/input.Rd/output.Rho[column,:,0]
+
+    kappa = input.Rd/input.Cp
+
+    Tad = T[15]*(P/P[15])**kappa
+
+    plt.semilogy(T,P/100,'k-')
+    plt.plot(Tad,P/100,'r--')
+    plt.gca().invert_yaxis()
+    plt.ylabel('Pressure (mbar)')
+    plt.xlabel('Temperature [K]')
+    plt.savefig(input.resultsf+'/figures/TPprofile_col%05d_i%d_l%d.pdf'%(column,output.ntsi,output.nts))
+    plt.close()
