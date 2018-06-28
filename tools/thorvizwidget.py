@@ -100,7 +100,7 @@ class ThorVizWidget(QOpenGLWidget):
         self.axis_painter.set_shader_manager(self.shader_manager)
         # self.field_painter.set_shader_manager(self.shader_manager)
         self.projection = QMatrix4x4()
-        self.projection.perspective(35.0, 1.0, -1.0, 15.0)
+        self.projection.perspective(35.0, 1.0, 1.0, 15.0)
 
     def initializeGL(self):
         print("OpenGL: " + str(gl.glGetString(gl.GL_VERSION)))
@@ -228,7 +228,7 @@ class ThorVizWidget(QOpenGLWidget):
 
         self.projection.setToIdentity()
         scale = 1.0
-        self.projection.perspective(35.0, aspectratio, -1.0, 1.0)
+        self.projection.perspective(35.0, aspectratio, 1.0, 15.0)
 
     def mousePressEvent(self, e):
 
