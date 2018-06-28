@@ -75,18 +75,18 @@ class ShaderManager:
                          }"""
 
     vertex_fragment_colour = """#version 400\n
- in GS_OUT {
-                          vec3 fcolor;
-                          vec3 dist;
-} fs_in;
+                                in GS_OUT {
+                                   vec3 fcolor;
+                                   vec3 dist;
+                                } fs_in;
                  
                                 out vec4 frag_colour;
-
+                                uniform float wire_limit;
                                 void main() {
 
                                    float nearD = min(min(fs_in.dist[0],fs_in.dist[1]),fs_in.dist[2]);
                                    float edgeIntensity = exp2(-1.0*nearD*nearD);
-                                   if (nearD < 0.00001)
+                                   if (nearD < wire_limit)
                                        frag_colour = vec4( 0.1, 0.1, 0.1, 1.0 );
                                    else
                                        frag_colour = vec4(fs_in.fcolor, 1.0);
@@ -197,6 +197,8 @@ class ShaderManager:
         self.m_projectionUniform_pc = self.m_program_pc.uniformLocation(
             'projection')
         self.m_modelUniform_pc = self.m_program_pc.uniformLocation('model')
+        self.m_wirelimitUniform = self.m_program_pc.uniformLocation(
+            'wire_limit')
         self.m_program_field = QOpenGLShaderProgram(parent)
 
         if self.m_program_field.addShaderFromSourceCode(QOpenGLShader.Vertex,
@@ -243,6 +245,9 @@ class ShaderManager:
     def set_colour_field(self, colour):
         self.m_program_field.setUniformValue(
             self.m_colourUniform_field, colour)
+
+    def set_wirelimit(self, wirelimit):
+        self.m_program_pc.setUniformValue(self.m_wirelimitUniform, wirelimit)
 
     def set_view(self, view):
         self.m_program.setUniformValue(
