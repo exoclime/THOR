@@ -83,4 +83,4 @@ results_path = deephj_results
 n_out = 3456
 
 # GPU ID number
-GPU_ID_N = 0
+GPU_ID_N = 1

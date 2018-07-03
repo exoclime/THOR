@@ -64,7 +64,7 @@ rest = true
 # initial conditions file, used if rest is set to false
 # (path relative to current working directory)
 # defaults to 'ifile/esp.initial.h5'
-initial = ifile/esp.initial.h5
+initial = tidalearth_results/esp_output_Earth_29.h5
 
 
 # Benchmark test
@@ -84,4 +84,4 @@ n_out = 3456
 results_path = tidalearth_results
 
 # GPU ID number
-GPU_ID_N = 0
+GPU_ID_N = 2
