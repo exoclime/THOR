@@ -48,15 +48,26 @@ __device__ void radcsw(double *phtemp         ,
 
 	// Extra layer to avoid over heating at the top.
     fnet_dn_d[id*(nv+1) + nv] = flux_top*exp(-(1.0/coszrs)*tau);
+    if (isnan(fnet_dn_d[id*(nv+1)+nv]) || isinf(fnet_dn_d[id*(nv+1)+nv])) {
+      printf("%d, %d\n",id,nv);
+    }
 
     // Normal integration
 	for(int lev = nv;lev >= 1;lev--) fnet_dn_d[id*(nv+1) + lev-1] = fnet_dn_d[id*(nv+1) + lev]*exp(-(1.0/coszrs)*tau_d[id*nv*2 + (lev-1)*2]);
 	for(int lev = 0;lev <= nv;lev++) fnet_up_d[id*(nv+1) + lev]   = 0.0;
 
 	// Update temperature rates.
-	for(int lev = 0;lev < nv;lev++){
+  // if (id==0) printf("shortwave down = \n");
+  for(int lev = 0;lev < nv;lev++){
         gocp  = gravit/Cp;
         dtemp[id*nv+lev]     = gocp * ((fnet_up_d[id*(nv+1) + lev] - fnet_dn_d[id*(nv+1) + lev]) - (fnet_up_d[id*(nv+1) + lev+1] - fnet_dn_d[id*(nv+1) + lev+1])) / (phtemp[id*(nv+1)+lev] - phtemp[id*(nv+1)+lev +1]);
+
+        // if (isnan(dtemp[id*nv+lev])) {
+        //   printf("%d, %d\n",id,lev);
+        // }
+        // if (id == 0){
+        //   printf("%f, ",fnet_dn_d[id*(nv+1)+lev-1]);
+        // }
     }
 }
 
@@ -80,8 +91,8 @@ __device__ double source_func_lin(double bb      ,
                                   double diff_fac){
 
     double e1 = 0.0;
-    double e2 = 0.0;
-    double e  = 0.0;
+    // double e2 = 0.0;
+    // double e  = 0.0;
 
     if(tau >= 1e-10){
         e1 = bb - bt + (bt-(diff_fac/(tau))*(bb-bt))*(1.0-exp(-(tau)/diff_fac));
@@ -164,10 +175,20 @@ __device__ void radclw(double *phtemp         ,
         fnet_up_d[id*(nv+1) + lev] = eu + fnet_up_d[id*(nv+1) + lev-1] * exp(-(1./diff_fac)*tau_d[id*nv*2 + 2*(lev-1) + 1]);
     }
 
+    // if(id==0) printf("\nlongwave down = \n");
     for(int lev = 0;lev < nv;lev++) {
         dtemp[id*nv+lev] = dtemp[id*nv+lev] + gocp * ((fnet_up_d[id*(nv+1) + lev] - fnet_dn_d[id*(nv+1) + lev]) - (fnet_up_d[id*(nv+1) + lev+1] - fnet_dn_d[id*(nv+1) + lev+1])) /
                                     (phtemp[id*(nv+1)+lev] - phtemp[id*(nv+1)+lev + 1]);
+        // if(id==0) printf("%f, ",fnet_dn_d[id*(nv+1)+lev]);
+        // if (isnan(dtemp[id*nv+lev])) {
+        //   printf("%d, %d\n",id,lev);
+        // }
     }
+    // if(id==0) printf("\nlongwave up = \n");
+    // for(int lev = 0;lev < nv;lev++) {
+    //     // if(id==0) printf("%f, ",fnet_up_d[id*(nv+1)+lev]);
+    // }
+
 }
 
 
@@ -274,7 +295,8 @@ __global__ void rtm_dual_band (double *pressure_d   ,
                 thtemp[id*nvi+0] = ttemp[id*nv+0];
             }
             else if(lev == nv){
-                pp = pressure_d[id*nv + nv-2] - Rho_d[id*nv + nv-1] * gravit * (2*Altitudeh_d[nv]-Altitude_d[nv-1]-Altitude_d[nv-2]);
+                // pp = pressure_d[id*nv + nv-2] - Rho_d[id*nv + nv-1] * gravit * (2*Altitudeh_d[nv]-Altitude_d[nv-1]-Altitude_d[nv-2]);
+                pp = pressure_d[id*nv+nv-2] + (pressure_d[id*nv+nv-1]-pressure_d[id*nv+nv-2])/(Altitude_d[nv-1]-Altitude_d[nv-2])*(2*Altitudeh_d[nv]-Altitude_d[nv-1]-Altitude_d[nv-2]);
                 ptop  = 0.5*(pressure_d[id*nv + nv-1] + pp);
 
                 phtemp[id*nvi+nv] = ptop;
@@ -291,7 +313,20 @@ __global__ void rtm_dual_band (double *pressure_d   ,
                 phtemp[id*nvi+lev] = pressure_d[id*nv + lev-1]*a + pressure_d[id*nv + lev]*b;
                 thtemp[id*nvi+lev] = temperature_d[id*nv + lev-1]*a + ttemp[id*nv+lev]*b;
             }
+            // if (id==431){
+            //   printf("%f, ",pressure_d[lev]);
+            // }
+            // if (phtemp[id*nvi+lev]<=0){
+            //   printf("%d, %d",id,lev);
+            // }
         }
+
+        // if (phtemp[id*nvi+nv]<=0){
+        //   for (int lev = 0; lev < nv; lev++ ){
+        //     printf("%f, ",pressure_d[id*nv+lev]);
+        //   }
+        //   printf("stop");
+        // }
 		// Cosine of the zenith angle
         coszrs = cos(lonlat_d[id*2 + 1])*cos(lonlat_d[id*2 + 0]);
 
@@ -305,8 +340,20 @@ __global__ void rtm_dual_band (double *pressure_d   ,
                     id    ,
                     nv    );
 
-        for(int lev = 0; lev <=nv; lev++)fnet_up_d[id*nvi + lev] = 0.0;
-        for(int lev = 0; lev <=nv; lev++)fnet_dn_d[id*nvi + lev] = 0.0;
+        // for(int lev = 0; lev <=nv; lev++){
+        //       fnet_up_d[id*nvi + lev] = 0.0;
+        //       if(id==0) {
+        //         printf("%f, ",tau_d[2*lev]);
+        //       }
+        // }
+        // for(int lev = 0; lev <=nv; lev++) {
+        //       fnet_dn_d[id*nvi + lev] = 0.0;
+        //       if(id==0) printf("%f, ",tau_d[2*lev+1]);
+        // }
+        //
+        // if (id == 0){
+        //   printf("stop\n");
+        // }
 
         if(coszrs > 0.0){
 
@@ -327,6 +374,10 @@ __global__ void rtm_dual_band (double *pressure_d   ,
 
         }
 
+        // if (id == 0){
+        //   printf("stop\n");
+        // }
+
         for(int lev = 0; lev <=nv; lev++)fnet_up_d[id*nvi + lev] = 0.0;
         for(int lev = 0; lev <=nv; lev++)fnet_dn_d[id*nvi + lev] = 0.0;
 
@@ -344,8 +395,13 @@ __global__ void rtm_dual_band (double *pressure_d   ,
                id       ,
                nv       );
 
+        // if(id==0) printf("\ndT = \n");
         for(int lev = 0; lev < nv; lev++) {
           temperature_d[id*nv + lev] = ttemp[id*nv+lev] + dtemp[id*nv+lev]*timestep;
+          // if (id==0) printf("%e, ",dtemp[id*nv+lev]);
+          // if (isnan(temperature_d[id*nv+lev])) {
+          //   printf("%d, %d\n",id,lev);
+          // }
         }
     }
 }
