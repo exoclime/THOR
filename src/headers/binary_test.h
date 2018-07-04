@@ -47,9 +47,11 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 #include "debug.h"
-
+#include <iomanip>
+#include <memory>
 
 // precompiler macros to enable binary testing of simulation output
 // BENCHMARKING enables the binary testing. if not set, those
@@ -67,16 +69,30 @@
                                                                                           +"-" \
                                                                                           +std::to_string(subiteration), \
                                                                                           name);
+    #define BENCH_POINT_I_SS(esp, iteration, subiteration, subsubiteration, name)  btester.output_reference(esp, \
+                                                                                                            std::to_string(iteration) \
+                                                                                                            +"-" \
+                                                                                                            +std::to_string(subiteration) \
+                                                                                                            +"-" \
+                                                                                                            +std::to_string(subsubiteration), \
+                                                                                                            name);
     #define BENCH_POINT_GRID(grid)  btester.output_reference_grid(grid);
   #endif
   #ifdef BENCH_POINT_COMPARE // compare mode
     #define BENCH_POINT(esp, iteration, name)  btester.compare_to_reference(esp, iteration, name);
     #define BENCH_POINT_I(esp, iteration, name)  btester.compare_to_reference(esp, std::to_string(iteration), name);
     #define BENCH_POINT_I_S(esp, iteration, subiteration, name)  btester.compare_to_reference(esp, \
-std::to_string(iteration)                                               \
+                                                                                              std::to_string(iteration) \
                                                                                               +"-" \
                                                                                               +std::to_string(subiteration), \
                                                                                               name);
+    #define BENCH_POINT_I_SS(esp, iteration, subiteration, subsubiteration,  name)  btester.compare_to_reference(esp, \
+                                                                                                                 std::to_string(iteration) \
+                                                                                                                 +"-" \
+                                                                                                                 +std::to_string(subiteration) \
+                                                                                                                 +"-" \
+                                                                                                                 +std::to_string(subsubiteration), \
+                                                                                                                 name);
      #define BENCH_POINT_GRID(grid)  btester.compare_to_reference_grid(grid);
   #endif
 #else // do nothing
@@ -85,7 +101,7 @@ std::to_string(iteration)                                               \
   #define BENCH_POINT_I(esp, iteration, name)
   #define BENCH_POINT_I_S(esp, iteration, subiteration, name)
   #define BENCH_POINT_GRID(grid)
-#endif
+#endif // BENCHMARKING
 
 #ifdef BENCHMARKING
 #include "esp.h"
@@ -152,7 +168,23 @@ private:
                                const string & name,
                                T * local_data,
                                const int & data_size);
-  
+
+    struct output_def
+    {
+        double * data;
+        int size;
+        string name;
+        string short_name;
+        bool device_ptr;
+    };
+    
+
+    bool output_defined = false;
+    std::vector<output_def> output_definitions;
+    std::unique_ptr<double[]> mem_buf = nullptr;
+    
+    
+    void init_output_data(ESP & esp);    
 };
 
 // Compare binary table to saved table in storage output
@@ -163,7 +195,9 @@ bool binary_test::compare_to_saved_data(storage & s,
                                         const int & data_size) {
     std::unique_ptr<T[]> saved_data = nullptr;
     int size = 0;
-
+    // print out piece of the table for visual inspection
+    bool print_details = false;
+    
 //    cout << "Comparing " << name << " :\t";
     
     s.read_table(name, saved_data, size);
@@ -172,7 +206,7 @@ bool binary_test::compare_to_saved_data(storage & s,
     
     bool b = compare_arrays(size, saved_data.get(),
                             data_size, local_data,
-                            name, true);
+                            name, print_details);
 //    cout << b << endl;
     return b;
     
@@ -196,13 +230,29 @@ bool binary_test::compare_arrays(int s1, T * d1,
     bool same = true;
     
     for (int i = 0; i < s1; i++)
+    {
+        
+        //>
+        //double mx = (abs(d1[i]) > abs(d2[i]))?abs(d1[i]):abs(d2[i]);
+        
+        //if (abs((d1[i] - d2[i])) > 1e-10 )
         if (d1[i] != d2[i])
         {
+//            if (print && i < 10)
             if (print)
-                cout << array << "["<<i<<"]:\tdifferent value ("<<d1[i]<<":"<<d2[i]<<")"<<endl;
+                cout <<std::setprecision(20) << std::scientific << array << "["<<i<<"]:\tdifferent value ("<<d1[i]<<":"<<d2[i]<<")"<<endl;
             
             same = false;
         }
+        else
+        {
+            //if (print && i < 10)            
+            //  cout <<std::setprecision(20) << std::scientific << array << "["<<i<<"]:\tsame value ("<<d1[i]<<":"<<d2[i]<<")"<<endl;
+            // cout << "same value " << endl;
+        }
+    }
+    
+    
     
     return same;
 }

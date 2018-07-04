@@ -57,13 +57,13 @@ using namespace std;
 #include "headers/define.h"
 #include "headers/grid.h"
 #include "headers/planet.h"
-#include "headers/esp.h"
-
-#include "debug.h"
+#include "esp.h"
 
 #include "config_file.h"
 #include "cmdargs.h"
 #include "directories.h"
+
+#include "binary_test.h"
 
 int main (int argc,  char** argv){
 
@@ -400,6 +400,7 @@ int main (int argc,  char** argv){
     
     // Initial conditions
     int output_file_idx = 0;
+    int step_idx = 0;
     
     bool load_initial = X.InitialValues(rest         , // Option to
                                                        // start the
@@ -429,13 +430,14 @@ int main (int argc,  char** argv){
                                         Planet.Mmol  , // Mean molecular mass of dry air [kg]
                                         mu_constant  , // Atomic mass unit [kg]
                                         Planet.Rd    , // Gas constant [J/kg/K]
-                                        SpongeLayer  ,          // Enable
-                                                              // sponge
-                                                              // layer
-                                        simulation_start_time,
-                                        output_file_idx);// return value for
-                                                                // simulation start time
-
+                                        SpongeLayer  , // Enable sponge layer
+                                        step_idx     , // current step index
+                                        simulation_start_time, // output:
+                                                               // simulation start time
+                                        output_file_idx); // output file
+                                                          // read + 1, 0
+                                                          // if nothing read
+    
     if (hstest == 0) {
       X.RTSetup(Tstar            ,
                 planet_star_dist ,
@@ -455,8 +457,12 @@ int main (int argc,  char** argv){
 
     // Check presence of output files
     path results(output_path);
-    
+
+    // Get the files in the directory
     vector<string> result_files = get_files_in_directory(results.to_string());
+
+    // match them to name pattern, get file numbers and check numbers that are greater than the
+    // restart file number
     vector<pair<string,int>> matching_name_result_files;
     for (const auto & r : result_files)
     {
@@ -464,10 +470,11 @@ int main (int argc,  char** argv){
         int file_number = 0;
         if (match_output_file_numbering_scheme(r, basename, file_number))
         {
-            if (basename == simulation_ID && file_number >= output_file_idx)
+            if (basename == simulation_ID && file_number > output_file_idx)
                 matching_name_result_files.emplace_back(r, file_number);
         }
-    }    
+    }
+    // sort them by number
     std::sort(matching_name_result_files.begin(),
               matching_name_result_files.end(),
               [](const std::pair<string,int> &left, const std::pair<string,int> &right) {
@@ -556,7 +563,8 @@ int main (int argc,  char** argv){
     double simulation_time = simulation_start_time;
     if (!continue_sim)
     {
-        X.Output(output_file_idx     ,
+        X.Output(0                   , // file index
+                 0                   , // step index
                  Planet.Cp           , // Specific heat capacity [J/(Kg K)]
                  Planet.Rd           , // Gas constant [J/(Kg K)]
                  Planet.Omega        , // Rotation rate [s-1]
@@ -568,20 +576,27 @@ int main (int argc,  char** argv){
                  Planet.simulation_ID, // Simulation ID (e.g., "Earth")
                  simulation_time     , // Time of the simulation [s]
                  output_path);         // directory to save output
-        output_file_idx++;
+        output_file_idx = 1;
+        step_idx = 1;
+    }
+    else
+    {
+        output_file_idx += 1;
+        step_idx += 1;
     }
     
-
-//
+    
+// *********************************************************************************************    
 //  Starting model Integration.
     printf(" Starting the model integration.\n\n");
 
 //
 //  Main loop. nstep is the current step of the integration and nsmax the maximum
 //  number of steps in the integration.
-    for(int nstep = 1; nstep <= nsmax; ++nstep){
+    for(int nstep = step_idx; nstep <= nsmax; ++nstep){
+        // store step number for file comparison tests
         X.current_step = nstep;
-
+        
 //
 //      Dynamical Core Integration (THOR)
         X.Thor (timestep     , // Time-step [s]
@@ -613,18 +628,19 @@ int main (int argc,  char** argv){
                kb_constant  , // Boltzmann constant [J/K]
                Planet.P_Ref , // Reference pressure [Pa]
                Planet.Gravit, // Gravity [m/s^2]
-               Planet.A     ,// Planet radius [m]
+               Planet.A     , // Planet radius [m]
                SpongeLayer  );
 
        // compute simulation time
-       simulation_time = simulation_start_time + nstep*timestep;
+       simulation_time = simulation_start_time + (nstep - step_idx+1)*timestep;
        bool file_output = false;
 
 //
 //      Prints output every nout steps
         if(nstep % n_out == 0) {
             X.CopyToHost();
-            X.Output(output_file_idx     ,
+            X.Output(nstep               ,
+                     output_file_idx     ,
                      Planet.Cp           , // Specific heat capacity [J/(Kg K)]
                      Planet.Rd           , // Gas constant [J/(Kg K)]
                      Planet.Omega        , // Rotation rate [s-1]
@@ -644,7 +660,7 @@ int main (int argc,  char** argv){
         }
         printf("\n Time step number = %d || Time = %f days. %s",
                nstep,
-               nstep*timestep/86400.,
+               simulation_time/86400.,
                file_output?"saved output":"");
     }
 //

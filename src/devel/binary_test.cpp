@@ -46,7 +46,6 @@
 ////////////////////////////////////////////////////////////////////////
 
 #include "binary_test.h"
-#include "debug.h"
 
 #ifdef BENCHMARKING
 //#include "grid.h"
@@ -54,7 +53,8 @@
 #include "esp.h"
 #include "grid.h"
 
-
+#include <iomanip>
+#include <sstream>
 
 binary_test::binary_test(string output_dir_,
                          string output_base_name_):
@@ -64,36 +64,78 @@ binary_test::binary_test(string output_dir_,
 
 }
 
+void binary_test::init_output_data(ESP & esp)
+{
+    if (output_defined)
+        return;
+
+    // define all the data we want to output
+    output_definitions =
+        {
+            { esp.Rho_d,         esp.nv*esp.point_num,   "Density", "rho", true },
+            { esp.pressure_d,    esp.nv*esp.point_num,   "Pressure", "P", true },
+            { esp.Mh_d,          esp.nv*esp.point_num*3, "Horizontal Momentum", "Mh", true},
+            { esp.Wh_d,          esp.nvi*esp.point_num,  "Vertical Momentum", "Wh", true},
+            { esp.temperature_d, esp.nv*esp.point_num,   "Temperature", "T", true},
+            { esp.W_d,           esp.nv*esp.point_num,   "W vert momentum", "W", true },
+            // RK variables
+            { esp.pressures_d,   esp.nv*esp.point_num,   "RK pressures", "ps", true},
+            { esp.Rhos_d,        esp.nv*esp.point_num,   "RK Rhos", "rhos", true},
+            { esp.Mhs_d,         esp.nv*esp.point_num*3, "RK Mhs", "Mhs", true},
+            { esp.Ws_d,          esp.nv*esp.point_num,   "RK Ws", "Ws", true},
+            { esp.Whs_d,         esp.nvi*esp.point_num,  "RK Whs", "Whs", true},
+            { esp.pressurek_d,   esp.nv*esp.point_num,   "RK pressurek", "pk", true},
+            { esp.Rhok_d,        esp.nv*esp.point_num,   "RK Rhok", "Rhok", true},
+            { esp.Mhk_d,         esp.nv*esp.point_num*3, "RK Mhk", "Mhk", true},
+            { esp.Wk_d,          esp.nv*esp.point_num,   "RK Wk", "Wk", true},
+            { esp.Whk_d,         esp.nvi*esp.point_num,  "RK Whk", "Whk", true},
+        };
+
+    // allocate temporary buffer
+    int max_size = 0;
+    
+    for (auto & def : output_definitions)
+    {
+        if (def.size > max_size)
+            max_size = def.size;
+    }
+    
+    mem_buf = std::unique_ptr<double[]>(new double[max_size], std::default_delete<double[]>());
+        
+    output_defined = true;
+}
+
+
 void binary_test::output_reference(ESP & esp,
                                    const string & iteration,
                                    const string & ref_name) {  
         // open file
         string output_name = output_dir + output_base_name
         + ref_name + "_" + iteration + ".h5";
-    
-        esp.CopyToHost();
+
+        init_output_data(esp);
         
         storage s(output_name);
-        
-        s.append_table(esp.Rho_h,
-                       esp.nv*esp.point_num,
-                       "Density",
-                       "kg/m^3");
-        
-        s.append_table(esp.pressure_h,
-                       esp.nv*esp.point_num,
-                       "Pressure",
-                       "Pa");
-        
-        s.append_table(esp.Mh_h,
-                       esp.nv*esp.point_num*3,
-                       "Horizontal Momentum",
-                       "kg m/s");
-        
-        s.append_table(esp.Wh_h,
-                       esp.nvi*esp.point_num,
-                       "Vertical Momentum",
-                       "kg m/s");
+
+        for (auto & def : output_definitions)
+        {
+            // copy data to host if needed
+            // and write it to the output file
+            if (def.device_ptr)
+            {
+                esp.getDeviceData(def.data, mem_buf.get(), def.size * sizeof(double));
+                s.append_table(mem_buf.get(),
+                               def.size,
+                               def.name,
+                               "-");
+            }
+            else
+                s.append_table(def.data,
+                               def.size,
+                               def.name,
+                               "-");
+        }
+
 }
 
 void binary_test::output_reference_grid(Icogrid & grid) {
@@ -102,7 +144,7 @@ void binary_test::output_reference_grid(Icogrid & grid) {
         + "_grid.h5";    
         
     storage s(output_name);
-        
+
     s.append_table(grid.point_xyz,
                    grid.point_num*3,
                    "xyz",
@@ -210,48 +252,48 @@ bool binary_test::compare_to_reference(ESP & esp,
         string output_name = output_dir + output_base_name
         + ref_name + "_" + iteration + ".h5";
 
-            
-        esp.CopyToHost();
-
         storage s(output_name, true);
 
-        //cout << "opening " << output_name << endl;
         
-        bool density_comp = compare_to_saved_data(s,
-                                                  "Density",
-                                                  esp.Rho_h,
-                                                  esp.nv*esp.point_num);
+
+        init_output_data(esp);
         
-            
-        bool pressure_comp = compare_to_saved_data(s,
-                                                  "Pressure",
-                                                   esp.pressure_h,
-                                                   esp.nv*esp.point_num);
-
-        bool h_momentum_comp = compare_to_saved_data(s,
-                                                     "Horizontal Momentum",
-                                                     esp.Mh_h,
-                                                     esp.nv*esp.point_num*3);
-         
-
-        bool v_momentum_comp = compare_to_saved_data(s,
-                                                     "Vertical Momentum",
-                                                     esp.Wh_h,
-                                                     esp.nvi*esp.point_num);
-
-        if (! (density_comp && pressure_comp && h_momentum_comp && v_momentum_comp ))
+        bool out = true;
+        std::ostringstream oss;
+        oss << std::left << std::setw(50) << output_name;
+        oss  << std::setw(6) << iteration << " ref: " << std::setw(30) << ref_name;
+        
+        for (auto & def : output_definitions)
         {
-            cout << iteration << "\tref:\t" << ref_name 
-                 << "\trho: " << density_comp
-                 << "\tP: " << pressure_comp
-                 << "\tM_h: " << h_momentum_comp
-                 << "\tM_v: " << v_momentum_comp << endl;
-            return false;
+            bool comp = false;
+            
+            // copy data to host if needed
+            // and write it to the output file
+            if (def.device_ptr)
+            {
+                esp.getDeviceData(def.data, mem_buf.get(), def.size * sizeof(double));
+                comp = compare_to_saved_data(s, def.name, mem_buf.get(), def.size);
+            }
+            else
+            {
+                comp = compare_to_saved_data(s, def.name, def.data, def.size);
+            }
+
+            oss << " " << def.short_name <<": " << comp;
+            out &= comp;
+            
+            
         }
-        else
-            return true;
         
+                                              
+                                              
+                                              
+            
+
+//        if (!out )
+            cout << oss.str() << endl;
         
+        return out;
 }
 
 

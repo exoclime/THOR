@@ -48,12 +48,12 @@
 // compare benchmark point to references
 //#define BENCH_POINT_COMPARE
 // write reference benchmark point
-// #define BENCH_POINT_WRITE
+//#define BENCH_POINT_WRITE
 
 
- // path to benchmark re
+// path to benchmark result directory
 #define BENCHMARK_DUMP_REF_PATH   "results/ref/"
 #define BENCHMARK_DUMP_BASENAME   "bindata_"
 
-#include "binary_test.h"
+
 

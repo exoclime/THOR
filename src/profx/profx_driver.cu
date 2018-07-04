@@ -51,6 +51,9 @@
 #include "../headers/phy/apocalypse_sponge.h"
 #include "../headers/phy/profx_RT.h"
 
+#include "binary_test.h"
+
+
 __host__ void ESP::ProfX(int    planetnumber, // Planet ID
                          int    nstep       , // Step number
                          int    hstest      , // Held-Suarez test option
@@ -65,6 +68,7 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
                          double Gravit      , // Gravity [m/s^2]
                          double A           ,// Planet radius [m]
                          bool   sponge      ){
+    USE_BENCHMARK()
 //
 //  Number of threads per block.
     const int NTH = 256;
@@ -116,6 +120,8 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
                                          Rd           ,
                                          Cp           ,
                                          point_num    );
+    
+    BENCH_POINT_I(*this, current_step, "phy_T")
 //  Check for nan.
 
 
@@ -194,7 +200,7 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
     }
 //
 ////////////////////////
-
+    
     if(planetnumber != 1){
         printf("Planet value incorrect! (see in file planet.h)");
         exit(EXIT_FAILURE);
@@ -235,7 +241,7 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
                                        A             );
         // isnan_loop <<< 1, 1 >>> (temperature_d, point_num, nv);
     }
-
+    BENCH_POINT_I(*this, current_step, "phy_hstest")
 //  Computes the new pressures.
     cudaDeviceSynchronize();
     Compute_pressure <<< NB, NTH >>> (pressure_d   ,
@@ -244,7 +250,16 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
                                       Rd           ,
                                       point_num    );
 
-
+#ifdef BENCHMARKING
+    // recompute temperature from pressure and density, to avoid rounding issues when comparing
+    Compute_temperature_only <<< NB, NTH >>> (temperature_d,
+                                              pressure_d   ,
+                                              Rho_d        ,
+                                              Rd           ,
+                                              point_num    );
+#endif // BENCHMARKING
+    
+    BENCH_POINT_I(*this, current_step, "phy_END")
 //
 //END OF INTEGRATION
 //

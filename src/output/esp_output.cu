@@ -47,9 +47,15 @@
 #include <stdio.h>              
 #include <stdlib.h>             
 #include <string>             
-#include "../headers/esp.h"
+#include "esp.h"
 #include "hdf5.h"
 #include "storage.h"
+
+
+__host__ void ESP::getDeviceData(double * device, double * host, int size)
+{
+    cudaMemcpy(host, device, size, cudaMemcpyDeviceToHost);
+}
 
 
 __host__ void ESP::CopyToHost(){
@@ -64,6 +70,7 @@ __host__ void ESP::CopyToHost(){
 }
 
 __host__ void ESP::Output(int    ntstep         , // Number of integration steps
+                          int    fidx           , // Index of output file
                           double Cp             , // Specific heat capacities [J/(Kg K)]
                           double Rd             , // Gas constant [J/(Kg K)]
                           double Omega          , // Rotation rate [s-1]
@@ -260,9 +267,12 @@ __host__ void ESP::Output(int    ntstep         , // Number of integration steps
     }       
        
 //  ESP OUTPUT
-    sprintf(FILE_NAME1, "%s/esp_output_%s_%d.h5", output_dir.c_str(), simulation_ID, ntstep);
+    sprintf(FILE_NAME1, "%s/esp_output_%s_%d.h5", output_dir.c_str(), simulation_ID, fidx);
     file_id = H5Fcreate(FILE_NAME1, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
-       
+
+    // step index
+    write_int_value_to_h5file(file_id, "/nstep", ntstep, "Step number", "-" );
+    
 //  Simulation time
     dims[0] = 1; 
     double simulation_time_a[]           = {simulation_time};

@@ -48,6 +48,8 @@
 #include <math.h>
 
 #include <string>
+#include "debug.h"
+
 
 class ESP{
 
@@ -151,7 +153,7 @@ public:
     double *Mhk_d         ;
     double *Wk_d          ;
     double *Whk_d         ;
-
+    
     double *v_d           ;
     double *pt_d          ;
     double *pth_d         ;
@@ -249,6 +251,7 @@ public:
                        double mu                ,
                        double Rd                ,
                        bool sponge              ,
+                       int & nsteps             ,
                        double & simulation_start_time,
                        int & output_file_idx);
     
@@ -294,6 +297,7 @@ public:
     void CopyToHost();
 
     void Output(int   ,
+                int   ,
                 double,
                 double,
                 double,
@@ -305,6 +309,9 @@ public:
                 char* ,
                 double,
                 const std::string & output_dir);
+
+    void getDeviceData(double * device, double * host, int size);
+    
 
     ~ESP();
 };

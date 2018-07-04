@@ -45,14 +45,13 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
-#include "../headers/esp.h"
+#include "esp.h"
 #include "hdf5.h"
 #include <stdio.h>
 #include "storage.h"
 #include "directories.h"
 
 #include <map>
-
 
 __host__ ESP::ESP(int *point_local_    ,
                   int *maps_           ,
@@ -255,12 +254,13 @@ __host__ bool ESP::InitialValues(bool rest          ,
                                  double mu          ,
                                  double Rd          ,
                                  bool sponge        ,
+                                 int & nstep        ,
                                  double & simulation_start_time,
                                  int & output_file_idx){
 
     output_file_idx = 0;
-    
-//  Set initial conditions.
+    nstep = 0;
+    //  Set initial conditions.
 //
 //
 //  Initial atmospheric conditions
@@ -319,7 +319,7 @@ __host__ bool ESP::InitialValues(bool rest          ,
                 return false;                
             }
             
-            output_file_idx = file_number + 1;
+            output_file_idx = file_number;
             
             planet_filename = p.parent() + "/esp_output_planet_" + basename + ".h5";
         }
@@ -390,9 +390,11 @@ __host__ bool ESP::InitialValues(bool rest          ,
         //      Restart from an existing simulation.
         {
             
-            // Load athmospheric data
+            // Load atmospheric data
             hid_t       file_id;
             file_id = H5Fopen(initial_conditions_filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
+            // Step number
+            load_OK &= load_int_value_from_h5file(file_id, "/nstep",  nstep);
             //      Density
             load_OK &= load_double_table_from_h5file(file_id, "/Rho",  Rho_h, point_num*nv);
 
@@ -412,13 +414,13 @@ __host__ bool ESP::InitialValues(bool rest          ,
 
         if (!load_OK)
             return false;
-        
-        for(int lev = 0; lev < nv+1; lev++)
-            for(int i = 0; i < point_num; i++)
+
+        for(int i = 0; i < point_num; i++)
+            for(int lev = 0; lev < nv; lev++)
                 temperature_h[i*nv + lev] = pressure_h[i*nv + lev]/(Rd*Rho_h[i*nv + lev]);
 
         for(int i = 0; i < point_num; i++){
-            for(int lev = 1; lev < nv; lev++){
+            for(int lev = 0; lev < nv; lev++){
                 double xi  = Altitude_h[lev  ] ;
                 double xim1= Altitudeh_h[lev ] ;
                 double xip1= Altitudeh_h[lev +1  ] ;
@@ -430,8 +432,12 @@ __host__ bool ESP::InitialValues(bool rest          ,
             }
         }
     }
-
-
+#ifdef BENCHMARKING
+    // recompute temperature from pressure and density, to have correct rounding for binary comparison
+    for(int i = 0; i < point_num; i++)
+        for(int lev = 0; lev < nv; lev++)
+            temperature_h[i*nv + lev] = pressure_h[i*nv + lev]/(Rd*Rho_h[i*nv + lev]);
+#endif // BENCHMARKING
 //  Diffusion
 //  Horizontal
     double *Kdhz_h, *Kdh4_h;
