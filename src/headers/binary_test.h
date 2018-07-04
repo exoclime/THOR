@@ -100,6 +100,7 @@
   #define BENCH_POINT(esp, iteration, name)
   #define BENCH_POINT_I(esp, iteration, name)
   #define BENCH_POINT_I_S(esp, iteration, subiteration, name)
+  #define BENCH_POINT_I_SS(esp, iteration, subiteration, subsubiteration,  name)
   #define BENCH_POINT_GRID(grid)
 #endif // BENCHMARKING
 
