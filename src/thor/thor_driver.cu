@@ -53,6 +53,7 @@
 #include "../headers/dyn/thor_slowmodes.h"    // Slow terms.
 #include "../headers/dyn/thor_vertical_int.h" // Vertical momentum.
 
+
 #include "binary_test.h"
 
 __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
@@ -95,8 +96,16 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
     cudaMemcpy(Rhok_d      , Rho_d      , point_num * nv *     sizeof(double), cudaMemcpyDeviceToDevice);
     cudaMemcpy(pressurek_d , pressure_d , point_num * nv *     sizeof(double), cudaMemcpyDeviceToDevice);
 
+
+    cudaMemset(Mhs_d       , 0, sizeof(double) * 3*point_num * nv);
+    cudaMemset(Rhos_d      , 0, sizeof(double) * point_num * nv)  ;
+    cudaMemset(Whs_d       , 0, sizeof(double) * point_num * nvi) ;
+    cudaMemset(Ws_d        , 0, sizeof(double) * point_num * nv)  ;
+    cudaMemset(pressures_d , 0, sizeof(double) * point_num * nv)  ;
+
     USE_BENCHMARK()
 
+    BENCH_POINT_I(*this, current_step, "thor_init")
 //  Loop for large time integration.
     for(int rk = 0; rk < 3; rk++){
 //      Local variables to define the length (times) and the number of the small steps (ns_it).
@@ -107,12 +116,19 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
         if(rk == 0) times = timestep_dyn/3.0      ;
         if(rk == 1) times = timestep_dyn/ns_totald;
         if(rk == 2) times = timestep_dyn/ns_totald;
+
+        // initialise some memory
+
 //
 //      Compute advection and coriolis terms.
-        cudaMemset(Adv_d, 0, sizeof(double) * 3 * point_num * nv); // Sets every value of Adv_d to zero.
+        cudaMemset(Adv_d, 0, sizeof(double) * 3 * point_num * nv); // Sets every value of Adv_d to
+                                                                   // zero.
         cudaDeviceSynchronize();
+        
+
+            
         Compute_Advec_Cori1<LN,LN><<<NB,NT>>>(Adv_d      ,
-                                               v_d        ,
+                                              v_d        ,
                                               Mhk_d      ,
                                               div_d      ,
                                               Wk_d       ,
@@ -157,7 +173,7 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
 //      Computes temperature, internal energy, potential temperature and effective gravity.
         cudaDeviceSynchronize();
 
-        BENCH_POINT_I(*this, current_step, "Compute_Advec_Cori")
+        BENCH_POINT_I_S(*this, current_step, rk, "Compute_Advec_Cori")
 
         Compute_Temperature_H_Pt_Geff <<< (point_num / NTH) + 1, NTH >>> (temperature_d,
                                                                           pressurek_d  ,
@@ -443,14 +459,8 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
         //    exit(EXIT_FAILURE);
         // }
 
-        if (rk == 0){
-            cudaMemset(Mhs_d       , 0, sizeof(double) * 3*point_num * nv);
-            cudaMemset(Rhos_d      , 0, sizeof(double) * point_num * nv)  ;
-            cudaMemset(Whs_d       , 0, sizeof(double) * point_num * nvi) ;
-            cudaMemset(Ws_d        , 0, sizeof(double) * point_num * nv)  ;
-            cudaMemset(pressures_d , 0, sizeof(double) * point_num * nv)  ;
-        }
-        else{
+        if (rk > 0)
+        {
             cudaDeviceSynchronize();
             UpdateRK <<< (point_num / NTH) + 1, NTH >>> (Mhs_d      ,
                                                          Mhk_d      ,
@@ -583,7 +593,7 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
 //          Vertical Momentum
             cudaDeviceSynchronize();
 
-            BENCH_POINT_I_S(*this, current_step, ns, "Momentum_Eq")
+            BENCH_POINT_I_SS(*this, current_step, rk, ns, "Momentum_Eq")
 
             Prepare_Implicit_Vertical <LN,LN>  <<<NB, NT >>>(Mhs_d         ,
                                                              h_d           ,
@@ -645,7 +655,7 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
 //          Pressure and density equations.
             cudaDeviceSynchronize();
 
-            BENCH_POINT_I_S(*this, current_step, ns, "Vertical_Eq")
+            BENCH_POINT_I_SS(*this, current_step, rk, ns, "Vertical_Eq")
 
             Density_Pressure_Eqs <LN,LN>  <<<NB, NT >>>(pressures_d,
                                                         pressurek_d,
@@ -725,7 +735,7 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
                                                      point_num  ,
                                                      nv         );
 
-        BENCH_POINT_I(*this, current_step, "RK2")
+        BENCH_POINT_I_S(*this, current_step, rk, "RK2")
     }
 //  Update diagnostic variables.
     cudaDeviceSynchronize();

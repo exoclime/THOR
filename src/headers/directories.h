@@ -42,9 +42,69 @@
 ////////////////////////////////////////////////////////////////////////
 
 #include <string>
+#include <vector>
+
 using namespace std;
 
+vector<string> get_files_in_directory(const string & dir_name);
+
+bool match_output_file_numbering_scheme(const string & file_path, string & basename, int & number );
 
 bool create_output_dir(const string & output_dir);
 
 bool path_exists(const string & path);
+
+
+class path
+{
+public:
+    path(const string & path);
+
+    bool is_absolute() 
+    {
+        return is_absolute_path;
+    }
+
+    // last file extension separated by a '.'
+    string suffix();
+    // vector of file extensions separated by a '.' 
+    vector<string> suffixes();
+    // parts
+    vector<string> parts();
+    
+    // final part of the path
+    string name();
+    // final part of path, without suffix
+    string stem();
+
+    // parent of last element
+    string parent();
+
+    string to_string();
+    const char * c_str();
+    
+    
+    path& operator/=(const string& rhs) // compound assignment (does not need to be a member,
+    {                           // but often is, to modify the private members)
+        elements.push_back(rhs);
+    
+        return *this; // return the result by reference
+    }
+ 
+    // friends defined inside class body are inline and are hidden from non-ADL lookup
+    friend path operator/(path lhs,        // passing lhs by value helps optimize chained a+b+c
+                          const string& rhs) // otherwise, both parameters may be const references
+    {
+        lhs /= rhs; // reuse compound assignment
+        return lhs; // return the result by value (uses move constructor)
+    }
+    
+private:
+
+    string element_name;
+    vector<string> elements;
+
+    bool is_absolute_path = false;
+    
+};
+

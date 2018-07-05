@@ -43,6 +43,20 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
+__global__ void Compute_temperature_only (double *temperature_d,
+                                     double *pressure_d   ,
+                                     double *Rho_d        ,
+                                     double  Rd           ,
+                                     int     num          ){
+
+    int id = blockIdx.x * blockDim.x + threadIdx.x;
+    int nv = gridDim.y;
+    int lev = blockIdx.y;
+
+    // Computes absolute temperature
+    if(id < num) temperature_d[id*nv + lev] = pressure_d[id*nv + lev]/(Rd*Rho_d[id*nv + lev]);
+}
+
 __global__ void Compute_temperature (double *temperature_d,
                                      double *pt_d         ,
                                      double *pressure_d   ,

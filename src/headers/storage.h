@@ -56,6 +56,55 @@ using std::endl;
 using std::string;
 using namespace H5;
 
+
+bool write_double_value_to_h5file(hid_t       file_id,
+                                   const string & tablename,
+                                  const double & out_value,
+                                  const string & name,
+                                  const string & unit );
+
+    
+bool write_double_table_to_h5file(hid_t       file_id,
+                                  const string & tablename,
+                                  double * double_table,
+                                  int size,
+                                  const string & name,
+                                  const string & unit);
+
+    
+bool load_double_table_from_h5file(hid_t       file_id,
+                                   const string & tablename,
+                                   double * double_table,
+                                   int expected_size );
+
+bool load_double_value_from_h5file(hid_t       file_id,
+                                   const string & tablename,
+                                   double & out_value);
+
+bool write_int_value_to_h5file(hid_t       file_id,
+                               const string & tablename,
+                               const int & out_value,
+                               const string & name,
+                               const string & unit );
+
+    
+bool write_int_table_to_h5file(hid_t       file_id,
+                               const string & tablename,
+                               int * double_table,
+                               int size,
+                               const string & name,
+                               const string & unit);
+
+    
+bool load_int_table_from_h5file(hid_t       file_id,
+                                const string & tablename,
+                                int * double_table,
+                                int expected_size );
+
+bool load_int_value_from_h5file(hid_t       file_id,
+                                const string & tablename,
+                                int & out_value);
+    
 class storage
 {
 public:
@@ -222,12 +271,12 @@ bool storage::read_table(const string & name,
             DataSpace dataspace = dataset.getSpace();
             // get dimensions and rank
             int rank = dataspace.getSimpleExtentNdims();
-            hsize_t dims_out[1];
+            hsize_t dims_out[1] = {0};
             if (rank == 1)
             {
                 
                 
-                // int ndims = dataspace.getSimpleExtentDims( dims_out, NULL);
+                dataspace.getSimpleExtentDims( dims_out, NULL);
                 // cout << "rank " << rank << ", dimensions " <<
                 //    (unsigned long)(dims_out[0]) << " x " << endl;
             }

@@ -158,7 +158,8 @@ set(SRC_GRID
   src/grid/grid.cu
   src/test/grid_test.cpp
   src/output/storage.cpp
-  src/devel/binary_test.cpp)
+  src/devel/binary_test.cpp
+  src/files/directories.cpp)
 
 set(SRC_CONFIG
   src/test/config_test.cpp

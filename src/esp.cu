@@ -57,13 +57,13 @@ using namespace std;
 #include "headers/define.h"
 #include "headers/grid.h"
 #include "headers/planet.h"
-#include "headers/esp.h"
-
-#include "debug.h"
+#include "esp.h"
 
 #include "config_file.h"
 #include "cmdargs.h"
 #include "directories.h"
+
+#include "binary_test.h"
 
 int main (int argc,  char** argv){
 
@@ -92,10 +92,21 @@ int main (int argc,  char** argv){
     argparser.add_arg("o", "output_dir", string("results"), "results directory to store output");
 
     argparser.add_arg("i", "initial", string("initialfilename"), "start from this initial condition instead of rest");
+    argparser.add_arg("c", "continue", string("continuefilename"), "continue simulation from this output file");
     argparser.add_arg("N", "numsteps", 48000, "number of steps to run");
+    argparser.add_arg("w", "overwrite", true, "Force overwrite of output file if they exist");
+    
 
-    // Parse arguments
-    argparser.parse(argc, argv);
+    // Parse arguments, exit on fail
+    bool parse_ok = argparser.parse(argc, argv);
+    if (!parse_ok)
+    {
+        printf("error parsing arguments\n");
+        
+        argparser.print_help();
+        exit(-1);
+    }
+    
 
     // get config file path if present in argument
     string config_filename = "";
@@ -192,8 +203,8 @@ int main (int argc,  char** argv){
     double Tstar            = 4520;       // Star effective temperature [K]
     double planet_star_dist = 0.015;      // Planet-star distance [au]
     double radius_star      = 0.667;      // Star radius [Rsun]
-  	double diff_fac         = 0.5;        // Diffusivity factor: 0.5-1.0
-  	double Tlow             = 970;        // Lower boundary temperature: upward flux coming from the planet's interior
+    double diff_fac         = 0.5;        // Diffusivity factor: 0.5-1.0
+    double Tlow             = 970;        // Lower boundary temperature: upward flux coming from the planet's interior
     double albedo           = 0.18;       // Bond albedo
     double tausw            = 532.0;      // Absorption coefficient for the shortwaves
     double taulw            = 1064.0;     // Absorption coefficient for the longwaves
@@ -238,19 +249,53 @@ int main (int argc,  char** argv){
         output_path = output_dir_arg;
 
     string inital_conditions_arg;
-
+    bool initial_condition_arg_set = false;
+    
+    
     if (argparser.get_arg("initial", inital_conditions_arg))
     {
         rest = false;
         initial_conditions = inital_conditions_arg;
-
+        initial_condition_arg_set = true;
+        
         if (!path_exists(initial_conditions))
         {
-            printf("Initial conditions file \"%s\" not found", initial_conditions.c_str());
+            printf("Initial conditions file \"%s\" not found\n", initial_conditions.c_str());
             exit(-1);
         }
     }
 
+    string continue_filename = "";
+    bool continue_sim = false;
+    
+    
+    if (argparser.get_arg("continue", continue_filename))
+    {
+        rest = false;
+        continue_sim = true;
+
+        if (initial_condition_arg_set)
+        {
+            printf("--continue and --initial options set, must set only one\n");
+            
+            exit(-1);
+        }
+                
+        if (!path_exists(continue_filename))
+        {
+            printf("Continuation start condition file \"%s\" not found\n", continue_filename.c_str());
+            exit(-1);
+        }
+
+        initial_conditions = continue_filename;
+    }
+
+    bool force_overwrite_arg = false;
+    bool force_overwrite = false;
+    
+    if (argparser.get_arg("overwrite", force_overwrite_arg))
+        force_overwrite = force_overwrite_arg;
+    
     int nsmax_arg;
     if (argparser.get_arg("numsteps", nsmax_arg))
         nsmax = nsmax_arg;
@@ -284,8 +329,6 @@ int main (int argc,  char** argv){
 
         config_OK = false;
     }
-
-
 
     if (!config_OK)
     {
@@ -337,7 +380,12 @@ int main (int argc,  char** argv){
            Grid.nr            , // Number of rhombi
            Grid.nv            , // Number of vertical layers
            Grid.nvi           , // Number of interfaces between layer
-           nlat               , // Number of latitude rings for zonal mean wind
+           glevel             , // Horizontal resolution level
+           spring_dynamics    , // Spring dynamics option
+           spring_beta        , // Parameter beta for spring dynamics
+           nlat               , // Number of latitude rings for zonal
+                                // mean wind
+           Grid.zonal_mean_tab, // table of zonal means for sponge layer
            Rv_sponge          , // Maximum damping of sponge layer
            ns_sponge          , // lowest level of sponge layer (fraction of model)
            Grid.point_num     );// Number of grid points
@@ -346,32 +394,50 @@ int main (int argc,  char** argv){
 
     BENCH_POINT_GRID(Grid);
 
-   printf(" Setting the initial conditions.\n\n");
-
-   double simulation_start_time = 0.0;
-
-// Initial conditions
-   X.InitialValues(rest         , // Option to start the atmosphere
-                                  // from rest
-                   initial_conditions, // initial conditions if not
-                                       // started from rest
-                   glevel       , // Horizontal resolution level
-                   timestep     , // Time-step [s]
-                   Planet.A     , // Planet radius [m]
-                   Planet.Cp    , // Specific heat capacity [J /(kg K)]
-                   Planet.P_Ref , // Reference pressure [Pa]
-                   Planet.Gravit, // Gravity [m/s^2]
-                   Planet.Omega , // Rotation rate [1/s]
-                   Planet.Diffc , // Strength of diffusion
-                   kb           , // Boltzmann constant [J/kg]
-                   Planet.Tmean , // Isothermal atmosphere (at temperature Tmean)
-                   Planet.Mmol  , // Mean molecular mass of dry air [kg]
-                   mu           , // Atomic mass unit [kg]
-                   Planet.Rd    ,// Gas constant [J/kg/K]
-                   Grid.zonal_mean_tab,
-                   SpongeLayer,
-                 simulation_start_time );
-
+    printf(" Setting the initial conditions.\n\n");
+    
+    double simulation_start_time = 0.0;
+    
+    // Initial conditions
+    int output_file_idx = 0;
+    int step_idx = 0;
+    
+    bool load_initial = X.InitialValues(rest         , // Option to
+                                                       // start the
+                                                       // atmosphere
+                                                       // from rest
+                                        initial_conditions, // initial conditions if not
+                                                       // started from
+                                                       // rest
+                                        continue_sim , // if we
+                                                       // specify
+                                                       // initial
+                                                       // conditions,
+                                                       // continue or
+                                                       // start at 0?
+                                        timestep     , // Time-step [s]
+                                        Planet.A     , // Planet
+                                                       // radius [m]
+                                        Planet.Top_altitude, // Planet
+                                                             // top altitude
+                                        Planet.Cp    , // Specific heat capacity [J /(kg K)]
+                                        Planet.P_Ref , // Reference pressure [Pa]
+                                        Planet.Gravit, // Gravity [m/s^2]
+                                        Planet.Omega , // Rotation rate [1/s]
+                                        Planet.Diffc , // Strength of diffusion
+                                        kb_constant  , // Boltzmann constant [J/kg]
+                                        Planet.Tmean , // Isothermal atmosphere (at temperature Tmean)
+                                        Planet.Mmol  , // Mean molecular mass of dry air [kg]
+                                        mu_constant  , // Atomic mass unit [kg]
+                                        Planet.Rd    , // Gas constant [J/kg/K]
+                                        SpongeLayer  , // Enable sponge layer
+                                        step_idx     , // current step index
+                                        simulation_start_time, // output:
+                                                               // simulation start time
+                                        output_file_idx); // output file
+                                                          // read + 1, 0
+                                                          // if nothing read
+    
     if (hstest == 0) {
       X.RTSetup(Tstar            ,
                 planet_star_dist ,
@@ -383,6 +449,55 @@ int main (int argc,  char** argv){
                 taulw            );
     }
 
+    if (!load_initial)
+    {
+        printf("error loading initial conditions from %s.\n", initial_conditions.c_str());
+        return -1;       
+    }
+
+    // Check presence of output files
+    path results(output_path);
+
+    // Get the files in the directory
+    vector<string> result_files = get_files_in_directory(results.to_string());
+
+    // match them to name pattern, get file numbers and check numbers that are greater than the
+    // restart file number
+    vector<pair<string,int>> matching_name_result_files;
+    for (const auto & r : result_files)
+    {
+        string basename = "";
+        int file_number = 0;
+        if (match_output_file_numbering_scheme(r, basename, file_number))
+        {
+            if (basename == simulation_ID && file_number > output_file_idx)
+                matching_name_result_files.emplace_back(r, file_number);
+        }
+    }
+    // sort them by number
+    std::sort(matching_name_result_files.begin(),
+              matching_name_result_files.end(),
+              [](const std::pair<string,int> &left, const std::pair<string,int> &right) {
+                  return left.second < right.second;
+              });
+    
+    if (matching_name_result_files.size() > 0)
+    {
+        if (!force_overwrite)
+        {
+            printf("output files already exist and would be overwritten \n"
+                   "when running simulation. \n"
+                   "Files found:\n");
+            for (const auto & f: matching_name_result_files)
+                printf("\t%s\n", f.first.c_str());
+            
+            printf(" Aborting. \n"
+                   "use --overwrite to overwrite existing files.\n");
+            return -1;
+        }
+    }
+    
+    
     long startTime = clock();
 
 //
@@ -424,7 +539,7 @@ int main (int argc,  char** argv){
     printf("   ********** \n");
     printf("   Grid - Icosahedral\n");
     printf("   Glevel          = %d.\n", glevel);
-    printf("   Spring dynamics = %d.\n",spring_dynamics);
+    printf("   Spring dynamics = %d.\n", spring_dynamics);
     printf("   Beta            = %f.\n", spring_beta);
     printf("   Resolution      = %f deg.\n", (180/M_PI)*sqrt(2*M_PI/5)/pow(2,glevel));
     printf("   Vertical layers = %d.\n",Grid.nv);
@@ -441,34 +556,47 @@ int main (int argc,  char** argv){
     if (!rest)
         printf("   Loading initial conditions from = %s \n", initial_conditions.c_str());
     printf("   Output directory = %s \n", output_path.c_str());
-
+    printf("   Start output numbering at %d.\n", output_file_idx);
 
 //
 //  Writes initial conditions
     double simulation_time = simulation_start_time;
-    X.Output(0                   ,
-             Planet.Cp           , // Specific heat capacity [J/(Kg K)]
-             Planet.Rd           , // Gas constant [J/(Kg K)]
-             Planet.Omega        , // Rotation rate [s-1]
-             Planet.Gravit       , // Gravitational acceleration [m/s2]
-             Planet.Mmol         , // Mean molecular mass of dry air [kg]
-             Planet.P_Ref        , // Reference surface pressure [Pa]
-             Planet.Top_altitude , // Top of the model's domain [m]
-             Planet.A            , // Planet Radius [m]
-             Planet.simulation_ID, // Simulation ID (e.g., "Earth")
-             simulation_time     , // Time of the simulation [s]
-             output_path);         // directory to save output
-
-//
+    if (!continue_sim)
+    {
+        X.Output(0                   , // file index
+                 0                   , // step index
+                 Planet.Cp           , // Specific heat capacity [J/(Kg K)]
+                 Planet.Rd           , // Gas constant [J/(Kg K)]
+                 Planet.Omega        , // Rotation rate [s-1]
+                 Planet.Gravit       , // Gravitational acceleration [m/s2]
+                 Planet.Mmol         , // Mean molecular mass of dry air [kg]
+                 Planet.P_Ref        , // Reference surface pressure [Pa]
+                 Planet.Top_altitude , // Top of the model's domain [m]
+                 Planet.A            , // Planet Radius [m]
+                 Planet.simulation_ID, // Simulation ID (e.g., "Earth")
+                 simulation_time     , // Time of the simulation [s]
+                 output_path);         // directory to save output
+        output_file_idx = 1;
+        step_idx = 1;
+    }
+    else
+    {
+        output_file_idx += 1;
+        step_idx += 1;
+    }
+    
+    
+// *********************************************************************************************    
 //  Starting model Integration.
     printf(" Starting the model integration.\n\n");
 
 //
 //  Main loop. nstep is the current step of the integration and nsmax the maximum
 //  number of steps in the integration.
-    for(int nstep = 1; nstep <= nsmax; ++nstep){
+    for(int nstep = step_idx; nstep <= nsmax; ++nstep){
+        // store step number for file comparison tests
         X.current_step = nstep;
-
+        
 //
 //      Dynamical Core Integration (THOR)
         X.Thor (timestep     , // Time-step [s]
@@ -478,8 +606,8 @@ int main (int argc,  char** argv){
                 Planet.Cp    , // Specific heat capacity [J/kg/K]
                 Planet.Rd    , // Gas constant [J/kg/K]
                 Planet.Mmol  , // Mean molecular mass of dry air [kg]
-                mu           , // Atomic mass unit [kg]
-                kb           , // Boltzmann constant [J/K]
+                mu_constant  , // Atomic mass unit [kg]
+                kb_constant  , // Boltzmann constant [J/K]
                 Planet.P_Ref , // Reference pressure [Pa]
                 Planet.Gravit, // Gravity [m/s^2]
                 Planet.A     , // Planet radius [m]
@@ -496,22 +624,23 @@ int main (int argc,  char** argv){
                Planet.Cp    , // Specific heat capacity [J/kg/K]
                Planet.Rd    , // Gas constant [J/kg/K]
                Planet.Mmol  , // Mean molecular mass of dry air [kg]
-               mu           , // Atomic mass unit [kg]
-               kb           , // Boltzmann constant [J/K]
+               mu_constant  , // Atomic mass unit [kg]
+               kb_constant  , // Boltzmann constant [J/K]
                Planet.P_Ref , // Reference pressure [Pa]
                Planet.Gravit, // Gravity [m/s^2]
-               Planet.A     ,// Planet radius [m]
+               Planet.A     , // Planet radius [m]
                SpongeLayer  );
 
        // compute simulation time
-       simulation_time = simulation_start_time + nstep*timestep;
+       simulation_time = simulation_start_time + (nstep - step_idx+1)*timestep;
        bool file_output = false;
 
 //
 //      Prints output every nout steps
         if(nstep % n_out == 0) {
             X.CopyToHost();
-            X.Output(nstep/n_out         ,
+            X.Output(nstep               ,
+                     output_file_idx     ,
                      Planet.Cp           , // Specific heat capacity [J/(Kg K)]
                      Planet.Rd           , // Gas constant [J/(Kg K)]
                      Planet.Omega        , // Rotation rate [s-1]
@@ -523,12 +652,15 @@ int main (int argc,  char** argv){
                      Planet.simulation_ID, // Planet ID
                      simulation_time     , // Simulation time [s]
                      output_path);         // Directory to save output
+            // increment output file index
+            output_file_idx++;
+            
             file_output = true;
 
         }
         printf("\n Time step number = %d || Time = %f days. %s",
                nstep,
-               nstep*timestep/86400.,
+               simulation_time/86400.,
                file_output?"saved output":"");
     }
 //
