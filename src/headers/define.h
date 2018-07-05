@@ -97,3 +97,5 @@
 #define tausw_default 532.0      // Absorption coefficient for the shortwaves
 #define taulw_default 1064.0     // Absorption coefficient for the longwaves
 #define output_path_default  "results"     // Output directory
+
+#define gcm_off_default false      //turns off fluid dynamical core for debugging physics

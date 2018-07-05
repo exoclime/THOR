@@ -3,13 +3,17 @@ import matplotlib.pyplot as plt
 import scipy.interpolate as interp
 import os
 import h5py
+import time
 
 plt.rcParams['image.cmap'] = 'magma'
 
 class input:
     def __init__(self,resultsf,simID):
         fileh5 = resultsf+'/esp_output_'+simID+'.h5'
-        openh5 = h5py.File(fileh5)
+        if os.path.exists(fileh5):
+            openh5 = h5py.File(fileh5)
+        else:
+            raise IOError(fileh5+' not found!')
         self.A = openh5['A'][...]  #'A' is the key for this dataset
         self.Rd = openh5['Rd'][...]  #[...] is syntax for "gimme all the data under this key"
         self.Omega = openh5['Omega'][...]
@@ -24,7 +28,10 @@ class input:
 class grid:
     def __init__(self,resultsf,simID):
         fileh5 = resultsf+'/esp_output_grid_'+simID+'.h5'
-        openh5 = h5py.File(fileh5)
+        if os.path.exists(fileh5):
+            openh5 = h5py.File(fileh5)
+        else:
+            raise IOError(fileh5+' not found!')
         self.Altitude = openh5['Altitude'][...]
         self.Altitudeh = openh5['Altitudeh'][...]
         self.areasT = openh5['areasT'][...]
@@ -49,7 +56,10 @@ class output:
         # Read model results
         for t in np.arange(ntsi-1,nts):
             fileh5 = resultsf+'/esp_output_'+simID+'_'+np.str(t+1)+'.h5'
-            openh5 = h5py.File(fileh5)
+            if os.path.exists(fileh5):
+                openh5 = h5py.File(fileh5)
+            else:
+                raise IOError(fileh5+' not found!')
             Rhoi = openh5['Rho'][...]
             Pressurei = openh5['Pressure'][...]
             Mhi = openh5['Mh'][...]
@@ -151,21 +161,45 @@ def u(input,grid,output,sigmaref):
     ZonalMi = np.zeros((grid.point_num,d_sig))
     ZonalM = np.zeros((d_lon[0],d_lon[1],d_sig,tsp))
 
+    ZonalMtemp = (output.Mh[0]*(-np.sin(grid.lon[:,None,None])) + \
+                output.Mh[1]*np.cos(grid.lon[:,None,None]))/output.Rho
+    # ZonalMtemp1 = np.vstack((ZonalMtemp[:,:,0],ZonalMtemp[:,:,1]))
+    #
+    # Ptemp = np.vstack((output.Pressure[:,:,0],output.Pressure[:,:,1]))
+    #
+    # y = np.arange(grid.point_num*tsp)
+    # x = np.arange(grid.nv)
+    # xx, yy = np.meshgrid(x,y)
+    # fint2d = interp.interp2d(Ptemp,yy,ZonalMtemp1)
+    # #ZonalMtemp2 = np.reshape(fint2d(Pref,Ptemp[:,0]),(grid.point_num,len(Pref),tsp))
+    # ZonalMtemp2 = fint2d(Pref,Ptemp[:,0])
+
     # Compute zonal Winds
+    beg = time.time()
+    # v = np.hstack((output.Pressure,ZonalMtemp))
     for t in np.arange(tsp):
         for i in np.arange(grid.point_num):
             sigma = output.Pressure[i,:,t]
-            for lev in np.arange(grid.nv):
-                ZonalMii[lev] = (output.Mh[0,i,lev,t]*(-np.sin(grid.lon[i])) + \
-                                 output.Mh[1,i,lev,t]*np.cos(grid.lon[i]) + \
-                                 output.Mh[2,i,lev,t]*(0))/output.Rho[i,lev,t]
+            # for lev in np.arange(grid.nv):
+            #     ZonalMii[lev] = (output.Mh[0,i,lev,t]*(-np.sin(grid.lon[i])) + \
+            #                      output.Mh[1,i,lev,t]*np.cos(grid.lon[i]) + \
+            #                      output.Mh[2,i,lev,t]*(0))/output.Rho[i,lev,t]
             # Interpolate atmospheric column to the reference pressure
-            ZonalMi[i,:] = interp.pchip_interpolate(sigma[::-1],ZonalMii[::-1],Pref[::-1])[::-1]
+            import pdb; pdb.set_trace()
+
+            ZonalMi[i,:] = interp.pchip_interpolate(sigma[::-1],ZonalMtemp[i,::-1,t],Pref[::-1])[::-1]
         # Convert icosahedral grid into lon-lat grid
         for lev in np.arange(d_sig):
             ZonalM[:,:,lev,t] = interp.griddata(np.vstack([grid.lon,grid.lat]).T,ZonalMi[:,lev],(loni,lati),method='nearest')
 
+    # plt.plot(Pref,ZonalMtemp2[0,:],'b-')
+    # # plt.plot(Pref,ZonalMi[0,:],'r-')
+    # plt.plot(output.Pressure[0,:,0],ZonalMtemp[0,:,0],'k.')
+    # plt.plot(Ptemp[0,:],ZonalMtemp1[0,:],'r-')
+    # plt.show()
     del ZonalMii, ZonalMi
+    end = time.time()
+    print(end-beg)
 
     # Averaging in time and longitude
     if tsp > 1:
@@ -871,21 +905,26 @@ def TPprof(input,grid,output,sigmaref,column):
 
     tsp = output.nts-output.ntsi+1
 
-    if tsp > 1:
-        P = np.mean(output.Pressure[column,:,:],axis=2)
-        T = np.mena(output.Pressure[column,:,:]/input.Rd/output.Rho[column,:,:],axis=2)
-    else:
-        P = output.Pressure[column,:,0]
-        T = output.Pressure[column,:,0]/input.Rd/output.Rho[column,:,0]
+    for column in np.arange(0,grid.point_num,50):
+        if tsp > 1:
+            P = np.mean(output.Pressure[column,:,:],axis=2)
+            T = np.mean(output.Pressure[column,:,:]/input.Rd/output.Rho[column,:,:],axis=2)
+        else:
+            P = output.Pressure[column,:,0]
+            T = output.Pressure[column,:,0]/input.Rd/output.Rho[column,:,0]
 
-    kappa = input.Rd/input.Cp
+        kappa = input.Rd/input.Cp
+
+        plt.semilogy(T,P/100,'k-',alpha= 0.5,lw=1)
 
     Tad = T[15]*(P/P[15])**kappa
 
-    plt.semilogy(T,P/100,'k-')
     plt.plot(Tad,P/100,'r--')
     plt.gca().invert_yaxis()
     plt.ylabel('Pressure (mbar)')
     plt.xlabel('Temperature [K]')
-    plt.savefig(input.resultsf+'/figures/TPprofile_col%05d_i%d_l%d.pdf'%(column,output.ntsi,output.nts))
+
+    if not os.path.exists(input.resultsf+'/figures'):
+        os.mkdir(input.resultsf+'/figures')
+    plt.savefig(input.resultsf+'/figures/TPprofile_i%d_l%d.pdf'%(output.ntsi,output.nts))
     plt.close()

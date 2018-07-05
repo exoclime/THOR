@@ -59,15 +59,15 @@ NonHydro = true
 # Deep atmosphere
 DeepModel = true
 # Initial conditions
-rest = true
+rest = false
 
 # initial conditions file, used if rest is set to false
 # (path relative to current working directory)
 # defaults to 'ifile/esp.initial.h5'
-initial = wasp43_results/esp_output_Wasp43b_711.h5
+initial = wasp43_sponge2/esp_output_Wasp43b_re.h5
 
 # Spongebob
-SpongeLayer = false
+SpongeLayer = true
 # latitude rings
 nlat = 20
 ns_sponge = 0.5
@@ -86,7 +86,7 @@ n_out = 10
 
 # output directory (relative to current working directory)
 # defaults to 'results'
-results_path = wasp43_nosponge
+results_path = wasp43_sponge2
 
 Tstar = 4520
 planet_star_dist = 0.015
@@ -94,3 +94,5 @@ radius_star = 0.667
 
 # GPU ID number
 GPU_ID_N = 0
+
+gcm_off = false

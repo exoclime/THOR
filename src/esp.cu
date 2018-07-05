@@ -215,6 +215,9 @@ int main (int argc,  char** argv){
     string output_path  = "results";
     config_reader.append_config_var("results_path", output_path, string(output_path_default));
 
+    bool gcm_off = false;
+    config_reader.append_config_var("gcm_off", gcm_off, gcm_off_default);
+
     //*****************************************************************
     // Read config file
 
@@ -469,9 +472,10 @@ int main (int argc,  char** argv){
     for(int nstep = 1; nstep <= nsmax; ++nstep){
         X.current_step = nstep;
 
+        if (!gcm_off) {
 //
-//      Dynamical Core Integration (THOR)
-        X.Thor (timestep     , // Time-step [s]
+//        Dynamical Core Integration (THOR)
+          X.Thor (timestep     , // Time-step [s]
                 HyDiff       , // Hyperdiffusion option
                 DivDampP     , // Divergence-damping option
                 Planet.Omega , // Rotation rate [1/s]
@@ -485,7 +489,7 @@ int main (int argc,  char** argv){
                 Planet.A     , // Planet radius [m]
                 NonHydro     , // Non-hydrostatic option
                 DeepModel    );// Deep model option
-
+          }
 //
 //     Physical Core Integration (ProfX)
        X.ProfX(planetnumber , // Planet ID
