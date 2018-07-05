@@ -505,6 +505,21 @@ int main (int argc,  char** argv){
 //  Device Information
     int ndevices;
     cudaGetDeviceCount(&ndevices);
+
+    if (ndevices < 1)
+    {
+        printf("No appropriate device found (SM:%d).\n", DEVICE_SM);
+        printf("Aborting.\n");
+        exit(-1);
+    }
+    
+    if ( GPU_ID_N > ndevices ) 
+    {
+        printf("Can't find requested GPU device ID: %d.\n", GPU_ID_N);
+        printf("Aborting.\n");
+        exit(-1);
+    }
+    
     for (int i = 0; i < ndevices; ++i) {
         // Get device properties
         printf("\n CUDA Device #%d\n", i);
