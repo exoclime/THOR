@@ -240,40 +240,42 @@ $(BINDIR)/$(TESTDIR)/storage_test:  $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_te
 .phony: clean,ar
 clean:
 	@echo $(CYAN)clean up binaries $(END)
-	-rm -f $(BINDIR)/debug/esp
-	-rm -f $(BINDIR)/release/esp
-	-rm -f $(BINDIR)/prof/esp
+	-$(RM) $(BINDIR)/debug/esp
+	-$(RM) $(BINDIR)/release/esp
+	-$(RM) $(BINDIR)/prof/esp
 	@echo $(CYAN)clean up objects files and dependencies $(END)
-	-rm -f $(addprefix $(OBJDIR)/debug/,$(obj)) $(obj:%.o=$(OBJDIR)/debug/%.d)
-	-rm -f $(addprefix $(OBJDIR)/release/,$(obj)) $(obj:%.o=$(OBJDIR)/release/%.d)
-	-rm -f $(addprefix $(OBJDIR)/prof/,$(obj)) $(obj:%.o=$(OBJDIR)/prof/%.d)
+	-$(RM) $(addprefix $(OBJDIR)/debug/,$(obj)) $(obj:%.o=$(OBJDIR)/debug/%.d)
+	-$(RM) $(addprefix $(OBJDIR)/release/,$(obj)) $(obj:%.o=$(OBJDIR)/release/%.d)
+	-$(RM) $(addprefix $(OBJDIR)/prof/,$(obj)) $(obj:%.o=$(OBJDIR)/prof/%.d)
 	@echo $(CYAN)clean up tests binaries $(END)
-	-rm -f $(BINDIR)/tests/cmdargs_test
-	-rm -f $(BINDIR)/tests/storage_test
-	-rm -f $(BINDIR)/tests/config_test
-	-rm -f $(BINDIR)/tests/directories_test
+	-$(RM) $(BINDIR)/tests/cmdargs_test
+	-$(RM) $(BINDIR)/tests/storage_test
+	-$(RM) $(BINDIR)/tests/config_test
+	-$(RM) $(BINDIR)/tests/directories_test
 	@echo $(CYAN)clean up test object files $(END)
-	-rm -f $(addprefix $(OBJDIR)/debug/,$(obj_tests_storage))
-	-rf -f $(addprefix $(OBJDIR)/debug/,$(obj_tests_config))
-	-rm -f $(addprefix $(OBJDIR)/debug/,$(obj_tests_cmdargs))
-	-rm -f $(addprefix $(OBJDIR)/debug/,$(obj_tests_directories))
+	-$(RM) $(addprefix $(OBJDIR)/debug/,$(obj_tests_storage))
+	-$(RM) $(addprefix $(OBJDIR)/debug/,$(obj_tests_config))
+	-$(RM) $(addprefix $(OBJDIR)/debug/,$(obj_tests_cmdargs))
+	-$(RM) $(addprefix $(OBJDIR)/debug/,$(obj_tests_directories))
 	@echo $(CYAN)clean up test dependencies $(END)
-	-rm -f $(obj_tests_cmdargs:%.o=$(OBJDIR)/debug/%.d)
-	-rm -f $(obj_tests_storage:%.o=$(OBJDIR)/debug/%.d)
-	-rm -f $(obj_tests_config:%.o=$(OBJDIR)/debug/%.d)
-	-rm -f $(obj_tests_directories:%.o=$(OBJDIR)/debug/%.d)
+	-$(RM) $(obj_tests_cmdargs:%.o=$(OBJDIR)/debug/%.d)
+	-$(RM) $(obj_tests_storage:%.o=$(OBJDIR)/debug/%.d)
+	-$(RM) $(obj_tests_config:%.o=$(OBJDIR)/debug/%.d)
+	-$(RM) $(obj_tests_directories:%.o=$(OBJDIR)/debug/%.d)
 	@echo $(CYAN)clean up symlink $(END)
-	-rm -f $(BINDIR)/esp
+	-$(RM) $(BINDIR)/esp
 	@echo $(CYAN)clean up directories $(END)
-	-rmdir $(BINDIR)/debug $(BINDIR)/release $(BINDIR)/prof
-	-rmdir $(BINDIR)/tests
-	-rmdir $(OBJDIR)/debug
-	-rmdir $(OBJDIR)/release
-	-rmdir $(OBJDIR)/prof
-
+	-$(RM) -d $(BINDIR)/debug $(BINDIR)/release $(BINDIR)/prof
+	-$(RM) -d $(BINDIR)/tests
+	-$(RM) -d $(OBJDIR)/debug
+	-$(RM) -d $(OBJDIR)/release
+	-$(RM) -d $(OBJDIR)/prof
+	-$(RM) -d $(BINDIR)
+	-$(RM) -d $(OBJDIR)
 
 #######################################################################
 # dependencies includes
+ifneq ($(MAKECMDGOALS),clean)
 ifeq "${MODE}" "tests"
 include $(obj_tests_config:%.o=$(OBJDIR)/$(OUTPUTDIR)/%.d)
 include $(obj_tests_cmdargs:%.o=$(OBJDIR)/$(OUTPUTDIR)/%.d)
@@ -281,4 +283,5 @@ include $(obj_tests_storage:%.o=$(OBJDIR)/$(OUTPUTDIR)/%.d)
 include $(obj_tests_directories:%.o=$(OBJDIR)/$(OUTPUTDIR)/%.d)
 else
 include $(obj:%.o=$(OBJDIR)/$(OUTPUTDIR)/%.d)
+endif
 endif
