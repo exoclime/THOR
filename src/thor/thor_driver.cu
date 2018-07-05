@@ -124,9 +124,9 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
         cudaMemset(Adv_d, 0, sizeof(double) * 3 * point_num * nv); // Sets every value of Adv_d to
                                                                    // zero.
         cudaDeviceSynchronize();
-        
 
-            
+
+        // Updates: Adv_d, v_d
         Compute_Advec_Cori1<LN,LN><<<NB,NT>>>(Adv_d      ,
                                               v_d        ,
                                               Mhk_d      ,
@@ -139,7 +139,7 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
                                               maps_d     ,
                                               nl_region  ,
                                               DeepModel);
-
+        // Updates: Adv_d, v_d
         Compute_Advec_Cori_Poles<6><<<2, 1>>>(Adv_d        ,
                                               v_d          ,
                                               Mhk_d        ,
@@ -156,7 +156,7 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
 
 
         cudaDeviceSynchronize();
-
+        // Updates: Adv_d, v_d
         Compute_Advec_Cori2 <<<(point_num / NTH) + 1, NTH >>>(Adv_d      ,
                                                               v_d        ,
                                                               Whk_d      ,
@@ -175,6 +175,7 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
 
         BENCH_POINT_I_S(*this, current_step, rk, "Compute_Advec_Cori")
 
+        // Updates: temperature_d, h_d, hh_d, pt_d, pth_d, gtil_d, gtilh_d
         Compute_Temperature_H_Pt_Geff <<< (point_num / NTH) + 1, NTH >>> (temperature_d,
                                                                           pressurek_d  ,
                                                                           Rhok_d       ,
@@ -213,6 +214,7 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
         if (HyDiff){
             cudaMemset(diff_d, 0, sizeof(double) *   6 * point_num * nv);
             cudaDeviceSynchronize();
+            //Updates: diffmh_d, diffw_d, diffrh_d, diffpr_d, diff_d
             Diffusion_Op <LN,LN> <<< NBD,NT >>>(diffmh_d     ,
                                                 diffw_d      ,
                                                 diffrh_d     ,
@@ -235,6 +237,7 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
                                                 nl_region    ,
                                                 0            ,
                                                 DeepModel    );
+            //Updates: diffmh_d, diffw_d, diffrh_d, diffpr_d, diff_d
             Diffusion_Op_Poles <5><<<NBDP,1 >>>(diffmh_d     ,
                                                  diffw_d      ,
                                                 diffrh_d     ,
@@ -259,6 +262,7 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
                                                 0            ,
                                                 DeepModel    );
             cudaDeviceSynchronize();
+            //Updates: diffmh_d, diffw_d, diffrh_d, diffpr_d, diff_d
             Diffusion_Op <LN,LN><<<  NBD,NT >>>(diffmh_d     ,
                                                 diffw_d      ,
                                                 diffrh_d     ,
@@ -281,7 +285,7 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
                                                 nl_region    ,
                                                 1            ,
                                                 DeepModel    );
-
+            //Updates: diffmh_d, diffw_d, diffrh_d, diffpr_d, diff_d
             Diffusion_Op_Poles <5><<<NBDP, 1>>>(diffmh_d     ,
                                                  diffw_d      ,
                                                 diffrh_d     ,
@@ -312,6 +316,7 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
         cudaMemset(divg_Mh_d, 0, sizeof(double)*point_num * 3 * nv);
         if (DivDampP) {
             cudaDeviceSynchronize();
+            // Updates: DivM_d, divg_Mh_d
             DivM_Op <LN,LN> <<< NB, NT >>>(DivM_d     ,
                                            divg_Mh_d  ,
                                            Mhk_d      ,
@@ -329,6 +334,7 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
                                            nl_region  ,
                                            0          ,
                                            DeepModel);
+            // Updates: DivM_d, divg_Mh_d
             DivM_Op_Poles<5><<<NBP,1>>>(DivM_d       ,
                                         divg_Mh_d    ,
                                         Mhk_d        ,
@@ -348,6 +354,7 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
                                         DeepModel    );
 
             cudaDeviceSynchronize();
+            // Updates: DivM_d, divg_Mh_d
             DivM_Op <LN,LN> <<< NB, NT >>>(DivM_d     ,
                                            divg_Mh_d  ,
                                            Mhk_d      ,
@@ -365,6 +372,7 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
                                            nl_region  ,
                                            1          ,
                                            DeepModel);
+            // Updates: DivM_d, divg_Mh_d
             DivM_Op_Poles<5><<<NBP,1>>>(DivM_d       ,
                                         divg_Mh_d    ,
                                         Mhk_d        ,
@@ -386,6 +394,7 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
 //
 //      Slow Modes
         cudaDeviceSynchronize();
+        // Updates: SlowMh_d, SlowWh_d, SlowRho_d, Slowpressure_d
         Compute_Slow_Modes <LN,LN>  <<<NB, NT >>> (SlowMh_d      ,
                                                    SlowWh_d      ,
                                                    SlowRho_d     ,
@@ -417,6 +426,7 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
                                                    DeepModel     ,
                                                    NonHydro      );
         cudaDeviceSynchronize();
+        // Updates: SlowMh_d, SlowWh_d, SlowRho_d, Slowpressure_d
         Compute_Slow_Modes_Poles<6><<<2,1>>> (SlowMh_d,
                                               SlowWh_d      ,
                                               SlowRho_d     ,
@@ -462,6 +472,7 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
         if (rk > 0)
         {
             cudaDeviceSynchronize();
+            // Updates: Mhs_d, Whs_d, Ws_d, Rhos_d, pressures_d
             UpdateRK <<< (point_num / NTH) + 1, NTH >>> (Mhs_d      ,
                                                          Mhk_d      ,
                                                          Mh_d       ,
@@ -488,6 +499,7 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
             cudaMemset(divg_Mh_d, 0, sizeof(double)*point_num * 3 * nv);
             if (DivDampP) {
                 cudaDeviceSynchronize();
+                // Updates: DivM_d, divg_Mh_d
                 DivM_Op <LN,LN><<< NB, NT >>>(DivM_d     ,
                                                 divg_Mh_d  ,
                                                Mhs_d      ,
@@ -505,7 +517,7 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
                                                nl_region  ,
                                                0          ,
                                                DeepModel);
-
+                // Updates: DivM_d, divg_Mh_d
                 DivM_Op_Poles<5><<<NBP,1>>>(DivM_d       ,
                                             divg_Mh_d    ,
                                             Mhs_d        ,
@@ -525,6 +537,7 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
                                             DeepModel    );
 
                 cudaDeviceSynchronize();
+                // Updates: DivM_d, divg_Mh_d
                 DivM_Op <LN, LN> <<< NB, NT>>>(DivM_d,
                                                 divg_Mh_d  ,
                                                Mhs_d      ,
@@ -542,7 +555,7 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
                                                nl_region  ,
                                                1          ,
                                                DeepModel);
-
+                // Updates: DivM_d, divg_Mh_d
                 DivM_Op_Poles<5><<<NBP,1>>>(DivM_d       ,
                                             divg_Mh_d    ,
                                             Mhs_d        ,
@@ -564,6 +577,7 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
 
 //          Momentum equation.
             cudaDeviceSynchronize();
+            // Updates: Mhs_d
             Momentum_Eq <LN,LN>  <<<NB, NT>>>(Mhs_d      ,
                                               pressures_d,
                                               SlowMh_d   ,
@@ -576,7 +590,7 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
                                               maps_d     ,
                                               nl_region  ,
                                               DeepModel  );
-
+            // Updates: Mhs_d
             Momentum_Eq_Poles<6><<< 2, 1>>>(Mhs_d        ,
                                             pressures_d  ,
                                             SlowMh_d     ,
@@ -602,7 +616,7 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
             cudaDeviceSynchronize();
 
             BENCH_POINT_I_SS(*this, current_step, rk, ns, "Momentum_Eq")
-
+            // Updates: Sp_d, Sd_d
             Prepare_Implicit_Vertical <LN,LN>  <<<NB, NT >>>(Mhs_d         ,
                                                              h_d           ,
                                                              div_d         ,
@@ -626,6 +640,7 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
               exit(EXIT_FAILURE);
            }
             cudaDeviceSynchronize();
+            // Updates: Sp_d, Sd_d
             Prepare_Implicit_Vertical_Poles<6><<<2, 1>>> (Mhs_d         ,
                                                           h_d           ,
                                                           div_d         ,
@@ -651,6 +666,7 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
               exit(EXIT_FAILURE);
            }
             cudaDeviceSynchronize();
+            // Updates: Whs_d, Ws_d
             Vertical_Eq <<< (point_num / NTH) + 1, NTH >>> (Whs_d      ,
                                                             Ws_d       ,
                                                             pressures_d,
@@ -686,7 +702,7 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
             cudaDeviceSynchronize();
 
             BENCH_POINT_I_SS(*this, current_step, rk, ns, "Vertical_Eq")
-
+            // Updates: pressures_d, Rhos_d
             Density_Pressure_Eqs <LN,LN>  <<<NB, NT >>>(pressures_d,
                                                         pressurek_d,
                                                         Rhos_d     ,
@@ -719,6 +735,7 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
               exit(EXIT_FAILURE);
            }
             cudaDeviceSynchronize();
+            // Updates: pressures_d, Rhos_d
             Density_Pressure_Eqs_Poles<6><<< 2, 1>>>(pressures_d  ,
                                                      pressurek_d  ,
                                                      Rhos_d       ,
@@ -764,6 +781,7 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
         }
 //      Update quantities for the long loop.
         cudaDeviceSynchronize();
+        // Updates: Mhk_d, Whk_d, Wk_d, Rhok_d, pressurek_d
         UpdateRK2<<< (point_num / NTH) + 1, NTH >>> (Mhs_d      ,
                                                      Mhk_d      ,
                                                      Whs_d      ,

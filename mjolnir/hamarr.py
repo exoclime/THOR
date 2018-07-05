@@ -9,11 +9,15 @@ plt.rcParams['image.cmap'] = 'magma'
 
 class input:
     def __init__(self,resultsf,simID):
-        fileh5 = resultsf+'/esp_output_'+simID+'.h5'
+        fileh5 = resultsf+'/esp_output_planet_'+simID+'.h5'
         if os.path.exists(fileh5):
             openh5 = h5py.File(fileh5)
         else:
-            raise IOError(fileh5+' not found!')
+            fileh5_old = resultsf+'/esp_output_'+simID+'.h5'
+            if os.path.exists(fileh5_old):
+                openh5 = h5py.File(fileh5_old)
+            else:
+                raise IOError(fileh5+' or '+fileh5_old+' not found!')
         self.A = openh5['A'][...]  #'A' is the key for this dataset
         self.Rd = openh5['Rd'][...]  #[...] is syntax for "gimme all the data under this key"
         self.Omega = openh5['Omega'][...]

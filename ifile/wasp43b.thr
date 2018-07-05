@@ -35,7 +35,7 @@ P_ref = 10000000.0
 # Altitude of the top of the model domain [m]
 Top_altitude = 1.4e6
 # Strength of diffusion
-Diffc = 0.009973
+Diffc = 0.019946
 
 # grid
 # Spring dynamics
@@ -59,7 +59,7 @@ NonHydro = true
 # Deep atmosphere
 DeepModel = true
 # Initial conditions
-rest = false
+rest = true
 
 # initial conditions file, used if rest is set to false
 # (path relative to current working directory)
@@ -71,6 +71,7 @@ SpongeLayer = true
 # latitude rings
 nlat = 20
 ns_sponge = 0.5
+Rv_sponge = 1e-4
 
 # Benchmark test
 # Held-Suarez test for Earth == 1
@@ -82,11 +83,11 @@ hstest = 0
 
 # output
 # output every n steps
-n_out = 10
+n_out = 100
 
 # output directory (relative to current working directory)
 # defaults to 'results'
-results_path = wasp43_sponge2
+results_path = wasp43_spo_diffcx2
 
 Tstar = 4520
 planet_star_dist = 0.015
