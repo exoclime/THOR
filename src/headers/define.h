@@ -99,3 +99,4 @@
 #define output_path_default  "results"     // Output directory
 
 #define gcm_off_default false      //turns off fluid dynamical core for debugging physics
+#define TPprof_default 0           //initial TP profile (0 = isothermal, 1 = guillot)

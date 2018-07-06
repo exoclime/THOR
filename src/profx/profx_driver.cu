@@ -120,7 +120,7 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
                                          Rd           ,
                                          Cp           ,
                                          point_num    );
-    
+
     BENCH_POINT_I(*this, current_step, "phy_T")
 //  Check for nan.
 
@@ -131,7 +131,7 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
     isnan_check<<< 16, NTH >>>(temperature_d, nv, point_num, check_d);
     cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
     if(check_h){
-       printf("\n\n Error in NAN check!\n");
+       printf("\n\n Error in NAN check after PROFX:compute_temp!\n");
        exit(EXIT_FAILURE);
     }
 
@@ -200,7 +200,7 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
     }
 //
 ////////////////////////
-    
+
     if(planetnumber != 1){
         printf("Planet value incorrect! (see in file planet.h)");
         exit(EXIT_FAILURE);
@@ -250,6 +250,15 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
                                       Rd           ,
                                       point_num    );
 
+    check_h = false;
+    cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
+    isnan_check<<< 16, NTH >>>(temperature_d, nv, point_num, check_d);
+    cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
+    if(check_h){
+       printf("\n\n Error in NAN check after PROFX:compute_pressure!\n");
+       exit(EXIT_FAILURE);
+    }
+
 #ifdef BENCHMARKING
     // recompute temperature from pressure and density, to avoid rounding issues when comparing
     Compute_temperature_only <<< NB, NTH >>> (temperature_d,
@@ -258,7 +267,7 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
                                               Rd           ,
                                               point_num    );
 #endif // BENCHMARKING
-    
+
     BENCH_POINT_I(*this, current_step, "phy_END")
 //
 //END OF INTEGRATION

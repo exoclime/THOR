@@ -65,7 +65,7 @@ public:
     const int glevel      ;
     const bool spring_dynamics;
     const double spring_beta;
-        
+
     // step counter for benchmark logging
     int current_step;
 
@@ -153,7 +153,7 @@ public:
     double *Mhk_d         ;
     double *Wk_d          ;
     double *Whk_d         ;
-    
+
     double *v_d           ;
     double *pt_d          ;
     double *pth_d         ;
@@ -234,7 +234,7 @@ public:
 
     void AllocData() ;
 
-    bool InitialValues(bool rest                ,  
+    bool InitialValues(bool rest                ,
                        const std::string & initial_conditions_filename,
                        const bool & continue_sim,
                        double timestep_dyn      ,
@@ -251,10 +251,11 @@ public:
                        double mu                ,
                        double Rd                ,
                        bool sponge              ,
+                       int TPprof              ,
                        int & nsteps             ,
                        double & simulation_start_time,
                        int & output_file_idx);
-    
+
     void RTSetup(double,
                  double,
                  double,
@@ -311,7 +312,7 @@ public:
                 const std::string & output_dir);
 
     void getDeviceData(double * device, double * host, int size);
-    
+
 
     ~ESP();
 };

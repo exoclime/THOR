@@ -8,7 +8,7 @@ config_version = 1
 num_steps = 172800
 
 # length of timesteps imn seconds
-timestep = 600
+timestep = 120
 
 # keys to add
 # TODO: output_dir # relative to working directory
@@ -33,9 +33,9 @@ Tmean = 1759
 # Reference surface pressure [Pa]
 P_ref = 22000000.0
 # Altitude of the top of the model domain [m]
-Top_altitude = 4875000
+Top_altitude = 8e6
 # Strength of diffusion
-Diffc = 0.019921
+Diffc = 0.0099
 
 # grid
 # Spring dynamics
@@ -45,7 +45,7 @@ glevel = 4
 # Parameter beta for spring dynamics
 spring_beta = 1.15
 # Number of vertical layers
-vlevel = 45
+vlevel = 40
 
 # diffusion
 # Hyper-diffusion
@@ -80,7 +80,9 @@ results_path = deephj_results
 
 # output
 # output every n steps
-n_out = 3456
+n_out = 100
 
 # GPU ID number
 GPU_ID_N = 1
+
+TPprof = 0

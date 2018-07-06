@@ -476,6 +476,9 @@ __global__ void Density_Pressure_Eqs(double *pressure_d ,
     if(isnan(pressure_d[id*nv+lev])){
       printf("Vertical wind gradient too large at %d, %d\n",id,lev);
     }
+    if(pressurek_d[id*nv+lev]<-pressure_d[id*nv+lev]){
+      printf("Pressure negative at %d, %d\n",id,lev);
+    }
 
     // Updates density
     nflxr_s[iri] += dwdz;

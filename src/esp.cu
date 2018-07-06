@@ -229,6 +229,9 @@ int main (int argc,  char** argv){
     bool gcm_off = false;
     config_reader.append_config_var("gcm_off", gcm_off, gcm_off_default);
 
+    int TPprof = 0;
+    config_reader.append_config_var("TPprof", TPprof, TPprof_default);
+
     //*****************************************************************
     // Read config file
 
@@ -321,6 +324,8 @@ int main (int argc,  char** argv){
 
     config_OK &= check_greater( "GPU_ID_N", GPU_ID_N, -1);
     config_OK &= check_greater( "n_out", n_out, 0);
+
+    config_OK &= check_range( "TPprof", TPprof, -1, 2);
 
     if (simulation_ID.length() < 160)
     {
@@ -434,6 +439,7 @@ int main (int argc,  char** argv){
                                         mu_constant  , // Atomic mass unit [kg]
                                         Planet.Rd    , // Gas constant [J/kg/K]
                                         SpongeLayer  , // Enable sponge layer
+                                        TPprof       , // isothermal = 0, guillot = 1
                                         step_idx     , // current step index
                                         simulation_start_time, // output:
                                                                // simulation start time

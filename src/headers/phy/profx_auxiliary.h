@@ -94,6 +94,9 @@ __global__ void Compute_pressure    (double *pressure_d   ,
     // Computes absolute pressure
     if (id < num) {
       pressure_d[id*nv + lev] = temperature_d[id*nv + lev] * Rd*Rho_d[id*nv + lev];
+      if (isnan(pressure_d[id*nv+lev])){
+        printf("%d, %d\n",id,lev);
+      }
     }
 }
 

@@ -35,7 +35,7 @@ P_ref = 10000000.0
 # Altitude of the top of the model domain [m]
 Top_altitude = 1.4e6
 # Strength of diffusion
-Diffc = 0.019946
+Diffc = 0.0049865
 
 # grid
 # Spring dynamics
@@ -87,7 +87,7 @@ n_out = 100
 
 # output directory (relative to current working directory)
 # defaults to 'results'
-results_path = wasp43_spo_diffcx2
+results_path = wasp43_spo_diffcdiv2
 
 Tstar = 4520
 planet_star_dist = 0.015
