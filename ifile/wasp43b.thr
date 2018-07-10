@@ -5,7 +5,7 @@ config_version = 1
 # testing sponge layer model
 
 # number of steps
-num_steps = 10000
+num_steps = 345600
 
 # length of timesteps imn seconds
 timestep = 300
@@ -83,7 +83,7 @@ hstest = 0
 
 # output
 # output every n steps
-n_out = 100
+n_out = 6912
 
 # output directory (relative to current working directory)
 # defaults to 'results'

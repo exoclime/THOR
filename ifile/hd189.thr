@@ -8,7 +8,7 @@ config_version = 1
 num_steps = 5184000
 
 # length of timesteps imn seconds
-timestep = 50
+timestep = 120
 
 # keys to add
 # TODO: output_dir # relative to working directory
@@ -33,7 +33,7 @@ Tmean = 1200.0
 # Reference surface pressure [Pa]
 P_ref = 1000000.0
 # Altitude of the top of the model domain [m]
-Top_altitude = 2.5e6
+Top_altitude = 2e6
 # Strength of diffusion
 Diffc = 0.009973
 
@@ -62,10 +62,11 @@ DeepModel = true
 rest = true
 
 # Spongebob
-SpongeLayer = true
+SpongeLayer = false
 # latitude rings
 nlat = 20
-ns_sponge = 0.75
+ns_sponge = 0.8
+Rv_sponge = 1e-5
 
 # Benchmark test
 # Held-Suarez test for Earth == 1
@@ -85,4 +86,6 @@ n_out = 10
 results_path = hd189
 
 # GPU ID number
-GPU_ID_N = 2
+GPU_ID_N = 0
+
+TPprof = 0
