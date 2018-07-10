@@ -41,6 +41,7 @@ class grid:
         self.areasT = openh5['areasT'][...]
         self.lonlat = openh5['lonlat'][...]
         self.point_num = np.int(openh5['point_num'][0])
+        self.pntloc = openh5['pntloc'][...]
         self.nv = np.int(openh5['nv'][0])
         openh5.close()
         self.nvi = self.nv+1
@@ -56,6 +57,7 @@ class output:
         self.Wh = np.zeros((grid.point_num,grid.nvi,nts-ntsi+1))
         self.ntsi = ntsi
         self.nts = nts
+        self.time = np.zeros(nts-ntsi+1)
 
         # Read model results
         for t in np.arange(ntsi-1,nts):
@@ -68,6 +70,7 @@ class output:
             Pressurei = openh5['Pressure'][...]
             Mhi = openh5['Mh'][...]
             Whi = openh5['Wh'][...]
+            time = openh5['simulation_time'][0]/86400
             openh5.close()
 
             self.Rho[:,:,t-ntsi+1] = np.reshape(Rhoi,(grid.point_num,grid.nv))
@@ -75,8 +78,15 @@ class output:
             self.Mh[0,:,:,t-ntsi+1] = np.reshape(Mhi[::3],(grid.point_num,grid.nv))
             self.Mh[1,:,:,t-ntsi+1] = np.reshape(Mhi[1::3],(grid.point_num,grid.nv))
             self.Mh[2,:,:,t-ntsi+1] = np.reshape(Mhi[2::3],(grid.point_num,grid.nv))
-
             self.Wh[:,:,t-ntsi+1] = np.reshape(Whi,(grid.point_num,grid.nvi))
+            self.time[t-ntsi+1] = time
+
+
+class GetOutput:
+    def __init__(self,resultsf,simID,ntsi,nts):
+        self.input = input(resultsf,simID)
+        self.grid = grid(resultsf,simID)
+        self.output = output(resultsf,simID,ntsi,nts,self.grid)
 
 def temperature(input,grid,output,sigmaref):
     # Set the reference pressure
@@ -189,7 +199,7 @@ def u(input,grid,output,sigmaref):
             #                      output.Mh[1,i,lev,t]*np.cos(grid.lon[i]) + \
             #                      output.Mh[2,i,lev,t]*(0))/output.Rho[i,lev,t]
             # Interpolate atmospheric column to the reference pressure
-            import pdb; pdb.set_trace()
+            # import pdb; pdb.set_trace()
 
             ZonalMi[i,:] = interp.pchip_interpolate(sigma[::-1],ZonalMtemp[i,::-1,t],Pref[::-1])[::-1]
         # Convert icosahedral grid into lon-lat grid

@@ -65,23 +65,25 @@ if ntsi > nts:
 simulation_ID = args.simulation_ID[0]
 resultsf = args.file[0]
 
+outall = ham.GetOutput(resultsf,simulation_ID,ntsi,nts)
+
 ##########
 # Planet #
 ##########
 
-input = ham.input(resultsf,simulation_ID)
+input = outall.input
 
 ########
 # Grid #
 ########
 
-grid = ham.grid(resultsf,simulation_ID)
+grid = outall.grid
 
 ###############
 # Diagnostics #
 ###############
 
-output = ham.output(resultsf,simulation_ID,ntsi,nts,grid)
+output = outall.output
 
 #########
 # Plots #
