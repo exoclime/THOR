@@ -50,6 +50,7 @@
 #include <stdio.h>
 #include "storage.h"
 #include "directories.h"
+#include "../headers/phy/valkyrie_jet_steadystate.h"
 
 #include <map>
 
@@ -254,7 +255,8 @@ __host__ bool ESP::InitialValues(bool rest          ,
                                  double mu          ,
                                  double Rd          ,
                                  bool sponge        ,
-                                 int TPprof        ,
+                                 int TPprof         ,
+                                 int hstest         ,
                                  int & nstep        ,
                                  double & simulation_start_time,
                                  int & output_file_idx){
@@ -296,6 +298,35 @@ __host__ bool ESP::InitialValues(bool rest          ,
 //              Vertical momentum [kg/m3 m/s]
                 W_h[i*nv + lev] = 0.0;     // Center of the layer.
                 Wh_h[i*(nv+1) + lev] = 0.0;// Layers interface.
+                if (hstest == 5) {
+                  //  Number of threads per block.
+                  const int NTH = 256;
+
+                  //  Specify the block sizes.
+                  dim3 NB((point_num / NTH) + 1, nv, 1);
+
+                  cudaMemcpy(Altitude_d , Altitude_h , nv * sizeof(double), cudaMemcpyHostToDevice);
+                  cudaMemcpy(pressure_d , pressure_h , nv * sizeof(double), cudaMemcpyHostToDevice);
+                  cudaMemcpy(Mh_d , Mh_h , 3 * nv * sizeof(double), cudaMemcpyHostToDevice);
+                  cudaMemcpy(Rho_d , Rho_h , nv * sizeof(double), cudaMemcpyHostToDevice);
+                  cudaMemcpy(temperature_d , temperature_h , nv * sizeof(double), cudaMemcpyHostToDevice);
+                  setup_jet <<< NB, NTH >>>  (Mh_d         ,
+                                              pressure_d   ,
+                                              Rho_d        ,
+                                              temperature_d,
+                                              Cp           ,
+                                              Rd           ,
+                                              Omega        ,
+                                              A            ,
+                                              Altitude_d   ,
+                                              lonlat_d     ,
+                                              point_num    );
+
+                  cudaMemcpy(Mh_h , Mh_d , 3 * nv * sizeof(double), cudaMemcpyDeviceToHost);
+                  cudaMemcpy(temperature_h , temperature_d , nv * sizeof(double), cudaMemcpyDeviceToHost);
+                  cudaMemcpy(pressure_h , pressure_d , nv * sizeof(double), cudaMemcpyDeviceToHost);
+                  cudaMemcpy(Rho_h , Rho_d , nv * sizeof(double), cudaMemcpyDeviceToHost);
+                }
             }
             Wh_h[i*(nv + 1) + nv] = 0.0;
         }

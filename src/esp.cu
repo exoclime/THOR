@@ -440,6 +440,7 @@ int main (int argc,  char** argv){
                                         Planet.Rd    , // Gas constant [J/kg/K]
                                         SpongeLayer  , // Enable sponge layer
                                         TPprof       , // isothermal = 0, guillot = 1
+                                        hstest       , // argh
                                         step_idx     , // current step index
                                         simulation_start_time, // output:
                                                                // simulation start time

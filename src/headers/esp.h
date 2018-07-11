@@ -251,7 +251,8 @@ public:
                        double mu                ,
                        double Rd                ,
                        bool sponge              ,
-                       int TPprof              ,
+                       int TPprof               ,
+                       int hstest               ,
                        int & nsteps             ,
                        double & simulation_start_time,
                        int & output_file_idx);
