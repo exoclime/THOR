@@ -74,6 +74,10 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
 //  Number of threads per block.
     const int NTH = 256;
 
+    // Vertical Eq only works on vertical stack of data, can run independently, only uses shared
+    // memory for intermediate data that is not shared with neighbours.
+    // Need to set the block size so that the internal arrays fit in shared memory for each block
+    const int num_th_vertical_eq = 32;
 //  Specify the block sizes.
     const int LN = 16;               // Size of the inner region side.
     dim3 NT(nl_region, nl_region, 1);// Number of threads in a block.
@@ -106,6 +110,7 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
     USE_BENCHMARK()
 
     BENCH_POINT_I(*this, current_step, "thor_init")
+    
 //  Loop for large time integration.
     for(int rk = 0; rk < 3; rk++){
 //      Local variables to define the length (times) and the number of the small steps (ns_it).
@@ -124,8 +129,6 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
         cudaMemset(Adv_d, 0, sizeof(double) * 3 * point_num * nv); // Sets every value of Adv_d to
                                                                    // zero.
         cudaDeviceSynchronize();
-        
-
             
         Compute_Advec_Cori1<LN,LN><<<NB,NT>>>(Adv_d      ,
                                               v_d        ,
@@ -140,6 +143,7 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
                                               nl_region  ,
                                               DeepModel);
 
+
         Compute_Advec_Cori_Poles<6><<<2, 1>>>(Adv_d        ,
                                               v_d          ,
                                               Mhk_d        ,
@@ -153,7 +157,6 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
                                               point_num    ,
                                               nv           ,
                                               DeepModel   );
-
 
         cudaDeviceSynchronize();
 
@@ -628,29 +631,43 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
                                                           DeepModel     );
 
             cudaDeviceSynchronize();
-            Vertical_Eq <<< (point_num / NTH) + 1, NTH >>> (Whs_d      ,
-                                                            Ws_d       ,
-                                                            pressures_d,
-                                                            h_d        ,
-                                                            hh_d       ,
-                                                            Rhos_d     ,
-                                                            gtil_d     ,
-                                                            gtilh_d    ,
-                                                            Sp_d       ,
-                                                            Sd_d       ,
-                                                            SlowWh_d   ,
-                                                            Cp         ,
-                                                            Rd         ,
-                                                            times      ,
-                                                            Gravit     ,
-                                                            Altitude_d ,
-                                                            Altitudeh_d,
-                                                            A          ,
-                                                            NonHydro   ,
-                                                            point_num  ,
-                                                            nv         ,
-                                                            nvi        ,
-                                                            DeepModel  );
+
+            
+            Vertical_Eq <<< (point_num / num_th_vertical_eq) + 1,
+                num_th_vertical_eq,
+                2*num_th_vertical_eq*nvi*sizeof(double) >>> (Whs_d      ,
+                                                             Ws_d       ,
+                                                             pressures_d,
+                                                             h_d        ,
+                                                             hh_d       ,
+                                                             Rhos_d     ,
+                                                             gtil_d     ,
+                                                             gtilh_d    ,
+                                                             Sp_d       ,
+                                                             Sd_d       ,
+                                                             SlowWh_d   ,
+                                                             Cp         ,
+                                                             Rd         ,
+                                                             times      ,
+                                                             Gravit     ,
+                                                             Altitude_d ,
+                                                             Altitudeh_d,
+                                                             A          ,
+                                                             NonHydro   ,
+                                                             point_num  ,
+                                                             nv         ,
+                                                             nvi        ,
+                                                             DeepModel  );
+
+            
+            cudaError_t err = cudaGetLastError();
+            
+            
+            // Check device query
+            if (err != cudaSuccess) 
+            {
+                printf("%s\n", cudaGetErrorString(err));
+            }
 
 //          Pressure and density equations.
             cudaDeviceSynchronize();
