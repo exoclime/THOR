@@ -391,8 +391,16 @@ int main (int argc,  char** argv){
            Grid.point_num     );// Number of grid points
 
     USE_BENCHMARK();
-
-    BENCH_POINT_GRID(Grid);
+    INIT_BENCHMARK(X, Grid);
+/*
+    BENCH_POINT(0, "Grid", vector<string>({"test"}), vector<string>({"pent_ind", "point_local", "halo", "maps", "func_r", "areas",
+                "areasTr", "areasT", "nvec", "nvecoa", "nvecti", "nvecte", "Altitude", "Altitudeh", "lonlat",
+                "div", "grad"}))
+*/
+        BENCH_POINT(0, "Grid", vector<string>({"test"}), vector<string>({ "func_r", "areas",
+                "areasTr", "areasT", "nvec", "nvecoa", "nvecti", "nvecte", "Altitude", "Altitudeh", "lonlat",
+                "div", "grad"}))
+        
 
     printf(" Setting the initial conditions.\n\n");
     
