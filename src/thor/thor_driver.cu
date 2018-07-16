@@ -107,10 +107,9 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
     cudaMemset(Ws_d        , 0, sizeof(double) * point_num * nv)  ;
     cudaMemset(pressures_d , 0, sizeof(double) * point_num * nv)  ;
 
-    USE_BENCHMARK()
+    USE_BENCHMARK();
+    BENCH_POINT_I(current_step, "thor_init", vector<string>({}), vector<string>({"Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"}));
     
-
-        BENCH_POINT_I(current_step, "thor_init", vector<string>({}), vector<string>({"Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"}))
     
 //  Loop for large time integration.
     for(int rk = 0; rk < 3; rk++){
