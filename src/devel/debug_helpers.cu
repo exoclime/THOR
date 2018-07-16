@@ -49,3 +49,55 @@ __host__ void getDeviceData(const double * device, double * host, int size)
 {
     cudaMemcpy(host, device, size, cudaMemcpyDeviceToHost);
 }
+
+void init_device_mem_check(bool *ptr)
+{
+    cudaMalloc((void **)&ptr, sizeof (bool));
+}
+
+void deinit_device_mem_check(bool *ptr)
+{
+    cudaFree(ptr);
+}
+
+
+
+__global__ void isnan_check_device(double *array, int size, bool *check)
+{
+//
+//  Description: Check for nan in array.
+
+  int idx = threadIdx.x+blockDim.x*blockIdx.x;
+
+  if (isnan(array[idx])) {
+      *check = true;
+  }
+}
+
+
+
+__host__ bool check_array_for_nan(double * ptr, int size, bool on_device, bool * check_d)
+{
+    // TODO: could probably act on multiple arrays through streams
+    if (on_device)
+    {
+        bool check_h = false;
+        cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
+        isnan_check_device<<< 16, 256 >>>(ptr, size, check_d);
+        cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
+
+        return check_d;
+    }
+    else
+    {
+        bool isnan = false;
+        for (int i = 0; i < size; i++)
+        {
+            isnan |= std::isnan(ptr[i]);
+        }
+        return isnan;
+    }
+    
+    
+
+}

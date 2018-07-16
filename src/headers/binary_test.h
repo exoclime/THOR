@@ -145,6 +145,11 @@ public:
 
     
     void set_definitions(const map<string, output_def> & defs);
+
+     // make constructor private, can only be instantiated through get_instance
+    ~binary_test();
+    
+
     
 private:
     vector<string> current_input_vars;
@@ -172,11 +177,16 @@ private:
                                T * local_data,
                                const int & data_size);
 
+    bool check_nan(const string & iteration,
+                   const string & ref_name,
+                   const vector<output_def> & data_output);
     
 
     bool output_defined = false;
     std::map<string, output_def> output_definitions;
     std::unique_ptr<double[]> mem_buf = nullptr;
+
+    bool * nan_check_d;
 };
 
 // Compare binary table to saved table in storage output

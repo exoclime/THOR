@@ -47,4 +47,15 @@
 
 #pragma once
 
-void getDeviceData(const double * device, double * host, int size);  
+// check array for NaNs on device
+void isnan_check_device(double *array, int width, int height, bool *check);
+
+// helper to copy data from device to host (from any place, without cuda dependencies)
+void getDeviceData(const double * device, double * host, int size);
+
+//define device mem check ptr
+void init_device_mem_check(bool *ptr);
+void deinit_device_mem_check(bool *ptr);
+// check array for nan on device array or host array
+bool check_array_for_nan(double * ptr, int size, bool on_device, bool * device_mem_check_b);
+

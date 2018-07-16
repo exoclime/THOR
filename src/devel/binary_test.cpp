@@ -53,7 +53,7 @@
 #include "esp.h"
 #include "grid.h"
 #include "debug_helpers.h"
-
+#include "directories.h"
 #include <iomanip>
 #include <sstream>
 
@@ -120,7 +120,7 @@ map<string, output_def> build_definitions( ESP & esp, Icogrid & grid)
 	  {"lonlat",        { grid.lonlat, 2*grid.point_num, "lonlat", "ll", false}},
 	  
 	  {"div",           { grid.div, 7*3*grid.point_num, "div", "d", false}},
-	  {"grad",          { grid.grad, 7*3*grid.point_num, "grad", "g", false }}
+	  {"grad",          { grid.grad, 7*3*grid.point_num, "grad", "g", false }},
         };
 
     return out;        
@@ -133,9 +133,15 @@ binary_test::binary_test(string output_dir_,
     output_dir(output_dir_),
     output_base_name(output_base_name_)
 {
+    create_output_dir(output_dir);
 
+    init_device_mem_check(nan_check_d);
 }
+binary_test::~binary_test()
+{
 
+    deinit_device_mem_check(nan_check_d);
+}
 // generic data test function
 void binary_test::check_data(const string & iteration,
                     const string & ref_name,
@@ -164,8 +170,39 @@ void binary_test::check_data(const string & iteration,
 
 #endif // BENCH_POINT_COMPARE
 
+#ifdef BENCH_NAN_CHECK
+    check_nan(iteration, ref_name, data_output);
+#endif // BENCH_NAN_CHECK    
 }
 
+bool binary_test::check_nan(const string & iteration,
+                            const string & ref_name,
+                            const vector<output_def> & data_output)
+{
+    bool out = true;
+    std::ostringstream oss;
+    oss  << std::setw(6) << iteration << " ref: " << std::setw(30) << ref_name;
+    
+    for (auto & def : data_output)
+    {
+        bool nan = false;
+        // copy data to host if needed
+        // and write it to the output file
+        nan = check_array_for_nan(def.data, def.size, def.device_ptr, nan_check_d);
+        
+
+        oss << " " << def.short_name <<": " << nan;
+        out &= nan;
+        
+    }
+
+#ifndef BENCH_PRINT_DEBUG   // if unset, print only failures
+        if (!out )
+#endif // BENCH_PRINT_DEBUG
+            cout << oss.str() << endl;
+        
+        return out;
+}
 
 
 void binary_test::output_reference(const string & iteration,
@@ -195,6 +232,8 @@ void binary_test::output_reference(const string & iteration,
                                def.short_name,
                                "-");
         }
+
+
 
 }
 
@@ -243,13 +282,9 @@ bool binary_test::compare_to_reference(const string & iteration,
             
             
         }
-        
-                                              
-                                              
-                                              
-            
-
-//        if (!out )
+#ifndef BENCH_PRINT_DEBUG   // if unset, print only failures
+        if (!out )
+#endif
             cout << oss.str() << endl;
         
         return out;
