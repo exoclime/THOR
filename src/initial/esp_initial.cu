@@ -306,11 +306,13 @@ __host__ bool ESP::InitialValues(bool rest          ,
                   dim3 NB((point_num / NTH) + 1, nv, 1);
 
                   cudaMemcpy(Altitude_d , Altitude_h , nv * sizeof(double), cudaMemcpyHostToDevice);
-                  cudaMemcpy(pressure_d , pressure_h , nv * sizeof(double), cudaMemcpyHostToDevice);
-                  cudaMemcpy(Mh_d , Mh_h , 3 * nv * sizeof(double), cudaMemcpyHostToDevice);
-                  cudaMemcpy(Rho_d , Rho_h , nv * sizeof(double), cudaMemcpyHostToDevice);
-                  cudaMemcpy(temperature_d , temperature_h , nv * sizeof(double), cudaMemcpyHostToDevice);
+                  cudaMemcpy(pressure_d , pressure_h , point_num * nv * sizeof(double), cudaMemcpyHostToDevice);
+                  cudaMemcpy(Mh_d , Mh_h , 3 * point_num * nv * sizeof(double), cudaMemcpyHostToDevice);
+                  cudaMemcpy(Rho_d , Rho_h , point_num * nv * sizeof(double), cudaMemcpyHostToDevice);
+                  cudaMemcpy(temperature_d , temperature_h , point_num * nv * sizeof(double), cudaMemcpyHostToDevice);
+                  cudaMemcpy(lonlat_d , lonlat_h , point_num * sizeof(double), cudaMemcpyHostToDevice);
                   setup_jet <<< NB, NTH >>>  (Mh_d         ,
+                  // setup_jet <<< 1, 1 >>>  (Mh_d,
                                               pressure_d   ,
                                               Rho_d        ,
                                               temperature_d,
@@ -322,10 +324,10 @@ __host__ bool ESP::InitialValues(bool rest          ,
                                               lonlat_d     ,
                                               point_num    );
 
-                  cudaMemcpy(Mh_h , Mh_d , 3 * nv * sizeof(double), cudaMemcpyDeviceToHost);
-                  cudaMemcpy(temperature_h , temperature_d , nv * sizeof(double), cudaMemcpyDeviceToHost);
-                  cudaMemcpy(pressure_h , pressure_d , nv * sizeof(double), cudaMemcpyDeviceToHost);
-                  cudaMemcpy(Rho_h , Rho_d , nv * sizeof(double), cudaMemcpyDeviceToHost);
+                  cudaMemcpy(Mh_h , Mh_d , 3 * point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+                  cudaMemcpy(temperature_h , temperature_d , point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+                  cudaMemcpy(pressure_h , pressure_d , point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+                  cudaMemcpy(Rho_h , Rho_d , point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
                 }
             }
             Wh_h[i*(nv + 1) + nv] = 0.0;

@@ -514,13 +514,20 @@ int main (int argc,  char** argv){
 //  PRINTS
 //  Device Information
     int ndevices;
-    cudaGetDeviceCount(&ndevices);
+    cudaError_t err = cudaGetDeviceCount(&ndevices);
+
+    int device_major_minor_number = 0;    
     for (int i = 0; i < ndevices; ++i) {
         // Get device properties
         printf("\n CUDA Device #%d\n", i);
         cudaDeviceProp devPp;
         cudaGetDeviceProperties(&devPp, i);
+
+	if (i == GPU_ID_N)
+	    device_major_minor_number = devPp.major*10 + devPp.minor;
+
         printf(" Name: %s\n",  devPp.name);
+	printf(" Compute Capabilities: %d.%d\n", devPp.major, devPp.minor);
         printf("   Total global memory:           %lu\n",  devPp.totalGlobalMem);
         printf("   Total shared memory per block: %lu\n",  devPp.sharedMemPerBlock);
         printf("   Total registers per block:     %d\n" ,  devPp.regsPerBlock);
@@ -531,6 +538,44 @@ int main (int argc,  char** argv){
         printf("   Total constant memory:         %lu\n",  devPp.totalConstMem);
         printf("   Number of multiprocessors:     %d\n" ,  devPp.multiProcessorCount);
     }
+
+    // Check device query
+    if (err != cudaSuccess) 
+    {
+        printf("Error getting device count.\n");
+	printf("%s\n", cudaGetErrorString(err));
+    }	
+
+    // do we have a device?
+    if (ndevices < 1 || err != cudaSuccess)
+    {
+        printf("No device found (compiled SM:%d).\n", DEVICE_SM);
+        printf("Aborting.\n");
+        exit(-1);
+    }
+
+    // can we match the device ID asked?
+    if (GPU_ID_N >= ndevices)
+    {
+	printf("Asked for device #%d but only found %d devices.\n", GPU_ID_N, ndevices);
+	exit(-1);
+    }
+    
+    // do we have the compute capabilities set at compile time
+
+    if ( device_major_minor_number < DEVICE_SM ) 
+    {
+        printf("Found device with id %d does not have sufficent compute capabilities.\n", GPU_ID_N);
+        printf("Capabilities: %d (compiled with SM=%d).\n", device_major_minor_number, DEVICE_SM  );
+        printf("Aborting.\n");
+        exit(-1);
+    }
+    else if (device_major_minor_number > DEVICE_SM)
+    {
+	printf("Device has higher compute capability than used at compile time.\n");
+        printf("Capabilities: %d (compiled with SM=%d).\n", device_major_minor_number, DEVICE_SM  );
+    }
+
 //
 //  Planet conditions
     printf("\n");

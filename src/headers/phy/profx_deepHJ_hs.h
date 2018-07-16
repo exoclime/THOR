@@ -71,6 +71,7 @@ __global__ void deepHJ_hs(double *Mh_d         ,
         //double psm1;
         double lat = lonlat_d[id*2 + 1];
         double lon = lonlat_d[id*2];
+        if (lon < 0) lon += 2*M_PI;
 
         // Deeeeeep Hot Jupiter stuff....
 

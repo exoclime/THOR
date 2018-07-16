@@ -5,10 +5,10 @@ config_version = 1
 # earth model
 
 # number of steps
-num_steps = 172800
+num_steps = 345600
 
 # length of timesteps imn seconds
-timestep = 120
+timestep = 300
 
 # keys to add
 # TODO: output_dir # relative to working directory
@@ -76,13 +76,14 @@ hstest = 4
 
 # output directory (relative to current working directory)
 # defaults to 'results'
-results_path = deephj_results
+results_path = deephj_windsoff
 
 # output
 # output every n steps
-n_out = 100
+n_out = 6912
 
 # GPU ID number
-GPU_ID_N = 1
+GPU_ID_N = 0
 
 TPprof = 0
+gcm_off = false

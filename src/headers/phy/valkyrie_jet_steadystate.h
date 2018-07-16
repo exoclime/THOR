@@ -50,17 +50,17 @@ __device__ double dTemp_dphi(double U,
                              double Rd,
                              double Omega,
                              double A,
-                             double lat,
+                             double lati,
                              double Fz,
                              double dFzdz) {
 // Calculate the meridional temperature gradient at latitude 'lat'
-      double dU0dz, U0, fCori;
+      double dU0dz, U0, Corif;
 
-      dU0dz = U*pow(sin(M_PI*pow(sin(lat),2)),3)*dFzdz;
-      U0 = U*pow(sin(M_PI*pow(sin(lat),2)),3)*Fz;
-      fCori = 2*Omega*sin(lat);
+      dU0dz = U*pow(sin(M_PI*pow(sin(lati),2)),3)*dFzdz;
+      U0 = U*pow(sin(M_PI*pow(sin(lati),2)),3)*Fz;
+      Corif = 2*Omega*sin(lati);
 
-      return -H/Rd*(A*fCori+2*U0*tan(lat))*dU0dz;
+      return -H/Rd*(A*Corif+2*U0*tan(lati))*dU0dz;
 }
 
 __global__ void setup_jet(double *Mh_d         ,
@@ -76,17 +76,19 @@ __global__ void setup_jet(double *Mh_d         ,
                             int     num          ){
 
     int id = blockIdx.x * blockDim.x + threadIdx.x;
-    int nv = gridDim.y;
+    int nv = 40;  //temporary hack!!
     int lev = blockIdx.y;
 
     if (id < num){
+    // for (id=0;id<num;id++) {
+    //   for (lev=0;lev<nv;lev++) {
         double z0 = 1823e3, z1 = 2486e3, dz0 = 414e3;
         double z = Altitude_d[id*nv+lev];
         double pref = 1e5;
         double U = 500, U0;
         double Fz, dFzdz;
         double Tbase = 1500, dT0dl, dT0dl_tmp, T0;
-        double lat = lonlat_d[id*2 + 1];
+        double lat = lonlat_d[id*2 + 1], ltmp;
         double lon = lonlat_d[id*2];
         double H = 580e3;
         int nlat;
@@ -95,16 +97,17 @@ __global__ void setup_jet(double *Mh_d         ,
         dFzdz = 0.5*(-3/dz0*pow(tanh((z-z0)/dz0),2))*(1-pow(tanh((z-z0)/dz0),2))*sin(M_PI*z/z1)\
                 + 0.5*(1-pow(tanh((z-z0)/dz0),3))*cos(M_PI*z/z1)*M_PI/z1;
 
+        T0 = Tbase;  //constant of integration
+
         if (lat>=0) {
           U0 = U*pow(sin(M_PI*pow(sin(lat),2)),3)*Fz;
-          dT0dl = dTemp_dphi(U,H,Rd,Omega,A,lat,Fz,dFzdz);
-          T0 = Tbase;  //constant of integration
+          dT0dl = dTemp_dphi(U,H,Rd,Omega,A,0.0,Fz,dFzdz);
           for (nlat=1;nlat<=50;nlat++) { //do trapezoid rule. like a crazy person
-            dT0dl_tmp = dTemp_dphi(U,H,Rd,Omega,A,nlat*lat/50,Fz,dFzdz); // ltmp = nlat*lat/50
-            T0 += dT0dl_tmp + dT0dl;
+            ltmp = nlat*lat/50;
+            dT0dl_tmp = dTemp_dphi(U,H,Rd,Omega,A,ltmp,Fz,dFzdz); // ltmp = nlat*lat/50
+            T0 += (dT0dl_tmp + dT0dl)*lat/50/2;
             dT0dl = dT0dl_tmp;
           }
-          T0 *= lat/50/2;
         }
 
 //      Update temperature
@@ -116,5 +119,6 @@ __global__ void setup_jet(double *Mh_d         ,
         Mh_d[id*3*nv+lev*3+0] = U0*(-sin(lon))*Rho_d[id*nv+lev];
         Mh_d[id*3*nv+lev*3+1] = U0*(cos(lon))*Rho_d[id*nv+lev];
         Mh_d[id*3*nv+lev*3+2] = 0.0;
+
     }
 }

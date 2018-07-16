@@ -72,9 +72,20 @@ __global__ void Vertical_Eq( double *Whs_d        ,
 //
     int id = blockIdx.x * blockDim.x + threadIdx.x;
 
-    double *cc, *dd;
-    cc = new double[nvi];
-    dd = new double[nvi];
+
+    // using arrays created here either goes into local memory, which is slow and off device,
+    // or uses a lot of registers and limits the number of blocks that can be run concurrently.
+    // Replace it with shared memory which is on the device
+    //double *cc, *dd;
+    //cc = new double[nvi];
+    //dd = new double[nvi];
+
+    // define shared memory as external, because size is not known here
+    extern __shared__ double mem_shared[];
+
+    
+    double * cc = (double*)mem_shared;
+    double * dd = (double*)&mem_shared[blockDim.x*nvi];    
 
     double Cv = Cp - Rd;
     double C0;
@@ -98,7 +109,7 @@ __global__ void Vertical_Eq( double *Whs_d        ,
 
     if(id < num){
         for (int lev = 1; lev < nv; lev++){
-            if (lev == 1){
+            if (lev == 1){ // Fetch data for first layer
                 altht = Altitudeh_d[lev + 1];
                 althl = Altitudeh_d[lev - 1];
                 alth = Altitudeh_d[lev];
@@ -146,10 +157,12 @@ __global__ void Vertical_Eq( double *Whs_d        ,
                 inttm = -(xi - xip)*dzm*dzh;
                 intlm = (xi - xim)*dzm*dzh;
 
-                cc[lev] = -dzph*or2*hp - intt * (gp + GCoR - tor3*hp);
+                cc[threadIdx.x*nvi + lev] = -dzph*or2*hp - intt * (gp + GCoR - tor3*hp);
 
-                if (NonHydro) bb = CRdd + (dzph + dzmh)*or2*h + (intl - inttm)*(g + GCoR - tor3*h);
-                if (!NonHydro)bb = (dzph + dzmh)*or2*h + (intl - inttm)*(g + GCoR - tor3*h);
+                if (NonHydro)
+                    bb = CRdd + (dzph + dzmh)*or2*h + (intl - inttm)*(g + GCoR - tor3*h);
+                else
+                    bb = (dzph + dzmh)*or2*h + (intl - inttm)*(g + GCoR - tor3*h);
 
                 aa = -dzmh * or2 * hm + intlm *(gm + GCoR - tor3*hm);
 
@@ -182,7 +195,7 @@ __global__ void Vertical_Eq( double *Whs_d        ,
                         - deltat*Srh_d[id*nvi + lev])*(CRdd);
                 }
 
-                if (lev < nv - 1){
+                if (lev < nv - 1){ // Fetch the data for next layer
                     althl = alth;
                     alth = altht;
                     altht = Altitudeh_d[lev + 2];
@@ -204,7 +217,7 @@ __global__ void Vertical_Eq( double *Whs_d        ,
                     Sd = Sd_d[id*nv + lev + 1];
                 }                
             }
-            else{
+            else{ // DeepModel == false
                 double dzp   = 1.0/(altht - alth  ); 
                 double dzh   = 1.0/(alt - altl); 
                 double dzm   = 1.0/(alth - althl); 
@@ -225,10 +238,12 @@ __global__ void Vertical_Eq( double *Whs_d        ,
                 inttm = -(xi - xip)*dzm*dzh;
                 intlm =  (xi - xim)*dzm*dzh;
                             
-                cc[lev] = -dzph*hp - intt * (gp + GCoR);
+                cc[threadIdx.x*nvi + lev] = -dzph*hp - intt * (gp + GCoR);
                 
-                if (NonHydro) bb = CRdd + (dzph + dzmh)*h + (intl - inttm)*(g + GCoR);
-                if (!NonHydro)bb = (dzph + dzmh)*h + (intl - inttm)*(g + GCoR);
+                if (NonHydro)
+                    bb = CRdd + (dzph + dzmh)*h + (intl - inttm)*(g + GCoR);
+                else
+                    bb = (dzph + dzmh)*h + (intl - inttm)*(g + GCoR);
                 
                 aa = -dzmh * hm + intlm *(gm + GCoR);
                                       
@@ -261,7 +276,7 @@ __global__ void Vertical_Eq( double *Whs_d        ,
                         - deltat*Srh_d[id*nvi + lev])*(CRdd);
                 }
 
-                if (lev < nv-1){
+                if (lev < nv-1){ // Fetch data for the next layer
                     althl = alth;
                     alth = altht;
                     altht = Altitudeh_d[lev + 2];
@@ -283,24 +298,25 @@ __global__ void Vertical_Eq( double *Whs_d        ,
                     Sd = Sd_d[id*nv + lev + 1];
                 }
 
-            }                
+            }  // End of if (DeepModel) physics computation              
 
-            dd[lev] = -C0;
+            dd[threadIdx.x*nvi + lev] = -C0;
             if(lev == 1){
-                cc[1] = cc[1] / bb;
-                dd[1] = dd[1] / bb;
+                cc[threadIdx.x*nvi + 1] = cc[threadIdx.x*nvi + 1] / bb;
+                dd[threadIdx.x*nvi + 1] = dd[threadIdx.x*nvi + 1] / bb;
             }
             else{
-                t = 1.0 / (bb - cc[lev - 1] * aa);
-                cc[lev] *= t;
-                dd[lev] = (dd[lev] - dd[lev - 1] * aa) * t;
+                t = 1.0 / (bb - cc[threadIdx.x*nvi + lev - 1] * aa);
+                cc[threadIdx.x*nvi + lev] *= t;
+                dd[threadIdx.x*nvi + lev] = (dd[threadIdx.x*nvi + lev] - dd[threadIdx.x*nvi + lev - 1] * aa) * t;
             }    
         }
         Whs_d[id*nvi + nv]      = 0.0;
         Whs_d[id*nvi]           = 0.0; 
-        Whs_d[id*nvi + nv - 1] = dd[nv-1];
+        Whs_d[id*nvi + nv - 1] = dd[threadIdx.x*nvi + nv-1];
         // Updates vertical momentum
-        for (int lev = nvi - 2; lev > 0; lev--) Whs_d[id*nvi + lev] = (-cc[lev] * Whs_d[id*nvi + lev + 1] + dd[lev]);
+        for (int lev = nvi - 2; lev > 0; lev--)
+            Whs_d[id*nvi + lev] = (-cc[threadIdx.x*nvi + lev] * Whs_d[id*nvi + lev + 1] + dd[threadIdx.x*nvi + lev]);
 
         for (int lev = 0; lev < nv; lev++){
 
@@ -327,9 +343,6 @@ __global__ void Vertical_Eq( double *Whs_d        ,
             }
         }
     }
-
-    delete [] cc;
-    delete [] dd;
 }
 
 

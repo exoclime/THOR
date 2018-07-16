@@ -45,7 +45,7 @@ glevel = 4
 # Parameter beta for spring dynamics
 spring_beta = 1.15
 # Number of vertical layers
-vlevel = 40
+vlevel = 10
 
 # diffusion
 # Hyper-diffusion

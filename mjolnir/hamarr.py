@@ -237,6 +237,7 @@ def u(input,grid,output,sigmaref):
     for cc in C.collections:
         cc.set_edgecolor("face") #fixes a stupid bug in matplotlib 2.0
     plt.gca().invert_yaxis()
+    plt.gca().set_yscale("log")
     plt.xlabel('Latitude (deg)')
     plt.ylabel('Pressure (mba)')
     clb = plt.colorbar(C)
