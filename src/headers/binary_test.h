@@ -107,7 +107,7 @@ struct output_def
 
 
 
-map<string, output_def> build_definitions(ESP & esp, const Icogrid & grd);
+map<string, output_def> build_definitions(ESP & esp, Icogrid & grd);
 
 // singleton storing class for debug
 class binary_test

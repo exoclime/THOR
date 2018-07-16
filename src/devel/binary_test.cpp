@@ -59,7 +59,7 @@
 
 
 // define all the variables we can check in the debugging functions
-map<string, output_def> build_definitions( ESP & esp, const Icogrid & grid)
+map<string, output_def> build_definitions( ESP & esp, Icogrid & grid)
 {
   
     map<string, output_def> out =
@@ -90,12 +90,12 @@ map<string, output_def> build_definitions( ESP & esp, const Icogrid & grid)
 	  
 	  {"Adv_d",         { esp.Adv_d,         esp.nv*esp.point_num*3,   "Advection", "Adv", true}},
 	  {"v_d",           { esp.v_d,           esp.nv*esp.point_num*3,   "Velocity", "v", true}},
-	  /*
+	  
 	  // grid
 	  {"point_xyz",     { grid.point_xyz, grid.point_num*3, "xyz", "x", false}},
 	  
 	  {"point_xyzq",    { grid.point_xyzq, grid.point_num*3*6, "xyzq", "xq", false}},
-	  */
+	  
 	  /*
               disable int tables for now
               {"pent_ind",      { grid.pent_ind, 12, "pent_ind", "pi", false}},
@@ -104,22 +104,23 @@ map<string, output_def> build_definitions( ESP & esp, const Icogrid & grid)
               {"halo",          { grid.halo, grid.nh, "halo", "halo", false}},
               {"maps",          { grid.maps, (grid.nl_region+2)*(grid.nl_region+2)*grid.nr, "maps", "m", false}},
             */
-	  /*
+	  
 	  {"func_r",        { grid.func_r, 3*grid.point_num, "func_r", "f", false}},
 	  {"areas",         { grid.areas, 6*3*grid.point_num, "areas", "a", false}},
 	  {"areasTr",       { grid.areasTr, 6*grid.point_num, "areasTr", "aTr", false}},
-          
+	  
 	  {"areasT",        { grid.areasT, grid.point_num, "areasT", "aT", false}},
 	  {"nvec",          { grid.nvec, 6*3*grid.point_num, "nvec", "nc", false}},
 	  {"nvecoa",        { grid.nvecoa, 6*3*grid.point_num, "nvecoa", "na", false}},
 	  {"nvecti",        { grid.nvecti, 6*3*grid.point_num, "nvecti", "nti", false}},
 	  {"nvecte",        { grid.nvecte, 6*3*grid.point_num, "nvecte", "nte", false}},
+	  
 	  {"Altitude",      { grid.Altitude, grid.nv, "Altitude", "Alt", false}},
 	  {"Altitudeh",     { grid.Altitudeh, grid.nvi, "Altitudeh", "Alth", false}},
 	  {"lonlat",        { grid.lonlat, 2*grid.point_num, "lonlat", "ll", false}},
+	  
 	  {"div",           { grid.div, 7*3*grid.point_num, "div", "d", false}},
 	  {"grad",          { grid.grad, 7*3*grid.point_num, "grad", "g", false }}
-	  */
         };
 
     return out;        
