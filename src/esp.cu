@@ -392,7 +392,6 @@ int main (int argc,  char** argv){
 
     USE_BENCHMARK();
     INIT_BENCHMARK(X, Grid);
-
     
     BENCH_POINT("0", "Grid", vector<string>({}), vector<string>({ "func_r", "areas",
                 "areasTr", "areasT", "nvec", "nvecoa", "nvecti", "nvecte", "Altitude", "Altitudeh", "lonlat",
@@ -454,11 +453,14 @@ int main (int argc,  char** argv){
                 taulw            );
     }
 
+
     if (!load_initial)
     {
         printf("error loading initial conditions from %s.\n", initial_conditions.c_str());
         return -1;       
     }
+
+    
 
     // Check presence of output files
     path results(output_path);
@@ -634,7 +636,6 @@ int main (int argc,  char** argv){
         output_file_idx += 1;
         step_idx += 1;
     }
-    
     
 // *********************************************************************************************    
 //  Starting model Integration.

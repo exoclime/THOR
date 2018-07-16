@@ -98,7 +98,7 @@ using namespace std;
 
 struct output_def
 {
-    double * data;
+    double *& data;
     int size;
     string name;
     string short_name;
@@ -107,7 +107,7 @@ struct output_def
 
 
 
-map<string, output_def> build_definitions(const ESP & esp, const Icogrid & grd);
+map<string, output_def> build_definitions(ESP & esp, const Icogrid & grd);
 
 // singleton storing class for debug
 class binary_test
@@ -144,10 +144,7 @@ public:
     }
 
     
-    void set_definitions(const map<string, output_def> & defs)
-    {
-        output_definitions = defs;
-    }
+    void set_definitions(const map<string, output_def> & defs);
     
 private:
     vector<string> current_input_vars;

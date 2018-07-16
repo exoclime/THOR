@@ -47,4 +47,4 @@
 
 #pragma once
 
-void getDeviceData(double * device, double * host, int size);  
+void getDeviceData(const double * device, double * host, int size);  

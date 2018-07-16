@@ -44,9 +44,9 @@
 
 // benchmarking
 // if defined run benchmark functions
-//#define BENCHMARKING
+#define BENCHMARKING
 // compare benchmark point to references
-//#define BENCH_POINT_COMPARE
+#define BENCH_POINT_COMPARE
 // write reference benchmark point
 //#define BENCH_POINT_WRITE
 

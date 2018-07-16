@@ -45,7 +45,7 @@
 ////////////////////////////////////////////////////////////////////////
 
 
-__host__ void getDeviceData(double * device, double * host, int size)
+__host__ void getDeviceData(const double * device, double * host, int size)
 {
     cudaMemcpy(host, device, size, cudaMemcpyDeviceToHost);
 }

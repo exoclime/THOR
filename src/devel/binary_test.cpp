@@ -59,36 +59,44 @@
 
 
 // define all the variables we can check in the debugging functions
-map<string, output_def> build_definitions(const ESP & esp, const Icogrid & grid)
-{    
+map<string, output_def> build_definitions( ESP & esp, const Icogrid & grid)
+{
+  
     map<string, output_def> out =
         {
             // {"map name, {variable pointer, table size, name, short name, on device}}
-            {"Rho_d",         { esp.Rho_d,         esp.nv*esp.point_num,   "Density", "rho", true }},
-            {"pressure_d",    { esp.pressure_d,    esp.nv*esp.point_num,   "Pressure", "P", true }},
-            {"Mh_d",          { esp.Mh_d,          esp.nv*esp.point_num*3, "Horizontal Momentum", "Mh", true}},
-            {"Wh_d",          { esp.Wh_d,          esp.nvi*esp.point_num,  "Vertical Momentum", "Wh", true}},
-            {"temperature_d", { esp.temperature_d, esp.nv*esp.point_num,   "Temperature", "T", true}},
-            {"W_d",           { esp.W_d,           esp.nv*esp.point_num,   "W vert momentum", "W", true }},
-
-            // RK variables
-            {"pressures_d",   { esp.pressures_d,   esp.nv*esp.point_num,   "RK pressures", "ps", true}},
-            {"Rhos_d",        { esp.Rhos_d,        esp.nv*esp.point_num,   "RK Rhos", "rhos", true}},
-            {"Mhs_d",         { esp.Mhs_d,         esp.nv*esp.point_num*3, "RK Mhs", "Mhs", true}},
-            {"Ws_d",          { esp.Ws_d,          esp.nv*esp.point_num,   "RK Ws", "Ws", true}},
-            {"Whs_d",         { esp.Whs_d,         esp.nvi*esp.point_num,  "RK Whs", "Whs", true}},
-            {"pressurek_d",   { esp.pressurek_d,   esp.nv*esp.point_num,   "RK pressurek", "pk", true}},
-            {"Rhok_d",        { esp.Rhok_d,        esp.nv*esp.point_num,   "RK Rhok", "Rhok", true}},
-            {"Mhk_d",         { esp.Mhk_d,         esp.nv*esp.point_num*3, "RK Mhk", "Mhk", true}},
-            {"Wk_d",          { esp.Wk_d,          esp.nv*esp.point_num,   "RK Wk", "Wk", true}},
-            {"Whk_d",         { esp.Whk_d,         esp.nvi*esp.point_num,  "RK Whk", "Whk", true}},
-            // local variables
-            {"Adv_d",         { esp.Adv_d,         esp.nv*esp.point_num*3,   "Advection", "Adv", true}},
-            {"v_d",           { esp.v_d,           esp.nv*esp.point_num*3,   "Velocity", "v", true}},
-            // grid
-            {"point_xyz",     { grid.point_xyz, grid.point_num*3, "xyz", "x", false}},
-            {"point_xyzq",    { grid.point_xyzq, grid.point_num*3*6, "xyzq", "xq", false}},
-            /*
+	  {"Rho_d",         { esp.Rho_d,         esp.nv*esp.point_num,   "Density", "rho", true}},
+	  
+	  {"pressure_d",    { esp.pressure_d,    esp.nv*esp.point_num,   "Pressure", "P", true}},
+	  {"Mh_d",          { esp.Mh_d,          esp.nv*esp.point_num*3, "Horizontal Momentum", "Mh", true}},
+	  {"Wh_d",          { esp.Wh_d,          esp.nvi*esp.point_num,  "Vertical Momentum", "Wh", true}},
+	  {"temperature_d", { esp.temperature_d, esp.nv*esp.point_num,   "Temperature", "T", true}},
+	  
+	  {"W_d",           { esp.W_d,           esp.nv*esp.point_num,   "W vert momentum", "W", true }},
+	  
+	  // RK variables
+	  {"pressures_d",   { esp.pressures_d,   esp.nv*esp.point_num,   "RK pressures", "ps", true}},
+	  {"Rhos_d",        { esp.Rhos_d,        esp.nv*esp.point_num,   "RK Rhos", "rhos", true}},
+	  {"Mhs_d",         { esp.Mhs_d,         esp.nv*esp.point_num*3, "RK Mhs", "Mhs", true}},
+	  {"Ws_d",          { esp.Ws_d,          esp.nv*esp.point_num,   "RK Ws", "Ws", true}},
+	  {"Whs_d",         { esp.Whs_d,         esp.nvi*esp.point_num,  "RK Whs", "Whs", true}},
+	  {"pressurek_d",   { esp.pressurek_d,   esp.nv*esp.point_num,   "RK pressurek", "pk", true}},
+	  {"Rhok_d",        { esp.Rhok_d,        esp.nv*esp.point_num,   "RK Rhok", "Rhok", true}},
+	  
+	  {"Mhk_d",         { esp.Mhk_d,         esp.nv*esp.point_num*3, "RK Mhk", "Mhk", true}},
+	  {"Wk_d",          { esp.Wk_d,          esp.nv*esp.point_num,   "RK Wk", "Wk", true}},
+	  {"Whk_d",         { esp.Whk_d,         esp.nvi*esp.point_num,  "RK Whk", "Whk", true}},
+	  // local variables
+	  
+	  {"Adv_d",         { esp.Adv_d,         esp.nv*esp.point_num*3,   "Advection", "Adv", true}},
+	  {"v_d",           { esp.v_d,           esp.nv*esp.point_num*3,   "Velocity", "v", true}},
+	  /*
+	  // grid
+	  {"point_xyz",     { grid.point_xyz, grid.point_num*3, "xyz", "x", false}},
+	  
+	  {"point_xyzq",    { grid.point_xyzq, grid.point_num*3*6, "xyzq", "xq", false}},
+	  */
+	  /*
               disable int tables for now
               {"pent_ind",      { grid.pent_ind, 12, "pent_ind", "pi", false}},
             
@@ -96,21 +104,22 @@ map<string, output_def> build_definitions(const ESP & esp, const Icogrid & grid)
               {"halo",          { grid.halo, grid.nh, "halo", "halo", false}},
               {"maps",          { grid.maps, (grid.nl_region+2)*(grid.nl_region+2)*grid.nr, "maps", "m", false}},
             */
-            {"func_r",        { grid.func_r, 3*grid.point_num, "func_r", "f", false}},
-            {"areas",         { grid.areas, 6*3*grid.point_num, "areas", "a", false}},
-            {"areasTr",       { grid.areasTr, 6*grid.point_num, "areasTr", "aTr", false}},
-            
-            {"areasT",        { grid.areasT, grid.point_num, "areasT", "aT", false}},
-            {"nvec",          { grid.nvec, 6*3*grid.point_num, "nvec", "nc", false}},
-            {"nvecoa",        { grid.nvecoa, 6*3*grid.point_num, "nvecoa", "na", false}},
-            {"nvecti",        { grid.nvecti, 6*3*grid.point_num, "nvecti", "nti", false}},
-            {"nvecte",        { grid.nvecte, 6*3*grid.point_num, "nvecte", "nte", false}},
-            {"Altitude",      { grid.Altitude, grid.nv, "Altitude", "Alt", false}},
-            {"Altitudeh",     { grid.Altitudeh, grid.nvi, "Altitudeh", "Alth", false}},
-            {"lonlat",        { grid.lonlat, 2*grid.point_num, "lonlat", "ll", false}},
-            {"div",           { grid.div, 7*3*grid.point_num, "div", "d", false}},
-            {"grad",          { grid.grad, 7*3*grid.point_num, "grad", "g", false }}
-            
+	  /*
+	  {"func_r",        { grid.func_r, 3*grid.point_num, "func_r", "f", false}},
+	  {"areas",         { grid.areas, 6*3*grid.point_num, "areas", "a", false}},
+	  {"areasTr",       { grid.areasTr, 6*grid.point_num, "areasTr", "aTr", false}},
+          
+	  {"areasT",        { grid.areasT, grid.point_num, "areasT", "aT", false}},
+	  {"nvec",          { grid.nvec, 6*3*grid.point_num, "nvec", "nc", false}},
+	  {"nvecoa",        { grid.nvecoa, 6*3*grid.point_num, "nvecoa", "na", false}},
+	  {"nvecti",        { grid.nvecti, 6*3*grid.point_num, "nvecti", "nti", false}},
+	  {"nvecte",        { grid.nvecte, 6*3*grid.point_num, "nvecte", "nte", false}},
+	  {"Altitude",      { grid.Altitude, grid.nv, "Altitude", "Alt", false}},
+	  {"Altitudeh",     { grid.Altitudeh, grid.nvi, "Altitudeh", "Alth", false}},
+	  {"lonlat",        { grid.lonlat, 2*grid.point_num, "lonlat", "ll", false}},
+	  {"div",           { grid.div, 7*3*grid.point_num, "div", "d", false}},
+	  {"grad",          { grid.grad, 7*3*grid.point_num, "grad", "g", false }}
+	  */
         };
 
     return out;        
@@ -142,6 +151,7 @@ void binary_test::check_data(const string & iteration,
             data_output.push_back(it->second);
         }
     }
+
     
 // Specific debugging functions
 #ifdef BENCH_POINT_WRITE
@@ -170,18 +180,18 @@ void binary_test::output_reference(const string & iteration,
         {
             // copy data to host if needed
             // and write it to the output file
-            if (def.device_ptr)
+	    if (def.device_ptr)
             {
-                getDeviceData(def.data, mem_buf.get(), def.size * sizeof(double));
-                s.append_table(mem_buf.get(),
+	      getDeviceData(def.data, mem_buf.get(), def.size * sizeof(double));
+	       s.append_table(mem_buf.get(),
                                def.size,
-                               def.name,
+                               def.short_name,
                                "-");
             }
             else
-                s.append_table(def.data,
+	      s.append_table(def.data,
                                def.size,
-                               def.name,
+                               def.short_name,
                                "-");
         }
 
@@ -219,12 +229,12 @@ bool binary_test::compare_to_reference(const string & iteration,
             // and write it to the output file
             if (def.device_ptr)
             {
-                getDeviceData(def.data, mem_buf.get(), def.size * sizeof(double));
-                comp = compare_to_saved_data(s, def.name, mem_buf.get(), def.size);
+	      getDeviceData(def.data, mem_buf.get(), def.size * sizeof(double));
+                comp = compare_to_saved_data(s, def.short_name, mem_buf.get(), def.size);
             }
             else
             {
-                comp = compare_to_saved_data(s, def.name, def.data, def.size);
+	      comp = compare_to_saved_data(s, def.short_name, def.data, def.size);
             }
 
             oss << " " << def.short_name <<": " << comp;
@@ -243,5 +253,19 @@ bool binary_test::compare_to_reference(const string & iteration,
         
         return out;
 }
+
+void binary_test::set_definitions(const map<string, output_def> & defs)
+{
+  output_definitions = defs;
+  int memsize = 0;
+  for (auto & d : defs)
+  {
+    if (d.second.size > memsize)
+      memsize = d.second.size;
+  }
+
+  mem_buf = std::unique_ptr<double[]>(new double[memsize], std::default_delete<double[]>());
+}
+
 
 #endif // BENCHMARKING
