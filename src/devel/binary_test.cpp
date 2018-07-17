@@ -131,16 +131,16 @@ map<string, output_def> build_definitions( ESP & esp, Icogrid & grid)
 binary_test::binary_test(string output_dir_,
                          string output_base_name_):
     output_dir(output_dir_),
-    output_base_name(output_base_name_)
+    output_base_name(output_base_name_),
+    nan_check_d(nullptr)
 {
     create_output_dir(output_dir);
-
-    init_device_mem_check(nan_check_d);
+    
 }
 binary_test::~binary_test()
 {
-
-    deinit_device_mem_check(nan_check_d);
+    if (nan_check_d != nullptr)
+        deinit_device_mem_check(nan_check_d);
 }
 // generic data test function
 void binary_test::check_data(const string & iteration,
@@ -148,6 +148,11 @@ void binary_test::check_data(const string & iteration,
                     const vector<string> & input_vars,
                     const vector<string> & output_vars)
 {
+    if ( nan_check_d == nullptr)
+    {
+        nan_check_d = init_device_mem_check(nan_check_d);
+    }
+    
     // load definitions for variables
     vector<output_def> data_output;
     for (auto & name: output_vars)
@@ -181,7 +186,7 @@ bool binary_test::check_nan(const string & iteration,
 {
     bool out = true;
     std::ostringstream oss;
-    oss  << std::setw(6) << iteration << " ref: " << std::setw(30) << ref_name;
+    oss  << std::setw(6) << iteration << " NaNChk: " << std::setw(30) << ref_name;
     
     for (auto & def : data_output)
     {

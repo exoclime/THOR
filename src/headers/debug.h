@@ -44,7 +44,7 @@
 
 // benchmarking
 // if defined run benchmark functions
-// #define BENCHMARKING
+#define BENCHMARKING
 
 // ***************************************
 // * binary comparison
@@ -53,10 +53,10 @@
 // write reference benchmark point
 //#define BENCH_POINT_WRITE
 // print out more debug info, by default, only print out failures
-// #define BENCH_PRINT_DEBUG
+#define BENCH_PRINT_DEBUG
 // ***************************************
 // * check for NaNs
-// #define BENCH_NAN_CHECKS
+#define BENCH_NAN_CHECK
 
 // path to benchmark result directory
 #define BENCHMARK_DUMP_REF_PATH   "results/ref/"

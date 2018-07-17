@@ -43,6 +43,8 @@
 // 1.0     16/08/2017 Released version  (JM)
 //
 ////////////////////////////////////////////////////////////////////////
+#include <iostream>
+using namespace std;
 
 
 __host__ void getDeviceData(const double * device, double * host, int size)
@@ -50,9 +52,12 @@ __host__ void getDeviceData(const double * device, double * host, int size)
     cudaMemcpy(host, device, size, cudaMemcpyDeviceToHost);
 }
 
-void init_device_mem_check(bool *ptr)
+bool * init_device_mem_check(bool * ptr)
 {
     cudaMalloc((void **)&ptr, sizeof (bool));
+
+    return ptr;
+    
 }
 
 void deinit_device_mem_check(bool *ptr)
@@ -68,10 +73,11 @@ __global__ void isnan_check_device(double *array, int size, bool *check)
 //  Description: Check for nan in array.
 
   int idx = threadIdx.x+blockDim.x*blockIdx.x;
-
-  if (isnan(array[idx])) {
+  
+  if (idx < size && isnan(array[idx])) {
       *check = true;
   }
+ 
 }
 
 
@@ -83,7 +89,7 @@ __host__ bool check_array_for_nan(double * ptr, int size, bool on_device, bool *
     {
         bool check_h = false;
         cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
-        isnan_check_device<<< 16, 256 >>>(ptr, size, check_d);
+        isnan_check_device<<< size/256+1, 256 >>>(ptr, size, check_d);
         cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
 
         return check_d;
