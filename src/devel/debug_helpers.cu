@@ -107,3 +107,16 @@ __host__ bool check_array_for_nan(double * ptr, int size, bool on_device, bool *
     
 
 }
+
+void check_last_cuda_error(string ref_name)
+{
+    cudaError_t err = cudaGetLastError();
+            
+    // Check device query
+    if (err != cudaSuccess) 
+    {
+        printf("'%s' cuda error: %s\n", ref_name.c_str(), cudaGetErrorString(err));
+    }
+}
+
+

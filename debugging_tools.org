@@ -8,7 +8,8 @@ Thor contains some tools to check values and get some feedback when everything f
 
 ** NaN Checks
    The code can run NaN checks on various tables, to test that the simulation values didn't explode and go crazy.
-
+** CUDA check
+   Checks and reports the last CUDA error
 ** How to enable the tests
    The main point to enable the tests are the ~#defines~ in ~src/headers/debug.h~. The tests are enabled by uncommenting some of the defines and recompiling.
 
@@ -16,7 +17,8 @@ Thor contains some tools to check values and get some feedback when everything f
    - ~BENCH_POINT_WRITE~ enables writing of reference files to ~results/ref/~.
    - ~BENCH_POINT_COMPARE~ enable comparison of simulation data to reference files saved previously with ~BENCH_POINT_WRITE~.
    - ~BENCH_PRINT_DEBUG~ by default, only print out if comparison failed, with this enabled, print state of comparison at each step.
-   - ~BENCH_NAN_CHECKS~ enables NaN checks on data table
+   - ~BENCH_NAN_CHECKS~ enables NaN checks on data table.
+   - ~BENCH_CHECK_LAST_CUDA_ERROR~ enables check of the last cuda error and report if there is one.
 *** what gets checked?
     The code contains lines like this
 #+BEGIN_SRC C++

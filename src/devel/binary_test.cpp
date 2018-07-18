@@ -73,7 +73,9 @@ map<string, output_def> build_definitions( ESP & esp, Icogrid & grid)
 	  {"temperature_d", { esp.temperature_d, esp.nv*esp.point_num,   "Temperature", "T", true}},
 	  
 	  {"W_d",           { esp.W_d,           esp.nv*esp.point_num,   "W vert momentum", "W", true }},
-	  
+          
+	  {"h_d",           { esp.h_d,           esp.nv*esp.point_num,   "Entalphy h", "h", true }},
+          {"hh_d",          { esp.hh_d,          esp.nvi*esp.point_num, "Entalphy hh", "hh", true }},
 	  // RK variables
 	  {"pressures_d",   { esp.pressures_d,   esp.nv*esp.point_num,   "RK pressures", "ps", true}},
 	  {"Rhos_d",        { esp.Rhos_d,        esp.nv*esp.point_num,   "RK Rhos", "rhos", true}},
@@ -147,11 +149,10 @@ void binary_test::check_data(const string & iteration,
                     const string & ref_name,
                     const vector<string> & input_vars,
                     const vector<string> & output_vars)
-{
-    if ( nan_check_d == nullptr)
-    {
-        nan_check_d = init_device_mem_check(nan_check_d);
-    }
+{    
+#ifdef BENCH_CHECK_LAST_CUDA_ERROR
+    check_last_cuda_error(ref_name);
+#endif // BENCH_CHECK_LAST_CUDA_ERROR
     
     // load definitions for variables
     vector<output_def> data_output;
@@ -176,8 +177,14 @@ void binary_test::check_data(const string & iteration,
 #endif // BENCH_POINT_COMPARE
 
 #ifdef BENCH_NAN_CHECK
+    if ( nan_check_d == nullptr)
+    {
+        nan_check_d = init_device_mem_check(nan_check_d);
+    }
+    
     check_nan(iteration, ref_name, data_output);
-#endif // BENCH_NAN_CHECK    
+#endif // BENCH_NAN_CHECK
+
 }
 
 bool binary_test::check_nan(const string & iteration,
@@ -226,10 +233,13 @@ void binary_test::output_reference(const string & iteration,
 	    if (def.device_ptr)
             {
 	      getDeviceData(def.data, mem_buf.get(), def.size * sizeof(double));
+              check_last_cuda_error(string("output ") +ref_name + string(" ") +def.name);
+              
+              
 	       s.append_table(mem_buf.get(),
                                def.size,
                                def.short_name,
-                               "-");
+                               "-");               
             }
             else
 	      s.append_table(def.data,
@@ -264,7 +274,7 @@ bool binary_test::compare_to_reference(const string & iteration,
         bool out = true;
         std::ostringstream oss;
         oss << std::left << std::setw(50) << output_name;
-        oss  << std::setw(6) << iteration << " ref: " << std::setw(30) << ref_name;
+        oss  << std::setw(8) << iteration << " ref: " << std::setw(30) << ref_name;
         
         for (auto & def : data_output)
         {
