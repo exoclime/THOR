@@ -133,8 +133,8 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
 
         // Updates: Adv_d, v_d
         Compute_Advec_Cori1<LN,LN><<<NB,NT>>>(Adv_d      ,
-                                              v_d        ,
-                                              Mhk_d      ,
+                                              (double3*)v_d        ,
+                                              (double3*)Mhk_d      ,
                                               div_d      ,
                                               Wk_d       ,
                                               Rhok_d     ,
