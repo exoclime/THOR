@@ -93,7 +93,7 @@ class IcoGridPainter:
 
         # indexing function through rhombis
         # level
-        g = int(pow((num_points - 2)/10, 1/4))
+        g = int(pow((num_points - 2)/10, 1/4)) - 2
         num_rhombi = 10
         # nfaces
         num_subrhombi = int(pow(4.0, g - 4))

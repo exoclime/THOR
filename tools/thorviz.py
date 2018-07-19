@@ -124,19 +124,21 @@ for fc in range(num_rhombi):
             # horizontal
             for i in range(nl_reg):
                 for j in range(nl_reg):
-                    H = num_color_points/num_points
+                    #H = num_color_points/num_points
                     #H = i/(nl_reg-1)*0.5
                     #H = (i*nl_reg + j) / (2*nl_reg*nl_reg)
                     #S = 1.0
                     #V = 1.0
-                    #H = fc/(num_rhombi-1)*0.5
+                    H = fc/(num_rhombi-1)*0.5
                     #S = (i + j) / (nl_reg*2)
                     #V = 1.0
                     S = i/(nl_reg-1)*0.5+0.25
                     V = j/(nl_reg-1)*0.5+0.25
                     #V = j/(nl_reg-1)
 
-                    c = HSV_to_RGB(360.0*H, S, V)
+                    #c = HSV_to_RGB(360.0*H, S, V)
+                    c = [i/(nl_reg-1)*0.5+0.5, j/(nl_reg-1) *
+                         0.5+0.5, 0.5*fc/(num_rhombi-1)+0.5]
                     #c[0] = i/(num_points-1)
                     #c[1] = idx/(num_points-1)
                     colors[num_color_points][0] = c[0]
