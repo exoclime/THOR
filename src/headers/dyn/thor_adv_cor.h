@@ -43,10 +43,10 @@
 // Computes the 3D advection terms and the velocities in cartesians.
 // (no poles)
 template <int NX, int NY>
-__global__ void Compute_Advec_Cori1(double * Adv_d     , // Advection term.
+__global__ void Compute_Advec_Cori1(double3 * Adv_d     , // Advection term.
                                     double3 * v_d       , // 3D velocity (cartesians).
                                     double3 * Mh_d      , // Horizontal momentum.
-                                    double * div_d     , // Divergence operator.
+                                    double3 * div_d     , // Divergence operator.
                                     double * W_d       , // Vertical momentum.
                                     double * Rho_d     , // Density.
                                     double * Altitude_d, // Altitude.
@@ -63,7 +63,7 @@ __global__ void Compute_Advec_Cori1(double * Adv_d     , // Advection term.
     int lev= blockIdx.y;
 
     int pt1, pt2, pt3, pt4, pt5, pt6;
-    double div0, div1, div2, div3, div4, div5, div6;
+    double3 div0, div1, div2, div3, div4, div5, div6;
     int nhl = nl_region + 2;
     int nhl2 = nhl*nhl;
 
@@ -79,9 +79,7 @@ __global__ void Compute_Advec_Cori1(double * Adv_d     , // Advection term.
     /////////////////////////////////////////
     __shared__ double3 v_s[(NX + 2)*(NY + 2)];
     __shared__ double3 M_s[(NX + 2)*(NY + 2)];
-    __shared__ double nflxx_s[NX*NY];
-    __shared__ double nflxy_s[NX*NY];
-    __shared__ double nflxz_s[NX*NY];
+    __shared__ double3 nflx_s[NX*NY];
     /////////////////////////////////////////
 
     bool pent_ind = 0; // 
@@ -205,118 +203,94 @@ __global__ void Compute_Advec_Cori1(double * Adv_d     , // Advection term.
     else rscale = 1.0;
 
     // Initialize fluxes.
-    nflxx_s[iri] = 0.0;
-    nflxy_s[iri] = 0.0;
-    nflxz_s[iri] = 0.0;
+    nflx_s[iri].x = 0.0;
+    nflx_s[iri].y = 0.0;
+    nflx_s[iri].z = 0.0;
 
     // Calculate divergence.
     {
-        int k = 0;
+        div0 = div_d[id * 7 + 0];
+        div1 = div_d[id * 7 + 1];
+        div2 = div_d[id * 7 + 2];
+        div3 = div_d[id * 7 + 3];
+        div4 = div_d[id * 7 + 4];
+        div5 = div_d[id * 7 + 5];
+        div6 = div_d[id * 7 + 6]; // For pent_ind = 1 div6 is equal to 0.
+
+        nflx_s[iri].x += rscale*(div0.x * v_s[ir].x  * M_s[ir].x +
+                                div1.x * v_s[pt1].x * M_s[pt1].x +
+                                div2.x * v_s[pt2].x * M_s[pt2].x +
+                                div3.x * v_s[pt3].x * M_s[pt3].x +
+                                div4.x * v_s[pt4].x * M_s[pt4].x +
+                                div5.x * v_s[pt5].x * M_s[pt5].x +
+                                div6.x * v_s[pt6].x * M_s[pt6].x);
+
+        nflx_s[iri].y += rscale*(div0.x * v_s[ir].y  * M_s[ir].x +
+                                div1.x * v_s[pt1].y * M_s[pt1].x +
+                                div2.x * v_s[pt2].y * M_s[pt2].x +
+                                div3.x * v_s[pt3].y * M_s[pt3].x +
+                                div4.x * v_s[pt4].y * M_s[pt4].x +
+                                div5.x * v_s[pt5].y * M_s[pt5].x +
+                                div6.x * v_s[pt6].y * M_s[pt6].x);
+
+        nflx_s[iri].z += rscale*(div0.x * v_s[ir].z  * M_s[ir].x  +
+                                div1.x * v_s[pt1].z * M_s[pt1].x +
+                                div2.x * v_s[pt2].z * M_s[pt2].x +
+                                div3.x * v_s[pt3].z * M_s[pt3].x +
+                                div4.x * v_s[pt4].z * M_s[pt4].x +
+                                div5.x * v_s[pt5].z * M_s[pt5].x +
+                                div6.x * v_s[pt6].z * M_s[pt6].x);
+
+        nflx_s[iri].x += rscale*(div0.y * v_s[ir].x  * M_s[ir].y +
+                                div1.y * v_s[pt1].x * M_s[pt1].y +
+                                div2.y * v_s[pt2].x * M_s[pt2].y +
+                                div3.y * v_s[pt3].x * M_s[pt3].y +
+                                div4.y * v_s[pt4].x * M_s[pt4].y +
+                                div5.y * v_s[pt5].x * M_s[pt5].y +
+                                div6.y * v_s[pt6].x * M_s[pt6].y);
+
+        nflx_s[iri].y += rscale*(div0.y * v_s[ir].y  * M_s[ir].y +
+                                div1.y * v_s[pt1].y * M_s[pt1].y +
+                                div2.y * v_s[pt2].y * M_s[pt2].y +
+                                div3.y * v_s[pt3].y * M_s[pt3].y +
+                                div4.y * v_s[pt4].y * M_s[pt4].y +
+                                div5.y * v_s[pt5].y * M_s[pt5].y +
+                                div6.y * v_s[pt6].y * M_s[pt6].y);
+
+        nflx_s[iri].z += rscale*(div0.y * v_s[ir].z  * M_s[ir].y  +
+                                div1.y * v_s[pt1].z * M_s[pt1].y +
+                                div2.y * v_s[pt2].z * M_s[pt2].y +
+                                div3.y * v_s[pt3].z * M_s[pt3].y +
+                                div4.y * v_s[pt4].z * M_s[pt4].y +
+                                div5.y * v_s[pt5].z * M_s[pt5].y +
+                                div6.y * v_s[pt6].z * M_s[pt6].y);
         
-        div0 = div_d[id * 7 * 3 + 3 * 0 + k];
-        div1 = div_d[id * 7 * 3 + 3 * 1 + k];
-        div2 = div_d[id * 7 * 3 + 3 * 2 + k];
-        div3 = div_d[id * 7 * 3 + 3 * 3 + k];
-        div4 = div_d[id * 7 * 3 + 3 * 4 + k];
-        div5 = div_d[id * 7 * 3 + 3 * 5 + k];
-        div6 = div_d[id * 7 * 3 + 3 * 6 + k]; // For pent_ind = 1 div6 is equal to 0.
+        nflx_s[iri].x += rscale*(div0.z * v_s[ir].x  * M_s[ir].z +
+                                div1.z * v_s[pt1].x * M_s[pt1].z +
+                                div2.z * v_s[pt2].x * M_s[pt2].z +
+                                div3.z * v_s[pt3].x * M_s[pt3].z +
+                                div4.z * v_s[pt4].x * M_s[pt4].z +
+                                div5.z * v_s[pt5].x * M_s[pt5].z +
+                                div6.z * v_s[pt6].x * M_s[pt6].z);
 
-        nflxx_s[iri] += rscale*(div0 * v_s[ir].x  * M_s[ir].x +
-                                div1 * v_s[pt1].x * M_s[pt1].x +
-                                div2 * v_s[pt2].x * M_s[pt2].x +
-                                div3 * v_s[pt3].x * M_s[pt3].x +
-                                div4 * v_s[pt4].x * M_s[pt4].x +
-                                div5 * v_s[pt5].x * M_s[pt5].x +
-                                div6 * v_s[pt6].x * M_s[pt6].x);
+        nflx_s[iri].y += rscale*(div0.z * v_s[ir].y  * M_s[ir].z +
+                                div1.z * v_s[pt1].y * M_s[pt1].z +
+                                div2.z * v_s[pt2].y * M_s[pt2].z +
+                                div3.z * v_s[pt3].y * M_s[pt3].z +
+                                div4.z * v_s[pt4].y * M_s[pt4].z +
+                                div5.z * v_s[pt5].y * M_s[pt5].z +
+                                div6.z * v_s[pt6].y * M_s[pt6].z);
 
-        nflxy_s[iri] += rscale*(div0 * v_s[ir].y  * M_s[ir].x +
-                                div1 * v_s[pt1].y * M_s[pt1].x +
-                                div2 * v_s[pt2].y * M_s[pt2].x +
-                                div3 * v_s[pt3].y * M_s[pt3].x +
-                                div4 * v_s[pt4].y * M_s[pt4].x +
-                                div5 * v_s[pt5].y * M_s[pt5].x +
-                                div6 * v_s[pt6].y * M_s[pt6].x);
-
-        nflxz_s[iri] += rscale*(div0 * v_s[ir].z  * M_s[ir].x  +
-                                div1 * v_s[pt1].z * M_s[pt1].x +
-                                div2 * v_s[pt2].z * M_s[pt2].x +
-                                div3 * v_s[pt3].z * M_s[pt3].x +
-                                div4 * v_s[pt4].z * M_s[pt4].x +
-                                div5 * v_s[pt5].z * M_s[pt5].x +
-                                div6 * v_s[pt6].z * M_s[pt6].x);
-
-        k = 1;
-        
-        div0 = div_d[id * 7 * 3 + 3 * 0 + k];
-        div1 = div_d[id * 7 * 3 + 3 * 1 + k];
-        div2 = div_d[id * 7 * 3 + 3 * 2 + k];
-        div3 = div_d[id * 7 * 3 + 3 * 3 + k];
-        div4 = div_d[id * 7 * 3 + 3 * 4 + k];
-        div5 = div_d[id * 7 * 3 + 3 * 5 + k];
-        div6 = div_d[id * 7 * 3 + 3 * 6 + k]; // For pent_ind = 1 div6 is equal to 0.
-
-        nflxx_s[iri] += rscale*(div0 * v_s[ir].x  * M_s[ir].y +
-                                div1 * v_s[pt1].x * M_s[pt1].y +
-                                div2 * v_s[pt2].x * M_s[pt2].y +
-                                div3 * v_s[pt3].x * M_s[pt3].y +
-                                div4 * v_s[pt4].x * M_s[pt4].y +
-                                div5 * v_s[pt5].x * M_s[pt5].y +
-                                div6 * v_s[pt6].x * M_s[pt6].y);
-
-        nflxy_s[iri] += rscale*(div0 * v_s[ir].y  * M_s[ir].y +
-                                div1 * v_s[pt1].y * M_s[pt1].y +
-                                div2 * v_s[pt2].y * M_s[pt2].y +
-                                div3 * v_s[pt3].y * M_s[pt3].y +
-                                div4 * v_s[pt4].y * M_s[pt4].y +
-                                div5 * v_s[pt5].y * M_s[pt5].y +
-                                div6 * v_s[pt6].y * M_s[pt6].y);
-
-        nflxz_s[iri] += rscale*(div0 * v_s[ir].z  * M_s[ir].y  +
-                                div1 * v_s[pt1].z * M_s[pt1].y +
-                                div2 * v_s[pt2].z * M_s[pt2].y +
-                                div3 * v_s[pt3].z * M_s[pt3].y +
-                                div4 * v_s[pt4].z * M_s[pt4].y +
-                                div5 * v_s[pt5].z * M_s[pt5].y +
-                                div6 * v_s[pt6].z * M_s[pt6].y);
-
-        k = 2;
-        
-        div0 = div_d[id * 7 * 3 + 3 * 0 + k];
-        div1 = div_d[id * 7 * 3 + 3 * 1 + k];
-        div2 = div_d[id * 7 * 3 + 3 * 2 + k];
-        div3 = div_d[id * 7 * 3 + 3 * 3 + k];
-        div4 = div_d[id * 7 * 3 + 3 * 4 + k];
-        div5 = div_d[id * 7 * 3 + 3 * 5 + k];
-        div6 = div_d[id * 7 * 3 + 3 * 6 + k]; // For pent_ind = 1 div6 is equal to 0.
-
-        nflxx_s[iri] += rscale*(div0 * v_s[ir].x  * M_s[ir].z +
-                                div1 * v_s[pt1].x * M_s[pt1].z +
-                                div2 * v_s[pt2].x * M_s[pt2].z +
-                                div3 * v_s[pt3].x * M_s[pt3].z +
-                                div4 * v_s[pt4].x * M_s[pt4].z +
-                                div5 * v_s[pt5].x * M_s[pt5].z +
-                                div6 * v_s[pt6].x * M_s[pt6].z);
-
-        nflxy_s[iri] += rscale*(div0 * v_s[ir].y  * M_s[ir].z +
-                                div1 * v_s[pt1].y * M_s[pt1].z +
-                                div2 * v_s[pt2].y * M_s[pt2].z +
-                                div3 * v_s[pt3].y * M_s[pt3].z +
-                                div4 * v_s[pt4].y * M_s[pt4].z +
-                                div5 * v_s[pt5].y * M_s[pt5].z +
-                                div6 * v_s[pt6].y * M_s[pt6].z);
-
-        nflxz_s[iri] += rscale*(div0 * v_s[ir].z  * M_s[ir].z  +
-                                div1 * v_s[pt1].z * M_s[pt1].z +
-                                div2 * v_s[pt2].z * M_s[pt2].z +
-                                div3 * v_s[pt3].z * M_s[pt3].z +
-                                div4 * v_s[pt4].z * M_s[pt4].z +
-                                div5 * v_s[pt5].z * M_s[pt5].z +
-                                div6 * v_s[pt6].z * M_s[pt6].z);
+        nflx_s[iri].z += rscale*(div0.z * v_s[ir].z  * M_s[ir].z  +
+                                div1.z * v_s[pt1].z * M_s[pt1].z +
+                                div2.z * v_s[pt2].z * M_s[pt2].z +
+                                div3.z * v_s[pt3].z * M_s[pt3].z +
+                                div4.z * v_s[pt4].z * M_s[pt4].z +
+                                div5.z * v_s[pt5].z * M_s[pt5].z +
+                                div6.z * v_s[pt6].z * M_s[pt6].z);
     }
     // Return values (3D advection term and velocities in cartesians).
-    Adv_d[id * 3 * nv + lev * 3 + 0] = nflxx_s[iri];
-    Adv_d[id * 3 * nv + lev * 3 + 1] = nflxy_s[iri];
-    Adv_d[id * 3 * nv + lev * 3 + 2] = nflxz_s[iri];
+    Adv_d[id * nv + lev] = nflx_s[iri];
     v_d[id * nv + lev] = v_s[ir];
 
 }

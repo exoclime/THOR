@@ -131,11 +131,13 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
         cudaDeviceSynchronize();
 
 
+
         // Updates: Adv_d, v_d
-        Compute_Advec_Cori1<LN,LN><<<NB,NT>>>(Adv_d      ,
+            
+        Compute_Advec_Cori1<LN,LN><<<NB,NT>>>((double3*)Adv_d      ,
                                               (double3*)v_d        ,
                                               (double3*)Mhk_d      ,
-                                              div_d      ,
+                                              (double3*)div_d      ,
                                               Wk_d       ,
                                               Rhok_d     ,
                                               Altitude_d ,
