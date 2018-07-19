@@ -121,7 +121,7 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
                                          Cp           ,
                                          point_num    );
     
-    BENCH_POINT_I(*this, current_step, "phy_T")
+    BENCH_POINT_I(current_step, "phy_T", vector<string>({}), vector<string>({"Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"}))
 //  Check for nan.
 
 
@@ -241,7 +241,7 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
                                        A             );
         // isnan_loop <<< 1, 1 >>> (temperature_d, point_num, nv);
     }
-    BENCH_POINT_I(*this, current_step, "phy_hstest")
+    BENCH_POINT_I(current_step, "phy_hstest", vector<string>({}), vector<string>({"Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"}))
 //  Computes the new pressures.
     cudaDeviceSynchronize();
     Compute_pressure <<< NB, NTH >>> (pressure_d   ,
@@ -259,7 +259,7 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
                                               point_num    );
 #endif // BENCHMARKING
     
-    BENCH_POINT_I(*this, current_step, "phy_END")
+    BENCH_POINT_I(current_step, "phy_END", vector<string>({}), vector<string>({"Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"}))
 //
 //END OF INTEGRATION
 //

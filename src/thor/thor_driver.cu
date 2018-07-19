@@ -55,6 +55,7 @@
 
 
 #include "binary_test.h"
+#include "debug_helpers.h"
 
 __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
                         bool   HyDiff      , // Turn on/off hyper-diffusion.
@@ -99,17 +100,16 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
     cudaMemcpy(Wk_d        , W_d        , point_num * nv *     sizeof(double), cudaMemcpyDeviceToDevice);
     cudaMemcpy(Rhok_d      , Rho_d      , point_num * nv *     sizeof(double), cudaMemcpyDeviceToDevice);
     cudaMemcpy(pressurek_d , pressure_d , point_num * nv *     sizeof(double), cudaMemcpyDeviceToDevice);
-
-
+    
     cudaMemset(Mhs_d       , 0, sizeof(double) * 3*point_num * nv);
     cudaMemset(Rhos_d      , 0, sizeof(double) * point_num * nv)  ;
     cudaMemset(Whs_d       , 0, sizeof(double) * point_num * nvi) ;
     cudaMemset(Ws_d        , 0, sizeof(double) * point_num * nv)  ;
     cudaMemset(pressures_d , 0, sizeof(double) * point_num * nv)  ;
 
-    USE_BENCHMARK()
-
-    BENCH_POINT_I(*this, current_step, "thor_init")
+    USE_BENCHMARK();
+    BENCH_POINT_I(current_step, "thor_init", vector<string>({}), vector<string>({"Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"}));
+    
     
 //  Loop for large time integration.
     for(int rk = 0; rk < 3; rk++){
@@ -176,7 +176,7 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
 //      Computes temperature, internal energy, potential temperature and effective gravity.
         cudaDeviceSynchronize();
 
-        BENCH_POINT_I_S(*this, current_step, rk, "Compute_Advec_Cori")
+        BENCH_POINT_I_S( current_step, rk, "Compute_Advec_Cori", vector<string>({}), vector<string>({"Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d", "Adv_d", "v_d"}))
 
         Compute_Temperature_H_Pt_Geff <<< (point_num / NTH) + 1, NTH >>> (temperature_d,
                                                                           pressurek_d  ,
@@ -451,7 +451,6 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
                                               point_num     ,
                                               DeepModel     ,
                                               NonHydro      );
-
 //      Updates or initializes deviations.
         // check_h = false;
         // cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
@@ -596,7 +595,7 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
 //          Vertical Momentum
             cudaDeviceSynchronize();
 
-            BENCH_POINT_I_SS(*this, current_step, rk, ns, "Momentum_Eq")
+            BENCH_POINT_I_SS( current_step, rk, ns, "Momentum_Eq", vector<string>({}), vector<string>({"Rho_d", "pressures_d", "Mhs_d", "Wh_d", "temperature_d", "W_d"}))
 
             Prepare_Implicit_Vertical <LN,LN>  <<<NB, NT >>>(Mhs_d         ,
                                                              h_d           ,
@@ -612,7 +611,6 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
                                                              maps_d        ,
                                                              nl_region     ,
                                                              DeepModel     );
-
             cudaDeviceSynchronize();
             Prepare_Implicit_Vertical_Poles<6><<<2, 1>>> (Mhs_d         ,
                                                           h_d           ,
@@ -629,7 +627,6 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
                                                           point_num     ,
                                                           nv            ,
                                                           DeepModel     );
-
             cudaDeviceSynchronize();
 
             
@@ -659,20 +656,14 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
                                                              nvi        ,
                                                              DeepModel  );
 
-            
-            cudaError_t err = cudaGetLastError();
-            
-            
-            // Check device query
-            if (err != cudaSuccess) 
-            {
-                printf("%s\n", cudaGetErrorString(err));
-            }
-
 //          Pressure and density equations.
             cudaDeviceSynchronize();
 
-            BENCH_POINT_I_SS(*this, current_step, rk, ns, "Vertical_Eq")
+            BENCH_POINT_I_SS( current_step, rk, ns, "Vertical_Eq", vector<string>({}), vector<string>({ "Whs_d", "Ws_d",
+                            "pressures_d",
+                            "h_d", "hh_d",
+                            "Rhos_d"
+                            }))
 
             Density_Pressure_Eqs <LN,LN>  <<<NB, NT >>>(pressures_d,
                                                         pressurek_d,
@@ -752,12 +743,14 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
                                                      point_num  ,
                                                      nv         );
 
-        BENCH_POINT_I_S(*this, current_step, rk, "RK2")
+        BENCH_POINT_I_S( current_step, rk, "RK2", vector<string>({}), vector<string>({"Rhos_d", "Rhok_d",
+                        "Mhs_d", "Mhk_d", "Whs_d", "Whk_d",
+                        "pressures_d", "pressurek_d" }))
     }
 //  Update diagnostic variables.
     cudaDeviceSynchronize();
 
-    BENCH_POINT_I(*this, current_step, "END")
+    BENCH_POINT_I( current_step, "END", vector<string>({}), vector<string>({"Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"}))
 
     cudaMemcpy(Mh_d       , Mhk_d       , point_num * nv * 3 * sizeof(double), cudaMemcpyDeviceToDevice);
     cudaMemcpy(Wh_d       , Whk_d       , point_num * nvi*     sizeof(double), cudaMemcpyDeviceToDevice);

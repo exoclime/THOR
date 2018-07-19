@@ -52,10 +52,6 @@
 #include "storage.h"
 
 
-__host__ void ESP::getDeviceData(double * device, double * host, int size)
-{
-    cudaMemcpy(host, device, size, cudaMemcpyDeviceToHost);
-}
 
 
 __host__ void ESP::CopyToHost(){

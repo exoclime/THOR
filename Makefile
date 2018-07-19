@@ -24,7 +24,7 @@ SM:=35 # Streaming Multiprocessor version
 arch := -arch sm_$(SM)
 
 # objects
-obj_cuda   := esp.o grid.o esp_initial.o planet.o thor_driver.o profx_driver.o esp_output.o
+obj_cuda   := esp.o grid.o esp_initial.o planet.o thor_driver.o profx_driver.o esp_output.o debug_helpers.o
 obj_cpp := storage.o binary_test.o config_file.o cmdargs.o directories.o
 obj := $(obj_cpp) $(obj_cuda)
 
