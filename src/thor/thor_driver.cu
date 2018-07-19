@@ -140,7 +140,7 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
                                               Rhok_d     ,
                                               Altitude_d ,
                                               A          ,
-                                              func_r_d   ,
+                                              (double3*)func_r_d   ,
                                               maps_d     ,
                                               nl_region  ,
                                               DeepModel);

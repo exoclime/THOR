@@ -51,7 +51,7 @@ __global__ void Compute_Advec_Cori1(double * Adv_d     , // Advection term.
                                     double * Rho_d     , // Density.
                                     double * Altitude_d, // Altitude.
                                     double   A         , // Radius.
-                                    double * func_r_d  , // Unit vectors normal to the spherical surface.
+                                    double3 * func_r_d  , // Unit vectors normal to the spherical surface.
                                     int * maps_d       , // Global indexes. 
                                     int nl_region      , // Length of the side of each rhombi (from the sphere decomposition).
                                     bool DeepModel     ){// Switches on and off the deep atmosphere solution (see headers/define.h).
@@ -92,14 +92,14 @@ __global__ void Compute_Advec_Cori1(double * Adv_d     , // Advection term.
     id = ig;
     if (x == 0 && y == 0) if (maps_d[ib * nhl2] == -1) pent_ind = 1;
 
-    v_s[ir] = Mh_d[ig * nv + lev];
-    M_s[ir] = v_s[ir];
+    M_s[ir] = Mh_d[ig * nv + lev];
     rho = Rho_d[ig*nv + lev];
     w   = W_d[ig*nv + lev];
-
-    v_s[ir].x = v_s[ir].x / rho + (w / rho) * func_r_d[ig * 3 + 0];
-    v_s[ir].y = v_s[ir].y / rho + (w / rho) * func_r_d[ig * 3 + 1];
-    v_s[ir].z = v_s[ir].z / rho + (w / rho) * func_r_d[ig * 3 + 2];
+    double3 func_r = func_r_d[ig];
+    
+    v_s[ir].x = M_s[ir].x / rho + (w / rho) * func_r.x;
+    v_s[ir].y = M_s[ir].y / rho + (w / rho) * func_r.y;
+    v_s[ir].z = M_s[ir].z / rho + (w / rho) * func_r.z;
 
     ///////////////////////////////
     //////////// Halo /////////////
@@ -161,13 +161,14 @@ __global__ void Compute_Advec_Cori1(double * Adv_d     , // Advection term.
     if (load_halo){
         ig = maps_d[ib * nhl2 + ir2];
         if (ig >= 0){
-            v_s[ir2] = Mh_d[ig* nv + lev];
-            M_s[ir2] = v_s[ir2];
+            M_s[ir2] = Mh_d[ig* nv + lev];
             rho = Rho_d[ig * nv + lev];
             w = W_d[ig * nv + lev];
-            v_s[ir2].x = v_s[ir2].x / rho + (w / rho) * func_r_d[ig * 3 + 0];
-            v_s[ir2].y = v_s[ir2].y / rho + (w / rho) * func_r_d[ig * 3 + 1];
-            v_s[ir2].z = v_s[ir2].z / rho + (w / rho) * func_r_d[ig * 3 + 2];
+            double3 func_r = func_r_d[ig];
+            
+            v_s[ir2].x = M_s[ir2].x / rho + (w / rho) * func_r.x;
+            v_s[ir2].y = M_s[ir2].y / rho + (w / rho) * func_r.y;
+            v_s[ir2].z = M_s[ir2].z / rho + (w / rho) * func_r.z;
         }
         // we can probably ignore this as it's never used and set to 0 by divergence for pentagons. 
         //   either set it to zero automagically or use mappings
@@ -316,9 +317,8 @@ __global__ void Compute_Advec_Cori1(double * Adv_d     , // Advection term.
     Adv_d[id * 3 * nv + lev * 3 + 0] = nflxx_s[iri];
     Adv_d[id * 3 * nv + lev * 3 + 1] = nflxy_s[iri];
     Adv_d[id * 3 * nv + lev * 3 + 2] = nflxz_s[iri];
-    v_d[id * nv + lev].x = v_s[ir].x;
-    v_d[id * nv + lev].y = v_s[ir].y;
-    v_d[id * nv + lev].z = v_s[ir].z;
+    v_d[id * nv + lev] = v_s[ir];
+
 }
 
 // Computes the 3D advection terms and the velocities in cartesians.
