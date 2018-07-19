@@ -66,7 +66,7 @@ class IcoGridPainter:
         num_points = int(len(self.lonlat)/2)
         vertices = np.zeros((num_points, 3),
                             dtype=np.float32)
-
+        print("number of points: ", num_points)
         # r = 1.2
         # w = 2.0*math.acos(1.0/(2.0*sin(pi/5.0)))
 
@@ -106,6 +106,7 @@ class IcoGridPainter:
         def idx(fc, kx, ky, i, j):
             return nl2*(fc*nfaces + ky*kxl + kx) + j*nl_reg + i
 
+        print("subdivision level: ", g)
         # num segments in rhombis
         num_segments = int(2*(pow(2, g)*(pow(2, g)+1)))*num_rhombi
         # num segments in halo
@@ -176,8 +177,8 @@ class IcoGridPainter:
 
         draw_rhomb = [0, 1, 2, 3, 4, 5, 6, 7, 8,  9]
         #draw_rhomb = [5, 6, 7, 8, 9]
-        #halos = False
-        halos = True
+        halos = False
+        #halos = True
         triangle_idx = 0
         for fc in range(num_rhombi):
             if fc not in draw_rhomb:

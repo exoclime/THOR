@@ -74,14 +74,14 @@ folder = pathlib.Path(args.folder)
 
 #num_points = int(len(xyz)/3)
 
-grid_dataset = "../results/esp_output_grid_Earth.h5"
+grid_dataset = folder / "esp_output_grid_Earth.h5"
 
 #print("grid def")
 grid = h5py.File(grid_dataset)
 lonlat = grid['lonlat']
 num_points = int(len(lonlat)/2)
 colors = np.zeros((num_points, 3), dtype=np.float32)
-
+print("num points in file (lonlat)", num_points)
 
 for i in range(num_points):
     #idx = maps[i]
@@ -97,7 +97,7 @@ for i in range(num_points):
 # indexing function through rhombis
 # level
 print("num points", num_points)
-g = int(pow((num_points - 2)/10, 1/4))
+g = int(pow((num_points - 2)/10, 1/4)) - 2
 print("level: ", g)
 num_rhombi = 10
 # nfaces
@@ -107,6 +107,8 @@ num_points_side_region = int(pow(2, 4))
 nl_reg = num_points_side_region
 nl2 = int(pow(num_points_side_region, 2))
 kxl = int(sqrt(num_subrhombi))
+print("nl_reg: ", nl_reg)
+print("kxl: ", kxl)
 
 
 def idx(fc, kx, ky, i, j):
