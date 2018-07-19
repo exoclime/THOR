@@ -74,7 +74,7 @@ __global__ void Compute_Advec_Cori1(double * Adv_d     , // Advection term.
     double w;
 
     int ir = (y + 1)*nhl + x + 1;   // Region index
-    int iri, ir2, twot, id;
+    int iri, ir2, id;
 
     /////////////////////////////////////////
     __shared__ double v_s[(NX + 2)*(NY + 2) * 3];
@@ -144,9 +144,6 @@ __global__ void Compute_Advec_Cori1(double * Adv_d     , // Advection term.
     if (y == 0){
         ir2 = y * nhl + (x + 1);
         
-
-        
-
         ig = maps_d[ib * nhl2 + ir2];
         if (ig >= 0){
             v_s[ir2 * 3 + 0] = Mh_d[ig * 3 * nv + lev * 3 + 0];
@@ -162,6 +159,7 @@ __global__ void Compute_Advec_Cori1(double * Adv_d     , // Advection term.
             v_s[ir2 * 3 + 2] = v_s[ir2 * 3 + 2] / rho + (w / rho) * func_r_d[ig * 3 + 2];
         }
         else{
+            // set to 0 if it is a pentagon index
             v_s[ir2 * 3 + 0] = 0.0;
             v_s[ir2 * 3 + 1] = 0.0;
             v_s[ir2 * 3 + 2] = 0.0;
