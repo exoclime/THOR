@@ -109,8 +109,11 @@ __global__ void Compute_Advec_Cori1(double * Adv_d     , // Advection term.
     //////////// Halo /////////////
     ///////////////////////////////
     // x: 0 halo
-    if (x == 0) {
-        ir2 = (y + 1) * nhl + x;
+//    if (x == 0) {
+//        ir2 = (y + 1) * nhl + x;
+    if ( y == 0 )
+    {
+        ir2 = (x + 1) * nhl;
         ig = maps_d[ib * nhl2 + ir2];
         v_s[ir2 * 3 + 0] = Mh_d[ig * 3 * nv + lev * 3 + 0];
         v_s[ir2 * 3 + 1] = Mh_d[ig * 3 * nv + lev * 3 + 1];
@@ -125,8 +128,11 @@ __global__ void Compute_Advec_Cori1(double * Adv_d     , // Advection term.
         v_s[ir2 * 3 + 2] = v_s[ir2 * 3 + 2] / rho + (w / rho) * func_r_d[ig * 3 + 2];
     }
     // x: nhl halo
-    if (x == nhl - 3){
-        ir2 = (y + 1) * nhl + x + 2;
+    //if (x == nhl - 3){
+//        ir2 = (y + 1) * nhl + x + 2;
+    if ( y == 3 )
+    {
+        ir2 = (x + 1) * nhl + nhl - 3 + 2;
         ig = maps_d[ib * nhl2 + ir2];
         v_s[ir2 * 3 + 0] = Mh_d[ig * 3 * nv + lev * 3 + 0];
         v_s[ir2 * 3 + 1] = Mh_d[ig * 3 * nv + lev * 3 + 1];
@@ -141,9 +147,10 @@ __global__ void Compute_Advec_Cori1(double * Adv_d     , // Advection term.
         v_s[ir2 * 3 + 2] = v_s[ir2 * 3 + 2] / rho + (w / rho) * func_r_d[ig * 3 + 2];
     }
     // y: 0 halo
-    if (y == 0){
-        ir2 = y * nhl + (x + 1);
-        
+    //if (y == 0){
+    //    ir2 = y * nhl + (x + 1);
+    if (y == 7){
+        ir2 = x+1;
         ig = maps_d[ib * nhl2 + ir2];
         if (ig >= 0){
             v_s[ir2 * 3 + 0] = Mh_d[ig * 3 * nv + lev * 3 + 0];
@@ -158,6 +165,8 @@ __global__ void Compute_Advec_Cori1(double * Adv_d     , // Advection term.
             v_s[ir2 * 3 + 1] = v_s[ir2 * 3 + 1] / rho + (w / rho) * func_r_d[ig * 3 + 1];
             v_s[ir2 * 3 + 2] = v_s[ir2 * 3 + 2] / rho + (w / rho) * func_r_d[ig * 3 + 2];
         }
+        // we can ignore this as it's never used and set to 0 by divergence for pentagons. 
+        //   either set it to zero automagically or use mappings
         else{
             // set to 0 if it is a pentagon index
             v_s[ir2 * 3 + 0] = 0.0;
@@ -172,10 +181,11 @@ __global__ void Compute_Advec_Cori1(double * Adv_d     , // Advection term.
     
 
     // x: 0, y: 0 corner point
-    if (y == 0 && x == 0)
+//    if (y == 0 && x == 0) {
+//        ir2 = y * nhl + x;
+    if (x == 4 && y == 4)
     {
-                
-        ir2 = y * nhl + x;
+        ir2 = 0;
         ig = maps_d[ib * nhl2 + ir2];
         if (ig >= 0){
             v_s[ir2 * 3 + 0] = Mh_d[ig * 3 * nv + lev * 3 + 0];
@@ -201,9 +211,12 @@ __global__ void Compute_Advec_Cori1(double * Adv_d     , // Advection term.
     }
 
     // y: nhl halo
-    if (y == nhl - 3) {
-
-        ir2 = (y + 2) * nhl + (x + 1);
+//    if (y == nhl - 3) {
+//        ir2 = (y + 2) * nhl + (x + 1);
+    if ( y == 11 ) {
+        
+        ir2 = (nhl - 3 + 2 )*nhl + ( x + 1);
+    
         ig = maps_d[ib * nhl2 + ir2];
         v_s[ir2 * 3 + 0] = Mh_d[ig * 3 * nv + lev * 3 + 0];
         v_s[ir2 * 3 + 1] = Mh_d[ig * 3 * nv + lev * 3 + 1];
@@ -219,9 +232,12 @@ __global__ void Compute_Advec_Cori1(double * Adv_d     , // Advection term.
     }
 
     // x: nhl, y: nhl corner point
-    if (y == nhl - 3 && x == nhl - 3)
-    {
-        ir2 = (y + 2) * nhl + (x + 2);
+    // if (y == nhl - 3 && x == nhl - 3) {
+    // ir2 = (y + 2) * nhl + (x + 2); 
+    if (y == 4 && x == 5) {
+
+        ir2 = (nhl - 3 + 2)*nhl +(nhl-3+2);
+        
         ig = maps_d[ib * nhl2 + ir2];
         v_s[ir2 * 3 + 0] = Mh_d[ig * 3 * nv + lev * 3 + 0];
         v_s[ir2 * 3 + 1] = Mh_d[ig * 3 * nv + lev * 3 + 1];
