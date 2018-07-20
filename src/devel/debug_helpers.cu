@@ -44,7 +44,6 @@
 //
 ////////////////////////////////////////////////////////////////////////
 #include <iostream>
-using namespace std;
 
 
 __host__ void getDeviceData(const double * device, double * host, int size)
@@ -74,7 +73,7 @@ __global__ void isnan_check_device(double *array, int size, bool *check)
 
   int idx = threadIdx.x+blockDim.x*blockIdx.x;
   
-  if (idx < size && isnan(array[idx])) {
+  if (idx < size && ::isnan(array[idx])) {
       *check = true;
   }
  
@@ -108,7 +107,7 @@ __host__ bool check_array_for_nan(double * ptr, int size, bool on_device, bool *
 
 }
 
-void check_last_cuda_error(string ref_name)
+void check_last_cuda_error(std::string ref_name)
 {
     cudaError_t err = cudaGetLastError();
             
