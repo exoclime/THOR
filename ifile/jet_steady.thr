@@ -33,7 +33,7 @@ Tmean = 1759
 # Reference surface pressure [Pa]
 P_ref = 100000.0
 # Altitude of the top of the model domain [m]
-Top_altitude = 8e6
+Top_altitude = 3.6e6
 # Strength of diffusion
 Diffc = 0.0099
 
@@ -45,7 +45,7 @@ glevel = 4
 # Parameter beta for spring dynamics
 spring_beta = 1.15
 # Number of vertical layers
-vlevel = 10
+vlevel = 40
 
 # diffusion
 # Hyper-diffusion
@@ -55,7 +55,7 @@ DivDampP =    true
 
 # Model options
 # Non-hydrostatic parameter
-NonHydro = false
+NonHydro = true
 # Deep atmosphere
 DeepModel = true
 # Initial conditions
@@ -80,7 +80,7 @@ results_path = jet_steady_results
 
 # output
 # output every n steps
-n_out = 2500
+n_out = 100
 
 # GPU ID number
 GPU_ID_N = 0

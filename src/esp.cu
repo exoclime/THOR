@@ -399,8 +399,12 @@ int main (int argc,  char** argv){
            Grid.point_num     );// Number of grid points
 
     USE_BENCHMARK();
+    INIT_BENCHMARK(X, Grid);
 
-    BENCH_POINT_GRID(Grid);
+    BENCH_POINT("0", "Grid", vector<string>({}), vector<string>({ "func_r", "areas",
+                "areasTr", "areasT", "nvec", "nvecoa", "nvecti", "nvecte", "Altitude", "Altitudeh", "lonlat",
+                "div", "grad"}))
+
 
     printf(" Setting the initial conditions.\n\n");
 
@@ -459,11 +463,14 @@ int main (int argc,  char** argv){
                 taulw            );
     }
 
+
     if (!load_initial)
     {
         printf("error loading initial conditions from %s.\n", initial_conditions.c_str());
         return -1;
     }
+
+
 
     // Check presence of output files
     path results(output_path);
@@ -516,7 +523,7 @@ int main (int argc,  char** argv){
     int ndevices;
     cudaError_t err = cudaGetDeviceCount(&ndevices);
 
-    int device_major_minor_number = 0;    
+    int device_major_minor_number = 0;
     for (int i = 0; i < ndevices; ++i) {
         // Get device properties
         printf("\n CUDA Device #%d\n", i);
@@ -540,11 +547,11 @@ int main (int argc,  char** argv){
     }
 
     // Check device query
-    if (err != cudaSuccess) 
+    if (err != cudaSuccess)
     {
         printf("Error getting device count.\n");
 	printf("%s\n", cudaGetErrorString(err));
-    }	
+    }
 
     // do we have a device?
     if (ndevices < 1 || err != cudaSuccess)
@@ -560,10 +567,10 @@ int main (int argc,  char** argv){
 	printf("Asked for device #%d but only found %d devices.\n", GPU_ID_N, ndevices);
 	exit(-1);
     }
-    
+
     // do we have the compute capabilities set at compile time
 
-    if ( device_major_minor_number < DEVICE_SM ) 
+    if ( device_major_minor_number < DEVICE_SM )
     {
         printf("Found device with id %d does not have sufficent compute capabilities.\n", GPU_ID_N);
         printf("Capabilities: %d (compiled with SM=%d).\n", device_major_minor_number, DEVICE_SM  );
@@ -639,7 +646,6 @@ int main (int argc,  char** argv){
         output_file_idx += 1;
         step_idx += 1;
     }
-
 
 // *********************************************************************************************
 //  Starting model Integration.

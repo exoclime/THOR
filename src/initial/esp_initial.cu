@@ -298,39 +298,40 @@ __host__ bool ESP::InitialValues(bool rest          ,
 //              Vertical momentum [kg/m3 m/s]
                 W_h[i*nv + lev] = 0.0;     // Center of the layer.
                 Wh_h[i*(nv+1) + lev] = 0.0;// Layers interface.
-                if (hstest == 5) {
-                  //  Number of threads per block.
-                  const int NTH = 256;
 
-                  //  Specify the block sizes.
-                  dim3 NB((point_num / NTH) + 1, nv, 1);
-
-                  cudaMemcpy(Altitude_d , Altitude_h , nv * sizeof(double), cudaMemcpyHostToDevice);
-                  cudaMemcpy(pressure_d , pressure_h , point_num * nv * sizeof(double), cudaMemcpyHostToDevice);
-                  cudaMemcpy(Mh_d , Mh_h , 3 * point_num * nv * sizeof(double), cudaMemcpyHostToDevice);
-                  cudaMemcpy(Rho_d , Rho_h , point_num * nv * sizeof(double), cudaMemcpyHostToDevice);
-                  cudaMemcpy(temperature_d , temperature_h , point_num * nv * sizeof(double), cudaMemcpyHostToDevice);
-                  cudaMemcpy(lonlat_d , lonlat_h , point_num * sizeof(double), cudaMemcpyHostToDevice);
-                  setup_jet <<< NB, NTH >>>  (Mh_d         ,
-                  // setup_jet <<< 1, 1 >>>  (Mh_d,
-                                              pressure_d   ,
-                                              Rho_d        ,
-                                              temperature_d,
-                                              Cp           ,
-                                              Rd           ,
-                                              Omega        ,
-                                              A            ,
-                                              Altitude_d   ,
-                                              lonlat_d     ,
-                                              point_num    );
-
-                  cudaMemcpy(Mh_h , Mh_d , 3 * point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
-                  cudaMemcpy(temperature_h , temperature_d , point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
-                  cudaMemcpy(pressure_h , pressure_d , point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
-                  cudaMemcpy(Rho_h , Rho_d , point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
-                }
             }
             Wh_h[i*(nv + 1) + nv] = 0.0;
+        }
+        if (hstest == 5) {
+          //  Number of threads per block.
+          const int NTH = 256;
+
+          //  Specify the block sizes.
+          dim3 NB((point_num / NTH) + 1, nv, 1);
+
+          cudaMemcpy(Altitude_d , Altitude_h , nv * sizeof(double), cudaMemcpyHostToDevice);
+          cudaMemcpy(pressure_d , pressure_h , point_num * nv * sizeof(double), cudaMemcpyHostToDevice);
+          cudaMemcpy(Mh_d , Mh_h , 3 * point_num * nv * sizeof(double), cudaMemcpyHostToDevice);
+          cudaMemcpy(Rho_d , Rho_h , point_num * nv * sizeof(double), cudaMemcpyHostToDevice);
+          cudaMemcpy(temperature_d , temperature_h , point_num * nv * sizeof(double), cudaMemcpyHostToDevice);
+          cudaMemcpy(lonlat_d , lonlat_h , 2*point_num * sizeof(double), cudaMemcpyHostToDevice);
+          setup_jet <<< NB, NTH >>>  (Mh_d         ,
+          // setup_jet <<< 1, 1 >>>  (Mh_d,
+                                      pressure_d   ,
+                                      Rho_d        ,
+                                      temperature_d,
+                                      Cp           ,
+                                      Rd           ,
+                                      Omega        ,
+                                      A            ,
+                                      Altitude_d   ,
+                                      lonlat_d     ,
+                                      point_num    );
+
+          cudaMemcpy(Mh_h , Mh_d , 3 * point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+          cudaMemcpy(temperature_h , temperature_d , point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+          cudaMemcpy(pressure_h , pressure_d , point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+          cudaMemcpy(Rho_h , Rho_d , point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
         }
 
         simulation_start_time = 0.0;

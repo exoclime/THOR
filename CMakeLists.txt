@@ -139,6 +139,7 @@ set(SRC
   src/profx/profx_driver.cu
   src/thor/thor_driver.cu
   src/devel/binary_test.cpp
+  src/devel/debug_helpers.cu
   src/output/storage.cpp
   src/input/config_file.cpp
   src/input/cmdargs.cpp

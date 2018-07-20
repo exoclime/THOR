@@ -48,7 +48,7 @@ parser.add_argument("-pmin","--pressure_min",nargs=1,default=[2000],help='Lowest
 args = parser.parse_args()
 pview = args.pview
 
-valid = ['uver','Tver','Tulev','PTver','ulev','PVver','PVlev','vring','TP','pause']
+valid = ['uver','Tver','Tulev','PTver','ulev','PVver','PVlev','vring','TP','RVlev','pause']
 if 'all' in pview:
     pview = valid
 else:
@@ -116,6 +116,9 @@ if 'PVlev' in pview:
 if 'PVver' in pview:
     #sigmaref = np.arange(1,0,-0.05)
     ham.potential_vort_vert(input,grid,output,sigmaref)
+if 'RVlev' in pview:
+    PR_LV = np.float(args.pressure_lev[0])
+    ham.rela_vort_lev(input,grid,output,PR_LV)
 # if 'vring' in pview:
 #     #still in development...
 #     sigmaref = np.arange(1,0,-0.05)

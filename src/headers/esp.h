@@ -51,6 +51,9 @@
 #include "debug.h"
 
 
+
+
+
 class ESP{
 
 public:
@@ -312,7 +315,6 @@ public:
                 double,
                 const std::string & output_dir);
 
-    void getDeviceData(double * device, double * host, int size);
 
 
     ~ESP();

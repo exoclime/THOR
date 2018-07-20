@@ -77,8 +77,6 @@ bool path_exists(const string & path)
         return true;
     else
         return false;
-    
-
 }
 
 bool create_dir(const string & dir)

@@ -16,23 +16,25 @@
 //     <http://www.gnu.org/licenses/>.
 // ==============================================================================
 //
+// Description: binary correctness test of output, enabled with compile time switches
 //
 //
-// Description: Defines the main model's parameters
 //
-// Method: -
+// Method: [1] - Dumps output to binary file on a flag
+//         [2] - Reads data from binary files on a flag and compare to
+//               dumped output
 //
-// Known limitations: None
-//   
+// Known limitations: None.
 //
-// Known issues: None
-//   
 //
-// If you use this code please cite the following reference: 
+// Known issues: None.
 //
-//       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016  
 //
 // Current Code Owner: Joao Mendonca, EEG. joao.mendonca@csh.unibe.ch
+//
+// If you use this code please cite the following reference:
+//
+//       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016
 //
 // History:
 // Version Date       Comment
@@ -42,26 +44,22 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
-// benchmarking
-// if defined run benchmark functions
-//#define BENCHMARKING
 
-// ***************************************
-// * binary comparison
-// compare benchmark point to references
-//#define BENCH_POINT_COMPARE
-// write reference benchmark point
-//#define BENCH_POINT_WRITE
-// print out more debug info, by default, only print out failures
-//#define BENCH_PRINT_DEBUG
-// ***************************************
-// * check for NaNs
-//#define BENCH_NAN_CHECK
-//#define BENCH_CHECK_LAST_CUDA_ERROR
-
-// path to benchmark result directory
-#define BENCHMARK_DUMP_REF_PATH   "results/ref/"
-#define BENCHMARK_DUMP_BASENAME   "bindata_"
+#pragma once
+#include <string>
+using std::string;
 
 
+// check array for NaNs on device
+// void isnan_check_device(double *array, int width, int height, bool *check);
 
+// helper to copy data from device to host (from any place, without cuda dependencies)
+void getDeviceData(const double * device, double * host, int size);
+
+//define device mem check ptr
+bool * init_device_mem_check(bool *ptr);
+void deinit_device_mem_check(bool *ptr);
+// check array for nan on device array or host array
+bool check_array_for_nan(double * ptr, int size, bool on_device, bool * device_mem_check_b);
+
+void check_last_cuda_error(string ref_name);

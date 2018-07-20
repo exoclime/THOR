@@ -83,7 +83,7 @@ __global__ void setup_jet(double *Mh_d         ,
     // for (id=0;id<num;id++) {
     //   for (lev=0;lev<nv;lev++) {
         double z0 = 1823e3, z1 = 2486e3, dz0 = 414e3;
-        double z = Altitude_d[id*nv+lev];
+        double z = Altitude_d[lev];
         double pref = 1e5;
         double U = 500, U0;
         double Fz, dFzdz;
@@ -92,6 +92,7 @@ __global__ void setup_jet(double *Mh_d         ,
         double lon = lonlat_d[id*2];
         double H = 580e3;
         int nlat;
+        int n_trap;
 
         Fz = 0.5*(1-pow(tanh((z-z0)/dz0),3))*sin(M_PI*z/z1);
         dFzdz = 0.5*(-3/dz0*pow(tanh((z-z0)/dz0),2))*(1-pow(tanh((z-z0)/dz0),2))*sin(M_PI*z/z1)\
@@ -102,12 +103,15 @@ __global__ void setup_jet(double *Mh_d         ,
         if (lat>=0) {
           U0 = U*pow(sin(M_PI*pow(sin(lat),2)),3)*Fz;
           dT0dl = dTemp_dphi(U,H,Rd,Omega,A,0.0,Fz,dFzdz);
-          for (nlat=1;nlat<=50;nlat++) { //do trapezoid rule. like a crazy person
-            ltmp = nlat*lat/50;
+          n_trap = 5 + ceil(lat*180/M_PI);
+          for (nlat=1;nlat<=n_trap;nlat++) { //do trapezoid rule. like a crazy person
+            ltmp = nlat*lat/n_trap;
             dT0dl_tmp = dTemp_dphi(U,H,Rd,Omega,A,ltmp,Fz,dFzdz); // ltmp = nlat*lat/50
-            T0 += (dT0dl_tmp + dT0dl)*lat/50/2;
+            T0 += (dT0dl_tmp + dT0dl)*lat/n_trap/2;
             dT0dl = dT0dl_tmp;
           }
+        } else {
+          U0 = 0.0;
         }
 
 //      Update temperature
@@ -119,6 +123,5 @@ __global__ void setup_jet(double *Mh_d         ,
         Mh_d[id*3*nv+lev*3+0] = U0*(-sin(lon))*Rho_d[id*nv+lev];
         Mh_d[id*3*nv+lev*3+1] = U0*(cos(lon))*Rho_d[id*nv+lev];
         Mh_d[id*3*nv+lev*3+2] = 0.0;
-
     }
 }

@@ -145,6 +145,8 @@ def temperature(input,grid,output,sigmaref):
     for cc in C.collections:
         cc.set_edgecolor("face") #fixes a stupid bug in matplotlib 2.0
     plt.gca().invert_yaxis()
+    if np.max(Pref)/np.min(Pref) > 100:
+        plt.gca().set_yscale("log")
     plt.xlabel('Latitude (deg)')
     plt.ylabel('Pressure (mba)')
     clb = plt.colorbar(C)
@@ -237,7 +239,8 @@ def u(input,grid,output,sigmaref):
     for cc in C.collections:
         cc.set_edgecolor("face") #fixes a stupid bug in matplotlib 2.0
     plt.gca().invert_yaxis()
-    plt.gca().set_yscale("log")
+    if np.max(Pref)/np.min(Pref) > 100:
+        plt.gca().set_yscale("log")
     plt.xlabel('Latitude (deg)')
     plt.ylabel('Pressure (mba)')
     clb = plt.colorbar(C)
@@ -431,6 +434,7 @@ def temperature_u_lev(input,grid,output,Plev):
     plt.ylabel('Latitude (deg)')
     plt.xlabel('Longitude (deg)')
     plt.quiver(lonq*180/np.pi,latq*180/np.pi,U,V,color='0.5')
+    #plt.plot(grid.lon*180/np.pi,grid.lat*180/np.pi,'w.')
 
     clb = plt.colorbar(C)
     if not os.path.exists(input.resultsf+'/figures'):
@@ -499,6 +503,8 @@ def potential_temp(input,grid,output,sigmaref):
     for cc in C.collections:
         cc.set_edgecolor("face") #fixes a stupid bug in matplotlib 2.0
     plt.gca().invert_yaxis()
+    if np.max(Pref)/np.min(Pref) > 100:
+        plt.gca().set_yscale("log")
     plt.xlabel('Latitude (deg)')
     plt.ylabel('Pressure (mba)')
     clb = plt.colorbar(C)
@@ -767,6 +773,8 @@ def potential_vort_vert(input,grid,output,sigmaref):
         cc.set_edgecolor("face") #fixes a stupid bug in matplotlib 2.0
 
     plt.gca().invert_yaxis()
+    if np.max(Pref)/np.min(Pref) > 100:
+        plt.gca().set_yscale("log")
     plt.xlabel('Latitude (deg)')
     plt.ylabel('Pressure (mba)')
     #plt.ylabel('Altitude (m)')
@@ -877,6 +885,108 @@ def potential_vort_lev(input,grid,output,sigmaref):
         os.mkdir(input.resultsf+'/figures')
     plt.tight_layout()
     plt.savefig(input.resultsf+'/figures/pot_vort_lev%d_i%d_l%d.pdf'%(sigmaref/input.P_Ref*1000,output.ntsi,output.nts))
+    plt.close()
+
+def rela_vort_lev(input,grid,output,sigmaref):
+    # Set the reference pressure
+
+    #Pref = ps0*sigmaref
+    Pref = np.array([sigmaref])
+    d_sig = np.size(sigmaref)
+    kappa_ad = input.Rd/input.Cp  # adiabatic coefficient
+
+    # Set the latitude-longitude grid.
+    res_deg = 0.1
+    tsp = output.nts-output.ntsi+1
+    lonm, altm = np.meshgrid(grid.lon,grid.Altitude)
+    latm, altm = np.meshgrid(grid.lat,grid.Altitude)
+    loni, lati, alti, ti = np.meshgrid(np.arange(0,2*np.pi,res_deg),\
+        np.arange(-np.pi/2+2*res_deg,np.pi/2-2*res_deg,res_deg),grid.Altitude,np.arange(tsp))
+    d_lon = np.shape(loni)
+
+    #########################
+    # Potential temperature #
+    #########################
+
+    # Initialize arrays
+    # Thetai = np.zeros((grid.point_num,grid.nv))
+    # Theta = np.zeros((d_lon[0],d_lon[1],grid.nv,tsp))
+    Ui = np.zeros((grid.point_num,grid.nv))
+    U = np.zeros((d_lon[0],d_lon[1],grid.nv,tsp))
+    Vi = np.zeros((grid.point_num,grid.nv))
+    V = np.zeros((d_lon[0],d_lon[1],grid.nv,tsp))
+    Wi = np.zeros((grid.point_num,grid.nv))
+    W = np.zeros((d_lon[0],d_lon[1],grid.nv,tsp))
+    Rholl = np.zeros((d_lon[0],d_lon[1],grid.nv,tsp))
+    Pressll = np.zeros((d_lon[0],d_lon[1],grid.nv,tsp))
+
+    # Compute temperatures
+    for t in np.arange(tsp):
+        # Thetai = output.Pressure[:,:,t]/(input.Rd*output.Rho[:,:,t]) * \
+                    # (output.Pressure[:,:,t]/input.P_Ref)**(-kappa_ad)
+        Ui = (output.Mh[0,:,:,t]*(-np.sin(lonm.T)) + \
+                     output.Mh[1,:,:,t]*np.cos(lonm.T) + \
+                     output.Mh[2,:,:,t]*(0))/output.Rho[:,:,t]
+        Vi = (output.Mh[0,:,:,t]*(-np.sin(latm.T)*np.cos(lonm.T)) + \
+                     output.Mh[1,:,:,t]*(-np.sin(latm.T)*np.sin(lonm.T)) + \
+                     output.Mh[2,:,:,t]*np.cos(latm.T))/output.Rho[:,:,t]
+        Wi = (output.Mh[0,:,:,t]*(np.cos(latm.T)*np.cos(lonm.T)) + \
+                     output.Mh[1,:,:,t]*(np.cos(latm.T)*np.sin(lonm.T)) + \
+                     output.Mh[2,:,:,t]*np.sin(latm.T))/output.Rho[:,:,t]
+        for lev in np.arange(grid.nv):
+            # Theta[:,:,lev,t] = interp.griddata(np.vstack([grid.lon,grid.lat]).T,Thetai[:,lev],(loni[:,:,0,0],lati[:,:,0,0]),method='nearest')
+            U[:,:,lev,t] = interp.griddata(np.vstack([grid.lon,grid.lat]).T,Ui[:,lev],(loni[:,:,0,0],lati[:,:,0,0]),method='nearest')
+            V[:,:,lev,t] = interp.griddata(np.vstack([grid.lon,grid.lat]).T,Vi[:,lev],(loni[:,:,0,0],lati[:,:,0,0]),method='nearest')
+            W[:,:,lev,t] = interp.griddata(np.vstack([grid.lon,grid.lat]).T,Wi[:,lev],(loni[:,:,0,0],lati[:,:,0,0]),method='nearest')
+            Rholl[:,:,lev,t] = interp.griddata(np.vstack([grid.lon,grid.lat]).T,output.Rho[:,lev,t],(loni[:,:,0,0],lati[:,:,0,0]),method='nearest')
+            Pressll[:,:,lev,t] = interp.griddata(np.vstack([grid.lon,grid.lat]).T,output.Pressure[:,lev,t],(loni[:,:,0,0],lati[:,:,0,0]),method='nearest')
+
+    # Compute gradient of potential temp
+    # dThdz = dFunc_dZ(Theta,alti,grid.nv)
+    #
+    # dThdlat = dFunc_dLat(Theta,res_deg)/(input.A+alti)
+    #
+    # dThdlon = dFunc_dLon(Theta,res_deg)/(input.A+alti)/np.cos(lati)
+
+    # Compute curl of wind speeds
+    curlVz, curlVlat, curlVlon = CurlF(W,V,U,lati,alti,res_deg,grid.nv,input.A)
+
+    # ok, no idea if I got the curl right, but now I need to add 2*Omega and dot into gradTheta
+    # curlVlon += 2*input.Omega
+    #
+    # curlVz /= Rholl
+    # curlVlat /= Rholl
+    # curlVlon /= Rholl
+    #
+    # Phi_z = curlVz * dThdz + curlVlat * dThdlat + curlVlon * dThdlon
+
+    # Now, I need to interpolate to a pressure grid (or should I?)
+    curlVz2 = np.zeros((d_lon[0],d_lon[1], d_sig, tsp))
+    for t in np.arange(tsp):
+        for ilat in np.arange(d_lon[0]):
+            for ilon in np.arange(d_lon[1]):
+                curlVz2[ilat,ilon,:,t] = interp.pchip_interpolate(Pressll[ilat,ilon,:,t][::-1],
+                                            curlVz[ilat,ilon,:,t][::-1],Pref[::-1])[::-1]
+    #################
+    # Create figure #
+    #################
+
+    # Latitude
+    latp = lati[:,0,0,0]
+    lonp = loni[0,:,0,0]
+
+    # Contour plot
+    C = plt.contourf(lonp*180/np.pi,latp*180/np.pi,curlVz2[:,:,0,0],40,linewidths=None)
+    for cc in C.collections:
+        cc.set_edgecolor("face") #fixes a stupid bug in matplotlib 2.0
+    # plt.gca().invert_yaxis()
+    plt.ylabel('Latitude (deg)')
+    plt.xlabel('Longitude (deg)')
+    clb = plt.colorbar(C)
+    if not os.path.exists(input.resultsf+'/figures'):
+        os.mkdir(input.resultsf+'/figures')
+    plt.tight_layout()
+    plt.savefig(input.resultsf+'/figures/rela_vort_lev%d_i%d_l%d.pdf'%(sigmaref/input.P_Ref*1000,output.ntsi,output.nts))
     plt.close()
 
 def vring(input,grid,output,sigmaref):
