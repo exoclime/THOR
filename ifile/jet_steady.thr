@@ -5,10 +5,10 @@ config_version = 1
 # earth model
 
 # number of steps
-num_steps = 50000
+num_steps = 100000
 
 # length of timesteps imn seconds
-timestep = 120
+timestep = 60
 
 # keys to add
 # TODO: output_dir # relative to working directory
@@ -49,9 +49,9 @@ vlevel = 40
 
 # diffusion
 # Hyper-diffusion
-HyDiff  =    true
+HyDiff  =    false
 # Divergence-damping
-DivDampP =    true
+DivDampP =    false
 
 # Model options
 # Non-hydrostatic parameter
@@ -76,11 +76,11 @@ hstest = 5
 
 # output directory (relative to current working directory)
 # defaults to 'results'
-results_path = jet_steady_results
+results_path = jet_steady_nodis
 
 # output
 # output every n steps
-n_out = 100
+n_out = 1000
 
 # GPU ID number
 GPU_ID_N = 0

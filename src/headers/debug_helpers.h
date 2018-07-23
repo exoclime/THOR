@@ -51,7 +51,7 @@ using std::string;
 
 
 // check array for NaNs on device
-// void isnan_check_device(double *array, int width, int height, bool *check);
+void isnan_check_device(double *array, int width, int height, bool *check);
 
 // helper to copy data from device to host (from any place, without cuda dependencies)
 void getDeviceData(const double * device, double * host, int size);

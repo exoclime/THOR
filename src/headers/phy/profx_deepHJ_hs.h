@@ -113,8 +113,17 @@ __global__ void deepHJ_hs(double *Mh_d         ,
                     + 0.16475329*Ptil*Ptil*Ptil + 0.014241552*Ptil*Ptil*Ptil*Ptil;
           kt_hs = pow(10,-logtrad); //      Temperature forcing constant.
         } else {
-          Tnight = 5529.7168 - 6869.6504*Ptil + 4142.7231*Ptil*Ptil \
+          //Tnight = 5529.7168 - 6869.6504*Ptil + 4142.7231*Ptil*Ptil \
                    - 936.23053*Ptil*Ptil*Ptil + 87.120975*Ptil*Ptil*Ptil*Ptil;
+          //The above seems to be a very poor fit to Tiro... switch to eq B4 instead
+          Tnight = 1696.6986 + 132.2318*Ptil - 174.30459*Ptil*Ptil \
+                   + 12.579612*Ptil*Ptil*Ptil + 59.513639*Ptil*Ptil*Ptil*Ptil \
+                   + 9.6706522*Ptil*Ptil*Ptil*Ptil*Ptil \
+                   - 4.1136048*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil \
+                   - 1.0632301*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil \
+                   + 0.064400203*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil \
+                   + 0.035974396*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil \
+                   + 0.0025740066*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil;
           Tday = Tnight;
           kt_hs = 0.0; //      Temperature forcing constant.
         }

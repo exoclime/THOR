@@ -67,46 +67,46 @@ void deinit_device_mem_check(bool *ptr)
 
 
 
-// __global__ void isnan_check_device(double *array, int size, bool *check)
-// {
-// //
-// //  Description: Check for nan in array.
+__global__ void isnan_check_device(double *array, int size, bool *check)
+{
 //
-//   int idx = threadIdx.x+blockDim.x*blockIdx.x;
-//
-//   if (idx < size && isnan(array[idx])) {
-//       *check = true;
-//   }
-//
-// }
+//  Description: Check for nan in array.
+
+  int idx = threadIdx.x+blockDim.x*blockIdx.x;
+
+  if (idx < size && ::isnan(array[idx])) {
+      *check = true;
+  }
+
+}
 
 
 
-// __host__ bool check_array_for_nan(double * ptr, int size, bool on_device, bool * check_d)
-// {
-//     // TODO: could probably act on multiple arrays through streams
-//     if (on_device)
-//     {
-//         bool check_h = false;
-//         cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
-//         isnan_check_device<<< size/256+1, 256 >>>(ptr, size, check_d);
-//         cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
-//
-//         return check_d;
-//     }
-//     else
-//     {
-//         bool isnan = false;
-//         for (int i = 0; i < size; i++)
-//         {
-//             isnan |= std::isnan(ptr[i]);
-//         }
-//         return isnan;
-//     }
-//
-//
-// 
-// }
+__host__ bool check_array_for_nan(double * ptr, int size, bool on_device, bool * check_d)
+{
+    // TODO: could probably act on multiple arrays through streams
+    if (on_device)
+    {
+        bool check_h = false;
+        cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
+        isnan_check_device<<< size/256+1, 256 >>>(ptr, size, check_d);
+        cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
+
+        return check_d;
+    }
+    else
+    {
+        bool isnan = false;
+        for (int i = 0; i < size; i++)
+        {
+            isnan |= std::isnan(ptr[i]);
+        }
+        return isnan;
+    }
+
+
+
+}
 
 void check_last_cuda_error(string ref_name)
 {
