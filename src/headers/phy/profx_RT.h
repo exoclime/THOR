@@ -156,6 +156,7 @@ __device__ void radclw(double *phtemp         ,
 //  Upward Directed Radiation
 //
     fnet_up_d[id*(nv+1) + 0] = bc*tlow*tlow*tlow*tlow; // Lower boundary;
+    if (fnet_up_d[id*(nv+1)+0] < fnet_dn_d[id*(nv+1)+0]) fnet_up_d[id*(nv+1)+0] = fnet_dn_d[id*(nv+1)+0];
     for(int lev = 1;lev <= nv; lev++){
 
         double eu = 0.0;
