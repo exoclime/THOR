@@ -285,7 +285,10 @@ __host__ bool ESP::InitialValues(bool rest          ,
                         (gamma/sqrt(3) - 1/(gamma*sqrt(3)))*exp(-gamma*tau*sqrt(3))),0.25);
                 }
                 if (hstest == 4) {
-                  double Ptil = log10(pressure_h[i*nv + lev]/100000);
+                  double Ptil = 0.0;
+                  if (pressure_h[i*nv+lev] >= 1e5) {
+                    Ptil = log10(pressure_h[i*nv + lev]/100000);
+                  } 
                   temperature_h[i*nv + lev] = 1696.6986 + 132.2318*Ptil - 174.30459*Ptil*Ptil \
                      + 12.579612*Ptil*Ptil*Ptil + 59.513639*Ptil*Ptil*Ptil*Ptil \
                      + 9.6706522*Ptil*Ptil*Ptil*Ptil*Ptil \
