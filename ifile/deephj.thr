@@ -76,7 +76,7 @@ hstest = 4
 
 # output directory (relative to current working directory)
 # defaults to 'results'
-results_path = deephj_windsoff
+results_path = deephj_results
 
 # output
 # output every n steps

@@ -67,7 +67,7 @@ rest = true
 initial = wasp43_sponge2/esp_output_Wasp43b_re.h5
 
 # Spongebob
-SpongeLayer = false
+SpongeLayer = true
 # latitude rings
 nlat = 20
 ns_sponge = 0.75
@@ -83,7 +83,7 @@ hstest = 0
 
 # output
 # output every n steps
-n_out = 100
+n_out = 6912
 
 # output directory (relative to current working directory)
 # defaults to 'results'

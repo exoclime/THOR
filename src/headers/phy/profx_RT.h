@@ -91,24 +91,24 @@ __device__ double source_func_lin(double bb      ,
                                   double diff_fac){
 
     double e1 = 0.0;
-    // double e2 = 0.0;
-    // double e  = 0.0;
+    double e2 = 0.0;
+    double e  = 0.0;
 
     if(tau >= 1e-10){
-        e1 = bb - bt + (bt-(diff_fac/(tau))*(bb-bt))*(1.0-exp(-(tau)/diff_fac));
-      //  e2 = bl - bt + (bt-(diff_fac/(tau/2.0))*(bl-bt))*(1.0-exp(-(tau/2.0)/diff_fac));
-      //  e  = e1 + e2 *  exp(-(tau/2.0)/diff_fac);
+        e1 = bb - bl + (bl-(diff_fac/(tau/2.0))*(bb-bl))*(1.0-exp(-(tau/2.0)/diff_fac));
+        e2 = bl - bt + (bt-(diff_fac/(tau/2.0))*(bl-bt))*(1.0-exp(-(tau/2.0)/diff_fac));
+        e  = e1 + e2 *  exp(-(tau/2.0)/diff_fac);
     }
     else{
         for(int i = 0; i < 5; i++){
             int fac = factorial_num(i+2);
-            e1 = e1 + (pow(-1.0,i+2.0))*((bb + (i+1)*bt)/fac)*pow((tau)/diff_fac,i+1.0);
-        //    e2 = e2 + (pow(-1.0,i+1.0))*((bl + i*bt)/fac)*pow((tau/2.0)/diff_fac,i);
+            e1 = e1 + (pow(-1.0,i+2.0))*((bl + (i+1)*bl)/fac)*pow((tau/2.0)/diff_fac,i+1.0);
+            e2 = e2 + (pow(-1.0,i+2.0))*((bt + (i+1)*bb)/fac)*pow((tau/2.0)/diff_fac,i+1.0);
         }
-        //e = e1 + e2*exp(-(tau/2.0)/diff_fac);
+        e = e1 + e2*exp(-(tau/2.0)/diff_fac);
     }
 
-    return e1;
+    return e;
 }
 
 __device__ void radclw(double *phtemp         ,

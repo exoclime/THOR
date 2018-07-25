@@ -1044,7 +1044,7 @@ def TPprof(input,grid,output,sigmaref,column):
 
     Tad = T[15]*(P/P[15])**kappa
 
-    plt.plot(Tad,P/100,'r--')
+    # plt.plot(Tad,P/100,'r--')
     plt.gca().invert_yaxis()
     plt.ylabel('Pressure (mbar)')
     plt.xlabel('Temperature [K]')

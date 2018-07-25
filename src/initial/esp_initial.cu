@@ -284,6 +284,17 @@ __host__ bool ESP::InitialValues(bool rest          ,
                   temperature_h[i*nv+lev] = pow(3*Tmean*Tmean*Tmean*Tmean*f*(2/3+1/(gamma*sqrt(3))+\
                         (gamma/sqrt(3) - 1/(gamma*sqrt(3)))*exp(-gamma*tau*sqrt(3))),0.25);
                 }
+                if (hstest == 4) {
+                  double Ptil = log10(pressure_h[i*nv + lev]/100000);
+                  temperature_h[i*nv + lev] = 1696.6986 + 132.2318*Ptil - 174.30459*Ptil*Ptil \
+                     + 12.579612*Ptil*Ptil*Ptil + 59.513639*Ptil*Ptil*Ptil*Ptil \
+                     + 9.6706522*Ptil*Ptil*Ptil*Ptil*Ptil \
+                     - 4.1136048*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil \
+                     - 1.0632301*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil \
+                     + 0.064400203*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil \
+                     + 0.035974396*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil \
+                     + 0.0025740066*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil;
+                }
             }
 
             for (int lev = 0; lev < nv; lev++ ){
