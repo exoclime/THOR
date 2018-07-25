@@ -239,8 +239,16 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
                                        nv           ,
                                        nvi          ,
                                        A             );
-        // isnan_loop <<< 1, 1 >>> (temperature_d, point_num, nv);
     }
+    check_h = false;
+    cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
+    isnan_check<<< 16, NTH >>>(temperature_d, nv, point_num, check_d);
+    cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
+    if(check_h){
+       printf("\n\n Error in NAN check after PROFX:RT!\n");
+       exit(EXIT_FAILURE);
+    }
+
     BENCH_POINT_I(current_step, "phy_hstest", vector<string>({}), vector<string>({"Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"}))
 //  Computes the new pressures.
     cudaDeviceSynchronize();

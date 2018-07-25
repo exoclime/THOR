@@ -48,9 +48,9 @@ __device__ void radcsw(double *phtemp         ,
 
 	// Extra layer to avoid over heating at the top.
     fnet_dn_d[id*(nv+1) + nv] = flux_top*exp(-(1.0/coszrs)*tau);
-    if (isnan(fnet_dn_d[id*(nv+1)+nv]) || isinf(fnet_dn_d[id*(nv+1)+nv])) {
-      printf("%d, %d\n",id,nv);
-    }
+    // if (isnan(fnet_dn_d[id*(nv+1)+nv]) || isinf(fnet_dn_d[id*(nv+1)+nv])) {
+    //   printf("%d, %d\n",id,nv);
+    // }
 
     // Normal integration
 	for(int lev = nv;lev >= 1;lev--) fnet_dn_d[id*(nv+1) + lev-1] = fnet_dn_d[id*(nv+1) + lev]*exp(-(1.0/coszrs)*tau_d[id*nv*2 + (lev-1)*2]);
@@ -180,7 +180,7 @@ __device__ void radclw(double *phtemp         ,
     for(int lev = 0;lev < nv;lev++) {
         dtemp[id*nv+lev] = dtemp[id*nv+lev] + gocp * ((fnet_up_d[id*(nv+1) + lev] - fnet_dn_d[id*(nv+1) + lev]) - (fnet_up_d[id*(nv+1) + lev+1] - fnet_dn_d[id*(nv+1) + lev+1])) /
                                     (phtemp[id*(nv+1)+lev] - phtemp[id*(nv+1)+lev + 1]);
-        // if(id==0) printf("%f, ",fnet_dn_d[id*(nv+1)+lev]);
+
         // if (isnan(dtemp[id*nv+lev])) {
         //   printf("%d, %d\n",id,lev);
         // }
@@ -298,6 +298,7 @@ __global__ void rtm_dual_band (double *pressure_d   ,
             else if(lev == nv){
                 // pp = pressure_d[id*nv + nv-2] - Rho_d[id*nv + nv-1] * gravit * (2*Altitudeh_d[nv]-Altitude_d[nv-1]-Altitude_d[nv-2]);
                 pp = pressure_d[id*nv+nv-2] + (pressure_d[id*nv+nv-1]-pressure_d[id*nv+nv-2])/(Altitude_d[nv-1]-Altitude_d[nv-2])*(2*Altitudeh_d[nv]-Altitude_d[nv-1]-Altitude_d[nv-2]);
+                if (pp < 0) pp = 0;  //prevents pressure at the top from becoming negative
                 ptop  = 0.5*(pressure_d[id*nv + nv-1] + pp);
 
                 phtemp[id*nvi+nv] = ptop;
@@ -400,9 +401,9 @@ __global__ void rtm_dual_band (double *pressure_d   ,
         for(int lev = 0; lev < nv; lev++) {
           temperature_d[id*nv + lev] = ttemp[id*nv+lev] + dtemp[id*nv+lev]*timestep;
           // if (id==0) printf("%e, ",dtemp[id*nv+lev]);
-          // if (isnan(temperature_d[id*nv+lev])) {
-          //   printf("%d, %d\n",id,lev);
-          // }
+          if (isnan(temperature_d[id*nv+lev])) {
+            printf("%d, %d\n",id,lev);
+          }
         }
     }
 }
