@@ -20,7 +20,7 @@
 //
 //
 // Description: Sets up mid latitude jet to test steady state capability of core
-//
+//               based on Polichtchouk+ 2014
 //
 // Method:
 //
@@ -80,8 +80,6 @@ __global__ void setup_jet(double *Mh_d         ,
     int lev = blockIdx.y;
 
     if (id < num){
-    // for (id=0;id<num;id++) {
-    //   for (lev=0;lev<nv;lev++) {
         double z0 = 1823e3, z1 = 2486e3, dz0 = 414e3;
         double z = Altitude_d[lev];
         double pref = 1e5;

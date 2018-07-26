@@ -92,7 +92,7 @@ __host__ bool check_array_for_nan(double * ptr, int size, bool on_device, bool *
         isnan_check_device<<< size/256+1, 256 >>>(ptr, size, check_d);
         cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
 
-        return check_d;
+        return check_h;
     }
     else
     {
@@ -103,9 +103,6 @@ __host__ bool check_array_for_nan(double * ptr, int size, bool on_device, bool *
         }
         return isnan;
     }
-
-
-
 }
 
 void check_last_cuda_error(string ref_name)
