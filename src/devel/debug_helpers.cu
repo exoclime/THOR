@@ -65,7 +65,7 @@ void deinit_device_mem_check(bool *ptr)
 }
 
 
-
+// returns true if data contains a NaN
 __global__ void isnan_check_device(double *array, int size, bool *check)
 {
 //
@@ -80,7 +80,8 @@ __global__ void isnan_check_device(double *array, int size, bool *check)
 }
 
 
-
+// check data for NaNs
+// returns true if data contains a NaN
 __host__ bool check_array_for_nan(double * ptr, int size, bool on_device, bool * check_d)
 {
     // TODO: could probably act on multiple arrays through streams
