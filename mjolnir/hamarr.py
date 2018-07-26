@@ -25,6 +25,11 @@ class input:
         self.P_Ref = openh5['P_Ref'][...]
         self.Top_altitude = openh5['Top_altitude'][...]
         self.Cp = openh5['Cp'][...]
+        self.spring_beta = openh5['spring_beta'][...]
+        self.vlevel = openh5['vlevel'][...]
+        self.glevel = openh5['glevel'][...]
+        self.Gravit = openh5['Gravit'][...]
+        self.spring_dynamics = openh5['spring_dynamics'][...]
         self.resultsf = resultsf
         self.simID = simID
         openh5.close()
@@ -66,6 +71,7 @@ class output:
                 openh5 = h5py.File(fileh5)
             else:
                 raise IOError(fileh5+' not found!')
+            import pdb; pdb.set_trace()
             Rhoi = openh5['Rho'][...]
             Pressurei = openh5['Pressure'][...]
             Mhi = openh5['Mh'][...]
@@ -157,6 +163,9 @@ def temperature(input,grid,output,sigmaref):
     plt.close()
 
 def u(input,grid,output,sigmaref):
+    # contour spacing
+    csp = 200
+
     # Set the reference pressure
     Pref = input.P_Ref*sigmaref
     d_sig = np.size(sigmaref)
@@ -191,7 +200,6 @@ def u(input,grid,output,sigmaref):
     # ZonalMtemp2 = fint2d(Pref,Ptemp[:,0])
 
     # Compute zonal Winds
-    beg = time.time()
     # v = np.hstack((output.Pressure,ZonalMtemp))
     for t in np.arange(tsp):
         for i in np.arange(grid.point_num):
@@ -214,8 +222,6 @@ def u(input,grid,output,sigmaref):
     # plt.plot(Ptemp[0,:],ZonalMtemp1[0,:],'r-')
     # plt.show()
     del ZonalMii, ZonalMi
-    end = time.time()
-    print(end-beg)
 
     # Averaging in time and longitude
     if tsp > 1:
@@ -236,6 +242,10 @@ def u(input,grid,output,sigmaref):
 
     # Contour plot
     C = plt.contourf(latp*180/np.pi,Pref/100,ZonalMlt.T,40)
+
+    levp = np.arange(np.ceil(np.min(ZonalMlt)/csp)*csp,np.floor(np.max(ZonalMlt)/csp)*csp,csp)
+    c2 = plt.contour(latp*180/np.pi,Pref/100,ZonalMlt.T,levels=levp,colors='w',linewidths=1)
+    plt.clabel(c2,inline=1,fontsize=10)
     for cc in C.collections:
         cc.set_edgecolor("face") #fixes a stupid bug in matplotlib 2.0
     plt.gca().invert_yaxis()
