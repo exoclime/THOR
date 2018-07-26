@@ -67,7 +67,8 @@ class IcoGridPainter:
         # vertices = np.zeros((num_vertices, 3),
         #                     dtype=np.float32)
         lonlat = self.dataset.get_grid()
-        num_points = int(lonlat.shape[0])
+        num_points, num_levels = self.dataset.get_dim()
+
         vertices = np.zeros((num_points, 3),
                             dtype=np.float32)
         print("number of points: ", num_points)
@@ -89,18 +90,12 @@ class IcoGridPainter:
         #     [-2.0*pi/5.0, -(pi/2.0-w)]
         # ]
 
-        # for i, a in enumerate(angles):
-        #     vertices[i, :] = spherical(r, a[0], a[1])
-
-        vertices_colors = np.zeros((vertices.shape[0], 3), dtype=np.float32)
-        elements = np.zeros(vertices.shape[0], dtype=np.uint32)
-
         # indexing function through rhombis
         # level
         g = int(pow((num_points - 2)/10, 1/4)) - 2
         num_rhombi = 10
         # nfaces
-        num_subrhombi = int(pow(4.0, g - 4))
+        num_subrhombi = int(pow(4.0, g - 2))
         nfaces = num_subrhombi
         num_points_side_region = int(pow(2, 4))
         nl_reg = num_points_side_region
@@ -111,42 +106,6 @@ class IcoGridPainter:
             return nl2*(fc*nfaces + ky*kxl + kx) + j*nl_reg + i
 
         print("subdivision level: ", g)
-        # num segments in rhombis
-        num_segments = int(2*(pow(2, g)*(pow(2, g)+1)))*num_rhombi
-        # num segments in halo
-
-        print("number of segments:", num_segments)
-
-        # build line array for rhombis
-        lines = np.zeros((num_segments, 2), dtype=np.uint32)
-
-        lines_idx = 0
-        for fc in range(num_rhombi):
-            # sub rhombis
-            for kx in range(kxl):
-                for ky in range(kxl):
-                    # inside one rombi
-                    # horizontal
-                    for i in range(nl_reg):
-                        for j in range(nl_reg-1):
-                            i1 = idx(fc, kx, ky, i, j)
-                            i2 = idx(fc, kx, ky, i, j+1)
-
-                            lines[lines_idx][0] = i1
-                            lines[lines_idx][1] = i2
-
-                            lines_idx += 1
-                    # vertical
-                    for i in range(nl_reg-1):
-                        for j in range(nl_reg):
-                            i1 = idx(fc, kx, ky, i, j)
-                            i2 = idx(fc, kx, ky, i+1, j)
-
-                            lines[lines_idx][0] = i1
-                            lines[lines_idx][1] = i2
-
-                            lines_idx += 1
-        print("number of lines", lines_idx)
 
         # build triangles
         # triangles in rhombi and subrhombi
@@ -180,9 +139,9 @@ class IcoGridPainter:
         triangles = np.zeros((num_triangles, 3), dtype=np.uint32)
 
         draw_rhomb = [0, 1, 2, 3, 4, 5, 6, 7, 8,  9]
-        #draw_rhomb = [5, 6, 7, 8, 9]
+        # draw_rhomb = [5, 6, 7, 8, 9]
         halos = False
-        #halos = True
+        # halos = True
         triangle_idx = 0
         for fc in range(num_rhombi):
             if fc not in draw_rhomb:
@@ -364,26 +323,11 @@ class IcoGridPainter:
 
         print("number of created triangles:", triangle_idx)
 
-        # R = 6371000.0
-        # for i in range(vertices.shape[0]):
-        #     vertices[i][0] = self.xyz[i*3 + 0]/R
-        #     vertices[i][1] = self.xyz[i*3 + 1]/R
-        #     vertices[i][2] = self.xyz[i*3 + 2]/R
-        #     elements[i] = i
-
-        #     vertices_colors[i][0] = self.colors[i][0]
-        #     vertices_colors[i][1] = self.colors[i][1]
-        #     vertices_colors[i][2] = self.colors[i][2]
-
         r = 1.0
         for i in range(vertices.shape[0]):
             vertices[i, :] = spherical(r,
                                        lonlat[i, 0],
                                        lonlat[i, 1])
-
-            vertices_colors[i][0] = 0.0
-            vertices_colors[i][1] = 0.0
-            vertices_colors[i][2] = 0.0
 
         # build VAOs for all input data
         self.vao_list = []
@@ -409,38 +353,36 @@ class IcoGridPainter:
         # # self.grid_elements_vbo = self.create_elements_vbo(lines)
         # self.grid_elements_vbo = self.create_elements_vbo(triangles)
 
-        self.vao_grid = self.create_sphere_vao(
-            vertices, triangles, vertices_colors)
-
-        print(self.data_colors.shape)
-        num_samples = self.data_colors.shape[0]
-        num_levels = self.data_colors.shape[1]
-        num_points = self.data_colors.shape[2]
-        all_vertices = np.zeros((num_samples, num_levels,  num_points, 3),
+        all_vertices = np.zeros((num_levels,  num_points, 3),
                                 dtype=np.float32)
+        all_colors = np.zeros((num_levels,  num_points, 3),
+                              dtype=np.float32)
 
-        all_triangles = np.zeros((num_samples, num_levels,  triangles.shape[0], 3),
+        all_triangles = np.zeros((num_levels,  triangles.shape[0], 3),
                                  dtype=np.uint32)
-        cnt = 0
-        for sample in range(num_samples):
-            for level in range(num_levels):
 
-                all_vertices[sample, level, :, :] = (
-                    1.0+level*0.01) * vertices
+        print("num_levels:", num_levels)
+        for level in range(num_levels):
 
-                all_triangles[sample, level, :, :] = triangles + \
-                    cnt*vertices.shape[0]
-                cnt += 1
+            all_vertices[level, :, :] = (
+                1.0+level*0.01) * vertices
 
-        print(triangles.shape, vertices.shape, cnt, self.data_colors.shape)
+            all_triangles[level, :, :] = triangles + \
+                level*vertices.shape[0]
+
+            all_colors[level, :, :] = 0.5+0.5*level/(num_levels-1)*np.ones((num_points,
+                                                                            3),
+                                                                           dtype=np.float32)
+
         # for sample in range(num_samples):
         #     for level in range(num_levels):
         #         for n in range(num_points):
         #             print(all_triangles[sample, level, n, :])
         #             print(all_vertices[sample, level, n, :])
-        self.vao_list = self.create_sphere_vao(
-            all_vertices, all_triangles, self.data_colors)
-        print(all_vertices.size, self.data_colors.size)
+        self.vao_list = self.create_sphere_vao(all_vertices,
+                                               all_triangles,
+                                               all_colors)
+
         self.num_levels = num_levels
 
     def create_sphere_vao(self, vertices, triangles, colors):
@@ -467,22 +409,34 @@ class IcoGridPainter:
         #        print("paint grid",
         #              self.vao_list[self.draw_idx], self.grid_vertex_count)
 
-        if self.draw_idx == 0:
-            gl.glBindVertexArray(self.vao_grid)
-            gl.glDrawElements(gl.GL_TRIANGLES,
-                              self.grid_elements_count,
-                              gl.GL_UNSIGNED_INT,
-                              None)
-        else:
-            gl.glBindVertexArray(self.vao_list)
+        gl.glBindVertexArray(self.vao_list)
+        idx = 4*self.grid_elements_count*(self.num_levels *
+                                          self.draw_idx + self.altitude)
 
-            idx = 4*self.grid_elements_count * \
-                (self.num_levels*(self.draw_idx-1) + self.altitude)
+        # gl.glDrawElements(gl.GL_TRIANGLES,
+        #                  int(self.grid_elements_count),
+        #                  gl.GL_UNSIGNED_INT,
+        #                  ctypes.c_void_p(idx))
+        gl.glDrawElements(gl.GL_TRIANGLES,
+                          int(self.grid_elements_count),
+                          gl.GL_UNSIGNED_INT,
+                          ctypes.c_void_p(idx))
+        # if self.draw_idx == 0:
+        #     gl.glBindVertexArray(self.vao_grid)
+        #     gl.glDrawElements(gl.GL_TRIANGLES,
+        #                       self.grid_elements_count,
+        #                       gl.GL_UNSIGNED_INT,
+        #                       None)
+        # else:
+        #     gl.glBindVertexArray(self.vao_list)
 
-            gl.glDrawElements(gl.GL_TRIANGLES,
-                              int(self.grid_elements_count),
-                              gl.GL_UNSIGNED_INT,
-                              ctypes.c_void_p(idx))
+        #     idx = 4*self.grid_elements_count *
+        #         (self.num_levels*(self.draw_idx-1) + self.altitude)
+
+        #     gl.glDrawElements(gl.GL_TRIANGLES,
+        #                       int(self.grid_elements_count),
+        #                       gl.GL_UNSIGNED_INT,
+        #                       ctypes.c_void_p(idx))
 #        if self.wireframe:
 #            gl.glPolygonMode(gl.GL_FRONT_AND_BACK, gl.GL_FILL)
 
@@ -548,7 +502,7 @@ class IcoGridPainter:
         gl.glBufferData(gl.GL_ARRAY_BUFFER,
                         colors.nbytes,
                         colors,
-                        gl.GL_DYNAMIC_DRAW)
+                        gl.GL_STATIC_DRAW)
 
         gl.glVertexAttribPointer(1, 3,
                                  gl.GL_FLOAT, False,

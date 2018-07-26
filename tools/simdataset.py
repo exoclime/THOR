@@ -2,6 +2,7 @@
 import numpy as np
 import h5py
 import pathlib
+import re
 
 from math import sqrt
 
@@ -51,7 +52,7 @@ class simdataset:
             if match is not None:
                 basename = match.group(1)
                 number = match.group(2)
-                if basename not in planets:
+                if basename not in self.planets:
                     self.planets[basename] = {'datasets': [(number, f)]}
                 else:
                     self.planets[basename]['datasets'].append((number, f))
@@ -72,8 +73,8 @@ class simdataset:
 
     def select_planet(self, planet):
         self.planet = planet
-        self.grid = h5py.File((self.planets[self.planet]['grid']))
-        self.planet_def = h5py.File((self.planets[self.planet]['def']))
+        self.grid = h5py.File(self.planets[self.planet]['grid'])
+        self.planet_def = h5py.File(self.planets[self.planet]['def'])
 
         self.datasets = self.planets[self.planet]['datasets']
         self.num_samples = len(self.datasets)
@@ -82,7 +83,7 @@ class simdataset:
         self.num_levels = int(self.grid['nv'][0])
 
     def get_planets(self):
-        return self.planets.keys()
+        return list(self.planets.keys())
 
     def get_num_datasets(self):
         return self.num_samples
@@ -98,7 +99,7 @@ class simdataset:
             (self.num_points, self.num_levels, 3), dtype=np.float32)
 
         # return color matching dataset
-        pass colors
+        return colors
 
     def get_vector_data(self, dataset_idx, data_name):
         pass

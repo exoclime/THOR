@@ -14,6 +14,7 @@ from PyQt5 import QtGui, QtCore, uic
 from PyQt5.QtWidgets import QMainWindow, QApplication
 
 from PyQt5.QtCore import QByteArray, QIODevice, Qt, QTimer, pyqtSignal, pyqtSlot
+from simdataset import simdataset
 
 
 def HSV_to_RGB(H, S, V):
@@ -74,181 +75,13 @@ folder = pathlib.Path(args.folder)
 
 #num_points = int(len(xyz)/3)
 
-grid_dataset = folder / "esp_output_grid_Earth.h5"
+dataset = simdataset(folder)
+planets = dataset.get_planets()
+if len(planets) < 1:
+    print("no planet found in dataset")
+    exit(-1)
 
-#print("grid def")
-grid = h5py.File(grid_dataset)
-lonlat = grid['lonlat']
-num_points = int(len(lonlat)/2)
-colors = np.zeros((num_points, 3), dtype=np.float32)
-print("num points in file (lonlat)", num_points)
-
-for i in range(num_points):
-    #idx = maps[i]
-    #c = [0.0, 0.0, 0.0]
-    c = HSV_to_RGB(360.0*i/(num_points - 1), 1.0, 1.0)
-    #c[0] = i/(num_points-1)
-    #c[1] = idx/(num_points-1)
-    colors[i][0] = c[0]
-    colors[i][1] = c[1]
-    colors[i][2] = c[2]
-
-# grid color indexing
-# indexing function through rhombis
-# level
-print("num points", num_points)
-g = int(pow((num_points - 2)/10, 1/4)) - 2
-print("level: ", g)
-num_rhombi = 10
-# nfaces
-num_subrhombi = int(pow(4.0, g - 4))
-nfaces = num_subrhombi
-num_points_side_region = int(pow(2, 4))
-nl_reg = num_points_side_region
-nl2 = int(pow(num_points_side_region, 2))
-kxl = int(sqrt(num_subrhombi))
-print("nl_reg: ", nl_reg)
-print("kxl: ", kxl)
-
-
-def idx(fc, kx, ky, i, j):
-    return nl2*(fc*nfaces + ky*kxl + kx) + j*nl_reg + i
-
-
-num_color_points = 0
-for fc in range(num_rhombi):
-    # sub rhombis
-    for kx in range(kxl):
-        for ky in range(kxl):
-            # inside one rombi
-            # horizontal
-            for i in range(nl_reg):
-                for j in range(nl_reg):
-                    #H = num_color_points/num_points
-                    #H = i/(nl_reg-1)*0.5
-                    #H = (i*nl_reg + j) / (2*nl_reg*nl_reg)
-                    #S = 1.0
-                    #V = 1.0
-                    H = fc/(num_rhombi-1)*0.5
-                    #S = (i + j) / (nl_reg*2)
-                    #V = 1.0
-                    S = i/(nl_reg-1)*0.5+0.25
-                    V = j/(nl_reg-1)*0.5+0.25
-                    #V = j/(nl_reg-1)
-
-                    #c = HSV_to_RGB(360.0*H, S, V)
-                    c = [i/(nl_reg-1)*0.5+0.5, j/(nl_reg-1) *
-                         0.5+0.5, 0.5*fc/(num_rhombi-1)+0.5]
-                    #c[0] = i/(num_points-1)
-                    #c[1] = idx/(num_points-1)
-                    colors[num_color_points][0] = c[0]
-                    colors[num_color_points][1] = c[1]
-                    colors[num_color_points][2] = c[2]
-
-                    num_color_points += 1
-
-
-# read and sort all files
-datasets = folder.glob('esp_output_*_*.h5')
-
-dataset_re = re.compile('esp_output_(.*)_(\d+)')
-
-
-planets = {}
-
-for f in datasets:
-    match = dataset_re.match(f.stem)
-    if match is not None:
-        basename = match.group(1)
-        number = match.group(2)
-        if basename not in planets:
-            planets[basename] = {'datasets': [(number, f)]}
-        else:
-            planets[basename]['datasets'].append((number, f))
-
-for planet, values in planets.items():
-    # sort them numericaly
-    d = values['datasets']
-    values['datasets'] = [a[1] for a in sorted(d, key=lambda k:int(k[0]))]
-
-    # open grid file
-    grid = folder / ('esp_output_grid_{}.h5'.format(planet))
-    planets[planet]['grid'] = grid
-    # open plaet file
-    planet_def = folder / ('esp_output_{}.h5'.format(planet))
-    planets[planet]['def'] = planet_def
-
-
-grd = None
-for planet, files in planets.items():
-    print("Planet: ", planet)
-    print("Number of datafiles:", len(files['datasets']))
-    num_samples = len(files['datasets'])
-    print("Planet def")
-    planet_def = h5py.File(files['def'])
-    for k, v in planet_def.items():
-        print(k, v[0])
-
-    print("grid def")
-    grid = h5py.File(files['grid'])
-    for k, v in grid.items():
-        print(k, v)
-
-    num_levels = int(grid['nv'][0])
-    num_datas = 0
-    if len(files['datasets']) > 0:
-        print("datafiles def")
-        datafile0 = h5py.File(files['datasets'][0])
-        num_datas = len(datafile0['Pressure'])
-
-        for k, v in datafile0.items():
-            print(k, v)
-
-    if grd is None:
-        grd = grid['lonlat']
-        # neighbours = grid['pntloc']
-    num_points = len(grd)//2
-    ground_moment = np.zeros(
-        (len(files['datasets']),   num_points, num_levels, 3), dtype=np.float32)
-    print(ground_moment.shape)
-    for i in range(len(files['datasets'])):
-        d = h5py.File(files['datasets'][i])
-        ground_moment[i, :, :, :] = np.array(d['Mh']).reshape(num_points,
-                                                              num_levels,
-                                                              3)
-    ground_moment = np.transpose(ground_moment, (0, 2, 1, 3))
-    pressure = np.zeros(
-        (len(files['datasets']), num_datas//(num_levels)), dtype=np.float32)
-
-    for i in range(len(files['datasets'])):
-        d = h5py.File(files['datasets'][i])
-        pressure[i, :] = np.array(d['Pressure']).reshape(
-            num_points, num_levels)[:, 0]
-    print(pressure.shape)
-#    for n in neighbours:
-#        print(n)
-#    print(neighbours)
-
-colors2 = np.zeros((num_samples, num_levels, num_points, 3), dtype=np.float32)
-# colors[:, :, 0] = pressure/np.max(pressure)
-k = 0.2
-colors2[:, :, :, 0] = k + (1.0-k)*ground_moment[:, :, :, 0] / \
-    np.max(ground_moment[:, :, :, 0])
-colors2[:, :, :, 1] = k + (1.0-k)*ground_moment[:, :, :, 1] / \
-    np.max(ground_moment[:, :, :, 1])
-colors2[:, :, :, 2] = k + (1.0-k)*ground_moment[:, :, :, 2] / \
-    np.max(ground_moment[:, :, :, 2])
-# for i in range(n):
-#     colors[i, :, 0] = i/n
-
-# print(colors)
-
-print("color data size: ", colors2.nbytes/(1024*1024), "MiB")
-
-# moments = np.zeros((num_samples, len(grid['lonlat'])//2, 3), dtype=np.float32)
-# # colors[:, :, 0] = pressure/np.max(pressure)
-# k = 0.2
-# moments[:, :, :] = ground_moment[:, :, :]
+dataset.select_planet(planets[0])
 
 
 class ThorVizWindow(QMainWindow):
@@ -256,15 +89,18 @@ class ThorVizWindow(QMainWindow):
         super(ThorVizWindow, self).__init__()
         uic.loadUi('VizWin.ui', self)
 
+        num_samples = dataset.get_num_datasets()
+        pts, lvl = dataset.get_dim()
+
         self.animation_slider.setMinimum(0)
-        self.animation_slider.setMaximum(colors2.shape[0] - 1)
+        self.animation_slider.setMaximum(num_samples - 1)
         self.animation_slider.setSingleStep(1)
 
         self.level_slider.setMinimum(0)
-        self.level_slider.setMaximum(colors2.shape[1] - 1)
+        self.level_slider.setMaximum(lvl - 1)
         self.level_slider.setSingleStep(1)
 
-        self.vizGL.set_grid_data(lonlat, colors, colors2)
+        self.vizGL.set_grid_data(dataset)
         #self.vizGL.set_grid(grd, neighbours, colors, moments)
         self.show()
 
