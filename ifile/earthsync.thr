@@ -84,4 +84,4 @@ n_out = 3456
 results_path = tidalearth_results
 
 # GPU ID number
-GPU_ID_N = 2
+GPU_ID_N = 0

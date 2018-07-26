@@ -84,4 +84,4 @@ n_out = 2000
 results_path = earth_hs
 
 # GPU ID number
-GPU_ID_N = 3
+GPU_ID_N = 0
