@@ -18,23 +18,23 @@
 //
 // Description: binary correctness test of output, enabled with compile time switches
 //
-//   
+//
 //
 // Method: [1] - Dumps output to binary file on a flag
 //         [2] - Reads data from binary files on a flag and compare to
 //               dumped output
 //
 // Known limitations: None.
-//      
+//
 //
 // Known issues: None.
-//   
+//
 //
 // Current Code Owner: Joao Mendonca, EEG. joao.mendonca@csh.unibe.ch
 //
-// If you use this code please cite the following reference: 
+// If you use this code please cite the following reference:
 //
-//       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016  
+//       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016
 //
 // History:
 // Version Date       Comment
@@ -63,4 +63,3 @@ void deinit_device_mem_check(bool *ptr);
 bool check_array_for_nan(double * ptr, int size, bool on_device, bool * device_mem_check_b);
 
 void check_last_cuda_error(string ref_name);
-

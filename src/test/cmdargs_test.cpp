@@ -23,16 +23,16 @@
 // external calling
 //
 // Known limitations: None.
-//      
+//
 //
 // Known issues: None.
-//   
+//
 //
 // Current Code Owner: Joao Mendonca, EEG. joao.mendonca@csh.unibe.ch
 //
-// If you use this code please cite the following reference: 
+// If you use this code please cite the following reference:
 //
-//       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016  
+//       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016
 //
 // History:
 // Version Date       Comment
@@ -53,17 +53,16 @@
 using namespace std;
 
 
-    
-    
+
 
 int main(int argc,  char** argv)
 {
     cout << "commandline file test" << endl;
-    
+
     cmdargs argparser("cmdargs_test", "tester for argument parser");
-    
+
     argparser.add_positional_arg(string("positional"), "positional argument");
-    
+
     argparser.add_arg("i", "int", -1, "int argument");
     argparser.add_arg("b", "bool", false, "booolean argument");
     argparser.add_arg("d", "double", 1e-5, "double argument");
@@ -75,16 +74,16 @@ int main(int argc,  char** argv)
     bool positional_arg_string_set = argparser.get_positional_arg(positional_arg_string);
     printf("# positional argument - value: %s\tset: %d\n", positional_arg_string.c_str(), positional_arg_string_set);
 
-    
+
     // keyqord args
     int test_arg_int = -100;
     bool test_arg_int_set = argparser.get_arg("int", test_arg_int);
     printf("int - value: %d\tset: %d\n", test_arg_int, test_arg_int_set);
-    
+
     bool test_arg_bool = false;
     bool test_arg_bool_set = argparser.get_arg("bool", test_arg_bool);
     printf("bool - value: %d\tset: %d\n", test_arg_bool, test_arg_bool_set);
-     
+
     double test_arg_double = -1e5;
     bool test_arg_double_set = argparser.get_arg("double", test_arg_double);
     printf("double - value: %g\tset: %d\n", test_arg_double, test_arg_double_set);
@@ -94,5 +93,5 @@ int main(int argc,  char** argv)
     printf("string - value: %s\tset: %d\n", test_arg_string.c_str(), test_arg_string_set);
 
 
-    
+
 }

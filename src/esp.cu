@@ -95,18 +95,18 @@ int main (int argc,  char** argv){
     argparser.add_arg("c", "continue", string("continuefilename"), "continue simulation from this output file");
     argparser.add_arg("N", "numsteps", 48000, "number of steps to run");
     argparser.add_arg("w", "overwrite", true, "Force overwrite of output file if they exist");
-    
+
 
     // Parse arguments, exit on fail
     bool parse_ok = argparser.parse(argc, argv);
     if (!parse_ok)
     {
         printf("error parsing arguments\n");
-        
+
         argparser.print_help();
         exit(-1);
     }
-    
+
 
     // get config file path if present in argument
     string config_filename = "";
@@ -226,6 +226,12 @@ int main (int argc,  char** argv){
     string output_path  = "results";
     config_reader.append_config_var("results_path", output_path, string(output_path_default));
 
+    bool gcm_off = false;
+    config_reader.append_config_var("gcm_off", gcm_off, gcm_off_default);
+
+    int TPprof = 0;
+    config_reader.append_config_var("TPprof", TPprof, TPprof_default);
+
     //*****************************************************************
     // Read config file
 
@@ -250,14 +256,14 @@ int main (int argc,  char** argv){
 
     string inital_conditions_arg;
     bool initial_condition_arg_set = false;
-    
-    
+
+
     if (argparser.get_arg("initial", inital_conditions_arg))
     {
         rest = false;
         initial_conditions = inital_conditions_arg;
         initial_condition_arg_set = true;
-        
+
         if (!path_exists(initial_conditions))
         {
             printf("Initial conditions file \"%s\" not found\n", initial_conditions.c_str());
@@ -267,8 +273,8 @@ int main (int argc,  char** argv){
 
     string continue_filename = "";
     bool continue_sim = false;
-    
-    
+
+
     if (argparser.get_arg("continue", continue_filename))
     {
         rest = false;
@@ -277,10 +283,10 @@ int main (int argc,  char** argv){
         if (initial_condition_arg_set)
         {
             printf("--continue and --initial options set, must set only one\n");
-            
+
             exit(-1);
         }
-                
+
         if (!path_exists(continue_filename))
         {
             printf("Continuation start condition file \"%s\" not found\n", continue_filename.c_str());
@@ -292,10 +298,10 @@ int main (int argc,  char** argv){
 
     bool force_overwrite_arg = false;
     bool force_overwrite = false;
-    
+
     if (argparser.get_arg("overwrite", force_overwrite_arg))
         force_overwrite = force_overwrite_arg;
-    
+
     int nsmax_arg;
     if (argparser.get_arg("numsteps", nsmax_arg))
         nsmax = nsmax_arg;
@@ -318,6 +324,8 @@ int main (int argc,  char** argv){
 
     config_OK &= check_greater( "GPU_ID_N", GPU_ID_N, -1);
     config_OK &= check_greater( "n_out", n_out, 0);
+
+    config_OK &= check_range( "TPprof", TPprof, -1, 2);
 
     if (simulation_ID.length() < 160)
     {
@@ -392,20 +400,20 @@ int main (int argc,  char** argv){
 
     USE_BENCHMARK();
     INIT_BENCHMARK(X, Grid);
-    
+
     BENCH_POINT("0", "Grid", vector<string>({}), vector<string>({ "func_r", "areas",
                 "areasTr", "areasT", "nvec", "nvecoa", "nvecti", "nvecte", "Altitude", "Altitudeh", "lonlat",
                 "div", "grad"}))
-    
+
 
     printf(" Setting the initial conditions.\n\n");
-    
+
     double simulation_start_time = 0.0;
-    
+
     // Initial conditions
     int output_file_idx = 0;
     int step_idx = 0;
-    
+
     bool load_initial = X.InitialValues(rest         , // Option to
                                                        // start the
                                                        // atmosphere
@@ -435,13 +443,15 @@ int main (int argc,  char** argv){
                                         mu_constant  , // Atomic mass unit [kg]
                                         Planet.Rd    , // Gas constant [J/kg/K]
                                         SpongeLayer  , // Enable sponge layer
+                                        TPprof       , // isothermal = 0, guillot = 1
+                                        hstest       , // argh
                                         step_idx     , // current step index
                                         simulation_start_time, // output:
                                                                // simulation start time
                                         output_file_idx); // output file
                                                           // read + 1, 0
                                                           // if nothing read
-    
+
     if (hstest == 0) {
       X.RTSetup(Tstar            ,
                 planet_star_dist ,
@@ -457,10 +467,10 @@ int main (int argc,  char** argv){
     if (!load_initial)
     {
         printf("error loading initial conditions from %s.\n", initial_conditions.c_str());
-        return -1;       
+        return -1;
     }
 
-    
+
 
     // Check presence of output files
     path results(output_path);
@@ -487,7 +497,7 @@ int main (int argc,  char** argv){
               [](const std::pair<string,int> &left, const std::pair<string,int> &right) {
                   return left.second < right.second;
               });
-    
+
     if (matching_name_result_files.size() > 0)
     {
         if (!force_overwrite)
@@ -497,14 +507,14 @@ int main (int argc,  char** argv){
                    "Files found:\n");
             for (const auto & f: matching_name_result_files)
                 printf("\t%s\n", f.first.c_str());
-            
+
             printf(" Aborting. \n"
                    "use --overwrite to overwrite existing files.\n");
             return -1;
         }
     }
-    
-    
+
+
     long startTime = clock();
 
 //
@@ -513,7 +523,7 @@ int main (int argc,  char** argv){
     int ndevices;
     cudaError_t err = cudaGetDeviceCount(&ndevices);
 
-    int device_major_minor_number = 0;    
+    int device_major_minor_number = 0;
     for (int i = 0; i < ndevices; ++i) {
         // Get device properties
         printf("\n CUDA Device #%d\n", i);
@@ -537,11 +547,11 @@ int main (int argc,  char** argv){
     }
 
     // Check device query
-    if (err != cudaSuccess) 
+    if (err != cudaSuccess)
     {
         printf("Error getting device count.\n");
 	printf("%s\n", cudaGetErrorString(err));
-    }	
+    }
 
     // do we have a device?
     if (ndevices < 1 || err != cudaSuccess)
@@ -557,10 +567,10 @@ int main (int argc,  char** argv){
 	printf("Asked for device #%d but only found %d devices.\n", GPU_ID_N, ndevices);
 	exit(-1);
     }
-    
+
     // do we have the compute capabilities set at compile time
 
-    if ( device_major_minor_number < DEVICE_SM ) 
+    if ( device_major_minor_number < DEVICE_SM )
     {
         printf("Found device with id %d does not have sufficent compute capabilities.\n", GPU_ID_N);
         printf("Capabilities: %d (compiled with SM=%d).\n", device_major_minor_number, DEVICE_SM  );
@@ -636,8 +646,8 @@ int main (int argc,  char** argv){
         output_file_idx += 1;
         step_idx += 1;
     }
-    
-// *********************************************************************************************    
+
+// *********************************************************************************************
 //  Starting model Integration.
     printf(" Starting the model integration.\n\n");
 
@@ -647,10 +657,11 @@ int main (int argc,  char** argv){
     for(int nstep = step_idx; nstep <= nsmax; ++nstep){
         // store step number for file comparison tests
         X.current_step = nstep;
-        
+
+        if (!gcm_off) {
 //
-//      Dynamical Core Integration (THOR)
-        X.Thor (timestep     , // Time-step [s]
+//        Dynamical Core Integration (THOR)
+          X.Thor (timestep     , // Time-step [s]
                 HyDiff       , // Hyperdiffusion option
                 DivDampP     , // Divergence-damping option
                 Planet.Omega , // Rotation rate [1/s]
@@ -664,7 +675,7 @@ int main (int argc,  char** argv){
                 Planet.A     , // Planet radius [m]
                 NonHydro     , // Non-hydrostatic option
                 DeepModel    );// Deep model option
-
+          }
 //
 //     Physical Core Integration (ProfX)
        X.ProfX(planetnumber , // Planet ID
@@ -705,7 +716,7 @@ int main (int argc,  char** argv){
                      output_path);         // Directory to save output
             // increment output file index
             output_file_idx++;
-            
+
             file_output = true;
 
         }

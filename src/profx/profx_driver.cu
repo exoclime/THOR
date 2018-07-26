@@ -52,6 +52,7 @@
 #include "../headers/phy/profx_RT.h"
 
 #include "binary_test.h"
+#include "debug_helpers.h"
 
 
 __host__ void ESP::ProfX(int    planetnumber, // Planet ID
@@ -90,9 +91,6 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
                              point_num                        );
 
       cudaDeviceSynchronize();
-  // temporary to set up code. Need to move to config file eventually.
-      // double Rv_sponge = 1e-4;
-      // double ns_sponge = 0.75;
 
       sponge_layer <<< NB,NTH >>>(Mh_d                      ,
                                   Rho_d                    ,
@@ -120,18 +118,12 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
                                          Rd           ,
                                          Cp           ,
                                          point_num    );
-    
+
     BENCH_POINT_I(current_step, "phy_T", vector<string>({}), vector<string>({"Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"}))
 //  Check for nan.
-
-
-
-    check_h = false;
-    cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
-    isnan_check<<< 16, NTH >>>(temperature_d, nv, point_num, check_d);
-    cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
+    check_h = check_array_for_nan(temperature_d,nv*point_num,1,check_d);
     if(check_h){
-       printf("\n\n Error in NAN check!\n");
+       printf("\n\n Error in NAN check after PROFX:compute_temp!\n");
        exit(EXIT_FAILURE);
     }
 
@@ -200,7 +192,7 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
     }
 //
 ////////////////////////
-    
+
     if(planetnumber != 1){
         printf("Planet value incorrect! (see in file planet.h)");
         exit(EXIT_FAILURE);
@@ -239,8 +231,16 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
                                        nv           ,
                                        nvi          ,
                                        A             );
-        // isnan_loop <<< 1, 1 >>> (temperature_d, point_num, nv);
     }
+    check_h = false;
+    cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
+    isnan_check<<< 16, NTH >>>(temperature_d, nv, point_num, check_d);
+    cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
+    if(check_h){
+       printf("\n\n Error in NAN check after PROFX:RT!\n");
+       exit(EXIT_FAILURE);
+    }
+
     BENCH_POINT_I(current_step, "phy_hstest", vector<string>({}), vector<string>({"Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"}))
 //  Computes the new pressures.
     cudaDeviceSynchronize();
@@ -250,6 +250,15 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
                                       Rd           ,
                                       point_num    );
 
+    check_h = false;
+    cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
+    isnan_check<<< 16, NTH >>>(temperature_d, nv, point_num, check_d);
+    cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
+    if(check_h){
+       printf("\n\n Error in NAN check after PROFX:compute_pressure!\n");
+       exit(EXIT_FAILURE);
+    }
+
 #ifdef BENCHMARKING
     // recompute temperature from pressure and density, to avoid rounding issues when comparing
     Compute_temperature_only <<< NB, NTH >>> (temperature_d,
@@ -258,7 +267,7 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
                                               Rd           ,
                                               point_num    );
 #endif // BENCHMARKING
-    
+
     BENCH_POINT_I(current_step, "phy_END", vector<string>({}), vector<string>({"Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"}))
 //
 //END OF INTEGRATION
