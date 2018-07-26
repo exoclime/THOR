@@ -50,6 +50,7 @@
 #include <stdio.h>
 #include "storage.h"
 #include "directories.h"
+#include "../headers/phy/valkyrie_jet_steadystate.h"
 
 #include <map>
 
@@ -108,7 +109,7 @@ __host__ ESP::ESP(int *point_local_    ,
     func_r_h = func_r_ ;
 
     zonal_mean_tab_h = zonal_mean_tab;
-    
+
     Rv_sponge = Rv_sponge_;
     ns_sponge = ns_sponge_;
 //
@@ -236,7 +237,7 @@ __host__ void ESP::AllocData(){
     cudaMalloc((void **)&ttemp       , nv * point_num *     sizeof(double));
     cudaMalloc((void **)&dtemp       , nv * point_num *     sizeof(double));
 }
-    
+
 __host__ bool ESP::InitialValues(bool rest          ,
                                  const std::string & initial_conditions_filename,
                                  const bool & continue_sim,
@@ -254,6 +255,8 @@ __host__ bool ESP::InitialValues(bool rest          ,
                                  double mu          ,
                                  double Rd          ,
                                  bool sponge        ,
+                                 int TPprof         ,
+                                 int hstest         ,
                                  int & nstep        ,
                                  double & simulation_start_time,
                                  int & output_file_idx){
@@ -272,7 +275,29 @@ __host__ bool ESP::InitialValues(bool rest          ,
             double Ha = Rd * Tmean / Gravit;
             for (int lev = 0; lev < nv; lev++ ){
                 pressure_h[i*nv + lev] = P_Ref*exp(-Altitude_h[lev] / Ha);
-                temperature_h[i*nv + lev] = Tmean;
+                if (TPprof == 0) {
+                  temperature_h[i*nv + lev] = Tmean;
+                } else if (TPprof == 1){
+                  double tau = pressure_h[i*nv+lev]/(1e4); //tau = 1 at 0.1 bar
+                  double gamma = 0.6; // ratio of sw to lw opacity
+                  double f = 0.25;
+                  temperature_h[i*nv+lev] = pow(3*Tmean*Tmean*Tmean*Tmean*f*(2/3+1/(gamma*sqrt(3))+\
+                        (gamma/sqrt(3) - 1/(gamma*sqrt(3)))*exp(-gamma*tau*sqrt(3))),0.25);
+                }
+                if (hstest == 4) {
+                  double Ptil = 0.0;
+                  if (pressure_h[i*nv+lev] >= 1e5) {
+                    Ptil = log10(pressure_h[i*nv + lev]/100000);
+                  } 
+                  temperature_h[i*nv + lev] = 1696.6986 + 132.2318*Ptil - 174.30459*Ptil*Ptil \
+                     + 12.579612*Ptil*Ptil*Ptil + 59.513639*Ptil*Ptil*Ptil*Ptil \
+                     + 9.6706522*Ptil*Ptil*Ptil*Ptil*Ptil \
+                     - 4.1136048*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil \
+                     - 1.0632301*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil \
+                     + 0.064400203*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil \
+                     + 0.035974396*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil \
+                     + 0.0025740066*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil;
+                }
             }
 
             for (int lev = 0; lev < nv; lev++ ){
@@ -287,8 +312,40 @@ __host__ bool ESP::InitialValues(bool rest          ,
 //              Vertical momentum [kg/m3 m/s]
                 W_h[i*nv + lev] = 0.0;     // Center of the layer.
                 Wh_h[i*(nv+1) + lev] = 0.0;// Layers interface.
+
             }
             Wh_h[i*(nv + 1) + nv] = 0.0;
+        }
+        if (hstest == 5) {
+          //  Number of threads per block.
+          const int NTH = 256;
+
+          //  Specify the block sizes.
+          dim3 NB((point_num / NTH) + 1, nv, 1);
+
+          cudaMemcpy(Altitude_d , Altitude_h , nv * sizeof(double), cudaMemcpyHostToDevice);
+          cudaMemcpy(pressure_d , pressure_h , point_num * nv * sizeof(double), cudaMemcpyHostToDevice);
+          cudaMemcpy(Mh_d , Mh_h , 3 * point_num * nv * sizeof(double), cudaMemcpyHostToDevice);
+          cudaMemcpy(Rho_d , Rho_h , point_num * nv * sizeof(double), cudaMemcpyHostToDevice);
+          cudaMemcpy(temperature_d , temperature_h , point_num * nv * sizeof(double), cudaMemcpyHostToDevice);
+          cudaMemcpy(lonlat_d , lonlat_h , 2*point_num * sizeof(double), cudaMemcpyHostToDevice);
+          setup_jet <<< NB, NTH >>>  (Mh_d         ,
+          // setup_jet <<< 1, 1 >>>  (Mh_d,
+                                      pressure_d   ,
+                                      Rho_d        ,
+                                      temperature_d,
+                                      Cp           ,
+                                      Rd           ,
+                                      Omega        ,
+                                      A            ,
+                                      Altitude_d   ,
+                                      lonlat_d     ,
+                                      point_num    );
+
+          cudaMemcpy(Mh_h , Mh_d , 3 * point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+          cudaMemcpy(temperature_h , temperature_d , point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+          cudaMemcpy(pressure_h , pressure_d , point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+          cudaMemcpy(Rho_h , Rho_d , point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
         }
 
         simulation_start_time = 0.0;
@@ -316,11 +373,11 @@ __host__ bool ESP::InitialValues(bool rest          ,
                        initial_conditions_filename.c_str(),
                        basename.c_str(),
                        file_number);
-                return false;                
+                return false;
             }
-            
+
             output_file_idx = file_number;
-            
+
             planet_filename = p.parent() + "/esp_output_planet_" + basename + ".h5";
         }
         else
@@ -341,10 +398,10 @@ __host__ bool ESP::InitialValues(bool rest          ,
             return false;
         }
 
-        
+
         printf("Loading planet from: %s\n", planet_filename.c_str());
         printf("Loading initial conditions from: %s\n", initial_conditions_filename.c_str());
-        
+
         // Check planet data
         {
             // values to check agains variable
@@ -352,19 +409,19 @@ __host__ bool ESP::InitialValues(bool rest          ,
 
             mapValues["/A"] = A;
             mapValues["/Top_altitude"] = Top_altitude;
-            mapValues["/glevel"] = glevel;        
-            mapValues["/vlevel"] = nv;        
-            
+            mapValues["/glevel"] = glevel;
+            mapValues["/vlevel"] = nv;
+
             hid_t       file_id;
             file_id = H5Fopen(planet_filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
 
             bool values_match = true;
-            
-            for (const std::pair<std::string, double> & element : mapValues) 
+
+            for (const std::pair<std::string, double> & element : mapValues)
             {
                 double value = 0.0;
                 load_OK &= load_double_value_from_h5file(file_id, element.first, value );
-                
+
                 if (value != element.second)
                 {
                     printf("mismatch for %s value between config value: %f and initial condition value %f.\n",
@@ -374,22 +431,22 @@ __host__ bool ESP::InitialValues(bool rest          ,
             }
 
             H5Fclose(file_id);
-            
+
             if (load_OK == false || values_match == false)
             {
                 printf("Could not reload full configuration.\n");
-                
+
                 return false;
             }
 
-            
+
         }
-        
-        
-        
+
+
+
         //      Restart from an existing simulation.
         {
-            
+
             // Load atmospheric data
             hid_t       file_id;
             file_id = H5Fopen(initial_conditions_filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
@@ -400,17 +457,17 @@ __host__ bool ESP::InitialValues(bool rest          ,
 
             //      Pressure
             load_OK &= load_double_table_from_h5file(file_id, "/Pressure", pressure_h, point_num*nv);
-            
+
             //      Horizontal momentum
-            load_OK &= load_double_table_from_h5file(file_id, "/Mh", Mh_h, point_num*nv*3);        
+            load_OK &= load_double_table_from_h5file(file_id, "/Mh", Mh_h, point_num*nv*3);
             //      Vertical momentum
             load_OK &= load_double_table_from_h5file(file_id, "/Wh", Wh_h, point_num*nvi);
-            
+
             //      Simulation start time
             load_OK &= load_double_value_from_h5file(file_id, "/simulation_time", simulation_start_time);
             H5Fclose(file_id);
         }
-        
+
 
         if (!load_OK)
             return false;
@@ -471,7 +528,7 @@ __host__ bool ESP::InitialValues(bool rest          ,
     cudaMemcpy(grad_d,grad_h,7 * 3 * point_num * sizeof(double), cudaMemcpyHostToDevice);
     cudaMemcpy(Kdhz_d      ,Kdhz_h, nv     * sizeof(double), cudaMemcpyHostToDevice);
     cudaMemcpy(Kdh4_d      ,Kdh4_h, nv     * sizeof(double), cudaMemcpyHostToDevice);
-    
+
     if (sponge==true)
         cudaMemcpy(zonal_mean_tab_d      ,zonal_mean_tab_h, 2*point_num * sizeof(int), cudaMemcpyHostToDevice);
 
@@ -507,7 +564,7 @@ __host__ bool ESP::InitialValues(bool rest          ,
     cudaMemset(diffrh_d    , 0, sizeof(double) * nv * point_num);
     cudaMemset(diff_d       , 0, sizeof(double) * 6 * nv * point_num);
     cudaMemset(divg_Mh_d    , 0, sizeof(double) * 3 * nv * point_num);
-    
+
     delete [] Kdh4_h;
     delete [] Kdhz_h;
 

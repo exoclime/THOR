@@ -116,6 +116,7 @@ __global__ void Compute_Temperature_H_Pt_Geff(double * temperature_d,
                 pl = pressure_d[id * nv + 1] - rho * Gravit * (-alt - Altitude_d[1]);
                 rhoh = 0.5*(pressure + pl) / (Rd*temperature);
                 pth_d[id * (nv+1)] = (P_Ref / (Rd*rhoh))*pow(0.5*(pressure + pl) / P_Ref, CvoCp);
+
                 gtilh_d[id * (nv + 1)] = 0.0;
                 gtilh = 0.0;
             }
@@ -123,6 +124,7 @@ __global__ void Compute_Temperature_H_Pt_Geff(double * temperature_d,
                 hh_d[id*(nv + 1) + nv] = h;
 
                 pp = pressure_d[id*nv + nv - 2] - rho * Gravit * (2 * Altitudeh_d[nv] - alt - Altitude_d[nv - 2]);
+                if (pp<0) pp = 0;
                 rhoh = 0.5*(pressure + pp) / (Rd*temperature);
                 pth_d[id*(nv + 1) + nv] = (P_Ref / (Rd*rhoh))*pow(0.5*(pressure + pp) / P_Ref, CvoCp);
 
@@ -169,7 +171,12 @@ __global__ void Compute_Temperature_H_Pt_Geff(double * temperature_d,
                 gtil_d[id * nv + lev-1] = gtilh * intt + gtilht * intl;
                 gtilh = gtilht;
             }
+            if (isnan(pth_d[id*(nv+1)+lev])){
+              printf("%d, %d\n",id,lev);
+            }
         }
+
+
         for (int lev = 0; lev < nv + 1; lev++){
             if (lev == 0) {
                 dz = 2.0*Altitude_d[0];
@@ -362,6 +369,9 @@ __global__ void UpdateRK2(double * M_d        ,
 
 // Pressure
             pressurek_d[id * nv + lev] += pressure_d[id*nv + lev];
+            if (pressurek_d[id*nv+lev]<0) {
+              printf("%d, %d\n",id, lev);
+            }
         }
 // Wh
         for (int lev = 0; lev < nv + 1; lev++){

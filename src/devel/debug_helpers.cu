@@ -18,23 +18,23 @@
 //
 // Description: binary correctness test of output, enabled with compile time switches
 //
-//   
+//
 //
 // Method: [1] - Dumps output to binary file on a flag
 //         [2] - Reads data from binary files on a flag and compare to
 //               dumped output
 //
 // Known limitations: None.
-//      
+//
 //
 // Known issues: None.
-//   
+//
 //
 // Current Code Owner: Joao Mendonca, EEG. joao.mendonca@csh.unibe.ch
 //
-// If you use this code please cite the following reference: 
+// If you use this code please cite the following reference:
 //
-//       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016  
+//       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016
 //
 // History:
 // Version Date       Comment
@@ -56,7 +56,7 @@ bool * init_device_mem_check(bool * ptr)
     cudaMalloc((void **)&ptr, sizeof (bool));
 
     return ptr;
-    
+
 }
 
 void deinit_device_mem_check(bool *ptr)
@@ -72,11 +72,11 @@ __global__ void isnan_check_device(double *array, int size, bool *check)
 //  Description: Check for nan in array.
 
   int idx = threadIdx.x+blockDim.x*blockIdx.x;
-  
+
   if (idx < size && ::isnan(array[idx])) {
       *check = true;
   }
- 
+
 }
 
 
@@ -91,7 +91,7 @@ __host__ bool check_array_for_nan(double * ptr, int size, bool on_device, bool *
         isnan_check_device<<< size/256+1, 256 >>>(ptr, size, check_d);
         cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
 
-        return check_d;
+        return check_h;
     }
     else
     {
@@ -102,20 +102,15 @@ __host__ bool check_array_for_nan(double * ptr, int size, bool on_device, bool *
         }
         return isnan;
     }
-    
-    
-
 }
 
 void check_last_cuda_error(std::string ref_name)
 {
     cudaError_t err = cudaGetLastError();
-            
+
     // Check device query
-    if (err != cudaSuccess) 
+    if (err != cudaSuccess)
     {
         printf("'%s' cuda error: %s\n", ref_name.c_str(), cudaGetErrorString(err));
     }
 }
-
-

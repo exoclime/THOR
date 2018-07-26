@@ -71,6 +71,7 @@ __global__ void deepHJ_hs(double *Mh_d         ,
         //double psm1;
         double lat = lonlat_d[id*2 + 1];
         double lon = lonlat_d[id*2];
+        if (lon < 0) lon += 2*M_PI;
 
         // Deeeeeep Hot Jupiter stuff....
 
@@ -112,8 +113,17 @@ __global__ void deepHJ_hs(double *Mh_d         ,
                     + 0.16475329*Ptil*Ptil*Ptil + 0.014241552*Ptil*Ptil*Ptil*Ptil;
           kt_hs = pow(10,-logtrad); //      Temperature forcing constant.
         } else {
-          Tnight = 5529.7168 - 6869.6504*Ptil + 4142.7231*Ptil*Ptil \
-                   - 936.23053*Ptil*Ptil*Ptil + 87.120975*Ptil*Ptil*Ptil*Ptil;
+          /*Tnight = 5529.7168 - 6869.6504*Ptil + 4142.7231*Ptil*Ptil \
+                   - 936.23053*Ptil*Ptil*Ptil + 87.120975*Ptil*Ptil*Ptil*Ptil;*/
+          //The above seems to be a very poor fit to Tiro... switch to eq B4 instead
+          Tnight = 1696.6986 + 132.2318*Ptil - 174.30459*Ptil*Ptil \
+                   + 12.579612*Ptil*Ptil*Ptil + 59.513639*Ptil*Ptil*Ptil*Ptil \
+                   + 9.6706522*Ptil*Ptil*Ptil*Ptil*Ptil \
+                   - 4.1136048*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil \
+                   - 1.0632301*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil \
+                   + 0.064400203*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil \
+                   + 0.035974396*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil \
+                   + 0.0025740066*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil*Ptil;
           Tday = Tnight;
           kt_hs = 0.0; //      Temperature forcing constant.
         }
@@ -126,6 +136,9 @@ __global__ void deepHJ_hs(double *Mh_d         ,
           Teq_hs = Tnight;
         }
 
+        // if (id==899 && lev==38){
+        //   printf("%f\n",Teq_hs);
+        // }
 //      Momentum dissipation constant.
         kv_hs = 0.0;  //no boundary layer friction
 
@@ -133,5 +146,8 @@ __global__ void deepHJ_hs(double *Mh_d         ,
         for(int k = 0; k < 3; k++) Mh_d[id*3*nv + lev*3 + k] = Mh_d[id*3*nv + lev*3 + k]/(1.0 + kv_hs*time_step);;
 //      Update temperature
         temperature_d[id*nv + lev] -= kt_hs * time_step * (temperature_d[id*nv + lev] - Teq_hs);
+        if (isnan(temperature_d[id*nv+lev])){
+          printf("%d,%d\n",id,lev);
+        }
     }
 }
