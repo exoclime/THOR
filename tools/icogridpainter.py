@@ -1,4 +1,4 @@
-
+1
 from PyQt5.QtGui import (QOpenGLShader,
                          QOpenGLShaderProgram,
                          QMatrix4x4,
@@ -17,6 +17,11 @@ import matplotlib.pyplot as plt
 
 
 class ico:
+    def pt_in_quad(quad, p):
+        # computes if a point is in the quadrilateral
+
+        return False
+
     def __init__(self, g):
         """computes icosahedron subdivided by g levels"""
         self.g = g
