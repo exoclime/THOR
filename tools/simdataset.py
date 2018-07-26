@@ -95,11 +95,10 @@ class simdataset:
         return np.array(self.lonlat).reshape(self.num_points, 2)
 
     def get_scalar_data(self, dataset_idx, data_name):
-        colors = np.zeros(
-            (self.num_points, self.num_levels, 3), dtype=np.float32)
+        data = np.array(h5py.File(self.datasets[dataset_idx])[data_name], dtype=np.float32).reshape(
+            (self.num_points, self.num_levels))
 
-        # return color matching dataset
-        return colors
+        return data
 
     def get_vector_data(self, dataset_idx, data_name):
         pass

@@ -15,6 +15,8 @@ from math import cos, sin, pi, pow, sqrt
 
 import matplotlib.pyplot as plt
 
+from utilities import HSV_to_RGB, spherical
+
 
 class ico:
     def pt_in_quad(quad, p):
@@ -35,14 +37,6 @@ class ico:
         print("halos: ", 10*4*(self.n_s+2))
 
         print("maps: ", 10*pow(self.n_s+2, 2))
-
-
-def spherical(r, theta, phi):
-    return np.array((
-        r*math.cos(theta)*math.cos(phi),
-        r*math.sin(theta)*math.cos(phi),
-        r*math.sin(phi)),
-        dtype=np.float32)
 
 
 class IcoGridPainter:
@@ -355,8 +349,8 @@ class IcoGridPainter:
 
         all_vertices = np.zeros((num_levels,  num_points, 3),
                                 dtype=np.float32)
-        all_colors = np.zeros((num_levels,  num_points, 3),
-                              dtype=np.float32)
+        self.all_colors = np.zeros((num_levels,  num_points, 3),
+                                   dtype=np.float32)
 
         all_triangles = np.zeros((num_levels,  triangles.shape[0], 3),
                                  dtype=np.uint32)
@@ -370,9 +364,9 @@ class IcoGridPainter:
             all_triangles[level, :, :] = triangles + \
                 level*vertices.shape[0]
 
-            all_colors[level, :, :] = 0.5+0.5*level/(num_levels-1)*np.ones((num_points,
-                                                                            3),
-                                                                           dtype=np.float32)
+            self.all_colors[level, :, :] = 0.5+0.5*level/(num_levels-1)*np.ones((num_points,
+                                                                                 3),
+                                                                                dtype=np.float32)
 
         # for sample in range(num_samples):
         #     for level in range(num_levels):
@@ -381,9 +375,27 @@ class IcoGridPainter:
         #             print(all_vertices[sample, level, n, :])
         self.vao_list = self.create_sphere_vao(all_vertices,
                                                all_triangles,
-                                               all_colors)
+                                               self.all_colors)
 
         self.num_levels = num_levels
+        self.num_points = num_points
+        self.last_loaded = -1
+
+    def update_colors(self):
+        if self.draw_idx == self.last_loaded:
+            return
+        data = self.dataset.get_scalar_data(self.draw_idx, "Rho")
+        min_data = np.min(data)
+        max_data = np.max(data)
+        print("data max min", max_data, min_data)
+        for i in range(self.num_levels):
+            for j in range(self.num_points):
+                v = (data[j, i] - min_data)/(max_data-min_data)
+                c = HSV_to_RGB(v*360.0, 1.0, 1.0)
+                self.all_colors[i, j, :] = c
+
+        self.update_colors_vbo(self.all_colors)
+        self.last_loaded = self.draw_idx
 
     def create_sphere_vao(self, vertices, triangles, colors):
         vao = gl.glGenVertexArrays(1)
@@ -393,7 +405,7 @@ class IcoGridPainter:
 
         self.create_vbo(vertices)
 
-        self.create_colors_vbo(colors)
+        self.color_vbo = self.create_colors_vbo(colors)
 
         self.create_elements_vbo(triangles)
 
@@ -408,10 +420,10 @@ class IcoGridPainter:
             #            gl.glPolygonMode(gl.GL_FRONT_AND_BACK, gl.GL_LINE)
         #        print("paint grid",
         #              self.vao_list[self.draw_idx], self.grid_vertex_count)
+        self.update_colors()
 
         gl.glBindVertexArray(self.vao_list)
-        idx = 4*self.grid_elements_count*(self.num_levels *
-                                          self.draw_idx + self.altitude)
+        idx = 4*self.grid_elements_count * self.altitude
 
         # gl.glDrawElements(gl.GL_TRIANGLES,
         #                  int(self.grid_elements_count),
@@ -494,6 +506,14 @@ class IcoGridPainter:
 
         return vbo
 
+    def update_colors_vbo(self, colors):
+        gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.color_vbo)
+
+        gl.glBufferSubData(gl.GL_ARRAY_BUFFER,
+                           0,
+                           colors.nbytes,
+                           colors)
+
     def create_colors_vbo(self, colors):
         vbo = gl.glGenBuffers(1)
 
@@ -502,7 +522,7 @@ class IcoGridPainter:
         gl.glBufferData(gl.GL_ARRAY_BUFFER,
                         colors.nbytes,
                         colors,
-                        gl.GL_STATIC_DRAW)
+                        gl.GL_DYNAMIC_DRAW)
 
         gl.glVertexAttribPointer(1, 3,
                                  gl.GL_FLOAT, False,
