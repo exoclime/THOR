@@ -1,4 +1,4 @@
-1
+
 from PyQt5.QtGui import (QOpenGLShader,
                          QOpenGLShaderProgram,
                          QMatrix4x4,
@@ -52,10 +52,8 @@ class IcoGridPainter:
         self.draw_idx = 0
         self.altitude = 0
 
-    def set_grid_data(self, lonlat, mesh_colors, data_colors):
-        self.lonlat = lonlat
-        self.mesh_colors = mesh_colors
-        self.data_colors = data_colors
+    def set_grid_data(self, dataset):
+        self.dataset = dataset
 
     def set_shader_manager(self, shader_manager):
         self.shader_manager = shader_manager
@@ -68,7 +66,8 @@ class IcoGridPainter:
 
         # vertices = np.zeros((num_vertices, 3),
         #                     dtype=np.float32)
-        num_points = int(len(self.lonlat)/2)
+        lonlat = self.dataset.get_grid()
+        num_points = int(lonlat.shape[0])
         vertices = np.zeros((num_points, 3),
                             dtype=np.float32)
         print("number of points: ", num_points)
@@ -379,12 +378,12 @@ class IcoGridPainter:
         r = 1.0
         for i in range(vertices.shape[0]):
             vertices[i, :] = spherical(r,
-                                       self.lonlat[2*i+0],
-                                       self.lonlat[2*i+1])
+                                       lonlat[i, 0],
+                                       lonlat[i, 1])
 
-            vertices_colors[i][0] = self.mesh_colors[i][0]
-            vertices_colors[i][1] = self.mesh_colors[i][1]
-            vertices_colors[i][2] = self.mesh_colors[i][2]
+            vertices_colors[i][0] = 0.0
+            vertices_colors[i][1] = 0.0
+            vertices_colors[i][2] = 0.0
 
         # build VAOs for all input data
         self.vao_list = []
@@ -549,7 +548,7 @@ class IcoGridPainter:
         gl.glBufferData(gl.GL_ARRAY_BUFFER,
                         colors.nbytes,
                         colors,
-                        gl.GL_STATIC_DRAW)
+                        gl.GL_DYNAMIC_DRAW)
 
         gl.glVertexAttribPointer(1, 3,
                                  gl.GL_FLOAT, False,
