@@ -384,7 +384,9 @@ class IcoGridPainter:
     def update_colors(self):
         if self.draw_idx == self.last_loaded:
             return
-        data = self.dataset.get_color_data(self.draw_idx)
+        data = np.array(self.dataset.get_color_data(self.draw_idx), copy=True)
+        print("owndata", data.flags['OWNDATA'])
+        print(data.shape)
         # min_data = np.min(data)
         # max_data = np.max(data)
         # print("data max min", max_data, min_data)

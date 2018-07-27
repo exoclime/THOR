@@ -5,7 +5,7 @@ import pathlib
 import re
 
 from math import sqrt
-from utilities import HSV_to_RGB
+from utilities import HSV_to_RGB, H_to_RGB
 
 
 class simdataset:
@@ -44,6 +44,7 @@ class simdataset:
                              self.num_levels), dtype=np.float32)
             self.data_color = np.zeros(
                 (self.num_samples, self.num_levels, self.num_points, 3), dtype=np.float32)
+            print(self.data_color.shape)
             for i in range(self.num_samples):
                 data[i, :, :self.num_levels -
                      1] = self.dataloader.get_data(i, dataname)
@@ -52,15 +53,31 @@ class simdataset:
             min_data = np.min(data)
             max_data = np.max(data)
 
-            data = (data - min_data)/(max_data - min_data)
-            for i in range(self.num_samples):
-                for j in range(self.num_levels):
-                    for k in range(self.num_points):
-                        self.data_color[i, j, k] = HSV_to_RGB(
-                            data[i, k, j]*360.0, 1.0, 1.0)
+            data = 360.0*(data - min_data)/(max_data - min_data)
+            # for i in range(self.num_samples):
+            #     for j in range(self.num_levels):
+            #         for k in range(self.num_points):
+            #             print(i*self.num_levels*self.num_points + j*self.num_levels + k,
+            #                   "/",
+            #                   self.num_samples*self.num_levels*self.num_points)
+            #             self.data_color[i, j, k] = HSV_to_RGB(
+            #                 data[i, k, j]*360.0, 1.0, 1.0)
+            self.data_color = np.array(
+                np.swapaxes(H_to_RGB(data), 1, 2), copy=True, dtype=np.float32)
+            # print(self.data_color.shape)
+            # data_color = np.array(H_to_RGB(data))
+            # for i in range(self.num_samples):
+            #     for j in range(self.num_levels):
+            #         for k in range(self.num_points):
+            #             print(i*self.num_levels*self.num_points + j*self.num_levels + k,
+            #                   "/",
+            #                   self.num_samples*self.num_levels*self.num_points)
+            #             self.data_color[i, j, k] = data_color[i, k, j]
+            #self.data_color[i, j, k] = HSV_to_RGB(data[i, k, j]*360.0, 1.0, 1.0)
 
     def get_color_data(self, dataset_idx):
-        return self.data_color[dataset_idx, :, :]
+        #print(self.data_color[dataset_idx, :, :, :])
+        return self.data_color[dataset_idx, :, :, :]
 
 
 class dataloader:
