@@ -384,16 +384,17 @@ class IcoGridPainter:
     def update_colors(self):
         if self.draw_idx == self.last_loaded:
             return
-        data = self.dataset.get_scalar_data(self.draw_idx, "Rho")
-        min_data = np.min(data)
-        max_data = np.max(data)
-        print("data max min", max_data, min_data)
-        for i in range(self.num_levels):
-            for j in range(self.num_points):
-                v = (data[j, i] - min_data)/(max_data-min_data)
-                c = HSV_to_RGB(v*360.0, 1.0, 1.0)
-                self.all_colors[i, j, :] = c
+        data = self.dataset.get_color_data(self.draw_idx)
+        # min_data = np.min(data)
+        # max_data = np.max(data)
+        # print("data max min", max_data, min_data)
+        # for i in range(self.num_levels):
+        #     for j in range(self.num_points):
+        #         v = (data[j, i] - min_data)/(max_data-min_data)
+        #         c = HSV_to_RGB(v*360.0, 1.0, 1.0)
+        #         self.all_colors[i, j, :] = c
 
+        self.all_colors = data
         self.update_colors_vbo(self.all_colors)
         self.last_loaded = self.draw_idx
 

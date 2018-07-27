@@ -5,9 +5,65 @@ import pathlib
 import re
 
 from math import sqrt
+from utilities import HSV_to_RGB
 
 
 class simdataset:
+    def __init__(self, folder):
+        self.dataloader = dataloader(folder)
+
+    def select_planet(self, planet):
+        self.dataloader.select_planet(planet)
+
+        self.currently_loaded_data = None
+
+        self.num_samples = self.get_num_datasets()
+        self.num_points, self.num_levels = self.get_dim()
+        self.color_data_buffer = np.zeros(
+            (self.num_samples, self.num_levels + 1, self.num_points), dtype=np.float32)
+
+    def get_planets(self):
+        return self.dataloader.get_planets()
+
+    def get_num_datasets(self):
+        return self.dataloader.get_num_datasets()
+
+    def get_dim(self):
+        pts, lvl = self.dataloader.get_dim()
+        return pts, lvl + 1
+
+    def get_grid(self):
+        return self.dataloader.get_grid()
+
+    def select_data_type(self, dataname):
+        self.dataname = dataname
+
+        # load data set
+        if dataname == "Pressure":
+            data = np.zeros((self.num_samples, self.num_points,
+                             self.num_levels), dtype=np.float32)
+            self.data_color = np.zeros(
+                (self.num_samples, self.num_levels, self.num_points, 3), dtype=np.float32)
+            for i in range(self.num_samples):
+                data[i, :, :self.num_levels -
+                     1] = self.dataloader.get_data(i, dataname)
+
+            # rescale
+            min_data = np.min(data)
+            max_data = np.max(data)
+
+            data = (data - min_data)/(max_data - min_data)
+            for i in range(self.num_samples):
+                for j in range(self.num_levels):
+                    for k in range(self.num_points):
+                        self.data_color[i, j, k] = HSV_to_RGB(
+                            data[i, k, j]*360.0, 1.0, 1.0)
+
+    def get_color_data(self, dataset_idx):
+        return self.data_color[dataset_idx, :, :]
+
+
+class dataloader:
     def __init__(self, folder):
         self.folder = pathlib.Path(folder)
 
@@ -94,7 +150,8 @@ class simdataset:
     def get_grid(self):
         return np.array(self.lonlat).reshape(self.num_points, 2)
 
-    def get_scalar_data(self, dataset_idx, data_name):
+    def get_data(self, dataset_idx, data_name):
+        print("loading: ", self.datasets[dataset_idx])
         data = np.array(h5py.File(self.datasets[dataset_idx])[data_name], dtype=np.float32).reshape(
             (self.num_points, self.num_levels))
 

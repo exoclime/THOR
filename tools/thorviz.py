@@ -82,6 +82,7 @@ if len(planets) < 1:
     exit(-1)
 
 dataset.select_planet(planets[0])
+dataset.select_data_type("Pressure")
 
 
 class ThorVizWindow(QMainWindow):
