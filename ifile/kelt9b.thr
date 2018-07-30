@@ -1,0 +1,102 @@
+# config file for THOR
+# config format version
+config_version = 1
+
+# testing sponge layer model
+
+# number of steps
+num_steps = 345600
+
+# length of timesteps imn seconds
+timestep = 60
+
+# keys to add
+# TODO: output_dir # relative to working directory
+
+# planet
+# name of simulation for output files
+simulation_ID = kelt9b
+# Radius [m]
+radius = 132201701.0
+# Rotation rate [s-1]
+rotation_rate = 4.9099E-5
+# Gravitational acceleration [m/s^2]
+gravitation = 19.95
+# Mean molecular mass of dry air [kg]
+Mmol = 28.964
+# Gas constant [J/(Kg K)]
+Rd = 5000
+# Specific heat capacities [J/(Kg K)]
+Cp = 19000
+# Mean atmospheric temperature [K]
+Tmean = 4000.0
+# Reference surface pressure [Pa]
+P_ref = 10000000.0
+# Altitude of the top of the model domain [m]
+Top_altitude = 10e6
+# Strength of diffusion
+Diffc = 0.0099
+
+# grid
+# Spring dynamics
+spring_dynamics = true
+# Horizontal resolution level.
+glevel = 4
+# Parameter beta for spring dynamics
+spring_beta = 1.15
+# Number of vertical layers
+vlevel = 40
+
+# diffusion
+# Hyper-diffusion
+HyDiff  =    true
+# Divergence-damping
+DivDampP =    true
+
+# Model options
+# Non-hydrostatic parameter
+NonHydro = true
+# Deep atmosphere
+DeepModel = true
+# Initial conditions
+rest = true
+
+# initial conditions file, used if rest is set to false
+# (path relative to current working directory)
+# defaults to 'ifile/esp.initial.h5'
+initial = wasp43_sponge2/esp_output_Wasp43b_re.h5
+
+# Spongebob
+SpongeLayer = true
+# latitude rings
+nlat = 20
+ns_sponge = 0.75
+Rv_sponge = 2.5e-6
+
+# Benchmark test
+# Held-Suarez test for Earth == 1
+# HS test for shallow hot Jupiter == 3
+# HS test for tidally locked Earth == 2
+# No HS test == 0
+
+hstest = 0
+
+# output
+# output every n steps
+n_out = 6912
+#n_out = 1000
+
+# output directory (relative to current working directory)
+# defaults to 'results'
+results_path = kelt9b_std
+
+Tstar = 10170
+planet_star_dist = 0.03462
+radius_star = 2.362
+
+# GPU ID number
+GPU_ID_N = 0
+
+gcm_off = false
+
+TPprof = 0
