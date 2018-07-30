@@ -5,7 +5,7 @@ import pathlib
 import re
 
 from math import sqrt
-from utilities import HSV_to_RGB, H_to_RGB
+from utilities import HSV_to_RGB, H_to_RGB, spherical
 
 
 class simdataset:
@@ -35,15 +35,91 @@ class simdataset:
     def get_grid(self):
         return self.dataloader.get_grid()
 
-    def select_data_type(self, dataname):
+    def get_data_types(self):
+        datatypes = {}
+        datatypes["Pressure"] = {'type': 'scalar'}
+        datatypes["Rho"] = {'type': 'scalar'}
+        datatypes["Momentum"] = {'type': 'vector'}
+        datatypes["Momentum_norm"] = {'type': 'scalar'}
+        datatypes["Momentum_horiz"] = {'type': 'scalar'}
+        datatypes["Momentum_vert"] = {'type': 'scalar'}
+
+        return datatypes
+
+    def get_relative_radii(self):
+        radius = self.dataloader.get_radius()
+        altitudes = self.dataloader.get_altitudes()
+
+        lonlat = self.dataloader.get_grid()
+
+        alt_min = altitudes[0]
+        alt_max = altitudes[-1]
+
+        r_max = radius+alt_max
+        rad = []
+        for a in altitudes:
+            rad.append((radius+a)/r_max)
+
+        return rad
+
+    def select_vector_data_type(self, dataname):
+        self.field_dataname = dataname
+        radius = self.dataloader.get_radius()
+        altitudes = self.dataloader.get_altitudes()
+
+        lonlat = self.dataloader.get_grid()
+
+        radii = self.get_relative_radii()
+
+        if dataname == "Mh":
+            vector_h = np.zeros((self.num_samples, self.num_points,
+                                 self.num_levels, 3), dtype=np.float32)
+            vector_v = np.zeros((self.num_samples, self.num_points,
+                                 self.num_levels+1), dtype=np.float32)
+
+            # get the data
+            for i in range(self.num_samples):
+                vector_h[i, :, :self.num_levels -
+                         1] = self.dataloader.get_data(i, "Mh")
+                vector_v[i, :, :self.num_levels] = self.dataloader.get_data(
+                    i, "Wh")
+
+            # interpolate vertical value
+            # blah
+
+            # create field vector
+            field = np.zeros((self.num_samples,
+                              self.num_levels,
+                              self.num_points,
+                              2, 3), dtype=np.float32)
+
+            scale = 1.0
+            for i in range(self.num_points):
+                for l in range(self.num_levels-1):
+
+                    normal = spherical(1.0,
+                                       lonlat[i, 0],
+                                       lonlat[i, 1])
+                    r = radii[l]
+                    vertex = spherical(r,
+                                       lonlat[i, 0],
+                                       lonlat[i, 1])
+                    field[:, l, i, 0, :] = vertex
+                    # field[:, l, i, 1, :] = scale*vector_h[:, i, l, :] + vertex
+                    field[:, l, i, 1, :] = vertex + normal
+            self.field_data = field
+
+    def select_scalar_data_type(self, dataname):
         self.dataname = dataname
 
         # load data set
         if dataname == "Pressure":
             data = np.zeros((self.num_samples, self.num_points,
                              self.num_levels), dtype=np.float32)
-            self.data_color = np.zeros(
-                (self.num_samples, self.num_levels, self.num_points, 3), dtype=np.float32)
+            self.data_color = np.zeros((self.num_samples,
+                                        self.num_levels,
+                                        self.num_points,
+                                        3), dtype=np.float32)
             print(self.data_color.shape)
             for i in range(self.num_samples):
                 data[i, :, :self.num_levels -
@@ -117,13 +193,16 @@ class simdataset:
             #     (max_data[non_zeros] - min_data[non_zeros])
             # data[zeros] = 0.0
 
-            #self.data_color = data
+            # self.data_color = data
             self.data_color = np.array(np.swapaxes(
                 H_to_RGB(data), 1, 2), copy=True, dtype=np.float32)
 
     def get_color_data(self, dataset_idx):
-        #print(self.data_color[dataset_idx, :, :, :])
+        # print(self.data_color[dataset_idx, :, :, :])
         return self.data_color[dataset_idx, :, :, :]
+
+    def get_field_data(self, idx):
+        return self.field_data[idx]
 
 
 class dataloader:
@@ -189,6 +268,15 @@ class dataloader:
             # open planet file
             planet_def = folder / ('esp_output_planet_{}.h5'.format(planet))
             self.planets[planet]['def'] = planet_def
+
+    def get_radius(self):
+        return self.planet_def['A'][0]
+
+    def get_altitudes(self):
+        return self.grid['Altitude']
+
+    def get_altitudesh(self):
+        return self.grid['Altitudeh']
 
     def select_planet(self, planet):
         self.planet = planet

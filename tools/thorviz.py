@@ -82,7 +82,8 @@ if len(planets) < 1:
     exit(-1)
 
 dataset.select_planet(planets[0])
-dataset.select_data_type("Mh")
+dataset.select_scalar_data_type("Mh")
+dataset.select_vector_data_type("Mh")
 
 
 class ThorVizWindow(QMainWindow):

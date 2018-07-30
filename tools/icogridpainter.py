@@ -356,10 +356,11 @@ class IcoGridPainter:
                                  dtype=np.uint32)
 
         print("num_levels:", num_levels)
-        for level in range(num_levels):
+        relative_radius = self.dataset.get_relative_radii()
+        for level in range(num_levels-1):
+            r = relative_radius[level]
 
-            all_vertices[level, :, :] = (
-                1.0+level*0.01) * vertices
+            all_vertices[level, :, :] = r*vertices
 
             all_triangles[level, :, :] = triangles + \
                 level*vertices.shape[0]
@@ -381,16 +382,47 @@ class IcoGridPainter:
         self.num_points = num_points
         self.last_loaded = -1
 
+        self.display_vector_field = True
+        vector_data = np.zeros(
+            (self.num_levels, self.num_points, 2, 3), dtype=np.float32)
+        vector_elements = np.zeros((num_levels, self.num_points, 2),
+                                   dtype=np.uint32)
+
+        self.vao_vector_field = self.create_vector_field_vao(
+            vector_data, vector_elements)
+        self.field_element_count = vector_elements.size
+        self.last_field_loaded = -1
+
+    def update_field(self):
+        if self.draw_idx == self.last_field_loaded:
+            return
+
+        data = np.array(self.dataset.get_field_data(self.draw_idx), copy=True)
+        print(data)
+
+        self.update_field_vbo(data)
+        self.last_field_loaded = self.draw_idx
+
     def update_colors(self):
         if self.draw_idx == self.last_loaded:
             return
         data = np.array(self.dataset.get_color_data(self.draw_idx), copy=True)
-        print("owndata", data.flags['OWNDATA'])
-        print(data.shape)
 
         self.all_colors = data
         self.update_colors_vbo(data)
         self.last_loaded = self.draw_idx
+
+    def create_vector_field_vao(self, vertices, elements):
+        vao = gl.glGenVertexArrays(1)
+
+        gl.glBindVertexArray(vao)
+        gl.glEnableVertexAttribArray(0)
+
+        self.vector_field_vbo = self.create_vbo(vertices, dynamic=True)
+
+        self.create_elements_vbo(elements)
+
+        return vao
 
     def create_sphere_vao(self, vertices, triangles, colors):
         vao = gl.glGenVertexArrays(1)
@@ -405,6 +437,19 @@ class IcoGridPainter:
         self.create_elements_vbo(triangles)
 
         return vao
+
+    def paint_vector_field(self):
+        if not self.display_vector_field:
+            return
+
+        self.update_field()
+        gl.glBindVertexArray(self.vao_vector_field)
+        idx = 4*self.field_element_count * self.altitude
+        idx = 0
+        gl.glDrawElements(gl.GL_LINES,
+                          int(self.field_element_count),
+                          gl.GL_UNSIGNED_INT,
+                          ctypes.c_void_p(idx))
 
     def paint_grid(self):
         # display grid
@@ -465,15 +510,21 @@ class IcoGridPainter:
 
         return vbo
 
-    def create_vbo(self, vertices):
+    def create_vbo(self, vertices, dynamic=False):
         vbo = gl.glGenBuffers(1)
 
         gl.glBindBuffer(gl.GL_ARRAY_BUFFER, vbo)
 
-        gl.glBufferData(gl.GL_ARRAY_BUFFER,
-                        vertices.nbytes,
-                        vertices,
-                        gl.GL_STATIC_DRAW)
+        if dynamic:
+            gl.glBufferData(gl.GL_ARRAY_BUFFER,
+                            vertices.nbytes,
+                            vertices,
+                            gl.GL_DYNAMIC_DRAW)
+        else:
+            gl.glBufferData(gl.GL_ARRAY_BUFFER,
+                            vertices.nbytes,
+                            vertices,
+                            gl.GL_STATIC_DRAW)
 
         gl.glVertexAttribPointer(0, 3,
                                  gl.GL_FLOAT, False,
@@ -501,11 +552,21 @@ class IcoGridPainter:
 
         return vbo
 
+    def update_field_vbo(self, field):
+        print("update field")
+        gl.glBindVertexArray(self.vao_vector_field)
+        gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.vector_field_vbo)
+
+        gl.glBufferSubData(gl.GL_ARRAY_BUFFER,
+                           0,
+                           field.nbytes,
+                           field)
+
     def update_colors_vbo(self, colors):
-        print("update colors")
+        # print("update colors")
         gl.glBindVertexArray(self.vao_list)
         gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.color_vbo)
-        print(colors)
+
         gl.glBufferSubData(gl.GL_ARRAY_BUFFER,
                            0,
                            colors.nbytes,
