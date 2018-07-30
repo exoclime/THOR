@@ -91,6 +91,7 @@ class ThorVizWindow(QMainWindow):
         uic.loadUi('VizWin.ui', self)
 
         num_samples = dataset.get_num_datasets()
+        print("num datasets:", num_samples)
         pts, lvl = dataset.get_dim()
 
         self.animation_slider.setMinimum(0)

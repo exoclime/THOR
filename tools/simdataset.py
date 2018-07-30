@@ -53,8 +53,9 @@ class simdataset:
             min_data = np.min(data)
             max_data = np.max(data)
 
-            print(min_data, max_data)
+            zeros = (max_data - min_data) == 0
             data = (data - min_data)/(max_data - min_data)
+            data[zeros] = 0.0
 
             # self.data_color = np.array(
             #    np.swapaxes(H_to_RGB(data), 1, 2), copy=True, dtype=np.float32)
@@ -105,6 +106,17 @@ class simdataset:
                     min_data = np.min(d)
                     max_data = np.max(d)
                     data[i, j, :] = (d - min_data)/(max_data - min_data)
+
+            # min_data = np.min(data)
+            # max_data = np.max(data)
+
+            # print(min_data, max_data)
+            # zeros = (max_data - min_data) == 0
+            # non_zeros = (max_data - min_data) != 0
+            # data[non_zeros] = (data[non_zeros] - min_data[non_zeros]) / \
+            #     (max_data[non_zeros] - min_data[non_zeros])
+            # data[zeros] = 0.0
+
             #self.data_color = data
             self.data_color = np.array(np.swapaxes(
                 H_to_RGB(data), 1, 2), copy=True, dtype=np.float32)

@@ -268,16 +268,6 @@ class ThorVizWidget(QOpenGLWidget):
             v = (drx*v_y + dry*v_x).normalized()
             alpha = math.sqrt(math.pow(drx, 2.0)+math.pow(dry, 2.0))
             self.cam_orientation.rotate(alpha, v.x(), v.y(), v.z())
-            #self.cam_orientation.rotate(dphi, v.x(), v.y(), v.z())
-            # print(v)
-            #print(dx, dy)
-
-            # print(v)
-            #self.cam_orientation.rotate(dtheta, v.x(), v.y(), v.z())
-
-            #print(dtheta, dphi)
-            #self.cam_theta += dtheta
-            #self.cam_phi += dphi
 
         if self.right_button_pressed:
             dr = dy/100.0
