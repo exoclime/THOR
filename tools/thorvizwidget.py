@@ -56,6 +56,7 @@ class ThorVizWidget(QOpenGLWidget):
         self.cam_phi = 0.0
 
         self.cam_r = -5.0
+        self.cam_orientation = QMatrix4x4()
 
         self.right_button_pressed = False
         self.left_button_pressed = False
@@ -75,7 +76,7 @@ class ThorVizWidget(QOpenGLWidget):
 
     def set_image(self, img):
         self.image = img
-        self.ico_grid_painter.draw_idx = self.image+1
+        self.ico_grid_painter.draw_idx = self.image
         self.update()
 
     def show_data(self, b):
@@ -154,9 +155,10 @@ class ThorVizWidget(QOpenGLWidget):
         # view transformation
         view = QMatrix4x4()
         view.translate(0.0,  0.0, self.cam_r)
+        view *= self.cam_orientation
         print(self.cam_theta, self.cam_phi, self.cam_r)
-        view.rotate(-self.cam_theta, 0.0, 1.0, 0.0)
-        view.rotate(-self.cam_phi, 1.0, 0.0, 0.0)
+        #view.rotate(-self.cam_theta, 0.0, 1.0, 0.0)
+        #view.rotate(-self.cam_phi, 1.0, 0.0, 0.0)
         self.shader_manager.set_view_pc(view)
 
         # projection transformation
@@ -198,10 +200,10 @@ class ThorVizWidget(QOpenGLWidget):
         model = QMatrix4x4()
         self.shader_manager.set_model(model)
         gl.glViewport(0, 0, self.width//10, self.height//10)
-        view = QMatrix4x4()
-        view.translate(0.0,  0.0, -4.0)
-        view.rotate(self.cam_theta, 1.0, 0.0, 0.0)
-        view.rotate(self.cam_phi, 0.0, 1.0, 0.0)
+        #view = QMatrix4x4()
+        #view.translate(0.0,  0.0, -4.0)
+        #view.rotate(self.cam_theta, 1.0, 0.0, 0.0)
+        #view.rotate(self.cam_phi, 0.0, 1.0, 0.0)
 
         self.shader_manager.set_view_pc(view)
         # projection transformation
@@ -251,15 +253,31 @@ class ThorVizWidget(QOpenGLWidget):
     def mouseMoveEvent(self, e):
         dx = e.x() - self.x
         dy = e.y() - self.y
-        k = 2.0
+        self.x = e.x()
+        self.y = e.y()
+
+        k = 50
         if self.left_button_pressed:
 
-            dtheta = k*dx/self.width
-            dphi = k*dy/self.height
+            drx = k*dx/self.width
+            dry = k*dy/self.height
+            c = self.cam_orientation.inverted()[0]
 
-            print(dtheta, dphi)
-            self.cam_theta += dtheta
-            self.cam_phi += dphi
+            v_x = c.column(0)
+            v_y = c.column(1)
+            v = (drx*v_y + dry*v_x).normalized()
+            alpha = math.sqrt(math.pow(drx, 2.0)+math.pow(dry, 2.0))
+            self.cam_orientation.rotate(alpha, v.x(), v.y(), v.z())
+            #self.cam_orientation.rotate(dphi, v.x(), v.y(), v.z())
+            # print(v)
+            #print(dx, dy)
+
+            # print(v)
+            #self.cam_orientation.rotate(dtheta, v.x(), v.y(), v.z())
+
+            #print(dtheta, dphi)
+            #self.cam_theta += dtheta
+            #self.cam_phi += dphi
 
         if self.right_button_pressed:
             dr = dy/100.0
