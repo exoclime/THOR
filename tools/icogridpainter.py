@@ -389,7 +389,7 @@ class IcoGridPainter:
         print(data.shape)
 
         self.all_colors = data
-        self.update_colors_vbo(self.all_colors)
+        self.update_colors_vbo(data)
         self.last_loaded = self.draw_idx
 
     def create_sphere_vao(self, vertices, triangles, colors):
@@ -502,8 +502,10 @@ class IcoGridPainter:
         return vbo
 
     def update_colors_vbo(self, colors):
+        print("update colors")
+        gl.glBindVertexArray(self.vao_list)
         gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.color_vbo)
-
+        print(colors)
         gl.glBufferSubData(gl.GL_ARRAY_BUFFER,
                            0,
                            colors.nbytes,

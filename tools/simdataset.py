@@ -53,10 +53,61 @@ class simdataset:
             min_data = np.min(data)
             max_data = np.max(data)
 
-            data = 360.0*(data - min_data)/(max_data - min_data)
+            print(min_data, max_data)
+            data = (data - min_data)/(max_data - min_data)
 
-            self.data_color = np.array(
-                np.swapaxes(H_to_RGB(data), 1, 2), copy=True, dtype=np.float32)
+            # self.data_color = np.array(
+            #    np.swapaxes(H_to_RGB(data), 1, 2), copy=True, dtype=np.float32)
+
+            for i in range(self.num_samples):
+                for j in range(self.num_levels):
+                    for k in range(self.num_points):
+                        self.data_color[i, j, k] = (data[i, k, j], 0.0, 0.0)
+                        # HSV_to_RGB(
+                        #    360.0*data[i, k, j], 1.0, 1.0)
+
+        elif dataname == "Rho":
+            data = np.zeros((self.num_samples, self.num_points,
+                             self.num_levels), dtype=np.float32)
+            self.data_color = np.zeros(
+                (self.num_samples, self.num_levels, self.num_points, 3), dtype=np.float32)
+
+            for i in range(self.num_samples):
+                data[i, :, :self.num_levels -
+                     1] = self.dataloader.get_data(i, dataname)
+
+            # rescale
+            min_data = np.min(data)
+            max_data = np.max(data)
+
+            data = (data - min_data)/(max_data - min_data)
+
+            self.data_color = np.array(np.swapaxes(
+                H_to_RGB(data), 1, 2), copy=True, dtype=np.float32)
+
+        elif dataname == "Mh":
+            data = np.zeros((self.num_samples, self.num_points,
+                             self.num_levels, 3), dtype=np.float32)
+            self.data_color = np.zeros(
+                (self.num_samples, self.num_levels, self.num_points, 3), dtype=np.float32)
+
+            for i in range(self.num_samples):
+                data[i, :, :self.num_levels -
+                     1] = self.dataloader.get_data(i, dataname)
+
+            # compute norm
+            data = np.sum(np.power(data, 2.0), axis=3)
+            # data = data[:, :, :, 0]
+            # rescale
+            for i in range(self.num_samples):
+                for j in range(self.num_levels):
+                    d = data[i, j, :]
+                    min_data = np.min(d)
+                    max_data = np.max(d)
+                    data[i, j, :] = (d - min_data)/(max_data - min_data)
+            #self.data_color = data
+            self.data_color = np.array(np.swapaxes(
+                H_to_RGB(data), 1, 2), copy=True, dtype=np.float32)
 
     def get_color_data(self, dataset_idx):
         #print(self.data_color[dataset_idx, :, :, :])
@@ -152,8 +203,14 @@ class dataloader:
 
     def get_data(self, dataset_idx, data_name):
         print("loading: ", self.datasets[dataset_idx])
-        data = np.array(h5py.File(self.datasets[dataset_idx])[data_name], dtype=np.float32).reshape(
-            (self.num_points, self.num_levels))
+        data = None
+        if (data_name == "Pressure"
+                or data_name == "Rho"):
+            data = np.array(h5py.File(self.datasets[dataset_idx])[data_name], dtype=np.float32).reshape(
+                (self.num_points, self.num_levels))
+        elif data_name == "Mh":
+            data = np.array(h5py.File(self.datasets[dataset_idx])[data_name], dtype=np.float32).reshape(
+                (self.num_points, self.num_levels, 3))
 
         return data
 
