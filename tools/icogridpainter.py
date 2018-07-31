@@ -230,9 +230,11 @@ class IcoGridPainter(BasePainter):
 
         #draw_rhomb = [0, 1, 2, 3, 4, 5, 6, 7, 8,  9]
         # upper
-        draw_rhomb = [0, 1, 2, 3, 4]
+        # draw_rhomb = [0, 1, 2, 3, 4]
         # lower
         #draw_rhomb = [5, 6, 7, 8,  9]
+        # North South link
+        draw_rhomb = [0, 1, 2, 5, 6]
         faces = True
 
         # halos = False
@@ -301,7 +303,28 @@ class IcoGridPainter(BasePainter):
                                 triangles[triangle_idx][2] = i_c_b
                                 triangle_idx += 1
                             elif ky == 0:
-                                pass
+                                # on ky = 0 side
+                                i_c = idx(fc, kx, ky, 0, 0)
+                                i_c_t = idx(fc, kx-1, ky, cn, 0)
+                                i_c_b = idx(fc_b_l, kx-1, kxl-1,
+                                            cn, cn)
+
+                                triangles[triangle_idx][0] = i_c
+                                triangles[triangle_idx][1] = i_c_t
+                                triangles[triangle_idx][2] = i_c_b
+                                triangle_idx += 1
+
+                                i_c = idx(fc, kx, ky, 0, 0)
+
+                                i_c_t = idx(fc_b_l, kx, kxl-1,
+                                            0, cn)
+                                i_c_b = idx(fc_b_l, kx-1, kxl-1,
+                                            cn, cn)
+
+                                triangles[triangle_idx][0] = i_c
+                                triangles[triangle_idx][1] = i_c_t
+                                triangles[triangle_idx][2] = i_c_b
+                                triangle_idx += 1
                             else:  # kx >0 and ky > 0
                                 # inside a face
                                 i_c = idx(fc, kx, ky, 0, 0)
