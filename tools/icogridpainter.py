@@ -185,7 +185,7 @@ class IcoGridPainter(BasePainter):
         g = int(pow((num_points - 2)/10, 1/4)) - 2
         num_rhombi = 10
         # nfaces
-        num_subrhombi = int(pow(4.0, g - 2))
+        num_subrhombi = int(pow(4.0, g - 4))
         nfaces = num_subrhombi
         num_points_side_region = int(pow(2, 4))
         nl_reg = num_points_side_region
@@ -228,81 +228,172 @@ class IcoGridPainter(BasePainter):
 
         triangles = np.zeros((num_triangles, 3), dtype=np.uint32)
 
-        draw_rhomb = [0, 1, 2, 3, 4, 5, 6, 7, 8,  9]
-        # draw_rhomb = [5, 6, 7, 8, 9]
-        halos = False
-        # halos = True
+        #draw_rhomb = [0, 1, 2, 3, 4, 5, 6, 7, 8,  9]
+        # upper
+        draw_rhomb = [0, 1, 2, 3, 4]
+        # lower
+        #draw_rhomb = [5, 6, 7, 8,  9]
+        faces = True
+
+        # halos = False
+        halos = True
+        poles = False
+        corners = True
         triangle_idx = 0
+
+        # index for corner point
+        cn = nl_reg - 1
+
         for fc in range(num_rhombi):
             if fc not in draw_rhomb:
                 continue
             # sub rhombis
             for kx in range(kxl):
                 for ky in range(kxl):
-                    # inside one sub-rombi
-                    for i in range(nl_reg-1):
-                        for j in range(nl_reg-1):
-                            i1 = idx(fc, kx, ky, i, j)
-                            i2 = idx(fc, kx, ky, i, j+1)
-                            i3 = idx(fc, kx, ky, i+1, j)
-                            i4 = idx(fc, kx, ky, i+1, j+1)
-                            triangles[triangle_idx][0] = i1
-                            triangles[triangle_idx][1] = i2
-                            triangles[triangle_idx][2] = i4
+                    if faces:
+                        # inside one sub-rombi
+                        # loop on triangles and add them, two per "square"
+                        for i in range(nl_reg-1):
+                            for j in range(nl_reg-1):
+                                i1 = idx(fc, kx, ky, i, j)
+                                i2 = idx(fc, kx, ky, i, j+1)
+                                i3 = idx(fc, kx, ky, i+1, j)
+                                i4 = idx(fc, kx, ky, i+1, j+1)
+                                triangles[triangle_idx][0] = i1
+                                triangles[triangle_idx][1] = i2
+                                triangles[triangle_idx][2] = i4
 
-                            triangle_idx += 1
-                            triangles[triangle_idx][0] = i1
-                            triangles[triangle_idx][1] = i4
-                            triangles[triangle_idx][2] = i3
-                            triangle_idx += 1
+                                triangle_idx += 1
+                                triangles[triangle_idx][0] = i1
+                                triangles[triangle_idx][1] = i4
+                                triangles[triangle_idx][2] = i3
+                                triangle_idx += 1
 
-                    # corner indexes
-                    i_c = idx(fc, kx, ky, 0, 0)
-                    i_c_t = idx(fc, kx, ky, 1, 0)
-                    i_c_b = idx(fc, kx, ky, 1, 0)
-
-                    if fc < 5:
-                        # lower rhombi
-                        fc_t_l = rhombi_neighbours[fc][0]
-                        fc_b_l = rhombi_neighbours[fc][3]
-                        i_c_b = idx(fc_t_l, kxl-1, kxl-1, nl_reg-1, nl_reg-1)
-                        i_c_t = idx(fc_b_l, kxl-1, kxl-1, 0, nl_reg-1)
-                    else:
-                        # upper rhombi
+                    if corners:
+                        # corner indexes
                         fc_t_l = rhombi_neighbours[fc][0]
                         fc_b_l = rhombi_neighbours[fc][3]
 
-                        i_c_b = idx(fc_t_l, kxl-1, kxl-1, nl_reg-1, 0)
-                        i_c_t = idx(fc_b_l, kxl-1, kxl-1, nl_reg-1, nl_reg-1)
+                        if fc < 5:
+                            # upper rhombi
+                            if kx == 0 and ky == 0:
+                                pass
+                            elif kx == 0:
+                                # on ky = 0 side
+                                i_c = idx(fc, kx, ky, 0, 0)
+                                i_c_t = idx(fc, kx, ky-1, 0, cn)
+                                i_c_b = idx(fc_t_l,
+                                            kxl - 1 - ky + 1, kxl - 1, 0, cn)
 
-                    triangles[triangle_idx][0] = i_c
-                    triangles[triangle_idx][1] = i_c_t
-                    triangles[triangle_idx][2] = i_c_b
-                    triangle_idx += 1
+                                triangles[triangle_idx][0] = i_c
+                                triangles[triangle_idx][1] = i_c_t
+                                triangles[triangle_idx][2] = i_c_b
+                                triangle_idx += 1
 
-                    # poles indexes
-                    if fc < 5:
-                        if kx == 0 and ky == kxl - 1:
-                            i_p = vertices.shape[0] - 2
-                            i_c1 = idx(fc, 0, kxl-1, 0, nl_reg-1)
+                                i_c = idx(fc, kx, ky, 0, 0)
+                                i_c_t = idx(fc_t_l, kxl - 1 - ky + 1, kxl-1,
+                                            0, cn)
+                                i_c_b = idx(fc_t_l, kxl - 1 - ky, kxl-1,
+                                            cn, cn)
 
-                            fc_t_l = rhombi_neighbours[fc][0]
-                            i_c2 = idx(fc_t_l, 0, kxl-1, 0, nl_reg-1)
-                            triangles[triangle_idx][0] = i_p
-                            triangles[triangle_idx][1] = i_c1
-                            triangles[triangle_idx][2] = i_c2
-                            triangle_idx += 1
-                    else:
-                        if kx == kxl - 1 and ky == 0:
-                            i_p = vertices.shape[0] - 1
-                            i_c1 = idx(fc, kxl-1, 0, nl_reg-1, 0)
+                                triangles[triangle_idx][0] = i_c
+                                triangles[triangle_idx][1] = i_c_t
+                                triangles[triangle_idx][2] = i_c_b
+                                triangle_idx += 1
+                            elif ky == 0:
+                                pass
+                            else:  # kx >0 and ky > 0
+                                # inside a face
+                                i_c = idx(fc, kx, ky, 0, 0)
+                                i_c_t = idx(fc, kx-1, ky-1, cn, cn)
+                                i_c_b = idx(fc, kx, ky-1, 0, cn)
+                                triangles[triangle_idx][0] = i_c
+                                triangles[triangle_idx][1] = i_c_t
+                                triangles[triangle_idx][2] = i_c_b
+                                triangle_idx += 1
+                                i_c = idx(fc, kx, ky, 0, 0)
+                                i_c_t = idx(fc, kx-1, ky, cn, 0)
+                                i_c_b = idx(fc, kx-1, ky-1, cn, cn)
+                                triangles[triangle_idx][0] = i_c
+                                triangles[triangle_idx][1] = i_c_t
+                                triangles[triangle_idx][2] = i_c_b
+                                triangle_idx += 1
+                        else:
+                            # lower rhombi
+                            if kx == 0 and ky == 0:
+                                pass
+                            elif kx == 0:
+                                pass
+                            elif ky == 0:
+                                # on ky = 0 side
+                                i_c = idx(fc, kx, ky, 0, 0)
+                                i_c_t = idx(fc, kx-1, ky, cn, 0)
+                                i_c_b = idx(fc_b_l, kxl-1,
+                                            kxl - 1 - kx + 1, cn, 0)
 
-                            fc_b_l = rhombi_neighbours[fc][3]
-                            i_c2 = idx(fc_b_l, kxl-1, 0, nl_reg-1, 0)
-                            triangles[triangle_idx][0] = i_p
-                            triangles[triangle_idx][1] = i_c1
-                            triangles[triangle_idx][2] = i_c2
-                            triangle_idx += 1
+                                triangles[triangle_idx][0] = i_c
+                                triangles[triangle_idx][1] = i_c_t
+                                triangles[triangle_idx][2] = i_c_b
+                                triangle_idx += 1
+
+                                i_c = idx(fc, kx, ky, 0, 0)
+                                i_c_t = idx(fc_b_l, kxl-1,
+                                            kxl - 1 - kx + 1, cn, 0)
+                                i_c_b = idx(fc_b_l, kxl-1,
+                                            kxl - 1 - kx, cn, cn)
+
+                                triangles[triangle_idx][0] = i_c
+                                triangles[triangle_idx][1] = i_c_t
+                                triangles[triangle_idx][2] = i_c_b
+                                triangle_idx += 1
+
+                            else:  # kx >0 and ky > 0
+                                # inside a face
+                                i_c = idx(fc, kx, ky, 0, 0)
+                                i_c_t = idx(fc, kx-1, ky-1, cn, cn)
+                                i_c_b = idx(fc, kx, ky-1, 0, cn)
+                                triangles[triangle_idx][0] = i_c
+                                triangles[triangle_idx][1] = i_c_t
+                                triangles[triangle_idx][2] = i_c_b
+                                triangle_idx += 1
+                                i_c = idx(fc, kx, ky, 0, 0)
+                                i_c_t = idx(fc, kx-1, ky, cn, 0)
+                                i_c_b = idx(fc, kx-1, ky-1, cn, cn)
+                                triangles[triangle_idx][0] = i_c
+                                triangles[triangle_idx][1] = i_c_t
+                                triangles[triangle_idx][2] = i_c_b
+                                triangle_idx += 1
+                                fc_t_l = rhombi_neighbours[fc][0]
+                                fc_b_l = rhombi_neighbours[fc][3]
+
+                                i_c_b = idx(fc_t_l, kxl-1, kxl-1, nl_reg-1, 0)
+                                i_c_t = idx(fc_b_l, kxl-1, kxl -
+                                            1, nl_reg-1, nl_reg-1)
+
+                    if poles:
+                        # poles indexes
+                        if fc < 5:
+                            if kx == 0 and ky == kxl - 1:
+                                i_p = vertices.shape[0] - 2
+                                i_c1 = idx(fc, 0, kxl-1, 0, nl_reg-1)
+
+                                fc_t_l = rhombi_neighbours[fc][0]
+                                i_c2 = idx(fc_t_l, 0, kxl-1, 0, nl_reg-1)
+                                triangles[triangle_idx][0] = i_p
+                                triangles[triangle_idx][1] = i_c1
+                                triangles[triangle_idx][2] = i_c2
+                                triangle_idx += 1
+                        else:
+                            if kx == kxl - 1 and ky == 0:
+                                i_p = vertices.shape[0] - 1
+                                i_c1 = idx(fc, kxl-1, 0, nl_reg-1, 0)
+
+                                fc_b_l = rhombi_neighbours[fc][3]
+                                i_c2 = idx(fc_b_l, kxl-1, 0, nl_reg-1, 0)
+                                triangles[triangle_idx][0] = i_p
+                                triangles[triangle_idx][1] = i_c1
+                                triangles[triangle_idx][2] = i_c2
+                                triangle_idx += 1
 
                     if halos:
                         # sub rhombi halo
