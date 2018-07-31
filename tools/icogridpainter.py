@@ -17,6 +17,8 @@ import matplotlib.pyplot as plt
 
 from utilities import HSV_to_RGB, spherical
 
+from basepainter import BasePainter
+
 vertex_shader_icos = """#version 400\n
                        layout(location = 0) in vec3 vp;
                        layout(location = 1) in vec3 vertex_colour;
@@ -145,8 +147,9 @@ class ico:
         print("maps: ", 10*pow(self.n_s+2, 2))
 
 
-class IcoGridPainter:
+class IcoGridPainter(BasePainter):
     def __init__(self):
+        BasePainter.__init__(self)
         self.level = 0
         self.wireframe = False
         self.draw_idx = 0
@@ -156,7 +159,8 @@ class IcoGridPainter:
         self.dataset = dataset
 
     def set_shader_manager(self, shader_manager):
-        self.shader_manager = shader_manager
+        BasePainter.set_shader_manager(self, shader_manager)
+
         self.shader_manager.add_shaders("icos_grid",
                                         vertex=vertex_shader_icos,
                                         geometry=geometry_shader_icos,
@@ -595,102 +599,17 @@ class IcoGridPainter:
 #        if self.wireframe:
 #            gl.glPolygonMode(gl.GL_FRONT_AND_BACK, gl.GL_FILL)
 
-    def create_elements_vbo(self, elements):
-        vbo = gl.glGenBuffers(1)
-
-        gl.glBindBuffer(gl.GL_ELEMENT_ARRAY_BUFFER, vbo)
-
-        gl.glBufferData(gl.GL_ELEMENT_ARRAY_BUFFER,
-                        elements.nbytes,
-                        elements,
-                        gl.GL_STATIC_DRAW)
-
-        # gl.glVertexAttribPointer(0, 1,
-        #                         gl.GL_INT, False,
-        #                         0, None)
-
-        # gl.glEnableVertexAttribArray(0)
-
-        return vbo
-
-    def create_vbo(self, vertices, dynamic=False):
-        vbo = gl.glGenBuffers(1)
-
-        gl.glBindBuffer(gl.GL_ARRAY_BUFFER, vbo)
-
-        if dynamic:
-            gl.glBufferData(gl.GL_ARRAY_BUFFER,
-                            vertices.nbytes,
-                            vertices,
-                            gl.GL_DYNAMIC_DRAW)
-        else:
-            gl.glBufferData(gl.GL_ARRAY_BUFFER,
-                            vertices.nbytes,
-                            vertices,
-                            gl.GL_STATIC_DRAW)
-
-        gl.glVertexAttribPointer(0, 3,
-                                 gl.GL_FLOAT, False,
-                                 0, None)
-
-        gl.glEnableVertexAttribArray(0)
-
-        return vbo
-
-    def create_normals_vbo(self, vertices):
-        vbo = gl.glGenBuffers(1)
-
-        gl.glBindBuffer(gl.GL_ARRAY_BUFFER, vbo)
-
-        gl.glBufferData(gl.GL_ARRAY_BUFFER,
-                        vertices.nbytes,
-                        vertices,
-                        gl.GL_STATIC_DRAW)
-
-        gl.glVertexAttribPointer(2, 3,
-                                 gl.GL_FLOAT, False,
-                                 0, None)
-
-        gl.glEnableVertexAttribArray(2)
-
-        return vbo
-
     def update_field_vbo(self, field):
         print("update field")
-        gl.glBindVertexArray(self.vao_vector_field)
-        gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.vector_field_vbo)
-
-        gl.glBufferSubData(gl.GL_ARRAY_BUFFER,
-                           0,
-                           field.nbytes,
-                           field)
+        self.update_vbo(self.vao_vector_field,
+                        self.vector_field_vbo,
+                        field)
 
     def update_colors_vbo(self, colors):
         # print("update colors")
-        gl.glBindVertexArray(self.vao_list)
-        gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.color_vbo)
-
-        gl.glBufferSubData(gl.GL_ARRAY_BUFFER,
-                           0,
-                           colors.nbytes,
-                           colors)
-
-    def create_colors_vbo(self, colors):
-        vbo = gl.glGenBuffers(1)
-
-        gl.glBindBuffer(gl.GL_ARRAY_BUFFER, vbo)
-
-        gl.glBufferData(gl.GL_ARRAY_BUFFER,
-                        colors.nbytes,
-                        colors,
-                        gl.GL_DYNAMIC_DRAW)
-
-        gl.glVertexAttribPointer(1, 3,
-                                 gl.GL_FLOAT, False,
-                                 0, None)
-        gl.glEnableVertexAttribArray(1)
-
-        return vbo
+        self.update_vbo(self.vao_list,
+                        self.color_vbo,
+                        colors)
 
 
 if __name__ == '__main__':
