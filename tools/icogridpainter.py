@@ -184,18 +184,23 @@ class IcoGridPainter(BasePainter):
         # level
         g = int(pow((num_points - 2)/10, 1/4)) - 2
         num_rhombi = 10
-        # nfaces
-        num_subrhombi = int(pow(4.0, g - 4))
-        nfaces = num_subrhombi
+
         num_points_side_region = int(pow(2, 4))
         nl_reg = num_points_side_region
         nl2 = int(pow(num_points_side_region, 2))
-        kxl = int(sqrt(num_subrhombi))
+        # kxl = int(sqrt(num_subrhombi))
+        kxl = int(pow((num_points - 2)/10, 1/2))//num_points_side_region
 
         def idx(fc, kx, ky, i, j):
             return nl2*(fc*nfaces + ky*kxl + kx) + j*nl_reg + i
 
+        # nfaces
+        num_subrhombi = kxl*kxl
+        nfaces = num_subrhombi
+
         print("subdivision level: ", g)
+        print("number of subregions square:", kxl)
+        print("num sub rhombis", num_subrhombi)
 
         # build triangles
         # triangles in rhombi and subrhombi
