@@ -221,20 +221,20 @@ class IcoGridPainter(BasePainter):
         ]
         num_triangles += 2*(nl_reg-1)*2*num_subrhombi*num_rhombi
         # corner between two halos
-        num_triangles += num_subrhombi*num_rhombi
+        num_triangles += 2*num_subrhombi*num_rhombi
         # poles
         num_triangles += 2*5
         print("number of triangles", num_triangles)
 
         triangles = np.zeros((num_triangles, 3), dtype=np.uint32)
 
-        #draw_rhomb = [0, 1, 2, 3, 4, 5, 6, 7, 8,  9]
+        draw_rhomb = [0, 1, 2, 3, 4, 5, 6, 7, 8,  9]
         # upper
         # draw_rhomb = [0, 1, 2, 3, 4]
         # lower
         #draw_rhomb = [5, 6, 7, 8,  9]
         # North South link
-        draw_rhomb = [0, 1, 2, 5, 6]
+        #draw_rhomb = [0, 1, 5, 6, 9]
         faces = True
 
         # halos = False
@@ -346,7 +346,31 @@ class IcoGridPainter(BasePainter):
                             if kx == 0 and ky == 0:
                                 pass
                             elif kx == 0:
-                                pass
+                                # on kx = 0 side
+                                i_c = idx(fc, kx, ky, 0, 0)
+                                i_c_b = idx(fc_t_l, kxl-1, ky-1,
+                                            cn, cn)
+
+                                i_c_t = idx(fc, kx, ky-1, 0, cn)
+                                # i_c_b = idx(fc_t_l, kx-1, kxl-1,
+                                #             cn, cn)
+
+                                triangles[triangle_idx][0] = i_c
+                                triangles[triangle_idx][1] = i_c_t
+                                triangles[triangle_idx][2] = i_c_b
+                                triangle_idx += 1
+
+                                i_c = idx(fc, kx, ky, 0, 0)
+
+                                i_c_t = idx(fc_t_l, kxl-1, ky,
+                                            cn, 0)
+                                i_c_b = idx(fc_t_l, kxl-1, ky-1,
+                                            cn, cn)
+
+                                triangles[triangle_idx][0] = i_c
+                                triangles[triangle_idx][1] = i_c_t
+                                triangles[triangle_idx][2] = i_c_b
+                                triangle_idx += 1
                             elif ky == 0:
                                 # on ky = 0 side
                                 i_c = idx(fc, kx, ky, 0, 0)
