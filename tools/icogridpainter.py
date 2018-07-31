@@ -134,6 +134,7 @@ class IcoGridPainter(BasePainter):
         self.wireframe = False
         self.draw_idx = 0
         self.altitude = 0
+        self.show_data = False
 
     def set_grid_data(self, dataset):
         self.dataset = dataset
@@ -229,7 +230,7 @@ class IcoGridPainter(BasePainter):
 
         draw_rhomb = [0, 1, 2, 3, 4, 5, 6, 7, 8,  9]
         # draw_rhomb = [5, 6, 7, 8, 9]
-        halos = True
+        halos = False
         # halos = True
         triangle_idx = 0
         for fc in range(num_rhombi):
@@ -261,13 +262,16 @@ class IcoGridPainter(BasePainter):
                     i_c_b = idx(fc, kx, ky, 1, 0)
 
                     if fc < 5:
+                        # lower rhombi
                         fc_t_l = rhombi_neighbours[fc][0]
                         fc_b_l = rhombi_neighbours[fc][3]
                         i_c_b = idx(fc_t_l, kxl-1, kxl-1, nl_reg-1, nl_reg-1)
                         i_c_t = idx(fc_b_l, kxl-1, kxl-1, 0, nl_reg-1)
                     else:
+                        # upper rhombi
                         fc_t_l = rhombi_neighbours[fc][0]
                         fc_b_l = rhombi_neighbours[fc][3]
+
                         i_c_b = idx(fc_t_l, kxl-1, kxl-1, nl_reg-1, 0)
                         i_c_t = idx(fc_b_l, kxl-1, kxl-1, nl_reg-1, nl_reg-1)
 
@@ -279,10 +283,10 @@ class IcoGridPainter(BasePainter):
                     # poles indexes
                     if fc < 5:
                         i_p = vertices.shape[0] - 2
-                        i_c1 = idx(fc, kxl-1, 0, 0, nl_reg-1)
+                        i_c1 = idx(fc, 0, kxl-1, 0, nl_reg-1)
 
                         fc_t_l = rhombi_neighbours[fc][0]
-                        i_c2 = idx(fc_t_l, kxl-1, 0, 0, nl_reg-1)
+                        i_c2 = idx(fc_t_l, 0, kxl-1, 0, nl_reg-1)
                         triangles[triangle_idx][0] = i_p
                         triangles[triangle_idx][1] = i_c1
                         triangles[triangle_idx][2] = i_c2
@@ -439,8 +443,15 @@ class IcoGridPainter(BasePainter):
         all_triangles = np.zeros((num_levels,  triangles.shape[0], 3),
                                  dtype=np.uint32)
 
+        self.grid_color_data = np.zeros((num_levels,  num_points, 3),
+                                        dtype=np.float32)
         print("num_levels:", num_levels)
         relative_radius = self.dataset.get_relative_radii()
+
+        for i in range(num_points):
+            self.grid_color_data[:, i, :] = HSV_to_RGB(
+                360.0*i/(num_points - 1), 1.0, 1.0)
+
         for level in range(num_levels-1):
             r = relative_radius[level]
 
@@ -448,10 +459,6 @@ class IcoGridPainter(BasePainter):
 
             all_triangles[level, :, :] = triangles + \
                 level*vertices.shape[0]
-
-            self.all_colors[level, :, :] = 0.5+0.5*level/(num_levels-1)*np.ones((num_points,
-                                                                                 3),
-                                                                                dtype=np.float32)
 
         self.vao_list = self.create_sphere_vao(all_vertices,
                                                all_triangles,
@@ -462,13 +469,17 @@ class IcoGridPainter(BasePainter):
         self.last_loaded = -1
 
     def update_colors(self):
-        if self.draw_idx == self.last_loaded:
-            return
-        data = np.array(self.dataset.get_color_data(self.draw_idx), copy=True)
+        if not self.show_data:
 
-        self.all_colors = data
-        self.update_colors_vbo(data)
-        self.last_loaded = self.draw_idx
+            self.update_colors_vbo(self.grid_color_data)
+        else:
+            if self.draw_idx == self.last_loaded:
+                return
+            data = np.array(self.dataset.get_color_data(
+                self.draw_idx), copy=True)
+
+            self.update_colors_vbo(data)
+            self.last_loaded = self.draw_idx
 
     def create_sphere_vao(self, vertices, triangles, colors):
         vao = gl.glGenVertexArrays(1)

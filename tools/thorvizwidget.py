@@ -75,13 +75,16 @@ class ThorVizWidget(QOpenGLWidget):
 
     def show_data(self, b):
         if b:
-            self.ico_grid_painter.draw_idx = self.image + 1
-            self.field_painter.draw_idx = self.image + 1
+            self.ico_grid_painter.show_data = True
+            self.ico_grid_painter.draw_idx = self.image
+            self.field_painter.show_data = True
             self.update()
 
     def show_grid(self, b):
         if b:
+            self.ico_grid_painter.show_data = False
             self.ico_grid_painter.draw_idx = 0
+            self.field_painter.show_data = False
             self.field_painter.draw_idx = 0
             self.update()
 

@@ -47,6 +47,7 @@ class VectorFieldPainter(BasePainter):
         self.level = 0
         self.draw_idx = 0
         self.altitude = 0
+        self.display_data = False
 
     def set_grid_data(self, dataset):
         self.dataset = dataset
@@ -108,7 +109,6 @@ class VectorFieldPainter(BasePainter):
             return
 
         data = np.array(self.dataset.get_field_data(self.draw_idx), copy=True)
-        print(data)
 
         self.update_field_vbo(data)
         self.last_field_loaded = self.draw_idx
@@ -126,7 +126,7 @@ class VectorFieldPainter(BasePainter):
         return vao
 
     def paint_vector_field(self):
-        if not self.display_vector_field:
+        if not self.display_vector_field and not self.display_data:
             return
 
         self.update_field()
