@@ -229,7 +229,7 @@ class IcoGridPainter(BasePainter):
 
         draw_rhomb = [0, 1, 2, 3, 4, 5, 6, 7, 8,  9]
         # draw_rhomb = [5, 6, 7, 8, 9]
-        halos = False
+        halos = True
         # halos = True
         triangle_idx = 0
         for fc in range(num_rhombi):

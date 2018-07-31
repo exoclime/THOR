@@ -66,11 +66,12 @@ class ThorVizWindow(QMainWindow):
         self.animation_slider.setMinimum(0)
         self.animation_slider.setMaximum(num_samples - 1)
         self.animation_slider.setSingleStep(1)
+        self.animation_spinbox.setMaximum(num_samples - 1)
 
         self.level_slider.setMinimum(0)
         self.level_slider.setMaximum(lvl - 1)
         self.level_slider.setSingleStep(1)
-
+        self.level_spinbox.setMaximum(lvl - 1)
         self.vizGL.set_grid_data(dataset)
         #self.vizGL.set_grid(grd, neighbours, colors, moments)
         self.show()

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
-    <height>600</height>
+    <width>1239</width>
+    <height>799</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,115 +16,137 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
     <item row="0" column="0">
-     <layout class="QHBoxLayout" name="horizontalLayout">
+     <layout class="QHBoxLayout" name="horizontalLayout_5" stretch="100,1">
       <item>
-       <widget class="ThorVizWidget" name="vizGL">
-        <property name="minimumSize">
-         <size>
-          <width>100</width>
-          <height>100</height>
-         </size>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </item>
-    <item row="1" column="0">
-     <layout class="QHBoxLayout" name="horizontalLayout_2">
-      <item>
-       <layout class="QVBoxLayout" name="verticalLayout">
-        <property name="rightMargin">
-         <number>19</number>
-        </property>
+       <layout class="QVBoxLayout" name="verticalLayout_2" stretch="9,1">
         <item>
-         <widget class="QRadioButton" name="show_data_radiobutton">
-          <property name="enabled">
-           <bool>true</bool>
-          </property>
-          <property name="text">
-           <string>&amp;Data</string>
-          </property>
-          <property name="checked">
-           <bool>false</bool>
-          </property>
-          <attribute name="buttonGroup">
-           <string notr="true">buttonGroup</string>
-          </attribute>
-         </widget>
-        </item>
-        <item>
-         <widget class="QRadioButton" name="show_grid_radiobutton">
-          <property name="text">
-           <string>&amp;Grid</string>
-          </property>
-          <property name="checked">
-           <bool>true</bool>
-          </property>
-          <attribute name="buttonGroup">
-           <string notr="true">buttonGroup</string>
-          </attribute>
-         </widget>
-        </item>
-        <item>
-         <widget class="QCheckBox" name="show_wireframe_checkbox">
-          <property name="text">
-           <string>Wireframe</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </item>
-      <item>
-       <layout class="QHBoxLayout" name="horizontalLayout_4">
-        <property name="rightMargin">
-         <number>0</number>
-        </property>
-        <item>
-         <layout class="QVBoxLayout" name="verticalLayout_3">
-          <property name="rightMargin">
-           <number>13</number>
-          </property>
+         <layout class="QHBoxLayout" name="horizontalLayout">
           <item>
-           <widget class="QSlider" name="level_slider">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
+           <widget class="ThorVizWidget" name="vizGL">
+            <property name="minimumSize">
+             <size>
+              <width>100</width>
+              <height>100</height>
+             </size>
             </property>
            </widget>
           </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="0,0,0">
           <item>
-           <widget class="QSpinBox" name="spinBox_2"/>
+           <layout class="QVBoxLayout" name="verticalLayout">
+            <property name="rightMargin">
+             <number>19</number>
+            </property>
+            <item>
+             <widget class="QRadioButton" name="show_data_radiobutton">
+              <property name="enabled">
+               <bool>true</bool>
+              </property>
+              <property name="text">
+               <string>&amp;Data</string>
+              </property>
+              <property name="checked">
+               <bool>false</bool>
+              </property>
+              <attribute name="buttonGroup">
+               <string notr="true">buttonGroup</string>
+              </attribute>
+             </widget>
+            </item>
+            <item>
+             <widget class="QRadioButton" name="show_grid_radiobutton">
+              <property name="text">
+               <string>&amp;Grid</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+              <attribute name="buttonGroup">
+               <string notr="true">buttonGroup</string>
+              </attribute>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="show_wireframe_checkbox">
+              <property name="text">
+               <string>Wireframe</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_4">
+            <property name="rightMargin">
+             <number>0</number>
+            </property>
+           </layout>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_3">
+            <property name="rightMargin">
+             <number>8</number>
+            </property>
+            <item>
+             <widget class="QLabel" name="label_2">
+              <property name="text">
+               <string>Time</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QSlider" name="animation_slider">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QSpinBox" name="animation_spinbox">
+              <property name="maximum">
+               <number>1000</number>
+              </property>
+             </widget>
+            </item>
+           </layout>
           </item>
          </layout>
         </item>
        </layout>
       </item>
       <item>
-       <layout class="QHBoxLayout" name="horizontalLayout_3">
+       <layout class="QVBoxLayout" name="verticalLayout_3" stretch="0,1000,0">
         <property name="rightMargin">
-         <number>8</number>
+         <number>13</number>
         </property>
         <item>
-         <widget class="QSlider" name="animation_slider">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
+         <widget class="QLabel" name="label">
+          <property name="text">
+           <string>Level</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QSpinBox" name="spinBox">
-          <property name="maximum">
-           <number>1000</number>
+         <widget class="QSlider" name="level_slider">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
           </property>
          </widget>
+        </item>
+        <item>
+         <widget class="QSpinBox" name="level_spinbox"/>
         </item>
        </layout>
       </item>
@@ -137,8 +159,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>800</width>
-     <height>27</height>
+     <width>1239</width>
+     <height>29</height>
     </rect>
    </property>
   </widget>
@@ -167,8 +189,8 @@
    <slot>set_image(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>466</x>
-     <y>449</y>
+     <x>653</x>
+     <y>738</y>
     </hint>
     <hint type="destinationlabel">
      <x>483</x>
@@ -179,16 +201,16 @@
   <connection>
    <sender>animation_slider</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>spinBox</receiver>
+   <receiver>animation_spinbox</receiver>
    <slot>setValue(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>571</x>
-     <y>441</y>
+     <x>758</x>
+     <y>738</y>
     </hint>
     <hint type="destinationlabel">
-     <x>773</x>
-     <y>440</y>
+     <x>1145</x>
+     <y>744</y>
     </hint>
    </hints>
   </connection>
@@ -199,8 +221,8 @@
    <slot>show_grid(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>28</x>
-     <y>443</y>
+     <x>38</x>
+     <y>739</y>
     </hint>
     <hint type="destinationlabel">
      <x>346</x>
@@ -215,8 +237,8 @@
    <slot>show_data(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>79</x>
-     <y>361</y>
+     <x>89</x>
+     <y>712</y>
     </hint>
     <hint type="destinationlabel">
      <x>181</x>
@@ -231,8 +253,8 @@
    <slot>show_wireframe(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>58</x>
-     <y>515</y>
+     <x>68</x>
+     <y>766</y>
     </hint>
     <hint type="destinationlabel">
      <x>283</x>
@@ -247,8 +269,8 @@
    <slot>show_data(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>82</x>
-     <y>375</y>
+     <x>92</x>
+     <y>712</y>
     </hint>
     <hint type="destinationlabel">
      <x>219</x>
@@ -259,16 +281,16 @@
   <connection>
    <sender>level_slider</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>spinBox_2</receiver>
+   <receiver>level_spinbox</receiver>
    <slot>setValue(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>133</x>
-     <y>415</y>
+     <x>1182</x>
+     <y>475</y>
     </hint>
     <hint type="destinationlabel">
-     <x>157</x>
-     <y>563</y>
+     <x>1218</x>
+     <y>768</y>
     </hint>
    </hints>
   </connection>
@@ -279,12 +301,44 @@
    <slot>set_level(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>134</x>
-     <y>379</y>
+     <x>1182</x>
+     <y>439</y>
     </hint>
     <hint type="destinationlabel">
      <x>225</x>
      <y>287</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>level_spinbox</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>level_slider</receiver>
+   <slot>setValue(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1190</x>
+     <y>755</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1175</x>
+     <y>599</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>animation_spinbox</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>animation_slider</receiver>
+   <slot>setValue(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1104</x>
+     <y>727</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>997</x>
+     <y>723</y>
     </hint>
    </hints>
   </connection>
