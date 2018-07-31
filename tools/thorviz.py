@@ -11,7 +11,7 @@ import re
 from math import sqrt
 
 from PyQt5 import QtGui, QtCore, uic
-from PyQt5.QtWidgets import QMainWindow, QApplication
+from PyQt5.QtWidgets import QMainWindow, QApplication, qApp
 
 from PyQt5.QtCore import QByteArray, QIODevice, Qt, QTimer, pyqtSignal, pyqtSlot
 from simdataset import simdataset
@@ -74,6 +74,10 @@ class ThorVizWindow(QMainWindow):
         self.level_spinbox.setMaximum(lvl - 1)
         self.vizGL.set_grid_data(dataset)
         #self.vizGL.set_grid(grd, neighbours, colors, moments)
+
+        self.actionQuit.triggered.connect(qApp.quit)
+
+        self.actionZero_Position.triggered.connect(self.vizGL.reset_position)
         self.show()
 
         # self.animation_slider.setMaximum(colors.shape[0])

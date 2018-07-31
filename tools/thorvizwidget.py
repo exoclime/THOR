@@ -56,6 +56,8 @@ class ThorVizWidget(QOpenGLWidget):
 
         self.right_button_pressed = False
         self.left_button_pressed = False
+        self.mid_button_pressed = False
+
         self.image = 0
 
     def set_grid_data(self, *args):
@@ -212,6 +214,11 @@ class ThorVizWidget(QOpenGLWidget):
         scale = 1.0
         self.projection.perspective(35.0, aspectratio, 0.01, 15.0)
 
+    def reset_position(self):
+        self.cam_orientation = QMatrix4x4()
+        self.cam_r = -5.0
+        self.update()
+
     def mousePressEvent(self, e):
 
         self.x = e.x()
@@ -220,6 +227,8 @@ class ThorVizWidget(QOpenGLWidget):
             self.left_button_pressed = True
         elif e.button() == QtCore.Qt.RightButton:
             self.right_button_pressed = True
+        elif e.button() == QtCore.Qt.MidButton:
+            self.mid_button_pressed = True
 
     def mouseReleaseEvent(self, e):
         self.x = e.x()
@@ -229,6 +238,8 @@ class ThorVizWidget(QOpenGLWidget):
             self.left_button_pressed = False
         elif e.button() == QtCore.Qt.RightButton:
             self.right_button_pressed = False
+        elif e.button() == QtCore.Qt.MidButton:
+            self.mid_button_pressed = False
 
     def mouseMoveEvent(self, e):
         dx = e.x() - self.x
@@ -248,6 +259,14 @@ class ThorVizWidget(QOpenGLWidget):
             v = (drx*v_y + dry*v_x).normalized()
             alpha = math.sqrt(math.pow(drx, 2.0)+math.pow(dry, 2.0))
             self.cam_orientation.rotate(alpha, v.x(), v.y(), v.z())
+
+        if self.mid_button_pressed:
+            drx = k*dx/self.width
+            c = self.cam_orientation.inverted()[0]
+
+            v = c.column(2)
+
+            self.cam_orientation.rotate(drx, v.x(), v.y(), v.z())
 
         if self.right_button_pressed:
             dr = dy/100.0

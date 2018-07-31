@@ -282,25 +282,27 @@ class IcoGridPainter(BasePainter):
 
                     # poles indexes
                     if fc < 5:
-                        i_p = vertices.shape[0] - 2
-                        i_c1 = idx(fc, 0, kxl-1, 0, nl_reg-1)
+                        if kx == 0 and ky == kxl - 1:
+                            i_p = vertices.shape[0] - 2
+                            i_c1 = idx(fc, 0, kxl-1, 0, nl_reg-1)
 
-                        fc_t_l = rhombi_neighbours[fc][0]
-                        i_c2 = idx(fc_t_l, 0, kxl-1, 0, nl_reg-1)
-                        triangles[triangle_idx][0] = i_p
-                        triangles[triangle_idx][1] = i_c1
-                        triangles[triangle_idx][2] = i_c2
-                        triangle_idx += 1
+                            fc_t_l = rhombi_neighbours[fc][0]
+                            i_c2 = idx(fc_t_l, 0, kxl-1, 0, nl_reg-1)
+                            triangles[triangle_idx][0] = i_p
+                            triangles[triangle_idx][1] = i_c1
+                            triangles[triangle_idx][2] = i_c2
+                            triangle_idx += 1
                     else:
-                        i_p = vertices.shape[0] - 1
-                        i_c1 = idx(fc, kxl-1, 0, nl_reg-1, 0)
+                        if kx == kxl - 1 and ky == 0:
+                            i_p = vertices.shape[0] - 1
+                            i_c1 = idx(fc, kxl-1, 0, nl_reg-1, 0)
 
-                        fc_b_l = rhombi_neighbours[fc][3]
-                        i_c2 = idx(fc_b_l, kxl-1, 0, nl_reg-1, 0)
-                        triangles[triangle_idx][0] = i_p
-                        triangles[triangle_idx][1] = i_c1
-                        triangles[triangle_idx][2] = i_c2
-                        triangle_idx += 1
+                            fc_b_l = rhombi_neighbours[fc][3]
+                            i_c2 = idx(fc_b_l, kxl-1, 0, nl_reg-1, 0)
+                            triangles[triangle_idx][0] = i_p
+                            triangles[triangle_idx][1] = i_c1
+                            triangles[triangle_idx][2] = i_c2
+                            triangle_idx += 1
 
                     if halos:
                         # sub rhombi halo
