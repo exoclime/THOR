@@ -150,7 +150,7 @@ class ThorVizWidget(QOpenGLWidget):
         model = QMatrix4x4()
         self.shader_manager.set_uniform("icos_grid", "model", model)
 
-        # self.ico_grid_painter.paint_grid()
+        self.ico_grid_painter.paint_grid()
         self.shader_manager.release("icos_grid")
 
         #################################
@@ -169,7 +169,7 @@ class ThorVizWidget(QOpenGLWidget):
 
         model = QMatrix4x4()
         self.shader_manager.set_uniform("icos_field", "model", model)
-        # self.field_painter.paint_vector_field()
+        self.field_painter.paint_vector_field()
         self.shader_manager.release("icos_field")
         ############################################
         self.shader_manager.load("axis")

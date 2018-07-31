@@ -85,7 +85,6 @@ class AxisPainter(BasePainter):
 
     def paint_axis(self):
         # display grid
-        print("paint axis", self.vao_axis, self.grid_vertex_count)
         gl.glBindVertexArray(self.vao_axis)
 
         gl.glDrawArrays(gl.GL_LINES, 0,
