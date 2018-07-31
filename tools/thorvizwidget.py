@@ -120,18 +120,12 @@ class ThorVizWidget(QOpenGLWidget):
         print("GLSL: " + str(gl.glGetString(gl.GL_SHADING_LANGUAGE_VERSION)))
 
         self.initialize()
-        # self.shader_manager.start_paint()
         # self.grid_painter.initializeGL()
 
-        # self.shader_manager.end_paint()
-        # self.shader_manager.start_paint_field()
         # self.field_painter.initializeGL()
         self.ico_grid_painter.initializeGL()
-        # self.shader_manager.end_paint_field()
-        # self.shader_manager.start_paint_pc()
         self.axis_painter.initializeGL()
 
-        # self.shader_manager.end_paint_pc()
         gl.glEnable(gl.GL_DEPTH_TEST)
 
         gl.glEnable(gl.GL_BLEND)
@@ -148,67 +142,67 @@ class ThorVizWidget(QOpenGLWidget):
 
         self.resize()
         ##############################################
-        self.shader_manager.start_paint_pc()
+        self.shader_manager.load("icos_grid")
 
         colour = QVector4D(1.0, 1.0, 1.0, 1.0)
-        # self.shader_manager.set_colour_pc(colour)
         # view transformation
         view = QMatrix4x4()
         view.translate(0.0,  0.0, self.cam_r)
         view *= self.cam_orientation
-        self.shader_manager.set_view_pc(view)
+        self.shader_manager.set_uniform("icos_grid", "view", view)
 
         # projection transformation
-        self.shader_manager.set_projection_pc(self.projection)
+        self.shader_manager.set_uniform(
+            "icos_grid", "projection", self.projection)
 
         model = QMatrix4x4()
-        self.shader_manager.set_model_pc(model)
+        self.shader_manager.set_uniform("icos_grid", "model", model)
 
         self.ico_grid_painter.paint_grid()
-        self.shader_manager.end_paint_pc()
+        self.shader_manager.release("icos_grid")
 
         #################################
-        self.shader_manager.start_paint_field()
+        self.shader_manager.load("icos_field")
         view = QMatrix4x4()
         view.translate(0.0,  0.0, self.cam_r)
         view *= self.cam_orientation
         colour = QVector4D(1.0, 1.0, 1.0, 1.0)
-        self.shader_manager.set_colour_field(colour)
+        self.shader_manager.set_uniform("icos_field", "colour", colour)
         # view transformation
-        self.shader_manager.set_view_field(view)
+        self.shader_manager.set_uniform("icos_field", "view", view)
 
         # projection transformation
-        self.shader_manager.set_projection_field(self.projection)
+        self.shader_manager.set_uniform(
+            "icos_field", "projection", self.projection)
 
         model = QMatrix4x4()
-        self.shader_manager.set_model_field(model)
+        self.shader_manager.set_uniform("icos_field", "model", model)
 
-        # self.field_painter.paint_field(self.image)
         self.ico_grid_painter.paint_vector_field()
-        self.shader_manager.end_paint_field()
+        self.shader_manager.release("icos_field")
         ############################################
-        self.shader_manager.start_paint_pc()
-        model = QMatrix4x4()
-        self.shader_manager.set_model(model)
-        gl.glViewport(0, 0, self.width//10, self.height//10)
-        #view = QMatrix4x4()
-        #view.translate(0.0,  0.0, -4.0)
-        #view.rotate(self.cam_theta, 1.0, 0.0, 0.0)
-        #view.rotate(self.cam_phi, 0.0, 1.0, 0.0)
+        # self.shader_manager.start_paint_pc()
+#         model = QMatrix4x4()
+#         self.shader_manager.set_model(model)
+#         gl.glViewport(0, 0, self.width//10, self.height//10)
+#         #view = QMatrix4x4()
+#         #view.translate(0.0,  0.0, -4.0)
+#         #view.rotate(self.cam_theta, 1.0, 0.0, 0.0)
+#         #view.rotate(self.cam_phi, 0.0, 1.0, 0.0)
 
-        self.shader_manager.set_view_pc(view)
-        # projection transformation
+#         self.shader_manager.set_view_pc(view)
+#         # projection transformation
 
-        self.shader_manager.set_projection_pc(self.projection)
+#         self.shader_manager.set_projection_pc(self.projection)
 
-        model = QMatrix4x4()
-#        model.translate(-0.4, -0.8, 0.0)
-#        model.scale(0.05, 0.05, 1.0)
-        self.shader_manager.set_model_pc(model)
+#         model = QMatrix4x4()
+# #        model.translate(-0.4, -0.8, 0.0)
+# #        model.scale(0.05, 0.05, 1.0)
+#         self.shader_manager.set_model_pc(model)
 
-        # self.axis_painter.paint_axis()
+#         # self.axis_painter.paint_axis()
 
-        self.shader_manager.end_paint_pc()
+#         self.shader_manager.end_paint_pc()
 
     def resizeGL(self, width, height):
         self.width = width

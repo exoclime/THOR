@@ -12,97 +12,14 @@ from PyQt5.QtGui import (QOpenGLShader,
 
 
 class ShaderManager:
-    vertex_shader_colour = """#version 400\n
-                       layout(location = 0) in vec3 vp;
-                       layout(location = 1) in vec3 vertex_colour;
-
-
-                       out VS_OUT {
-                           out vec3 colour;
-                       } vs_out;
-                       
-
-                       uniform highp mat4 view;
-                       uniform highp mat4 projection;
-                       uniform highp mat4 model;
-                       void main() {
-                         vs_out.colour = vertex_colour;
-                          //colour = vec3(1.0,1.0,0.0);
-                          gl_Position = projection * \
-                              view * model *  vec4(vp, 1.0);
-                       }"""
-
-    geometry_colour = """#version 400\n
-
-                         layout (triangles) in;
-                         layout (triangle_strip, max_vertices = 3) out;
-
-                         in VS_OUT {
-                           vec3 colour;
-                         } gs_in[];  
-
-                         out GS_OUT {
-                          vec3 fcolor;
-                          vec3 dist;
-} gs_out;
-
-                         void main(void)
-                         {
-                           float WIN_SCALE = 800.0;
-                           // taken from 'Single-Pass Wireframe Rendering'
-                           vec2 p0 = WIN_SCALE * gl_in[0].gl_Position.xy/gl_in[0].gl_Position.w;
-                           vec2 p1 = WIN_SCALE * gl_in[1].gl_Position.xy/gl_in[1].gl_Position.w;
-                           vec2 p2 = WIN_SCALE * gl_in[2].gl_Position.xy/gl_in[2].gl_Position.w;
-                           vec2 v0 = p2-p1;
-                           vec2 v1 = p2-p0;
-                           vec2 v2 = p1-p0;
-                           float area = abs(v1.x*v2.y - v1.y * v2.x);
-
-                           gs_out.fcolor = gs_in[0].colour;
-                           
-                           gs_out.dist = vec3(area/length(v0),0,0);
-                           gl_Position = 1.5*gl_in[0].gl_Position;
-                           EmitVertex();
-                           gs_out.fcolor = gs_in[1].colour;
-                           gs_out.dist = vec3(0,area/length(v1),0);
-                           gl_Position = gl_in[1].gl_Position;
-                           EmitVertex();
-                           gs_out.fcolor = gs_in[2].colour;
-                           gs_out.dist = vec3(0,0,area/length(v2));
-                           gl_Position = gl_in[2].gl_Position;
-                           EmitVertex();
-                           EndPrimitive();
-                         }"""
-
-    vertex_fragment_colour = """#version 400\n
-                                in GS_OUT {
-                                   vec3 fcolor;
-                                   vec3 dist;
-                                } fs_in;
-                 
-                                out vec4 frag_colour;
-                                uniform float wire_limit;
-                                void main() {
-
-                                   float nearD = min(min(fs_in.dist[0],fs_in.dist[1]),fs_in.dist[2]);
-                                   float edgeIntensity = exp2(-1.0*nearD*nearD);
-                                   if (nearD < wire_limit)
-                                       frag_colour = vec4( 0.1, 0.1, 0.1, 1.0 );
-                                   else
-                                       frag_colour = vec4(fs_in.fcolor, 1.0);
-    //frag_colour = vec4(fs_in.fcolor, 1.0);
-//frag_colour = vec4(1.0,0.0,0.0, 1.0);
-//                                   frag_colour = (edgeIntensity * vec4( 0.1, 0.1, 0.1, 1.0 )) + 
-//                                                 (1.0-edgeIntensity)*vec4(colour, 1.0);
-                                }"""
 
     vertex_shader = """#version 400\n
                        layout(location = 0) in vec3 vp;
                        layout(location = 1) in vec3 vertex_colour;
                        layout(location = 2) in vec3 normals;
-                      
+
                        out vec3 normal;
-                       out vec3 FragPos; 
+                       out vec3 FragPos;
                        out vec3 colour_;
                        uniform highp mat4 view;
                        uniform highp mat4 projection;
@@ -129,158 +46,171 @@ class ShaderManager:
                         out vec4 frag_colour;
                         uniform highp vec4 colour;
                         void main() {
-                           
+
                            frag_colour = vec4(colour_, 1.0);
                         }"""
 
-    vertex_shader_field = """#version 400\n
-                       layout(location = 0) in vec3 vp;
-                      
-                       uniform highp mat4 view;
-                       uniform highp mat4 projection;
-                       uniform highp mat4 model;
-                       void main() {
-                          gl_Position = projection * \
-                              view * model *  vec4(vp, 1.0);
-                       }"""
-
-    fragment_shader_field = """#version 400\n
-
-                               out vec4 colour_out;
-                               uniform highp vec4 colour;
-                               void main() {
-                           
-                                colour_out = colour;
-                        }"""
-
     def __init__(self, parent):
-        self.m_program = QOpenGLShaderProgram(parent)
+        self.parent = parent
 
-        if self.m_program.addShaderFromSourceCode(QOpenGLShader.Vertex,
-                                                  self.vertex_shader):
-            print("initialised vertex shader")
-        else:
-            print("vertex shader failed")
+        # self.m_program = QOpenGLShaderProgram(parent)
 
-        self.m_program.addShaderFromSourceCode(QOpenGLShader.Fragment,
-                                               self.fragment_shader)
+        # if self.m_program.addShaderFromSourceCode(QOpenGLShader.Vertex,
+        #                                           self.vertex_shader):
+        #     print("initialised vertex shader")
+        # else:
+        #     print("vertex shader failed")
 
-        self.m_program.link()
+        # self.m_program.addShaderFromSourceCode(QOpenGLShader.Fragment,
+        #                                        self.fragment_shader)
 
-        self.m_viewUniform = self.m_program.uniformLocation('view')
-        self.m_projectionUniform = self.m_program.uniformLocation(
-            'projection')
-        self.m_modelUniform = self.m_program.uniformLocation('model')
+        # self.m_program.link()
 
-        self.m_colourUniform = self.m_program.uniformLocation('colour')
+        # self.m_viewUniform = self.m_program.uniformLocation('view')
+        # self.m_projectionUniform = self.m_program.uniformLocation(
+        #     'projection')
+        # self.m_modelUniform = self.m_program.uniformLocation('model')
 
-        # colour and position shader
-        self.m_program_pc = QOpenGLShaderProgram(parent)
+        # self.m_colourUniform = self.m_program.uniformLocation('colour')
 
-        if self.m_program_pc.addShaderFromSourceCode(QOpenGLShader.Vertex,
-                                                     self.vertex_shader_colour):
-            print("initialised vertex color shader")
-        else:
-            print("vertex shader color failed")
+        # # colour and position shader
+        # self.m_program_pc = QOpenGLShaderProgram(parent)
 
-        if self.m_program_pc.addShaderFromSourceCode(QOpenGLShader.Geometry,
-                                                     self.geometry_colour):
-            print("initialised geometryshader")
-        else:
-            print("geometry shader failed")
-        self.m_program_pc.addShaderFromSourceCode(QOpenGLShader.Fragment,
-                                                  self.vertex_fragment_colour)
+        # if self.m_program_pc.addShaderFromSourceCode(QOpenGLShader.Vertex,
+        #                                              self.vertex_shader_colour):
+        #     print("initialised vertex color shader")
+        # else:
+        #     print("vertex shader color failed")
 
-        self.m_program_pc.link()
+        # if self.m_program_pc.addShaderFromSourceCode(QOpenGLShader.Geometry,
+        #                                              self.geometry_colour):
+        #     print("initialised geometryshader")
+        # else:
+        #     print("geometry shader failed")
+        # self.m_program_pc.addShaderFromSourceCode(QOpenGLShader.Fragment,
+        #                                           self.vertex_fragment_colour)
 
-        self.m_viewUniform_pc = self.m_program_pc.uniformLocation('view')
-        self.m_projectionUniform_pc = self.m_program_pc.uniformLocation(
-            'projection')
-        self.m_modelUniform_pc = self.m_program_pc.uniformLocation('model')
-        self.m_wirelimitUniform = self.m_program_pc.uniformLocation(
-            'wire_limit')
-        self.m_program_field = QOpenGLShaderProgram(parent)
+        # self.m_program_pc.link()
 
-        if self.m_program_field.addShaderFromSourceCode(QOpenGLShader.Vertex,
-                                                        self.vertex_shader_field):
-            print("initialised vertex shader")
-        else:
-            print("vertex shader failed")
+        # self.m_viewUniform_pc = self.m_program_pc.uniformLocation('view')
+        # self.m_projectionUniform_pc = self.m_program_pc.uniformLocation(
+        #     'projection')
+        # self.m_modelUniform_pc = self.m_program_pc.uniformLocation('model')
+        # self.m_wirelimitUniform = self.m_program_pc.uniformLocation(
+        #     'wire_limit')
+        # self.m_program_field = QOpenGLShaderProgram(parent)
 
-        self.m_program_field.addShaderFromSourceCode(QOpenGLShader.Fragment,
-                                                     self.fragment_shader_field)
+        # if self.m_program_field.addShaderFromSourceCode(QOpenGLShader.Vertex,
+        #                                                 self.vertex_shader_field):
+        #     print("initialised vertex shader")
+        # else:
+        #     print("vertex shader failed")
 
-        self.m_program_field.link()
+        # self.m_program_field.addShaderFromSourceCode(QOpenGLShader.Fragment,
+        #                                              self.fragment_shader_field)
 
-        self.m_viewUniform_field = self.m_program_field.uniformLocation('view')
-        self.m_projectionUniform_field = self.m_program_field.uniformLocation(
-            'projection')
-        self.m_modelUniform_field = self.m_program_field.uniformLocation(
-            'model')
+        # self.m_program_field.link()
 
-        self.m_colourUniform_field = self.m_program_field.uniformLocation(
-            'colour')
+        # self.m_viewUniform_field = self.m_program_field.uniformLocation('view')
+        # self.m_projectionUniform_field = self.m_program_field.uniformLocation(
+        #     'projection')
+        # self.m_modelUniform_field = self.m_program_field.uniformLocation(
+        #     'model')
 
-    def start_paint_field(self):
-        self.m_program_field.bind()
+        # self.m_colourUniform_field = self.m_program_field.uniformLocation(
+        #     'colour')
 
-    def end_paint_field(self):
-        self.m_program_field.release()
+        self.shader_dict = {}
 
-    def start_paint(self):
-        self.m_program.bind()
+    def add_shaders(self, shader_name, vertex=None, geometry=None, fragment=None, uniforms=[]):
+        program = QOpenGLShaderProgram(self.parent)
+        if vertex is not None:
+            program.addShaderFromSourceCode(QOpenGLShader.Vertex, vertex)
+        if geometry is not None:
+            program.addShaderFromSourceCode(QOpenGLShader.Geometry, geometry)
+        if fragment is not None:
+            program.addShaderFromSourceCode(QOpenGLShader.Fragment, fragment)
 
-    def end_paint(self):
-        self.m_program.release()
+        program.link()
 
-    def start_paint_pc(self):
-        self.m_program_pc.bind()
+        uniforms_dict = {}
+        for u in uniforms:
+            uniforms_dict[u] = program.uniformLocation(u)
 
-    def end_paint_pc(self):
-        self.m_program_pc.release()
+        self.shader_dict[shader_name] = {'program': program,
+                                         'uniforms': uniforms_dict}
 
-    def set_colour(self, colour):
-        self.m_program.setUniformValue(self.m_colourUniform, colour)
+    def load(self, name):
+        self.shader_dict[name]['program'].bind()
 
-    def set_colour_field(self, colour):
-        self.m_program_field.setUniformValue(
-            self.m_colourUniform_field, colour)
+    def release(self, name):
+        self.shader_dict[name]['program'].release()
 
-    def set_wirelimit(self, wirelimit):
-        self.m_program_pc.setUniformValue(self.m_wirelimitUniform, wirelimit)
+    def set_uniform(self, shader_name, uniform_name, uniform_value):
+        program = self.shader_dict[shader_name]['program']
+        uniform = self.shader_dict[shader_name]['uniforms'][uniform_name]
+        program.setUniformValue(uniform, uniform_value)
 
-    def set_view(self, view):
-        self.m_program.setUniformValue(
-            self.m_viewUniform, view)
+    # def start_paint_field(self):
+    #     self.m_program_field.bind()
 
-    def set_view_pc(self, view):
-        self.m_program_pc.setUniformValue(
-            self.m_viewUniform_pc, view)
+    # def end_paint_field(self):
+    #     self.m_program_field.release()
 
-    def set_view_field(self, view):
-        self.m_program_field.setUniformValue(
-            self.m_viewUniform_field, view)
+    # def start_paint(self):
+    #     self.m_program.bind()
 
-    def set_projection(self, projection):
-        self.m_program.setUniformValue(
-            self.m_projectionUniform, projection)
+    # def end_paint(self):
+    #     self.m_program.release()
 
-    def set_projection_field(self, projection):
-        self.m_program_field.setUniformValue(
-            self.m_projectionUniform_field, projection)
+    # def start_paint_pc(self):
+    #     self.m_program_pc.bind()
 
-    def set_projection_pc(self, projection):
-        self.m_program_pc.setUniformValue(
-            self.m_projectionUniform_pc, projection)
+    # def end_paint_pc(self):
+    #     self.m_program_pc.release()
 
-    def set_model(self, model):
-        self.m_program.setUniformValue(
-            self.m_modelUniform, model)
+    # def set_colour(self, colour):
+    #     self.m_program.setUniformValue(self.m_colourUniform, colour)
 
-    def set_model_field(self, model):
-        self.m_program_field.setUniformValue(
-            self.m_modelUniform_field, model)
+    # def set_colour_field(self, colour):
+    #     self.m_program_field.setUniformValue(
+    #         self.m_colourUniform_field, colour)
 
-    def set_model_pc(self, model):
-        self.m_program_pc.setUniformValue(
-            self.m_modelUniform_pc, model)
+    # def set_wirelimit(self, wirelimit):
+    #     self.m_program_pc.setUniformValue(self.m_wirelimitUniform, wirelimit)
+
+    # def set_view(self, view):
+    #     self.m_program.setUniformValue(
+    #         self.m_viewUniform, view)
+
+    # def set_view_pc(self, view):
+    #     self.m_program_pc.setUniformValue(
+    #         self.m_viewUniform_pc, view)
+
+    # def set_view_field(self, view):
+    #     self.m_program_field.setUniformValue(
+    #         self.m_viewUniform_field, view)
+
+    # def set_projection(self, projection):
+    #     self.m_program.setUniformValue(
+    #         self.m_projectionUniform, projection)
+
+    # def set_projection_field(self, projection):
+    #     self.m_program_field.setUniformValue(
+    #         self.m_projectionUniform_field, projection)
+
+    # def set_projection_pc(self, projection):
+    #     self.m_program_pc.setUniformValue(
+    #         self.m_projectionUniform_pc, projection)
+
+    # def set_model(self, model):
+    #     self.m_program.setUniformValue(
+    #         self.m_modelUniform, model)
+
+    # def set_model_field(self, model):
+    #     self.m_program_field.setUniformValue(
+    #         self.m_modelUniform_field, model)
+
+    # def set_model_pc(self, model):
+    #     self.m_program_pc.setUniformValue(
+    #         self.m_modelUniform_pc, model)

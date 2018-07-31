@@ -17,6 +17,112 @@ import matplotlib.pyplot as plt
 
 from utilities import HSV_to_RGB, spherical
 
+vertex_shader_icos = """#version 400\n
+                       layout(location = 0) in vec3 vp;
+                       layout(location = 1) in vec3 vertex_colour;
+
+
+                       out VS_OUT {
+                           out vec3 colour;
+                       } vs_out;
+
+
+                       uniform highp mat4 view;
+                       uniform highp mat4 projection;
+                       uniform highp mat4 model;
+                       void main() {
+                         vs_out.colour = vertex_colour;
+                          //colour = vec3(1.0,1.0,0.0);
+                          gl_Position = projection * \
+                              view * model *  vec4(vp, 1.0);
+                       }"""
+
+geometry_shader_icos = """
+#version 400\n
+
+
+layout (triangles) in;
+layout (triangle_strip, max_vertices = 3) out;
+
+in VS_OUT {
+   vec3 colour;
+} gs_in[];
+
+out GS_OUT {
+   vec3 fcolor;
+   vec3 dist;
+} gs_out;
+
+void main(void)
+{
+   float WIN_SCALE = 800.0;
+   // taken from 'Single-Pass Wireframe Rendering'
+   vec2 p0 = WIN_SCALE * gl_in[0].gl_Position.xy/gl_in[0].gl_Position.w;
+   vec2 p1 = WIN_SCALE * gl_in[1].gl_Position.xy/gl_in[1].gl_Position.w;
+   vec2 p2 = WIN_SCALE * gl_in[2].gl_Position.xy/gl_in[2].gl_Position.w;
+                           vec2 v0 = p2-p1;
+   vec2 v1 = p2-p0;
+   vec2 v2 = p1-p0;
+   float area = abs(v1.x*v2.y - v1.y * v2.x);
+
+   gs_out.fcolor = gs_in[0].colour;
+
+   gs_out.dist = vec3(area/length(v0),0,0);
+   gl_Position = 1.5*gl_in[0].gl_Position;
+   EmitVertex();
+   gs_out.fcolor = gs_in[1].colour;
+   gs_out.dist = vec3(0,area/length(v1),0);
+   gl_Position = gl_in[1].gl_Position;
+   EmitVertex();
+   gs_out.fcolor = gs_in[2].colour;
+   gs_out.dist = vec3(0,0,area/length(v2));
+   gl_Position = gl_in[2].gl_Position;
+   EmitVertex();
+   EndPrimitive();
+}"""
+
+fragment_shader_icos = """
+#version 400\n
+in GS_OUT {
+   vec3 fcolor;
+   vec3 dist;
+} fs_in;
+
+out vec4 frag_colour;
+uniform float wire_limit;
+void main() {
+   float nearD = min(min(fs_in.dist[0],fs_in.dist[1]),fs_in.dist[2]);
+   float edgeIntensity = exp2(-1.0*nearD*nearD);
+   if (nearD < wire_limit)
+      frag_colour = vec4(0.1, 0.1, 0.1, 1.0 );
+   else
+      frag_colour = vec4(fs_in.fcolor, 1.0);
+      //frag_colour = vec4(fs_in.fcolor, 1.0);
+      //frag_colour = vec4(1.0,0.0,0.0, 1.0);
+      //                                   frag_colour = (edgeIntensity * vec4( 0.1, 0.1, 0.1, 1.0 )) +
+      //                                                 (1.0-edgeIntensity)*vec4(colour, 1.0);
+}"""
+
+vertex_shader_field = """
+#version 400\n
+layout(location = 0) in vec3 vp;
+
+uniform highp mat4 view;
+uniform highp mat4 projection;
+uniform highp mat4 model;
+void main() {
+   gl_Position = projection * view * model *  vec4(vp, 1.0);
+}"""
+
+fragment_shader_field = """
+#version 400\n
+
+out vec4 colour_out;
+uniform highp vec4 colour;
+void main() {
+   colour_out = colour;
+}"""
+
 
 class ico:
     def pt_in_quad(quad, p):
@@ -51,6 +157,15 @@ class IcoGridPainter:
 
     def set_shader_manager(self, shader_manager):
         self.shader_manager = shader_manager
+        self.shader_manager.add_shaders("icos_grid",
+                                        vertex=vertex_shader_icos,
+                                        geometry=geometry_shader_icos,
+                                        fragment=fragment_shader_icos,
+                                        uniforms=["model", "view", "projection", "wire_limit"])
+        self.shader_manager.add_shaders("icos_field",
+                                        vertex=vertex_shader_field,
+                                        fragment=fragment_shader_field,
+                                        uniforms=["model", "view", "projection", "colour"])
 
     def initializeGL(self):
 
@@ -442,9 +557,9 @@ class IcoGridPainter:
     def paint_grid(self):
         # display grid
         if self.wireframe:
-            self.shader_manager.set_wirelimit(0.00001)
+            self.shader_manager.set_uniform("icos_grid", "wire_limit", 0.00001)
         else:
-            self.shader_manager.set_wirelimit(-10.0)
+            self.shader_manager.set_uniform("icos_grid", "wire_limit", -10.0)
             #            gl.glPolygonMode(gl.GL_FRONT_AND_BACK, gl.GL_LINE)
         #        print("paint grid",
         #              self.vao_list[self.draw_idx], self.grid_vertex_count)
