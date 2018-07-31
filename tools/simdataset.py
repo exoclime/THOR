@@ -93,10 +93,9 @@ class simdataset:
                               self.num_points,
                               2, 3), dtype=np.float32)
 
-            scale = 1.0
-            for i in range(self.num_points):
-                for l in range(self.num_levels-1):
-
+            scale = 0.01
+            for l in range(self.num_levels-1):
+                for i in range(self.num_points):
                     normal = spherical(1.0,
                                        lonlat[i, 0],
                                        lonlat[i, 1])
@@ -105,8 +104,11 @@ class simdataset:
                                        lonlat[i, 0],
                                        lonlat[i, 1])
                     field[:, l, i, 0, :] = vertex
-                    # field[:, l, i, 1, :] = scale*vector_h[:, i, l, :] + vertex
-                    field[:, l, i, 1, :] = vertex + normal
+                    field[:, l, i, 1, :] = scale*vector_h[:, i, l, :] + vertex
+                    #field[:, l, i, 1, :] = vertex + normal
+                    #field[:, l, i, 0, :] = (0.0, 0.0, 0.0)
+                    #field[:, l, i, 1, :] = normal
+
             self.field_data = field
 
     def select_scalar_data_type(self, dataname):
@@ -202,7 +204,7 @@ class simdataset:
         return self.data_color[dataset_idx, :, :, :]
 
     def get_field_data(self, idx):
-        return self.field_data[idx]
+        return self.field_data[idx, :, :, :, :]
 
 
 class dataloader:

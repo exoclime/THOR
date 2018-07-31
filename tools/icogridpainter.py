@@ -335,17 +335,6 @@ class IcoGridPainter:
         # gl.glEnableVertexAttribArray(0)
 
         self.grid_vertex_count = vertices.size
-        # self.grid_vbo = self.create_vbo(vertices)
-
-        # # self.grid_normals_vbo = self.create_normals_vbo(vertices)
-        # self.grid_colors_vbo = self.create_colors_vbo(vertices_colors)
-        # # elements = np.zeros((len(self.neighbours), 2), dtype=np.uint32)
-
-        # #        fig = plt.figure()
-        # #        ax = fig.add_subplot(1, 1, 1)
-
-        # # self.grid_elements_vbo = self.create_elements_vbo(lines)
-        # self.grid_elements_vbo = self.create_elements_vbo(triangles)
 
         all_vertices = np.zeros((num_levels,  num_points, 3),
                                 dtype=np.float32)
@@ -369,11 +358,6 @@ class IcoGridPainter:
                                                                                  3),
                                                                                 dtype=np.float32)
 
-        # for sample in range(num_samples):
-        #     for level in range(num_levels):
-        #         for n in range(num_points):
-        #             print(all_triangles[sample, level, n, :])
-        #             print(all_vertices[sample, level, n, :])
         self.vao_list = self.create_sphere_vao(all_vertices,
                                                all_triangles,
                                                self.all_colors)
@@ -388,9 +372,14 @@ class IcoGridPainter:
         vector_elements = np.zeros((num_levels, self.num_points, 2),
                                    dtype=np.uint32)
 
+        for l in range(num_levels):
+            for i in range(self.num_points):
+                vector_elements[l, i, 0] = 2*l*self.num_points + 2*i + 0
+                vector_elements[l, i, 1] = 2*l*self.num_points + 2*i + 1
+
         self.vao_vector_field = self.create_vector_field_vao(
             vector_data, vector_elements)
-        self.field_element_count = vector_elements.size
+        self.field_element_count = num_points*2
         self.last_field_loaded = -1
 
     def update_field(self):
@@ -445,7 +434,6 @@ class IcoGridPainter:
         self.update_field()
         gl.glBindVertexArray(self.vao_vector_field)
         idx = 4*self.field_element_count * self.altitude
-        idx = 0
         gl.glDrawElements(gl.GL_LINES,
                           int(self.field_element_count),
                           gl.GL_UNSIGNED_INT,
