@@ -11,14 +11,43 @@ import OpenGL.GL as gl
 import numpy as np
 
 import math
+from basepainter import BasePainter
 
 
-class AxisPainter:
+vertex_shader_axis = """
+#version 400\n
+layout(location = 0) in vec3 vp;
+layout(location = 1) in vec3 vertex_colour;
+out vec3 colour_;
+
+uniform highp mat4 view;
+uniform highp mat4 projection;
+uniform highp mat4 model;
+void main() {
+   gl_Position = projection * view * model *  vec4(vp, 1.0);
+   colour_ = vertex_colour;
+}"""
+
+fragment_shader_axis = """
+#version 400\n
+in vec3 colour_;
+out vec4 colour_out;
+
+void main() {
+   colour_out = vec4(colour_, 1.0);
+}"""
+
+
+class AxisPainter(BasePainter):
     def __init__(self):
-        pass
+        BasePainter.__init__(self)
 
     def set_shader_manager(self, shader_manager):
-        self.shader_manager = shader_manager
+        BasePainter.set_shader_manager(self, shader_manager)
+        self.shader_manager.add_shaders("axis",
+                                        vertex=vertex_shader_axis,
+                                        fragment=fragment_shader_axis,
+                                        uniforms=["model", "view", "projection", "colour"])
 
     def initializeGL(self):
 
@@ -59,42 +88,5 @@ class AxisPainter:
         print("paint axis", self.vao_axis, self.grid_vertex_count)
         gl.glBindVertexArray(self.vao_axis)
 
-        #c = QVector4D(1.0, 1.0, 1.0, 1.0)
-
-        # self.shader_manager.set_colour(c)
         gl.glDrawArrays(gl.GL_LINES, 0,
                         self.grid_vertex_count)
-
-    def create_colors_vbo(self, colors):
-        vbo = gl.glGenBuffers(1)
-
-        gl.glBindBuffer(gl.GL_ARRAY_BUFFER, vbo)
-
-        gl.glBufferData(gl.GL_ARRAY_BUFFER,
-                        colors.nbytes,
-                        colors,
-                        gl.GL_STATIC_DRAW)
-
-        gl.glVertexAttribPointer(1, 3,
-                                 gl.GL_FLOAT, False,
-                                 0, None)
-        gl.glEnableVertexAttribArray(1)
-
-        return vbo
-
-    def create_vbo(self, vertices):
-        vbo = gl.glGenBuffers(1)
-
-        gl.glBindBuffer(gl.GL_ARRAY_BUFFER, vbo)
-
-        gl.glBufferData(gl.GL_ARRAY_BUFFER,
-                        vertices.nbytes,
-                        vertices,
-                        gl.GL_STATIC_DRAW)
-
-        gl.glVertexAttribPointer(0, 3,
-                                 gl.GL_FLOAT, False,
-                                 0, None)
-        gl.glEnableVertexAttribArray(0)
-
-        return vbo
