@@ -105,26 +105,6 @@ void main() {
       //                                                 (1.0-edgeIntensity)*vec4(colour, 1.0);
 }"""
 
-vertex_shader_field = """
-#version 400\n
-layout(location = 0) in vec3 vp;
-
-uniform highp mat4 view;
-uniform highp mat4 projection;
-uniform highp mat4 model;
-void main() {
-   gl_Position = projection * view * model *  vec4(vp, 1.0);
-}"""
-
-fragment_shader_field = """
-#version 400\n
-
-out vec4 colour_out;
-uniform highp vec4 colour;
-void main() {
-   colour_out = colour;
-}"""
-
 
 class ico:
     def pt_in_quad(quad, p):
@@ -166,10 +146,6 @@ class IcoGridPainter(BasePainter):
                                         geometry=geometry_shader_icos,
                                         fragment=fragment_shader_icos,
                                         uniforms=["model", "view", "projection", "wire_limit"])
-        self.shader_manager.add_shaders("icos_field",
-                                        vertex=vertex_shader_field,
-                                        fragment=fragment_shader_field,
-                                        uniforms=["model", "view", "projection", "colour"])
 
     def initializeGL(self):
 
@@ -485,32 +461,6 @@ class IcoGridPainter(BasePainter):
         self.num_points = num_points
         self.last_loaded = -1
 
-        self.display_vector_field = True
-        vector_data = np.zeros(
-            (self.num_levels, self.num_points, 2, 3), dtype=np.float32)
-        vector_elements = np.zeros((num_levels, self.num_points, 2),
-                                   dtype=np.uint32)
-
-        for l in range(num_levels):
-            for i in range(self.num_points):
-                vector_elements[l, i, 0] = 2*l*self.num_points + 2*i + 0
-                vector_elements[l, i, 1] = 2*l*self.num_points + 2*i + 1
-
-        self.vao_vector_field = self.create_vector_field_vao(
-            vector_data, vector_elements)
-        self.field_element_count = num_points*2
-        self.last_field_loaded = -1
-
-    def update_field(self):
-        if self.draw_idx == self.last_field_loaded:
-            return
-
-        data = np.array(self.dataset.get_field_data(self.draw_idx), copy=True)
-        print(data)
-
-        self.update_field_vbo(data)
-        self.last_field_loaded = self.draw_idx
-
     def update_colors(self):
         if self.draw_idx == self.last_loaded:
             return
@@ -519,18 +469,6 @@ class IcoGridPainter(BasePainter):
         self.all_colors = data
         self.update_colors_vbo(data)
         self.last_loaded = self.draw_idx
-
-    def create_vector_field_vao(self, vertices, elements):
-        vao = gl.glGenVertexArrays(1)
-
-        gl.glBindVertexArray(vao)
-        gl.glEnableVertexAttribArray(0)
-
-        self.vector_field_vbo = self.create_vbo(vertices, dynamic=True)
-
-        self.create_elements_vbo(elements)
-
-        return vao
 
     def create_sphere_vao(self, vertices, triangles, colors):
         vao = gl.glGenVertexArrays(1)
@@ -545,18 +483,6 @@ class IcoGridPainter(BasePainter):
         self.create_elements_vbo(triangles)
 
         return vao
-
-    def paint_vector_field(self):
-        if not self.display_vector_field:
-            return
-
-        self.update_field()
-        gl.glBindVertexArray(self.vao_vector_field)
-        idx = 4*self.field_element_count * self.altitude
-        gl.glDrawElements(gl.GL_LINES,
-                          int(self.field_element_count),
-                          gl.GL_UNSIGNED_INT,
-                          ctypes.c_void_p(idx))
 
     def paint_grid(self):
         # display grid
@@ -598,12 +524,6 @@ class IcoGridPainter(BasePainter):
         #                       ctypes.c_void_p(idx))
 #        if self.wireframe:
 #            gl.glPolygonMode(gl.GL_FRONT_AND_BACK, gl.GL_FILL)
-
-    def update_field_vbo(self, field):
-        print("update field")
-        self.update_vbo(self.vao_vector_field,
-                        self.vector_field_vbo,
-                        field)
 
     def update_colors_vbo(self, colors):
         # print("update colors")

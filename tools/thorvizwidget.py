@@ -28,7 +28,7 @@ import time
 from shadermanager import ShaderManager
 from gridpainter import GridPainter
 from axispainter import AxisPainter
-from vectorfieldpainter import FieldPainter
+from vectorfieldpainter import VectorFieldPainter
 from icogridpainter import IcoGridPainter
 
 
@@ -48,7 +48,7 @@ class ThorVizWidget(QOpenGLWidget):
         #self.grid_painter = GridPainter()
         self.ico_grid_painter = IcoGridPainter()
         self.axis_painter = AxisPainter()
-        #self.field_painter = FieldPainter()
+        self.field_painter = VectorFieldPainter()
 
         self.m_matrixUniform = 0
 
@@ -64,30 +64,29 @@ class ThorVizWidget(QOpenGLWidget):
 
     def set_grid_data(self, *args):
         self.ico_grid_painter.set_grid_data(*args)
-
-    def set_grid(self, grid, neighbours, vertices_color_arrays, moments):
-        self.grid_painter.set_grid(
-            grid, neighbours, vertices_color_arrays)
-        self.field_painter.set_field(grid, moments)
+        self.field_painter.set_grid_data(*args)
 
     def set_level(self, level):
         self.ico_grid_painter.altitude = level
+        self.field_painter.altitude = level
         self.update()
 
     def set_image(self, img):
         self.image = img
         self.ico_grid_painter.draw_idx = self.image
+        self.field_painter.draw_idx = self.image
         self.update()
 
     def show_data(self, b):
         if b:
             self.ico_grid_painter.draw_idx = self.image + 1
-
+            self.field_painter.draw_idx = self.image + 1
             self.update()
 
     def show_grid(self, b):
         if b:
             self.ico_grid_painter.draw_idx = 0
+            self.field_painter.draw_idx = 0
             self.update()
 
     def show_wireframe(self, b):
@@ -99,7 +98,7 @@ class ThorVizWidget(QOpenGLWidget):
         # self.grid_painter.set_shader_manager(self.shader_manager)
         self.ico_grid_painter.set_shader_manager(self.shader_manager)
         self.axis_painter.set_shader_manager(self.shader_manager)
-        # self.field_painter.set_shader_manager(self.shader_manager)
+        self.field_painter.set_shader_manager(self.shader_manager)
         self.projection = QMatrix4x4()
         self.projection.perspective(35.0, 1.0, 0.01, 15.0)
 
@@ -122,7 +121,7 @@ class ThorVizWidget(QOpenGLWidget):
         self.initialize()
         # self.grid_painter.initializeGL()
 
-        # self.field_painter.initializeGL()
+        self.field_painter.initializeGL()
         self.ico_grid_painter.initializeGL()
         self.axis_painter.initializeGL()
 
@@ -177,8 +176,7 @@ class ThorVizWidget(QOpenGLWidget):
 
         model = QMatrix4x4()
         self.shader_manager.set_uniform("icos_field", "model", model)
-
-        self.ico_grid_painter.paint_vector_field()
+        self.field_painter.paint_vector_field()
         self.shader_manager.release("icos_field")
         ############################################
         # self.shader_manager.start_paint_pc()
