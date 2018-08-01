@@ -277,7 +277,7 @@
     </hint>
     <hint type="destinationlabel">
      <x>1145</x>
-     <y>744</y>
+     <y>743</y>
     </hint>
    </hints>
   </connection>
@@ -289,7 +289,7 @@
    <hints>
     <hint type="sourcelabel">
      <x>38</x>
-     <y>739</y>
+     <y>738</y>
     </hint>
     <hint type="destinationlabel">
      <x>346</x>
@@ -305,7 +305,7 @@
    <hints>
     <hint type="sourcelabel">
      <x>89</x>
-     <y>712</y>
+     <y>711</y>
     </hint>
     <hint type="destinationlabel">
      <x>181</x>
@@ -321,7 +321,7 @@
    <hints>
     <hint type="sourcelabel">
      <x>68</x>
-     <y>766</y>
+     <y>765</y>
     </hint>
     <hint type="destinationlabel">
      <x>283</x>
@@ -337,7 +337,7 @@
    <hints>
     <hint type="sourcelabel">
      <x>92</x>
-     <y>712</y>
+     <y>711</y>
     </hint>
     <hint type="destinationlabel">
      <x>219</x>

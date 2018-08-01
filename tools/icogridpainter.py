@@ -229,7 +229,7 @@ class IcoGridPainter(BasePainter):
         num_triangles += 2*num_subrhombi*num_rhombi
         # poles
         num_triangles += 2*5
-        print("number of triangles", num_triangles)
+        print("size of triangles buffer", num_triangles)
 
         triangles = np.zeros((num_triangles, 3), dtype=np.uint32)
 
@@ -593,9 +593,17 @@ class IcoGridPainter(BasePainter):
         print("num_levels:", num_levels)
         relative_radius = self.dataset.get_relative_radii()
 
-        for i in range(num_points):
-            self.grid_color_data[:, i, :] = HSV_to_RGB(
-                360.0*i/(num_points - 1), 1.0, 1.0)
+        for fc in range(num_rhombi):
+            for kx in range(kxl):
+                for ky in range(kxl):
+                    for i in range(nl_reg-1):
+                        for j in range(nl_reg-1):
+                            c = idx(fc, kx, ky,  i, j)
+                            self.grid_color_data[:, c, :] = HSV_to_RGB(
+                                360.0*c/(num_points - 1), 1.0, 1.0)
+#        for i in range(num_points):
+#            self.grid_color_data[:, i, :] = HSV_to_RGB(
+#                360.0*i/(num_points - 1), 1.0, 1.0)
 
         for level in range(num_levels-1):
             r = relative_radius[level]
