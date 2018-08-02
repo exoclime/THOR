@@ -233,13 +233,13 @@ class IcoGridPainter(BasePainter):
 
         triangles = np.zeros((num_triangles, 3), dtype=np.uint32)
 
-        draw_rhomb = [0, 1, 2, 3, 4, 5, 6, 7, 8,  9]
+        # draw_rhomb = [0, 1, 2, 3, 4, 5, 6, 7, 8,  9]
         # upper
         # draw_rhomb = [0, 1, 2, 3, 4]
         # lower
         #draw_rhomb = [5, 6, 7, 8,  9]
         # North South link
-        #draw_rhomb = [0, 1, 5, 6, 9]
+        draw_rhomb = [0, 1, 5, 6, 9]
         faces = True
 
         # halos = False
@@ -284,7 +284,16 @@ class IcoGridPainter(BasePainter):
                         if fc < 5:
                             # upper rhombi
                             if kx == 0 and ky == 0:
-                                pass
+                                i_c = idx(fc, 0, 0, 0, 0)
+                                i_c_t = idx(fc_b_l, 0, kxl-1, 0, cn)
+                                i_c_b = idx(fc_t_l,
+                                            kxl - 1, kxl - 1, cn, cn)
+
+                                triangles[triangle_idx][0] = i_c
+                                triangles[triangle_idx][1] = i_c_t
+                                triangles[triangle_idx][2] = i_c_b
+                                triangle_idx += 1
+
                             elif kx == 0:
                                 # on ky = 0 side
                                 i_c = idx(fc, kx, ky, 0, 0)
@@ -349,7 +358,16 @@ class IcoGridPainter(BasePainter):
                         else:
                             # lower rhombi
                             if kx == 0 and ky == 0:
-                                pass
+                                i_c = idx(fc, 0, 0, 0, 0)
+                                i_c_t = idx(fc_t_l, kxl-1, 0, cn, 0)
+                                i_c_b = idx(fc_b_l,
+                                            kxl - 1, kxl - 1, cn, cn)
+
+                                triangles[triangle_idx][0] = i_c
+                                triangles[triangle_idx][1] = i_c_t
+                                triangles[triangle_idx][2] = i_c_b
+                                triangle_idx += 1
+
                             elif kx == 0:
                                 # on kx = 0 side
                                 i_c = idx(fc, kx, ky, 0, 0)
@@ -596,8 +614,8 @@ class IcoGridPainter(BasePainter):
         for fc in range(num_rhombi):
             for kx in range(kxl):
                 for ky in range(kxl):
-                    for i in range(nl_reg-1):
-                        for j in range(nl_reg-1):
+                    for i in range(nl_reg):
+                        for j in range(nl_reg):
                             c = idx(fc, kx, ky,  i, j)
                             self.grid_color_data[:, c, :] = HSV_to_RGB(
                                 360.0*c/(num_points - 1), 1.0, 1.0)
