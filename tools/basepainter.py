@@ -72,15 +72,21 @@ class BasePainter:
 
         return vbo
 
-    def create_colors_vbo(self, colors):
+    def create_colors_vbo(self, colors, dynamic=False):
         vbo = gl.glGenBuffers(1)
 
         gl.glBindBuffer(gl.GL_ARRAY_BUFFER, vbo)
 
-        gl.glBufferData(gl.GL_ARRAY_BUFFER,
-                        colors.nbytes,
-                        colors,
-                        gl.GL_DYNAMIC_DRAW)
+        if dynamic:
+            gl.glBufferData(gl.GL_ARRAY_BUFFER,
+                            colors.nbytes,
+                            colors,
+                            gl.GL_DYNAMIC_DRAW)
+        else:
+            gl.glBufferData(gl.GL_ARRAY_BUFFER,
+                            colors.nbytes,
+                            colors,
+                            gl.GL_STATIC_DRAW)
 
         gl.glVertexAttribPointer(1, 3,
                                  gl.GL_FLOAT, False,

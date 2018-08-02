@@ -29,6 +29,7 @@ from shadermanager import ShaderManager
 from axispainter import AxisPainter
 from vectorfieldpainter import VectorFieldPainter
 from icogridpainter import IcoGridPainter
+from planet_axis_equator_painter import PlanetAxisEquatorPainter
 
 
 class ThorVizWidget(QOpenGLWidget):
@@ -47,12 +48,14 @@ class ThorVizWidget(QOpenGLWidget):
         self.ico_grid_painter = IcoGridPainter()
         self.axis_painter = AxisPainter()
         self.field_painter = VectorFieldPainter()
+        self.axis_equator_painter = PlanetAxisEquatorPainter()
 
         self.cam_theta = 0.0
         self.cam_phi = 0.0
 
         self.cam_r = -5.0
         self.cam_orientation = QMatrix4x4()
+        self.cam_orientation.rotate(90, 1.0, 0.0, 0.0)
 
         self.right_button_pressed = False
         self.left_button_pressed = False
@@ -99,6 +102,7 @@ class ThorVizWidget(QOpenGLWidget):
         self.ico_grid_painter.set_shader_manager(self.shader_manager)
         self.axis_painter.set_shader_manager(self.shader_manager)
         self.field_painter.set_shader_manager(self.shader_manager)
+        self.axis_equator_painter.set_shader_manager(self.shader_manager)
         self.projection = QMatrix4x4()
         self.projection.perspective(35.0, 1.0, 0.01, 15.0)
 
@@ -122,7 +126,7 @@ class ThorVizWidget(QOpenGLWidget):
         self.field_painter.initializeGL()
         self.ico_grid_painter.initializeGL()
         self.axis_painter.initializeGL()
-
+        self.axis_equator_painter.initializeGL()
         gl.glEnable(gl.GL_DEPTH_TEST)
 
         gl.glEnable(gl.GL_BLEND)
@@ -177,6 +181,24 @@ class ThorVizWidget(QOpenGLWidget):
         self.field_painter.paint_vector_field()
         self.shader_manager.release("icos_field")
         ############################################
+        self.shader_manager.load("axis_equator")
+        # view transformation
+        view = QMatrix4x4()
+        view.translate(0.0,  0.0, self.cam_r)
+        view *= self.cam_orientation
+        self.shader_manager.set_uniform("axis_equator", "view", view)
+
+        # projection transformation
+        self.shader_manager.set_uniform(
+            "axis_equator", "projection", self.projection)
+
+        model = QMatrix4x4()
+        self.shader_manager.set_uniform("axis_equator", "model", model)
+        self.axis_equator_painter.paint()
+
+        self.shader_manager.release("axis_equator")
+
+        ############################################
         self.shader_manager.load("axis")
 
         gl.glViewport(0, 0, self.width//8, self.height//8)
@@ -216,6 +238,7 @@ class ThorVizWidget(QOpenGLWidget):
 
     def reset_position(self):
         self.cam_orientation = QMatrix4x4()
+        self.cam_orientation.rotate(90, 1.0, 0.0, 0.0)
         self.cam_r = -5.0
         self.update()
 

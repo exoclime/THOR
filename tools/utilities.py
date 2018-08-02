@@ -94,3 +94,11 @@ def spherical(r, theta, phi):
         r*math.sin(theta)*math.cos(phi),
         r*math.sin(phi)),
         dtype=np.float32)
+
+
+def cylindrical(r, h, theta):
+    return np.array((
+        r*math.cos(theta),
+        r*math.sin(theta),
+        h),
+        dtype=np.float32)

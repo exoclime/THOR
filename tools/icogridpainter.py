@@ -660,7 +660,7 @@ class IcoGridPainter(BasePainter):
 
         self.create_vbo(vertices)
 
-        self.color_vbo = self.create_colors_vbo(colors)
+        self.color_vbo = self.create_colors_vbo(colors, dynamic=True)
 
         self.create_elements_vbo(triangles)
 
