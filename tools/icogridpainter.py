@@ -134,7 +134,7 @@ class IcoGridPainter(BasePainter):
         self.wireframe = False
         self.draw_idx = 0
         self.altitude = 0
-        self.show_data = False
+        self.show_data = True
 
     def set_grid_data(self, dataset):
         self.dataset = dataset
@@ -233,18 +233,18 @@ class IcoGridPainter(BasePainter):
 
         triangles = np.zeros((num_triangles, 3), dtype=np.uint32)
 
-        # draw_rhomb = [0, 1, 2, 3, 4, 5, 6, 7, 8,  9]
+        draw_rhomb = [0, 1, 2, 3, 4, 5, 6, 7, 8,  9]
         # upper
         # draw_rhomb = [0, 1, 2, 3, 4]
         # lower
         #draw_rhomb = [5, 6, 7, 8,  9]
         # North South link
-        draw_rhomb = [0, 1, 5, 6, 9]
+        # draw_rhomb = [0, 1, 5, 6, 9]
         faces = True
 
         # halos = False
         halos = True
-        poles = False
+        poles = True
         corners = True
         triangle_idx = 0
 

@@ -50,8 +50,8 @@ if len(planets) < 1:
     exit(-1)
 
 dataset.select_planet(planets[0])
-dataset.select_scalar_data_type("Mh")
-dataset.select_vector_data_type("Mh")
+dataset.select_scalar_data_type("Momentum_norm")
+dataset.select_vector_data_type("Momentum")
 
 
 class ThorVizWindow(QMainWindow):
@@ -75,9 +75,19 @@ class ThorVizWindow(QMainWindow):
         self.vizGL.set_grid_data(dataset)
         #self.vizGL.set_grid(grd, neighbours, colors, moments)
 
+        # connect menu items
         self.actionQuit.triggered.connect(qApp.quit)
-
         self.actionZero_Position.triggered.connect(self.vizGL.reset_position)
+
+        # display
+        datatypes = dataset.get_data_types()
+
+        for k, v in datatypes.items():
+            if v['type'] == 'scalar':
+                self.scalar_display_combobox.addItem(k)
+            if v['type'] == 'vector':
+                self.vector_display_combobox.addItem(k)
+
         self.show()
 
         # self.animation_slider.setMaximum(colors.shape[0])
@@ -87,6 +97,16 @@ class ThorVizWindow(QMainWindow):
 
     def show_data(self, b):
         self.animation_slider.setEnabled(b)
+
+    def select_vector_display(self, item):
+        print(item)
+        dataset.select_vector_data_type(item)
+        self.vizGL.update()
+
+    def select_scalar_display(self, item):
+        print(item)
+        dataset.select_scalar_data_type(item)
+        self.vizGL.update()
 
 
 app = QApplication([])
