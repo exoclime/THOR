@@ -43,27 +43,27 @@ def H_to_RGB(H):
     S = 1.0
     C = V*S
     H_p = H/60.0
-    X = C*(1.0-np.abs((H_p % 2) - 1.0))
+    X = C*(1.0-np.abs(np.mod(H_p, 2) - 1.0))
 
     R1G1B1 = np.zeros((*H.shape, 3))
 
     # c[b>=5] = np.stack((b[b>=5]*2, np.ones(b[b>=5].shape), np.zeros(b[b>=5].shape) ) ).T
-    idx = np.logical_and(H_p <= 0.0, H_p <= 1.0)
+    idx = np.logical_and(H_p >= 0.0, H_p <= 1.0)
     R1G1B1[idx] = np.stack(
         (np.ones(H_p[idx].shape), X[idx], np.zeros(H_p[idx].shape))).T
-    idx = np.logical_and(H_p <= 1.0, H_p <= 2.0)
+    idx = np.logical_and(H_p >= 1.0, H_p <= 2.0)
     R1G1B1[idx] = np.stack(
         (X[idx], np.ones(H_p[idx].shape), np.zeros(H_p[idx].shape))).T
-    idx = np.logical_and(H_p <= 2.0, H_p <= 3.0)
+    idx = np.logical_and(H_p >= 2.0, H_p <= 3.0)
     R1G1B1[idx] = np.stack(
         (np.zeros(H_p[idx].shape), np.ones(H_p[idx].shape),  X[idx])).T
-    idx = np.logical_and(H_p <= 3.0, H_p <= 4.0)
+    idx = np.logical_and(H_p >= 3.0, H_p <= 4.0)
     R1G1B1[idx] = np.stack(
         (np.zeros(H_p[idx].shape), X[idx], np.ones(H_p[idx].shape))).T
-    idx = np.logical_and(H_p <= 4.0, H_p <= 5.0)
+    idx = np.logical_and(H_p >= 4.0, H_p <= 5.0)
     R1G1B1[idx] = np.stack(
         (X[idx], np.zeros(H_p[idx].shape), np.ones(H_p[idx].shape))).T
-    idx = np.logical_and(H_p <= 5.0, H_p <= 6.0)
+    idx = np.logical_and(H_p >= 5.0, H_p <= 6.0)
     R1G1B1[idx] = np.stack(
         (np.ones(H_p[idx].shape), np.zeros(H_p[idx].shape), X[idx])).T
 #    if 0.0 <= H_p and H_p <= 1.0:

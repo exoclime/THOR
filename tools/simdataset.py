@@ -13,7 +13,9 @@ def normalize(data):
     min_data = np.min(data)
     max_data = np.max(data)
 
-    data = (data - min_data)/(max_data - min_data)
+    delta = max_data - min_data
+
+    data[delta != 0.0] = (data[delta != 0] - min_data)/(max_data - min_data)
     return data
 
 
@@ -51,6 +53,7 @@ class simdataset:
         datatypes["Momentum"] = {'type': 'vector'}
         datatypes["Momentum_norm"] = {'type': 'scalar'}
         datatypes["Momentum_norm_vert"] = {'type': 'scalar'}
+        datatypes["Momentum_norm_horiz"] = {'type': 'scalar'}
         datatypes["Momentum_horiz"] = {'type': 'vector'}
         datatypes["Momentum_vert"] = {'type': 'vector'}
 
@@ -173,7 +176,7 @@ class simdataset:
 
             # interpolate vertical value
             # blah
-
+            vector_v = normalize(vector_v)
             # create field vector
             scale = 0.01
             dr = 0.01
@@ -330,13 +333,80 @@ class simdataset:
             # self.data_color = data
             self.data_color[:, :, :, :] = np.array(
                 H_to_RGB(360.0*data), copy=True, dtype=np.float32)
-        elif dataname == "Momentum_norm_vert":
-            print("compute norm vert")
+        elif dataname == "Momentum_norm_horiz":
             vector_h = np.zeros((self.num_samples, self.num_points,
                                  self.num_levels, 3), dtype=np.float32)
             vector_v = np.zeros((self.num_samples, self.num_points,
                                  self.num_levels+1), dtype=np.float32)
+            field = np.zeros((self.num_samples,
+                              self.num_levels,
+                              self.num_points, 3), dtype=np.float32)
 
+            # get the data
+            for i in range(self.num_samples):
+                vector_h[i, :, :self.num_levels -
+                         1] = self.dataloader.get_data(i, "Mh")
+                vector_v[i, :, :self.num_levels] = self.dataloader.get_data(
+                    i, "Wh")
+
+            # interpolate vertical value
+            # blah
+
+            # create field vector
+
+            for l in range(self.num_levels-1):
+                for i in range(self.num_points):
+                    normal = spherical(1.0,
+                                       lonlat[i, 0],
+                                       lonlat[i, 1])
+                    r = radii[l]
+                    vertex = spherical(r,
+                                       lonlat[i, 0],
+                                       lonlat[i, 1])
+                    field[:, l, i, :] = vector_h[:, i, l, :]
+
+                    # field[:, l, i, 0, :] = (0.0, 0.0, 0.0)
+                    # field[:, l, i, 1, :] = normal
+            data = np.zeros((self.num_samples, self.num_levels, self.num_points,
+                             3), dtype=np.float32)
+
+            if np.any(np.isnan(data)):
+                print("NaN")
+
+            # compute norm
+            data = np.sqrt(np.sum(np.power(field, 2.0), axis=3))
+            # data = data[:, :, :, 0]
+            # rescale
+            for i in range(self.num_samples):
+                for j in range(self.num_levels):
+                    d = data[i, j, :]
+                    min_data = np.min(d)
+                    max_data = np.max(d)
+                    if np.any(max_data - min_data == 0):
+                        print("zeros")
+                    else:
+                        data[i, j, :] = (d - min_data)/(max_data - min_data)
+
+            # min_data = np.min(data)
+            # max_data = np.max(data)
+
+            # print(min_data, max_data)
+            # zeros = (max_data - min_data) == 0
+            # non_zeros = (max_data - min_data) != 0
+            # data[non_zeros] = (data[non_zeros] - min_data[non_zeros]) / \
+            #     (max_data[non_zeros] - min_data[non_zeros])
+            # data[zeros] = 0.0
+
+            # self.data_color = data
+            self.data_color[:, :, :, :] = np.array(
+                H_to_RGB(360.0*data), copy=True, dtype=np.float32)
+
+        elif dataname == "Momentum_norm_vert":
+            vector_h = np.zeros((self.num_samples, self.num_points,
+                                 self.num_levels, 3), dtype=np.float32)
+            vector_v = np.zeros((self.num_samples, self.num_points,
+                                 self.num_levels), dtype=np.float32)
+            print(self.num_samples)
             # get the data
             for i in range(self.num_samples):
                 vector_h[i, :, :self.num_levels -
@@ -345,7 +415,7 @@ class simdataset:
                     i, "Wh")
             data = normalize(vector_v)
             self.data_color = np.array(np.swapaxes(
-                H_to_RGB(360.0*data[:, :, :self.num_levels]), 1, 2), copy=True, dtype=np.float32)
+                H_to_RGB(360.0*data[:, :, :]), 1, 2), copy=True, dtype=np.float32)
 
         else:
             print("Unrecognised data name for scalar field: ", dataname)
@@ -464,7 +534,9 @@ class dataloader:
         elif data_name == "Mh":
             data = np.array(h5py.File(self.datasets[dataset_idx])[data_name], dtype=np.float32).reshape(
                 (self.num_points, self.num_levels, 3))
-
+        elif data_name == "Wh":
+            data = np.array(h5py.File(self.datasets[dataset_idx])[data_name], dtype=np.float32).reshape(
+                (self.num_points, self.num_levels+1))
         return data
 
     def get_vector_data(self, dataset_idx, data_name):
