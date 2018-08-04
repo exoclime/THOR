@@ -57,7 +57,7 @@ out GS_OUT {
 
 void main(void)
 {
-   float WIN_SCALE = 800.0;
+   float WIN_SCALE = 3200.0;
    // taken from 'Single-Pass Wireframe Rendering'
    vec2 p0 = WIN_SCALE * gl_in[0].gl_Position.xy/gl_in[0].gl_Position.w;
    vec2 p1 = WIN_SCALE * gl_in[1].gl_Position.xy/gl_in[1].gl_Position.w;
