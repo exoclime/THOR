@@ -22,10 +22,11 @@ from basepainter import BasePainter
 vertex_shader_icos = """#version 400\n
                        layout(location = 0) in vec3 vp;
                        layout(location = 1) in vec3 vertex_colour;
-
+                       layout(location = 2) in float vertex_value;
 
                        out VS_OUT {
                            out vec3 colour;
+                           out float val;
                        } vs_out;
 
 
@@ -34,6 +35,7 @@ vertex_shader_icos = """#version 400\n
                        uniform highp mat4 model;
                        void main() {
                          vs_out.colour = vertex_colour;
+                         vs_out.val = vertex_value;
                           //colour = vec3(1.0,1.0,0.0);
                           gl_Position = projection * \
                               view * model *  vec4(vp, 1.0);
@@ -48,11 +50,13 @@ layout (triangle_strip, max_vertices = 3) out;
 
 in VS_OUT {
    vec3 colour;
+   float val;
 } gs_in[];
 
 out GS_OUT {
    vec3 fcolor;
    vec3 dist;
+   float val;
 } gs_out;
 
 void main(void)
@@ -62,22 +66,28 @@ void main(void)
    vec2 p0 = WIN_SCALE * gl_in[0].gl_Position.xy/gl_in[0].gl_Position.w;
    vec2 p1 = WIN_SCALE * gl_in[1].gl_Position.xy/gl_in[1].gl_Position.w;
    vec2 p2 = WIN_SCALE * gl_in[2].gl_Position.xy/gl_in[2].gl_Position.w;
-                           vec2 v0 = p2-p1;
+   
+   vec2 v0 = p2-p1;
    vec2 v1 = p2-p0;
    vec2 v2 = p1-p0;
+
    float area = abs(v1.x*v2.y - v1.y * v2.x);
 
    gs_out.fcolor = gs_in[0].colour;
 
    gs_out.dist = vec3(area/length(v0),0,0);
+   gs_out.val = gs_in[0].val;
    gl_Position = 1.5*gl_in[0].gl_Position;
+   
    EmitVertex();
    gs_out.fcolor = gs_in[1].colour;
    gs_out.dist = vec3(0,area/length(v1),0);
+   gs_out.val = gs_in[1].val;
    gl_Position = gl_in[1].gl_Position;
    EmitVertex();
    gs_out.fcolor = gs_in[2].colour;
    gs_out.dist = vec3(0,0,area/length(v2));
+   gs_out.val = gs_in[2].val;
    gl_Position = gl_in[2].gl_Position;
    EmitVertex();
    EndPrimitive();
@@ -88,7 +98,81 @@ fragment_shader_icos = """
 in GS_OUT {
    vec3 fcolor;
    vec3 dist;
+   float val;
 } fs_in;
+
+vec3 colormap(float H)
+{
+   vec3 RGB;
+   RGB.x = H;
+   RGB.y = H;
+   RGB.z = H;
+
+   return RGB;
+} 
+
+vec3 H_to_RGB(float H)
+{
+   H *= 360.0;
+   float S = 1.0;
+   float V = 1.0; 
+
+   float C = V*S;
+   float H_p = H/60.0;
+   float X = C*(1.0 - abs(mod(H_p,2.0) - 1.0));
+
+   vec3 R1G1B1;
+   R1G1B1.x = 0.0;
+   R1G1B1.y = 0.0;
+   R1G1B1.z = 0.0;
+        
+    if (0 <= H_p && H_p <= 1.0)
+    {
+        R1G1B1.x = C;
+        R1G1B1.y = X;
+        R1G1B1.z = 0.0;
+    }
+    else if (1.0 <= H_p && H_p <= 2.0)
+    {
+        R1G1B1.x = X;
+        R1G1B1.y = C;
+        R1G1B1.z = 0.0;
+    }
+    else if (2.0 <= H_p && H_p <= 3.0)
+    {
+        R1G1B1.x = 0.0;
+        R1G1B1.y = C;
+        R1G1B1.z = X;
+    }
+    else if (3. <= H_p && H_p <= 4.0)
+    {
+        R1G1B1.x = 0.0;
+        R1G1B1.y = X;
+        R1G1B1.z = C;
+    }
+    else if (4.0 <= H_p && H_p <= 5.0)
+    {
+        R1G1B1.x = X;
+        R1G1B1.y = 0.0;
+        R1G1B1.z = C;
+    }
+    else if (5.0 <= H_p && H_p < 6.0)
+    {
+        R1G1B1.x = C;
+        R1G1B1.y = 0.0;
+        R1G1B1.z = X;
+    }
+    
+    float m = V-C;
+    
+
+    vec3 RGB;
+    RGB.x = R1G1B1.x + m;
+    RGB.y = R1G1B1.y + m;
+    RGB.z = R1G1B1.z + m;
+    
+    return RGB;
+}
 
 out vec4 frag_colour;
 uniform float wire_limit;
@@ -98,7 +182,8 @@ void main() {
    if (nearD < wire_limit)
       frag_colour = vec4(0.1, 0.1, 0.1, 1.0 );
    else
-      frag_colour = vec4(fs_in.fcolor, 1.0);
+      frag_colour = vec4(H_to_RGB(fs_in.val), 1.0);
+//      frag_colour = vec4(colormap(fs_in.val), 1.0);
       //frag_colour = vec4(fs_in.fcolor, 1.0);
       //frag_colour = vec4(1.0,0.0,0.0, 1.0);
       //                                   frag_colour = (edgeIntensity * vec4( 0.1, 0.1, 0.1, 1.0 )) +
@@ -602,6 +687,8 @@ class IcoGridPainter(BasePainter):
                                 dtype=np.float32)
         self.all_colors = np.zeros((num_levels,  num_points, 3),
                                    dtype=np.float32)
+        self.grid_scalar_data = np.zeros((num_levels,  num_points),
+                                         dtype=np.float32)
 
         all_triangles = np.zeros((num_levels,  triangles.shape[0], 3),
                                  dtype=np.uint32)
@@ -619,6 +706,7 @@ class IcoGridPainter(BasePainter):
                             c = idx(fc, kx, ky,  i, j)
                             self.grid_color_data[:, c, :] = HSV_to_RGB(
                                 360.0*c/(num_points - 1), 1.0, 1.0)
+                            self.grid_scalar_data[:, c] = c/(num_points - 1)
 #        for i in range(num_points):
 #            self.grid_color_data[:, i, :] = HSV_to_RGB(
 #                360.0*i/(num_points - 1), 1.0, 1.0)
@@ -633,7 +721,8 @@ class IcoGridPainter(BasePainter):
 
         self.vao_list = self.create_sphere_vao(all_vertices,
                                                all_triangles,
-                                               self.all_colors)
+                                               self.all_colors,
+                                               self.grid_scalar_data)
 
         self.num_levels = num_levels
         self.num_points = num_points
@@ -643,16 +732,19 @@ class IcoGridPainter(BasePainter):
         if not self.show_data:
 
             self.update_colors_vbo(self.grid_color_data)
+            self.update_values_vbo(self.grid_scalar_data)
         else:
             if self.draw_idx == self.last_loaded:
                 return
-            data = np.array(self.dataset.get_color_data(
-                self.draw_idx), copy=True)
+            data, data_scalar = self.dataset.get_color_data(self.draw_idx)
 
+            data = np.array(data, copy=True)
+            data_scalar = np.array(data_scalar, copy=True)
             self.update_colors_vbo(data)
+            self.update_values_vbo(data_scalar)
             self.last_loaded = self.draw_idx
 
-    def create_sphere_vao(self, vertices, triangles, colors):
+    def create_sphere_vao(self, vertices, triangles, colors, values):
         vao = gl.glGenVertexArrays(1)
 
         gl.glBindVertexArray(vao)
@@ -661,7 +753,7 @@ class IcoGridPainter(BasePainter):
         self.create_vbo(vertices)
 
         self.color_vbo = self.create_colors_vbo(colors, dynamic=True)
-
+        self.values_vbo = self.create_values_vbo(values, dynamic=True)
         self.create_elements_vbo(triangles)
 
         return vao
@@ -712,6 +804,35 @@ class IcoGridPainter(BasePainter):
         self.update_vbo(self.vao_list,
                         self.color_vbo,
                         colors)
+
+    def update_values_vbo(self, values):
+        # print("update colors")
+        self.update_vbo(self.vao_list,
+                        self.values_vbo,
+                        values)
+
+    def create_values_vbo(self, values, dynamic=False):
+        vbo = gl.glGenBuffers(1)
+
+        gl.glBindBuffer(gl.GL_ARRAY_BUFFER, vbo)
+
+        if dynamic:
+            gl.glBufferData(gl.GL_ARRAY_BUFFER,
+                            values.nbytes,
+                            values,
+                            gl.GL_DYNAMIC_DRAW)
+        else:
+            gl.glBufferData(gl.GL_ARRAY_BUFFER,
+                            values.nbytes,
+                            values,
+                            gl.GL_STATIC_DRAW)
+
+        gl.glVertexAttribPointer(2, 1,
+                                 gl.GL_FLOAT, False,
+                                 0, None)
+        gl.glEnableVertexAttribArray(2)
+
+        return vbo
 
 
 if __name__ == '__main__':

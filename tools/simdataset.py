@@ -219,6 +219,8 @@ class simdataset:
         self.dataname = dataname
         self.data_color = np.zeros(
             (self.num_samples, self.num_levels, self.num_points, 3), dtype=np.float32)
+        self.data_scalar = np.zeros(
+            (self.num_samples, self.num_levels, self.num_points), dtype=np.float32)
         # load data set
         if dataname == "Pressure":
             data = np.zeros((self.num_samples, self.num_points,
@@ -239,7 +241,7 @@ class simdataset:
 
             # self.data_color = np.array(
             #    np.swapaxes(H_to_RGB(data), 1, 2), copy=True, dtype=np.float32)
-
+            self.data_scalar = np.array(np.swapaxes(data, 1, 2))
             for i in range(self.num_samples):
                 for j in range(self.num_levels):
                     for k in range(self.num_points):
@@ -260,7 +262,7 @@ class simdataset:
             max_data = np.max(data)
 
             data = (data - min_data)/(max_data - min_data)
-
+            self.data_scalar = np.array(np.swapaxes(data, 1, 2))
             self.data_color = np.array(np.swapaxes(
                 H_to_RGB(data), 1, 2), copy=True, dtype=np.float32)
 
@@ -307,6 +309,7 @@ class simdataset:
 
             # compute norm
             data = np.sqrt(np.sum(np.power(field, 2.0), axis=3))
+            self.data_scalar = data
             # data = data[:, :, :, 0]
             # rescale
             for i in range(self.num_samples):
@@ -396,7 +399,7 @@ class simdataset:
             # data[non_zeros] = (data[non_zeros] - min_data[non_zeros]) / \
             #     (max_data[non_zeros] - min_data[non_zeros])
             # data[zeros] = 0.0
-
+            self.data_scalar = data
             # self.data_color = data
             self.data_color[:, :, :, :] = np.array(
                 H_to_RGB(360.0*data), copy=True, dtype=np.float32)
@@ -414,6 +417,7 @@ class simdataset:
                 vector_v[i, :, :self.num_levels] = self.dataloader.get_data(
                     i, "Wh")
             data = normalize(vector_v)
+            self.data_scalar = np.array(np.swapaxes(data, 1, 2))
             self.data_color = np.array(np.swapaxes(
                 H_to_RGB(360.0*data[:, :, :]), 1, 2), copy=True, dtype=np.float32)
 
@@ -422,7 +426,8 @@ class simdataset:
 
     def get_color_data(self, dataset_idx):
         # print(self.data_color[dataset_idx, :, :, :])
-        return self.data_color[dataset_idx, :, :, :]
+        # return self.data_color[dataset_idx, :, :, :]
+        return self.data_color[dataset_idx, :, :, :], self.data_scalar[dataset_idx, :, :]
 
     def get_field_data(self, idx):
         return self.field_data[idx, :, :, :, :]
