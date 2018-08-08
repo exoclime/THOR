@@ -107,6 +107,8 @@ public:
     int *zonal_mean_tab_h ;
     double Rv_sponge      ;
     double ns_sponge      ;
+    double t_shrink       ;
+
 ///////////////////////////
 //  Device
     int *point_local_d    ;
@@ -233,6 +235,7 @@ public:
         int * zonal_mean_tab ,
         double Rv_sponge_    ,
         double ns_sponge_    ,
+        double t_shrink_     ,
         int point_num_       );
 
     void AllocData() ;
@@ -297,6 +300,7 @@ public:
                double,
                double,
                double,
+               bool  ,
                bool  );
 
     void CopyToHost();

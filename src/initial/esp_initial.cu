@@ -78,6 +78,7 @@ __host__ ESP::ESP(int *point_local_    ,
                   int *zonal_mean_tab  ,
                   double Rv_sponge_    ,
                   double ns_sponge_    ,
+                  double t_shrink_     ,
                   int point_num_    ): nl_region(nl_region_),
                                        nr(nr_),
                                        point_num(point_num_),
@@ -112,6 +113,7 @@ __host__ ESP::ESP(int *point_local_    ,
 
     Rv_sponge = Rv_sponge_;
     ns_sponge = ns_sponge_;
+    t_shrink = t_shrink_;
 //
 //  Allocate Data
     AllocData();
@@ -288,7 +290,7 @@ __host__ bool ESP::InitialValues(bool rest          ,
                   double Ptil = 0.0;
                   if (pressure_h[i*nv+lev] >= 1e5) {
                     Ptil = log10(pressure_h[i*nv + lev]/100000);
-                  } 
+                  }
                   temperature_h[i*nv + lev] = 1696.6986 + 132.2318*Ptil - 174.30459*Ptil*Ptil \
                      + 12.579612*Ptil*Ptil*Ptil + 59.513639*Ptil*Ptil*Ptil*Ptil \
                      + 9.6706522*Ptil*Ptil*Ptil*Ptil*Ptil \

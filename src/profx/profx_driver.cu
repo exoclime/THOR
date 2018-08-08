@@ -68,7 +68,8 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
                          double P_Ref       , // Reference pressure [Pa]
                          double Gravit      , // Gravity [m/s^2]
                          double A           ,// Planet radius [m]
-                         bool   sponge      ){
+                         bool   sponge      , // Use sponge layer?
+                         bool   shrink_sponge){ // Shrink sponge after some time
     USE_BENCHMARK()
 //
 //  Number of threads per block.
@@ -91,6 +92,13 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
                              point_num                        );
 
       cudaDeviceSynchronize();
+
+      if (shrink_sponge == true) {
+        if (nstep*time_step >= t_shrink) {
+          ns_sponge = 1.0 - 0.5*(1.0-ns_sponge);
+          shrink_sponge = false;
+        }
+      }
 
       sponge_layer <<< NB,NTH >>>(Mh_d                      ,
                                   Rho_d                    ,

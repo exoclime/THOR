@@ -176,6 +176,8 @@ int main (int argc,  char** argv){
     int nlat = 20;
     double Rv_sponge = 1e-4;
     double ns_sponge = 0.75;
+    bool shrink_sponge = false;
+    double t_shrink = 500;
 
     config_reader.append_config_var("NonHydro", NonHydro, NonHydro_default);
     config_reader.append_config_var("DeepModel", DeepModel, DeepModel_default);
@@ -183,6 +185,8 @@ int main (int argc,  char** argv){
     config_reader.append_config_var("nlat", nlat, nlat_default);
     config_reader.append_config_var("Rv_sponge", Rv_sponge, Rv_sponge_default);
     config_reader.append_config_var("ns_sponge", ns_sponge, ns_sponge_default);
+    config_reader.append_config_var("shrink_sponge", shrink_sponge, shrink_sponge_default);
+    config_reader.append_config_var("t_shrink", t_shrink, t_shrink_default);
 
     // Initial conditions
     // rest supersedes initial condition entry,
@@ -396,6 +400,7 @@ int main (int argc,  char** argv){
            Grid.zonal_mean_tab, // table of zonal means for sponge layer
            Rv_sponge          , // Maximum damping of sponge layer
            ns_sponge          , // lowest level of sponge layer (fraction of model)
+           t_shrink           , // time to shrink sponge layer
            Grid.point_num     );// Number of grid points
 
     USE_BENCHMARK();
@@ -691,7 +696,8 @@ int main (int argc,  char** argv){
                Planet.P_Ref , // Reference pressure [Pa]
                Planet.Gravit, // Gravity [m/s^2]
                Planet.A     , // Planet radius [m]
-               SpongeLayer  );
+               SpongeLayer  ,
+               shrink_sponge);
 
        // compute simulation time
        simulation_time = simulation_start_time + (nstep - step_idx+1)*timestep;

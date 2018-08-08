@@ -1050,6 +1050,9 @@ def TPprof(input,grid,output,sigmaref,column):
         kappa = input.Rd/input.Cp
 
         plt.semilogy(T,P/100,'k-',alpha= 0.5,lw=1)
+        plt.plot(T[np.int(np.floor(grid.nv/2))],P[np.int(np.floor(grid.nv/2))]/100,'r+',ms =5,alpha=0.5)
+        plt.plot(T[np.int(np.floor(grid.nv*0.75))],P[np.int(np.floor(grid.nv*0.75))]/100,'g+',ms =5,alpha=0.5)
+
 
     Tad = T[15]*(P/P[15])**kappa
 

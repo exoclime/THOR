@@ -2,7 +2,7 @@
 # config format version
 config_version = 1
 
-# testing sponge layer model
+# earth model
 
 # number of steps
 num_steps = 345600
@@ -15,27 +15,27 @@ timestep = 300
 
 # planet
 # name of simulation for output files
-simulation_ID = Wasp43b
+simulation_ID = hd209b
 # Radius [m]
-radius = 72427000.0
+radius = 9.44e7
 # Rotation rate [s-1]
-rotation_rate = 9.09E-5
+rotation_rate = 2.06e-5
 # Gravitational acceleration [m/s^2]
-gravitation = 47
+gravitation = 9.42
 # Mean molecular mass of dry air [kg]
 Mmol = 28.964
 # Gas constant [J/(Kg K)]
-Rd = 3714
+Rd = 4593
 # Specific heat capacities [J/(Kg K)]
-Cp = 13000
+Cp = 14308.4
 # Mean atmospheric temperature [K]
-Tmean = 1800.0
+Tmean = 1759
 # Reference surface pressure [Pa]
-P_ref = 10000000.0
+P_ref = 22000000.0
 # Altitude of the top of the model domain [m]
-Top_altitude = 1.4e6
+Top_altitude = 1e7
 # Strength of diffusion
-Diffc = 0.0099
+Diffc = 0.00495
 
 # grid
 # Spring dynamics
@@ -61,41 +61,39 @@ DeepModel = true
 # Initial conditions
 rest = true
 
-# initial conditions file, used if rest is set to false
-# (path relative to current working directory)
-# defaults to 'ifile/esp.initial.h5'
-initial = wasp43_sponge2/esp_output_Wasp43b_re.h5
-
-# Spongebob
-SpongeLayer = true
-# latitude rings
-nlat = 20
-ns_sponge = 0.5
-Rv_sponge = 1e-5
-
 # Benchmark test
 # Held-Suarez test for Earth == 1
 # HS test for shallow hot Jupiter == 3
 # HS test for tidally locked Earth == 2
 # No HS test == 0
+# HS test for deep hot Jupiter == 4
 
 hstest = 0
 
-# output
-# output every n steps
-n_out = 100
+# Spongebob
+SpongeLayer = false
+# latitude rings
+nlat = 20
+ns_sponge = 0.5
+Rv_sponge = 1e-5
+
+Tstar = 6000
+planet_star_dist = 0.045
+radius_star = 1.14
+#set albedo so irradiation roughly matches Heng+ 2011b
+albedo = 0.07
 
 # output directory (relative to current working directory)
 # defaults to 'results'
-results_path = wasp43_spngtest
+results_path = hd209_results
 
-Tstar = 4520
-planet_star_dist = 0.015
-radius_star = 0.667
+# output
+# output every n steps
+n_out = 6912
+#n_out = 100
 
 # GPU ID number
 GPU_ID_N = 0
 
-gcm_off = true
-
-TPprof = 1
+TPprof = 0
+gcm_off = false
