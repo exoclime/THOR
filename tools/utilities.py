@@ -91,8 +91,8 @@ def H_to_RGB(H):
 def spherical(r, theta, phi):
     return np.array((
         r*math.cos(theta)*math.cos(phi),
-        r*math.sin(theta)*math.cos(phi),
-        r*math.sin(phi)),
+        r*math.cos(theta)*math.sin(phi),
+        r*math.sin(theta)),
         dtype=np.float32)
 
 

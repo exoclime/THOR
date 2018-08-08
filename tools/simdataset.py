@@ -8,6 +8,12 @@ from math import sqrt
 from utilities import HSV_to_RGB, H_to_RGB, spherical
 
 
+def normalize_field(field):
+    # normalize field where last dimension is x,y,z
+    norms = np.sqrt(np.sum(np.power(field, 2.0), axis=3))
+    return field/norms.reshape(*norms.shape, 1)
+
+
 def normalize(data):
     # rescale
     min_data = np.min(data)
@@ -87,121 +93,85 @@ class simdataset:
         field = np.zeros((self.num_samples,
                           self.num_levels,
                           self.num_points,
-                          2, 3), dtype=np.float32)
+                          3), dtype=np.float32)
 
+        pt_coords = np.zeros((self.num_samples,
+                              self.num_levels,
+                              self.num_points,
+                              3), dtype=np.float32)
+
+        normals = np.zeros((self.num_samples,
+                            self.num_levels,
+                            self.num_points,
+                            3), dtype=np.float32)
+
+        # compute normals and point coordinates
+        for l in range(self.num_levels-1):
+            for i in range(self.num_points):
+                normals[:, l, i, :] = spherical(1.0,
+                                                lonlat[i, 1],
+                                                lonlat[i, 0])
+                r = radii[l]
+                pt_coords[:, l, i, :] = spherical(r,
+                                                  lonlat[i, 1],
+                                                  lonlat[i, 0])
+
+        vector_h = np.zeros((self.num_samples, self.num_levels, self.num_points,
+                             3), dtype=np.float32)
+        vector_v = np.zeros(
+            (self.num_samples, self.num_levels+1, self.num_points), dtype=np.float32)
+
+        # scale the vectors by this
+        scale = 0.1
+        # offset them from the surface by this
+        dr = 0.01
         if dataname == "Momentum":
-            vector_h = np.zeros((self.num_samples, self.num_points,
-                                 self.num_levels, 3), dtype=np.float32)
-            vector_v = np.zeros((self.num_samples, self.num_points,
-                                 self.num_levels+1), dtype=np.float32)
-
             # get the data
             for i in range(self.num_samples):
-                vector_h[i, :, :self.num_levels -
-                         1] = self.dataloader.get_data(i, "Mh")
-                vector_v[i, :, :self.num_levels] = self.dataloader.get_data(
-                    i, "Wh")
-
-            # interpolate vertical value
-            # blah
-
-            # create field vector
-
-            scale = 0.01
-            for l in range(self.num_levels-1):
-                for i in range(self.num_points):
-                    normal = spherical(1.0,
-                                       lonlat[i, 0],
-                                       lonlat[i, 1])
-                    r = radii[l]
-                    vertex = spherical(r,
-                                       lonlat[i, 0],
-                                       lonlat[i, 1])
-                    field[:, l, i, 0, :] = vertex
-                    field[:, l, i, 1, :] = vertex + scale * \
-                        (vector_h[:, i, l, :] +
-                         normal)  # *vector_v[:, i, l])
-                    # field[:, l, i, 1, :] = vertex + normal
-                    # field[:, l, i, 0, :] = (0.0, 0.0, 0.0)
-                    # field[:, l, i, 1, :] = normal
+                v = self.dataloader.get_data(i, "Mh")
+                vector_h[i, :self.num_levels -
+                         1, :] = np.swapaxes(v, 0, 1)
+                v = self.dataloader.get_data(i, "Wh")
+                vector_v[i, :self.num_levels] = np.swapaxes(v, 0, 1)
 
         elif dataname == "Momentum_horiz":
-            vector_h = np.zeros((self.num_samples, self.num_points,
-                                 self.num_levels-1, 3), dtype=np.float32)
-            vector_v = np.zeros((self.num_samples, self.num_points,
-                                 self.num_levels), dtype=np.float32)
-
             # get the data
             for i in range(self.num_samples):
-                vector_h[i, :, :self.num_levels-1] = self.dataloader.get_data(
-                    i, "Mh")
-                vector_v[i, :, :] = self.dataloader.get_data(
-                    i, "Wh")
-
-            # interpolate vertical value
-            # blah
-
-            # create field vector
-
-            scale = 0.01
-            for l in range(self.num_levels-1):
-                for i in range(self.num_points):
-                    normal = spherical(1.0,
-                                       lonlat[i, 0],
-                                       lonlat[i, 1])
-                    r = radii[l]
-                    vertex = spherical(r,
-                                       lonlat[i, 0],
-                                       lonlat[i, 1])
-                    field[:, l, i, 0, :] = vertex
-                    field[:, l, i, 1, :] = vertex + scale * \
-                        vector_h[:, i, l, :]
-                    # field[:, l, i, 1, :] = vertex + normal
-                    # field[:, l, i, 0, :] = (0.0, 0.0, 0.0)
-                    # field[:, l, i, 1, :] = normal
+                v = self.dataloader.get_data(i, "Mh")
+                vector_h[i, :self.num_levels -
+                         1, :] = np.swapaxes(v, 0, 1)
 
         elif dataname == "Momentum_vert":
-            vector_h = np.zeros((self.num_samples, self.num_points,
-                                 self.num_levels-1, 3), dtype=np.float32)
-            vector_v = np.zeros((self.num_samples, self.num_points,
-                                 self.num_levels), dtype=np.float32)
-
             # get the data
             for i in range(self.num_samples):
-                vector_h[i, :, :self.num_levels -
-                         1] = self.dataloader.get_data(i, "Mh")
-                vector_v[i, :, :] = self.dataloader.get_data(
-                    i, "Wh")
-                print("vectorvnan", np.isnan(vector_v))
+                v = self.dataloader.get_data(i, "Wh")
+                vector_v[i, :self.num_levels] = np.swapaxes(v, 0, 1)
 
-            # interpolate vertical value
-            # blah
-            vector_v = normalize(vector_v)
-            # create field vector
-            scale = 0.01
-            dr = 0.01
-            for l in range(self.num_levels-1):
-                for i in range(self.num_points):
-                    normal = spherical(1.0,
-                                       lonlat[i, 0],
-                                       lonlat[i, 1])
-                    r = radii[l]
-                    vertex = spherical(r,
-                                       lonlat[i, 0],
-                                       lonlat[i, 1])
-                    field[:, l, i, 0, :] = (1.0+dr)*vertex
-                    field[:, l, i, 1, :] = (1.0+dr)*vertex + (scale *
-                                                              vector_v[:, i, l]*normal.reshape((3, 1))).T
-                    # print(vector_v)
-                    # vertex + \
-                    # scale * vector_v[:, i, l]*normal.reshape((1, 3))
-                    # field[:, l, i, 1, :] = vertex + normal
-                    # field[:, l, i, 0, :] = (0.0, 0.0, 0.0)
-                    # field[:, l, i, 1, :] = normal
         else:
             print("Unrecognised data name for vector field: ", dataname)
 
-        self.field_data = field
+        for l in range(self.num_levels-1):
+            for i in range(self.num_points):
+
+                field[:, l, i, :] = (vector_h[:, l, i, :] +
+                                     (vector_v[:, l, i].reshape(*vector_v[:, l, i].shape, 1)*normals[:, l, i, :]))
+
+        # normalize and rescale the field
+        field = scale*normalize_field(field)
+
+        # prepare output
+        out = np.zeros((self.num_samples,
+                        self.num_levels,
+                        self.num_points,
+                        2, 3), dtype=np.float32)
+
+        # append pt coordinates
+        # can be offset from surface by dr
+        out[:, :, :, 0, :] = pt_coords*(1+dr)
+        # append field
+        out[:, :, :, 1, :] = pt_coords*(1+dr) + field
+
+        self.field_data = out
 
     def select_scalar_data_type(self, dataname):
         print("update scalar display: ", dataname)
@@ -245,7 +215,7 @@ class simdataset:
             for i in range(self.num_samples):
                 for j in range(self.num_levels):
                     for k in range(self.num_points):
-                        #self.data_color[i, j, k] = (data[i, k, j], 0.0, 0.0)
+                        # self.data_color[i, j, k] = (data[i, k, j], 0.0, 0.0)
                         self.data_color[i, j, k] = HSV_to_RGB(
                             360.0*data[i, k, j], 1.0, 1.0)
 
@@ -291,12 +261,12 @@ class simdataset:
             for l in range(self.num_levels-1):
                 for i in range(self.num_points):
                     normal = spherical(1.0,
-                                       lonlat[i, 0],
-                                       lonlat[i, 1])
+                                       lonlat[i, 1],
+                                       lonlat[i, 0])
                     r = radii[l]
                     vertex = spherical(r,
-                                       lonlat[i, 0],
-                                       lonlat[i, 1])
+                                       lonlat[i, 1],
+                                       lonlat[i, 0])
                     field[:, l, i, :] = vector_h[:, i, l, :] + \
                         (vector_v[:, i, l]*normal.reshape((3, 1))).T
                     # field[:, l, i, 0, :] = (0.0, 0.0, 0.0)
@@ -360,12 +330,12 @@ class simdataset:
             for l in range(self.num_levels-1):
                 for i in range(self.num_points):
                     normal = spherical(1.0,
-                                       lonlat[i, 0],
-                                       lonlat[i, 1])
+                                       lonlat[i, 1],
+                                       lonlat[i, 0])
                     r = radii[l]
                     vertex = spherical(r,
-                                       lonlat[i, 0],
-                                       lonlat[i, 1])
+                                       lonlat[i, 1],
+                                       lonlat[i, 0])
                     field[:, l, i, :] = vector_h[:, i, l, :]
 
                     # field[:, l, i, 0, :] = (0.0, 0.0, 0.0)

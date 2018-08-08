@@ -78,8 +78,8 @@ class VectorFieldPainter(BasePainter):
         r = 1.0
         for i in range(vertices.shape[0]):
             vertices[i, :] = spherical(r,
-                                       lonlat[i, 0],
-                                       lonlat[i, 1])
+                                       lonlat[i, 1],
+                                       lonlat[i, 0])
 
         # build VAOs for all input data
         self.vao_list = []

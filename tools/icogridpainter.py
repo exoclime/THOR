@@ -75,18 +75,21 @@ void main(void)
 
    gs_out.fcolor = gs_in[0].colour;
 
-   gs_out.dist = vec3(area/length(v0),0,0);
+   //gs_out.dist = vec3(area/length(v0),0,0);
+   gs_out.dist = vec3(1.0,0,0);
    gs_out.val = gs_in[0].val;
    gl_Position = 1.5*gl_in[0].gl_Position;
    
    EmitVertex();
    gs_out.fcolor = gs_in[1].colour;
-   gs_out.dist = vec3(0,area/length(v1),0);
+//   gs_out.dist = vec3(0,area/length(v1),0);
+   gs_out.dist = vec3(0,1.0,0);
    gs_out.val = gs_in[1].val;
    gl_Position = gl_in[1].gl_Position;
    EmitVertex();
    gs_out.fcolor = gs_in[2].colour;
-   gs_out.dist = vec3(0,0,area/length(v2));
+//   gs_out.dist = vec3(0,0,area/length(v2));
+   gs_out.dist = vec3(0,0,1.0);
    gs_out.val = gs_in[2].val;
    gl_Position = gl_in[2].gl_Position;
    EmitVertex();
@@ -182,7 +185,7 @@ void main() {
    if (nearD < wire_limit)
       frag_colour = vec4(0.1, 0.1, 0.1, 1.0 );
    else
-      frag_colour = vec4(H_to_RGB(fs_in.val), 1.0);
+        frag_colour = vec4(H_to_RGB(fs_in.val), 1.0);
 //      frag_colour = vec4(colormap(fs_in.val), 1.0);
       //frag_colour = vec4(fs_in.fcolor, 1.0);
       //frag_colour = vec4(1.0,0.0,0.0, 1.0);
@@ -666,9 +669,11 @@ class IcoGridPainter(BasePainter):
 
         r = 1.0
         for i in range(vertices.shape[0]):
+            # spherical -> theta vertical mvt, declination-> latitude
+            # -> phi -> horizontal mvt, azimuth -> longitude
             vertices[i, :] = spherical(r,
-                                       lonlat[i, 0],
-                                       lonlat[i, 1])
+                                       lonlat[i, 1],
+                                       lonlat[i, 0])
 
         # build VAOs for all input data
         self.vao_list = []
