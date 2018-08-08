@@ -185,9 +185,9 @@ void main() {
    if (nearD < wire_limit)
       frag_colour = vec4(0.1, 0.1, 0.1, 1.0 );
    else
-        frag_colour = vec4(H_to_RGB(fs_in.val), 1.0);
+        //frag_colour = vec4(H_to_RGB(fs_in.val), 1.0);
 //      frag_colour = vec4(colormap(fs_in.val), 1.0);
-      //frag_colour = vec4(fs_in.fcolor, 1.0);
+      frag_colour = vec4(fs_in.fcolor, 1.0);
       //frag_colour = vec4(1.0,0.0,0.0, 1.0);
       //                                   frag_colour = (edgeIntensity * vec4( 0.1, 0.1, 0.1, 1.0 )) +
       //                                                 (1.0-edgeIntensity)*vec4(colour, 1.0);

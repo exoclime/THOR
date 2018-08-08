@@ -447,14 +447,14 @@ int main ()
         // level 3 grid
         Icogrid Grid(spring_dynamics , // Spring dynamics option
                      spring_beta     , // Parameter beta for spring dynamics 
-                     4               , // Horizontal resolution level
+                     6               , // Horizontal resolution level
                      32              , // Number of vertical layers
                      10              , 
                      6371000.0       , // Planet radius
                      36000.0         ,
                      sponge);// Top of the model's domain
 
-        string output_dir = "./gen/results_res_4/";
+        string output_dir = "./gen/results_res_6/";
 
         
          XPlanet Planet;
@@ -623,8 +623,8 @@ int main ()
 //              Momentum [kg/m3 m/s]
                  double phase = lev/double(Grid.nv)*2.0*M_PI;
                  
-                 double v_theta = cos(lat + phase);
-                 double v_phi = sin(lat + phase);
+                 double v_theta = cos(4.0*lon)*cos(lat + phase);
+                 double v_phi = cos(4.0*lon)*sin(lat + phase);
                  double v_r = 0.5;
                  
 
