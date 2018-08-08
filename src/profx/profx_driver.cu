@@ -94,7 +94,7 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
       cudaDeviceSynchronize();
 
       if (shrink_sponge == true) {
-        if (nstep*time_step >= t_shrink) {
+        if (nstep*time_step >= t_shrink*86400) {
           ns_sponge = 1.0 - 0.5*(1.0-ns_sponge);
           shrink_sponge = false;
         }

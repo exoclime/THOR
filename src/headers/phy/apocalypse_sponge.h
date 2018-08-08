@@ -70,7 +70,7 @@ __global__ void sponge_layer (double * M_d             ,
 //
 
 	double n;
-	double ns = 1.0 - nsi;
+	double ns = nsi;
 	double ztop = Altitudeh_d[nv];
 	double u,v, w;
 	double du,dv,dw;

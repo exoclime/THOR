@@ -70,8 +70,10 @@ initial = wasp43_sponge2/esp_output_Wasp43b_re.h5
 SpongeLayer = true
 # latitude rings
 nlat = 20
-ns_sponge = 0.5
+ns_sponge = 0.75
 Rv_sponge = 1e-5
+shrink_sponge = true
+t_shrink = 1
 
 # Benchmark test
 # Held-Suarez test for Earth == 1
@@ -87,7 +89,7 @@ n_out = 100
 
 # output directory (relative to current working directory)
 # defaults to 'results'
-results_path = wasp43_spngtest
+results_path = wasp43_shrinktest
 
 Tstar = 4520
 planet_star_dist = 0.015
