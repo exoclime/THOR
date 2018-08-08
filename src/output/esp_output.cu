@@ -46,9 +46,12 @@
 
 #include <stdio.h>              
 #include <stdlib.h>             
-#include <string.h>             
-#include "../headers/esp.h"
+#include <string>             
+#include "esp.h"
 #include "hdf5.h"
+#include "storage.h"
+
+
 
 
 __host__ void ESP::CopyToHost(){
@@ -63,6 +66,7 @@ __host__ void ESP::CopyToHost(){
 }
 
 __host__ void ESP::Output(int    ntstep         , // Number of integration steps
+                          int    fidx           , // Index of output file
                           double Cp             , // Specific heat capacities [J/(Kg K)]
                           double Rd             , // Gas constant [J/(Kg K)]
                           double Omega          , // Rotation rate [s-1]
@@ -72,7 +76,8 @@ __host__ void ESP::Output(int    ntstep         , // Number of integration steps
                           double Top_altitude   , // Top of the model's domain [m]
                           double A              , // Planet radius [m]
                           char  *simulation_ID  , // Planet ID
-                          double simulation_time){// Option for deep atmosphere
+                          double simulation_time, // Option for deep atmosphere
+                          const std::string & output_dir){
 
 //
 //  Description: Model output.
@@ -88,7 +93,7 @@ __host__ void ESP::Output(int    ntstep         , // Number of integration steps
           
 //  GRID OUTPUT
     if(ntstep == 0){           
-       sprintf(FILE_NAME1, "results/esp_output_grid_%s.h5", simulation_ID);
+        sprintf(FILE_NAME1, "%s/esp_output_grid_%s.h5", output_dir.c_str(), simulation_ID);
 
 //      Create a new file using default properties. 
         file_id = H5Fcreate(FILE_NAME1, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);  
@@ -225,162 +230,45 @@ __host__ void ESP::Output(int    ntstep         , // Number of integration steps
   
 //  PLANET
     if(ntstep == 0){           
-        sprintf(FILE_NAME1, "results/esp_output_%s.h5", simulation_ID);
-        file_id = H5Fcreate(FILE_NAME1, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);    
-                   
-        double A_a[]            = {A           };
-        double Rd_a[]           = {Rd          };
-        double Omega_a[]        = {Omega       };
-        double Gravit_a[]       = {Gravit      };
-        double Mmol_a[]         = {Mmol        };
-        double P_Ref_a[]        = {P_Ref       };
-        double Top_altitude_a[] = {Top_altitude};
-        double Cp_a[]           = {Cp          };
+        sprintf(FILE_NAME1, "%s/esp_output_planet_%s.h5", output_dir.c_str(), simulation_ID);
+        file_id = H5Fcreate(FILE_NAME1, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 
-//      A  
-        dims[0] = 1; 
-        dataspace_id = H5Screate_simple(1, dims, NULL);
-        dataset_id = H5Dcreate2(file_id, "/A", H5T_IEEE_F64LE, dataspace_id, 
-                                H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-        H5Dwrite(dataset_id, H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, A_a);    
-        H5Tset_size(stringType, strlen("Planet radius"));
-        att    = H5Acreate(dataset_id, "Variable", stringType, stringSpace, H5P_DEFAULT, H5P_DEFAULT);
-        H5Awrite(att, stringType, "Planet radius");
-        H5Aclose(att);        
-        H5Tset_size(stringType, strlen("m"));
-        att    = H5Acreate(dataset_id, "units", stringType, stringSpace, H5P_DEFAULT, H5P_DEFAULT);
-        H5Awrite(att, stringType, "m");
-        H5Dclose(dataset_id);
-        H5Aclose(att);
-        H5Sclose(dataspace_id);
-        
-//      Rd  
-        dims[0] = 1; 
-        dataspace_id = H5Screate_simple(1, dims, NULL);
-        dataset_id = H5Dcreate2(file_id, "/Rd", H5T_IEEE_F64LE, dataspace_id, 
-                                H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-        H5Dwrite(dataset_id, H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, Rd_a);    
-        H5Tset_size(stringType, strlen("Gas constant"));
-        att    = H5Acreate(dataset_id, "Variable", stringType, stringSpace, H5P_DEFAULT, H5P_DEFAULT);
-        H5Awrite(att, stringType, "Gas constant");
-        H5Aclose(att);            
-        H5Tset_size(stringType, strlen("J/(Kg K)"));
-        att    = H5Acreate(dataset_id, "units", stringType, stringSpace, H5P_DEFAULT, H5P_DEFAULT);
-        H5Awrite(att, stringType, "J/(Kg K)");
-        H5Dclose(dataset_id);
-        H5Aclose(att);
-        H5Sclose(dataspace_id);
-        
-//      Omega  
-        dims[0] = 1; 
-        dataspace_id = H5Screate_simple(1, dims, NULL);
-        dataset_id = H5Dcreate2(file_id, "/Omega", H5T_IEEE_F64LE, dataspace_id, 
-                                H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-        H5Dwrite(dataset_id, H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, Omega_a);    
-        H5Tset_size(stringType, strlen("Rotation rate"));
-        att    = H5Acreate(dataset_id, "Variable", stringType, stringSpace, H5P_DEFAULT, H5P_DEFAULT);
-        H5Awrite(att, stringType, "Rotation rate");
-        H5Aclose(att);            
-        H5Tset_size(stringType, strlen("1/s"));
-        att    = H5Acreate(dataset_id, "units", stringType, stringSpace, H5P_DEFAULT, H5P_DEFAULT);
-        H5Awrite(att, stringType, "1/s");
-        H5Dclose(dataset_id);
-        H5Aclose(att);
-        H5Sclose(dataspace_id);
-        
-//      Gravit  
-        dims[0] = 1; 
-        dataspace_id = H5Screate_simple(1, dims, NULL);
-        dataset_id = H5Dcreate2(file_id, "/Gravit", H5T_IEEE_F64LE, dataspace_id, 
-                                H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-        H5Dwrite(dataset_id, H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, Gravit_a);    
-        H5Tset_size(stringType, strlen("Surface gravity"));
-        att    = H5Acreate(dataset_id, "Variable", stringType, stringSpace, H5P_DEFAULT, H5P_DEFAULT);
-        H5Awrite(att, stringType, "Surface gravity");
-        H5Aclose(att);            
-        H5Tset_size(stringType, strlen("m/s^2"));
-        att    = H5Acreate(dataset_id, "units", stringType, stringSpace, H5P_DEFAULT, H5P_DEFAULT);
-        H5Awrite(att, stringType, "m/s^2");
-        H5Dclose(dataset_id);
-        H5Aclose(att);
-        H5Sclose(dataspace_id);
-        
-//      Mmol  
-        dims[0] = 1; 
-        dataspace_id = H5Screate_simple(1, dims, NULL);
-        dataset_id = H5Dcreate2(file_id, "/Mmol", H5T_IEEE_F64LE, dataspace_id, 
-                                H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-        H5Dwrite(dataset_id, H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, Mmol_a);    
-        H5Tset_size(stringType, strlen("Mean molecular mass of dry air"));
-        att    = H5Acreate(dataset_id, "Variable", stringType, stringSpace, H5P_DEFAULT, H5P_DEFAULT);
-        H5Awrite(att, stringType, "Mean molecular mass of dry air");
-        H5Aclose(att);            
-        H5Tset_size(stringType, strlen("kg"));
-        att    = H5Acreate(dataset_id, "units", stringType, stringSpace, H5P_DEFAULT, H5P_DEFAULT);
-        H5Awrite(att, stringType, "kg");
-        H5Dclose(dataset_id);
-        H5Aclose(att);
-        H5Sclose(dataspace_id);
-        
-//      P_Ref  
-        dims[0] = 1; 
-        dataspace_id = H5Screate_simple(1, dims, NULL);
-        dataset_id = H5Dcreate2(file_id, "/P_Ref", H5T_IEEE_F64LE, dataspace_id, 
-                                H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-        H5Dwrite(dataset_id, H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, P_Ref_a);
-        H5Tset_size(stringType, strlen("Reference pressure"));
-        att    = H5Acreate(dataset_id, "Variable", stringType, stringSpace, H5P_DEFAULT, H5P_DEFAULT);
-        H5Awrite(att, stringType, "Reference pressure");
-        H5Aclose(att);            
-        H5Tset_size(stringType, strlen("Pa"));
-        att    = H5Acreate(dataset_id, "units", stringType, stringSpace, H5P_DEFAULT, H5P_DEFAULT);
-        H5Awrite(att, stringType, "Pa");
-        H5Dclose(dataset_id);
-        H5Aclose(att);
-        H5Sclose(dataspace_id);
-        
-//      Top_altitude 
-        dims[0] = 1; 
-        dataspace_id = H5Screate_simple(1, dims, NULL);
-        dataset_id = H5Dcreate2(file_id, "/Top_altitude", H5T_IEEE_F64LE, dataspace_id, 
-                                H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-        H5Dwrite(dataset_id, H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, Top_altitude_a);    
-        H5Tset_size(stringType, strlen("Top of the model's domain"));
-        att    = H5Acreate(dataset_id, "Variable", stringType, stringSpace, H5P_DEFAULT, H5P_DEFAULT);
-        H5Awrite(att, stringType, "Top of the model's domain");
-        H5Aclose(att);        
-        H5Tset_size(stringType, strlen("m"));
-        att    = H5Acreate(dataset_id, "units", stringType, stringSpace, H5P_DEFAULT, H5P_DEFAULT);
-        H5Awrite(att, stringType, "m");
-        H5Dclose(dataset_id);
-        H5Aclose(att);
-        H5Sclose(dataspace_id);
-        
-//      CP  
-        dims[0] = 1; 
-        dataspace_id = H5Screate_simple(1, dims, NULL);
-        dataset_id = H5Dcreate2(file_id, "/Cp", H5T_IEEE_F64LE, dataspace_id, 
-                                H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-        H5Dwrite(dataset_id, H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, Cp_a);    
-        H5Tset_size(stringType, strlen("Specific heat capacity"));
-        att    = H5Acreate(dataset_id, "Variable", stringType, stringSpace, H5P_DEFAULT, H5P_DEFAULT);
-        H5Awrite(att, stringType, "Specific heat capacity");
-        H5Aclose(att);        
-        H5Tset_size(stringType, strlen("J/(Kg K)"));
-        att    = H5Acreate(dataset_id, "units", stringType, stringSpace, H5P_DEFAULT, H5P_DEFAULT);
-        H5Awrite(att, stringType, "J/(Kg K)");
-        H5Dclose(dataset_id);
-        H5Aclose(att);
-        H5Sclose(dataspace_id);    
+        // glevel
+        write_double_value_to_h5file(file_id, "/glevel", glevel, "Horizontal subdivision level", "-");
+        // vlevel
+        write_double_value_to_h5file(file_id, "/vlevel", nv, "Vertical subdivision level", "-");
+        // spring_dynamics
+        write_double_value_to_h5file(file_id, "/spring_dynamics", spring_dynamics?1.0:0.0, "Spring dynamics", "-");
+        // spring beta
+        write_double_value_to_h5file(file_id, "/spring_beta", spring_beta, "Spring Beta", "-");        
+        //      A
+        write_double_value_to_h5file(file_id, "/A", A, "Planet radius", "m");        
+        //      Rd
+        write_double_value_to_h5file(file_id, "/Rd", Rd, "Gas constant", "J/(Kg K)");
+        //      Omega
+        write_double_value_to_h5file(file_id, "/Omega", Omega, "Rotation rate", "1/s");
+        //      Gravit
+        write_double_value_to_h5file(file_id, "/Gravit", Gravit,"Surface gravity" , "m/s^2");  
+        //      Mmol
+        write_double_value_to_h5file(file_id, "/Mmol", Mmol,"Mean molecular mass of dry air" , "kg");        
+        //      P_Ref
+        write_double_value_to_h5file(file_id, "/P_Ref", P_Ref, "Reference pressure","Pa" );
+        //      Top_altitude
+        write_double_value_to_h5file(file_id, "/Top_altitude", Top_altitude, "Top of the model's domain", "m");
+        //      CP
+        write_double_value_to_h5file(file_id, "/Cp", Cp, "Specific heat capacity", "J/(Kg K)");  
             
         H5Fflush(file_id, H5F_SCOPE_LOCAL);
         H5Fclose(file_id);
     }       
        
 //  ESP OUTPUT
-    sprintf(FILE_NAME1, "results/esp_output_%s_%d.h5", simulation_ID, ntstep);
+    sprintf(FILE_NAME1, "%s/esp_output_%s_%d.h5", output_dir.c_str(), simulation_ID, fidx);
     file_id = H5Fcreate(FILE_NAME1, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
-       
+
+    // step index
+    write_int_value_to_h5file(file_id, "/nstep", ntstep, "Step number", "-" );
+    
 //  Simulation time
     dims[0] = 1; 
     double simulation_time_a[]           = {simulation_time};

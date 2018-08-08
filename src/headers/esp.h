@@ -47,6 +47,13 @@
 #include <stdlib.h>
 #include <math.h>
 
+#include <string>
+#include "debug.h"
+
+
+
+
+
 class ESP{
 
 public:
@@ -57,10 +64,14 @@ public:
     const int nvi         ;
     const int nl_region   ;
     const int nr          ;
+    const int nlat        ;
+    const int glevel      ;
+    const bool spring_dynamics;
+    const double spring_beta;
 
     // step counter for benchmark logging
     int current_step;
-    
+
 ///////////////////////////
 //  Host
     int *point_local_h    ;
@@ -92,6 +103,10 @@ public:
     double *Kdhz_h        ;
     double *Kdh4_h        ;
     bool    check_h       ;
+
+    int *zonal_mean_tab_h ;
+    double Rv_sponge      ;
+    double ns_sponge      ;
 ///////////////////////////
 //  Device
     int *point_local_d    ;
@@ -164,44 +179,95 @@ public:
     double *diff_d        ;
     double *divg_Mh_d     ;
     bool   *check_d       ;
+
+    double *vbar_d        ;
+    int *zonal_mean_tab_d ;
+//  Arrays used in RT code
+    double *fnet_up_d     ;
+    double *fnet_dn_d     ;
+    double *tau_d         ;
+
+//  Input values used in RT
+    double Tstar          ;
+    double planet_star_dist;      // Planet-star distance [au]
+    double radius_star    ;      // Star radius [Rsun]
+    double diff_fac       ;        // Diffusivity factor: 0.5-1.0
+    double Tlow           ;        // Lower boundary temperature: upward flux coming from the planet's interior
+    double albedo         ;       // Bond albedo
+    double tausw          ;      // Absorption coefficient for the shortwaves
+    double taulw          ;
+    double resc_flx       ;
+    double incflx         ;
+
+//  These arrays are for temporary usage in RT code
+    double *dtemp         ;
+    double *phtemp        ;
+    double *ttemp         ;
+    double *thtemp        ;
+
 ///////////////////////////
 
 //  Functions
-    ESP(int *   ,
-        int *   ,
-        double *,
-        double *,
-        double *,
-        double *,
-        double *,
-        double *,
-        double *,
-        double *,
-        double *,
-        double *,
-        double *,
-        int     ,
-        int     ,
-        int     ,
-        int     ,
-        int     );
+    // Constructor, receives all grid parameters
+    ESP(int * point_local_   ,
+        int * maps_          ,
+        double * lonlat_     ,
+        double * Altitude_   ,
+        double * Altitudeh_  ,
+        double * nvecoa_     ,
+        double * nvecti_     ,
+        double * nvecte_     ,
+        double * areasT_     ,
+        double * areasTr_    ,
+        double * div_        ,
+        double * grad_       ,
+        double * func_r_     ,
+        int nl_region_       ,
+        int nr_              ,
+        int nv_              ,
+        int nvi_             ,
+        int glevel_          ,
+        bool spring_dynamics_,
+        double spring_beta_  ,
+        int nlat_            ,
+        int * zonal_mean_tab ,
+        double Rv_sponge_    ,
+        double ns_sponge_    ,
+        int point_num_       );
 
     void AllocData() ;
 
-    void InitialValues(bool  ,
-                       int   ,
-                       double,
-                       double,
-                       double,
-                       double,
-                       double,
-                       double,
-                       double,
-                       double,
-                       double,
-                       double,
-                       double,
-                       double);
+    bool InitialValues(bool rest                ,
+                       const std::string & initial_conditions_filename,
+                       const bool & continue_sim,
+                       double timestep_dyn      ,
+                       double A                 ,
+                       double Top_altitude      ,
+                       double Cp                ,
+                       double P_Ref             ,
+                       double Gravit            ,
+                       double Omega             ,
+                       double Diffc             ,
+                       double kb                ,
+                       double Tmean             ,
+                       double Mmol              ,
+                       double mu                ,
+                       double Rd                ,
+                       bool sponge              ,
+                       int TPprof               ,
+                       int hstest               ,
+                       int & nsteps             ,
+                       double & simulation_start_time,
+                       int & output_file_idx);
+
+    void RTSetup(double,
+                 double,
+                 double,
+                 double,
+                 double,
+                 double,
+                 double,
+                 double);
 
     void Thor(double,
               bool  ,
@@ -230,11 +296,13 @@ public:
                double,
                double,
                double,
-               double);
+               double,
+               bool  );
 
     void CopyToHost();
 
     void Output(int   ,
+                int   ,
                 double,
                 double,
                 double,
@@ -244,7 +312,10 @@ public:
                 double,
                 double,
                 char* ,
-                double);
+                double,
+                const std::string & output_dir);
+
+
 
     ~ESP();
 };

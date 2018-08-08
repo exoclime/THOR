@@ -67,10 +67,10 @@ __global__ void shallowHJ_hs(double *Mh_d         ,
 
 //      Parameters for the forcing and dissipation
         double sigma;
-        double sigmab = 0.7;
-        double ka     = (1.0/40.0) * (1.0/86400.0);
-        double ks     = (1.0/4.0) * (1.0/86400.0);
-        double dTy    = 300.0;
+        //double sigmab = 0.7;
+        //double ka     = (1.0/40.0) * (1.0/86400.0);
+        //double ks     = (1.0/4.0) * (1.0/86400.0);
+        double dTy    = 200.0;
         double ps, pre  ;
         double psm1;
         double lat = lonlat_d[id*2 + 1];
@@ -111,13 +111,12 @@ __global__ void shallowHJ_hs(double *Mh_d         ,
         Teq_hs=  T_vert + beta_trop * dTy * cos(lon-M_PI)*cos(lat);
 
 //      Temperature forcing constant.
-        kt_hs =  ka + (ks - ka)*max(0.0, (sigma-sigmab)/(1.0-sigmab))*
-                 pow(cos(lat), 4.0);
+        kt_hs =  1/(1.5e5);
 
 //      Momentum dissipation constant.
         kv_hs = 0.0;  //no boundary layer friction
 
-//      Update momenta
+//      Update momentasigmab
         for(int k = 0; k < 3; k++) Mh_d[id*3*nv + lev*3 + k] = Mh_d[id*3*nv + lev*3 + k]/(1.0 + kv_hs*time_step);;
 //      Update temperature
         temperature_d[id*nv + lev] -= kt_hs * time_step * (temperature_d[id*nv + lev] - Teq_hs);

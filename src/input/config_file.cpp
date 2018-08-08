@@ -42,11 +42,11 @@
 ////////////////////////////////////////////////////////////////////////
 #include "config_file.h"
 
-#include <regex>
 #include <iomanip>
 #include <fstream>
 using namespace std;
 
+#include "parser_helpers.h"
 
 
 
@@ -86,58 +86,58 @@ bool config_file::parse_config(basic_istream<char> & config)
 
 
     // read input line by line
-    regex comment_regex("^[[:blank:]]?#.*$");
-    regex empty_line_regex("^[[:blank:]]*$");
-    regex key_value_pair_regex("^[[:blank:]]*([A-Za-z0-9_]+)[[:blank:]]*="
-                               "[[:blank:]]*(([[:alnum:]]|[[:punct:]])+)[[:blank:]]*(#.*)?$");
+   
+    bool parse_success = true;
+    
+    
     
     int cnt = 1;
     for (std::string line; std::getline(config, line); ) {
 
         // cout << left << "line("<<setw(4)<<right<<cnt<<"): [" << line << "]" << setw(45 - line.length()) << " ";
         
-        std::smatch match;
         
-        if (regex_match(line, match, empty_line_regex))
+        string key;
+        string value;
+
+        
+        if (is_empty_line(line))
         {
             // cout << "empty line" << endl;
         }
-        else if (regex_match(line, match, comment_regex))
+        else if (is_comment_line(line))
         {
             // cout << "comment"<<endl;
         }
-        else if (regex_match(line, match, key_value_pair_regex))
+        else if (is_key_value_pair(line, key, value) )
         {
             // cout << "key value pair matched: (" << match[1] << ":" << match[2] <<")"<< endl;
-
-            string key(match[1]);
-            string value(match[2]);
-
             auto && it = config_vars.find(key);
             if (it != config_vars.end())
             {
                 bool parsed = it->second->parse(value);
                 if (!parsed)
                 {
-                     cout << "parsing of value ["<<value<<"] failed for key ["<<key<<"] "<<endl;                    
+                     cout << "parsing of value ["<<value<<"] failed for key ["<<key<<"] "<<endl;
+                     parse_success &= false;
                 }                
             }
             else
             {
                 cout << "config file key ["<< key << "] does not exist" << endl;
-                // return false;                
+                parse_success &= false;
+
             }
         }
         else
         {
-            cout << "error in config file at line " << cnt << endl;
-            
-            //return false;
+            cout << "error in config file at line " << cnt << " :\t [" << line << "]" << endl;
+            parse_success &= false;
         }
         cnt++;     
     }
     
-    return true;
+    return parse_success;
     
 }
     

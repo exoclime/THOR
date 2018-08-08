@@ -5,10 +5,10 @@ config_version = 1
 # earth model
 
 # number of steps
-num_steps = 10
+num_steps = 103680
 
 # length of timesteps imn seconds
-timestep = 1800
+timestep = 1000
 
 # keys to add
 # TODO: output_dir # relative to working directory
@@ -30,18 +30,18 @@ Rd = 287.0
 Cp = 1005.0
 # Mean atmospheric temperature [K]
 Tmean = 300.0
-# Reference surface pressure [Pa] 
+# Reference surface pressure [Pa]
 P_ref = 100000.0
 # Altitude of the top of the model domain [m]
 Top_altitude = 36000.0
 # Strength of diffusion
-Diffc = 0.007
+Diffc = 0.0048
 
 # grid
 # Spring dynamics
 spring_dynamics = true
 # Horizontal resolution level.
-glevel = 4
+glevel = 5
 # Parameter beta for spring dynamics
 spring_beta = 1.15
 # Number of vertical layers
@@ -57,9 +57,15 @@ DivDampP =    true
 # Non-hydrostatic parameter
 NonHydro = true
 # Deep atmosphere
-DeepModel = true    
-# Initial conditions 
+DeepModel = true
+# Initial conditions
 rest = true
+
+# initial conditions file, used if rest is set to false
+# (path relative to current working directory)
+# defaults to 'ifile/esp.initial.h5'
+initial = earth_hs/esp_output_Earth_3.h5
+
 
 # Benchmark test
 # Held-Suarez test for Earth == 1
@@ -71,7 +77,11 @@ hstest = 1
 
 # output
 # output every n steps
-n_out = 200
+n_out = 2000
+
+# output directory (relative to current working directory)
+# defaults to 'results'
+results_path = earth_hs
 
 # GPU ID number
-GPU_ID_N = 0 
+GPU_ID_N = 0

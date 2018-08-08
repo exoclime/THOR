@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import numpy as np
 import matplotlib.pyplot as plt
 import hamarr as ham
@@ -7,7 +7,9 @@ import argparse
 import h5py
 from imp import reload
 reload(ham)
+import time
 
+first = time.time()
 ###########################################################################
 #
 # Options
@@ -35,8 +37,6 @@ reload(ham)
 #         2D Map Longitude Vs Latitude.
 ###########################################################################
 
-#nview    = np.int(sys.argv[1])   # type of plot
-
 parser = argparse.ArgumentParser()
 parser.add_argument('pview',metavar='nview',nargs='*',help='Type of plot to make (integer)')
 parser.add_argument("-f","--file",nargs=1,default=['results'],help='Results folder to use for plotting')
@@ -44,10 +44,11 @@ parser.add_argument("-s","--simulation_ID",nargs=1,default=['Earth'],help='Name 
 parser.add_argument("-i","--initial_file",nargs=1,default=[10],type=int,help='Initial file id number (integer)')
 parser.add_argument("-l","--last_file",nargs=1,default=[10],type=int,help='Last file id number (integer)')
 parser.add_argument("-p","--pressure_lev",nargs=1,default=[2.5e4],help='Pressure level to plot in temperature/velocity/vorticity field')
+parser.add_argument("-pmin","--pressure_min",nargs=1,default=['default'],help='Lowest pressure value to plot in vertical plots')
 args = parser.parse_args()
 pview = args.pview
 
-valid = ['uver','Tver','Tulev','PTver','ulev','PVver','PVlev','vring','pause']
+valid = ['uver','Tver','Tulev','PTver','ulev','PVver','PVlev','vring','TP','RVlev','pause']
 if 'all' in pview:
     pview = valid
 else:
@@ -64,29 +65,37 @@ if ntsi > nts:
 simulation_ID = args.simulation_ID[0]
 resultsf = args.file[0]
 
+outall = ham.GetOutput(resultsf,simulation_ID,ntsi,nts)
+
 ##########
 # Planet #
 ##########
 
-input = ham.input(resultsf,simulation_ID)
+input = outall.input
 
 ########
 # Grid #
 ########
 
-grid = ham.grid(resultsf,simulation_ID)
+grid = outall.grid
 
 ###############
 # Diagnostics #
 ###############
 
-output = ham.output(resultsf,simulation_ID,ntsi,nts,grid)
+output = outall.output
 
 #########
 # Plots #
 #########
 # Sigma values for the plotting
-sigmaref = np.array([1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.05])
+if (args.pressure_min[0]=='default'):
+    args.pressure_min[0] = np.max(output.Pressure[:,grid.nv-1,:])
+
+if np.max(input.P_Ref)/np.float(args.pressure_min[0]) > 100:
+    sigmaref = np.logspace(np.log10(input.P_Ref),np.log10(np.float(args.pressure_min[0])),20)/input.P_Ref
+else:
+    sigmaref = np.linspace(input.P_Ref,np.float(args.pressure_min[0]),20)/input.P_Ref
 
 if 'pause' in pview:
     import pdb; pdb.set_trace()
@@ -111,9 +120,17 @@ if 'PVlev' in pview:
     PR_LV = np.float(args.pressure_lev[0])
     ham.potential_vort_lev(input,grid,output,PR_LV)
 if 'PVver' in pview:
-    sigmaref = np.arange(1,0,-0.05)
+    #sigmaref = np.arange(1,0,-0.05)
     ham.potential_vort_vert(input,grid,output,sigmaref)
-if 'vring' in pview:
-    #still in development...
-    sigmaref = np.arange(1,0,-0.05)
-    ham.vring(input,grid,output,sigmaref)
+if 'RVlev' in pview:
+    PR_LV = np.float(args.pressure_lev[0])
+    ham.rela_vort_lev(input,grid,output,PR_LV)
+# if 'vring' in pview:
+#     #still in development...
+#     sigmaref = np.arange(1,0,-0.05)
+#     ham.vring(input,grid,output,sigmaref)
+if 'TP' in pview:
+    ham.TPprof(input,grid,output,sigmaref,1902)
+
+last = time.time()
+print(last-first)

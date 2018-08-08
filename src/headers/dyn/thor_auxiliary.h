@@ -16,22 +16,22 @@
 //     <http://www.gnu.org/licenses/>.
 // ==============================================================================
 //
-// 
+//
 //
 //
 // Description: Contains the subroutines that compute: - Temperature, enthalpy, potential temperature and effective gravity.
-//   
+//
 //
 // Method: -
 //
 // Known limitations: None
-//   
+//
 // Known issues: None
-//   
 //
-// If you use this code please cite the following reference: 
 //
-//       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016  
+// If you use this code please cite the following reference:
+//
+//       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016
 //
 // Current Code Owner: Joao Mendonca, EEG. joao.mendonca@csh.unibe.ch
 //
@@ -43,28 +43,28 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
-__global__ void Compute_Temperature_H_Pt_Geff(double * temperature_d, 
-                                              double * pressure_d   , 
-                                              double * Rho_d        , 
-                                              double * h_d          , 
-                                              double * hh_d         , 
-                                              double * pt_d         , 
-                                              double * pth_d        , 
-                                              double * gtil_d       , 
-                                              double * gtilh_d      , 
-                                              double * Wh_d         , 
-                                              double   P_Ref        , 
-                                              double   Gravit       , 
-                                              double   Cp           , 
-                                              double   Rd           , 
-                                              double * Altitude_d   , 
-                                              double * Altitudeh_d  , 
-                                              int      num          , 
+__global__ void Compute_Temperature_H_Pt_Geff(double * temperature_d,
+                                              double * pressure_d   ,
+                                              double * Rho_d        ,
+                                              double * h_d          ,
+                                              double * hh_d         ,
+                                              double * pt_d         ,
+                                              double * pth_d        ,
+                                              double * gtil_d       ,
+                                              double * gtilh_d      ,
+                                              double * Wh_d         ,
+                                              double   P_Ref        ,
+                                              double   Gravit       ,
+                                              double   Cp           ,
+                                              double   Rd           ,
+                                              double * Altitude_d   ,
+                                              double * Altitudeh_d  ,
+                                              int      num          ,
                                               int      nv           ){
 
 //
 //  Description: Computes temperature, internal energy, potential temperature and effective gravity.
-//  
+//
 //
 //  Input: density, vertical momentum, heat capacity, gravity, reference pressure, gas constant and altitudes.
 //
@@ -116,6 +116,7 @@ __global__ void Compute_Temperature_H_Pt_Geff(double * temperature_d,
                 pl = pressure_d[id * nv + 1] - rho * Gravit * (-alt - Altitude_d[1]);
                 rhoh = 0.5*(pressure + pl) / (Rd*temperature);
                 pth_d[id * (nv+1)] = (P_Ref / (Rd*rhoh))*pow(0.5*(pressure + pl) / P_Ref, CvoCp);
+
                 gtilh_d[id * (nv + 1)] = 0.0;
                 gtilh = 0.0;
             }
@@ -123,6 +124,7 @@ __global__ void Compute_Temperature_H_Pt_Geff(double * temperature_d,
                 hh_d[id*(nv + 1) + nv] = h;
 
                 pp = pressure_d[id*nv + nv - 2] - rho * Gravit * (2 * Altitudeh_d[nv] - alt - Altitude_d[nv - 2]);
+                if (pp<0) pp = 0;
                 rhoh = 0.5*(pressure + pp) / (Rd*temperature);
                 pth_d[id*(nv + 1) + nv] = (P_Ref / (Rd*rhoh))*pow(0.5*(pressure + pp) / P_Ref, CvoCp);
 
@@ -169,7 +171,12 @@ __global__ void Compute_Temperature_H_Pt_Geff(double * temperature_d,
                 gtil_d[id * nv + lev-1] = gtilh * intt + gtilht * intl;
                 gtilh = gtilht;
             }
+            if (isnan(pth_d[id*(nv+1)+lev])){
+              printf("%d, %d\n",id,lev);
+            }
         }
+
+
         for (int lev = 0; lev < nv + 1; lev++){
             if (lev == 0) {
                 dz = 2.0*Altitude_d[0];
@@ -208,23 +215,23 @@ __global__ void Compute_Temperature_H_Pt_Geff(double * temperature_d,
     }
 }
 
-__global__ void UpdateRK(double * M_d        , 
-                         double * Mk_d       , 
-                         double * Mi_d       , 
-                         double * Wh_d       , 
-                         double * Whk_d      , 
-                         double * Whi_d      , 
-                         double * W_d        , 
-                         double * Rho_d      , 
-                         double * Rhok_d     , 
-                         double * Rhoi_d     , 
-                         double * pressure_d , 
-                         double * pressurek_d, 
-                         double * pressurei_d, 
-                         double * func_r_d   , 
-                         double * Altitude_d , 
-                         double * Altitudeh_d, 
-                         int num             , 
+__global__ void UpdateRK(double * M_d        ,
+                         double * Mk_d       ,
+                         double * Mi_d       ,
+                         double * Wh_d       ,
+                         double * Whk_d      ,
+                         double * Whi_d      ,
+                         double * W_d        ,
+                         double * Rho_d      ,
+                         double * Rhok_d     ,
+                         double * Rhoi_d     ,
+                         double * pressure_d ,
+                         double * pressurek_d,
+                         double * pressurei_d,
+                         double * func_r_d   ,
+                         double * Altitude_d ,
+                         double * Altitudeh_d,
+                         int num             ,
                          int nv              ){
 
 //
@@ -302,24 +309,24 @@ __global__ void UpdateRK(double * M_d        ,
     }
 }
 
-__global__ void UpdateRK2(double * M_d        , 
-                          double * Mk_d       , 
-                          double * Wh_d       , 
-                          double * Whk_d      , 
-                          double * Wk_d       , 
-                          double * Rho_d      , 
-                          double * Rhok_d     , 
-                          double * pressure_d , 
-                          double * pressurek_d, 
-                          double * func_r_d   , 
-                          double * Altitude_d , 
-                          double * Altitudeh_d, 
-                          int num             , 
+__global__ void UpdateRK2(double * M_d        ,
+                          double * Mk_d       ,
+                          double * Wh_d       ,
+                          double * Whk_d      ,
+                          double * Wk_d       ,
+                          double * Rho_d      ,
+                          double * Rhok_d     ,
+                          double * pressure_d ,
+                          double * pressurek_d,
+                          double * func_r_d   ,
+                          double * Altitude_d ,
+                          double * Altitudeh_d,
+                          int num             ,
                           int nv              ){
 
 //
 //  Description: Update arrays from the large step.
-//  
+//
 //  Input: deviations.
 //
 //  Output: diagnostics from the large time step.
@@ -362,6 +369,9 @@ __global__ void UpdateRK2(double * M_d        ,
 
 // Pressure
             pressurek_d[id * nv + lev] += pressure_d[id*nv + lev];
+            if (pressurek_d[id*nv+lev]<0) {
+              printf("%d, %d\n",id, lev);
+            }
         }
 // Wh
         for (int lev = 0; lev < nv + 1; lev++){
@@ -390,5 +400,22 @@ __global__ void UpdateRK2(double * M_d        ,
                 wht = Whk_d[id*(nv + 1) + lev + 2];
             }
         }
+    }
+}
+
+__global__ void isnan_check_thor(double *array, int width, int height, bool *check){
+
+//
+//  Description: Check for nan in the temperature array.
+//
+
+  int idx = threadIdx.x+blockDim.x*blockIdx.x;
+
+  while (idx < width){
+    for (int i = 0; i < height; i++)
+      if (isnan(array[(i*width) + idx])) {
+        *check = true;
+      }
+      idx += gridDim.x+blockDim.x;
     }
 }

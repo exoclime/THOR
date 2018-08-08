@@ -166,22 +166,27 @@ Copy that file where you'd like as an initial condition file. e.g.: "init/myplan
 2- Run 
 
 ```sh
-   $ ./bin/esp init/myplanet.thr
+   $ ./bin/esp init/myplanet.thr 
 ```
 
 3- Press enter and go grab a coffee. Or lunch.
 
 * command line arguments * 
-Positional argument: config filename
+Positional argument: config filename (e.g. init/myplanet.thr)
 
 Keyword argument:
 ```sh
- -g / --gpu_id              GPU_ID to run on
+ -g / --gpu_id <N>             GPU_ID to run on
+ -o / --output_dir <PATH>      directory to write results to
+ -i / --initial <PATH>         initial conditions HDF5 filename
 ```
+
+Keyword arguments supersede config file arguments. 
+If initial conditions path is given on the command line, it starts from there instead of from rest and ignores the 'rest' setting in the config file.
 
 ### Results
 
-* Output is written in "results" folder.
+* Output is written in "results" folder or path configured in config file or given as command line.
 * Very useful command lines to quickly explore the hdf5 files can be found in support.hdfgroup.org/HDFS/Tutor/cmdtools.html
   or type the command ">> man h5dump".
 * You can find some Matlab and Python routines to explore the results in "mjolnir" folder.

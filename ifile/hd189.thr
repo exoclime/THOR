@@ -1,0 +1,91 @@
+# config file for THOR
+# config format version
+config_version = 1
+
+# earth model
+
+# number of steps
+num_steps = 5184000
+
+# length of timesteps imn seconds
+timestep = 120
+
+# keys to add
+# TODO: output_dir # relative to working directory
+
+# planet
+# name of simulation for output files
+simulation_ID = HD189
+# Radius [m]
+radius = 79698540.0
+# Rotation rate [s-1]
+rotation_rate = 3.279E-5
+# Gravitational acceleration [m/s^2]
+gravitation = 21.4
+# Mean molecular mass of dry air [kg]
+Mmol = 28.964
+# Gas constant [J/(Kg K)]
+Rd = 3779
+# Specific heat capacities [J/(Kg K)]
+Cp = 13226.82
+# Mean atmospheric temperature [K]
+Tmean = 1200.0
+# Reference surface pressure [Pa]
+P_ref = 1000000.0
+# Altitude of the top of the model domain [m]
+Top_altitude = 2e6
+# Strength of diffusion
+Diffc = 0.009973
+
+# grid
+# Spring dynamics
+spring_dynamics = true
+# Horizontal resolution level.
+glevel = 4
+# Parameter beta for spring dynamics
+spring_beta = 1.15
+# Number of vertical layers
+vlevel = 40
+
+# diffusion
+# Hyper-diffusion
+HyDiff  =    true
+# Divergence-damping
+DivDampP =    true
+
+# Model options
+# Non-hydrostatic parameter
+NonHydro = true
+# Deep atmosphere
+DeepModel = true
+# Initial conditions
+rest = true
+
+# Spongebob
+SpongeLayer = false
+# latitude rings
+nlat = 20
+ns_sponge = 0.8
+Rv_sponge = 1e-5
+
+# Benchmark test
+# Held-Suarez test for Earth == 1
+# HS test for shallow hot Jupiter == 3
+# HS test for tidally locked Earth == 2
+# No HS test == 0
+
+hstest = 0
+
+Tstar = 4875
+planet_star_dist = 0.03099
+radius_star = 0.805
+
+# output
+# output every n steps
+n_out = 10
+results_path = hd189
+
+# GPU ID number
+GPU_ID_N = 0
+
+TPprof = 0
