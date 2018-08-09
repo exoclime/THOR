@@ -33,7 +33,7 @@ obj_tests_cmdargs := cmdargs_test.o cmdargs.o
 obj_tests_config := config_test.o config_file.o
 obj_tests_storage := storage_test.o storage.o
 obj_tests_directories := directories_test.o directories.o
-
+obj_tests_gen_init := gen_init.o storage.o grid.o planet.o
 
 
 #######################################################################
@@ -216,7 +216,7 @@ symlink: $(BINDIR)/$(OUTPUTDIR)/esp
 #	$(CC) $(arch) $(flags) $(debug_flags) -o $(BINDIR)/$(TESTDIR)/cmdargs_test $(addprefix #$(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_cmdargs))
 #endef
 
-tests: ${BINDIR}/${TESTDIR}/cmdargs_test ${BINDIR}/${TESTDIR}/config_test ${BINDIR}/${TESTDIR}/storage_test ${BINDIR}/${TESTDIR}/directories_test
+tests: ${BINDIR}/${TESTDIR}/cmdargs_test ${BINDIR}/${TESTDIR}/config_test ${BINDIR}/${TESTDIR}/storage_test ${BINDIR}/${TESTDIR}/directories_test ${BINDIR}/${TESTDIR}/gen_init
 
 $(BINDIR)/$(TESTDIR)/cmdargs_test:  $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_cmdargs)) | $(BINDIR)/${OUTPUTDIR} $(BINDIR)/$(TESTDIR) $(BINDIR) $(RESDIR)
 	@echo $(YELLOW)creating $@ $(END)
@@ -234,6 +234,9 @@ $(BINDIR)/$(TESTDIR)/storage_test:  $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_te
 	@echo $(YELLOW)creating $@ $(END)
 	$(CC) $(arch) $(flags) $(debug_flags) -o $(BINDIR)/$(TESTDIR)/storage_test $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_storage))  $(h5libdir) $(h5libs)
 
+$(BINDIR)/$(TESTDIR)/gen_init:  $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_gen_init)) | $(BINDIR)/${OUTPUTDIR} $(BINDIR)/$(TESTDIR) $(BINDIR) $(RESDIR)
+	@echo $(YELLOW)creating $@ $(END)
+	$(CC) $(arch) $(flags) $(debug_flags) -o $(BINDIR)/$(TESTDIR)/gen_init $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_gen_init))  $(h5libdir) $(h5libs)
 
 #######################################################################
 # Cleanup
@@ -252,16 +255,19 @@ clean:
 	-$(RM) $(BINDIR)/tests/storage_test
 	-$(RM) $(BINDIR)/tests/config_test
 	-$(RM) $(BINDIR)/tests/directories_test
+	-$(RM) $(BINDIR)/tests/gen_init
 	@echo $(CYAN)clean up test object files $(END)
 	-$(RM) $(addprefix $(OBJDIR)/debug/,$(obj_tests_storage))
 	-$(RM) $(addprefix $(OBJDIR)/debug/,$(obj_tests_config))
 	-$(RM) $(addprefix $(OBJDIR)/debug/,$(obj_tests_cmdargs))
 	-$(RM) $(addprefix $(OBJDIR)/debug/,$(obj_tests_directories))
+	-$(RM) $(addprefix $(OBJDIR)/debug/,$(obj_tests_gen_init))
 	@echo $(CYAN)clean up test dependencies $(END)
 	-$(RM) $(obj_tests_cmdargs:%.o=$(OBJDIR)/debug/%.d)
 	-$(RM) $(obj_tests_storage:%.o=$(OBJDIR)/debug/%.d)
 	-$(RM) $(obj_tests_config:%.o=$(OBJDIR)/debug/%.d)
 	-$(RM) $(obj_tests_directories:%.o=$(OBJDIR)/debug/%.d)
+	-$(RM) $(obj_tests_gen_init:%.o=$(OBJDIR)/debug/%.d)
 	@echo $(CYAN)clean up symlink $(END)
 	-$(RM) $(BINDIR)/esp
 	@echo $(CYAN)clean up directories $(END)
@@ -281,6 +287,7 @@ include $(obj_tests_config:%.o=$(OBJDIR)/$(OUTPUTDIR)/%.d)
 include $(obj_tests_cmdargs:%.o=$(OBJDIR)/$(OUTPUTDIR)/%.d)
 include $(obj_tests_storage:%.o=$(OBJDIR)/$(OUTPUTDIR)/%.d)
 include $(obj_tests_directories:%.o=$(OBJDIR)/$(OUTPUTDIR)/%.d)
+include $(obj_tests_gen_init:%.o=$(OBJDIR)/$(OUTPUTDIR)/%.d)
 else
 include $(obj:%.o=$(OBJDIR)/$(OUTPUTDIR)/%.d)
 endif

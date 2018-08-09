@@ -8,10 +8,14 @@ import pathlib
 import argparse
 import re
 
+from math import sqrt
+
 from PyQt5 import QtGui, QtCore, uic
-from PyQt5.QtWidgets import QMainWindow, QApplication
+from PyQt5.QtWidgets import QMainWindow, QApplication, qApp
 
 from PyQt5.QtCore import QByteArray, QIODevice, Qt, QTimer, pyqtSignal, pyqtSlot
+from simdataset import simdataset
+
 
 # argument parsing
 parser = argparse.ArgumentParser(description='THOR dataset visualisation tool')
@@ -27,97 +31,27 @@ args = parser.parse_args()
 
 folder = pathlib.Path(args.folder)
 
+#grid_dataset = "../results/grid_ref/grid_test_6_grid.h5"
 
-# read and sort all files
-datasets = folder.glob('esp_output_*_*.h5')
+#print("grid def")
+#grid = h5py.File(grid_dataset)
+# for k, v in grid.items():
+#    print(k, v)
 
-dataset_re = re.compile('esp_output_(.*)_(\d+)')
+#xyz = grid['xyz']
+#maps = grid['maps']
 
+#num_points = int(len(xyz)/3)
 
-planets = {}
+dataset = simdataset(folder)
+planets = dataset.get_planets()
+if len(planets) < 1:
+    print("no planet found in dataset")
+    exit(-1)
 
-for f in datasets:
-    match = dataset_re.match(f.stem)
-    if match is not None:
-        basename = match.group(1)
-        number = match.group(2)
-        if basename not in planets:
-            planets[basename] = {'datasets': [(number, f)]}
-        else:
-            planets[basename]['datasets'].append((number, f))
-
-for planet, values in planets.items():
-    # sort them numericaly
-    d = values['datasets']
-    values['datasets'] = [a[1] for a in sorted(d, key=lambda k:int(k[0]))]
-
-    # open grid file
-    grid = folder / ('esp_output_grid_{}.h5'.format(planet))
-    planets[planet]['grid'] = grid
-    # open plaet file
-    planet_def = folder / ('esp_output_{}.h5'.format(planet))
-    planets[planet]['def'] = planet_def
-
-
-grd = None
-neighbours = None
-for planet, files in planets.items():
-    print("Planet: ", planet)
-    print("Number of datafiles:", len(files['datasets']))
-    num_samples = len(files['datasets'])
-    print("Planet def")
-    planet_def = h5py.File(files['def'])
-    for k, v in planet_def.items():
-        print(k, v[0])
-
-    print("grid def")
-    grid = h5py.File(files['grid'])
-    for k, v in grid.items():
-        print(k, v)
-
-    num_levels = int(grid['nv'][0])
-    num_datas = 0
-    if len(files['datasets']) > 0:
-        print("datafiles def")
-        datafile0 = h5py.File(files['datasets'][0])
-        num_datas = len(datafile0['Pressure'])
-
-        for k, v in datafile0.items():
-            print(k, v)
-
-    if grd is None:
-        grd = grid['lonlat']
-        neighbours = grid['pntloc']
-    num_points = len(grd)//2
-    ground_moment = np.zeros(
-        (len(files['datasets']), num_datas//(num_levels), 3), dtype=np.float32)
-    print(ground_moment.shape)
-    for i in range(len(files['datasets'])):
-        d = h5py.File(files['datasets'][i])
-        ground_moment[i, :, :] = np.array(d['Mh']).reshape(
-            num_points, num_levels, 3)[:, 0, :]
-
-    pressure = np.zeros(
-        (len(files['datasets']), num_datas//(num_levels)), dtype=np.float32)
-
-    for i in range(len(files['datasets'])):
-        d = h5py.File(files['datasets'][i])
-        pressure[i, :] = np.array(d['Pressure']).reshape(
-            num_points, num_levels)[:, 0]
-    print(pressure.shape)
-#    for n in neighbours:
-#        print(n)
-#    print(neighbours)
-
-colors = np.zeros((num_samples, len(grid['lonlat'])//2, 3), dtype=np.float32)
-# colors[:, :, 0] = pressure/np.max(pressure)
-colors[:, :, 0] = ground_moment[:, :, 0]/np.max(ground_moment[:, :, 0])
-colors[:, :, 1] = ground_moment[:, :, 1]/np.max(ground_moment[:, :, 1])
-colors[:, :, 2] = ground_moment[:, :, 2]/np.max(ground_moment[:, :, 2])
-# for i in range(n):
-#     colors[i, :, 0] = i/n
-
-print(colors)
+dataset.select_planet(planets[0])
+dataset.select_scalar_data_type("Momentum_norm")
+dataset.select_vector_data_type("Momentum")
 
 
 class ThorVizWindow(QMainWindow):
@@ -125,13 +59,54 @@ class ThorVizWindow(QMainWindow):
         super(ThorVizWindow, self).__init__()
         uic.loadUi('VizWin.ui', self)
 
-        self.vizGL.set_grid(grd, neighbours, colors)
+        num_samples = dataset.get_num_datasets()
+        print("num datasets:", num_samples)
+        pts, lvl = dataset.get_dim()
+
+        self.animation_slider.setMinimum(0)
+        self.animation_slider.setMaximum(num_samples - 1)
+        self.animation_slider.setSingleStep(1)
+        self.animation_spinbox.setMaximum(num_samples - 1)
+
+        self.level_slider.setMinimum(0)
+        self.level_slider.setMaximum(lvl - 1)
+        self.level_slider.setSingleStep(1)
+        self.level_spinbox.setMaximum(lvl - 1)
+        self.vizGL.set_grid_data(dataset)
+        #self.vizGL.set_grid(grd, neighbours, colors, moments)
+
+        # connect menu items
+        self.actionQuit.triggered.connect(qApp.quit)
+        self.actionZero_Position.triggered.connect(self.vizGL.reset_position)
+
+        # display
+        datatypes = dataset.get_data_types()
+
+        for k, v in datatypes.items():
+            if v['type'] == 'scalar':
+                self.scalar_display_combobox.addItem(k)
+            if v['type'] == 'vector':
+                self.vector_display_combobox.addItem(k)
+
         self.show()
 
-        self.animation_slider.setMaximum(colors.shape[0])
+        # self.animation_slider.setMaximum(colors.shape[0])
 
     def set_image(self, i):
-        pass
+        self.vizGL.set_image(i)
+
+    def show_data(self, b):
+        self.animation_slider.setEnabled(b)
+
+    def select_vector_display(self, item):
+        print(item)
+        dataset.select_vector_data_type(item)
+        self.vizGL.update()
+
+    def select_scalar_display(self, item):
+        print(item)
+        dataset.select_scalar_data_type(item)
+        self.vizGL.update()
 
 
 app = QApplication([])
