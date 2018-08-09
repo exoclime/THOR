@@ -186,7 +186,8 @@ void binary_test::check_data(const string & iteration,
 #endif // BENCH_NAN_CHECK
 
 }
-
+// Check for NaNs
+// Returns true if data is ok (contains no NaNs!)
 bool binary_test::check_nan(const string & iteration,
                             const string & ref_name,
                             const vector<output_def> & data_output)
@@ -204,7 +205,8 @@ bool binary_test::check_nan(const string & iteration,
         
 
         oss << " " << def.short_name <<": " << nan;
-        out &= nan;
+        out &= !nan; // need to use binary neg, nan is true if data has NaNs, out should be true if
+                     // data is OK
         
     }
 

@@ -98,6 +98,6 @@ radius_star = 0.667
 # GPU ID number
 GPU_ID_N = 0
 
-gcm_off = true
+gcm_off = false
 
 TPprof = 1

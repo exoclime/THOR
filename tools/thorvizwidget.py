@@ -26,8 +26,10 @@ import math
 import time
 
 from shadermanager import ShaderManager
-from gridpainter import GridPainter
 from axispainter import AxisPainter
+from vectorfieldpainter import VectorFieldPainter
+from icogridpainter import IcoGridPainter
+from planet_axis_equator_painter import PlanetAxisEquatorPainter
 
 
 class ThorVizWidget(QOpenGLWidget):
@@ -43,33 +45,66 @@ class ThorVizWidget(QOpenGLWidget):
         fmt.setSwapBehavior(QSurfaceFormat.TripleBuffer)
         self.setFormat(fmt)
 
-        self.grid_painter = GridPainter()
+        self.ico_grid_painter = IcoGridPainter()
         self.axis_painter = AxisPainter()
-
-        self.m_matrixUniform = 0
+        self.field_painter = VectorFieldPainter()
+        self.axis_equator_painter = PlanetAxisEquatorPainter()
 
         self.cam_theta = 0.0
         self.cam_phi = 0.0
 
         self.cam_r = -5.0
+        self.cam_orientation = QMatrix4x4()
+        self.cam_orientation.rotate(90, 1.0, 0.0, 0.0)
 
         self.right_button_pressed = False
         self.left_button_pressed = False
+        self.mid_button_pressed = False
+
         self.image = 0
 
-    def set_grid(self, grid, neighbours, vertices_color_arrays):
-        self.grid_painter.set_grid(grid, neighbours, vertices_color_arrays)
+    def set_grid_data(self, *args):
+        self.ico_grid_painter.set_grid_data(*args)
+        self.field_painter.set_grid_data(*args)
+
+    def set_level(self, level):
+        self.ico_grid_painter.altitude = level
+        self.field_painter.altitude = level
+        self.update()
 
     def set_image(self, img):
         self.image = img
+        self.ico_grid_painter.draw_idx = self.image
+        self.field_painter.draw_idx = self.image
+        self.update()
+
+    def show_data(self, b):
+        if b:
+            self.ico_grid_painter.show_data = True
+            self.ico_grid_painter.draw_idx = self.image
+            self.field_painter.show_data = True
+            self.update()
+
+    def show_grid(self, b):
+        if b:
+            self.ico_grid_painter.show_data = False
+            self.ico_grid_painter.draw_idx = 0
+            self.field_painter.show_data = False
+            self.field_painter.draw_idx = 0
+            self.update()
+
+    def show_wireframe(self, b):
+        self.ico_grid_painter.wireframe = b
         self.update()
 
     def initialize(self):
         self.shader_manager = ShaderManager(self)
-        self.grid_painter.set_shader_manager(self.shader_manager)
+        self.ico_grid_painter.set_shader_manager(self.shader_manager)
         self.axis_painter.set_shader_manager(self.shader_manager)
+        self.field_painter.set_shader_manager(self.shader_manager)
+        self.axis_equator_painter.set_shader_manager(self.shader_manager)
         self.projection = QMatrix4x4()
-        self.projection.perspective(35.0, 1.0, -1.0, 15.0)
+        self.projection.perspective(35.0, 1.0, 0.01, 15.0)
 
     def initializeGL(self):
         print("OpenGL: " + str(gl.glGetString(gl.GL_VERSION)))
@@ -88,14 +123,16 @@ class ThorVizWidget(QOpenGLWidget):
         print("GLSL: " + str(gl.glGetString(gl.GL_SHADING_LANGUAGE_VERSION)))
 
         self.initialize()
-
-        self.grid_painter.initializeGL()
+        self.field_painter.initializeGL()
+        self.ico_grid_painter.initializeGL()
         self.axis_painter.initializeGL()
+        self.axis_equator_painter.initializeGL()
         gl.glEnable(gl.GL_DEPTH_TEST)
 
         gl.glEnable(gl.GL_BLEND)
 
         gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
+        # gl.glPolygonMode(gl.GL_FRONT_AND_BACK, gl.GL_LINE)
         self.idx = 0
 
     def paintGL(self):
@@ -105,54 +142,86 @@ class ThorVizWidget(QOpenGLWidget):
  #        gl.glLoadIdentity()
 
         self.resize()
-
-        self.shader_manager.start_paint()
+        ##############################################
+        self.shader_manager.load("icos_grid")
 
         colour = QVector4D(1.0, 1.0, 1.0, 1.0)
-        self.shader_manager.set_colour(colour)
         # view transformation
         view = QMatrix4x4()
         view.translate(0.0,  0.0, self.cam_r)
-        print(self.cam_theta, self.cam_phi, self.cam_r)
-        view.rotate(-self.cam_theta, 0.0, 1.0, 0.0)
-        view.rotate(-self.cam_phi, 1.0, 0.0, 0.0)
-        self.shader_manager.set_view(view)
+        view *= self.cam_orientation
+        self.shader_manager.set_uniform("icos_grid", "view", view)
 
         # projection transformation
-        self.shader_manager.set_projection(self.projection)
+        self.shader_manager.set_uniform(
+            "icos_grid", "projection", self.projection)
 
         model = QMatrix4x4()
-#        model.translate(-0.4, -0.8, 0.0)
-#        model.scale(0.05, 0.05, 1.0)
-        self.shader_manager.set_model(model)
+        self.shader_manager.set_uniform("icos_grid", "model", model)
 
-        self.grid_painter.paint_grid(self.image)
-        self.idx = (self.idx+1) % 3
-        self.shader_manager.end_paint()
+        self.ico_grid_painter.paint_grid()
+        self.shader_manager.release("icos_grid")
 
-        self.shader_manager.start_paint_pc()
-        model = QMatrix4x4()
-        self.shader_manager.set_model(model)
-        gl.glViewport(0, 0, self.width//10, self.height//10)
+        #################################
+        self.shader_manager.load("icos_field")
         view = QMatrix4x4()
-        view.translate(0.0,  0.0, -4.0)
-        view.rotate(self.cam_theta, 1.0, 0.0, 0.0)
-        view.rotate(self.cam_phi, 0.0, 1.0, 0.0)
+        view.translate(0.0,  0.0, self.cam_r)
+        view *= self.cam_orientation
+        colour = QVector4D(1.0, 1.0, 1.0, 1.0)
+        self.shader_manager.set_uniform("icos_field", "colour", colour)
+        # view transformation
+        self.shader_manager.set_uniform("icos_field", "view", view)
 
-        self.shader_manager.set_view_pc(view)
         # projection transformation
-
-        self.shader_manager.set_projection_pc(self.projection)
+        self.shader_manager.set_uniform(
+            "icos_field", "projection", self.projection)
 
         model = QMatrix4x4()
-#        model.translate(-0.4, -0.8, 0.0)
-#        model.scale(0.05, 0.05, 1.0)
-        self.shader_manager.set_model_pc(model)
+        self.shader_manager.set_uniform("icos_field", "model", model)
+        self.field_painter.paint_vector_field()
+        self.shader_manager.release("icos_field")
+        ############################################
+        self.shader_manager.load("axis_equator")
+        # view transformation
+        view = QMatrix4x4()
+        view.translate(0.0,  0.0, self.cam_r)
+        view *= self.cam_orientation
+        self.shader_manager.set_uniform("axis_equator", "view", view)
+
+        # projection transformation
+        self.shader_manager.set_uniform(
+            "axis_equator", "projection", self.projection)
+
+        model = QMatrix4x4()
+        self.shader_manager.set_uniform("axis_equator", "model", model)
+        self.axis_equator_painter.paint()
+
+        self.shader_manager.release("axis_equator")
+
+        ############################################
+        self.shader_manager.load("axis")
+
+        gl.glViewport(0, 0, self.width//8, self.height//8)
+        #         #view.translate(0.0,  0.0, -4.0)
+        #         #view.rotate(self.cam_theta, 1.0, 0.0, 0.0)
+        #         #view.rotate(self.cam_phi, 0.0, 1.0, 0.0)
+        view = QMatrix4x4()
+        view.translate(0.0,  0.0, self.cam_r)
+        view *= self.cam_orientation
+        self.shader_manager.set_uniform("axis", "view", view)
+        # projection transformation
+
+        self.shader_manager.set_uniform("axis", "projection", self.projection)
+
+        model = QMatrix4x4()
+        # #        model.translate(-0.4, -0.8, 0.0)
+        # #        model.scale(0.05, 0.05, 1.0)
+
+        self.shader_manager.set_uniform("axis", "model", model)
 
         self.axis_painter.paint_axis()
 
-        gl.glViewport(0, 0, self.width, self.height)
-        self.shader_manager.end_paint_pc()
+        self.shader_manager.release("axis")
 
     def resizeGL(self, width, height):
         self.width = width
@@ -165,7 +234,13 @@ class ThorVizWidget(QOpenGLWidget):
 
         self.projection.setToIdentity()
         scale = 1.0
-        self.projection.perspective(35.0, aspectratio, -1.0, 1.0)
+        self.projection.perspective(35.0, aspectratio, 0.01, 15.0)
+
+    def reset_position(self):
+        self.cam_orientation = QMatrix4x4()
+        self.cam_orientation.rotate(90, 1.0, 0.0, 0.0)
+        self.cam_r = -5.0
+        self.update()
 
     def mousePressEvent(self, e):
 
@@ -175,6 +250,8 @@ class ThorVizWidget(QOpenGLWidget):
             self.left_button_pressed = True
         elif e.button() == QtCore.Qt.RightButton:
             self.right_button_pressed = True
+        elif e.button() == QtCore.Qt.MidButton:
+            self.mid_button_pressed = True
 
     def mouseReleaseEvent(self, e):
         self.x = e.x()
@@ -184,19 +261,35 @@ class ThorVizWidget(QOpenGLWidget):
             self.left_button_pressed = False
         elif e.button() == QtCore.Qt.RightButton:
             self.right_button_pressed = False
+        elif e.button() == QtCore.Qt.MidButton:
+            self.mid_button_pressed = False
 
     def mouseMoveEvent(self, e):
         dx = e.x() - self.x
         dy = e.y() - self.y
-        k = 2.0
+        self.x = e.x()
+        self.y = e.y()
+
+        k = 50
         if self.left_button_pressed:
 
-            dtheta = k*dx/self.width
-            dphi = k*dy/self.height
+            drx = k*dx/self.width
+            dry = k*dy/self.height
+            c = self.cam_orientation.inverted()[0]
 
-            print(dtheta, dphi)
-            self.cam_theta += dtheta
-            self.cam_phi += dphi
+            v_x = c.column(0)
+            v_y = c.column(1)
+            v = (drx*v_y + dry*v_x).normalized()
+            alpha = math.sqrt(math.pow(drx, 2.0)+math.pow(dry, 2.0))
+            self.cam_orientation.rotate(alpha, v.x(), v.y(), v.z())
+
+        if self.mid_button_pressed:
+            drx = k*dx/self.width
+            c = self.cam_orientation.inverted()[0]
+
+            v = c.column(2)
+
+            self.cam_orientation.rotate(drx, v.x(), v.y(), v.z())
 
         if self.right_button_pressed:
             dr = dy/100.0
