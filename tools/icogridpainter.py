@@ -194,27 +194,6 @@ void main() {
 }"""
 
 
-class ico:
-    def pt_in_quad(quad, p):
-        # computes if a point is in the quadrilateral
-
-        return False
-
-    def __init__(self, g):
-        """computes icosahedron subdivided by g levels"""
-        self.g = g
-        self.n_s = pow(2, g)
-        self.n_r = self.n_s*self.n_s
-
-        print("Subdivision level:", self.g)
-        print("number of points on side of rhomboid, n_s:", self.n_s)
-        print("number of points in rhomboid, n_r:", self.n_r, )
-        print("number of points in grid, 10*n_r+2:", 10*self.n_r+2)
-        print("halos: ", 10*4*(self.n_s+2))
-
-        print("maps: ", 10*pow(self.n_s+2, 2))
-
-
 class IcoGridPainter(BasePainter):
     def __init__(self):
         BasePainter.__init__(self)
