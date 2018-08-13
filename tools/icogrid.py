@@ -147,8 +147,7 @@ class ico:
         fc_b_l = self.rhombi_neighbours[f][3]
         # index for border point
         cn = self.nl_reg - 1
-        # TODO: add connections to poles
-        # TODO check that triangles are CCW
+        # TODO check orders of edges
         if kx == 0 and ky == 0 and i < 0 and j < 0:
             if f < 5:
                 if n == 0:
@@ -194,10 +193,10 @@ class ico:
         elif kx == 0 and i < 0 and j < 0:
             if f < 5:
                 i1 = self.idx_p(f, kx, ky, 0, 0)
-                i2 = self.idx_p(f, kx, ky-1, 0, cn)
+                i4 = self.idx_p(f, kx, ky-1, 0, cn)
                 i3 = self.idx_p(fc_t_l, self.kxl-1 - ky+1, self.kxl-1,
                                 0, cn)
-                i4 = self.idx_p(fc_t_l, self.kxl-1 - ky, self.kxl-1,
+                i2 = self.idx_p(fc_t_l, self.kxl-1 - ky, self.kxl-1,
                                 cn, cn)
 
                 if n == 0:
@@ -207,17 +206,18 @@ class ico:
             else:
                 i1 = self.idx_p(f, kx, ky, 0, 0)
                 i3 = self.idx_p(fc_t_l, self.kxl-1, ky-1, cn, cn)
-                i2 = self.idx_p(f, kx, ky-1, 0, cn)
-                i4 = self.idx_p(fc_t_l, self.kxl-1, ky, cn, 0)
+                i4 = self.idx_p(f, kx, ky-1, 0, cn)
+                i2 = self.idx_p(fc_t_l, self.kxl-1, ky, cn, 0)
 
                 if n == 0:
                     return np.array((i1, i2, i3), dtype=np.int32)
                 else:
                     return np.array((i1, i3, i4), dtype=np.int32)
         elif kx == 0 and i < 0:
+
             if f < 5:
                 i1 = self.idx_p(f, kx, ky, 0, j+1)
-                i2 = self.idx_p(f, kx, ky, 0, j)
+                i4 = self.idx_p(f, kx, ky, 0, j)
 
                 i3 = self.idx_p(fc_t_l,
                                 self.kxl - 1 - ky,
@@ -225,25 +225,26 @@ class ico:
                                 self.nl_reg - 1 - (j),
                                 cn)
 
-                i4 = self.idx_p(fc_t_l,
+                i2 = self.idx_p(fc_t_l,
                                 self.kxl - 1 - ky,
                                 self.kxl - 1,
                                 self.nl_reg - 1 - (j+1),
                                 cn)
+
                 if n == 0:
                     return np.array((i1, i2, i3), dtype=np.int32)
                 else:
-                    return np.array((i1, i3, i4), dtype=np.int32)
+                    return np.array((i3, i4, i1), dtype=np.int32)
             else:
                 i1 = self.idx_p(f, kx, ky, 0, j+1)
-                i2 = self.idx_p(f, kx, ky, 0, j)
+                i4 = self.idx_p(f, kx, ky, 0, j)
 
                 i3 = self.idx_p(fc_t_l,
                                 self.kxl - 1,
                                 ky,
                                 cn,
                                 j)
-                i4 = self.idx_p(fc_t_l,
+                i2 = self.idx_p(fc_t_l,
                                 self.kxl - 1,
                                 ky,
                                 cn,
@@ -252,9 +253,10 @@ class ico:
                 if n == 0:
                     return np.array((i1, i2, i3), dtype=np.int32)
                 else:
-                    return np.array((i1, i3, i4), dtype=np.int32)
+                    return np.array((i3, i4, i1), dtype=np.int32)
 
         elif ky == 0 and j < 0 and i < 0:
+            # done up to here CCW check
             if f < 5:
                 i1 = self.idx_p(f, kx, ky, 0, 0)
                 i2 = self.idx_p(f, kx-1, ky, cn, 0)
@@ -264,7 +266,7 @@ class ico:
                 if n == 0:
                     return np.array((i1, i2, i3), dtype=np.int32)
                 else:
-                    return np.array((i1, i3, i4), dtype=np.int32)
+                    return np.array((i3, i4, i1), dtype=np.int32)
             else:
                 i1 = self.idx_p(f, kx, ky, 0, 0)
                 i2 = self.idx_p(f, kx-1, ky, cn, 0)
@@ -274,7 +276,7 @@ class ico:
                                 cn, cn)
 
                 if n == 0:
-                    return np.array((i1, i2, i3), dtype=np.int32)
+                    return np.array((i3, i1, i2), dtype=np.int32)
                 else:
                     return np.array((i1, i3, i4), dtype=np.int32)
 
@@ -288,17 +290,16 @@ class ico:
                                 i,
                                 cn)
 
-                i2 = self.idx_p(fc_b_l,
+                i4 = self.idx_p(fc_b_l,
                                 kx,
                                 self.kxl - 1,
                                 i+1,
                                 cn)
-                i4 = self.idx_p(f, kx, ky, i, 0)
-
+                i2 = self.idx_p(f, kx, ky, i, 0)
                 if n == 0:
                     return np.array((i1, i2, i3), dtype=np.int32)
                 else:
-                    return np.array((i1, i3, i4), dtype=np.int32)
+                    return np.array((i3, i4, i1), dtype=np.int32)
             else:
                 i1 = self.idx_p(f, kx, ky, i+1, 0)
                 i2 = self.idx_p(f, kx, ky, i, 0)
@@ -314,7 +315,7 @@ class ico:
                                 cn, cn - (i+1))
 
                 if n == 0:
-                    return np.array((i1, i2, i3), dtype=np.int32)
+                    return np.array((i3, i1, i2), dtype=np.int32)
                 else:
                     return np.array((i1, i3, i4), dtype=np.int32)
         else:
@@ -335,6 +336,7 @@ class ico:
                 i2 = self.idx_p(f, kx, ky, 0, j)
                 i3 = self.idx_p(f, kx, ky, 0, j+1)
                 i4 = self.idx_p(f, kx-1, ky, cn, j+1)
+                #i1, i2, i3, i4 = (0, 0, 0, 0)
             elif j < 0:
                 # y axis
                 i1 = self.idx_p(f, kx, ky-1, i, cn)
@@ -347,13 +349,13 @@ class ico:
                 i2 = self.idx_p(f, kx, ky, i+1, j)
                 i3 = self.idx_p(f, kx, ky, i+1, j+1)
                 i4 = self.idx_p(f, kx, ky, i, j+1)
-                if f == 9:
-                    i1, i2, i3, i4 = (0, 0, 0, 0)
+                # if f == 9:
+                #     i1, i2, i3, i4 = (0, 0, 0, 0)
             # TODO: check that they are CCW
             if n == 0:
                 return np.array((i1, i2, i3), dtype=np.int32)
             else:
-                return np.array((i1, i3, i4), dtype=np.int32)
+                return np.array((i3, i4, i1), dtype=np.int32)
 
     def build_triangle_mesh_for_subrhombus(self, face, kx, ky):
         for i in range(self.nl_reg):
