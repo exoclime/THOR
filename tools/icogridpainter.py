@@ -277,7 +277,7 @@ class IcoGridPainter(BasePainter):
         # nl_reg-1 squares, * 2 for triangles, * 2 for two borders
 
         # neighbours of major rhombi face indexes
-        # use clockwhise addressing, top left, top right, bottom right, bottom left
+        # use clockwise addressing, top left, top right, bottom right, bottom left
         rhombi_neighbours = [
             [4, 1, 5, 9],  # idx: 0
             [0, 2, 6, 5],  # idx: 1

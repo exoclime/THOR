@@ -12,22 +12,20 @@ class BasePainter:
     def set_shader_manager(self, shader_manager):
         self.shader_manager = shader_manager
 
-    def create_elements_vbo(self, elements):
+    def create_elements_vbo(self, elements, dynamic=False):
         vbo = gl.glGenBuffers(1)
 
         gl.glBindBuffer(gl.GL_ELEMENT_ARRAY_BUFFER, vbo)
-
-        gl.glBufferData(gl.GL_ELEMENT_ARRAY_BUFFER,
-                        elements.nbytes,
-                        elements,
-                        gl.GL_STATIC_DRAW)
-
-        # gl.glVertexAttribPointer(0, 1,
-        #                         gl.GL_INT, False,
-        #                         0, None)
-
-        # gl.glEnableVertexAttribArray(0)
-
+        if dynamic:
+            gl.glBufferData(gl.GL_ELEMENT_ARRAY_BUFFER,
+                            elements.nbytes,
+                            elements,
+                            gl.GL_DYNAMIC_DRAW)
+        else:
+            gl.glBufferData(gl.GL_ELEMENT_ARRAY_BUFFER,
+                            elements.nbytes,
+                            elements,
+                            gl.GL_STATIC_DRAW)
         return vbo
 
     def create_vbo(self, vertices, dynamic=False):

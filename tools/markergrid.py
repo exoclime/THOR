@@ -79,38 +79,85 @@ class MarkerGridPainter(BasePainter):
 
         self.ico = ico(g, lonlat)
 
-        vertices = np.zeros((num_points, 3),
-                            dtype=np.float32)
-        colors = np.zeros((num_points, 3),
-                          dtype=np.float32)
+        self.triangles = True
+        r = 1.002
+        if self.triangles:
+            triangle_mesh = self.ico.triangles
+            elements = np.zeros((triangle_mesh.shape[0], 3), np.int32)
+            vertices = np.zeros((triangle_mesh.shape[0] * 3, 3),
+                                dtype=np.float32)
+            colors = np.zeros((triangle_mesh.shape[0] * 3, 3),
+                              dtype=np.float32)
+            cnt = 0
 
-        triangle_mesh = self.ico.triangles
+            c1 = np.array((1.0, 0.0, 0.0), dtype=np.float32)
+            c2 = np.array((0.0, 1.0, 0.0), dtype=np.float32)
+            c3 = np.array((0.0, 0.0, 1.0), dtype=np.float32)
 
-        elements = np.zeros((triangle_mesh.shape[0], 3, 2), np.int32)
-        print(triangle_mesh.shape, elements.shape)
-        cnt = 0
-        for t in range(triangle_mesh.shape[0]):
-            triangle = triangle_mesh[t]
+            for t in range(triangle_mesh.shape[0]):
+                triangle = triangle_mesh[t]
+                i1 = triangle[0]
+                i2 = triangle[1]
+                i3 = triangle[2]
 
-            elements[t, 0, 0] = triangle[0]
-            elements[t, 0, 1] = triangle[1]
-            elements[t, 1, 0] = triangle[1]
-            elements[t, 1, 1] = triangle[2]
-            elements[t, 2, 0] = triangle[2]
-            elements[t, 2, 1] = triangle[0]
-        self.elements_count = elements.size
-        r = 1.1
-        for i in range(vertices.shape[0]):
-            # spherical -> theta vertical mvt, declination-> latitude
-            # -> phi -> horizontal mvt, azimuth -> longitude
-            vertices[i, :] = spherical(r,
-                                       lonlat[i, 1],
-                                       lonlat[i, 0])
-            colors[i, :] = np.array((1.0, 1.0, 1.0), dtype=np.float32)
+                p1 = spherical(r, lonlat[i1, 1], lonlat[i1, 0])
+                p2 = spherical(r, lonlat[i2, 1], lonlat[i2, 0])
+                p3 = spherical(r, lonlat[i3, 1], lonlat[i3, 0])
 
-        self.vao_list = self.create_marker_vao(vertices,
-                                               elements,
-                                               colors)
+                vertices[cnt, :] = p1
+                colors[cnt, :] = c1
+                idx1 = cnt
+                cnt += 1
+                vertices[cnt, :] = p2
+                colors[cnt, :] = c2
+                idx2 = cnt
+                cnt += 1
+
+                vertices[cnt, :] = p3
+                colors[cnt, :] = c3
+                idx3 = cnt
+                cnt += 1
+
+                elements[t, 0] = idx1
+                elements[t, 1] = idx2
+                elements[t, 2] = idx3
+
+            self.elements_count = elements.size
+            self.vao_list = self.create_marker_vao(vertices,
+                                                   elements,
+                                                   colors)
+        else:
+            vertices = np.zeros((num_points, 3),
+                                dtype=np.float32)
+            colors = np.zeros((num_points, 3),
+                              dtype=np.float32)
+
+            triangle_mesh = self.ico.triangles
+
+            elements = np.zeros((triangle_mesh.shape[0], 3, 2), np.int32)
+            print(triangle_mesh.shape, elements.shape)
+            cnt = 0
+            for t in range(triangle_mesh.shape[0]):
+                triangle = triangle_mesh[t]
+
+                elements[t, 0, 0] = triangle[0]
+                elements[t, 0, 1] = triangle[1]
+                elements[t, 1, 0] = triangle[1]
+                elements[t, 1, 1] = triangle[2]
+                elements[t, 2, 0] = triangle[2]
+                elements[t, 2, 1] = triangle[0]
+            self.elements_count = elements.size
+            for i in range(vertices.shape[0]):
+                # spherical -> theta vertical mvt, declination-> latitude
+                # -> phi -> horizontal mvt, azimuth -> longitude
+                vertices[i, :] = spherical(r,
+                                           lonlat[i, 1],
+                                           lonlat[i, 0])
+                colors[i, :] = np.array((1.0, 1.0, 1.0), dtype=np.float32)
+
+            self.vao_list = self.create_marker_vao(vertices,
+                                                   elements,
+                                                   colors)
 
     # def update_colors(self):
     #     if not self.show_data:
@@ -146,11 +193,19 @@ class MarkerGridPainter(BasePainter):
         # self.update_colors()
 
         gl.glBindVertexArray(self.vao_list)
-        print("paint marker grid", self.elements_count)
-        gl.glDrawElements(gl.GL_LINES,
-                          int(self.elements_count),
-                          gl.GL_UNSIGNED_INT,
-                          None)
+        if self.triangles:
+            print("paint marker grid", self.elements_count)
+            gl.glDrawElements(gl.GL_TRIANGLES,
+                              int(self.elements_count),
+                              gl.GL_UNSIGNED_INT,
+                              None)
+
+        else:
+            print("paint marker grid", self.elements_count)
+            gl.glDrawElements(gl.GL_LINES,
+                              int(self.elements_count),
+                              gl.GL_UNSIGNED_INT,
+                              None)
         # ctypes.c_void_p(idx))
 
     def update_colors_vbo(self, colors):
