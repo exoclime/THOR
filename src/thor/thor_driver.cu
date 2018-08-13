@@ -683,7 +683,7 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
             cudaDeviceSynchronize();
 
             BENCH_POINT_I_SS( current_step, rk, ns, "Momentum_Eq", vector<string>({}), vector<string>({"Rho_d", "pressures_d", "Mhs_d", "Wh_d", "temperature_d", "W_d"}))
-
+            // Updates: Sp_d, Sd_d
             Prepare_Implicit_Vertical <LN,LN>  <<<NB, NT >>>(Mhs_d         ,
                                                              h_d           ,
                                                              div_d         ,

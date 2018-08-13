@@ -3452,7 +3452,7 @@ void Icogrid::gra_operator(double *areasT,
 //
 //  Description:
 //
-//  Computes the divergence operator from equations 15 and 16 of M. Satoh et al. 2008.
+//  Computes the gradient operator from equation 17 of M. Satoh et al. 2008.
 //
 //  Input: - areas     - Sub-areas (alpha, beta and gamma).
 //         - areasT    - Control volume area.
