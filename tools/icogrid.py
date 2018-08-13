@@ -86,7 +86,7 @@ class ico:
         # kxl = int(sqrt(num_subrhombi))
         # number of subrhombi regions on one rhombi side
         self.kxl = int(pow((num_points - 2)/10, 1/2))//num_points_side_region
-
+        self.num_points = num_points
         print("Subdivision level:", self.g)
         print("number of points on side of rhomboid:", self.nl_reg)
         print("number of points in rhomboid:", self.nl2)
@@ -151,18 +151,46 @@ class ico:
         # TODO check that triangles are CCW
         if kx == 0 and ky == 0 and i < 0 and j < 0:
             if f < 5:
-                i_c = self.idx_p(f, 0, 0, 0, 0)
-                i_c_t = self.idx_p(fc_b_l, 0, self.kxl-1, 0, cn)
-                i_c_b = self.idx_p(fc_t_l,
-                                   self.kxl - 1, self.kxl - 1, cn, cn)
-                return np.array((i_c, i_c_t, i_c_b), dtype=np.int32)
+                if n == 0:
+                    i_c = self.idx_p(f, 0, 0, 0, 0)
+                    i_c_t = self.idx_p(fc_b_l, 0, self.kxl-1, 0, cn)
+                    i_c_b = self.idx_p(fc_t_l,
+                                       self.kxl - 1, self.kxl - 1, cn, cn)
+                    return np.array((i_c, i_c_t, i_c_b), dtype=np.int32)
+                else:
+
+                    i1 = self.idx_p(f, 0, self.kxl - 1, 0, cn)
+
+                    i2 = self.num_points - 2
+
+                    i3 = self.idx_p(fc_t_l,
+                                    0,
+                                    self.kxl - 1,
+                                    0,
+                                    cn)
+
+                    return np.array((i1, i2, i3), dtype=np.int32)
+
             else:
-                i_c = self.idx_p(f, 0, 0, 0, 0)
-                i_c_t = self.idx_p(fc_t_l, self.kxl-1, 0, cn, 0)
-                i_c_b = self.idx_p(fc_b_l,
-                                   self.kxl - 1, self.kxl - 1, cn, cn)
-                return np.array((i_c, i_c_t, i_c_b), dtype=np.int32)
-                # return np.array((0, 0, 0), dtype=np.int32)
+                if n == 0:
+                    i_c = self.idx_p(f, 0, 0, 0, 0)
+                    i_c_t = self.idx_p(fc_t_l, self.kxl-1, 0, cn, 0)
+                    i_c_b = self.idx_p(fc_b_l,
+                                       self.kxl - 1, self.kxl - 1, cn, cn)
+                    return np.array((i_c, i_c_t, i_c_b), dtype=np.int32)
+                else:
+                    i1 = self.idx_p(f, self.kxl - 1, 0, cn, 0)
+
+                    i3 = self.num_points - 1
+
+                    i2 = self.idx_p(fc_b_l,
+                                    self.kxl - 1,
+                                    0,
+                                    cn,
+                                    0)
+
+                    return np.array((i1, i2, i3), dtype=np.int32)
+
         elif kx == 0 and i < 0 and j < 0:
             if f < 5:
                 i1 = self.idx_p(f, kx, ky, 0, 0)
@@ -319,7 +347,7 @@ class ico:
                 i2 = self.idx_p(f, kx, ky, i+1, j)
                 i3 = self.idx_p(f, kx, ky, i+1, j+1)
                 i4 = self.idx_p(f, kx, ky, i, j+1)
-                if f == 0:
+                if f == 9:
                     i1, i2, i3, i4 = (0, 0, 0, 0)
             # TODO: check that they are CCW
             if n == 0:

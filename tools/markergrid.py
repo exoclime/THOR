@@ -80,7 +80,7 @@ class MarkerGridPainter(BasePainter):
         self.ico = ico(g, lonlat)
 
         self.triangles = True
-        r = 1.002
+        r = 1.402
         if self.triangles:
             triangle_mesh = self.ico.triangles
             elements = np.zeros((triangle_mesh.shape[0], 3), np.int32)
