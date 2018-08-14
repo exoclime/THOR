@@ -30,10 +30,8 @@ class barycentric_coordinates:
         self.v0 = self.c1 - self.c0
         self.v1 = self.c2 - self.c0
         # compute normals
-        print(self.v0.shape, self.v1.shape)
         # dim: [vector idx, coordinate] list of vectors
         self.n = np.cross(self.v0, self.v1)
-        print(self.n.shape, self.c0.shape)
         # compute distance to origin / not used now
         # self.D = -np.tensordot(self.n, self.c0, axes=(1, 1))
 
@@ -163,15 +161,10 @@ class ico:
         self.barycentric_coordinates = barycentric_coordinates()
         self.barycentric_coordinates.prepare_barycentric_coordinates(
             self.triangles, vertices)
-        l = 100
-        rs = np.zeros((l, 3))
-
-        for i in range(l):
-            rs[i, :] = spherical(1.0, 45.0, ((i/(l-1))*2.0 - 1)*math.pi)
-
-        dot, t_i, u_i, v_i = self.barycentric_coordinates.get_barycentric_coordinates(
-            rs)
         print("done")
+
+    def get_barycentric_coordinates(self, r):
+        return self.barycentric_coordinates.get_barycentric_coordinates(r)
 
     def idx_p(self, fc, kx, ky, i, j):
         """point index in subrhombus, in face fc, for subrhombus kx, ky,

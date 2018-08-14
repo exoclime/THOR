@@ -79,10 +79,41 @@ class MarkerGridPainter(BasePainter):
 
         self.ico = ico(g, lonlat)
 
-        self.triangles = True
-        r = 1.402
+        # get some triangles
+        l = 40
+        rs = np.zeros((l, 3))
+
+        for i in range(l):
+            rs[i, :] = spherical(1.0, ((i/(l-1))*2.0 - 1)*math.pi, 0.0)
+
+        dot, t_i, u_i, v_i = self.ico.barycentric_coordinates.get_barycentric_coordinates(
+            rs)
+
+        # for i in range(num_points):
+        #     print(dot[i], t_i[i]/dot[i], u_i[i]/dot[i], v_i[i]/dot[i])
+
+        # get indexes that actually match:
+
+        u = u_i/dot
+        v = v_i/dot
+        print(u.shape, v.shape, u_i.shape, v_i.shape, dot.shape)
+        condition = np.logical_and.reduce((dot > 0.0,
+                                           u > 0.0,
+                                           u < 1.0,
+                                           v > 0.0,
+                                           v < 1.0))
+        w = np.where(condition)
+
+        for i in range(w[0].shape[0]):
+            idx = w[0][i], w[1][i]
+            print(idx)
+            t = t_i[idx[0]]/dot[idx]
+            print(dot[idx], t, u[idx], v[idx])
+
+        self.triangles = False
+        r = 1.02
         if self.triangles:
-            triangle_mesh = self.ico.triangles
+            triangle_mesh = self.ico.triangles[w[0]]
             elements = np.zeros((triangle_mesh.shape[0], 3), np.int32)
             vertices = np.zeros((triangle_mesh.shape[0] * 3, 3),
                                 dtype=np.float32)
@@ -132,7 +163,7 @@ class MarkerGridPainter(BasePainter):
             colors = np.zeros((num_points, 3),
                               dtype=np.float32)
 
-            triangle_mesh = self.ico.triangles
+            triangle_mesh = self.ico.triangles[w[0]]
 
             elements = np.zeros((triangle_mesh.shape[0], 3, 2), np.int32)
             print(triangle_mesh.shape, elements.shape)
@@ -158,6 +189,21 @@ class MarkerGridPainter(BasePainter):
             self.vao_list = self.create_marker_vao(vertices,
                                                    elements,
                                                    colors)
+
+            num_radii = rs.shape[0]
+            radii = np.zeros((rs.shape[0], 2, 3), dtype=np.float32)
+            radii_elements = np.zeros((rs.shape[0], 2), dtype=np.int32)
+            radii_colors = np.ones(rs.shape, dtype=np.float32)
+            r2 = 1.1
+
+            for i in range(num_radii):
+                radii[i, 0, :] = np.zeros(3, dtype=np.float32)
+                radii[i, 1, :] = r2*rs[i]
+                radii_elements[i, 0] = 2*i
+                radii_elements[i, 0] = 2*i+1
+            self.radii_elements_count = radii_elements.size
+            self.vao_radii = self.create_marker_vao(
+                radii, radii_elements, radii_colors)
 
     # def update_colors(self):
     #     if not self.show_data:
@@ -206,6 +252,12 @@ class MarkerGridPainter(BasePainter):
                               int(self.elements_count),
                               gl.GL_UNSIGNED_INT,
                               None)
+
+        gl.glBindVertexArray(self.vao_radii)
+        gl.glDrawElements(gl.GL_LINES,
+                          int(self.radii_elements_count),
+                          gl.GL_UNSIGNED_INT,
+                          None)
         # ctypes.c_void_p(idx))
 
     def update_colors_vbo(self, colors):
