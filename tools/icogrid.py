@@ -1,61 +1,82 @@
-
+import math
 import numpy as np
 from utilities import spherical
 
 
-def get_barycentric_coordinates(r, c):
-    """Return the barycentric coordinates of a ray from the origin to triangles
-    defined by three points.
+class barycentric_coordinates:
+    def prepare_barycentric_coordinates(self, c, vertices):
+        """Return the barycentric coordinates of a ray from the origin to triangles
+        defined by three points.
 
-    arrays index
-    c = [plane, point, coord]
-    plane: plane index
-    point: point index, 3 points per plane, CCW
-    coord: coord per point, x,y,z
+        arrays index
+        c = [plane, point]
+        vertex = [vertex, coordinate]
+        plane: plane index
+        point: point index, 3 points per plane, CCW
+        coord: coord per point, x,y,z
+        """
+        # c : [triangle idx, vertex idx]
+        # vertices: [ vertex idx, coord idx ]
+        num_planes = c.shape[0]
 
-    returns
-    dot: dot == 0: no intersection, r is parallel to plane
+        # ordered triangle corners
+        # dim: [vertex_idx, coordinate] list of vectors
+        self.c0 = vertices[c[:, 0]]
+        self.c1 = vertices[c[:, 1]]
+        self.c2 = vertices[c[:, 2]]
+        # plane equations
+        # compute vectors in plane
+        # dim: [vector idx, coordinate] list of vectors
+        self.v0 = self.c1 - self.c0
+        self.v1 = self.c2 - self.c0
+        # compute normals
+        print(self.v0.shape, self.v1.shape)
+        # dim: [vector idx, coordinate] list of vectors
+        self.n = np.cross(self.v0, self.v1)
+        print(self.n.shape, self.c0.shape)
+        # compute distance to origin / not used now
+        # self.D = -np.tensordot(self.n, self.c0, axes=(1, 1))
+
+    def get_barycentric_coordinates(self, r):
+        """Get barycentric coordinates of a vector compared to all triangles 
+        in the list of triangles. 
+
+        Returns
+         dot: dot == 0: no intersection, r is parallel to plane
          dot > 0:  plane normal and ray are in same direction, we are on
                    the correct side of plane
          dot < 0:  plane normal and ray are opposed direction, ray goes away
                    from triangle
 
-    t: r multiplier to find P
-    u, v: barycentric coordinates
+         t: r multiplier to find P
+         u, v: barycentric coordinates
 
-    t, u, v need to be normalised by 1/dot. Not done to avoid NaNs
-    """
-    num_planes = c.shape[0]
+        t, u, v need to be normalised by 1/dot. Not done to avoid NaNs
+        """
+        # r: [radial vector idx, coordinates] list of vectors
+        # n: [normal vector idx, coordinates] li8st of vectors
+        # should return a matrix of r's compared to all n's
+        # return of dim [normal, radial]
 
-    c0 = c[:, 0, :]
-    c1 = c[:, 1, :]
-    c2 = c[:, 2, :]
-    # plane equations
-    # compute vectors in plane
-    v0 = c1 - c0
-    v1 = c2 - c0
-    # compute normals
-    n = np.cross(v0, v1)
-    # compute distance to origin
-    D = -np.dot(n, c0)
+        dot = np.tensordot(self.n, r, axes=(-1, -1))
+        print("dot:", dot.shape)
+        #    it = dot != 0
+        # intersection_t = np.zeros(dot.shape)
+        # intersection_t[it] = D[it]/dot[it]
 
-    # get points that actually intersect
-    # dot == 0: no intersection, r is parallel to plane
-    # dot > 0:  plane normal and ray are in same direction, we are on
-    #           the correct side of plane
-    # dot < 0: plane normal and ray are opposed direction, ray goes away
-    #          from triangle
-    dot = np.dot(n, r)
+        # distance to origin: [vector idx] list of distances of one plane to its origin
+        d = np.cross(self.c0, self.v0)
+        print("d", d.shape)
+        t_i = -np.sum(d*self.v1, axis=1)
+        print("t_i:", t_i.shape)
+        # u and v barycentric coordinates of each r to each triangles: [vector idx, radial]
+        u_i = np.tensordot(np.cross(self.c0, self.v1), r, axes=(-1, -1))
+        print("u_i:", u_i.shape)
 
-    #    it = dot != 0
-    # intersection_t = np.zeros(dot.shape)
-    # intersection_t[it] = D[it]/dot[it]
+        v_i = -np.tensordot(d, r, axes=(-1, -1))
+        print("v_i:", v_i.shape)
 
-    t_i = -np.tensordot(np.cross(c0, v0), v1, axis=2)
-    u_i = np.tensordot(np.cross(c0, v1), r, axis=2)
-    v_i = -np.tensordot(np.cross(c0, v0), r, axis=2)
-
-    return dot, t_i, u_i, v_i
+        return dot, t_i, u_i, v_i
 
 
 class ico:
@@ -75,7 +96,15 @@ class ico:
 
         # indexing function through rhombis
         # level
-
+        vertices = np.zeros((num_points, 3),
+                            dtype=np.float32)
+        r = 1.0
+        for i in range(vertices.shape[0]):
+            # spherical -> theta vertical mvt, declination-> latitude
+            # -> phi -> horizontal mvt, azimuth -> longitude
+            vertices[i, :] = spherical(r,
+                                       lonlat[i, 1],
+                                       lonlat[i, 0])
         self.num_rhombi = 10
 
         num_points_side_region = int(pow(2, 4))
@@ -129,6 +158,20 @@ class ico:
         print("preparing triangle mesh")
         self.build_triangle_mesh()
         print("triangle mesh done", self.triangle_build_idx)
+
+        print("prepare coordinates seracher")
+        self.barycentric_coordinates = barycentric_coordinates()
+        self.barycentric_coordinates.prepare_barycentric_coordinates(
+            self.triangles, vertices)
+        l = 100
+        rs = np.zeros((l, 3))
+
+        for i in range(l):
+            rs[i, :] = spherical(1.0, 45.0, ((i/(l-1))*2.0 - 1)*math.pi)
+
+        dot, t_i, u_i, v_i = self.barycentric_coordinates.get_barycentric_coordinates(
+            rs)
+        print("done")
 
     def idx_p(self, fc, kx, ky, i, j):
         """point index in subrhombus, in face fc, for subrhombus kx, ky,
