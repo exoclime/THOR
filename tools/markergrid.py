@@ -80,17 +80,34 @@ class MarkerGridPainter(BasePainter):
         self.ico = ico(g, lonlat)
 
         # get some triangles
-        l = 40
+        l = 400
         rs = np.zeros((l, 3))
 
+        theta = 25.0*math.pi/(2.0*90.0)
+        phi = 10.0*math.pi/(2.0*90.0)
+        r = spherical(1.0, theta, phi)
+        p_z = 0.0
+        p_y = math.sqrt(1.0/(1+math.pow(r[1]/r[0], 2.0)))
+        p_x = -r[1]/r[0]*p_y
+        p1 = np.array((p_x, p_y, p_z))
+        p2 = np.cross(p1, r)
+
         for i in range(l):
-            rs[i, :] = spherical(1.0, ((i/(l-1))*2.0 - 1)*math.pi, 0.0)
+            alpha = (i/(l))*math.pi*2.0
+            rs[i, :] = cos(alpha)*p1+sin(alpha)*p2
+
+#            rs[i, :] = spherical(1.0, 25.0*math.pi/(2.0*90.0),
+#                                 ((i/(l))*2.0 - 1)*math.pi)
 
         dot, t_i, u_i, v_i = self.ico.barycentric_coordinates.get_barycentric_coordinates(
             rs)
 
+        print("dot", dot.shape)
+        print("t_i", t_i.shape)
+        print("u_i", u_i.shape)
+        print("v_i", v_i.shape)
         # for i in range(num_points):
-        #     print(dot[i], t_i[i]/dot[i], u_i[i]/dot[i], v_i[i]/dot[i])
+        #    print(dot[i], t_i[i]/dot[i], u_i[i]/dot[i], v_i[i]/dot[i])
 
         # get indexes that actually match:
 
@@ -101,17 +118,20 @@ class MarkerGridPainter(BasePainter):
                                            u > 0.0,
                                            u < 1.0,
                                            v > 0.0,
-                                           v < 1.0))
+                                           v < 1.0,
+                                           u+v < 1.0))
         w = np.where(condition)
 
-        for i in range(w[0].shape[0]):
-            idx = w[0][i], w[1][i]
-            print(idx)
-            t = t_i[idx[0]]/dot[idx]
-            print(dot[idx], t, u[idx], v[idx])
+        # for r in range(l):
+        #     print(rs[r, :])
+
+        # for i in range(w[0].shape[0]):
+        #     idx = w[0][i], w[1][i]
+        #     t = t_i[idx[0]]/dot[idx]
+        #     print(idx, dot[idx], t, u[idx], v[idx])
 
         self.triangles = False
-        r = 1.02
+        r = 1.002
         if self.triangles:
             triangle_mesh = self.ico.triangles[w[0]]
             elements = np.zeros((triangle_mesh.shape[0], 3), np.int32)
@@ -193,7 +213,7 @@ class MarkerGridPainter(BasePainter):
             num_radii = rs.shape[0]
             radii = np.zeros((rs.shape[0], 2, 3), dtype=np.float32)
             radii_elements = np.zeros((rs.shape[0], 2), dtype=np.int32)
-            radii_colors = np.ones(rs.shape, dtype=np.float32)
+            radii_colors = np.ones(radii.shape, dtype=np.float32)
             r2 = 1.1
 
             for i in range(num_radii):
@@ -240,14 +260,12 @@ class MarkerGridPainter(BasePainter):
 
         gl.glBindVertexArray(self.vao_list)
         if self.triangles:
-            print("paint marker grid", self.elements_count)
             gl.glDrawElements(gl.GL_TRIANGLES,
                               int(self.elements_count),
                               gl.GL_UNSIGNED_INT,
                               None)
 
         else:
-            print("paint marker grid", self.elements_count)
             gl.glDrawElements(gl.GL_LINES,
                               int(self.elements_count),
                               gl.GL_UNSIGNED_INT,

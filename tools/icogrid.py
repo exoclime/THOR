@@ -52,7 +52,7 @@ class barycentric_coordinates:
         t, u, v need to be normalised by 1/dot. Not done to avoid NaNs
         """
         # r: [radial vector idx, coordinates] list of vectors
-        # n: [normal vector idx, coordinates] li8st of vectors
+        # n: [normal vector idx, coordinates] list of vectors
         # should return a matrix of r's compared to all n's
         # return of dim [normal, radial]
 
@@ -74,15 +74,62 @@ class barycentric_coordinates:
         v_i = -np.tensordot(d, r, axes=(-1, -1))
         print("v_i:", v_i.shape)
 
+        #############################################################
+        # recompute
+        # O = np.array((0.0, 0.0, 0.0))
+        # D = r  # list of vectors
+        # print("D", D.shape)
+        # E1 = self.c1 - self.c0  # list of vectors
+        # E2 = self.c2 - self.c1  # list of vectors
+        # T = O - self.v0  # list of vectors
+        # # should be matrix of vectors
+        # #P = np.cross(D.reshape(D.shape[0], 1, D.shape[1]), E2).swapaxes(0, 1)
+        # P = np.cross(D.reshape(D.shape[0], 1, D.shape[1]), E2)
+        # print("P", P.shape)
+        # print("T", T.shape, "E1", E1.shape)
+        # Q = np.cross(T, E1)  # list of vectors
+        # # should be matrix of scalars
+        # dot = np.sum(P*E1, axis=-1).swapaxes(0, 1)
+        # print("Q", Q.shape, "E2", E2.shape)
+        # t_i = np.sum(Q*E2, axis=-1)  # list of scalars
+        # u_i = np.sum(P*T, axis=-1).swapaxes(0, 1)  # matrix of scalars
+        # v_i = np.tensordot(Q, D, axes=(-1, -1))  # matrix of scalars
+
+        ##############################################################
+        # other recompute
+        def tm(O, A, B, C, D):
+            T = O - A
+            E1 = C - A
+            E2 = B - A
+            P = np.cross(D, E2)
+            Q = np.cross(T, E1)
+            dot = np.dot(P, E1)
+            t_i = np.dot(Q, E2)
+            u_i = np.dot(P, T)
+            v_i = np.dot(Q, D)
+
+            return dot, t_i, u_i, v_i
+
+        num_tri = self.c0.shape[0]
+        num_ray = r.shape[0]
+        dot = np.zeros((num_tri, num_ray))
+        t_i = np.zeros(num_tri)
+        u_i = np.zeros((num_tri, num_ray))
+        v_i = np.zeros((num_tri, num_ray))
+        O = np.array((0.0, 0.0, 0.0))
+
+        for i in range(num_tri):
+            for j in range(num_ray):
+                d, t, u, v = tm(O, self.c0[i], self.c1[i], self.c2[i], r[j])
+                dot[i, j] = d
+                t_i[i] = t
+                u_i[i, j] = u
+                v_i[i, j] = v
+
         return dot, t_i, u_i, v_i
 
 
 class ico:
-    def pt_in_quad(quad, p):
-        # computes if a point is in the quadrilateral
-
-        return False
-
     def __init__(self, g, lonlat):
         """computes icosahedron subdivided by g levels"""
         self.g = g
@@ -157,7 +204,7 @@ class ico:
         self.build_triangle_mesh()
         print("triangle mesh done", self.triangle_build_idx)
 
-        print("prepare coordinates seracher")
+        print("prepare coordinates searcher")
         self.barycentric_coordinates = barycentric_coordinates()
         self.barycentric_coordinates.prepare_barycentric_coordinates(
             self.triangles, vertices)
@@ -410,7 +457,8 @@ class ico:
                 self.build_triangle_mesh_for_subrhombus(face, kx, ky)
 
     def build_triangle_mesh(self):
+        """build a list of triangles, with links to corners, foloowing the icosahedral mapping"""
         self.triangle_build_idx = 0
-        """build a list of triangles, with links to corners and neighbours"""
+
         for face in range(10):
             self.build_triangle_mesh_for_rhombus(face)
