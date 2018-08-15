@@ -478,8 +478,8 @@ class dataloader:
 
     def select_planet(self, planet):
         self.planet = planet
-        self.grid = h5py.File(self.planets[self.planet]['grid'])
-        self.planet_def = h5py.File(self.planets[self.planet]['def'])
+        self.grid = h5py.File(str(self.planets[self.planet]['grid']))
+        self.planet_def = h5py.File(str(self.planets[self.planet]['def']))
 
         self.datasets = self.planets[self.planet]['datasets']
         self.num_samples = len(self.datasets)
@@ -504,13 +504,13 @@ class dataloader:
         data = None
         if (data_name == "Pressure"
                 or data_name == "Rho"):
-            data = np.array(h5py.File(self.datasets[dataset_idx])[data_name], dtype=np.float32).reshape(
+            data = np.array(h5py.File(str(self.datasets[dataset_idx]))[data_name], dtype=np.float32).reshape(
                 (self.num_points, self.num_levels))
         elif data_name == "Mh":
-            data = np.array(h5py.File(self.datasets[dataset_idx])[data_name], dtype=np.float32).reshape(
+            data = np.array(h5py.File(str(self.datasets[dataset_idx]))[data_name], dtype=np.float32).reshape(
                 (self.num_points, self.num_levels, 3))
         elif data_name == "Wh":
-            data = np.array(h5py.File(self.datasets[dataset_idx])[data_name], dtype=np.float32).reshape(
+            data = np.array(h5py.File(str(self.datasets[dataset_idx]))[data_name], dtype=np.float32).reshape(
                 (self.num_points, self.num_levels+1))
         return data
 
