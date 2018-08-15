@@ -110,21 +110,96 @@ class barycentric_coordinates:
 
             return dot, t_i, u_i, v_i
 
+        def tm_multiray(O, A, B, C, D):
+            # D has multiple vectors
+            T = O - A  # single vector
+            E1 = C - A  # single vector
+            E2 = B - A  # single vector
+            # multi_vector x single vector -> multi vector
+            P = np.cross(D[:, np.newaxis, :], E2)
+            Q = np.cross(T, E1)  # single vector
+            dot = np.dot(P, E1)  # multi vector x single vector
+            t_i = np.dot(Q, E2)  # single vector x single vector -> scalar
+            u_i = np.dot(P, T)  # multi vector x single vector -> multi vector
+            # single vector x mult vector
+            v_i = np.tensordot(Q, D, axes=(-1, -1))
+            return dot.squeeze(), t_i, u_i.squeeze(), v_i
+
+        def tm_multidim(O, A, B, C, D):
+            # D has multiple vectors -> nr: num rays
+            # A, B, C, have multiple vectors -> nt: num triangles
+            T = O - A  # multi vector -> nt*3
+            E1 = C - A  # multi vector -> nt*3
+            E2 = B - A  # multi vector -> nt*3
+            # multi_vector x multi vector -> multi multi vector
+            # (crosses each vector from first input to each vector
+            # from second input)  -> nt*nr*3
+            P = np.cross(D[:, np.newaxis, :], E2)
+
+            # multi vector x multi vector -> multi vector (one value per triangle): nt*3
+            Q = np.cross(T, E1)
+
+            # dot product element wise
+            # multi multi vector x multi vector -> multi vector
+            # nr*nt*3 x nt*3 -> nr*nt
+            dot = np.sum(P*E1, axis=-1)
+
+            # elementwise dot product on last axis
+            # multi vector x multi vector -> scalar
+            # nt*3 x nt*3 -> nt
+            t_i = np.sum(Q*E2, axis=-1)
+
+            # elementwise dot product on last axis
+            # multi multi vector x multi vector -> multi multi vector
+            # nt*nr*3 x nt*3 -> nr*nt
+            u_i = np.sum(P*T, axis=-1)
+
+            # distributed dot product, each element from input 1 to each element from input 2
+            # multi vector x multi vector -> multi vector
+            # nt*3 x nr*3 -> nt*nr
+
+            v_i = np.tensordot(Q, D, axes=(-1, -1))
+            return dot.swapaxes(0, 1), t_i, u_i.swapaxes(0, 1), v_i
+
         num_tri = self.c0.shape[0]
         num_ray = r.shape[0]
         dot = np.zeros((num_tri, num_ray))
         t_i = np.zeros(num_tri)
         u_i = np.zeros((num_tri, num_ray))
         v_i = np.zeros((num_tri, num_ray))
-        O = np.array((0.0, 0.0, 0.0))
+        origin = np.array((0.0, 0.0, 0.0))
 
-        for i in range(num_tri):
-            for j in range(num_ray):
-                d, t, u, v = tm(O, self.c0[i], self.c1[i], self.c2[i], r[j])
-                dot[i, j] = d
+        method = "multidim"
+        if method == "iterative":
+            for i in range(num_tri):
+                for j in range(num_ray):
+                    d, t, u, v = tm(
+                        origin, self.c0[i], self.c1[i], self.c2[i], r[j])
+                    dot[i, j] = d
+                    t_i[i] = t
+                    u_i[i, j] = u
+                    v_i[i, j] = v
+        elif method == "multiray":
+            for i in range(num_tri):
+                d, t, u, v = tm_multiray(origin,
+                                         self.c0[i],
+                                         self.c1[i],
+                                         self.c2[i],
+                                         r)
+                dot[i, :] = d
                 t_i[i] = t
-                u_i[i, j] = u
-                v_i[i, j] = v
+                u_i[i, :] = u
+                v_i[i, :] = v
+        elif method == "multidim":
+            d, t, u, v = tm_multidim(origin,
+                                     self.c0,
+                                     self.c1,
+                                     self.c2,
+                                     r)
+            dot = d
+            t_i = t
+            u_i = u
+            v_i = v
 
         return dot, t_i, u_i, v_i
 

@@ -19,6 +19,7 @@ from utilities import HSV_to_RGB, spherical
 
 from basepainter import BasePainter
 from icogrid import ico
+import time
 
 vertex_shader_marker = """
 # version 400\n
@@ -77,6 +78,8 @@ class MarkerGridPainter(BasePainter):
 
         g = int(pow((num_points - 2)/10, 1/4)) - 2
 
+        print("Start computation for barycentric coordinates")
+        start = time.time()
         self.ico = ico(g, lonlat)
 
         # get some triangles
@@ -121,6 +124,8 @@ class MarkerGridPainter(BasePainter):
                                            v < 1.0,
                                            u+v < 1.0))
         w = np.where(condition)
+        stop = time.time()
+        print("Barycentric coordinates done: {} s".format(stop-start))
 
         # for r in range(l):
         #     print(rs[r, :])
