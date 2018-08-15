@@ -50,7 +50,7 @@ class ThorVizWidget(QOpenGLWidget):
         self.axis_painter = AxisPainter()
         self.field_painter = VectorFieldPainter()
         self.axis_equator_painter = PlanetAxisEquatorPainter()
-        self.marker_grid_painter = MarkerGridPainter()
+        #self.marker_grid_painter = MarkerGridPainter()
 
         self.cam_theta = 0.0
         self.cam_phi = 0.0
@@ -68,7 +68,7 @@ class ThorVizWidget(QOpenGLWidget):
     def set_grid_data(self, *args):
         self.ico_grid_painter.set_grid_data(*args)
         self.field_painter.set_grid_data(*args)
-        self.marker_grid_painter.set_grid_data(*args)
+        # self.marker_grid_painter.set_grid_data(*args)
 
     def set_level(self, level):
         self.ico_grid_painter.altitude = level
@@ -106,7 +106,7 @@ class ThorVizWidget(QOpenGLWidget):
         self.axis_painter.set_shader_manager(self.shader_manager)
         self.field_painter.set_shader_manager(self.shader_manager)
         self.axis_equator_painter.set_shader_manager(self.shader_manager)
-        self.marker_grid_painter.set_shader_manager(self.shader_manager)
+        # self.marker_grid_painter.set_shader_manager(self.shader_manager)
 
         self.projection = QMatrix4x4()
         self.projection.perspective(35.0, 1.0, 0.01, 15.0)
@@ -132,7 +132,7 @@ class ThorVizWidget(QOpenGLWidget):
         self.ico_grid_painter.initializeGL()
         self.axis_painter.initializeGL()
         self.axis_equator_painter.initializeGL()
-        self.marker_grid_painter.initializeGL()
+        # self.marker_grid_painter.initializeGL()
         gl.glEnable(gl.GL_DEPTH_TEST)
 
         gl.glEnable(gl.GL_BLEND)
@@ -167,25 +167,25 @@ class ThorVizWidget(QOpenGLWidget):
 
         self.ico_grid_painter.paint_grid()
         self.shader_manager.release("icos_grid")
-        ##############################################
-        self.shader_manager.load("marker_grid")
+        # ##############################################
+        # self.shader_manager.load("marker_grid")
 
-        colour = QVector4D(1.0, 1.0, 1.0, 1.0)
-        # view transformation
-        view = QMatrix4x4()
-        view.translate(0.0,  0.0, self.cam_r)
-        view *= self.cam_orientation
-        self.shader_manager.set_uniform("marker_grid", "view", view)
+        # colour = QVector4D(1.0, 1.0, 1.0, 1.0)
+        # # view transformation
+        # view = QMatrix4x4()
+        # view.translate(0.0,  0.0, self.cam_r)
+        # view *= self.cam_orientation
+        # self.shader_manager.set_uniform("marker_grid", "view", view)
 
-        # projection transformation
-        self.shader_manager.set_uniform(
-            "marker_grid", "projection", self.projection)
+        # # projection transformation
+        # self.shader_manager.set_uniform(
+        #     "marker_grid", "projection", self.projection)
 
-        model = QMatrix4x4()
-        self.shader_manager.set_uniform("marker_grid", "model", model)
+        # model = QMatrix4x4()
+        # self.shader_manager.set_uniform("marker_grid", "model", model)
 
-        self.marker_grid_painter.paint_grid()
-        self.shader_manager.release("marker_grid")
+        # self.marker_grid_painter.paint_grid()
+        # self.shader_manager.release("marker_grid")
 
         #################################
         self.shader_manager.load("icos_field")
