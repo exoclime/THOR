@@ -34,8 +34,8 @@ __global__ void zonal_v (double *M_d          ,
 			 M_d[id*nv*3 + lev*3 + 1] * ( cos(lon)) +
 			 M_d[id*nv*3 + lev*3 + 2] * 0)/ rho ;
 
-		v = (M_d[id*nv*3 + lev*3 + 0] * (-sin(lonlat_d[id*2+1]*cos(lon))) +
-			 M_d[id*nv*3 + lev*3 + 1] * (-sin(lonlat_d[id*2+1]*sin(lon))) +
+		v = (M_d[id*nv*3 + lev*3 + 0] * (-sin(lonlat_d[id*2+1])*cos(lon)) +
+			 M_d[id*nv*3 + lev*3 + 1] * (-sin(lonlat_d[id*2+1])*sin(lon)) +
 			 M_d[id*nv*3 + lev*3 + 2] * ( cos(lonlat_d[id*2+1])))/rho ;
 
 		myatomicAdd(&(vbar_d[ind*nv*3 + lev*3 + 0]), u/zonal_mean_tab_d[id*2+1]);
@@ -129,8 +129,8 @@ __global__ void sponge_layer (double * M_d             ,
 				M_d[id*nv*3 + lev*3 + 1] * ( cos(lon)) +
 				M_d[id*nv*3 + lev*3 + 2] * 0)/rho ;
 
-			v =(M_d[id*nv*3 + lev*3 + 0] * (-sin(lonlat_d[id*2+1]*cos(lon))) +
-				M_d[id*nv*3 + lev*3 + 1] * (-sin(lonlat_d[id*2+1]*sin(lon))) +
+			v =(M_d[id*nv*3 + lev*3 + 0] * (-sin(lonlat_d[id*2+1])*cos(lon)) +
+				M_d[id*nv*3 + lev*3 + 1] * (-sin(lonlat_d[id*2+1])*sin(lon)) +
 				M_d[id*nv*3 + lev*3 + 2] * ( cos(lonlat_d[id*2+1])))/rho; ;
 
 			w = W_d[id*nv +lev]/rho;
@@ -150,10 +150,10 @@ __global__ void sponge_layer (double * M_d             ,
       // }
 
 			vx = du*(-sin(lon))+
-			 	 dv*(-sin(lonlat_d[id*2+1]*cos(lon)));
+			 	 dv*(-sin(lonlat_d[id*2+1])*cos(lon));
 
 			vy = du*( cos(lon))+
-				 dv*(-sin(lonlat_d[id*2+1]*sin(lon)));
+				 dv*(-sin(lonlat_d[id*2+1])*sin(lon));
 
 			vz = dv*(cos(lonlat_d[id*2+1]));
 
