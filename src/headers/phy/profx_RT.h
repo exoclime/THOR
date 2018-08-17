@@ -404,12 +404,9 @@ __global__ void rtm_dual_band (double *pressure_d   ,
           if (isnan(temperature_d[id*nv+lev])) {
             printf("%d, %d\n",id,lev);
           }
-<<<<<<< HEAD
           if (temperature_d[id*nv+lev]<0) {
             printf("%d, %d\n",id,lev);
           }
-=======
->>>>>>> 5f62e303b53ccf378e23bae04190f22a46aa8abd
         }
     }
 }
