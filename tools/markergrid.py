@@ -242,7 +242,7 @@ class MarkerGridPainter(BasePainter):
             v0 = p2 - p1
             v1 = p3 - p1
 
-            pk = p1 + u_p*v1 + v_p * v0
+            pk = p1 + u_p*v0 + v_p * v1
             #uv_vertices[i] = p1 + u_p*v0 + v_p * v1
             uv_vertices[3*i+0] = pk + \
                 np.array((a, 0.0, 0.0), dtype=np.float32)
