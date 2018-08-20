@@ -1,3 +1,10 @@
+"""
+Find all triangles in mesh that intersect with all rays from supplied lists.
+
+Return u/v coordinates, implements the Moller-Trumbore algorith
+https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-rendering-a-triangle/moller-trumbore-ray-triangle-intersection.
+"""
+
 import math
 import numpy as np
 from utilities import spherical
@@ -5,7 +12,7 @@ from utilities import spherical
 
 class barycentric_coordinates:
     def prepare_barycentric_coordinates(self, c, vertices):
-        """Return the barycentric coordinates of a ray from the origin to triangles
+        """Prepare the data to get the barycentric coordinates of a ray from the origin to triangles
         defined by three points.
 
         arrays index
@@ -37,7 +44,7 @@ class barycentric_coordinates:
 
     def get_barycentric_coordinates(self, r):
         """Get barycentric coordinates of a vector compared to all triangles 
-        in the list of triangles. 
+        in the list of triangles, defined by points p1, p2, p3
 
         Returns
          dot: dot == 0: no intersection, r is parallel to plane
@@ -46,33 +53,37 @@ class barycentric_coordinates:
          dot < 0:  plane normal and ray are opposed direction, ray goes away
                    from triangle
 
-         t: r multiplier to find P
-         u, v: barycentric coordinates
+         t: r multiplier to find intersection point P = O + t*r
+         u, v: barycentric coordinates 
+                v0 = p2-p1
+                v1 = p3-p1
+                P = p1 + u*v0 + v*v1
 
-        t, u, v need to be normalised by 1/dot. Not done to avoid NaNs
+         t, u, v need to be normalised by multiplying by 1/dot. Not done 
+                 before returning values to avoid NaNs when dot == 0.
         """
         # r: [radial vector idx, coordinates] list of vectors
         # n: [normal vector idx, coordinates] list of vectors
         # should return a matrix of r's compared to all n's
         # return of dim [normal, radial]
 
-        dot = np.tensordot(self.n, r, axes=(-1, -1))
-        print("dot:", dot.shape)
+        #dot = np.tensordot(self.n, r, axes=(-1, -1))
+        #print("dot:", dot.shape)
         #    it = dot != 0
         # intersection_t = np.zeros(dot.shape)
         # intersection_t[it] = D[it]/dot[it]
 
         # distance to origin: [vector idx] list of distances of one plane to its origin
-        d = np.cross(self.c0, self.v0)
-        print("d", d.shape)
-        t_i = -np.sum(d*self.v1, axis=1)
-        print("t_i:", t_i.shape)
+        #d = np.cross(self.c0, self.v0)
+        #print("d", d.shape)
+        #t_i = -np.sum(d*self.v1, axis=1)
+        #print("t_i:", t_i.shape)
         # u and v barycentric coordinates of each r to each triangles: [vector idx, radial]
-        u_i = np.tensordot(np.cross(self.c0, self.v1), r, axes=(-1, -1))
-        print("u_i:", u_i.shape)
+        #u_i = np.tensordot(np.cross(self.c0, self.v1), r, axes=(-1, -1))
+        #print("u_i:", u_i.shape)
 
-        v_i = -np.tensordot(d, r, axes=(-1, -1))
-        print("v_i:", v_i.shape)
+        #v_i = -np.tensordot(d, r, axes=(-1, -1))
+        #print("v_i:", v_i.shape)
 
         #############################################################
         # recompute
@@ -99,8 +110,8 @@ class barycentric_coordinates:
         # other recompute
         def tm(O, A, B, C, D):
             T = O - A
-            E1 = C - A
-            E2 = B - A
+            E1 = B - A
+            E2 = C - A
             P = np.cross(D, E2)
             Q = np.cross(T, E1)
             dot = np.dot(P, E1)
@@ -113,8 +124,8 @@ class barycentric_coordinates:
         def tm_multiray(O, A, B, C, D):
             # D has multiple vectors
             T = O - A  # single vector
-            E1 = C - A  # single vector
-            E2 = B - A  # single vector
+            E1 = B - A  # single vector
+            E2 = C - A  # single vector
             # multi_vector x single vector -> multi vector
             P = np.cross(D[:, np.newaxis, :], E2)
             Q = np.cross(T, E1)  # single vector
@@ -129,8 +140,8 @@ class barycentric_coordinates:
             # D has multiple vectors -> nr: num rays
             # A, B, C, have multiple vectors -> nt: num triangles
             T = O - A  # multi vector -> nt*3
-            E1 = C - A  # multi vector -> nt*3
-            E2 = B - A  # multi vector -> nt*3
+            E1 = B - A  # multi vector -> nt*3
+            E2 = C - A  # multi vector -> nt*3
             # multi_vector x multi vector -> multi multi vector
             # (crosses each vector from first input to each vector
             # from second input)  -> nt*nr*3
