@@ -50,6 +50,7 @@
 #include "../headers/phy/profx_tidalearth_hs.h"
 #include "../headers/phy/apocalypse_sponge.h"
 #include "../headers/phy/profx_RT.h"
+#include "../headers/phy/valkyrie_conservation.h"
 
 #include "binary_test.h"
 #include "debug_helpers.h"
@@ -67,7 +68,9 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
                          double kb          , // Boltzmann constant [J/K]
                          double P_Ref       , // Reference pressure [Pa]
                          double Gravit      , // Gravity [m/s^2]
-                         double A           ,// Planet radius [m]
+                         double A           , // Planet radius [m]
+                         bool   DeepModel   ,
+                         int    n_out        , // output step (triggers conservation calc)
                          bool   sponge      , // Use sponge layer?
                          bool   shrink_sponge){ // Shrink sponge after some time
     USE_BENCHMARK()
@@ -277,6 +280,60 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
 #endif // BENCHMARKING
 
     BENCH_POINT_I(current_step, "phy_END", vector<string>({}), vector<string>({"Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"}))
+
+    if(nstep % n_out == 0) {
+    // calculate quantities we hope to conserve!
+      cudaMemset(GlobalE_d     , 0, sizeof(double));
+      cudaMemset(GlobalMass_d  , 0, sizeof(double));
+      cudaMemset(GlobalAMx_d   , 0, sizeof(double));
+      cudaMemset(GlobalAMy_d   , 0, sizeof(double));
+      cudaMemset(GlobalAMz_d   , 0, sizeof(double));
+
+      CalcMass <<< NB, NTH >>> (Mass_d       ,
+                                GlobalMass_d ,
+                                Rho_d        ,
+                                A            ,
+                                Altitudeh_d  ,
+                                lonlat_d     ,
+                                areasT_d     ,
+                                point_num    ,
+                                DeepModel    );
+
+      CalcTotEnergy <<< NB, NTH >>> (Etotal_d     ,
+                                     GlobalE_d    ,
+                                     Mh_d         ,
+                                     W_d          ,
+                                     Rho_d        ,
+                                     temperature_d,
+                                     Gravit       ,
+                                     Cp           ,
+                                     Rd           ,
+                                     A            ,
+                                     Altitude_d   ,
+                                     Altitudeh_d  ,
+                                     lonlat_d     ,
+                                     areasT_d     ,
+                                     point_num    ,
+                                     DeepModel    );
+
+      CalcAngMom <<< NB, NTH >>> ( AngMomx_d    ,
+                                   AngMomy_d    ,
+                                   AngMomz_d    ,
+                                   GlobalAMx_d  ,
+                                   GlobalAMy_d  ,
+                                   GlobalAMz_d  ,
+                                   Mh_d         ,
+                                   Rho_d        ,
+                                   A            ,
+                                   Omega        ,
+                                   Altitude_d   ,
+                                   Altitudeh_d  ,
+                                   lonlat_d     ,
+                                   areasT_d     ,
+                                   point_num    ,
+                                   DeepModel    );
+     }
+
 //
 //END OF INTEGRATION
 //

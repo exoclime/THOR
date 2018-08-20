@@ -48,7 +48,7 @@ parser.add_argument("-pmin","--pressure_min",nargs=1,default=['default'],help='L
 args = parser.parse_args()
 pview = args.pview
 
-valid = ['uver','Tver','Tulev','PTver','ulev','PVver','PVlev','vring','TP','RVlev','pause']
+valid = ['uver','Tver','Tulev','PTver','ulev','PVver','PVlev','vring','TP','RVlev','cons','pause']
 if 'all' in pview:
     pview = valid
 else:
@@ -131,6 +131,9 @@ if 'RVlev' in pview:
 #     ham.vring(input,grid,output,sigmaref)
 if 'TP' in pview:
     ham.TPprof(input,grid,output,sigmaref,1902)
+
+if 'cons' in pview:
+    ham.conservation(input,grid,output)
 
 last = time.time()
 print(last-first)

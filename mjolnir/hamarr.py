@@ -63,6 +63,16 @@ class output:
         self.ntsi = ntsi
         self.nts = nts
         self.time = np.zeros(nts-ntsi+1)
+        self.Etotal = np.zeros((grid.point_num,grid.nv,nts-ntsi+1))
+        self.Mass = np.zeros((grid.point_num,grid.nv,nts-ntsi+1))
+        self.AngMomx = np.zeros((grid.point_num,grid.nv,nts-ntsi+1))
+        self.AngMomy = np.zeros((grid.point_num,grid.nv,nts-ntsi+1))
+        self.AngMomz = np.zeros((grid.point_num,grid.nv,nts-ntsi+1))
+        self.GlobalE = np.zeros(nts-ntsi+1)
+        self.GlobalMass = np.zeros(nts-ntsi+1)
+        self.GlobalAMx = np.zeros(nts-ntsi+1)
+        self.GlobalAMy = np.zeros(nts-ntsi+1)
+        self.GlobalAMz = np.zeros(nts-ntsi+1)
 
         # Read model results
         for t in np.arange(ntsi-1,nts):
@@ -76,6 +86,19 @@ class output:
             Mhi = openh5['Mh'][...]
             Whi = openh5['Wh'][...]
             time = openh5['simulation_time'][0]/86400
+            if 'Etotal' in openh5.keys():
+                Etotali = openh5['Etotal'][...]
+                Massi = openh5['Mass'][...]
+                AngMomxi = openh5['AngMomx'][...]
+                AngMomyi = openh5['AngMomy'][...]
+                AngMomzi = openh5['AngMomz'][...]
+                self.GlobalE[t-ntsi+1] = openh5['GlobalE'][0]
+                self.GlobalMass[t-ntsi+1] = openh5['GlobalMass'][0]
+                self.GlobalAMx[t-ntsi+1] = openh5['GlobalAMx'][0]
+                self.GlobalAMy[t-ntsi+1] = openh5['GlobalAMy'][0]
+                self.GlobalAMz[t-ntsi+1] = openh5['GlobalAMz'][0]
+            else:
+                print('Warning: conservation diagnostics not available in file %s'%fileh5)
             openh5.close()
 
             self.Rho[:,:,t-ntsi+1] = np.reshape(Rhoi,(grid.point_num,grid.nv))
@@ -85,7 +108,12 @@ class output:
             self.Mh[2,:,:,t-ntsi+1] = np.reshape(Mhi[2::3],(grid.point_num,grid.nv))
             self.Wh[:,:,t-ntsi+1] = np.reshape(Whi,(grid.point_num,grid.nvi))
             self.time[t-ntsi+1] = time
-
+            if 'Etotali' in locals():
+                self.Etotal[:,:,t-ntsi+1] = np.reshape(Etotali,(grid.point_num,grid.nv))
+                self.Mass[:,:,t-ntsi+1] = np.reshape(Massi,(grid.point_num,grid.nv))
+                self.AngMomx[:,:,t-ntsi+1] = np.reshape(AngMomxi,(grid.point_num,grid.nv))
+                self.AngMomy[:,:,t-ntsi+1] = np.reshape(AngMomyi,(grid.point_num,grid.nv))
+                self.AngMomz[:,:,t-ntsi+1] = np.reshape(AngMomzi,(grid.point_num,grid.nv))
 
 class GetOutput:
     def __init__(self,resultsf,simID,ntsi,nts):
@@ -1064,4 +1092,38 @@ def TPprof(input,grid,output,sigmaref,column):
     if not os.path.exists(input.resultsf+'/figures'):
         os.mkdir(input.resultsf+'/figures')
     plt.savefig(input.resultsf+'/figures/TPprofile_i%d_l%d.pdf'%(output.ntsi,output.nts))
+    plt.close()
+
+def conservation(input,grid,output):
+
+    fig = plt.figure(figsize=(12,8))
+    fig.subplots_adjust(wspace=0.25,left=0.07,right=0.98,top=0.97,bottom=0.07)
+    plt.subplot(2,3,1)
+    plt.plot(output.time,output.GlobalE,'ko',linestyle='--')
+    plt.xlabel('Time (days)')
+    plt.ylabel('Total energy of atmosphere (J)')
+
+    plt.subplot(2,3,2)
+    plt.plot(output.time,output.GlobalMass,'ko',linestyle='--')
+    plt.xlabel('Time (days)')
+    plt.ylabel('Total mass of atmosphere (kg)')
+
+    plt.subplot(2,3,3)
+    plt.plot(output.time,output.GlobalAMz,'ko',linestyle='--')
+    plt.xlabel('Time (days)')
+    plt.ylabel(r'Z angular momentum of atmosphere (kg m$^2$ s$^{-1}$)')
+
+    plt.subplot(2,3,5)
+    plt.plot(output.time,output.GlobalAMx,'ko',linestyle='--')
+    plt.xlabel('Time (days)')
+    plt.ylabel(r'X angular momentum of atmosphere (kg m$^2$ s$^{-1}$)')
+
+    plt.subplot(2,3,6)
+    plt.plot(output.time,output.GlobalAMy,'ko',linestyle='--')
+    plt.xlabel('Time (days)')
+    plt.ylabel(r'Y angular momentum of atmosphere (kg m$^2$ s$^{-1}$)')
+
+    if not os.path.exists(input.resultsf+'/figures'):
+        os.mkdir(input.resultsf+'/figures')
+    plt.savefig(input.resultsf+'/figures/conservation_i%d_l%d.pdf'%(output.ntsi,output.nts))
     plt.close()

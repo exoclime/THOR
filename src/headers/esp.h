@@ -132,6 +132,7 @@ public:
     double *nvecoa_d        ;
     double *nvecti_d      ;
     double *nvecte_d      ;
+    double *areasT_d      ;
     double *areasTr_d     ;
 
     double *lonlat_d      ;
@@ -221,15 +222,15 @@ public:
 
 //  energy, ang momentum and mass conservation
     double *Etotal_d        ;  //total energy (internal+kinetic+gravit) in control volume
-    double GlobalE_d        ;  //total energy over entire atmosphere
+    double *GlobalE_d       ;  //total energy over entire atmosphere
     double *Mass_d          ;  //mass in control volume
-    double GlobalMass_d     ;  //total mass of atmosphere
+    double *GlobalMass_d    ;  //total mass of atmosphere
     double *AngMomx_d       ;
     double *AngMomy_d       ;
     double *AngMomz_d       ;
-    double GlobalAMx_d      ;
-    double GlobalAMy_d      ;
-    double GlobalAMz_d      ;
+    double *GlobalAMx_d     ;
+    double *GlobalAMy_d     ;
+    double *GlobalAMz_d     ;
 
 ///////////////////////////
 
@@ -324,6 +325,8 @@ public:
                double,
                double,
                double,
+               bool  ,
+               int   ,
                bool  ,
                bool  );
 

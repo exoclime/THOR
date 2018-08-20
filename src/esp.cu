@@ -696,6 +696,8 @@ int main (int argc,  char** argv){
                Planet.P_Ref , // Reference pressure [Pa]
                Planet.Gravit, // Gravity [m/s^2]
                Planet.A     , // Planet radius [m]
+               n_out        , 
+               DeepModel    ,
                SpongeLayer  ,
                shrink_sponge);
 
