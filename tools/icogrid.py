@@ -110,8 +110,8 @@ class barycentric_coordinates:
         # other recompute
         def tm(O, A, B, C, D):
             T = O - A
-            E1 = C - A
-            E2 = B - A
+            E1 = B - A
+            E2 = C - A
             P = np.cross(D, E2)
             Q = np.cross(T, E1)
             dot = np.dot(P, E1)
@@ -124,8 +124,8 @@ class barycentric_coordinates:
         def tm_multiray(O, A, B, C, D):
             # D has multiple vectors
             T = O - A  # single vector
-            E1 = C - A  # single vector
-            E2 = B - A  # single vector
+            E1 = B - A  # single vector
+            E2 = C - A  # single vector
             # multi_vector x single vector -> multi vector
             P = np.cross(D[:, np.newaxis, :], E2)
             Q = np.cross(T, E1)  # single vector

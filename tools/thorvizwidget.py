@@ -168,44 +168,44 @@ class ThorVizWidget(QOpenGLWidget):
         self.ico_grid_painter.paint_grid()
         self.shader_manager.release("icos_grid")
         # ##############################################
-        self.shader_manager.load("marker_grid")
+        # self.shader_manager.load("marker_grid")
 
-        colour = QVector4D(1.0, 1.0, 1.0, 1.0)
-        # view transformation
-        view = QMatrix4x4()
-        view.translate(0.0,  0.0, self.cam_r)
-        view *= self.cam_orientation
-        self.shader_manager.set_uniform("marker_grid", "view", view)
+        # colour = QVector4D(1.0, 1.0, 1.0, 1.0)
+        # # view transformation
+        # view = QMatrix4x4()
+        # view.translate(0.0,  0.0, self.cam_r)
+        # view *= self.cam_orientation
+        # self.shader_manager.set_uniform("marker_grid", "view", view)
 
-        # projection transformation
-        self.shader_manager.set_uniform(
-            "marker_grid", "projection", self.projection)
+        # # projection transformation
+        # self.shader_manager.set_uniform(
+        #     "marker_grid", "projection", self.projection)
 
-        model = QMatrix4x4()
-        self.shader_manager.set_uniform("marker_grid", "model", model)
+        # model = QMatrix4x4()
+        # self.shader_manager.set_uniform("marker_grid", "model", model)
 
-        self.marker_grid_painter.paint_grid()
-        self.shader_manager.release("marker_grid")
+        # self.marker_grid_painter.paint_grid()
+        # self.shader_manager.release("marker_grid")
 
         # ##############################################
-        self.shader_manager.load("uv_point_shader")
+        # self.shader_manager.load("uv_point_shader")
 
-        colour = QVector4D(1.0, 1.0, 1.0, 1.0)
-        # view transformation
-        view = QMatrix4x4()
-        view.translate(0.0,  0.0, self.cam_r)
-        view *= self.cam_orientation
-        self.shader_manager.set_uniform("uv_point_shader", "view", view)
+        # colour = QVector4D(1.0, 1.0, 1.0, 1.0)
+        # # view transformation
+        # view = QMatrix4x4()
+        # view.translate(0.0,  0.0, self.cam_r)
+        # view *= self.cam_orientation
+        # self.shader_manager.set_uniform("uv_point_shader", "view", view)
 
-        # projection transformation
-        self.shader_manager.set_uniform(
-            "uv_point_shader", "projection", self.projection)
+        # # projection transformation
+        # self.shader_manager.set_uniform(
+        #     "uv_point_shader", "projection", self.projection)
 
-        model = QMatrix4x4()
-        self.shader_manager.set_uniform("uv_point_shader", "model", model)
+        # model = QMatrix4x4()
+        # self.shader_manager.set_uniform("uv_point_shader", "model", model)
 
-        self.marker_grid_painter.paint_uv()
-        self.shader_manager.release("uv_point_shader")
+        # self.marker_grid_painter.paint_uv()
+        # self.shader_manager.release("uv_point_shader")
 
         #################################
         self.shader_manager.load("icos_field")
