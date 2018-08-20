@@ -30,6 +30,7 @@ out vec3 colour_;
 uniform highp mat4 view;
 uniform highp mat4 projection;
 uniform highp mat4 model;
+
 void main() {
    gl_Position = projection * view * model *  vec4(vp, 1.0);
    colour_ = vertex_colour;
@@ -43,6 +44,88 @@ out vec4 colour_out;
 void main() {
    colour_out = vec4(colour_, 1.0);
 }"""
+
+
+vertex_shader_point = """
+# version 400\n
+layout(location = 0) in vec3 vp;
+//layout(location = 1) in vec3 vertex_colour;
+
+
+out GS_OUT {
+   vec3 fcolor;
+} gs_out;
+
+uniform highp mat4 view;
+uniform highp mat4 projection;
+uniform highp mat4 model;
+
+void main() {
+   gl_Position = projection * view * model *  vec4(vp, 1.0);
+   //gl_Position = vec4(vp, 1.0);
+   gs_out.fcolor = vec3(0.0,1.0,0.0);
+}"""
+
+
+fragment_shader_point = """
+# version 400\n
+
+in GS_OUT {
+   vec3 fcolor;
+} fs_in;
+
+
+out vec4 colour_out;
+
+void main() {
+   colour_out = vec4(fs_in.fcolor, 1.0);
+}"""
+
+
+geometry_shader_point = """
+#version 400\n
+
+
+layout (points) in;
+layout (triangle_strip, max_vertices = 3) out;
+//layout (points, max_vertices = 3) out;
+
+in VS_OUT {
+   vec3 colour;
+} gs_in[];
+
+out GS_OUT {
+   vec3 fcolor;
+} gs_out;
+
+
+uniform highp mat4 view;
+uniform highp mat4 projection;
+uniform highp mat4 model;
+
+
+void main(void)
+{
+float a = 0.05;
+float w = gl_in[0].gl_Position.w;
+vec4 p = gl_in[0].gl_Position;
+
+gl_Position = projection * view * model * (p + vec4(a, 0.0,a,0.0));
+gs_out.fcolor = gs_in[0].colour;
+
+EmitVertex();
+gl_Position = projection * view * model * (p + vec4( -a,-a,0.0,0.0));
+gs_out.fcolor = gs_in[0].colour;
+
+EmitVertex();
+
+gl_Position = projection * view * model * (p + vec4( -a,a,0.0,0.0));
+gs_out.fcolor = gs_in[0].colour;
+
+EmitVertex();
+EndPrimitive();
+}
+"""
 
 
 class MarkerGridPainter(BasePainter):
@@ -65,6 +148,12 @@ class MarkerGridPainter(BasePainter):
                                         fragment=fragment_shader_marker,
                                         uniforms=["model", "view", "projection"])
 
+        self.shader_manager.add_shaders("uv_point_shader",
+                                        vertex=vertex_shader_point,
+                                        # geometry=geometry_shader_point,
+                                        fragment=fragment_shader_point,
+                                        uniforms=["model", "view", "projection"])
+
     def initializeGL(self):
 
         # create
@@ -83,7 +172,7 @@ class MarkerGridPainter(BasePainter):
         self.ico = ico(g, lonlat)
 
         # get some triangles
-        l = 400
+        l = 4
         rs = np.zeros((l, 3))
 
         theta = 25.0*math.pi/(2.0*90.0)
@@ -114,6 +203,7 @@ class MarkerGridPainter(BasePainter):
 
         # get indexes that actually match:
 
+        # t = t_i/dot
         u = u_i/dot
         v = v_i/dot
         print(u.shape, v.shape, u_i.shape, v_i.shape, dot.shape)
@@ -126,6 +216,41 @@ class MarkerGridPainter(BasePainter):
         w = np.where(condition)
         stop = time.time()
         print("Barycentric coordinates done: {} s".format(stop-start))
+
+        a = 0.01
+        rr = 1.002
+        # build UV coordinates
+
+        print("w0", w[0].shape)
+        uv_vertices = np.zeros((3*w[0].shape[0], 3), dtype=np.float32)
+        print("uv", u.shape, v.shape)
+        for i in range(w[0].shape[0]):
+            triangle_idx = w[0][i]
+            triangle = self.ico.triangles[triangle_idx]
+            print("tri", triangle)
+            u_p = u[w[0][i], w[1][i]]
+            v_p = v[w[0][i], w[1][i]]
+            print("u:\t{}\tv:{}".format(u_p, v_p))
+
+            i1 = triangle[0]
+            i2 = triangle[1]
+            i3 = triangle[2]
+            p1 = spherical(rr, lonlat[i1, 1], lonlat[i1, 0])
+            print("p1", p1)
+            p2 = spherical(rr, lonlat[i2, 1], lonlat[i2, 0])
+            p3 = spherical(rr, lonlat[i3, 1], lonlat[i3, 0])
+            v0 = p2 - p1
+            v1 = p3 - p1
+
+            pk = p1 + u_p*v1 + v_p * v0
+            #uv_vertices[i] = p1 + u_p*v0 + v_p * v1
+            uv_vertices[3*i+0] = pk + \
+                np.array((a, 0.0, 0.0), dtype=np.float32)
+            uv_vertices[3*i+1] = pk + np.array((-a, -a, 0.0), dtype=np.float32)
+            uv_vertices[3*i+2] = pk + np.array((-a,  a, 0.0), dtype=np.float32)
+        self.uv_count = uv_vertices.size
+
+        self.vao_uv = self.create_uv_vao(uv_vertices)
 
         # for r in range(l):
         #     print(rs[r, :])
@@ -246,6 +371,16 @@ class MarkerGridPainter(BasePainter):
     #         self.update_values_vbo(data_scalar)
     #         self.last_loaded = self.draw_idx
 
+    def create_uv_vao(self, vertices):
+        vao = gl.glGenVertexArrays(1)
+
+        gl.glBindVertexArray(vao)
+        gl.glEnableVertexAttribArray(0)
+
+        self.create_vbo(vertices)
+
+        return vao
+
     def create_marker_vao(self, vertices, elements, colors):
         vao = gl.glGenVertexArrays(1)
 
@@ -258,6 +393,12 @@ class MarkerGridPainter(BasePainter):
         self.create_elements_vbo(elements)
 
         return vao
+
+    def paint_uv(self):
+        gl.glBindVertexArray(self.vao_uv)
+        gl.glDrawArrays(gl.GL_TRIANGLES,
+                        0,
+                        int(self.uv_count))
 
     def paint_grid(self):
         # display grid
