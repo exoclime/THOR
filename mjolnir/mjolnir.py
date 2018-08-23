@@ -48,7 +48,7 @@ parser.add_argument("-pmin","--pressure_min",nargs=1,default=['default'],help='L
 args = parser.parse_args()
 pview = args.pview
 
-valid = ['uver','Tver','Tulev','PTver','ulev','PVver','PVlev','vring','TP','RVlev','cons','pause']
+valid = ['uver','Tver','Tulev','PTver','ulev','PVver','PVlev','vring','TP','RVlev','cons','stream','pause']
 if 'all' in pview:
     pview = valid
 else:
@@ -92,7 +92,7 @@ output = outall.output
 if (args.pressure_min[0]=='default'):
     args.pressure_min[0] = np.max(output.Pressure[:,grid.nv-1,:])
 
-if np.max(input.P_Ref)/np.float(args.pressure_min[0]) > 100:
+if np.max(input.P_Ref)/np.float(args.pressure_min[0]) > 1000:
     sigmaref = np.logspace(np.log10(input.P_Ref),np.log10(np.float(args.pressure_min[0])),20)/input.P_Ref
 else:
     sigmaref = np.linspace(input.P_Ref,np.float(args.pressure_min[0]),20)/input.P_Ref
@@ -134,6 +134,13 @@ if 'TP' in pview:
 
 if 'cons' in pview:
     ham.conservation(input,grid,output)
+
+if 'stream' in pview:
+    if np.max(input.P_Ref)/np.float(args.pressure_min[0]) > 1000:
+        sigmaref = np.logspace(np.log10(input.P_Ref),np.log10(np.float(args.pressure_min[0])),50)/input.P_Ref
+    else:
+        sigmaref = np.linspace(input.P_Ref,np.float(args.pressure_min[0]),50)/input.P_Ref
+    ham.streamf(input,grid,output,sigmaref)
 
 last = time.time()
 print(last-first)

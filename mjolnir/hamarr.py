@@ -182,6 +182,7 @@ def temperature(input,grid,output,sigmaref):
         plt.gca().set_yscale("log")
     plt.xlabel('Latitude (deg)')
     plt.ylabel('Pressure (mba)')
+    plt.title('Time = %#.3f - %#.3f days'%(output.time[0],output.time[-1]))
     clb = plt.colorbar(C)
     if not os.path.exists(input.resultsf+'/figures'):
         os.mkdir(input.resultsf+'/figures')
@@ -280,6 +281,7 @@ def u(input,grid,output,sigmaref):
         plt.gca().set_yscale("log")
     plt.xlabel('Latitude (deg)')
     plt.ylabel('Pressure (mba)')
+    plt.title('Time = %#.3f - %#.3f days'%(output.time[0],output.time[-1]))
     clb = plt.colorbar(C)
     if not os.path.exists(input.resultsf+'/figures'):
         os.mkdir(input.resultsf+'/figures')
@@ -358,7 +360,7 @@ def uv_lev(input,grid,output,Plev):
         cc.set_edgecolor("face") #fixes a stupid bug in matplotlib 2.0
     plt.ylabel('Latitude (deg)')
     plt.xlabel('Longitude (deg)')
-
+    plt.title('Time = %#.3f - %#.3f days'%(output.time[0],output.time[-1]))
     clb = plt.colorbar(C)
     if not os.path.exists(input.resultsf+'/figures'):
         os.mkdir(input.resultsf+'/figures')
@@ -374,7 +376,7 @@ def uv_lev(input,grid,output,Plev):
         cc.set_edgecolor("face") #fixes a stupid bug in matplotlib 2.0
     plt.ylabel('Latitude (deg)')
     plt.xlabel('Longitude (deg)')
-
+    plt.title('Time = %#.3f - %#.3f days'%(output.time[0],output.time[-1]))
     clb = plt.colorbar(C)
     if not os.path.exists(input.resultsf+'/figures'):
         os.mkdir(input.resultsf+'/grid.figures')
@@ -472,7 +474,7 @@ def temperature_u_lev(input,grid,output,Plev):
     plt.xlabel('Longitude (deg)')
     plt.quiver(lonq*180/np.pi,latq*180/np.pi,U,V,color='0.5')
     #plt.plot(grid.lon*180/np.pi,grid.lat*180/np.pi,'w.')
-
+    plt.title('Time = %#.3f - %#.3f days'%(output.time[0],output.time[-1]))
     clb = plt.colorbar(C)
     if not os.path.exists(input.resultsf+'/figures'):
         os.mkdir(input.resultsf+'/figures')
@@ -544,6 +546,7 @@ def potential_temp(input,grid,output,sigmaref):
         plt.gca().set_yscale("log")
     plt.xlabel('Latitude (deg)')
     plt.ylabel('Pressure (mba)')
+    plt.title('Time = %#.3f - %#.3f days'%(output.time[0],output.time[-1]))
     clb = plt.colorbar(C)
     if not os.path.exists(input.resultsf+'/figures'):
         os.mkdir(input.resultsf+'/figures')
@@ -621,6 +624,7 @@ def potential_temp_alt(Rho, Pressure, lon, lat, num, nts, ntsi, Rd, ps0, nv, sig
     # plt.gca().invert_yaxis()
     plt.xlabel('Latitude (deg)')
     plt.ylabel('Pressure (mba)')
+    plt.title('Time = %#.3f - %#.3f days'%(output.time[0],output.time[-1]))
     clb = plt.colorbar(C)
     if not os.path.exists(resultsf+'/figures'):
         os.mkdir(resultsf+'/figures')
@@ -814,6 +818,7 @@ def potential_vort_vert(input,grid,output,sigmaref):
         plt.gca().set_yscale("log")
     plt.xlabel('Latitude (deg)')
     plt.ylabel('Pressure (mba)')
+    plt.title('Time = %#.3f - %#.3f days'%(output.time[0],output.time[-1]))
     #plt.ylabel('Altitude (m)')
     clb = plt.colorbar(C)
     if not os.path.exists(input.resultsf+'/figures'):
@@ -917,6 +922,7 @@ def potential_vort_lev(input,grid,output,sigmaref):
     # plt.gca().invert_yaxis()
     plt.ylabel('Latitude (deg)')
     plt.xlabel('Longitude (deg)')
+    plt.title('Time = %#.3f - %#.3f days'%(output.time[0],output.time[-1]))
     clb = plt.colorbar(C)
     if not os.path.exists(input.resultsf+'/figures'):
         os.mkdir(input.resultsf+'/figures')
@@ -1019,6 +1025,7 @@ def rela_vort_lev(input,grid,output,sigmaref):
     # plt.gca().invert_yaxis()
     plt.ylabel('Latitude (deg)')
     plt.xlabel('Longitude (deg)')
+    plt.title('Time = %#.3f - %#.3f days'%(output.time[0],output.time[-1]))
     clb = plt.colorbar(C)
     if not os.path.exists(input.resultsf+'/figures'):
         os.mkdir(input.resultsf+'/figures')
@@ -1088,15 +1095,97 @@ def TPprof(input,grid,output,sigmaref,column):
     plt.gca().invert_yaxis()
     plt.ylabel('Pressure (mbar)')
     plt.xlabel('Temperature [K]')
-
+    plt.title('Time = %#.3f - %#.3f days'%(output.time[0],output.time[-1]))
     if not os.path.exists(input.resultsf+'/figures'):
         os.mkdir(input.resultsf+'/figures')
     plt.savefig(input.resultsf+'/figures/TPprofile_i%d_l%d.pdf'%(output.ntsi,output.nts))
     plt.close()
 
-def conservation(input,grid,output):
+def streamf(input,grid,output,sigmaref):
+    # eulerian stream function or mass stream function
+    # Set the reference pressure
+    Pref = input.P_Ref*sigmaref
+    d_sig = np.size(sigmaref)
 
+    # Set the latitude-longitude grid.
+    res_deg = 0.005
+    loni, lati = np.meshgrid(np.arange(0,2*np.pi,res_deg),\
+        np.arange(-np.pi/2,np.pi/2,res_deg))
+    d_lon = np.shape(loni)
+    tsp = output.nts-output.ntsi+1
+    ###################
+    # Stream function #
+    ###################
+
+    # Initialize arrays
+    vii = (output.Mh[0]*(-np.sin(grid.lat[:,None,None])*np.cos(grid.lon[:,None,None])) + \
+                output.Mh[1]*(-np.sin(grid.lat[:,None,None])*np.sin(grid.lon[:,None,None])) + \
+                output.Mh[2]*np.cos(grid.lat[:,None,None]))/output.Rho
+    vi = np.zeros((grid.point_num,d_sig))
+    v = np.zeros((d_lon[0],d_lon[1],d_sig,tsp))
+
+    # Compute meridional wind
+    for t in np.arange(tsp):
+        for i in np.arange(grid.point_num):
+            sigma = output.Pressure[i,:,t]
+            # Interpolate atmospheric column ot the reference pressure.
+            # Need to reverse index all arrays because pchip only works if x is increasing
+            vi[i,:] = interp.pchip_interpolate(sigma[::-1],vii[i,::-1,t],Pref[::-1])[::-1]
+        # Convert icosahedral grid into lon-lat grid
+        for lev in np.arange(d_sig):
+            v[:,:,lev,t] = interp.griddata(np.vstack([grid.lon,grid.lat]).T,vi[:,lev],(loni,lati),method='nearest')
+
+    del vii, vi
+
+    # Averaging in time and longitude.
+    if tsp > 1:
+        vl = np.mean(v[:,:,:,:],axis=1)
+        del v
+        vlt = np.mean(vl[:,:,:],axis=2)
+        del vl
+    else:
+        vlt = np.mean(v[:,:,:,0],axis=1)
+        del v
+
+    # Latitude
+    latp = np.arange(-np.pi/2,np.pi/2,res_deg)
+
+    # Now calculate stream fxn !!!
+    Stream = np.zeros_like(vlt)
+    for i in np.arange(np.shape(vlt)[0]):
+        for j in np.arange(1,np.shape(vlt)[1]):
+
+            Stream[i,j] = np.trapz(vlt[i,::-1][-j-1:],x=Pref[::-1][-j-1:])*np.cos(latp[i])
+
+    Stream *= 2*np.pi*input.A/input.Gravit
+
+    #################
+    # Create figure #
+    #################
+
+    # Contour plot
+    C = plt.contourf(latp*180/np.pi,Pref/100,Stream.T,40)
+    for cc in C.collections:
+        cc.set_edgecolor("face") #fixes a stupid bug in matplotlib 2.0
+    plt.gca().invert_yaxis()
+    if np.max(Pref)/np.min(Pref) > 100:
+        plt.gca().set_yscale("log")
+    plt.xlabel('Latitude (deg)')
+    plt.ylabel('Pressure (mba)')
+    plt.title('Time = %#.3f - %#.3f days'%(output.time[0],output.time[-1]))
+    clb = plt.colorbar(C)
+    clb.set_label(r'Stream function (kg s$^{-1}$)')
+    if not os.path.exists(input.resultsf+'/figures'):
+        os.mkdir(input.resultsf+'/figures')
+    plt.tight_layout()
+    plt.savefig(input.resultsf+'/figures/streamf_ver_i%d_l%d.pdf'%(output.ntsi,output.nts))
+    plt.close()
+
+
+def conservation(input,grid,output):
+    # plot quantities that are interesting for conservation
     fig = plt.figure(figsize=(12,8))
+    fig.suptitle('Time = %#.3f - %#.3f days'%(output.time[0],output.time[-1]))
     fig.subplots_adjust(wspace=0.25,left=0.07,right=0.98,top=0.97,bottom=0.07)
     plt.subplot(2,3,1)
     plt.plot(output.time,output.GlobalE,'ko',linestyle='--')
