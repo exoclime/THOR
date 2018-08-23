@@ -43,6 +43,7 @@
 // 1.0     16/08/2017 Released version  (JM)
 //
 ////////////////////////////////////////////////////////////////////////
+#pragma once
 
 // Physical Constants
 #define kb_constant 1.38e-23   // Boltzmann constant [J/K]

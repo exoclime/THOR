@@ -80,6 +80,8 @@ BINDIR = bin
 RESDIR = results
 TESTDIR = tests
 
+MODULES_SRC = src/modules
+
 .PHONY: all clean
 
 #######################################################################
@@ -146,6 +148,8 @@ ifndef VERBOSE
 .SILENT:
 endif
 
+# modules compile directories
+MODULES_DIR = $(OBJDIR)/phy_modules
 #######################################################################
 # create object directory if missing
 $(BINDIR) $(RESDIR) $(OBJDIR):
@@ -197,9 +201,9 @@ $(OBJDIR)/${OUTPUTDIR}/%.o: %.cpp $(OBJDIR)/$(OUTPUTDIR)/%.d| $(OBJDIR)/$(OUTPUT
 
 
 # link *.o objects
-$(BINDIR)/${OUTPUTDIR}/esp: $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj)) | $(BINDIR) $(RESDIR) $(BINDIR)/$(OUTPUTDIR)  $(OBJDIR)
+$(BINDIR)/${OUTPUTDIR}/esp: $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj)) $(MODULES_DIR)/phy_modules.o | $(BINDIR) $(RESDIR) $(BINDIR)/$(OUTPUTDIR)  $(OBJDIR)
 	@echo $(YELLOW)creating $@ $(END)
-	$(CC) $(arch) $(link_flags) -o $(BINDIR)/$(OUTPUTDIR)/esp $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj))  $(h5libdir) $(h5libs)
+	$(CC) $(arch) $(link_flags) -o $(BINDIR)/$(OUTPUTDIR)/esp $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj)) $(MODULES_DIR)/phy_modules.o $(h5libdir) $(h5libs)
 
 # phony so that it will always be run
 .PHONY: symlink
@@ -208,6 +212,16 @@ symlink: $(BINDIR)/$(OUTPUTDIR)/esp
 	rm -f $(BINDIR)/esp
 	ln -s $(BINDIR)/$(OUTPUTDIR)/esp -r -t bin
 
+#######################################################################
+# include physics modules
+
+export
+
+
+$(MODULES_DIR)/phy_modules.o:
+	@echo $(MAGENTA)Creating physics module from subdir $(MODULES_SRC)$(END)
+
+	$(MAKE) -C $(MODULES_SRC)
 
 #######################################################################
 # Build Tests

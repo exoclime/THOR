@@ -89,15 +89,7 @@
 // Output
 #define n_out_default 1000         // Print output every n_out steps
 
-// RT parameter defaults
-#define Tstar_default 4520.0             // Star effective temperature [K]
-#define planet_star_dist_default 0.015 // Planet-star distance [au]
-#define radius_star_default 0.667      // Star radius [km]
-#define diff_fac_default 0.5           // Diffusivity factor: 0.5-1.0
-#define Tlow_default 970.0   // Lower boundary temperature: upward flux coming from the planet's interior
-#define albedo_default 0.18            // Bond albedo
-#define tausw_default 532.0      // Absorption coefficient for the shortwaves
-#define taulw_default 1064.0     // Absorption coefficient for the longwaves
+
 #define output_path_default  "results"     // Output directory
 
 #define gcm_off_default false      //turns off fluid dynamical core for debugging physics
