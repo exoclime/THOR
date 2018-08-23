@@ -29,14 +29,14 @@ double *phtemp        ;
 double *ttemp         ;
 double *thtemp        ;
 
-RTSetup(double Tstar_           ,
-        double planet_star_dist_,
-        double radius_star_     ,
-        double diff_fac_        ,
-        double Tlow_            ,
-        double albedo_          ,
-        double tausw_           ,
-        double taulw_           ) {
+void RTSetup(double Tstar_           ,
+             double planet_star_dist_,
+             double radius_star_     ,
+             double diff_fac_        ,
+             double Tlow_            ,
+             double albedo_          ,
+             double tausw_           ,
+             double taulw_           ) {
     
    double bc = 5.677036E-8; // Stefan–Boltzmann constant [W m−2 K−4]
 
@@ -69,7 +69,7 @@ bool phy_modules_init_mem(const ESP & esp)
     return true;
 }
 
-bool phy_module_init_data()
+bool phy_modules_init_data()
 {
     RTSetup(Tstar            ,
             planet_star_dist ,
@@ -116,8 +116,8 @@ bool phy_modules_mainloop(ESP & esp,
     const int NTH = 256;
 
 //  Specify the block sizes.
-    dim3 NB((point_num / NTH) + 1, nv, 1);
-    dim3 NBRT((point_num/NTH) + 1, 1, 1);
+    dim3 NB((esp.point_num / NTH) + 1, esp.nv, 1);
+    dim3 NBRT((esp.point_num/NTH) + 1, 1, 1);
     
     rtm_dual_band <<< NBRT, NTH >>> (esp.pressure_d   ,
       //rtm_dual_band <<< 1,1 >>> (pressure_d         ,
@@ -172,5 +172,5 @@ bool phy_modules_free_mem()
     cudaFree(ttemp );
     cudaFree(dtemp);
 
-    
+    return true;
 }

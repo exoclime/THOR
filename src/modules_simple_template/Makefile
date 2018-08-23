@@ -9,7 +9,7 @@ $(info arch $(arch))
 all: phy_modules.o
 
 THOR_ROOT = ../../
-
+MODULES_INCLUDE = inc
 
 vpath %.cu src
 
@@ -29,4 +29,4 @@ vpath %.cu src
 
 phy_modules.o: phy_modules.cu | $(THOR_ROOT)$(MODULES_DIR)
 	@echo "Building Modules"
-	$(CC) $(arch)  $(flags) $(h5include) $(h5libdir) -I$(THOR_ROOT)$(includedir) -dc -o $(THOR_ROOT)$(MODULES_DIR)/$@ $<
+	$(CC) $(arch)  $(flags) $(h5include) $(h5libdir) -I$(THOR_ROOT)$(includedir) -I$(MODULES_INCLUDE) -dc -o $(THOR_ROOT)$(MODULES_DIR)/$@ $<
