@@ -17,10 +17,25 @@ MAGENTA := "\033[1;35m"
 CYAN := "\033[1;36m"
 END := "\033[0m"
 
+
+
+#######################################################################
+# get local config
+ifeq ($(wildcard Makefile.conf),Makefile.conf)
+$(info $(GREEN)Using local configuration from Makefile.conf $(END))
+include Makefile.conf
+else
+$(info $(GREEN)No local configuration $(END))
+endif
+
+
+#######################################################################
+# Set up variables for files and compilation
+
 # Builds THOR executable
 CC = nvcc
 
-SM:=35 # Streaming Multiprocessor version
+SM ?= 35 # Streaming Multiprocessor version
 arch := -arch sm_$(SM)
 
 # objects
@@ -80,7 +95,8 @@ BINDIR = bin
 RESDIR = results
 TESTDIR = tests
 
-MODULES_SRC = src/modules
+# set if not set from command line or config file
+MODULES_SRC ?= src/modules
 
 .PHONY: all clean
 
@@ -133,6 +149,8 @@ debug: symlink
 release: symlink
 prof: symlink
 
+
+
 #######################################################################
 # main binary
 all: symlink
@@ -142,14 +160,16 @@ $(info Output objects to: $(OBJDIR)/$(OUTPUTDIR))
 $(info Output tests to: $(BINDIR)/$(TESTDIR))
 $(info flags: $(flags) )
 $(info arch: $(arch) )
-
+$(info MODULES_SRC: $(MODULES_SRC))
 
 ifndef VERBOSE
 .SILENT:
 endif
 
 # modules compile directories
-MODULES_DIR = $(OBJDIR)/phy_modules
+MODULES_DIR := $(OBJDIR)/phy_modules
+
+$(info MODULES_DIR: $(MODULES_DIR))
 #######################################################################
 # create object directory if missing
 $(BINDIR) $(RESDIR) $(OBJDIR):
@@ -163,6 +183,9 @@ $(OBJDIR)/${OUTPUTDIR}: $(OBJDIR)
 
 $(BINDIR)/${TESTDIR}: $(BINDIR)
 	mkdir -p $(BINDIR)/$(TESTDIR)
+
+$(MODULES_DIR): $(OBJDIR)
+	mkdir -p $(MODULES_DIR)
 
 #######################################################################
 # make dependency targets
@@ -201,7 +224,7 @@ $(OBJDIR)/${OUTPUTDIR}/%.o: %.cpp $(OBJDIR)/$(OUTPUTDIR)/%.d| $(OBJDIR)/$(OUTPUT
 
 
 # link *.o objects
-$(BINDIR)/${OUTPUTDIR}/esp: $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj)) $(MODULES_DIR)/phy_modules.o | $(BINDIR) $(RESDIR) $(BINDIR)/$(OUTPUTDIR)  $(OBJDIR)
+$(BINDIR)/${OUTPUTDIR}/esp: $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj)) $(MODULES_DIR)/phy_modules.o | $(BINDIR) $(RESDIR) $(BINDIR)/$(OUTPUTDIR)  $(OBJDIR) $(MODULES_DIR)
 	@echo $(YELLOW)creating $@ $(END)
 	$(CC) $(arch) $(link_flags) -o $(BINDIR)/$(OUTPUTDIR)/esp $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj)) $(MODULES_DIR)/phy_modules.o $(h5libdir) $(h5libs)
 
@@ -216,9 +239,9 @@ symlink: $(BINDIR)/$(OUTPUTDIR)/esp
 # include physics modules
 
 export
-
-
-$(MODULES_DIR)/phy_modules.o:
+# always call submakefile for modules
+.PHONY: $(MODULES_DIR)/phy_modules.o
+$(MODULES_DIR)/phy_modules.o: $(MODULES_DIR)
 	@echo $(MAGENTA)Creating physics module from subdir $(MODULES_SRC)$(END)
 
 	$(MAKE) -C $(MODULES_SRC)
@@ -284,14 +307,18 @@ clean:
 	-$(RM) $(obj_tests_gen_init:%.o=$(OBJDIR)/debug/%.d)
 	@echo $(CYAN)clean up symlink $(END)
 	-$(RM) $(BINDIR)/esp
+	@echo $(CYAN)clean up modules directory $(END)
+	-$(RM) -rf $(MODULES_DIR)/*.o
 	@echo $(CYAN)clean up directories $(END)
 	-$(RM) -d $(BINDIR)/debug $(BINDIR)/release $(BINDIR)/prof
 	-$(RM) -d $(BINDIR)/tests
 	-$(RM) -d $(OBJDIR)/debug
 	-$(RM) -d $(OBJDIR)/release
 	-$(RM) -d $(OBJDIR)/prof
+	-$(RM) -d $(MODULES_DIR)
 	-$(RM) -d $(BINDIR)
 	-$(RM) -d $(OBJDIR)
+
 
 #######################################################################
 # dependencies includes
