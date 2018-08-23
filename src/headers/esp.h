@@ -107,6 +107,20 @@ public:
     int *zonal_mean_tab_h ;
     double Rv_sponge      ;
     double ns_sponge      ;
+    double t_shrink       ;
+
+    //  energy, ang momentum and mass conservation
+    double *Etotal_h        ;  //total energy (internal+kinetic+gravit) in control volume
+    double GlobalE_h        ;  //total energy over entire atmosphere
+    double *Mass_h          ;  //mass in control volume
+    double GlobalMass_h     ;  //total mass of atmosphere
+    double *AngMomx_h       ;
+    double *AngMomy_h       ;
+    double *AngMomz_h       ;
+    double GlobalAMx_h      ;
+    double GlobalAMy_h      ;
+    double GlobalAMz_h      ;
+
 ///////////////////////////
 //  Device
     int *point_local_d    ;
@@ -118,6 +132,7 @@ public:
     double *nvecoa_d        ;
     double *nvecti_d      ;
     double *nvecte_d      ;
+    double *areasT_d      ;
     double *areasTr_d     ;
 
     double *lonlat_d      ;
@@ -205,6 +220,18 @@ public:
     double *ttemp         ;
     double *thtemp        ;
 
+//  energy, ang momentum and mass conservation
+    double *Etotal_d        ;  //total energy (internal+kinetic+gravit) in control volume
+    double *GlobalE_d       ;  //total energy over entire atmosphere
+    double *Mass_d          ;  //mass in control volume
+    double *GlobalMass_d    ;  //total mass of atmosphere
+    double *AngMomx_d       ;
+    double *AngMomy_d       ;
+    double *AngMomz_d       ;
+    double *GlobalAMx_d     ;
+    double *GlobalAMy_d     ;
+    double *GlobalAMz_d     ;
+
 ///////////////////////////
 
 //  Functions
@@ -233,6 +260,7 @@ public:
         int * zonal_mean_tab ,
         double Rv_sponge_    ,
         double ns_sponge_    ,
+        double t_shrink_     ,
         int point_num_       );
 
     void AllocData() ;
@@ -297,6 +325,9 @@ public:
                double,
                double,
                double,
+               bool  ,
+               int   ,
+               bool  ,
                bool  );
 
     void CopyToHost();

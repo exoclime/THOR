@@ -78,6 +78,7 @@ __host__ ESP::ESP(int *point_local_    ,
                   int *zonal_mean_tab  ,
                   double Rv_sponge_    ,
                   double ns_sponge_    ,
+                  double t_shrink_     ,
                   int point_num_    ): nl_region(nl_region_),
                                        nr(nr_),
                                        point_num(point_num_),
@@ -112,6 +113,7 @@ __host__ ESP::ESP(int *point_local_    ,
 
     Rv_sponge = Rv_sponge_;
     ns_sponge = ns_sponge_;
+    t_shrink = t_shrink_;
 //
 //  Allocate Data
     AllocData();
@@ -135,6 +137,12 @@ __host__ void ESP::AllocData(){
     W_h          = (double*)malloc(nv*point_num   * sizeof(double));
     Wh_h         = (double*)malloc(nvi*point_num  * sizeof(double));
 
+    Etotal_h      = (double*)malloc(nv*point_num   * sizeof(double));
+    Mass_h        = (double*)malloc(nv*point_num   * sizeof(double));
+    AngMomx_h     = (double*)malloc(nv*point_num   * sizeof(double));
+    AngMomy_h     = (double*)malloc(nv*point_num   * sizeof(double));
+    AngMomz_h     = (double*)malloc(nv*point_num   * sizeof(double));
+
 //  Allocate data in device
 //  Grid
     cudaMalloc((void **)&point_local_d, 6 * point_num * sizeof(int));
@@ -144,6 +152,7 @@ __host__ void ESP::AllocData(){
     cudaMalloc((void **)&nvecoa_d , 6 * 3 * point_num * sizeof(double));
     cudaMalloc((void **)&nvecti_d , 6 * 3 * point_num * sizeof(double));
     cudaMalloc((void **)&nvecte_d , 6 * 3 * point_num * sizeof(double));
+    cudaMalloc((void **)&areasT_d, point_num * sizeof(double));
     cudaMalloc((void **)&areasTr_d, 6 * point_num * sizeof(double));
     cudaMalloc((void **)&func_r_d  , 3 * point_num * sizeof(double));
     cudaMalloc((void **)&div_d, 7 * 3 * point_num * sizeof(double));
@@ -236,6 +245,18 @@ __host__ void ESP::AllocData(){
     cudaMalloc((void **)&thtemp      , nvi * point_num *     sizeof(double));
     cudaMalloc((void **)&ttemp       , nv * point_num *     sizeof(double));
     cudaMalloc((void **)&dtemp       , nv * point_num *     sizeof(double));
+
+//  Conservation quantities
+    cudaMalloc((void **)&Etotal_d       , nv * point_num *     sizeof(double));
+    cudaMalloc((void **)&Mass_d         , nv * point_num *     sizeof(double));
+    cudaMalloc((void **)&AngMomx_d      , nv * point_num *     sizeof(double));
+    cudaMalloc((void **)&AngMomy_d      , nv * point_num *     sizeof(double));
+    cudaMalloc((void **)&AngMomz_d      , nv * point_num *     sizeof(double));
+    cudaMalloc((void **)&GlobalE_d      , 1 *     sizeof(double));
+    cudaMalloc((void **)&GlobalMass_d   , 1 *     sizeof(double));
+    cudaMalloc((void **)&GlobalAMx_d    , 1 *     sizeof(double));
+    cudaMalloc((void **)&GlobalAMy_d    , 1 *     sizeof(double));
+    cudaMalloc((void **)&GlobalAMz_d    , 1 *     sizeof(double));
 }
 
 __host__ bool ESP::InitialValues(bool rest          ,
@@ -288,7 +309,7 @@ __host__ bool ESP::InitialValues(bool rest          ,
                   double Ptil = 0.0;
                   if (pressure_h[i*nv+lev] >= 1e5) {
                     Ptil = log10(pressure_h[i*nv + lev]/100000);
-                  } 
+                  }
                   temperature_h[i*nv + lev] = 1696.6986 + 132.2318*Ptil - 174.30459*Ptil*Ptil \
                      + 12.579612*Ptil*Ptil*Ptil + 59.513639*Ptil*Ptil*Ptil*Ptil \
                      + 9.6706522*Ptil*Ptil*Ptil*Ptil*Ptil \
@@ -516,6 +537,7 @@ __host__ bool ESP::InitialValues(bool rest          ,
     cudaMemcpy(nvecti_d  , nvecti_h  , 6 * 3 * point_num * sizeof(double), cudaMemcpyHostToDevice);
     cudaMemcpy(nvecte_d  , nvecte_h  , 6 * 3 * point_num * sizeof(double), cudaMemcpyHostToDevice);
     cudaMemcpy(areasTr_d , areasTr_h , 6 *     point_num * sizeof(double), cudaMemcpyHostToDevice);
+    cudaMemcpy(areasT_d , areasT_h ,   point_num * sizeof(double), cudaMemcpyHostToDevice);
     cudaMemcpy(lonlat_d , lonlat_h , 2 * point_num * sizeof(double), cudaMemcpyHostToDevice);
     cudaMemcpy(func_r_d  , func_r_h  , 3 * point_num * sizeof(double), cudaMemcpyHostToDevice);
     cudaMemcpy(temperature_d, temperature_h, point_num * nv    *     sizeof(double), cudaMemcpyHostToDevice);
@@ -627,6 +649,7 @@ __host__ ESP::~ESP(){
     cudaFree(nvecoa_d);
     cudaFree(nvecti_d);
     cudaFree(nvecte_d);
+    cudaFree(areasT_d);
     cudaFree(areasTr_d);
     cudaFree(lonlat_d);
     cudaFree(div_d);
