@@ -27,11 +27,12 @@ class input:
         self.P_Ref = openh5['P_Ref'][...]
         self.Top_altitude = openh5['Top_altitude'][...]
         self.Cp = openh5['Cp'][...]
-        self.spring_beta = openh5['spring_beta'][...]
-        self.vlevel = openh5['vlevel'][...]
-        self.glevel = openh5['glevel'][...]
         self.Gravit = openh5['Gravit'][...]
-        self.spring_dynamics = openh5['spring_dynamics'][...]
+        if 'spring_beta' in openh5.keys():
+            self.spring_beta = openh5['spring_beta'][...]
+            self.vlevel = openh5['vlevel'][...]
+            self.glevel = openh5['glevel'][...]
+            self.spring_dynamics = openh5['spring_dynamics'][...]
         self.resultsf = resultsf
         self.simID = simID
         openh5.close()

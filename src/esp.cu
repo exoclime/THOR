@@ -64,6 +64,7 @@ using namespace std;
 #include "directories.h"
 
 #include "binary_test.h"
+//#include "headers/phy/valkyrie_conservation.h"
 
 int main (int argc,  char** argv){
 
@@ -448,6 +449,7 @@ int main (int argc,  char** argv){
                                         mu_constant  , // Atomic mass unit [kg]
                                         Planet.Rd    , // Gas constant [J/kg/K]
                                         SpongeLayer  , // Enable sponge layer
+                                        DeepModel    , // Use deep model radius correction
                                         TPprof       , // isothermal = 0, guillot = 1
                                         hstest       , // argh
                                         step_idx     , // current step index
@@ -630,6 +632,7 @@ int main (int argc,  char** argv){
     double simulation_time = simulation_start_time;
     if (!continue_sim)
     {
+        X.CopyToHost();
         X.Output(0                   , // file index
                  0                   , // step index
                  Planet.Cp           , // Specific heat capacity [J/(Kg K)]
@@ -696,7 +699,7 @@ int main (int argc,  char** argv){
                Planet.P_Ref , // Reference pressure [Pa]
                Planet.Gravit, // Gravity [m/s^2]
                Planet.A     , // Planet radius [m]
-               n_out        , 
+               n_out        ,
                DeepModel    ,
                SpongeLayer  ,
                shrink_sponge);

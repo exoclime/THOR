@@ -55,7 +55,6 @@
 #include "binary_test.h"
 #include "debug_helpers.h"
 
-
 __host__ void ESP::ProfX(int    planetnumber, // Planet ID
                          int    nstep       , // Step number
                          int    hstest      , // Held-Suarez test option

@@ -282,6 +282,7 @@ public:
                        double mu                ,
                        double Rd                ,
                        bool sponge              ,
+                       bool DeepModel           ,
                        int TPprof               ,
                        int hstest               ,
                        int & nsteps             ,
