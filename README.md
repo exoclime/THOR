@@ -12,7 +12,7 @@ If you use this code please cite: [Mendonca, J.M., Grimm, S.L., Grosheintz, L., 
 
 Main instructions to compile and run *THOR*. This version uses only a __single__ __GPU__.
 
-Current code owners: Joao Mendonca: joao.mendonca@space.dtu.dk, Russel Deitrick: russel.deitrick@csh.unibe.ch, Urs Schroffenegger: urs.schroffenegger@csh.unibe.ch
+Current code owners: Joao Mendonca: joao.mendonca@space.dtu.dk, Russell Deitrick: russel.deitrick@csh.unibe.ch, Urs Schroffenegger: urs.schroffenegger@csh.unibe.ch
 
 
 Home website: http://software-oasis.com/
