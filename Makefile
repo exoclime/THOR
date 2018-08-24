@@ -22,10 +22,10 @@ END := "\033[0m"
 #######################################################################
 # get local config
 ifeq ($(wildcard Makefile.conf),Makefile.conf)
-$(info $(GREEN)Using local configuration from Makefile.conf $(END))
+$(info Using local configuration from Makefile.conf )
 include Makefile.conf
 else
-$(info $(GREEN)No local configuration $(END))
+$(info No local configuration )
 endif
 
 
