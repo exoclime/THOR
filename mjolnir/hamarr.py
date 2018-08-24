@@ -1217,28 +1217,41 @@ def CalcE_M_AM(input,grid,output):
     Ek = 0.5*Mtot2/output.Rho
 
     output.Etotal = (Eint+Eg+Ek)*Vol[:,None,None]
-    output.GlobalE = np.sum(output.Etotal)
+    output.GlobalE = np.sum(np.sum(output.Etotal,0),0)
 
     output.Mass = output.Rho*Vol[:,None,None]
-    output.GlobalMass = np.sum(output.Mass)
+    output.GlobalMass = np.sum(np.sum(output.Mass,0),0)
+
 
     r = input.A+grid.Altitude
+
     rx = r[None,:,None]*np.cos(grid.lat[:,None,None])*np.cos(grid.lon[:,None,None])
     ry = r[None,:,None]*np.cos(grid.lat[:,None,None])*np.sin(grid.lon[:,None,None])
     rz = r[None,:,None]*np.sin(grid.lat[:,None,None])
 
-    output.AngMomx = (ry*Mtotz-rz*Mtoty-output.Rho*input.Omega[None,None,None]*\
-                     rz*r[None,None,None]*np.cos(grid.lat[:,None,None])*\
+    output.AngMomx = (ry*Mtotz-rz*Mtoty-output.Rho*input.Omega[0]*\
+                     rz*r[None,:,None]*np.cos(grid.lat[:,None,None])*\
                      np.cos(grid.lon[:,None,None]))*Vol[:,None,None]
-    output.AngMomy = (-rx*Mtotz+rz*Mtotx-output.Rho*input.Omega[None,None,None]*\
-                     rz*r[None,None,None]*np.cos(grid.lat[:,None,None])*\
+    output.AngMomy = (-rx*Mtotz+rz*Mtotx-output.Rho*input.Omega[0]*\
+                     rz*r[None,:,None]*np.cos(grid.lat[:,None,None])*\
                      np.sin(grid.lon[:,None,None]))*Vol[:,None,None]
-    output.AngMomz = (rx*Mtoty-ry*Mtotx + output.Rho*input.Omega[None,None,None]*\
-                     input.A[None,None,None]**2*np.cos(grid.lat[:,None,None])*\
+    output.AngMomz = (rx*Mtoty-ry*Mtotx + output.Rho*input.Omega[0]*\
+                     r[None,:,None]**2*np.cos(grid.lat[:,None,None])*\
                      np.cos(grid.lat[:,None,None]))*Vol[:,None,None]
-    output.GlobalAMx = np.sum(output.AngMomx)
-    output.GlobalAMy = np.sum(output.AngMomy)
-    output.GlobalAMz = np.sum(output.AngMomz)
+    output.GlobalAMx = np.sum(np.sum(output.AngMomx,0),0)
+    output.GlobalAMy = np.sum(np.sum(output.AngMomy,0),0)
+    output.GlobalAMz = np.sum(np.sum(output.AngMomz,0),0)
+
+def CalcEntropy(input,grid,output):
+    temperature = output.Pressure/(input.Rd*output.Rho)
+    dz = grid.Altitude[1]-grid.Altitude[0]
+    Vol = grid.areasT*dz
+    kappa = input.Rd/input.Cp
+
+    potT = temperature*(input.P_Ref/output.Pressure)**kappa
+    S = input.Cp * np.log(potT)
+    output.Entropy = S*Vol[:,None,None]
+    output.GlobalEnt = np.sum(np.sum(output.Entropy,0),0)
 
 def conservation(input,grid,output):
     # plot quantities that are interesting for conservation
@@ -1246,9 +1259,11 @@ def conservation(input,grid,output):
         print('Calculating energy, mass, angular momentum...')
         CalcE_M_AM(input,grid,output)
 
+    CalcEntropy(input,grid,output) #should put in Thor at some point
+
     fig = plt.figure(figsize=(12,8))
     fig.suptitle('Time = %#.3f - %#.3f days'%(output.time[0],output.time[-1]))
-    fig.subplots_adjust(wspace=0.25,left=0.07,right=0.98,top=0.97,bottom=0.07)
+    fig.subplots_adjust(wspace=0.25,left=0.07,right=0.98,top=0.94,bottom=0.07)
     plt.subplot(2,3,1)
     plt.plot(output.time,output.GlobalE,'ko',linestyle='--')
     plt.xlabel('Time (days)')
@@ -1263,6 +1278,11 @@ def conservation(input,grid,output):
     plt.plot(output.time,output.GlobalAMz,'ko',linestyle='--')
     plt.xlabel('Time (days)')
     plt.ylabel(r'Z angular momentum of atmosphere (kg m$^2$ s$^{-1}$)')
+
+    plt.subplot(2,3,4)
+    plt.plot(output.time,output.GlobalEnt,'ko',linestyle='--')
+    plt.xlabel('Time (days)')
+    plt.ylabel('Total entropy of atmosphere (J K$^{-1}$)')
 
     plt.subplot(2,3,5)
     plt.plot(output.time,output.GlobalAMx,'ko',linestyle='--')
