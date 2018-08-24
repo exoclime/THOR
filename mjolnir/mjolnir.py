@@ -137,9 +137,9 @@ if 'cons' in pview:
 
 if 'stream' in pview:
     if np.max(input.P_Ref)/np.float(args.pressure_min[0]) > 1000:
-        sigmaref = np.logspace(np.log10(input.P_Ref),np.log10(np.float(args.pressure_min[0])),50)/input.P_Ref
+        sigmaref = np.logspace(np.log10(input.P_Ref),np.log10(np.float(args.pressure_min[0])),grid.nv)/input.P_Ref
     else:
-        sigmaref = np.linspace(input.P_Ref,np.float(args.pressure_min[0]),50)/input.P_Ref
+        sigmaref = np.linspace(input.P_Ref,np.float(args.pressure_min[0]),grid.nv)/input.P_Ref
     ham.streamf(input,grid,output,sigmaref)
 
 last = time.time()
