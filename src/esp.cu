@@ -223,6 +223,11 @@ int main (int argc,  char** argv){
     config_reader.append_config_var("TPprof", TPprof, TPprof_default);
 
     //*****************************************************************
+    // read configs for modules
+    phy_modules_generate_config(config_reader);
+    
+    
+    //*****************************************************************
     // Read config file
 
     if (config_reader.parse_file(config_filename))

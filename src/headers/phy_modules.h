@@ -7,7 +7,7 @@
 #include "grid.h"
 #include "planet.h"
 
-bool phy_modules_config(config_file & config_reader);
+bool phy_modules_generate_config(config_file & config_reader);
 bool phy_modules_init_data();
 
 
