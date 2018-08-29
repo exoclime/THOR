@@ -287,7 +287,6 @@ public:
 
     void ProfX(int   ,
                int   ,
-               int   ,
                double,
                double,
                double,

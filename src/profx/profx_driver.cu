@@ -56,8 +56,8 @@
 
 #include "phy_modules.h"
 
-__host__ void ESP::ProfX(int    planetnumber_,// Planet ID
-                         int    nstep     , // Step number
+
+__host__ void ESP::ProfX(int    nstep       , // Step number
                          int    hstest      , // Held-Suarez test option
                          double time_step   , // Time-step [s]<<<<<<< HEAD
                          double Omega       , // Rotation rate [1/s]
@@ -143,7 +143,6 @@ __host__ void ESP::ProfX(int    planetnumber_,// Planet ID
 // HELD SUAREZ TEST  //
 ///////////////////////
 //
-    if (planetnumber == 1) {
       if (hstest == 1) {
         cudaDeviceSynchronize();
         held_suarez<<< NB, NTH >>> (Mh_d         ,
@@ -201,15 +200,10 @@ __host__ void ESP::ProfX(int    planetnumber_,// Planet ID
                                     time_step    ,
                                     point_num    );
       }
-    }
+      
 //
 ////////////////////////
-
-    if(planetnumber != 1){
-        printf("Planet value incorrect! (see in file planet.h)");
-        exit(EXIT_FAILURE);
-    }
-
+      
     if (!hstest) {
         cudaDeviceSynchronize();
         phy_modules_mainloop(*this,

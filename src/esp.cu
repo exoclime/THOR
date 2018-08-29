@@ -667,8 +667,7 @@ int main (int argc,  char** argv){
           }
 //
 //     Physical Core Integration (ProfX)
-       X.ProfX(planetnumber , // Planet ID
-               nstep        , // Step number
+       X.ProfX(nstep        , // Step number
                hstest       , // Held-Suarez test option
                timestep     , // Time-step [s]
                Planet.Omega , // Rotation rate [1/s]
@@ -734,3 +733,4 @@ int main (int argc,  char** argv){
 
     return 0;
 }
+

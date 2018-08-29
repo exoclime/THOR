@@ -49,13 +49,6 @@
 #define kb_constant 1.38e-23   // Boltzmann constant [J/K]
 #define mu_constant 1.660e-27  // Atomic mass unit   [kg]
 
-//
-// CONTENTS
-// [1] - Earth
-// [2] - (You can add a new planet)
-
-#define planetnumber 1 // Planet ID
-
 
 class XPlanet{
 
