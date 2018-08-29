@@ -57,6 +57,8 @@
 #include <iomanip>
 #include <sstream>
 
+using namespace std;
+
 
 // define all the variables we can check in the debugging functions
 map<string, output_def> build_definitions( ESP & esp, Icogrid & grid)
