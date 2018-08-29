@@ -72,7 +72,7 @@ bool config_file::parse_file(const string & filename)
 }
 
     
-bool config_file::parse_config(basic_istream<char> & config)
+bool config_file::parse_config(std::basic_istream<char> & config)
 {
     
     // initialise key value pairs
