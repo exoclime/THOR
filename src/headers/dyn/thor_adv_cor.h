@@ -43,15 +43,15 @@
 // Computes the 3D advection terms and the velocities in cartesians.
 // (no poles)
 template <int NX, int NY>
-__global__ void Compute_Advec_Cori1(double * Adv_d     , // Advection term.
-                                    double * v_d       , // 3D velocity (cartesians).
-                                    double * Mh_d      , // Horizontal momentum.
-                                    double * div_d     , // Divergence operator.
+__global__ void Compute_Advec_Cori1(double3 * Adv_d     , // Advection term.
+                                    double3 * v_d       , // 3D velocity (cartesians).
+                                    double3 * Mh_d      , // Horizontal momentum.
+                                    double3 * div_d     , // Divergence operator.
                                     double * W_d       , // Vertical momentum.
                                     double * Rho_d     , // Density.
                                     double * Altitude_d, // Altitude.
                                     double   A         , // Radius.
-                                    double * func_r_d  , // Unit vectors normal to the spherical surface.
+                                    double3 * func_r_d  , // Unit vectors normal to the spherical surface.
                                     int * maps_d       , // Global indexes. 
                                     int nl_region      , // Length of the side of each rhombi (from the sphere decomposition).
                                     bool DeepModel     ){// Switches on and off the deep atmosphere solution (see headers/define.h).
@@ -63,7 +63,7 @@ __global__ void Compute_Advec_Cori1(double * Adv_d     , // Advection term.
     int lev= blockIdx.y;
 
     int pt1, pt2, pt3, pt4, pt5, pt6;
-    double div0, div1, div2, div3, div4, div5, div6;
+    double3 div0, div1, div2, div3, div4, div5, div6;
     int nhl = nl_region + 2;
     int nhl2 = nhl*nhl;
 
@@ -74,14 +74,12 @@ __global__ void Compute_Advec_Cori1(double * Adv_d     , // Advection term.
     double w;
 
     int ir = (y + 1)*nhl + x + 1;   // Region index
-    int iri, ir2, twot, id;
-
+    int iri, ir2, id;
+    
     /////////////////////////////////////////
-    __shared__ double v_s[(NX + 2)*(NY + 2) * 3];
-    __shared__ double M_s[(NX + 2)*(NY + 2) * 3];
-    __shared__ double nflxx_s[NX*NY];
-    __shared__ double nflxy_s[NX*NY];
-    __shared__ double nflxz_s[NX*NY];
+    __shared__ double3 v_s[(NX + 2)*(NY + 2)];
+    __shared__ double3 M_s[(NX + 2)*(NY + 2)];
+    __shared__ double3 nflx_s[NX*NY];
     /////////////////////////////////////////
 
     bool pent_ind = 0; // 
@@ -92,103 +90,97 @@ __global__ void Compute_Advec_Cori1(double * Adv_d     , // Advection term.
     id = ig;
     if (x == 0 && y == 0) if (maps_d[ib * nhl2] == -1) pent_ind = 1;
 
-    v_s[ir * 3 + 0] = Mh_d[ig * 3 * nv + lev * 3 + 0];
-    v_s[ir * 3 + 1] = Mh_d[ig * 3 * nv + lev * 3 + 1];
-    v_s[ir * 3 + 2] = Mh_d[ig * 3 * nv + lev * 3 + 2];
-    M_s[ir * 3 + 0] = v_s[ir * 3 + 0];
-    M_s[ir * 3 + 1] = v_s[ir * 3 + 1];
-    M_s[ir * 3 + 2] = v_s[ir * 3 + 2];
+    M_s[ir] = Mh_d[ig * nv + lev];
     rho = Rho_d[ig*nv + lev];
     w   = W_d[ig*nv + lev];
-
-    v_s[ir * 3 + 0] = v_s[ir * 3 + 0] / rho + (w / rho) * func_r_d[ig * 3 + 0];
-    v_s[ir * 3 + 1] = v_s[ir * 3 + 1] / rho + (w / rho) * func_r_d[ig * 3 + 1];
-    v_s[ir * 3 + 2] = v_s[ir * 3 + 2] / rho + (w / rho) * func_r_d[ig * 3 + 2];
+    double3 func_r = func_r_d[ig];
+    
+    v_s[ir].x = M_s[ir].x / rho + (w / rho) * func_r.x;
+    v_s[ir].y = M_s[ir].y / rho + (w / rho) * func_r.y;
+    v_s[ir].z = M_s[ir].z / rho + (w / rho) * func_r.z;
 
     ///////////////////////////////
     //////////// Halo /////////////
     ///////////////////////////////
-    if (x == 0) {
-        ir2 = (y + 1) * nhl + x;
-        ig = maps_d[ib * nhl2 + ir2];
-        v_s[ir2 * 3 + 0] = Mh_d[ig * 3 * nv + lev * 3 + 0];
-        v_s[ir2 * 3 + 1] = Mh_d[ig * 3 * nv + lev * 3 + 1];
-        v_s[ir2 * 3 + 2] = Mh_d[ig * 3 * nv + lev * 3 + 2];
-        M_s[ir2 * 3 + 0] = v_s[ir2 * 3 + 0];
-        M_s[ir2 * 3 + 1] = v_s[ir2 * 3 + 1];
-        M_s[ir2 * 3 + 2] = v_s[ir2 * 3 + 2];
-        rho = Rho_d[ig*nv + lev];
-        w = W_d[ig*nv + lev];
-        v_s[ir2 * 3 + 0] = v_s[ir2 * 3 + 0] / rho + (w / rho) * func_r_d[ig * 3 + 0];
-        v_s[ir2 * 3 + 1] = v_s[ir2 * 3 + 1] / rho + (w / rho) * func_r_d[ig * 3 + 1];
-        v_s[ir2 * 3 + 2] = v_s[ir2 * 3 + 2] / rho + (w / rho) * func_r_d[ig * 3 + 2];
+    bool load_halo = false;
+    
+    // x: 0 halo
+//    if (x == 0) {
+//        ir2 = (y + 1) * nhl + x;
+    if ( y == 0 )
+    {
+        ir2 = (x + 1) * nhl;
+        load_halo = true;
     }
-    if (x == nhl - 3){
-        ir2 = (y + 1) * nhl + x + 2;
-        ig = maps_d[ib * nhl2 + ir2];
-        v_s[ir2 * 3 + 0] = Mh_d[ig * 3 * nv + lev * 3 + 0];
-        v_s[ir2 * 3 + 1] = Mh_d[ig * 3 * nv + lev * 3 + 1];
-        v_s[ir2 * 3 + 2] = Mh_d[ig * 3 * nv + lev * 3 + 2];
-        M_s[ir2 * 3 + 0] = v_s[ir2 * 3 + 0];
-        M_s[ir2 * 3 + 1] = v_s[ir2 * 3 + 1];
-        M_s[ir2 * 3 + 2] = v_s[ir2 * 3 + 2];
-        rho = Rho_d[ig*nv + lev];
-        w = W_d[ig*nv + lev];
-        v_s[ir2 * 3 + 0] = v_s[ir2 * 3 + 0] / rho + (w / rho) * func_r_d[ig * 3 + 0];
-        v_s[ir2 * 3 + 1] = v_s[ir2 * 3 + 1] / rho + (w / rho) * func_r_d[ig * 3 + 1];
-        v_s[ir2 * 3 + 2] = v_s[ir2 * 3 + 2] / rho + (w / rho) * func_r_d[ig * 3 + 2];
+    // x: nhl halo
+    //if (x == nhl - 3){
+//        ir2 = (y + 1) * nhl + x + 2;
+    else if ( y == 3 )
+    {
+        ir2 = (x + 1) * nhl + nhl - 3 + 2;
+        load_halo = true;
+        
     }
-    if (y == 0){
-        twot = 1;
-        ir2 = y * nhl + (x + 1);
-        if (x == 0) twot = 2;
+    // y: 0 halo
+    //if (y == 0){
+    //    ir2 = y * nhl + (x + 1);
+    else if (y == 7){
+        ir2 = x+1;
+        load_halo = true;
+    }
+    
 
-        for (int k = 0; k < twot; k++){
-            if (k == 1) ir2 = y * nhl + x;
-            ig = maps_d[ib * nhl2 + ir2];
-            if (ig >= 0){
-                v_s[ir2 * 3 + 0] = Mh_d[ig * 3 * nv + lev * 3 + 0];
-                v_s[ir2 * 3 + 1] = Mh_d[ig * 3 * nv + lev * 3 + 1];
-                v_s[ir2 * 3 + 2] = Mh_d[ig * 3 * nv + lev * 3 + 2];
-                M_s[ir2 * 3 + 0] = v_s[ir2 * 3 + 0];
-                M_s[ir2 * 3 + 1] = v_s[ir2 * 3 + 1];
-                M_s[ir2 * 3 + 2] = v_s[ir2 * 3 + 2];
-                rho = Rho_d[ig * nv + lev];
-                w = W_d[ig * nv + lev];
-                v_s[ir2 * 3 + 0] = v_s[ir2 * 3 + 0] / rho + (w / rho) * func_r_d[ig * 3 + 0];
-                v_s[ir2 * 3 + 1] = v_s[ir2 * 3 + 1] / rho + (w / rho) * func_r_d[ig * 3 + 1];
-                v_s[ir2 * 3 + 2] = v_s[ir2 * 3 + 2] / rho + (w / rho) * func_r_d[ig * 3 + 2];
-            }
-            else{
-                v_s[ir2 * 3 + 0] = 0.0;
-                v_s[ir2 * 3 + 1] = 0.0;
-                v_s[ir2 * 3 + 2] = 0.0;
-                M_s[ir2 * 3 + 0] = 0.0;
-                M_s[ir2 * 3 + 1] = 0.0;
-                M_s[ir2 * 3 + 2] = 0.0;
-            }
-        }
+    // x: 0, y: 0 corner point
+//    if (y == 0 && x == 0) {
+//        ir2 = y * nhl + x;
+    else if (x == 4 && y == 4)
+    {
+        ir2 = 0;
+        load_halo = true;
     }
-    if (y == nhl - 3) {
-        twot = 1;
-        ir2 = (y + 2) * nhl + (x + 1);
-        if (x == nhl - 3) twot = 2;
-        for (int k = 0; k < twot; k++){
-            if (k == 1) ir2 = (y + 2) * nhl + (x + 2);
-            ig = maps_d[ib * nhl2 + ir2];
-            v_s[ir2 * 3 + 0] = Mh_d[ig * 3 * nv + lev * 3 + 0];
-            v_s[ir2 * 3 + 1] = Mh_d[ig * 3 * nv + lev * 3 + 1];
-            v_s[ir2 * 3 + 2] = Mh_d[ig * 3 * nv + lev * 3 + 2];
-            M_s[ir2 * 3 + 0] = v_s[ir2 * 3 + 0];
-            M_s[ir2 * 3 + 1] = v_s[ir2 * 3 + 1];
-            M_s[ir2 * 3 + 2] = v_s[ir2 * 3 + 2];
+
+    // y: nhl halo
+//    if (y == nhl - 3) {
+//        ir2 = (y + 2) * nhl + (x + 1);
+    else if ( y == 11 ) {
+        
+        ir2 = (nhl - 3 + 2 )*nhl + ( x + 1);
+        load_halo = true;
+    }
+    // x: nhl, y: nhl corner point
+    // if (y == nhl - 3 && x == nhl - 3) {
+    // ir2 = (y + 2) * nhl + (x + 2); 
+    else if (y == 4 && x == 5) {
+        
+        ir2 = (nhl - 3 + 2)*nhl +(nhl-3+2);
+        load_halo = true;
+    }
+    
+    if (load_halo){
+        ig = maps_d[ib * nhl2 + ir2];
+        if (ig >= 0){
+            M_s[ir2] = Mh_d[ig* nv + lev];
             rho = Rho_d[ig * nv + lev];
             w = W_d[ig * nv + lev];
-            v_s[ir2 * 3 + 0] = v_s[ir2 * 3 + 0] / rho + (w / rho) * func_r_d[ig * 3 + 0];
-            v_s[ir2 * 3 + 1] = v_s[ir2 * 3 + 1] / rho + (w / rho) * func_r_d[ig * 3 + 1];
-            v_s[ir2 * 3 + 2] = v_s[ir2 * 3 + 2] / rho + (w / rho) * func_r_d[ig * 3 + 2];
+            double3 func_r = func_r_d[ig];
+            
+            v_s[ir2].x = M_s[ir2].x / rho + (w / rho) * func_r.x;
+            v_s[ir2].y = M_s[ir2].y / rho + (w / rho) * func_r.y;
+            v_s[ir2].z = M_s[ir2].z / rho + (w / rho) * func_r.z;
+        }
+        // we can probably ignore this as it's never used and set to 0 by divergence for pentagons. 
+        //   either set it to zero automagically or use mappings
+        else{
+            // set to 0 if it is a pentagon index
+            v_s[ir2].x = 0.0;
+            v_s[ir2].y = 0.0;
+            v_s[ir2].z = 0.0;
+            M_s[ir2].x = 0.0;
+            M_s[ir2].y = 0.0;
+            M_s[ir2].z = 0.0;
         }
     }
+    
     __syncthreads();
 
     //////////////////////////////////////////////
@@ -211,51 +203,96 @@ __global__ void Compute_Advec_Cori1(double * Adv_d     , // Advection term.
     else rscale = 1.0;
 
     // Initialize fluxes.
-    nflxx_s[iri] = 0.0;
-    nflxy_s[iri] = 0.0;
-    nflxz_s[iri] = 0.0;
+    nflx_s[iri].x = 0.0;
+    nflx_s[iri].y = 0.0;
+    nflx_s[iri].z = 0.0;
 
     // Calculate divergence.
-    for (int k = 0; k < 3; k++){
-        div0 = div_d[id * 7 * 3 + 3 * 0 + k];
-        div1 = div_d[id * 7 * 3 + 3 * 1 + k];
-        div2 = div_d[id * 7 * 3 + 3 * 2 + k];
-        div3 = div_d[id * 7 * 3 + 3 * 3 + k];
-        div4 = div_d[id * 7 * 3 + 3 * 4 + k];
-        div5 = div_d[id * 7 * 3 + 3 * 5 + k];
-        div6 = div_d[id * 7 * 3 + 3 * 6 + k]; // For pent_ind = 1 div6 is equal to 0.
+    {
+        div0 = div_d[id * 7 + 0];
+        div1 = div_d[id * 7 + 1];
+        div2 = div_d[id * 7 + 2];
+        div3 = div_d[id * 7 + 3];
+        div4 = div_d[id * 7 + 4];
+        div5 = div_d[id * 7 + 5];
+        div6 = div_d[id * 7 + 6]; // For pent_ind = 1 div6 is equal to 0.
 
-        nflxx_s[iri] += rscale*(div0 * v_s[ir * 3 + 0]  * M_s[ir * 3 + k] +
-                                div1 * v_s[pt1 * 3 + 0] * M_s[pt1 * 3 + k] +
-                                div2 * v_s[pt2 * 3 + 0] * M_s[pt2 * 3 + k] +
-                                div3 * v_s[pt3 * 3 + 0] * M_s[pt3 * 3 + k] +
-                                div4 * v_s[pt4 * 3 + 0] * M_s[pt4 * 3 + k] +
-                                div5 * v_s[pt5 * 3 + 0] * M_s[pt5 * 3 + k] +
-                                div6 * v_s[pt6 * 3 + 0] * M_s[pt6 * 3 + k]);
+        nflx_s[iri].x += rscale*(div0.x * v_s[ir].x  * M_s[ir].x +
+                                div1.x * v_s[pt1].x * M_s[pt1].x +
+                                div2.x * v_s[pt2].x * M_s[pt2].x +
+                                div3.x * v_s[pt3].x * M_s[pt3].x +
+                                div4.x * v_s[pt4].x * M_s[pt4].x +
+                                div5.x * v_s[pt5].x * M_s[pt5].x +
+                                div6.x * v_s[pt6].x * M_s[pt6].x);
 
-        nflxy_s[iri] += rscale*(div0 * v_s[ir * 3 + 1]  * M_s[ir * 3 + k] +
-                                div1 * v_s[pt1 * 3 + 1] * M_s[pt1 * 3 + k] +
-                                div2 * v_s[pt2 * 3 + 1] * M_s[pt2 * 3 + k] +
-                                div3 * v_s[pt3 * 3 + 1] * M_s[pt3 * 3 + k] +
-                                div4 * v_s[pt4 * 3 + 1] * M_s[pt4 * 3 + k] +
-                                div5 * v_s[pt5 * 3 + 1] * M_s[pt5 * 3 + k] +
-                                div6 * v_s[pt6 * 3 + 1] * M_s[pt6 * 3 + k]);
+        nflx_s[iri].y += rscale*(div0.x * v_s[ir].y  * M_s[ir].x +
+                                div1.x * v_s[pt1].y * M_s[pt1].x +
+                                div2.x * v_s[pt2].y * M_s[pt2].x +
+                                div3.x * v_s[pt3].y * M_s[pt3].x +
+                                div4.x * v_s[pt4].y * M_s[pt4].x +
+                                div5.x * v_s[pt5].y * M_s[pt5].x +
+                                div6.x * v_s[pt6].y * M_s[pt6].x);
 
-        nflxz_s[iri] += rscale*(div0 * v_s[ir * 3 + 2]  * M_s[ir * 3 + k]  +
-                                div1 * v_s[pt1 * 3 + 2] * M_s[pt1 * 3 + k] +
-                                div2 * v_s[pt2 * 3 + 2] * M_s[pt2 * 3 + k] +
-                                div3 * v_s[pt3 * 3 + 2] * M_s[pt3 * 3 + k] +
-                                div4 * v_s[pt4 * 3 + 2] * M_s[pt4 * 3 + k] +
-                                div5 * v_s[pt5 * 3 + 2] * M_s[pt5 * 3 + k] +
-                                div6 * v_s[pt6 * 3 + 2] * M_s[pt6 * 3 + k]);
+        nflx_s[iri].z += rscale*(div0.x * v_s[ir].z  * M_s[ir].x  +
+                                div1.x * v_s[pt1].z * M_s[pt1].x +
+                                div2.x * v_s[pt2].z * M_s[pt2].x +
+                                div3.x * v_s[pt3].z * M_s[pt3].x +
+                                div4.x * v_s[pt4].z * M_s[pt4].x +
+                                div5.x * v_s[pt5].z * M_s[pt5].x +
+                                div6.x * v_s[pt6].z * M_s[pt6].x);
+
+        nflx_s[iri].x += rscale*(div0.y * v_s[ir].x  * M_s[ir].y +
+                                div1.y * v_s[pt1].x * M_s[pt1].y +
+                                div2.y * v_s[pt2].x * M_s[pt2].y +
+                                div3.y * v_s[pt3].x * M_s[pt3].y +
+                                div4.y * v_s[pt4].x * M_s[pt4].y +
+                                div5.y * v_s[pt5].x * M_s[pt5].y +
+                                div6.y * v_s[pt6].x * M_s[pt6].y);
+
+        nflx_s[iri].y += rscale*(div0.y * v_s[ir].y  * M_s[ir].y +
+                                div1.y * v_s[pt1].y * M_s[pt1].y +
+                                div2.y * v_s[pt2].y * M_s[pt2].y +
+                                div3.y * v_s[pt3].y * M_s[pt3].y +
+                                div4.y * v_s[pt4].y * M_s[pt4].y +
+                                div5.y * v_s[pt5].y * M_s[pt5].y +
+                                div6.y * v_s[pt6].y * M_s[pt6].y);
+
+        nflx_s[iri].z += rscale*(div0.y * v_s[ir].z  * M_s[ir].y  +
+                                div1.y * v_s[pt1].z * M_s[pt1].y +
+                                div2.y * v_s[pt2].z * M_s[pt2].y +
+                                div3.y * v_s[pt3].z * M_s[pt3].y +
+                                div4.y * v_s[pt4].z * M_s[pt4].y +
+                                div5.y * v_s[pt5].z * M_s[pt5].y +
+                                div6.y * v_s[pt6].z * M_s[pt6].y);
+        
+        nflx_s[iri].x += rscale*(div0.z * v_s[ir].x  * M_s[ir].z +
+                                div1.z * v_s[pt1].x * M_s[pt1].z +
+                                div2.z * v_s[pt2].x * M_s[pt2].z +
+                                div3.z * v_s[pt3].x * M_s[pt3].z +
+                                div4.z * v_s[pt4].x * M_s[pt4].z +
+                                div5.z * v_s[pt5].x * M_s[pt5].z +
+                                div6.z * v_s[pt6].x * M_s[pt6].z);
+
+        nflx_s[iri].y += rscale*(div0.z * v_s[ir].y  * M_s[ir].z +
+                                div1.z * v_s[pt1].y * M_s[pt1].z +
+                                div2.z * v_s[pt2].y * M_s[pt2].z +
+                                div3.z * v_s[pt3].y * M_s[pt3].z +
+                                div4.z * v_s[pt4].y * M_s[pt4].z +
+                                div5.z * v_s[pt5].y * M_s[pt5].z +
+                                div6.z * v_s[pt6].y * M_s[pt6].z);
+
+        nflx_s[iri].z += rscale*(div0.z * v_s[ir].z  * M_s[ir].z  +
+                                div1.z * v_s[pt1].z * M_s[pt1].z +
+                                div2.z * v_s[pt2].z * M_s[pt2].z +
+                                div3.z * v_s[pt3].z * M_s[pt3].z +
+                                div4.z * v_s[pt4].z * M_s[pt4].z +
+                                div5.z * v_s[pt5].z * M_s[pt5].z +
+                                div6.z * v_s[pt6].z * M_s[pt6].z);
     }
     // Return values (3D advection term and velocities in cartesians).
-    Adv_d[id * 3 * nv + lev * 3 + 0] = nflxx_s[iri];
-    Adv_d[id * 3 * nv + lev * 3 + 1] = nflxy_s[iri];
-    Adv_d[id * 3 * nv + lev * 3 + 2] = nflxz_s[iri];
-    v_d[id * 3 * nv + lev * 3 + 0] = v_s[ir * 3 + 0];
-    v_d[id * 3 * nv + lev * 3 + 1] = v_s[ir * 3 + 1];
-    v_d[id * 3 * nv + lev * 3 + 2] = v_s[ir * 3 + 2];
+    Adv_d[id * nv + lev] = nflx_s[iri];
+    v_d[id * nv + lev] = v_s[ir];
+
 }
 
 // Computes the 3D advection terms and the velocities in cartesians.
