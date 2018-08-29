@@ -53,7 +53,7 @@ debug_flags := -g -G
 release_flags := -O3
 
 # define profiling flags
-profiling_flags := -pg
+profiling_flags := -pg -lineinfo --default-stream per-thread 
 
 #######################################################################
 # define where to find sources
