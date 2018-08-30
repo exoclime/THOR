@@ -18,6 +18,8 @@ vpath %.cu src
 vpath %.cpp src
 vpath %.h inc
 vpath %.h $(THOR_ROOT)src/headers/
+vpath %.h $(THOR_ROOT)src/phy_modules/inc/
+vpath %.cu $(THOR_ROOT)src/phy_modules/src/
 #######################################################################
 # build objects
 

@@ -17,12 +17,6 @@
 // define all the modules we want to use
 radiative_transfer rt;
 
-using std::vector;
-
-vector<std::unique_ptr<phy_module_base>> modules;
-
-
-
 
 
 bool phy_modules_init_mem(const ESP & esp)
@@ -30,11 +24,8 @@ bool phy_modules_init_mem(const ESP & esp)
     // initialise all the modules memory
     
     bool out = true;
-    
-    for (auto & m : modules)
-    {
-        out |= m->initialise_memory(esp);
-    }
+
+    rt.initialise_memory(esp);
     
     return out;
 }
@@ -43,13 +34,7 @@ bool phy_modules_init_data()
 {
     // initialise all the modules data
 
-    
-    bool out = true;
-    
-    for (auto & m : modules)
-    {
-        out |= m->initial_conditions();
-    }
+    rt.initial_conditions();
     
     return out;
     
@@ -57,16 +42,7 @@ bool phy_modules_init_data()
 
 bool phy_modules_generate_config(config_file & config_reader)
 {
-    // This is our first entry point to modules, initialise stuff here
-    modules.push_back( std::unique_ptr<phy_module_base>(new radiative_transfer()));
-    
-    // generate all the modules config
-    bool out = true;
-    
-    for (auto & m : modules)
-    {
-        out |= m->configure(config_reader);
-    }
+    rt.configure(config_reader);
     
     return out;
 }
@@ -88,23 +64,20 @@ bool phy_modules_mainloop(ESP & esp,
 {
     // run all the modules main loop
     bool out = true;
-    
-    for (auto & m : modules)
-    {
-        out |= m->loop(esp,
-                       nstep       , 
-                       hstest      , 
-                       time_step   ,
-                       Omega       ,
-                       Cp          ,
-                       Rd          ,
-                       Mmol        ,
-                       mu          ,
-                       kb          ,
-                       P_Ref       ,
-                       Gravit      ,
-                       A           );
-    }
+
+    rt.loop(esp,
+            nstep       , 
+            hstest      , 
+            time_step   ,
+            Omega       ,
+            Cp          ,
+            Rd          ,
+            Mmol        ,
+            mu          ,
+            kb          ,
+            P_Ref       ,
+            Gravit      ,
+            A           );
     
     return true;
 }
@@ -120,14 +93,8 @@ bool phy_modules_free_mem()
 {
     // generate all the modules config
     bool out = true;
-    
-    for (auto & m : modules)
-    {
-        out |= m->free_memory();
-    }
 
-    // clear all modules
-    modules.clear();
+    rt.free_memory();
     
     return out;
 }
