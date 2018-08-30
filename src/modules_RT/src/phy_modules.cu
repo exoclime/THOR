@@ -6,8 +6,6 @@
 
 #include "phy_modules.h"
 
-#include "profx_RT.h"
-
 #include "radiative_transfer.h"
 
 #include <math.h>

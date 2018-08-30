@@ -231,7 +231,7 @@ $(OBJDIR)/${OUTPUTDIR}/%.o: %.cpp $(OBJDIR)/$(OUTPUTDIR)/%.d| $(OBJDIR)/$(OUTPUT
 # link *.o objects
 $(BINDIR)/${OUTPUTDIR}/esp: $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj)) $(MODULES_DIR)/libphy_modules.a | $(BINDIR) $(RESDIR) $(BINDIR)/$(OUTPUTDIR)  $(OBJDIR) $(MODULES_DIR)
 	@echo $(YELLOW)creating $@ $(END)
-	$(CC) $(arch) $(link_flags) -o $(BINDIR)/$(OUTPUTDIR)/esp $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj)) -L$(MODULES_DIR) lphy_modules $(h5libdir) $(h5libs)
+	$(CC) $(arch) $(link_flags) -o $(BINDIR)/$(OUTPUTDIR)/esp $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj)) -L$(MODULES_DIR) -lphy_modules $(h5libdir) $(h5libs)
 
 # phony so that it will always be run
 .PHONY: symlink
@@ -245,8 +245,8 @@ symlink: $(BINDIR)/$(OUTPUTDIR)/esp
 
 export
 # always call submakefile for modules
-.PHONY: $(MODULES_DIR)/phy_modules.a
-$(MODULES_DIR)/phy_modules.a: $(MODULES_DIR)
+.PHONY: $(MODULES_DIR)/libphy_modules.a
+$(MODULES_DIR)/libphy_modules.a: $(MODULES_DIR)
 	@echo $(MAGENTA)Creating physics module from subdir $(MODULES_SRC)$(END)
 	$(MAKE) -C $(MODULES_SRC)
 

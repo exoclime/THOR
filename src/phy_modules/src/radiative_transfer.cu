@@ -132,6 +132,12 @@ config_reader.append_config_var("Tstar", Tstar, Tstar);
     return true;
 }
 
+bool radiative_transfer::store()
+{
+    
+    return true;
+}
+
 void radiative_transfer::RTSetup(double Tstar_           ,
                                  double planet_star_dist_,
                                  double radius_star_     ,
