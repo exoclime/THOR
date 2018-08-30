@@ -32,6 +32,7 @@ bool phy_modules_init_mem(const ESP & esp)
 
 bool phy_modules_init_data()
 {
+    bool out = true;
     // initialise all the modules data
 
     rt.initial_conditions();
@@ -42,6 +43,8 @@ bool phy_modules_init_data()
 
 bool phy_modules_generate_config(config_file & config_reader)
 {
+    bool out = true;
+    
     rt.configure(config_reader);
     
     return out;
@@ -79,7 +82,7 @@ bool phy_modules_mainloop(ESP & esp,
             Gravit      ,
             A           );
     
-    return true;
+    return out;
 }
 
 bool phy_modules_store()

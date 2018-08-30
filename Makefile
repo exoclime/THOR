@@ -5,8 +5,13 @@
 # default build builds release and SM=30
 # $ make -j8
 
+# to test localy while forcing g++-5:
+#  make release -j8 ccbin='-ccbin g++-5'
+# 
 # to show commands echoed
 # $ make VERBOSE=1
+
+# SM number can also be set in Makefile.conf
 
 # shell colors
 RED := "\033[1;31m"
@@ -224,9 +229,9 @@ $(OBJDIR)/${OUTPUTDIR}/%.o: %.cpp $(OBJDIR)/$(OUTPUTDIR)/%.d| $(OBJDIR)/$(OUTPUT
 
 
 # link *.o objects
-$(BINDIR)/${OUTPUTDIR}/esp: $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj)) $(MODULES_DIR)/phy_modules.o | $(BINDIR) $(RESDIR) $(BINDIR)/$(OUTPUTDIR)  $(OBJDIR) $(MODULES_DIR)
+$(BINDIR)/${OUTPUTDIR}/esp: $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj)) $(MODULES_DIR)/libphy_modules.a | $(BINDIR) $(RESDIR) $(BINDIR)/$(OUTPUTDIR)  $(OBJDIR) $(MODULES_DIR)
 	@echo $(YELLOW)creating $@ $(END)
-	$(CC) $(arch) $(link_flags) -o $(BINDIR)/$(OUTPUTDIR)/esp $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj)) $(MODULES_DIR)/phy_modules.o $(h5libdir) $(h5libs)
+	$(CC) $(arch) $(link_flags) -o $(BINDIR)/$(OUTPUTDIR)/esp $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj)) -L$(MODULES_DIR) lphy_modules $(h5libdir) $(h5libs)
 
 # phony so that it will always be run
 .PHONY: symlink
@@ -240,10 +245,9 @@ symlink: $(BINDIR)/$(OUTPUTDIR)/esp
 
 export
 # always call submakefile for modules
-.PHONY: $(MODULES_DIR)/phy_modules.o
-$(MODULES_DIR)/phy_modules.o: $(MODULES_DIR)
+.PHONY: $(MODULES_DIR)/phy_modules.a
+$(MODULES_DIR)/phy_modules.a: $(MODULES_DIR)
 	@echo $(MAGENTA)Creating physics module from subdir $(MODULES_SRC)$(END)
-
 	$(MAKE) -C $(MODULES_SRC)
 
 #######################################################################
@@ -309,6 +313,7 @@ clean:
 	-$(RM) $(BINDIR)/esp
 	@echo $(CYAN)clean up modules directory $(END)
 	-$(RM) -rf $(MODULES_DIR)/*.o
+	-$(RM) -rf $(MODULES_DIR)/*.a
 	@echo $(CYAN)clean up directories $(END)
 	-$(RM) -d $(BINDIR)/debug $(BINDIR)/release $(BINDIR)/prof
 	-$(RM) -d $(BINDIR)/tests
