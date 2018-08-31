@@ -45,6 +45,7 @@ parser.add_argument("-i","--initial_file",nargs=1,default=[10],type=int,help='In
 parser.add_argument("-l","--last_file",nargs=1,default=[10],type=int,help='Last file id number (integer)')
 parser.add_argument("-p","--pressure_lev",nargs=1,default=[2.5e4],help='Pressure level to plot in temperature/velocity/vorticity field')
 parser.add_argument("-pmin","--pressure_min",nargs=1,default=['default'],help='Lowest pressure value to plot in vertical plots')
+parser.add_argument("-slay","--split_layer",nargs=1,default=['no_split'],help='Split conserved quantities into weather and deep layers at this pressure')
 args = parser.parse_args()
 pview = args.pview
 
@@ -133,7 +134,11 @@ if 'TP' in pview:
     ham.TPprof(input,grid,output,sigmaref,1902)
 
 if 'cons' in pview:
-    ham.conservation(input,grid,output)
+    if args.split_layer[0] == 'no_split':
+        split = False
+    else:
+        split = np.float(args.split_layer[0])
+    ham.conservation(input,grid,output,split)
 
 if 'stream' in pview:
     if np.max(input.P_Ref)/np.float(args.pressure_min[0]) > 1000:

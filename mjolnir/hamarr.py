@@ -76,6 +76,7 @@ class output:
         self.GlobalAMx = np.zeros(nts-ntsi+1)
         self.GlobalAMy = np.zeros(nts-ntsi+1)
         self.GlobalAMz = np.zeros(nts-ntsi+1)
+        self.ConvData = np.zeros(nts-ntsi+1)
 
         # Read model results
         for t in np.arange(ntsi-1,nts):
@@ -100,10 +101,10 @@ class output:
                 self.GlobalAMx[t-ntsi+1] = openh5['GlobalAMx'][0]
                 self.GlobalAMy[t-ntsi+1] = openh5['GlobalAMy'][0]
                 self.GlobalAMz[t-ntsi+1] = openh5['GlobalAMz'][0]
-                self.ConvData = True
+                self.ConvData[t-ntsi+1] = True
             else:
                 print('Warning: conservation diagnostics not available in file %s'%fileh5)
-                self.ConvData = False
+                self.ConvData[t-ntsi+1] = False
             openh5.close()
 
             self.Rho[:,:,t-ntsi+1] = np.reshape(Rhoi,(grid.point_num,grid.nv))
@@ -1198,7 +1199,7 @@ def streamf(input,grid,output,sigmaref):
     plt.close()
 
 
-def CalcE_M_AM(input,grid,output):
+def CalcE_M_AM(input,grid,output,split):
     temperature = output.Pressure/(input.Rd*output.Rho)
     dz = grid.Altitude[1]-grid.Altitude[0]
     Vol = grid.areasT*dz
@@ -1218,11 +1219,8 @@ def CalcE_M_AM(input,grid,output):
     Ek = 0.5*Mtot2/output.Rho
 
     output.Etotal = (Eint+Eg+Ek)*Vol[:,None,None]
-    output.GlobalE = np.sum(np.sum(output.Etotal,0),0)
 
     output.Mass = output.Rho*Vol[:,None,None]
-    output.GlobalMass = np.sum(np.sum(output.Mass,0),0)
-
 
     r = input.A+grid.Altitude
 
@@ -1239,11 +1237,38 @@ def CalcE_M_AM(input,grid,output):
     output.AngMomz = (rx*Mtoty-ry*Mtotx + output.Rho*input.Omega[0]*\
                      r[None,:,None]**2*np.cos(grid.lat[:,None,None])*\
                      np.cos(grid.lat[:,None,None]))*Vol[:,None,None]
-    output.GlobalAMx = np.sum(np.sum(output.AngMomx,0),0)
-    output.GlobalAMy = np.sum(np.sum(output.AngMomy,0),0)
-    output.GlobalAMz = np.sum(np.sum(output.AngMomz,0),0)
 
-def CalcEntropy(input,grid,output):
+    if split == False:
+        output.GlobalE = np.sum(np.sum(output.Etotal,0),0)
+        output.GlobalMass = np.sum(np.sum(output.Mass,0),0)
+        output.GlobalAMx = np.sum(np.sum(output.AngMomx,0),0)
+        output.GlobalAMy = np.sum(np.sum(output.AngMomy,0),0)
+        output.GlobalAMz = np.sum(np.sum(output.AngMomz,0),0)
+    else:
+        output.WeatherE = np.zeros(np.shape(output.Pressure)[2])
+        output.DeepE = np.zeros(np.shape(output.Pressure)[2])
+        output.WeatherMass = np.zeros(np.shape(output.Pressure)[2])
+        output.DeepMass = np.zeros(np.shape(output.Pressure)[2])
+        output.WeatherAMx = np.zeros(np.shape(output.Pressure)[2])
+        output.DeepAMx = np.zeros(np.shape(output.Pressure)[2])
+        output.WeatherAMy = np.zeros(np.shape(output.Pressure)[2])
+        output.DeepAMy = np.zeros(np.shape(output.Pressure)[2])
+        output.WeatherAMz = np.zeros(np.shape(output.Pressure)[2])
+        output.DeepAMz = np.zeros(np.shape(output.Pressure)[2])
+
+        for ii in np.arange(np.shape(output.Pressure)[2]):
+            output.WeatherE[ii] = np.sum(output.Etotal[output.Pressure[:,:,ii]<=split][:,ii])
+            output.DeepE[ii] = np.sum(output.Etotal[output.Pressure[:,:,ii]>split][:,ii])
+            output.WeatherMass[ii] = np.sum(output.Mass[output.Pressure[:,:,ii]<=split][:,ii])
+            output.DeepMass[ii] = np.sum(output.Mass[output.Pressure[:,:,ii]>split][:,ii])
+            output.WeatherAMx[ii] = np.sum(output.AngMomx[output.Pressure[:,:,ii]<=split][:,ii])
+            output.DeepAMx[ii] = np.sum(output.AngMomx[output.Pressure[:,:,ii]>split][:,ii])
+            output.WeatherAMy[ii] = np.sum(output.AngMomy[output.Pressure[:,:,ii]<=split][:,ii])
+            output.DeepAMy[ii] = np.sum(output.AngMomy[output.Pressure[:,:,ii]>split][:,ii])
+            output.WeatherAMz[ii] = np.sum(output.AngMomz[output.Pressure[:,:,ii]<=split][:,ii])
+            output.DeepAMz[ii] = np.sum(output.AngMomz[output.Pressure[:,:,ii]>split][:,ii])
+
+def CalcEntropy(input,grid,output,split):
     temperature = output.Pressure/(input.Rd*output.Rho)
     dz = grid.Altitude[1]-grid.Altitude[0]
     Vol = grid.areasT*dz
@@ -1252,50 +1277,104 @@ def CalcEntropy(input,grid,output):
     potT = temperature*(input.P_Ref/output.Pressure)**kappa
     S = input.Cp * np.log(potT)
     output.Entropy = S*Vol[:,None,None]
-    output.GlobalEnt = np.sum(np.sum(output.Entropy,0),0)
+    if split == False:
+        output.GlobalEnt = np.sum(np.sum(output.Entropy,0),0)
+    else:
+        output.WeatherEnt = np.zeros(np.shape(output.Pressure)[2])
+        output.DeepEnt = np.zeros(np.shape(output.Pressure)[2])
+        for ii in np.arange(np.shape(output.Pressure)[2]):
+            output.WeatherEnt[ii] = np.sum(output.Entropy[output.Pressure[:,:,ii]<=split][:,ii])
+            output.DeepEnt[ii] = np.sum(output.Entropy[output.Pressure[:,:,ii]>split][:,ii])
 
-def conservation(input,grid,output):
+def conservation(input,grid,output,split):
     # plot quantities that are interesting for conservation
-    if output.ConvData == False:
-        print('Calculating energy, mass, angular momentum...')
-        CalcE_M_AM(input,grid,output)
+    if split == False:
+        import pdb; pdb.set_trace()
+        if (output.ConvData == False).any():
+            print('Calculating energy, mass, angular momentum...')
+            CalcE_M_AM(input,grid,output,split)
+        plots = ['global']
 
-    CalcEntropy(input,grid,output) #should put in Thor at some point
+    else:
+        CalcE_M_AM(input,grid,output,split)
+        plots = ['weather', 'deep']
 
-    fig = plt.figure(figsize=(12,8))
-    fig.suptitle('Time = %#.3f - %#.3f days'%(output.time[0],output.time[-1]))
-    fig.subplots_adjust(wspace=0.25,left=0.07,right=0.98,top=0.94,bottom=0.07)
-    plt.subplot(2,3,1)
-    plt.plot(output.time,output.GlobalE,'ko',linestyle='--')
-    plt.xlabel('Time (days)')
-    plt.ylabel('Total energy of atmosphere (J)')
+    CalcEntropy(input,grid,output,split) #should put in Thor at some point?
 
-    plt.subplot(2,3,2)
-    plt.plot(output.time,output.GlobalMass,'ko',linestyle='--')
-    plt.xlabel('Time (days)')
-    plt.ylabel('Total mass of atmosphere (kg)')
+    for ii in np.arange(len(plots)):
+        fig = plt.figure(figsize=(12,8))
+        fig.suptitle('Time = %#.3f - %#.3f days'%(output.time[0],output.time[-1]))
+        fig.subplots_adjust(wspace=0.25,left=0.07,right=0.98,top=0.94,bottom=0.07)
+        plt.subplot(2,3,1)
+        if split == False:
+            plt.plot(output.time,output.GlobalE,'ko',linestyle='--')
+        else:
+            if plots[ii] == 'weather':
+                plt.plot(output.time,output.WeatherE,'bo',linestyle='--')
+            elif plots[ii] == 'deep':
+                plt.plot(output.time,output.DeepE,'ro',linestyle='--')
+        plt.xlabel('Time (days)')
+        plt.ylabel('Total energy of atmosphere (J)')
 
-    plt.subplot(2,3,3)
-    plt.plot(output.time,output.GlobalAMz,'ko',linestyle='--')
-    plt.xlabel('Time (days)')
-    plt.ylabel(r'Z angular momentum of atmosphere (kg m$^2$ s$^{-1}$)')
+        plt.subplot(2,3,2)
+        if split == False:
+            plt.plot(output.time,output.GlobalMass,'ko',linestyle='--')
+        else:
+            if plots[ii] == 'weather':
+                plt.plot(output.time,output.WeatherMass,'bo',linestyle='--')
+            elif plots[ii] == 'deep':
+                plt.plot(output.time,output.DeepMass,'ro',linestyle='--')
+        plt.xlabel('Time (days)')
+        plt.ylabel('Total mass of atmosphere (kg)')
 
-    plt.subplot(2,3,4)
-    plt.plot(output.time,output.GlobalEnt,'ko',linestyle='--')
-    plt.xlabel('Time (days)')
-    plt.ylabel('Total entropy of atmosphere (J K$^{-1}$)')
+        plt.subplot(2,3,3)
+        if split == False:
+            plt.plot(output.time,output.GlobalAMz,'ko',linestyle='--')
+        else:
+            if plots[ii] == 'weather':
+                plt.plot(output.time,output.WeatherAMz,'bo',linestyle='--')
+            elif plots[ii] == 'deep':
+                plt.plot(output.time,output.DeepAMz,'ro',linestyle='--')
+        plt.xlabel('Time (days)')
+        plt.ylabel(r'Z angular momentum of atmosphere (kg m$^2$ s$^{-1}$)')
 
-    plt.subplot(2,3,5)
-    plt.plot(output.time,output.GlobalAMx,'ko',linestyle='--')
-    plt.xlabel('Time (days)')
-    plt.ylabel(r'X angular momentum of atmosphere (kg m$^2$ s$^{-1}$)')
+        plt.subplot(2,3,4)
+        if split == False:
+            plt.plot(output.time,output.GlobalEnt,'ko',linestyle='--')
+        else:
+            if plots[ii] == 'weather':
+                plt.plot(output.time,output.WeatherEnt,'bo',linestyle='--')
+            elif plots[ii] == 'deep':
+                plt.plot(output.time,output.DeepEnt,'ro',linestyle='--')
+        plt.xlabel('Time (days)')
+        plt.ylabel('Total entropy of atmosphere (J K$^{-1}$)')
 
-    plt.subplot(2,3,6)
-    plt.plot(output.time,output.GlobalAMy,'ko',linestyle='--')
-    plt.xlabel('Time (days)')
-    plt.ylabel(r'Y angular momentum of atmosphere (kg m$^2$ s$^{-1}$)')
+        plt.subplot(2,3,5)
+        if split == False:
+            plt.plot(output.time,output.GlobalAMx,'ko',linestyle='--')
+            plt.plot(output.time,output.GlobalAMy,'o',color='0.5',linestyle='--')
+        else:
+            if plots[ii] == 'weather':
+                plt.plot(output.time,output.WeatherAMx,'bo',linestyle='--')
+                plt.plot(output.time,output.WeatherAMy,'co',linestyle='--')
+            elif plots[ii] == 'deep':
+                plt.plot(output.time,output.DeepAMx,'ro',linestyle='--')
+                plt.plot(output.time,output.DeepAMy,'o',color='orange',linestyle='--')
+        plt.xlabel('Time (days)')
+        plt.ylabel(r'X, Y angular momentum of atmosphere (kg m$^2$ s$^{-1}$)')
 
-    if not os.path.exists(input.resultsf+'/figures'):
-        os.mkdir(input.resultsf+'/figures')
-    plt.savefig(input.resultsf+'/figures/conservation_i%d_l%d.pdf'%(output.ntsi,output.nts))
-    plt.close()
+        plt.subplot(2,3,6)
+        if split == False:
+            plt.plot(output.time,np.sqrt(output.GlobalAMx**2+output.GlobalAMy**2),'ko',linestyle='--')
+        else:
+            if plots[ii] == 'weather':
+                plt.plot(output.time,np.sqrt(output.WeatherAMx**2+output.WeatherAMy**2),'bo',linestyle='--')
+            elif plots[ii] == 'deep':
+                plt.plot(output.time,np.sqrt(output.DeepAMx**2+output.DeepAMy**2),'ro',linestyle='--')
+        plt.xlabel('Time (days)')
+        plt.ylabel(r'Horizontal angular momentum of atmosphere (kg m$^2$ s$^{-1}$)')
+
+        if not os.path.exists(input.resultsf+'/figures'):
+            os.mkdir(input.resultsf+'/figures')
+        plt.savefig(input.resultsf+'/figures/conservation_i%d_l%d_%s.pdf'%(output.ntsi,output.nts,plots[ii]))
+        plt.close()

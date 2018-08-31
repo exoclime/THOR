@@ -80,7 +80,8 @@ __host__ ESP::ESP(int *point_local_    ,
                   double Rv_sponge_    ,
                   double ns_sponge_    ,
                   double t_shrink_     ,
-                  int point_num_    ): nl_region(nl_region_),
+                  int point_num_       ,
+                  bool conservation ): nl_region(nl_region_),
                                        nr(nr_),
                                        point_num(point_num_),
                                        nv(nv_),
@@ -117,11 +118,11 @@ __host__ ESP::ESP(int *point_local_    ,
     t_shrink = t_shrink_;
 //
 //  Allocate Data
-    AllocData();
+    AllocData(conservation);
 
 }
 
-__host__ void ESP::AllocData(){
+__host__ void ESP::AllocData(bool conservation){
 
 
 //
@@ -138,11 +139,13 @@ __host__ void ESP::AllocData(){
     W_h          = (double*)malloc(nv*point_num   * sizeof(double));
     Wh_h         = (double*)malloc(nvi*point_num  * sizeof(double));
 
-    Etotal_h      = (double*)malloc(nv*point_num   * sizeof(double));
-    Mass_h        = (double*)malloc(nv*point_num   * sizeof(double));
-    AngMomx_h     = (double*)malloc(nv*point_num   * sizeof(double));
-    AngMomy_h     = (double*)malloc(nv*point_num   * sizeof(double));
-    AngMomz_h     = (double*)malloc(nv*point_num   * sizeof(double));
+    if (conservation == true) {
+      Etotal_h      = (double*)malloc(nv*point_num   * sizeof(double));
+      Mass_h        = (double*)malloc(nv*point_num   * sizeof(double));
+      AngMomx_h     = (double*)malloc(nv*point_num   * sizeof(double));
+      AngMomy_h     = (double*)malloc(nv*point_num   * sizeof(double));
+      AngMomz_h     = (double*)malloc(nv*point_num   * sizeof(double));
+    }
 
 //  Allocate data in device
 //  Grid
@@ -247,17 +250,19 @@ __host__ void ESP::AllocData(){
     cudaMalloc((void **)&ttemp       , nv * point_num *     sizeof(double));
     cudaMalloc((void **)&dtemp       , nv * point_num *     sizeof(double));
 
-//  Conservation quantities
-    cudaMalloc((void **)&Etotal_d       , nv * point_num *     sizeof(double));
-    cudaMalloc((void **)&Mass_d         , nv * point_num *     sizeof(double));
-    cudaMalloc((void **)&AngMomx_d      , nv * point_num *     sizeof(double));
-    cudaMalloc((void **)&AngMomy_d      , nv * point_num *     sizeof(double));
-    cudaMalloc((void **)&AngMomz_d      , nv * point_num *     sizeof(double));
-    cudaMalloc((void **)&GlobalE_d      , 1 *     sizeof(double));
-    cudaMalloc((void **)&GlobalMass_d   , 1 *     sizeof(double));
-    cudaMalloc((void **)&GlobalAMx_d    , 1 *     sizeof(double));
-    cudaMalloc((void **)&GlobalAMy_d    , 1 *     sizeof(double));
-    cudaMalloc((void **)&GlobalAMz_d    , 1 *     sizeof(double));
+    if (conservation == true) {
+  //  Conservation quantities
+      cudaMalloc((void **)&Etotal_d       , nv * point_num *     sizeof(double));
+      cudaMalloc((void **)&Mass_d         , nv * point_num *     sizeof(double));
+      cudaMalloc((void **)&AngMomx_d      , nv * point_num *     sizeof(double));
+      cudaMalloc((void **)&AngMomy_d      , nv * point_num *     sizeof(double));
+      cudaMalloc((void **)&AngMomz_d      , nv * point_num *     sizeof(double));
+      cudaMalloc((void **)&GlobalE_d      , 1 *     sizeof(double));
+      cudaMalloc((void **)&GlobalMass_d   , 1 *     sizeof(double));
+      cudaMalloc((void **)&GlobalAMx_d    , 1 *     sizeof(double));
+      cudaMalloc((void **)&GlobalAMy_d    , 1 *     sizeof(double));
+      cudaMalloc((void **)&GlobalAMz_d    , 1 *     sizeof(double));
+    }
 }
 
 __host__ bool ESP::InitialValues(bool rest          ,
@@ -282,7 +287,8 @@ __host__ bool ESP::InitialValues(bool rest          ,
                                  int hstest         ,
                                  int & nstep        ,
                                  double & simulation_start_time,
-                                 int & output_file_idx){
+                                 int & output_file_idx,
+                                 bool conservation  ){
 
     output_file_idx = 0;
     nstep = 0;
@@ -593,60 +599,63 @@ __host__ bool ESP::InitialValues(bool rest          ,
     delete [] Kdhz_h;
 
       //  Number of threads per block.
-      const int NTH = 256;
+      if (conservation == true) {
+        const int NTH = 256;
 
-      //  Specify the block sizes.
-      dim3 NB((point_num / NTH) + 1, nv, 1);
-      // calculate quantities we hope to conserve!
-      cudaMemset(GlobalE_d     , 0, sizeof(double));
-      cudaMemset(GlobalMass_d  , 0, sizeof(double));
-      cudaMemset(GlobalAMx_d   , 0, sizeof(double));
-      cudaMemset(GlobalAMy_d   , 0, sizeof(double));
-      cudaMemset(GlobalAMz_d   , 0, sizeof(double));
+        //  Specify the block sizes.
+        dim3 NB((point_num / NTH) + 1, nv, 1);
+        // calculate quantities we hope to conserve!
+        cudaMemset(GlobalE_d     , 0, sizeof(double));
+        cudaMemset(GlobalMass_d  , 0, sizeof(double));
+        cudaMemset(GlobalAMx_d   , 0, sizeof(double));
+        cudaMemset(GlobalAMy_d   , 0, sizeof(double));
+        cudaMemset(GlobalAMz_d   , 0, sizeof(double));
 
-      CalcMass <<< NB, NTH >>> (Mass_d       ,
-                                GlobalMass_d ,
-                                Rho_d        ,
-                                A            ,
-                                Altitudeh_d  ,
-                                lonlat_d     ,
-                                areasT_d     ,
-                                point_num    ,
-                                DeepModel    );
+        CalcMass <<< NB, NTH >>> (Mass_d       ,
+                                  GlobalMass_d ,
+                                  Rho_d        ,
+                                  A            ,
+                                  Altitudeh_d  ,
+                                  lonlat_d     ,
+                                  areasT_d     ,
+                                  point_num    ,
+                                  DeepModel    );
 
-      CalcTotEnergy <<< NB, NTH >>> (Etotal_d     ,
-                                     GlobalE_d    ,
+        CalcTotEnergy <<< NB, NTH >>> (Etotal_d     ,
+                                       GlobalE_d    ,
+                                       Mh_d         ,
+                                       W_d          ,
+                                       Rho_d        ,
+                                       temperature_d,
+                                       Gravit       ,
+                                       Cp           ,
+                                       Rd           ,
+                                       A            ,
+                                       Altitude_d   ,
+                                       Altitudeh_d  ,
+                                       lonlat_d     ,
+                                       areasT_d     ,
+                                       func_r_d     ,
+                                       point_num    ,
+                                       DeepModel    );
+
+        CalcAngMom <<< NB, NTH >>> ( AngMomx_d    ,
+                                     AngMomy_d    ,
+                                     AngMomz_d    ,
+                                     GlobalAMx_d  ,
+                                     GlobalAMy_d  ,
+                                     GlobalAMz_d  ,
                                      Mh_d         ,
-                                     W_d          ,
                                      Rho_d        ,
-                                     temperature_d,
-                                     Gravit       ,
-                                     Cp           ,
-                                     Rd           ,
                                      A            ,
+                                     Omega        ,
                                      Altitude_d   ,
                                      Altitudeh_d  ,
                                      lonlat_d     ,
                                      areasT_d     ,
                                      point_num    ,
                                      DeepModel    );
-
-      CalcAngMom <<< NB, NTH >>> ( AngMomx_d    ,
-                                   AngMomy_d    ,
-                                   AngMomz_d    ,
-                                   GlobalAMx_d  ,
-                                   GlobalAMy_d  ,
-                                   GlobalAMz_d  ,
-                                   Mh_d         ,
-                                   Rho_d        ,
-                                   A            ,
-                                   Omega        ,
-                                   Altitude_d   ,
-                                   Altitudeh_d  ,
-                                   lonlat_d     ,
-                                   areasT_d     ,
-                                   point_num    ,
-                                   DeepModel    );
+      }
 
     return true;
 }

@@ -237,6 +237,8 @@ int main (int argc,  char** argv){
     int TPprof = 0;
     config_reader.append_config_var("TPprof", TPprof, TPprof_default);
 
+    bool conservation = false;
+    config_reader.append_config_var("conservation", conservation, conservation_default);
     //*****************************************************************
     // Read config file
 
@@ -402,7 +404,8 @@ int main (int argc,  char** argv){
            Rv_sponge          , // Maximum damping of sponge layer
            ns_sponge          , // lowest level of sponge layer (fraction of model)
            t_shrink           , // time to shrink sponge layer
-           Grid.point_num     );// Number of grid points
+           Grid.point_num     , // Number of grid points
+           conservation       );
 
     USE_BENCHMARK();
     INIT_BENCHMARK(X, Grid);
@@ -455,9 +458,10 @@ int main (int argc,  char** argv){
                                         step_idx     , // current step index
                                         simulation_start_time, // output:
                                                                // simulation start time
-                                        output_file_idx); // output file
+                                        output_file_idx, // output file
                                                           // read + 1, 0
                                                           // if nothing read
+                                        conservation);
 
     if (hstest == 0) {
       X.RTSetup(Tstar            ,
@@ -632,7 +636,7 @@ int main (int argc,  char** argv){
     double simulation_time = simulation_start_time;
     if (!continue_sim)
     {
-        X.CopyToHost();
+        X.CopyToHost(conservation);
         X.Output(0                   , // file index
                  0                   , // step index
                  Planet.Cp           , // Specific heat capacity [J/(Kg K)]
@@ -645,7 +649,8 @@ int main (int argc,  char** argv){
                  Planet.A            , // Planet Radius [m]
                  Planet.simulation_ID, // Simulation ID (e.g., "Earth")
                  simulation_time     , // Time of the simulation [s]
-                 output_path);         // directory to save output
+                 output_path         , // directory to save output
+                 conservation        );
         output_file_idx = 1;
         step_idx = 1;
     }
@@ -699,10 +704,11 @@ int main (int argc,  char** argv){
                Planet.P_Ref , // Reference pressure [Pa]
                Planet.Gravit, // Gravity [m/s^2]
                Planet.A     , // Planet radius [m]
-               n_out        ,
                DeepModel    ,
+               n_out        ,
                SpongeLayer  ,
-               shrink_sponge);
+               shrink_sponge,
+               conservation );
 
        // compute simulation time
        simulation_time = simulation_start_time + (nstep - step_idx+1)*timestep;
@@ -711,7 +717,7 @@ int main (int argc,  char** argv){
 //
 //      Prints output every nout steps
         if(nstep % n_out == 0) {
-            X.CopyToHost();
+            X.CopyToHost(conservation);
             X.Output(nstep               ,
                      output_file_idx     ,
                      Planet.Cp           , // Specific heat capacity [J/(Kg K)]
@@ -724,7 +730,8 @@ int main (int argc,  char** argv){
                      Planet.A            , // Planet radius [m]
                      Planet.simulation_ID, // Planet ID
                      simulation_time     , // Simulation time [s]
-                     output_path);         // Directory to save output
+                     output_path         , // Directory to save output
+                     conservation        );
             // increment output file index
             output_file_idx++;
 

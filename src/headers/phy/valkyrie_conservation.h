@@ -63,6 +63,7 @@ __global__ void CalcTotEnergy(double *Etotal_d     ,
                               double *Altitudeh_d  ,
                               double *lonlat_d     ,
                               double *areasT       ,
+                              double *func_r_d     ,
                               int     num          ,
                               bool    DeepModel    ) ;
 

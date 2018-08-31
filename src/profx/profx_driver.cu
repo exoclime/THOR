@@ -71,7 +71,8 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
                          bool   DeepModel   ,
                          int    n_out        , // output step (triggers conservation calc)
                          bool   sponge      , // Use sponge layer?
-                         bool   shrink_sponge){ // Shrink sponge after some time
+                         bool   shrink_sponge,
+                         bool   conservation ){ // Shrink sponge after some time
     USE_BENCHMARK()
 //
 //  Number of threads per block.
@@ -280,7 +281,7 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
 
     BENCH_POINT_I(current_step, "phy_END", vector<string>({}), vector<string>({"Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"}))
 
-    if(nstep % n_out == 0) {
+    if(nstep % n_out == 0 && conservation == true)  {
     // calculate quantities we hope to conserve!
       cudaMemset(GlobalE_d     , 0, sizeof(double));
       cudaMemset(GlobalMass_d  , 0, sizeof(double));
@@ -312,6 +313,7 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
                                      Altitudeh_d  ,
                                      lonlat_d     ,
                                      areasT_d     ,
+                                     func_r_d     ,
                                      point_num    ,
                                      DeepModel    );
 

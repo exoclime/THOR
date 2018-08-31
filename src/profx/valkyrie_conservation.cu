@@ -28,6 +28,7 @@ __global__ void CalcTotEnergy(double *Etotal_d     ,
                               double *Altitudeh_d  ,
                               double *lonlat_d     ,
                               double *areasT       ,
+                              double *func_r_d     ,
                               int     num          ,
                               bool    DeepModel    ) {
 
@@ -51,7 +52,6 @@ __global__ void CalcTotEnergy(double *Etotal_d     ,
         zlow = Altitudeh_d[lev];
         Vol = areasT[id] * (zup-zlow);
       }
-
       //calc cartesian values of vertical wind
       wx = W_d[id*nv+lev]*cos(lonlat_d[id*2+1])*cos(lonlat_d[id*2]);
       wy = W_d[id*nv+lev]*cos(lonlat_d[id*2+1])*sin(lonlat_d[id*2]);

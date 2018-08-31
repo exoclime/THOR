@@ -261,9 +261,10 @@ public:
         double Rv_sponge_    ,
         double ns_sponge_    ,
         double t_shrink_     ,
-        int point_num_       );
+        int point_num_       ,
+        bool conservation    );
 
-    void AllocData() ;
+    void AllocData(bool) ;
 
     bool InitialValues(bool rest                ,
                        const std::string & initial_conditions_filename,
@@ -287,7 +288,8 @@ public:
                        int hstest               ,
                        int & nsteps             ,
                        double & simulation_start_time,
-                       int & output_file_idx);
+                       int & output_file_idx,
+                       bool conservation);
 
     void RTSetup(double,
                  double,
@@ -329,9 +331,10 @@ public:
                bool  ,
                int   ,
                bool  ,
+               bool  ,
                bool  );
 
-    void CopyToHost();
+    void CopyToHost(bool);
 
     void Output(int   ,
                 int   ,
@@ -345,7 +348,8 @@ public:
                 double,
                 char* ,
                 double,
-                const std::string & output_dir);
+                const std::string & output_dir,
+                bool );
 
 
 
