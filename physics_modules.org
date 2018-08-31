@@ -1,1 +1,40 @@
+
 * Physics Modules
+THOR runs the GCM and can then run specific physics modules.
+
+** Code structure for Physics modules
+   The code is done so that modules can live in an external code repository, separate from the GCM Core.
+   
+   They are compiled as a library that the THOR makefile integrates, and must provide an interface defined by ~src/headers/phy_modules.h~.
+
+*** Module Interface 
+    The module code is called by THOR at various points along the run of the simulation, to perform what's needed from the sim.
+
+    They will receive the state from the dynamical core and should define their own variables for simulation.
+
+**** Initialise and Configure
+
+**** Allocate Memory
+
+**** Initialise Data
+     TBD: should probably also receive startupfile?
+**** loop
+     
+     called after the dynamical core update in the main loop, receives the GCM state data and update their state. 
+
+**** Store
+     TBD: should receive output H5 file?
+**** Free Memory
+
+
+
+** Compiling modules
+
+** Examples
+
+*** simple 
+    this is a simple example implementing radiative transfer
+*** shared modules
+    this uses modules in an external directory, showing how modules can be implemented to be reused in multiple dynamic core constructs.
+*** template
+    this is a bare skelton to implement your own basic module

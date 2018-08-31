@@ -100,8 +100,11 @@ BINDIR = bin
 RESDIR = results
 TESTDIR = tests
 
+# modules search directory.
 # set if not set from command line or config file
-MODULES_SRC ?= src/modules
+# will run the Makefile in that directory, passing it this makefile's
+# variables
+MODULES_SRC ?= src/modules_simple_template
 
 .PHONY: all clean
 
@@ -171,10 +174,7 @@ ifndef VERBOSE
 .SILENT:
 endif
 
-# modules compile directories
-MODULES_DIR := $(OBJDIR)/phy_modules
 
-$(info MODULES_DIR: $(MODULES_DIR))
 #######################################################################
 # create object directory if missing
 $(BINDIR) $(RESDIR) $(OBJDIR):
@@ -188,9 +188,6 @@ $(OBJDIR)/${OUTPUTDIR}: $(OBJDIR)
 
 $(BINDIR)/${TESTDIR}: $(BINDIR)
 	mkdir -p $(BINDIR)/$(TESTDIR)
-
-$(MODULES_DIR): $(OBJDIR)
-	mkdir -p $(MODULES_DIR)
 
 #######################################################################
 # make dependency targets
@@ -229,9 +226,9 @@ $(OBJDIR)/${OUTPUTDIR}/%.o: %.cpp $(OBJDIR)/$(OUTPUTDIR)/%.d| $(OBJDIR)/$(OUTPUT
 
 
 # link *.o objects
-$(BINDIR)/${OUTPUTDIR}/esp: $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj)) $(MODULES_DIR)/libphy_modules.a | $(BINDIR) $(RESDIR) $(BINDIR)/$(OUTPUTDIR)  $(OBJDIR) $(MODULES_DIR)
+$(BINDIR)/${OUTPUTDIR}/esp: $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj)) $(MODULES_SRC)/libphy_modules.a | $(BINDIR) $(RESDIR) $(BINDIR)/$(OUTPUTDIR)  $(OBJDIR)
 	@echo $(YELLOW)creating $@ $(END)
-	$(CC) $(arch) $(link_flags) -o $(BINDIR)/$(OUTPUTDIR)/esp $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj)) -L$(MODULES_DIR) -lphy_modules $(h5libdir) $(h5libs)
+	$(CC) $(arch) $(link_flags) -o $(BINDIR)/$(OUTPUTDIR)/esp $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj)) -L$(MODULES_SRC) -lphy_modules $(h5libdir) $(h5libs)
 
 # phony so that it will always be run
 .PHONY: symlink
@@ -245,8 +242,8 @@ symlink: $(BINDIR)/$(OUTPUTDIR)/esp
 
 export
 # always call submakefile for modules
-.PHONY: $(MODULES_DIR)/libphy_modules.a
-$(MODULES_DIR)/libphy_modules.a: $(MODULES_DIR)
+.PHONY: $(MODULES_SRC)/libphy_modules.a
+$(MODULES_SRC)/libphy_modules.a:
 	@echo $(MAGENTA)Creating physics module from subdir $(MODULES_SRC)$(END)
 	$(MAKE) -C $(MODULES_SRC)
 
@@ -312,15 +309,13 @@ clean:
 	@echo $(CYAN)clean up symlink $(END)
 	-$(RM) $(BINDIR)/esp
 	@echo $(CYAN)clean up modules directory $(END)
-	-$(RM) -rf $(MODULES_DIR)/*.o
-	-$(RM) -rf $(MODULES_DIR)/*.a
+	$(MAKE) -C $(MODULES_SRC) clean
 	@echo $(CYAN)clean up directories $(END)
 	-$(RM) -d $(BINDIR)/debug $(BINDIR)/release $(BINDIR)/prof
 	-$(RM) -d $(BINDIR)/tests
 	-$(RM) -d $(OBJDIR)/debug
 	-$(RM) -d $(OBJDIR)/release
 	-$(RM) -d $(OBJDIR)/prof
-	-$(RM) -d $(MODULES_DIR)
 	-$(RM) -d $(BINDIR)
 	-$(RM) -d $(OBJDIR)
 
