@@ -57,12 +57,12 @@ $(BUILDDIR):
 
 INCLUDE_DIRS = -I$(SHARED_MODULES_INCLUDE) -I$(THOR_INCLUDE) -I$(LOCAL_INCLUDE)
 
-$(BUILDDIR)/radiative_transfer.o: radiative_transfer.cu radiative_transfer.h phy_modules.h phy_module_base.h 
+$(BUILDDIR)/radiative_transfer.o: radiative_transfer.cu radiative_transfer.h phy_modules.h phy_module_base.h | $(BUILDDIR)
 	@echo $(YELLOW)creating $@ $(END)
 	$(CC) $(arch)  $(flags) $(h5include) $(h5libdir) $(INCLUDE_DIRS) -dc -o $@ $<
 
 
-$(BUILDDIR)/phy_modules.o: phy_modules.cu phy_modules.h phy_module_base.h | 
+$(BUILDDIR)/phy_modules.o: phy_modules.cu phy_modules.h phy_module_base.h | $(BUILDDIR)
 	@echo $(YELLOW)creating $@ $(END)
 	$(CC) $(arch)  $(flags) $(h5include) $(h5libdir) $(INCLUDE_DIRS) -dc -o $@ $<
 
