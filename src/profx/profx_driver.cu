@@ -69,7 +69,7 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
                          double Gravit      , // Gravity [m/s^2]
                          double A           , // Planet radius [m]
                          bool   DeepModel   ,
-                         int    n_out        , // output step (triggers conservation calc)
+                         int    n_out       , // output step (triggers conservation calc)
                          bool   sponge      , // Use sponge layer?
                          bool   shrink_sponge,
                          bool   conservation ){ // Shrink sponge after some time

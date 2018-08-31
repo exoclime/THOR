@@ -83,7 +83,7 @@ radius_star = 0.805
 # output
 # output every n steps
 n_out = 10
-results_path = hd189
+results_path = hd189_2
 
 # GPU ID number
 GPU_ID_N = 0
