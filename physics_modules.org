@@ -1,11 +1,13 @@
 
 * Physics Modules
-THOR runs the GCM and can then run specific physics modules.
+THOR runs the GCM dynamical core and can then run specific physics modules for various simulations. Different users will want to use the dynamical core with different physics, thus, it is possible to compile physics outside of the THOR directory tree, to keep it separated from the dynamical core code. 
+
 
 ** Code structure for Physics modules
    The code is done so that modules can live in an external code repository, separate from the GCM Core.
    
-   They are compiled as a library that the THOR makefile integrates, and must provide an interface defined by ~src/headers/phy_modules.h~.
+   They are compiled as a library that the THOR makefile integrates, and must provide an interface defined by [[src/headers/phy_modules.h][src/headers/phy_modules.h]].
+
 
 *** Module Interface 
     The module code is called by THOR at various points along the run of the simulation, to perform what's needed from the sim.
@@ -14,27 +16,30 @@ THOR runs the GCM and can then run specific physics modules.
 
 **** Initialise and Configure
 
-**** Allocate Memory
+**** Allocate and free memory
+     Called at start and end to allocate and free memory used by on host and device
 
 **** Initialise Data
      TBD: should probably also receive startupfile?
 **** loop
-     
      called after the dynamical core update in the main loop, receives the GCM state data and update their state. 
 
 **** Store
      TBD: should receive output H5 file?
-**** Free Memory
+
 
 
 
 ** Compiling modules
+   The physics module should build a static library in its root directory, with the name libphy_modules.a. This will be linked into the main THOR code. 
+   The main Makefile calls the Makefile in the root of the physics module directory. This directory is found by the variable ~MODULES_SRC~, set in the ~Makefile.conf~ configuration makefile, used by the main makfile at the root of the project.
+   It should also have a ~clean~ target, to clean up the build files. See the example directories.
 
 ** Examples
 
-*** simple 
-    this is a simple example implementing radiative transfer
-*** shared modules
-    this uses modules in an external directory, showing how modules can be implemented to be reused in multiple dynamic core constructs.
-*** template
-    this is a bare skelton to implement your own basic module
+*** modules_simple_template
+    Simple example implementing radiative transfer directly in the physics module.
+*** modules_RT
+    Radiative transfer example, using modules in an external directory, showing how modules can be implemented to be reused in multiple physical modules constructs.
+*** phy_template
+    Bare skelton to implement your own basic module.

@@ -1,5 +1,5 @@
 # Local makefile configuration
 $(info Local Config)
 
-MODULES_SRC := src/modules
+MODULES_SRC := src/phy_template
 SM:=61

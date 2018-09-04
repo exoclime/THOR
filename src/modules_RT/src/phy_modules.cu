@@ -1,6 +1,6 @@
 // **********************************************************************************
 // 
-// Example of external module if we want to reuse phy module code at various places
+// Example of external module to reuse phy module code at various places
 // This pushes the module code in another file, with a standard structure, that make it easy to
 // put modules in a list and reuse them
 

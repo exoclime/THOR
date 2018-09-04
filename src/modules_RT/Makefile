@@ -1,15 +1,19 @@
-# makefile for phy modules, called from main makefile
-# must create phy_modules.o in MODULES_DIR from THOR_ROOT
+# makefile for RT physics modules, called from main makefile
+# must create libphy_modules.a in its root directory
 
 $(info Modules RT Makefile )
 
 # set some variables if not set 
+includedir ?= unset
+h5include ?= unset
+flags ?= unset
+arch ?= unset
 
 $(info Some variables inherited from parent makefiles)
-$(info includes $(includedir))
-$(info h5includes $(h5include))
-$(info flags $(flags))
-$(info arch $(arch))
+$(info includes: $(includedir))
+$(info h5includes: $(h5include))
+$(info flags: $(flags))
+$(info arch: $(arch))
 
 $(info Sub Makefile variables)
 
@@ -79,7 +83,7 @@ clean:
 	@echo $(CYAN)clean up library $(END)
 	-$(RM) libphy_modules.a
 	@echo $(CYAN)clean up objects $(END)
-	-$(RM) $(BUILDDIR)/phy_modules_main.o
+	-$(RM) $(BUILDDIR)/phy_modules.o
 	-$(RM) $(BUILDDIR)/radiative_transfer.o 
 	@echo $(CYAN)remove object dir $(END)
 	-$(RM) -d $(BUILDDIR)
