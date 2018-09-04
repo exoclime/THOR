@@ -104,7 +104,7 @@ TESTDIR = tests
 # set if not set from command line or config file
 # will run the Makefile in that directory, passing it this makefile's
 # variables
-MODULES_SRC ?= src/modules_simple_template
+MODULES_SRC ?= src/physics/managers/empty/
 
 .PHONY: all clean
 

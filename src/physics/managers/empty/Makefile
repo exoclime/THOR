@@ -19,20 +19,20 @@ $(info Sub Makefile variables)
 
 ######################################################################
 # Directories
-THOR_ROOT = ../../
+THOR_ROOT = ../../../../
 
 # Includes
 LOCAL_INCLUDE = inc
 
 # shared modules
-SHARED_MODULES_INCLUDE = $(THOR_ROOT)src/phy_modules/inc/
+SHARED_MODULES_INCLUDE = $(THOR_ROOT)src/physics/modules/inc/
 
 # thor root include if we want to use code from there
 THOR_INCLUDE = $(THOR_ROOT)src/headers
 
 # source dirs
 LOCAL_SOURCES = src
-SHARED_MODULES_DIR = $(THOR_ROOT)src/phy_modules/src/
+SHARED_MODULES_DIR = $(THOR_ROOT)src/physics/modules/src/
 
 # object directory
 BUILDDIR = obj
@@ -81,4 +81,3 @@ clean:
 	-$(RM) $(BUILDDIR)/phy_modules.o
 	@echo $(CYAN)remove object dir $(END)
 	-$(RM) -d $(BUILDDIR)
-

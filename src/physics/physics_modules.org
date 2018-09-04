@@ -1,16 +1,16 @@
 
-* Physics Modules
-THOR runs the GCM dynamical core and can then run specific physics modules for various simulations. Different users will want to use the dynamical core with different physics, thus, it is possible to compile physics outside of the THOR directory tree, to keep it separated from the dynamical core code. 
+* Physics
+THOR runs the GCM dynamical core and can then run specific physics function for various simulations. Different users will want to use the dynamical core with different physics, thus, it is possible to compile physics outside of the THOR directory tree, to keep it separated from the dynamical core code. 
 
 
-** Code structure for Physics modules
-   The code is done so that modules can live in an external code repository, separate from the GCM Core.
+** Code structure for Physics code
+   The code is separated in a physics manager, that can live in an external code repository, separate from the GCM Core.
    
    They are compiled as a library that the THOR makefile integrates, and must provide an interface defined by [[src/headers/phy_modules.h][src/headers/phy_modules.h]].
 
 
-*** Module Interface 
-    The module code is called by THOR at various points along the run of the simulation, to perform what's needed from the sim.
+*** Physics manager interface 
+    The manager code is called by THOR at various points along the run of the simulation, to perform what's needed from the sim.
 
     They will receive the state from the dynamical core and should define their own variables for simulation.
 
@@ -30,16 +30,19 @@ THOR runs the GCM dynamical core and can then run specific physics modules for v
 
 
 
+*** Physics 
+    Some shared physics examples are implemented in the ~modules~ directory, providing a standard interface, so that they can be easily reused in diverse managers implementing different combination of physics. 
+
 ** Compiling modules
    The physics module should build a static library in its root directory, with the name libphy_modules.a. This will be linked into the main THOR code. 
    The main Makefile calls the Makefile in the root of the physics module directory. This directory is found by the variable ~MODULES_SRC~, set in the ~Makefile.conf~ configuration makefile, used by the main makfile at the root of the project.
    It should also have a ~clean~ target, to clean up the build files. See the example directories.
-
+   
 ** Examples
 
-*** modules_simple_template
+*** empty
+    Bare skelton to implement your own basic module, this contains the minimum interface that is called by the dynamical core to run physics functions and does nothing.
+*** simple
     Simple example implementing radiative transfer directly in the physics module.
-*** modules_RT
-    Radiative transfer example, using modules in an external directory, showing how modules can be implemented to be reused in multiple physical modules constructs.
-*** phy_template
-    Bare skelton to implement your own basic module.
+*** multi
+    Example that can use multiple physics modules. Currently contains radiative transfer example, using modules in an external directory, showing how modules can be implemented to be reused in multiple physical modules constructs.
