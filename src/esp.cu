@@ -51,7 +51,9 @@
 #include <cmath>
 #include <iostream>
 #include <string>
-
+#include <chrono>
+#include <iomanip>
+#include <sstream>
 using namespace std;
 
 #include "headers/define.h"
@@ -66,6 +68,38 @@ using namespace std;
 #include "binary_test.h"
 
 #include "phy_modules.h"
+
+
+std::string duration_to_str(std::chrono::duration<double> time_delta)
+{
+    double delta = time_delta.count();
+    
+    int days = delta/(24*3600);
+    delta -= days*24.0*3600.0;
+    
+    int hours = delta/3600;
+    delta -= hours*3600;
+    
+    int minutes = delta/60;
+    delta -= minutes*60;
+    
+    int seconds = delta;    
+    std::ostringstream str;
+
+    if (days != 0)
+        str << days << "d ";
+    if (hours!=0)
+        str << hours << "h ";
+    if (minutes!= 0)
+        str << minutes << "m ";
+    str << seconds << "s";
+
+    return str.str();
+    
+        
+
+}
+
 
 int main (int argc,  char** argv){
 
@@ -640,13 +674,18 @@ int main (int argc,  char** argv){
 //  Starting model Integration.
     printf(" Starting the model integration.\n\n");
 
+    // Start timer
+    std::chrono::system_clock::time_point start_sim = std::chrono::system_clock::now();
+    
 //
 //  Main loop. nstep is the current step of the integration and nsmax the maximum
 //  number of steps in the integration.
     for(int nstep = step_idx; nstep <= nsmax; ++nstep){
+        
         // store step number for file comparison tests
         X.current_step = nstep;
 
+        
         if (!gcm_off) {
 //
 //        Dynamical Core Integration (THOR)
@@ -688,6 +727,7 @@ int main (int argc,  char** argv){
        simulation_time = simulation_start_time + (nstep - step_idx+1)*timestep;
        bool file_output = false;
 
+
 //
 //      Prints output every nout steps
         if(nstep % n_out == 0) {
@@ -711,10 +751,36 @@ int main (int argc,  char** argv){
             file_output = true;
 
         }
-        printf("\n Time step number = %d || Time = %f days. %s",
-               nstep,
+
+        std::chrono::system_clock::time_point end_step = std::chrono::system_clock::now();
+        
+        std::chrono::duration<double, std::ratio<1L,1L>> sim_delta = end_step - start_sim;
+
+        long num_steps_elapsed = nstep - step_idx;
+                
+        double mean_delta_per_step = sim_delta.count()/double(num_steps_elapsed);
+        
+        long num_steps_left = nsmax - num_steps_elapsed;
+        
+
+        std::chrono::duration<double, std::ratio<1L,1L>> time_left(double(num_steps_left)*mean_delta_per_step);
+        
+        std::chrono::system_clock::time_point sim_end = end_step + std::chrono::duration_cast<std::chrono::microseconds>(time_left);
+        
+        
+        std::time_t end_c = std::chrono::system_clock::to_time_t( sim_end );
+ 
+        std::ostringstream end_time_str;
+
+        end_time_str << std::put_time(std::localtime(&end_c), "%F %T");
+        
+        printf("\n Time step number = %d/%d || Time = %f days. elapsed %s left: %s total: %s. %s",
+               nstep, nsmax,
                simulation_time/86400.,
-               file_output?"saved output":"");
+               duration_to_str(sim_delta).c_str(),
+               duration_to_str(time_left).c_str(),               
+               end_time_str.str().c_str(),
+               file_output?"[saved output]":"");
     }
 //
 //  Prints the duration of the integration.
