@@ -54,24 +54,22 @@
 XPlanet::XPlanet(){
 //
 //  Earth
-    if(planetnumber==1){
-        // ID
-        sprintf(simulation_ID, "%s", "Earth");
-        //////////////
-        // BULK     //
-        //////////////
-        A = 72427000.0    ; // Radius [m]
-        Omega = 9.09E-5 ; // Rotation rate [s-1]
-        Gravit= 47.0      ; // Gravitational acceleration [m/s^2]
-        ////////////////
-        // ATMOSPHERE //
-        ////////////////
-        Mmol = 2.24        ; // Mean molecular mass of dry air [kg]
-        Rd   = 3714          ; // Gas constant [J/(Kg K)]
-        Cp   = 13000        ; // Specific heat capacities [J/(Kg K)]
-        Tmean= 1400          ; // Mean atmospheric temperature [K]
-        P_Ref = 10000000.0      ; // Reference surface pressure [Pa]
-        Top_altitude = 1235376.0; // Altitude of the top of the model domain [m]
-        Diffc = 0.009973         ; // Strength of diffusion
-    }
+    // ID
+    sprintf(simulation_ID, "%s", "Earth");
+    //////////////
+    // BULK     //
+    //////////////
+    A = 72427000.0    ; // Radius [m]
+    Omega = 9.09E-5 ; // Rotation rate [s-1]
+    Gravit= 47.0      ; // Gravitational acceleration [m/s^2]
+    ////////////////
+    // ATMOSPHERE //
+    ////////////////
+    Mmol = 2.24        ; // Mean molecular mass of dry air [kg]
+    Rd   = 3714          ; // Gas constant [J/(Kg K)]
+    Cp   = 13000        ; // Specific heat capacities [J/(Kg K)]
+    Tmean= 1400          ; // Mean atmospheric temperature [K]
+    P_Ref = 10000000.0      ; // Reference surface pressure [Pa]
+    Top_altitude = 1235376.0; // Altitude of the top of the model domain [m]
+    Diffc = 0.009973         ; // Strength of diffusion
 }

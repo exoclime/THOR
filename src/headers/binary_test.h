@@ -94,7 +94,9 @@
 #include <map>
 
 using std::string;
-using namespace std;
+using std::vector;
+using std::map;
+
 
 struct output_def
 {
@@ -144,7 +146,7 @@ public:
     }
 
     
-    void set_definitions(const map<string, output_def> & defs);
+    void set_definitions(const std::map<string, output_def> & defs);
 
      // make constructor private, can only be instantiated through get_instance
     ~binary_test();
@@ -222,8 +224,8 @@ bool binary_test::compare_arrays(int s1, T * d1,
     if (s1 != s2)
     {
         if (print)
-            cout << array << ":\tdifferent sized arrays (" << s1
-                 << ":" << s2 << endl;
+            std::cout << array << ":\tdifferent sized arrays (" << s1
+                      << ":" << s2 << std::endl;
         
         return false;
     }
@@ -242,7 +244,7 @@ bool binary_test::compare_arrays(int s1, T * d1,
         {
 //            if (print && i < 10)
             if (print)
-                cout <<std::setprecision(20) << std::scientific << array << "["<<i<<"]:\tdifferent value ("<<d1[i]<<":"<<d2[i]<<")"<<endl;
+                std::cout <<std::setprecision(20) << std::scientific << array << "["<<i<<"]:\tdifferent value ("<<d1[i]<<":"<<d2[i]<<")"<<std::endl;
             
             same = false;
         }

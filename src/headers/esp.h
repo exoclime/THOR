@@ -197,28 +197,10 @@ public:
 
     double *vbar_d        ;
     int *zonal_mean_tab_d ;
-//  Arrays used in RT code
-    double *fnet_up_d     ;
-    double *fnet_dn_d     ;
-    double *tau_d         ;
 
-//  Input values used in RT
-    double Tstar          ;
-    double planet_star_dist;      // Planet-star distance [au]
-    double radius_star    ;      // Star radius [Rsun]
-    double diff_fac       ;        // Diffusivity factor: 0.5-1.0
-    double Tlow           ;        // Lower boundary temperature: upward flux coming from the planet's interior
-    double albedo         ;       // Bond albedo
-    double tausw          ;      // Absorption coefficient for the shortwaves
-    double taulw          ;
-    double resc_flx       ;
-    double incflx         ;
 
-//  These arrays are for temporary usage in RT code
-    double *dtemp         ;
-    double *phtemp        ;
-    double *ttemp         ;
-    double *thtemp        ;
+
+
 
 //  energy, ang momentum and mass conservation
     double *Etotal_d        ;  //total energy (internal+kinetic+gravit) in control volume
@@ -288,15 +270,6 @@ public:
                        double & simulation_start_time,
                        int & output_file_idx);
 
-    void RTSetup(double,
-                 double,
-                 double,
-                 double,
-                 double,
-                 double,
-                 double,
-                 double);
-
     void Thor(double,
               bool  ,
               bool  ,
@@ -313,7 +286,6 @@ public:
               bool  );
 
     void ProfX(int   ,
-               int   ,
                int   ,
                double,
                double,

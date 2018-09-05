@@ -1,0 +1,5 @@
+# Local makefile configuration
+$(info Local Config)
+
+MODULES_SRC := src/physics/mangwrs/empty/
+SM:=61

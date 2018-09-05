@@ -49,17 +49,17 @@
 #include "../headers/phy/profx_deepHJ_hs.h"
 #include "../headers/phy/profx_tidalearth_hs.h"
 #include "../headers/phy/apocalypse_sponge.h"
-#include "../headers/phy/profx_RT.h"
 #include "../headers/phy/valkyrie_conservation.h"
 
 #include "binary_test.h"
 #include "debug_helpers.h"
 
+#include "phy_modules.h"
 
-__host__ void ESP::ProfX(int    planetnumber, // Planet ID
-                         int    nstep       , // Step number
+
+__host__ void ESP::ProfX(int    nstep       , // Step number
                          int    hstest      , // Held-Suarez test option
-                         double time_step   , // Time-step [s]
+                         double time_step   , // Time-step [s]<<<<<<< HEAD
                          double Omega       , // Rotation rate [1/s]
                          double Cp          , // Specific heat capacity [J/kg/K]
                          double Rd          , // Gas constant [J/kg/K]
@@ -73,6 +73,7 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
                          int    n_out        , // output step (triggers conservation calc)
                          bool   sponge      , // Use sponge layer?
                          bool   shrink_sponge){ // Shrink sponge after some time
+
     USE_BENCHMARK()
 //
 //  Number of threads per block.
@@ -142,7 +143,6 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
 // HELD SUAREZ TEST  //
 ///////////////////////
 //
-    if (planetnumber == 1) {
       if (hstest == 1) {
         cudaDeviceSynchronize();
         held_suarez<<< NB, NTH >>> (Mh_d         ,
@@ -200,48 +200,26 @@ __host__ void ESP::ProfX(int    planetnumber, // Planet ID
                                     time_step    ,
                                     point_num    );
       }
-    }
+      
 //
 ////////////////////////
-
-    if(planetnumber != 1){
-        printf("Planet value incorrect! (see in file planet.h)");
-        exit(EXIT_FAILURE);
-    }
-
+      
     if (!hstest) {
         cudaDeviceSynchronize();
-        rtm_dual_band <<< NBRT, NTH >>> (pressure_d   ,
-      //rtm_dual_band <<< 1,1 >>> (pressure_d         ,
-                                       Rho_d        ,
-                                       temperature_d,
-                                       fnet_up_d    ,
-                                       fnet_dn_d    ,
-                                       tau_d        ,
-                                       Gravit       ,
-                                       Cp           ,
-                                       lonlat_d     ,
-                                       Altitude_d   ,
-                                       Altitudeh_d  ,
-                                       phtemp       ,
-                                       dtemp        ,
-                                       ttemp        ,
-                                       thtemp       ,
-                                       time_step    ,
-                                       Tstar        ,
-                                       planet_star_dist,
-                                       radius_star  ,
-                                       diff_fac     ,
-                                       Tlow         ,
-                                       albedo       ,
-                                       tausw        ,
-                                       taulw        ,
-                                       incflx       ,
-                                       P_Ref        ,
-                                       point_num    ,
-                                       nv           ,
-                                       nvi          ,
-                                       A             );
+        phy_modules_mainloop(*this,
+                              nstep       , // Step number
+                              hstest      , // Held-Suarez test option
+                              time_step   , // Time-step [s]
+                              Omega       , // Rotation rate [1/s]
+                              Cp          , // Specific heat capacity [J/kg/K]
+                              Rd          , // Gas constant [J/kg/K]
+                              Mmol        , // Mean molecular mass of dry air [kg]
+                              mu          , // Atomic mass unit [kg]
+                              kb          , // Boltzmann constant [J/K]
+                              P_Ref       , // Reference pressure [Pa]
+                              Gravit      , // Gravity [m/s^2]
+                              A           // Planet radius [m]
+            );
     }
     check_h = false;
     cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);

@@ -67,6 +67,8 @@
 
 #include "parser_helpers.h"
 
+using std::string;
+
 // abstract argument interface class
 class arg_interface
 {
@@ -155,11 +157,11 @@ public:
     void print_desc()
     {
         if (short_form == "")
-            cout << setw(28) << " " 
-                 << setw( 0) << help_string << endl;
+            std::cout << std::setw(28) << " " 
+                 << std::setw( 0) << help_string << std::endl;
         else
-            cout << " -" << short_form <<" / --" << setw(20) << left << long_form
-                 << setw( 0) << help_string << endl;
+            std::cout << " -" << short_form <<" / --" << std::setw(20) << std::left << long_form
+                 << std::setw( 0) << help_string << std::endl;
 
     }
     
@@ -220,7 +222,7 @@ private:
     }
     
     // Storage map as key value pair
-    vector<std::unique_ptr<arg_interface>> args;
+    std::vector<std::unique_ptr<arg_interface>> args;
 
     // Storage for positional argument
     std::unique_ptr<arg_interface> positional_arg = nullptr;
@@ -234,7 +236,7 @@ private:
     e_parser_state parser_state = PARSE_FOR_KEY;
     
     int parser_state_nargs = 0;
-    vector<std::unique_ptr<arg_interface>>::iterator current_arg_interface;
+    std::vector<std::unique_ptr<arg_interface>>::iterator current_arg_interface;
 
     bool parser_state_machine(const string & str);
 

@@ -5,3 +5,6 @@ build/*
 *~
 obj/*
 bin/*
+Makefile.conf
+src/modules_RT/libphy_modules.a
+src/modules_RT/obj/*

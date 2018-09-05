@@ -50,7 +50,7 @@
 
 #include "parser_helpers.h"
 
-using namespace std;
+
 
 using std::string;
 using std::map;
@@ -122,7 +122,7 @@ public:
     bool append_config_var(const string & name, T & target_, const T & default_val_);
 
     // parsing functions
-    bool parse_config(basic_istream<char> & config);
+    bool parse_config(std::basic_istream<char> & config);
     bool parse_file(const string & filename);
     
 private:

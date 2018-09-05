@@ -51,7 +51,9 @@
 #include <cmath>
 #include <iostream>
 #include <string>
-
+#include <chrono>
+#include <iomanip>
+#include <sstream>
 using namespace std;
 
 #include "headers/define.h"
@@ -64,6 +66,40 @@ using namespace std;
 #include "directories.h"
 
 #include "binary_test.h"
+
+#include "phy_modules.h"
+
+
+std::string duration_to_str(std::chrono::duration<double> time_delta)
+{
+    double delta = time_delta.count();
+    
+    int days = delta/(24*3600);
+    delta -= days*24.0*3600.0;
+    
+    int hours = delta/3600;
+    delta -= hours*3600;
+    
+    int minutes = delta/60;
+    delta -= minutes*60;
+    
+    int seconds = delta;    
+    std::ostringstream str;
+
+    if (days != 0)
+        str << days << "d ";
+    if (hours!=0)
+        str << hours << "h ";
+    if (minutes!= 0)
+        str << minutes << "m ";
+    str << seconds << "s";
+
+    return str.str();
+    
+        
+
+}
+
 
 int main (int argc,  char** argv){
 
@@ -203,23 +239,7 @@ int main (int argc,  char** argv){
     int hstest = 1;
     config_reader.append_config_var("hstest", hstest, hstest_default);
 
-    // Rad Trans options
-    double Tstar            = 4520;       // Star effective temperature [K]
-    double planet_star_dist = 0.015;      // Planet-star distance [au]
-    double radius_star      = 0.667;      // Star radius [Rsun]
-    double diff_fac         = 0.5;        // Diffusivity factor: 0.5-1.0
-    double Tlow             = 970;        // Lower boundary temperature: upward flux coming from the planet's interior
-    double albedo           = 0.18;       // Bond albedo
-    double tausw            = 532.0;      // Absorption coefficient for the shortwaves
-    double taulw            = 1064.0;     // Absorption coefficient for the longwaves
-    config_reader.append_config_var("Tstar", Tstar, Tstar_default);
-    config_reader.append_config_var("planet_star_dist", planet_star_dist, planet_star_dist_default);
-    config_reader.append_config_var("radius_star", radius_star, radius_star_default);
-    config_reader.append_config_var("diff_fac", diff_fac, diff_fac_default);
-    config_reader.append_config_var("Tlow", Tlow, Tlow_default);
-    config_reader.append_config_var("albedo", albedo, albedo_default);
-    config_reader.append_config_var("tausw", tausw, tausw_default);
-    config_reader.append_config_var("taulw", taulw, taulw_default);
+ 
 
     int GPU_ID_N = 0;
     config_reader.append_config_var("GPU_ID_N", GPU_ID_N, GPU_ID_N_default);
@@ -236,6 +256,11 @@ int main (int argc,  char** argv){
     int TPprof = 0;
     config_reader.append_config_var("TPprof", TPprof, TPprof_default);
 
+    //*****************************************************************
+    // read configs for modules
+    phy_modules_generate_config(config_reader);
+    
+    
     //*****************************************************************
     // Read config file
 
@@ -458,14 +483,7 @@ int main (int argc,  char** argv){
                                                           // if nothing read
 
     if (hstest == 0) {
-      X.RTSetup(Tstar            ,
-                planet_star_dist ,
-                radius_star      ,
-                diff_fac         ,
-                Tlow             ,
-                albedo           ,
-                tausw            ,
-                taulw            );
+        phy_modules_init_data();
     }
 
 
@@ -656,13 +674,18 @@ int main (int argc,  char** argv){
 //  Starting model Integration.
     printf(" Starting the model integration.\n\n");
 
+    // Start timer
+    std::chrono::system_clock::time_point start_sim = std::chrono::system_clock::now();
+    
 //
 //  Main loop. nstep is the current step of the integration and nsmax the maximum
 //  number of steps in the integration.
     for(int nstep = step_idx; nstep <= nsmax; ++nstep){
+        
         // store step number for file comparison tests
         X.current_step = nstep;
 
+        
         if (!gcm_off) {
 //
 //        Dynamical Core Integration (THOR)
@@ -683,8 +706,7 @@ int main (int argc,  char** argv){
           }
 //
 //     Physical Core Integration (ProfX)
-       X.ProfX(planetnumber , // Planet ID
-               nstep        , // Step number
+       X.ProfX(nstep        , // Step number
                hstest       , // Held-Suarez test option
                timestep     , // Time-step [s]
                Planet.Omega , // Rotation rate [1/s]
@@ -704,6 +726,7 @@ int main (int argc,  char** argv){
        // compute simulation time
        simulation_time = simulation_start_time + (nstep - step_idx+1)*timestep;
        bool file_output = false;
+
 
 //
 //      Prints output every nout steps
@@ -728,10 +751,36 @@ int main (int argc,  char** argv){
             file_output = true;
 
         }
-        printf("\n Time step number = %d || Time = %f days. %s",
-               nstep,
+
+        std::chrono::system_clock::time_point end_step = std::chrono::system_clock::now();
+        
+        std::chrono::duration<double, std::ratio<1L,1L>> sim_delta = end_step - start_sim;
+
+        long num_steps_elapsed = nstep - step_idx;
+                
+        double mean_delta_per_step = sim_delta.count()/double(num_steps_elapsed);
+        
+        long num_steps_left = nsmax - num_steps_elapsed;
+        
+
+        std::chrono::duration<double, std::ratio<1L,1L>> time_left(double(num_steps_left)*mean_delta_per_step);
+        
+        std::chrono::system_clock::time_point sim_end = end_step + std::chrono::duration_cast<std::chrono::microseconds>(time_left);
+        
+        
+        std::time_t end_c = std::chrono::system_clock::to_time_t( sim_end );
+ 
+        std::ostringstream end_time_str;
+
+        end_time_str << std::put_time(std::localtime(&end_c), "%F %T");
+        
+        printf("\n Time step number = %d/%d || Time = %f days. elapsed %s left: %s total: %s. %s",
+               nstep, nsmax,
                simulation_time/86400.,
-               file_output?"saved output":"");
+               duration_to_str(sim_delta).c_str(),
+               duration_to_str(time_left).c_str(),               
+               end_time_str.str().c_str(),
+               file_output?"[saved output]":"");
     }
 //
 //  Prints the duration of the integration.
@@ -750,3 +799,4 @@ int main (int argc,  char** argv){
 
     return 0;
 }
+

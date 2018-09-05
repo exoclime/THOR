@@ -45,11 +45,11 @@
 
 #include <iostream>
 
-
-using namespace std;
-
 // To compile without regex lib
 //#define NO_REGEX_SUPPORT
+
+using std::string;
+
 
 // check if we use GCC and if version is below 4.9, define
 // NO_REGEX_SUPPORT
@@ -63,6 +63,9 @@ using namespace std;
 #ifdef NO_REGEX_SUPPORT
 #else // NO_REGEX_SUPPORT
 #include <regex>
+
+using std::regex;
+
 #endif // NO_REGEX_SUPPORT
 
 inline bool is_empty_line(const string & line)
@@ -418,7 +421,7 @@ bool check_greater(  string name, T val, T min_)
         return true;
     else
     {
-        cout << "Bad range for " << name << " (cond: min("<<min_<<") < " << val << endl;
+        std::cout << "Bad range for " << name << " (cond: min("<<min_<<") < " << val << std::endl;
         
         return false;
     }
@@ -432,7 +435,7 @@ bool check_range( const string & name, T val, T min_, T max_)
         return true;
     else
     {
-        cout << "Bad range for " << name << " (cond: min("<<min_<<") < "<<val<<") < max("<<max_<<"))"<<endl;
+        std::cout << "Bad range for " << name << " (cond: min("<<min_<<") < "<<val<<") < max("<<max_<<"))"<<std::endl;
         
         return false;
     }  
