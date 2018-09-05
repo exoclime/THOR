@@ -116,7 +116,7 @@ __global__ void gpu_reduction_sum(double * d,
     int mem_offset1 = 2*blockDim.x*blockIdx.x + 2*threadIdx.x;
 
     if (mem_offset1 + 1 < length)
-        double2(*((double2*)&ds_in[2*threadIdx.x])) = double2(*((double2*)(&d[mem_offset1])));
+        *((double2*)&ds_in[2*threadIdx.x]) = *((double2*)(&d[mem_offset1]));
     else if  (mem_offset1 < length)
     {
         ds_in[2*threadIdx.x] = d[mem_offset1];
@@ -127,9 +127,6 @@ __global__ void gpu_reduction_sum(double * d,
         ds_in[2*threadIdx.x] = 0.0f;
         ds_in[2*threadIdx.x + 1] = 0.0f;
     }
-    
-    
-    
     
     // loop on stride and add
     for (int stride = blockDim.x; stride > 0; stride /= 2)
@@ -163,11 +160,9 @@ double gpu_sum(double *d, int length)
     cudaMalloc((void **)&out_d   , num_blocks *     sizeof(double));
     cudaMalloc((void **)&in_d   , length *     sizeof(double));
     
-    cudaMemcpy(out_d, out_h, length*sizeof(double), cudaMemcpyHostToDevice);
+    cudaMemcpy(in_d, d, length*sizeof(double), cudaMemcpyHostToDevice);
 
-    
-
-    gpu_reduction_sum<BLOCK_SIZE><<<num_blocks, BLOCK_SIZE>>>(d, length);
+    gpu_reduction_sum<BLOCK_SIZE><<<num_blocks, BLOCK_SIZE>>>(d, out_d, length);
 
     cudaMemcpy(out_h, out_d, num_blocks*sizeof(double), cudaMemcpyDeviceToHost);
     
@@ -219,8 +214,13 @@ int main ()
     printf("Computed in %ld ms\n", duration.count());
     double epsilon = 1e-12;
     
-    double output_val = 0.0;
-
+    start = std::chrono::system_clock::now();
+    double output_val = gpu_sum<12>(s, size);
+    stop = std::chrono::system_clock::now();
+    duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
+    printf("CPU reduction sum: %10.5g\n", output_val);
+    printf("Computed in %ld ms\n", duration.count());
+    
     double output_ref = reduction_sum_CPU;
     
     bool result = abs(output_val - output_ref) < epsilon;
