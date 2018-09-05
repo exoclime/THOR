@@ -44,9 +44,10 @@
 #include <string>
 #include <vector>
 
-using namespace std;
+using std::string;
 
-vector<string> get_files_in_directory(const string & dir_name);
+
+std::vector<string> get_files_in_directory(const string & dir_name);
 
 bool match_output_file_numbering_scheme(const string & file_path, string & basename, int & number );
 
@@ -68,9 +69,9 @@ public:
     // last file extension separated by a '.'
     string suffix();
     // vector of file extensions separated by a '.' 
-    vector<string> suffixes();
+    std::vector<string> suffixes();
     // parts
-    vector<string> parts();
+    std::vector<string> parts();
     
     // final part of the path
     string name();
@@ -102,7 +103,7 @@ public:
 private:
 
     string element_name;
-    vector<string> elements;
+    std::vector<string> elements;
 
     bool is_absolute_path = false;
     

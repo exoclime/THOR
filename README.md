@@ -51,13 +51,14 @@ This depends on the GPU you are using. SM stands for Streaming Multiprocessor an
 
 #### Using makefile
 
+
 Set your SM number in the makefile.
 ```
 SM:=30 # Streaming Multiprocessor version
 ```
 Or as argument on the command line.
 
-Compile, for release build:
+Compile, for release build (`-j8` uses 8 parallel threads, to speed up compilation):
 
 ```sh
    $ make release -j8
@@ -86,6 +87,12 @@ To show commands echoed
 ```
 
 If if fails, check the makefile variables output at the beginning of the compilation, it shows the variables and the path detected for h5, which is a common cause of issue during compilation.
+
+##### Define a local configuration Makefile.
+Copy `Makefile.conf.template` to `Makefile.conf`. This defines a local makefile configuration that wont be added to git. You can define the `SM` number in there, so that you don't need to modify the main makefile that can be overwritten when pulling from git or add it to the command line each time. 
+
+#### Physics modules
+You can use your own physics modules by setting the path to the physics module in the local makefile configuration file `Makefile.conf`, see [How to add your own physics modules](physics_modules.org).
 
 #### Alternative: Using CMake
 Thor also provides a CMake script to try to configure the SM and find the libraries for CUDA and HDF5 automatically.

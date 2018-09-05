@@ -53,6 +53,10 @@
 
 #include "parser_helpers.h"
 
+using std::cout;
+using std::endl;
+
+
 cmdargs::cmdargs(const string & app_name_,
                  const string & app_desc_)
     : app_name(app_name_),
