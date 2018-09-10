@@ -782,7 +782,7 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
             // Check device query
             if (err != cudaSuccess)
             {
-                printf("%s\n", cudaGetErrorString(err));
+                printf("THORdriver CUDA error check reports error: %s\n", cudaGetErrorString(err));
             }
 
 //          Pressure and density equations.
