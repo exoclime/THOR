@@ -124,7 +124,26 @@ public:
                     std::unique_ptr<T[]> & data,
                     int & size);
 
+    // write a scalar value to output
+    template<typename T>
+    void append_value(T value,
+                      string name,
+                      string unit)
+    {
+        append_value(&value, 1, name, unit);
+    }
 
+    // read a scalar value from input
+    template<typename T>
+    void read_value(const string & name,
+                    T & data)
+    {
+        std::unique_ptr<T[]> buf = &data;
+        
+        read_table(name, buf, 1);
+    }
+    
+    
     // Template functions for data type detection in append_table function.
     template<typename T>
     DataType get_datatype(T & input)
