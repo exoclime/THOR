@@ -92,19 +92,30 @@ __host__ void ESP::Output(int    ntstep         , // Number of integration steps
 //
 //  Description: Model output.
 //
+    /*
     hid_t       file_id, dataset_id, att, dataspace_id;
     hid_t       stringType, stringSpace;
     hsize_t     dims[1];
-
+    */
     char FILE_NAME1[160];
 
+    /*
     stringType =  H5Tcopy(H5T_C_S1);
     stringSpace=  H5Screate(H5S_SCALAR);
-
+    */
+    
 //  GRID OUTPUT
     if(ntstep == 0){
         sprintf(FILE_NAME1, "%s/esp_output_grid_%s.h5", output_dir.c_str(), simulation_ID);
 
+        storage s(FILE_NAME1);
+
+        s.append_table(Altitude_h,
+                       nv,
+                       "/Altitude",
+                       "m",
+                       "Altitude");
+        /*
 //      Create a new file using default properties.
         file_id = H5Fcreate(FILE_NAME1, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 //      Create the data space for the dataset.
@@ -127,8 +138,15 @@ __host__ void ESP::Output(int    ntstep         , // Number of integration steps
         H5Dclose(dataset_id);
         H5Aclose(att);
         H5Sclose(dataspace_id);
-
+        */
+        
 //      Altitudeh
+        s.append_table(Altitudeh_h,
+                       nv+1,
+                       "/Altitudeh",
+                       "m",
+                       "Altitude at the interfaces");
+/*
         dims[0] = nv+1;
         dataspace_id = H5Screate_simple(1, dims, NULL);
         dataset_id = H5Dcreate2(file_id, "/Altitudeh", H5T_IEEE_F64LE, dataspace_id,
@@ -144,8 +162,15 @@ __host__ void ESP::Output(int    ntstep         , // Number of integration steps
         H5Dclose(dataset_id);
         H5Aclose(att);
         H5Sclose(dataspace_id);
-
+*/
+        
 //      AreasT
+        s.append_table(Altitudeh_h,
+                       point_num,
+                       "/areasT",
+                       "m^2",
+                       "Main cells areas");
+        /*
         dims[0] = point_num;
         dataspace_id = H5Screate_simple(1, dims, NULL);
         dataset_id = H5Dcreate2(file_id, "/areasT", H5T_IEEE_F64LE, dataspace_id,
@@ -161,8 +186,15 @@ __host__ void ESP::Output(int    ntstep         , // Number of integration steps
         H5Dclose(dataset_id);
         H5Aclose(att);
         H5Sclose(dataspace_id);
-
+        */
+        
 //      Lon-lat grid
+        s.append_table(lonlat_h,
+                       2*point_num,
+                       "/lonlat",
+                       "-",
+                       "Longitudes and latitudes");
+        /*
         dims[0] = 2*point_num;
         dataspace_id = H5Screate_simple(1, dims, NULL);
         dataset_id = H5Dcreate2(file_id, "/lonlat", H5T_IEEE_F64LE, dataspace_id,
@@ -178,8 +210,14 @@ __host__ void ESP::Output(int    ntstep         , // Number of integration steps
         H5Dclose(dataset_id);
         H5Aclose(att);
         H5Sclose(dataspace_id);
-
-//      Number of horizontal points
+        */
+        
+//      Number of horizontal points        
+        s.append_value((double)point_num,
+                       "/point_num",
+                       "-",
+                       "Number of grid points in one level");
+        /*
         double point_num_a[] = {(double)point_num};
         dims[0] = 1;
         dataspace_id = H5Screate_simple(1, dims, NULL);
@@ -196,8 +234,16 @@ __host__ void ESP::Output(int    ntstep         , // Number of integration steps
         H5Dclose(dataset_id);
         H5Aclose(att);
         H5Sclose(dataspace_id);
+        */
 
+        
 //      Number of vertical layers
+        s.append_value((double)nv,
+                       "/nv",
+                       "-",
+                       "Number of vertical layers");
+
+/*
         double nv_a[] = {(double)nv};
         dims[0] = 1;
         dataspace_id = H5Screate_simple(1, dims, NULL);
@@ -214,8 +260,14 @@ __host__ void ESP::Output(int    ntstep         , // Number of integration steps
         H5Dclose(dataset_id);
         H5Aclose(att);
         H5Sclose(dataspace_id);
-
+*/
 //      point neighbours
+        s.append_table(point_local_h,
+                       6*point_num,
+                       "/pntloc",
+                       "-",
+                       "Neighbours indexes");
+        /*
         dims[0] = 6*point_num;
         dataspace_id = H5Screate_simple(1, dims, NULL);
         dataset_id = H5Dcreate2(file_id, "/pntloc", H5T_STD_I32LE, dataspace_id,
@@ -231,55 +283,94 @@ __host__ void ESP::Output(int    ntstep         , // Number of integration steps
         H5Dclose(dataset_id);
         H5Aclose(att);
         H5Sclose(dataspace_id);
-
+        */
 
 //      Close the file.
-        H5Fflush(file_id, H5F_SCOPE_LOCAL);
-        H5Fclose(file_id);
+//        H5Fflush(file_id, H5F_SCOPE_LOCAL);
+//        H5Fclose(file_id);
     }
 
 //  PLANET
     if(ntstep == 0){
         sprintf(FILE_NAME1, "%s/esp_output_planet_%s.h5", output_dir.c_str(), simulation_ID);
-        file_id = H5Fcreate(FILE_NAME1, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+        storage s(FILE_NAME1);
 
         // glevel
-        write_double_value_to_h5file(file_id, "/glevel", glevel, "Horizontal subdivision level", "-");
+        s.append_value(glevel, "/glevel", "-", "Horizontal subdivision level");
+        //write_double_value_to_h5file(file_id, "/glevel", glevel, "Horizontal subdivision level", "-");
         // vlevel
-        write_double_value_to_h5file(file_id, "/vlevel", nv, "Vertical subdivision level", "-");
-        // spring_dynamics
-        write_double_value_to_h5file(file_id, "/spring_dynamics", spring_dynamics?1.0:0.0, "Spring dynamics", "-");
-        // spring beta
-        write_double_value_to_h5file(file_id, "/spring_beta", spring_beta, "Spring Beta", "-");
-        //      A
-        write_double_value_to_h5file(file_id, "/A", A, "Planet radius", "m");
-        //      Rd
-        write_double_value_to_h5file(file_id, "/Rd", Rd, "Gas constant", "J/(Kg K)");
-        //      Omega
-        write_double_value_to_h5file(file_id, "/Omega", Omega, "Rotation rate", "1/s");
-        //      Gravit
-        write_double_value_to_h5file(file_id, "/Gravit", Gravit,"Surface gravity" , "m/s^2");
-        //      Mmol
-        write_double_value_to_h5file(file_id, "/Mmol", Mmol,"Mean molecular mass of dry air" , "kg");
-        //      P_Ref
-        write_double_value_to_h5file(file_id, "/P_Ref", P_Ref, "Reference pressure","Pa" );
-        //      Top_altitude
-        write_double_value_to_h5file(file_id, "/Top_altitude", Top_altitude, "Top of the model's domain", "m");
-        //      CP
-        write_double_value_to_h5file(file_id, "/Cp", Cp, "Specific heat capacity", "J/(Kg K)");
+        s.append_value(nv,"/vlevel","-", "Vertical subdivision level");
+        //write_double_value_to_h5file(file_id, "/vlevel", nv, "Vertical subdivision level", "-");
 
-        H5Fflush(file_id, H5F_SCOPE_LOCAL);
-        H5Fclose(file_id);
+        // spring_dynamics
+        s.append_value(spring_dynamics?1.0:0.0, "/spring_dynamics","-", "Spring dynamics");
+        //write_double_value_to_h5file(file_id, "/spring_dynamics", spring_dynamics?1.0:0.0, "Spring dynamics", "-");
+        // spring beta
+        s.append_value(spring_beta, "/spring_beta", "-","Spring Beta");
+        
+        // write_double_value_to_h5file(file_id, "/spring_beta", spring_beta, "Spring Beta", "-");
+        
+        //      A
+        s.append_value(A,"/A","m","Planet radius");
+        
+        //write_double_value_to_h5file(file_id, "/A", A, "Planet radius", "m");
+        //      Rd
+        s.append_value(Rd,"/Rd","J/(Kg K)","Gas constant");
+        
+        //write_double_value_to_h5file(file_id, "/Rd", Rd, "Gas constant", "J/(Kg K)");
+        //      Omega
+        s.append_value(Omega,"/Omega","1/s","Rotation rate");
+        
+        //write_double_value_to_h5file(file_id, "/Omega", Omega, "Rotation rate", "1/s");
+        //      Gravit
+        s.append_value(Gravit,"/Gravit", "m/s^2","Surface gravity");
+        
+        // write_double_value_to_h5file(file_id, "/Gravit", Gravit,"Surface gravity" , "m/s^2");
+        //      Mmol
+        s.append_value(Mmol,"/Mmol","kg","Mean molecular mass of dry air");
+        
+        //write_double_value_to_h5file(file_id, "/Mmol", Mmol,"Mean molecular mass of dry air" , "kg");
+        
+        //      P_Ref
+        s.append_value( P_Ref,"/P_Ref","Pa","Reference pressure");
+        
+        // write_double_value_to_h5file(file_id, "/P_Ref", P_Ref, "Reference pressure","Pa" );
+        //      Top_altitude
+        s.append_value(Top_altitude,"/Top_altitude", "m", "Top of the model's domain");
+        
+            
+        // write_double_value_to_h5file(file_id, "/Top_altitude", Top_altitude, "Top of the model's domain", "m");
+        //      CP
+        s.append_value(Cp, "/Cp", "J/(Kg K)", "Specific heat capacity");
+        
+        //write_double_value_to_h5file(file_id, "/Cp", Cp, "Specific heat capacity", "J/(Kg K)");
+
+        // H5Fflush(file_id, H5F_SCOPE_LOCAL);
+        // H5Fclose(file_id);
     }
 
 //  ESP OUTPUT
     sprintf(FILE_NAME1, "%s/esp_output_%s_%d.h5", output_dir.c_str(), simulation_ID, fidx);
-    file_id = H5Fcreate(FILE_NAME1, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+
+    storage s(FILE_NAME1);
+
+
+    
+    // file_id = H5Fcreate(FILE_NAME1, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 
     // step index
-    write_int_value_to_h5file(file_id, "/nstep", ntstep, "Step number", "-" );
+    s.append_value(ntstep,
+                   "/nstep",
+                   "-",
+                   "Step number");
 
 //  Simulation time
+    s.append_value(simulation_time,
+                   "/simulation_time",
+                   "s",
+                   "Simulation time");
+
+    /*
     dims[0] = 1;
     double simulation_time_a[]           = {simulation_time};
     dataspace_id = H5Screate_simple(1, dims, NULL);
@@ -296,8 +387,15 @@ __host__ void ESP::Output(int    ntstep         , // Number of integration steps
     H5Dclose(dataset_id);
     H5Aclose(att);
     H5Sclose(dataspace_id);
-
+    */
+    
 //  Rho
+    s.append_table(Rho_h,
+                   nv*point_num,
+                   "/Rho",
+                   "kg/m^3",
+                   "Density");
+    /*
     dims[0] = nv*point_num;
     dataspace_id = H5Screate_simple(1, dims, NULL);
     dataset_id = H5Dcreate2(file_id, "/Rho", H5T_IEEE_F64LE, dataspace_id,
@@ -313,8 +411,15 @@ __host__ void ESP::Output(int    ntstep         , // Number of integration steps
     H5Dclose(dataset_id);
     H5Aclose(att);
     H5Sclose(dataspace_id);
-
+    */
 //  Pressure
+    s.append_table(pressure_h,
+                   nv*point_num,
+                   "/Pressure",
+                   "Pa",
+                   "Pressure");
+
+    /*
     dims[0] = nv*point_num;
     dataspace_id = H5Screate_simple(1, dims, NULL);
     dataset_id = H5Dcreate2(file_id, "/Pressure", H5T_IEEE_F64LE, dataspace_id,
@@ -330,8 +435,14 @@ __host__ void ESP::Output(int    ntstep         , // Number of integration steps
     H5Dclose(dataset_id);
     H5Aclose(att);
     H5Sclose(dataspace_id);
-
+    */
 //  Mh
+    s.append_table(Mh_h,
+                   nv*point_num*3,
+                   "/Mh",
+                   "kg m/s",
+                   "Horizontal Momentum");
+    /*
     dims[0] = nv*point_num*3;
     dataspace_id = H5Screate_simple(1, dims, NULL);
     dataset_id = H5Dcreate2(file_id, "/Mh", H5T_IEEE_F64LE, dataspace_id,
@@ -347,8 +458,14 @@ __host__ void ESP::Output(int    ntstep         , // Number of integration steps
     H5Dclose(dataset_id);
     H5Aclose(att);
     H5Sclose(dataspace_id);
-
+    */
 //  Wh
+     s.append_table(Wh_h,
+                   nvi*point_num,
+                   "/Wh",
+                   "kg m/s",
+                   "Vertical Momentum");
+     /*
     dims[0] = nvi*point_num;
     dataspace_id = H5Screate_simple(1, dims, NULL);
     dataset_id = H5Dcreate2(file_id, "/Wh", H5T_IEEE_F64LE, dataspace_id,
@@ -364,8 +481,15 @@ __host__ void ESP::Output(int    ntstep         , // Number of integration steps
     H5Dclose(dataset_id);
     H5Aclose(att);
     H5Sclose(dataspace_id);
-
+     */
+     
 //  Etotal at each point
+     s.append_table( Etotal_h,
+                     nv*point_num,
+                     "/Etotal",
+                     "kg m^2/s^2",
+                     "Total Energy");
+     /*
     dims[0] = nv*point_num;
     dataspace_id = H5Screate_simple(1, dims, NULL);
     dataset_id = H5Dcreate2(file_id, "/Etotal", H5T_IEEE_F64LE, dataspace_id,
@@ -381,8 +505,14 @@ __host__ void ESP::Output(int    ntstep         , // Number of integration steps
     H5Dclose(dataset_id);
     H5Aclose(att);
     H5Sclose(dataspace_id);
-
+     */
 //  Mass at each point
+     s.append_table( Mass_h,
+                     nv*point_num,
+                     "/Mass",
+                     "kg",
+                     "Mass");
+     /*
     dims[0] = nv*point_num;
     dataspace_id = H5Screate_simple(1, dims, NULL);
     dataset_id = H5Dcreate2(file_id, "/Mass", H5T_IEEE_F64LE, dataspace_id,
@@ -398,8 +528,15 @@ __host__ void ESP::Output(int    ntstep         , // Number of integration steps
     H5Dclose(dataset_id);
     H5Aclose(att);
     H5Sclose(dataspace_id);
+     */
 
 //  AngMomx at each point
+     s.append_table( AngMomx_h,
+                     nv*point_num,
+                     "/AngMomx",
+                     "kg m^2/s",
+                     "AngMom in X");
+     /*
     dims[0] = nv*point_num;
     dataspace_id = H5Screate_simple(1, dims, NULL);
     dataset_id = H5Dcreate2(file_id, "/AngMomx", H5T_IEEE_F64LE, dataspace_id,
@@ -415,8 +552,15 @@ __host__ void ESP::Output(int    ntstep         , // Number of integration steps
     H5Dclose(dataset_id);
     H5Aclose(att);
     H5Sclose(dataspace_id);
+     */
 //
 // //  AngMomy at each point
+     s.append_table( AngMomy_h,
+                     nv*point_num,
+                     "/AngMomy",
+                     "kg m^2/s",
+                     "AngMom in Y");
+     /*
     dims[0] = nv*point_num;
     dataspace_id = H5Screate_simple(1, dims, NULL);
     dataset_id = H5Dcreate2(file_id, "/AngMomy", H5T_IEEE_F64LE, dataspace_id,
@@ -432,8 +576,15 @@ __host__ void ESP::Output(int    ntstep         , // Number of integration steps
     H5Dclose(dataset_id);
     H5Aclose(att);
     H5Sclose(dataspace_id);
+     */
 //
 // //  AngMomz at each point
+     s.append_table( AngMomz_h,
+                     nv*point_num,
+                     "/AngMomz",
+                     "kg m^2/s",
+                     "AngMom in Z");
+     /*
     dims[0] = nv*point_num;
     dataspace_id = H5Screate_simple(1, dims, NULL);
     dataset_id = H5Dcreate2(file_id, "/AngMomz", H5T_IEEE_F64LE, dataspace_id,
@@ -449,8 +600,13 @@ __host__ void ESP::Output(int    ntstep         , // Number of integration steps
     H5Dclose(dataset_id);
     H5Aclose(att);
     H5Sclose(dataspace_id);
-
+     */
 //  GlobalE (total energy over entire planet)
+     s.append_value( GlobalE_h,
+                     "/GlobalE",
+                     "kg m^2/s^2",
+                     "Global Total Energy");
+     /*
     dims[0] = 1;
     dataspace_id = H5Screate_simple(1, dims, NULL);
     dataset_id = H5Dcreate2(file_id, "/GlobalE", H5T_IEEE_F64LE, dataspace_id,
@@ -466,8 +622,13 @@ __host__ void ESP::Output(int    ntstep         , // Number of integration steps
     H5Dclose(dataset_id);
     H5Aclose(att);
     H5Sclose(dataspace_id);
-
+     */
 //  GlobalMass (total atmospheric mass over entire planet)
+      s.append_value( GlobalMass_h,
+                     "/GlobalMass",
+                     "kg",
+                     "Global Mass");
+      /*
     dims[0] = 1;
     dataspace_id = H5Screate_simple(1, dims, NULL);
     dataset_id = H5Dcreate2(file_id, "/GlobalMass", H5T_IEEE_F64LE, dataspace_id,
@@ -483,8 +644,14 @@ __host__ void ESP::Output(int    ntstep         , // Number of integration steps
     H5Dclose(dataset_id);
     H5Aclose(att);
     H5Sclose(dataspace_id);
+      */
 
 //  GlobalAMx (total angular momentum in x direction over entire planet)
+      s.append_value( GlobalAMx_h,
+                     "/GlobalAMx",
+                     "kg m^2/s",
+                     "Global AngMomX");
+      /*
     dims[0] = 1;
     dataspace_id = H5Screate_simple(1, dims, NULL);
     dataset_id = H5Dcreate2(file_id, "/GlobalAMx", H5T_IEEE_F64LE, dataspace_id,
@@ -500,8 +667,14 @@ __host__ void ESP::Output(int    ntstep         , // Number of integration steps
     H5Dclose(dataset_id);
     H5Aclose(att);
     H5Sclose(dataspace_id);
-
+      */
 //  GlobalAMy (total angular momentum in y direction over entire planet)
+      s.append_value( GlobalAMy_h,
+                     "/GlobalAMy",
+                     "kg m^2/s",
+                     "Global AngMomY");
+      
+    /*
     dims[0] = 1;
     dataspace_id = H5Screate_simple(1, dims, NULL);
     dataset_id = H5Dcreate2(file_id, "/GlobalAMy", H5T_IEEE_F64LE, dataspace_id,
@@ -517,8 +690,15 @@ __host__ void ESP::Output(int    ntstep         , // Number of integration steps
     H5Dclose(dataset_id);
     H5Aclose(att);
     H5Sclose(dataspace_id);
+*/
 
 //  GlobalAMz (total angular momentum in y direction over entire planet)
+      s.append_value( GlobalAMz_h,
+                     "/GlobalAMz",
+                     "kg m^2/s",
+                     "Global AngMomZ");
+      
+/*
     dims[0] = 1;
     dataspace_id = H5Screate_simple(1, dims, NULL);
     dataset_id = H5Dcreate2(file_id, "/GlobalAMz", H5T_IEEE_F64LE, dataspace_id,
@@ -534,8 +714,9 @@ __host__ void ESP::Output(int    ntstep         , // Number of integration steps
     H5Dclose(dataset_id);
     H5Aclose(att);
     H5Sclose(dataspace_id);
+*/
 
 //  Close the file.
-    H5Fflush(file_id, H5F_SCOPE_LOCAL);
-    H5Fclose(file_id);
+//    H5Fflush(file_id, H5F_SCOPE_LOCAL);
+//    H5Fclose(file_id);
 }

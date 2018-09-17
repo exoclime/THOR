@@ -241,15 +241,17 @@ void binary_test::output_reference(const string & iteration,
               
               
 	       s.append_table(mem_buf.get(),
-                               def.size,
-                               def.short_name,
-                               "-");               
+                              def.size,
+                              def.short_name,
+                              "-",
+                              def.short_name);               
             }
             else
 	      s.append_table(def.data,
-                               def.size,
-                               def.short_name,
-                               "-");
+                             def.size,
+                             def.short_name,
+                             "-",
+                             def.short_name);
         }
 
 
