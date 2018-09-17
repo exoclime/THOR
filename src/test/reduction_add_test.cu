@@ -109,14 +109,16 @@ __global__ void gpu_reduction_sum(double * d,
                        int length)
 {
    // temporary memory for all tiles in that thread
-    __shared__ float ds_in[2*BLOCK_SIZE];  
-//    __shared__ float ds_out[LENGTH];      
-    
+    __shared__ double ds_in[2*BLOCK_SIZE];  
+ 
     // import all the data from global memory
-    int mem_offset1 = 2*blockDim.x*blockIdx.x + 2*threadIdx.x;
+    int mem_offset1 = 2*(blockDim.x*blockIdx.x + threadIdx.x);
 
     if (mem_offset1 + 1 < length)
-        *((double2*)&ds_in[2*threadIdx.x]) = *((double2*)(&d[mem_offset1]));
+    {
+        *((double2*)(&(ds_in[2*threadIdx.x]))) = *((double2*)(&(d[mem_offset1])));
+    }
+
     else if  (mem_offset1 < length)
     {
         ds_in[2*threadIdx.x] = d[mem_offset1];
@@ -127,6 +129,7 @@ __global__ void gpu_reduction_sum(double * d,
         ds_in[2*threadIdx.x] = 0.0f;
         ds_in[2*threadIdx.x + 1] = 0.0f;
     }
+    
     
     // loop on stride and add
     for (int stride = blockDim.x; stride > 0; stride /= 2)
@@ -139,10 +142,9 @@ __global__ void gpu_reduction_sum(double * d,
     __syncthreads();
     
     // copy to output
-//    ds_out[blockDim.x] = ds_in[0];
     
     if (threadIdx.x == 0)
-        o[blockIdx.x] = ds_in[0];
+       o[blockIdx.x] = ds_in[0];
     
 }
 
@@ -156,21 +158,38 @@ double gpu_sum(double *d, int length)
     double * out_h = new double[num_blocks];
     double * out_d;
     double * in_d;
-    
-    cudaMalloc((void **)&out_d   , num_blocks *     sizeof(double));
-    cudaMalloc((void **)&in_d   , length *     sizeof(double));
-    
-    cudaMemcpy(in_d, d, length*sizeof(double), cudaMemcpyHostToDevice);
 
-    gpu_reduction_sum<BLOCK_SIZE><<<num_blocks, BLOCK_SIZE>>>(d, out_d, length);
+    printf("num_blocks: %d\n", num_blocks);
+
+    cudaMalloc((void **)&out_d, num_blocks *     sizeof(double));
+    cudaMalloc((void **)&in_d , length *     sizeof(double));
+    cudaError_t err = cudaGetLastError();
+    if (err != cudaSuccess)
+        printf("Malloc: %s\n", cudaGetErrorString(err));    
+
+
+    cudaMemcpy(in_d, d, length*sizeof(double), cudaMemcpyHostToDevice);
+    err = cudaGetLastError();
+    if (err != cudaSuccess)
+        printf("cpyH2D: %s\n", cudaGetErrorString(err));    
+
+    gpu_reduction_sum<BLOCK_SIZE><<<num_blocks, BLOCK_SIZE>>>(in_d, out_d, length);
+    err = cudaGetLastError();
+    if (err != cudaSuccess)
+        printf("krnl: %s\n", cudaGetErrorString(err));    
 
     cudaMemcpy(out_h, out_d, num_blocks*sizeof(double), cudaMemcpyDeviceToHost);
-    
+    err = cudaGetLastError();
+    if (err != cudaSuccess)
+        printf("cpyD2H: %s\n", cudaGetErrorString(err));    
 
     double out = 0.0;
     for (int i = 0; i < num_blocks; i++)
+    {
+	printf("%d: %g\n", i, out_h[i]);
         out += out_h[i];
-    
+    }
+    cudaFree(in_d);
     cudaFree(out_d);
     delete[] out_h;
     
@@ -180,9 +199,9 @@ double gpu_sum(double *d, int length)
 
 int main ()
 {
-//    int size = 42;
+    int size = 5000;
     
-    int size = 434567890;
+//    int size = 434567890;
     
     // allocate on heap
     double * s =  new double[size];
@@ -215,10 +234,10 @@ int main ()
     double epsilon = 1e-12;
     
     start = std::chrono::system_clock::now();
-    double output_val = gpu_sum<12>(s, size);
+    double output_val = gpu_sum<1024>(s, size);
     stop = std::chrono::system_clock::now();
     duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
-    printf("CPU reduction sum: %10.5g\n", output_val);
+    printf("GPU reduction sum: %10.5g\n", output_val);
     printf("Computed in %ld ms\n", duration.count());
     
     double output_ref = reduction_sum_CPU;
