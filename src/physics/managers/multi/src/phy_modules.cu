@@ -83,7 +83,7 @@ bool phy_modules_mainloop(ESP & esp,
     return out;
 }
 
-bool phy_modules_store()
+bool phy_modules_store(storage & s)
 {
 
     return true;

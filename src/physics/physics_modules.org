@@ -25,7 +25,9 @@ THOR runs the GCM dynamical core and can then run specific physics function for 
      called after the dynamical core update in the main loop, receives the GCM state data and update their state. 
 
 **** Store
-     TBD: should receive output H5 file?
+     storage function receives a reference to a ~storage~ object, that points to the output file for the current timestep, already containing the dumps of the dynamic core. It has function to output tables and values, as ~int~ or ~double~.
+     
+     Using this, the physics module data gets automatically added to the dynamical core data.
 
 
 
@@ -37,6 +39,10 @@ THOR runs the GCM dynamical core and can then run specific physics function for 
    The physics module should build a static library in its root directory, with the name libphy_modules.a. This will be linked into the main THOR code. 
    The main Makefile calls the Makefile in the root of the physics module directory. This directory is found by the variable ~MODULES_SRC~, set in the ~Makefile.conf~ configuration makefile, used by the main makfile at the root of the project.
    It should also have a ~clean~ target, to clean up the build files. See the example directories.
+
+ *NOTE*
+
+   Physics modules are linked as a static library from the main makefile, so if you use any of the routines and classes provided by the main executable (e.g. ~storage~ class for output), you do not need to compile it and link it to the physics modules library, or you'll end up with errors about multiple definitions of some objects.
    
 ** Examples
 
