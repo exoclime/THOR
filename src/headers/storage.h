@@ -114,9 +114,10 @@ public:
     // Store a table of type T - double or int, in output file
     template<typename T>
     void append_table(T * data,
-                   const int & size,
-                   string name,
-                   string unit);
+                      const int & size,
+                      string name,
+                      string unit,
+                      string description);
 
     // read table of type T from output file
     template<typename T>
@@ -124,7 +125,27 @@ public:
                     std::unique_ptr<T[]> & data,
                     int & size);
 
+    // write a scalar value to output
+    template<typename T>
+    void append_value(T value,
+                      string name,
+                      string unit,
+                      string description)
+    {
+        append_table(&value, 1, name, unit, description);
+    }
 
+    // read a scalar value from input
+    template<typename T>
+    void read_value(const string & name,
+                    T & data)
+    {
+        std::unique_ptr<T[]> buf = &data;
+        
+        read_table(name, buf, 1);
+    }
+    
+    
     // Template functions for data type detection in append_table function.
     template<typename T>
     DataType get_datatype(T & input)
@@ -154,9 +175,10 @@ private:
 
 template<typename T>
 void storage::append_table(T * data,
-                   const int & size,
-                   string name,
-                   string unit)
+                           const int & size,
+                           string name,
+                           string unit,
+                           string description)
 {
     if (file != nullptr)
     {
@@ -178,18 +200,16 @@ void storage::append_table(T * data,
             dataset.write(data,  dt);
 
             {          
-                StrType strdatatype(PredType::C_S1, name.length());
-                hsize_t dims[] = {1}; // dimensions of attribute
-                DataSpace attrspace = H5::DataSpace(1, dims);
+                StrType strdatatype(PredType::C_S1, description.length());
+                DataSpace attrspace = H5::DataSpace(H5S_SCALAR);
                 Attribute attr = dataset.createAttribute("Variable",
                                                          strdatatype,
                                                          attrspace);
-                attr.write(strdatatype, name.c_str());
+                attr.write(strdatatype, description.c_str());
             }
             {          
                 StrType strdatatype(PredType::C_S1, unit.length());
-                hsize_t dims[] = {1}; // dimensions of attribute
-                DataSpace attrspace = H5::DataSpace(1, dims);
+                DataSpace attrspace = H5::DataSpace(H5S_SCALAR);
                 Attribute attr = dataset.createAttribute("units",
                                                          strdatatype,
                                                          attrspace);

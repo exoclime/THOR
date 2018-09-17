@@ -1,5 +1,5 @@
 # Local makefile configuration
 $(info Local Config)
 
-MODULES_SRC := src/physics/mangwrs/empty/
+MODULES_SRC := src/physics/managers/empty/
 SM:=61
