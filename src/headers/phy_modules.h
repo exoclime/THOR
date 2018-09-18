@@ -6,6 +6,7 @@
 #include "esp.h"
 #include "grid.h"
 #include "planet.h"
+#include "storage.h"
 
 bool phy_modules_generate_config(config_file & config_reader);
 bool phy_modules_init_data();
@@ -31,7 +32,7 @@ bool phy_modules_mainloop(ESP & esp,
     );
 
 
-bool phy_modules_store();
+bool phy_modules_store(storage & s);
 
 
 

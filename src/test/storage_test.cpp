@@ -70,7 +70,7 @@ int main()
         for (int i = 0; i < num_d; i++)
             d[i] = double(i)/double(s);
 
-        f.append_table(d, s, "Numbers", "m");
+        f.append_table(d, s, "Numbers", "m", "Number table");
 
         uint32_t s2 = num_i;
         
@@ -78,7 +78,7 @@ int main()
         for (int i = 0; i < num_i; i++)
             d2[i] = i;
         
-        f.append_table(d2, s2, "Indices", "m^2");       
+        f.append_table(d2, s2, "Indices", "m^2", "indices table");       
     }
 
     {

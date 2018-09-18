@@ -74,16 +74,16 @@ std::string duration_to_str(std::chrono::duration<double> time_delta)
 {
     double delta = time_delta.count();
 
-    int days = delta/(24*3600);
+    unsigned int days = delta/(24*3600);
     delta -= days*24.0*3600.0;
 
-    int hours = delta/3600;
+    unsigned int hours = delta/3600;
     delta -= hours*3600;
 
-    int minutes = delta/60;
+    unsigned int minutes = delta/60;
     delta -= minutes*60;
 
-    int seconds = delta;
+    unsigned int seconds = delta;
     std::ostringstream str;
 
     if (days != 0)
@@ -785,7 +785,11 @@ int main (int argc,  char** argv){
 
         std::ostringstream end_time_str;
 
-        end_time_str << std::put_time(std::localtime(&end_c), "%F %T");
+        char str_time[256];
+        std::strftime(str_time, sizeof(str_time), "%F %T", std::localtime(&end_c));
+
+
+        end_time_str << str_time;
 
         printf("\n Time step number = %d/%d || Time = %f days. \n\t Elapsed %s || Left: %s || Completion: %s. %s",
                nstep, nsmax,

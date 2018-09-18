@@ -6,16 +6,13 @@
 
 If you use this code please cite: [Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016](http://iopscience.iop.org/article/10.3847/0004-637X/829/2/115/meta)
 
-###### Copyright (C) 2017-2018 João Mendonça ######
+###### Copyright (C) 2017-2018 Exoclimes Simulation Platform ######
 
 ### BUILD & RUN THOR
 
 Main instructions to compile and run *THOR*. This version uses only a __single__ __GPU__.
 
 Current code owners: Joao Mendonca: joao.mendonca@space.dtu.dk, Russell Deitrick: russel.deitrick@csh.unibe.ch, Urs Schroffenegger: urs.schroffenegger@csh.unibe.ch
-
-
-Home website: http://software-oasis.com/
 
 ### INSTALL
 

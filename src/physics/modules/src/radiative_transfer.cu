@@ -132,7 +132,7 @@ config_reader.append_config_var("Tstar", Tstar, Tstar);
     return true;
 }
 
-bool radiative_transfer::store()
+bool radiative_transfer::store(storage & s)
 {
     
     return true;

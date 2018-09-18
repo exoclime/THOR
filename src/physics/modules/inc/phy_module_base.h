@@ -2,7 +2,7 @@
 
 #include "esp.h"
 #include "config_file.h"
-
+#include "storage.h"
 
 class phy_module_base
 {
@@ -31,8 +31,8 @@ public:
               double A           // Planet radius [m]);
         ) = 0; 
 
-    // TBD
-    virtual bool store() = 0; //? should be "get_data()"? "store_data(h5file)"?
+
+    virtual bool store(storage & s) = 0;
     
     virtual bool  configure(config_file & config_reader) = 0;
 

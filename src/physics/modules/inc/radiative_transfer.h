@@ -27,9 +27,7 @@ public:
               double A           // Planet radius [m]);
         );
     
-
-    // TBD
-    bool store(); //? should be "get_data()"? "store_data(h5file)"?
+    bool store(storage & s);
     
     bool configure(config_file & config_reader);
 
