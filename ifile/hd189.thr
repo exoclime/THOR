@@ -31,9 +31,9 @@ Cp = 13226.82
 # Mean atmospheric temperature [K]
 Tmean = 1200.0
 # Reference surface pressure [Pa]
-P_ref = 1000000.0
+P_ref = 22000000.0
 # Altitude of the top of the model domain [m]
-Top_altitude = 2e6
+Top_altitude = 2.5e6
 # Strength of diffusion
 Diffc = 0.009973
 

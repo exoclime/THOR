@@ -181,8 +181,8 @@ __host__ void ESP::Output(int    ntstep         , // Number of integration steps
         //      CP
         s.append_value(Cp, "/Cp", "J/(Kg K)", "Specific heat capacity");
         //      SpongeLayer option
-        s.append_value(SpongeLayer, "/SpongeLayer", "-", "Using SpongeLayer?");
-        //      hstest option
+        s.append_value(SpongeLayer?1.0:0.0, "/SpongeLayer", "-", "Using SpongeLayer?");
+        // //      hstest option
         s.append_value(hstest, "/hstest", "-", "Using benchmark forcing or RT");
         if (SpongeLayer) {
             //      nlat
@@ -199,6 +199,7 @@ __host__ void ESP::Output(int    ntstep         , // Number of integration steps
         //
         // H5Fflush(file_id, H5F_SCOPE_LOCAL);
         // H5Fclose(file_id);
+        phy_modules_store_init(s);
     }
 
 //  ESP OUTPUT

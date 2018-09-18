@@ -26,7 +26,7 @@ bool radiative_transfer::initialise_memory(const ESP & esp)
     cudaMalloc((void **)&ttemp       , esp.nv * esp.point_num *     sizeof(double));
     cudaMalloc((void **)&dtemp       , esp.nv * esp.point_num *     sizeof(double));
 
-    
+
     return true;
 }
 
@@ -36,7 +36,7 @@ bool radiative_transfer::free_memory()
     cudaFree(fnet_up_d);
     cudaFree(fnet_dn_d);
     cudaFree(tau_d);
-    
+
     cudaFree(phtemp);
     cudaFree(thtemp);
     cudaFree(ttemp );
@@ -81,7 +81,7 @@ bool radiative_transfer::loop(ESP & esp,
 //  Specify the block sizes.
     dim3 NB((esp.point_num / NTH) + 1, esp.nv, 1);
     dim3 NBRT((esp.point_num/NTH) + 1, 1, 1);
-    
+
     rtm_dual_band <<< NBRT, NTH >>> (esp.pressure_d   ,
       //rtm_dual_band <<< 1,1 >>> (pressure_d         ,
                                      esp.Rho_d        ,
@@ -134,7 +134,20 @@ config_reader.append_config_var("Tstar", Tstar, Tstar);
 
 bool radiative_transfer::store(storage & s)
 {
-    
+
+    return true;
+}
+
+bool radiative_transfer::store_init(storage & s)
+{
+    s.append_value(Tstar, "/Tstar", "K", "Temperature of host star");
+    s.append_value(Tlow, "/Tlow", "K", "Temperature of interior heat flux");
+    s.append_value(planet_star_dist/149597870.7, "/planet_star_dist", "au", "distance b/w host star and planet");
+    s.append_value(radius_star, "/radius_star", "R_sun", "radius of host star");
+    s.append_value(diff_fac, "/diff_fac", "-", "diffusivity factor");
+    s.append_value(albedo, "/albedo", "-", "bond albedo of planet");
+    s.append_value(tausw, "/tausw", "-", "shortwave optical depth of deepest layer");
+    s.append_value(taulw, "/taulw", "-", "longwave optical depth of deepest layer");
     return true;
 }
 
@@ -146,9 +159,9 @@ void radiative_transfer::RTSetup(double Tstar_           ,
                                  double albedo_          ,
                                  double tausw_           ,
                                  double taulw_           ) {
-    
+
     double bc = 5.677036E-8; // Stefan–Boltzmann constant [W m−2 K−4]
-    
+
     Tstar = Tstar_;
     planet_star_dist = planet_star_dist_*149597870.7;
     radius_star = radius_star_*695508;

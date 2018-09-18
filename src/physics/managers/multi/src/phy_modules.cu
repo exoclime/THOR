@@ -1,5 +1,5 @@
 // **********************************************************************************
-// 
+//
 // Example of external module to reuse phy module code at various places
 // This pushes the module code in another file, with a standard structure, that make it easy to
 // put modules in a list and reuse them
@@ -20,11 +20,11 @@ radiative_transfer rt;
 bool phy_modules_init_mem(const ESP & esp)
 {
     // initialise all the modules memory
-    
+
     bool out = true;
 
     rt.initialise_memory(esp);
-    
+
     return out;
 }
 
@@ -34,17 +34,17 @@ bool phy_modules_init_data()
     // initialise all the modules data
 
     rt.initial_conditions();
-    
+
     return out;
-    
+
 }
 
 bool phy_modules_generate_config(config_file & config_reader)
 {
     bool out = true;
-    
+
     rt.configure(config_reader);
-    
+
     return out;
 }
 
@@ -67,8 +67,8 @@ bool phy_modules_mainloop(ESP & esp,
     bool out = true;
 
     rt.loop(esp,
-            nstep       , 
-            hstest      , 
+            nstep       ,
+            hstest      ,
             time_step   ,
             Omega       ,
             Cp          ,
@@ -79,8 +79,14 @@ bool phy_modules_mainloop(ESP & esp,
             P_Ref       ,
             Gravit      ,
             A           );
-    
+
     return out;
+}
+
+bool phy_modules_store_init(storage & s)
+{
+    rt.store_init(s);
+    return true;
 }
 
 bool phy_modules_store(storage & s)
@@ -96,6 +102,6 @@ bool phy_modules_free_mem()
     bool out = true;
 
     rt.free_memory();
-    
+
     return out;
 }

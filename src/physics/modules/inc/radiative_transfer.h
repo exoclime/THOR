@@ -7,7 +7,7 @@ class radiative_transfer : public phy_module_base
 public:
     radiative_transfer();
     ~radiative_transfer();
-    
+
     bool initialise_memory(const ESP & esp);
     bool initial_conditions();
 
@@ -26,16 +26,18 @@ public:
               double Gravit      , // Gravity [m/s^2]
               double A           // Planet radius [m]);
         );
-    
+
     bool store(storage & s);
-    
+
+    bool store_init(storage & s);
+
     bool configure(config_file & config_reader);
 
     virtual bool free_memory();
 
 private:
 
-    
+
     // Rad Trans options
     double Tstar            = 4520;       // Star effective temperature [K]
     double planet_star_dist = 0.015;      // Planet-star distance [au]
@@ -45,7 +47,7 @@ private:
     double albedo           = 0.18;       // Bond albedo
     double tausw            = 532.0;      // Absorption coefficient for the shortwaves
     double taulw            = 1064.0;     // Absorption coefficient for the longwaves
-    
+
     // double resc_flx       ; TODO: check if this is still used
     double incflx         ;
     //  Arrays used in RT code
@@ -65,8 +67,5 @@ private:
                  double Tlow_            ,
                  double albedo_          ,
                  double tausw_           ,
-                 double taulw_           );    
+                 double taulw_           );
 };
-
-
-    
