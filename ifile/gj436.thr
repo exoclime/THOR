@@ -8,7 +8,7 @@ config_version = 1
 num_steps = 691200
 
 # length of timesteps in seconds
-timestep = 500
+timestep = 250
 
 # keys to add
 # TODO: output_dir # relative to working directory
@@ -67,10 +67,10 @@ rest = true
 initial = wasp43_sponge2/esp_output_Wasp43b_re.h5
 
 # Spongebob
-SpongeLayer = false
+SpongeLayer = true
 # latitude rings
 nlat = 20
-ns_sponge = 0.75
+ns_sponge = 0.8
 Rv_sponge = 1e-5
 
 # Benchmark test
@@ -83,12 +83,12 @@ hstest = 0
 
 # output
 # output every n steps
-n_out = 100
+n_out = 13824
 #n_out = 1000
 
 # output directory (relative to current working directory)
 # defaults to 'results'
-results_path = gj436b_t1
+results_path = gj436b_t2
 
 Tstar = 3350
 planet_star_dist = 0.02872

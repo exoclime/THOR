@@ -90,7 +90,9 @@ __host__ void ESP::Output(int    ntstep         , // Number of integration steps
                           char  *simulation_ID  , // Planet ID
                           double simulation_time, // Option for deep atmosphere
                           const std::string & output_dir,
-                          bool conservation     ){
+                          bool conservation     ,
+                          int  hstest           ,
+                          bool SpongeLayer      ){
 
 //
 //  Description: Model output.
@@ -270,7 +272,23 @@ __host__ void ESP::Output(int    ntstep         , // Number of integration steps
         write_double_value_to_h5file(file_id, "/Top_altitude", Top_altitude, "Top of the model's domain", "m");
         //      CP
         write_double_value_to_h5file(file_id, "/Cp", Cp, "Specific heat capacity", "J/(Kg K)");
-
+        //      SpongeLayer option
+        write_double_value_to_h5file(file_id, "/SpongeLayer", SpongeLayer, "Using SpongeLayer?", "-");
+        //      hstest option
+        write_double_value_to_h5file(file_id, "/hstest", hstest, "Using benchmark forcing or RT", "-");
+        if (SpongeLayer) {
+            //      nlat
+            write_double_value_to_h5file(file_id, "/nlat", nlat, "number of lat rings in sponge layer", "-");
+            //      ns
+            write_double_value_to_h5file(file_id, "/ns_sponge", ns_sponge, "Bottom of sponge layer", "-");
+            //      Rv
+            write_double_value_to_h5file(file_id, "/Rv_sponge", Rv_sponge, "Strength of sponge layer", "1/s");
+        }
+        // if (hstest == 0) { // might need help from urs for this!
+        //     //      Rv
+        //     write_double_value_to_h5file(file_id, "/Rv_sponge", Rv_sponge, "Strength of sponge layer", "1/s");
+        // }
+        //
         H5Fflush(file_id, H5F_SCOPE_LOCAL);
         H5Fclose(file_id);
     }

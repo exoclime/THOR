@@ -321,6 +321,8 @@ public:
                 char* ,
                 double,
                 const std::string & output_dir,
+                bool ,
+                int  ,
                 bool );
 
 

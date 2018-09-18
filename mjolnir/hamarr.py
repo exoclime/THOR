@@ -35,6 +35,13 @@ class input:
             self.spring_dynamics = openh5['spring_dynamics'][...]
         self.resultsf = resultsf
         self.simID = simID
+        self.SpongeLayer = openh5['SpongeLayer'][...]
+        if self.SpongeLayer[0] == 1:
+            self.nlat = openh5['nlat'][...]
+            self.ns_sponge = openh5['ns_sponge'][...]
+            self.Rv_sponge = openh5['Rv_sponge'][...]
+        self.hstest = openh5['hstest'][...]
+
         openh5.close()
 
 class grid:
@@ -1303,7 +1310,7 @@ def conservation(input,grid,output,split):
 
     for ii in np.arange(len(plots)):
         fig = plt.figure(figsize=(12,8))
-        fig.suptitle('Time = %#.3f - %#.3f days'%(output.time[0],output.time[-1]))
+        fig.suptitle('Time = %#.3f - %#.3f days, split = %e bar'%(output.time[0],output.time[-1],split/1e5))
         fig.subplots_adjust(wspace=0.25,left=0.07,right=0.98,top=0.94,bottom=0.07)
         plt.subplot(2,3,1)
         if split == False:
@@ -1376,5 +1383,5 @@ def conservation(input,grid,output,split):
 
         if not os.path.exists(input.resultsf+'/figures'):
             os.mkdir(input.resultsf+'/figures')
-        plt.savefig(input.resultsf+'/figures/conservation_i%d_l%d_%s.pdf'%(output.ntsi,output.nts,plots[ii]))
+        plt.savefig(input.resultsf+'/figures/conservation_s%e_i%d_l%d_%s.pdf'%(split/100,output.ntsi,output.nts,plots[ii]))
         plt.close()

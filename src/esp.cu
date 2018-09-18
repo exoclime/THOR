@@ -667,7 +667,9 @@ int main (int argc,  char** argv){
                  Planet.simulation_ID, // Simulation ID (e.g., "Earth")
                  simulation_time     , // Time of the simulation [s]
                  output_path         , // directory to save output
-                 conservation        );
+                 conservation        ,
+                 hstest              ,
+                 SpongeLayer         );
         output_file_idx = 1;
         step_idx = 1;
     }
@@ -753,7 +755,9 @@ int main (int argc,  char** argv){
                      Planet.simulation_ID, // Planet ID
                      simulation_time     , // Simulation time [s]
                      output_path         , // Directory to save output
-                     conservation        );
+                     conservation        ,
+                     hstest              ,
+                     SpongeLayer         );
             // increment output file index
             output_file_idx++;
 
