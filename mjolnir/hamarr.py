@@ -35,12 +35,13 @@ class input:
             self.spring_dynamics = openh5['spring_dynamics'][...]
         self.resultsf = resultsf
         self.simID = simID
-        self.SpongeLayer = openh5['SpongeLayer'][...]
-        if self.SpongeLayer[0] == 1:
-            self.nlat = openh5['nlat'][...]
-            self.ns_sponge = openh5['ns_sponge'][...]
-            self.Rv_sponge = openh5['Rv_sponge'][...]
-        self.hstest = openh5['hstest'][...]
+        if 'SpongeLayer' in openh5.keys():
+            self.SpongeLayer = openh5['SpongeLayer'][...]
+            if self.SpongeLayer[0] == 1:
+                self.nlat = openh5['nlat'][...]
+                self.ns_sponge = openh5['ns_sponge'][...]
+                self.Rv_sponge = openh5['Rv_sponge'][...]
+            self.hstest = openh5['hstest'][...]
 
         openh5.close()
 
