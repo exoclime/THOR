@@ -70,6 +70,32 @@ using namespace std;
 #include "phy_modules.h"
 
 
+#include <csignal>
+
+enum e_sig {
+    ESIG_NOSIG = 0,
+    ESIG_SIGTERM = 1,
+    ESIG_SIGINT = 2
+};
+
+    
+volatile sig_atomic_t caught_signal = ESIG_NOSIG;
+
+
+void sigterm_handler(int sig)
+{
+    caught_signal = ESIG_SIGTERM;
+    std::cout << "SIGTERM caught, trying to exit gracefully" << std::endl;
+}
+
+void sigint_handler(int sig)
+{
+    caught_signal = ESIG_SIGINT;
+    std::cout << "SIGINT caught, trying to exit gracefully" << std::endl;
+}
+
+
+
 std::string duration_to_str(std::chrono::duration<double> time_delta)
 {
     double delta = time_delta.count();
@@ -643,6 +669,29 @@ int main (int argc,  char** argv){
     printf("   Output directory = %s \n", output_path.c_str());
     printf("   Start output numbering at %d.\n", output_file_idx);
 
+
+    // We'll start writnig data to file and running main loop,
+    // setup signal handlers to handle gracefully termination and interrupt
+     struct sigaction sigterm_action;
+
+     sigterm_action.sa_handler = &sigterm_handler;
+     sigemptyset (&sigterm_action.sa_mask);
+     sigterm_action.sa_flags = 0;
+
+     if (sigaction(SIGTERM, &sigterm_action, NULL) == -1) {
+         std::cout << "Error: cannot handle SIGTERM" << std::endl; // Should not happen
+     }
+
+     struct sigaction sigint_action;
+
+     sigint_action.sa_handler = &sigint_handler;
+     sigemptyset (&sigint_action.sa_mask);
+     sigint_action.sa_flags = 0;
+
+     if (sigaction(SIGINT, &sigint_action, NULL) == -1) {
+         std::cout << "Error: cannot handle SIGINT" << std::endl; // Should not happen
+     }
+
 //
 //  Writes initial conditions
     double simulation_time = simulation_start_time;
@@ -730,7 +779,9 @@ int main (int argc,  char** argv){
 
 //
 //      Prints output every nout steps
-        if(nstep % n_out == 0) {
+//      or if caught SIGTERM or SIGINT
+        if(nstep % n_out == 0
+            || caught_signal != ESIG_NOSIG) {
             X.CopyToHost();
             X.Output(nstep               ,
                      output_file_idx     ,
@@ -749,7 +800,6 @@ int main (int argc,  char** argv){
             output_file_idx++;
 
             file_output = true;
-
         }
 
         std::chrono::system_clock::time_point end_step = std::chrono::system_clock::now();
@@ -786,6 +836,13 @@ int main (int argc,  char** argv){
                duration_to_str(time_left).c_str(),               
                end_time_str.str().c_str(),
                file_output?"[saved output]":"");
+
+        if( caught_signal != ESIG_NOSIG ) {
+            //exit loop and application after save on SIGTERM or SIGINT
+            break;
+        }
+        
+
     }
 //
 //  Prints the duration of the integration.
