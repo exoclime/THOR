@@ -50,6 +50,7 @@
 #include "../headers/phy/profx_tidalearth_hs.h"
 #include "../headers/phy/apocalypse_sponge.h"
 #include "../headers/phy/valkyrie_conservation.h"
+#include "../headers/phy/vulcan_device.h" // Simple chemistry.
 
 #include "binary_test.h"
 #include "debug_helpers.h"
@@ -59,6 +60,7 @@
 
 __host__ void ESP::ProfX(int    nstep       , // Step number
                          int    hstest      , // Held-Suarez test option
+                         int    vulcan      , //
                          double time_step   , // Time-step [s]<<<<<<< HEAD
                          double Omega       , // Rotation rate [1/s]
                          double Cp          , // Specific heat capacity [J/kg/K]
@@ -82,6 +84,7 @@ __host__ void ESP::ProfX(int    nstep       , // Step number
 //  Specify the block sizes.
     dim3 NB((point_num / NTH) + 1, nv, 1);
     dim3 NBRT((point_num/NTH) + 1, 1, 1);
+	dim3 NBTR((point_num / NTH) + 1, nv, ntr);
 
     if (sponge==true) {
       dim3 NBT((point_num / NTH) + 1, nv, 1);
@@ -203,6 +206,52 @@ __host__ void ESP::ProfX(int    nstep       , // Step number
       
 //
 ////////////////////////
+  	// Simple Vulcan
+      if(vulcan == 1) {
+    	cudaDeviceSynchronize();
+    	Tracers_relax_vulcan_co2<<< NBTR, NTH >>>(tracer_d     ,
+    							 	              tauch4_d     ,
+    								              tauco_d      ,
+    								              tauh2o_d     ,
+    								              tauco2_d     ,
+    								              taunh3_d     ,
+    								              ch4eq_d      ,
+    								              coeq_d       ,
+    								              h2oeq_d      ,
+    								              co2eq_d      ,
+    								              nh3eq_d      ,
+    								              P_che_d      ,
+    								              T_che_d      ,
+    								              temperature_d,
+    								              pressure_d   ,
+    								              Rho_d        ,
+    						                      time_step    ,
+    						                      ntr          ,
+    						                      point_num    );
+    	cudaDeviceSynchronize();
+    	Tracers_relax_vulcan<<< NBTR, NTH >>>(tracer_d     ,
+    								          tauch4_d     ,
+    								          tauco_d      ,
+    								          tauh2o_d     ,
+    								          tauco2_d     ,
+    								          taunh3_d     ,
+    								          ch4eq_d      ,
+    								          coeq_d       ,
+    								          h2oeq_d      ,
+    								          co2eq_d      ,
+    								          nh3eq_d      ,
+    								          P_che_d      ,
+    								          T_che_d      ,
+    								          temperature_d,
+    								          pressure_d   ,
+    								          Rho_d        ,
+    						                  time_step    ,
+    						                  ntr          ,
+    						                  point_num    );	   
+    }
+      
+      
+      
       
     if (!hstest) {
         cudaDeviceSynchronize();

@@ -228,9 +228,14 @@ __global__ void UpdateRK(double * M_d        ,
                          double * pressure_d ,
                          double * pressurek_d,
                          double * pressurei_d,
+						 double * tracer_d   , //
+						 double * tracerk_d  , //
+						 double * traceri_d  , //
                          double * func_r_d   ,
                          double * Altitude_d ,
                          double * Altitudeh_d,
+                         int vulcan          ,
+                         int ntr             ,
                          int num             ,
                          int nv              ){
 
@@ -279,6 +284,14 @@ __global__ void UpdateRK(double * M_d        ,
 
 // Pressure
             pressure_d[id * nv + lev] = pressurei_d[id * nv + lev] - pressurek_d[id * nv + lev];
+
+// Tracers
+            if(vulcan==1){
+            	for (int itr = 0; itr < ntr; itr++){
+            		tracer_d[id * nv * ntr + lev * ntr + itr] = traceri_d[id * nv * ntr + lev * ntr + itr] - 
+            													tracerk_d[id * nv * ntr + lev * ntr + itr];
+            	}
+            }
         }
 // Wh
         for (int lev = 0; lev < nv + 1; lev++){
@@ -318,9 +331,13 @@ __global__ void UpdateRK2(double * M_d        ,
                           double * Rhok_d     ,
                           double * pressure_d ,
                           double * pressurek_d,
+						  double * tracer_d   , //
+						  double * tracerk_d  , //
                           double * func_r_d   ,
                           double * Altitude_d ,
                           double * Altitudeh_d,
+                          int vulcan          ,
+                          int ntr             ,
                           int num             ,
                           int nv              ){
 
@@ -372,6 +389,10 @@ __global__ void UpdateRK2(double * M_d        ,
             if (pressurek_d[id*nv+lev]<0) {
               printf("%d, %d\n",id, lev);
             }
+//Tracers			
+            if(vulcan == 1)
+            	for (int itr = 0; itr < ntr; itr++) tracerk_d[id * nv * ntr + lev * ntr + itr] += tracer_d[id * nv * ntr + lev * ntr + itr];
+
         }
 // Wh
         for (int lev = 0; lev < nv + 1; lev++){

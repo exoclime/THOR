@@ -52,7 +52,7 @@
 #include "../headers/dyn/thor_fastmodes.h"    // Fast terms.
 #include "../headers/dyn/thor_slowmodes.h"    // Slow terms.
 #include "../headers/dyn/thor_vertical_int.h" // Vertical momentum.
-
+#include "../headers/dyn/thor_vulcan.h" // Simple chemistry.
 
 #include "binary_test.h"
 #include "debug_helpers.h"
@@ -69,6 +69,7 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
                         double P_Ref       , // Averaged pressure surface.
                         double Gravit      , // Gravity.
                         double A           , // Planet radius.
+                        int  vulcan        ,
                         bool NonHydro      , // Turn on/off non-hydrostatic.
                         bool DeepModel     ){// Turn on/off deep atmosphere.
 //
@@ -86,7 +87,10 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
     dim3 NBD(nr, nv, 6);             // Number of blocks in the diffusion routine.
     dim3 NBDP(2, nv, 6);             // Number of blocks in the diffusion routine. (POLES)
     dim3 NBP(2, nv, 1);              // Number of blocks. (POLES)
-
+	dim3 NBPT(2,1,ntr);              // Number of blocks. (POLES)
+	dim3 NBTR(nr, nv, ntr);          // Number of blocks in the diffusion routine for tracers.
+	dim3 NBTRP(2 , nv, ntr);         // Number of blocks in the diffusion routine for tracers. (POLES)
+    
 //  Number of Small steps
     double ns_totald = 6;            // Maximum number of small steps in a large step (double ).
     int    ns_totali = 6;            // Maximum number of small steps in a large step (integer).
@@ -100,12 +104,14 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
     cudaMemcpy(Wk_d        , W_d        , point_num * nv *     sizeof(double), cudaMemcpyDeviceToDevice);
     cudaMemcpy(Rhok_d      , Rho_d      , point_num * nv *     sizeof(double), cudaMemcpyDeviceToDevice);
     cudaMemcpy(pressurek_d , pressure_d , point_num * nv *     sizeof(double), cudaMemcpyDeviceToDevice);
-
+	cudaMemcpy(tracerk_d   , tracer_d   , point_num * nv * ntr * sizeof(double), cudaMemcpyDeviceToDevice);
+    
     cudaMemset(Mhs_d       , 0, sizeof(double) * 3*point_num * nv);
     cudaMemset(Rhos_d      , 0, sizeof(double) * point_num * nv)  ;
     cudaMemset(Whs_d       , 0, sizeof(double) * point_num * nvi) ;
     cudaMemset(Ws_d        , 0, sizeof(double) * point_num * nv)  ;
     cudaMemset(pressures_d , 0, sizeof(double) * point_num * nv)  ;
+	cudaMemset(tracers_d   , 0, sizeof(double) * point_num * nv * ntr)  ;
 
     USE_BENCHMARK();
     BENCH_POINT_I(current_step, "thor_init", vector<string>({}), vector<string>({"Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"}));
@@ -330,6 +336,7 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
                                                 point_num    ,
                                                 1            ,
                                                 DeepModel    );
+            
             check_h = false;
             cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
             isnan_check_thor<<< 16, NTH >>>(diffmh_d, nv, 3*point_num, check_d);
@@ -337,6 +344,89 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
             isnan_check_thor<<< 16, NTH >>>(diffrh_d, nv, point_num, check_d);
             isnan_check_thor<<< 16, NTH >>>(diffpr_d, nv, point_num, check_d);
             isnan_check_thor<<< 16, NTH >>>(diff_d, nv, 6*point_num, check_d);
+            
+            if(vulcan == 1){
+    			// Tracers
+    			cudaMemset(diff_d, 0, sizeof(double) *   6 * point_num * nv);
+    			cudaDeviceSynchronize();
+    			Tracer_Eq_Diffusion <LN,LN> <<< NBTR,NT >>>(difftr_d     ,
+    													    diff_d       ,
+    														tracerk_d    ,
+    														Rhok_d       ,
+    														areasTr_d    ,
+    														nvecoa_d     ,
+    														nvecti_d     ,
+    														nvecte_d     ,
+    														Kdh4_d       ,
+    														Altitude_d   ,
+    														A            ,
+    														maps_d       ,
+    													 	ntr          , //
+    														nl_region    ,
+    														0            ,
+    														DeepModel    );
+    						
+    			Tracer_Eq_Diffusion_Poles <5><<<NBTRP,1 >>>(difftr_d     ,
+    														diff_d       ,
+    														tracerk_d    ,												
+    														Rhok_d       ,
+    														areasTr_d    ,
+    														nvecoa_d     ,
+    														nvecti_d     ,
+    														nvecte_d     ,
+    														Kdh4_d       ,
+    														Altitude_d   ,
+    														Altitudeh_d  ,
+    														A            ,
+    														point_local_d,
+    														ntr          ,
+    														point_num    ,
+    														0            ,
+    														DeepModel    );
+    			cudaDeviceSynchronize();
+    			Tracer_Eq_Diffusion <LN,LN> <<< NBTR,NT >>>(difftr_d     ,
+    														diff_d       ,
+    														tracerk_d    ,												
+    														Rhok_d       ,
+    														areasTr_d    ,
+    														nvecoa_d     ,
+    														nvecti_d     ,
+    														nvecte_d     ,
+    														Kdh4_d       ,
+    														Altitude_d   ,
+    														A            ,
+    														maps_d       ,
+    												 	    ntr          , //
+    														nl_region    ,
+    														1            ,
+    														DeepModel    );
+    					
+    			Tracer_Eq_Diffusion_Poles <5><<<NBTRP,1 >>>(difftr_d     ,
+    														diff_d       ,
+    														tracerk_d    ,												
+    														Rhok_d       ,
+    														areasTr_d    ,
+    														nvecoa_d     ,
+    														nvecti_d     ,
+    														nvecte_d     ,
+    														Kdh4_d       ,
+    														Altitude_d   ,
+    														Altitudeh_d  ,
+    														A            ,
+    														point_local_d,
+    														ntr          ,
+    														point_num    ,
+    														1            ,
+    														DeepModel    );
+            	
+                isnan_check_thor<<< 16, NTH >>>(difftr_d, nv, ntr*point_num, check_d);
+                isnan_check_thor<<< 16, NTH >>>(diff_d, nv, 6*point_num, check_d);            	           	
+            	
+            }
+            
+            
+            
+            
             cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
             if(check_h){
                printf("\n\n Error in NAN check after Thor:Diffusion_Op!\n");
@@ -533,9 +623,14 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
                                                          pressures_d,
                                                          pressurek_d,
                                                          pressure_d ,
+														 tracers_d  ,
+														 tracerk_d  ,
+														 tracer_d   ,
                                                          func_r_d   ,
                                                          Altitude_d ,
                                                          Altitudeh_d,
+                                                         vulcan     ,
+                                                         ntr        ,
                                                          point_num  ,
                                                          nv         );
             check_h = false;
@@ -792,6 +887,51 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
                             "h_d", "hh_d",
                             "Rhos_d"
                             }))
+            
+            if(vulcan == 1){
+            	//
+            	// Tracer equation.
+            	cudaDeviceSynchronize();			
+            	Tracer_Eq <LN,LN>  <<<NBTR, NT >>> (tracers_d  ,
+            										tracerk_d  ,
+            										Rhos_d     ,
+            										Rhok_d     ,
+            										Mhs_d      ,
+            										Mhk_d      ,
+            										Whs_d      ,
+            										Whk_d      ,
+            										difftr_d   ,
+            										div_d      ,
+            										Altitude_d ,
+            										Altitudeh_d,
+            										A          ,
+            										times      ,     
+            										maps_d     ,
+						   	   	       	       	   ntr        ,
+						   	   	       	       	   nl_region  ,
+						   	   	       	       	   DeepModel  );
+		
+            	Tracer_Eq_Poles <6> <<<NBPT,1>>>(tracers_d    ,
+			   	       	   	   	   	   	   		tracerk_d    ,
+			   	       	   	   	   	   	   		Rhos_d       ,
+			   	       	   	   	   	   	   		Rhok_d       ,
+			   	       	   	   	   	   	   		Mhs_d        ,
+			   	       	   	   	   	   	   		Mhk_d        ,
+			   	       	   	   	   	   	   		Whs_d        ,
+			   	       	   	   	   	   	   		Whk_d        ,
+			   	       	   	   	   	   	   		difftr_d     ,
+			   	       	   	   	   	   	   		div_d        ,
+			   	       	   	   	   	   	   		Altitude_d   ,
+			   	       	   	   	   	   	   		Altitudeh_d  ,
+			   	       	   	   	   	   	   		A            ,
+			   	       	   	   	   	   	   		times        ,
+			   	       	   	   	   	   	   		point_local_d,
+			   	       	   	   	   	   	   		ntr          ,
+			   	       	   	   	   	   	   		point_num    ,
+			   	       	   	   	   	   	   		nv           ,
+			   	       	   	   	   	   	   		DeepModel    );   
+            }
+  
             // Updates: pressures_d, Rhos_d
             Density_Pressure_Eqs <LN,LN>  <<<NB, NT >>>(pressures_d,
                                                         pressurek_d,
@@ -875,9 +1015,13 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
                                                      Rhok_d     ,
                                                      pressures_d,
                                                      pressurek_d,
+													 tracers_d  ,
+													 tracerk_d  ,
                                                      func_r_d   ,
                                                      Altitude_d ,
                                                      Altitudeh_d,
+                                                     vulcan     ,
+                                                     ntr        ,
                                                      point_num  ,
                                                      nv         );
 
@@ -907,5 +1051,6 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
     cudaMemcpy(W_d        , Wk_d        , point_num * nv *     sizeof(double), cudaMemcpyDeviceToDevice);
     cudaMemcpy(Rho_d      , Rhok_d      , point_num * nv *     sizeof(double), cudaMemcpyDeviceToDevice);
     cudaMemcpy(pressure_d , pressurek_d , point_num * nv *     sizeof(double), cudaMemcpyDeviceToDevice);
+	cudaMemcpy(tracer_d   , tracerk_d   , point_num * nv * ntr * sizeof(double), cudaMemcpyDeviceToDevice);
 }
 //END OF THOR!
