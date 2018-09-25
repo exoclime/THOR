@@ -50,78 +50,103 @@
 
 
 
-template <int BLOCK_SIZE>
-__global__ void reduction_add (double *A_d        ,
-                               double * out_d,
-                               int len)
+const long MAX_BLOCK_SIZE = 4096;
+
+
+double cpu_reduction_sum(double * d, long length)
 {
-//    __shared__ double 
-/*    
-    int x = threadIdx.x;
-    int y = threadIdx.y;
-    int ib = blockIdx.x;
-    int nv = gridDim.y;
-    int lev = blockIdx.y;
-
-    int pt1, pt2, pt3, pt4, pt5, pt6;
-    int nhl = nl_region + 2;
-    int nhl2 = nhl*nhl;
-
-    int ir = (y + 1)*nhl + x + 1;   // Region index
-    int iri;
-
-    __shared__ double nflxv_s[3 * NX*NY];
-    __shared__ double pressure_s[(NX + 2)*(NY + 2)];
-
-    int pent_ind = 0;
-    int ig, ir2, id, twot;
-    double vr;
-    double alt, rscale;
-    double Mx, My, Mz;
-    double funcx, funcy, funcz;
-
-    // Load shared memory
-    ig = maps_d[ib*nhl2 + ir];
-    id = ig;
-    if (x == 0 && y == 0) if (maps_d[ib * nhl2] == -1) pent_ind = 1;
-    pressure_s[ir] = pressure_d[ig * nv + lev];
-
-    ///////////////////////////////
-    //////////// Halo /////////////
-    ///////////////////////////////
-    if (x == 0) {
-        ir2 = (y + 1) * nhl + x;
-        ig = maps_d[ib * nhl2 + ir2];
-        pressure_s[ir2] = pressure_d[ig * nv + lev];
+    
+    for (int stride = length; stride > 0; stride /= 2)
+    {
+        for (int i = 0; i < stride; i++)
+            d[i] += d[i+stride];
     }
-    if (x == nhl - 3){
-        ir2 = (y + 1) * nhl + x + 2;
-        ig = maps_d[ib * nhl2 + ir2];
-        pressure_s[ir2] = pressure_d[ig * nv + lev];
-    }
-    if (y == 0){
-        twot = 1;
-        ir2 = y * nhl + (x + 1);
-        if (x == 0) twot = 2;
 
-        for (int k = 0; k < twot; k++){
-            if (k == 1) ir2 = y * nhl + x;
-            ig = maps_d[ib * nhl2 + ir2];
-            if (ig >= 0) pressure_s[ir2] = pressure_d[ig * nv + lev];
-            else         pressure_s[ir2] = 0.0;
-        }
-    }
-    if (y == nhl - 3) {
-        twot = 1;
-        ir2 = (y + 2) * nhl + (x + 1);
-        if (x == nhl - 3) twot = 2;
-        for (int k = 0; k < twot; k++){
-            if (k == 1) ir2 = (y + 2) * nhl + (x + 2);
-            ig = maps_d[ib * nhl2 + ir2];
-            pressure_s[ir2] = pressure_d[ig * nv + lev];
-        }
-    }
-    __syncthreads();
-*/
+    return d[0];
 }
 
+double buf[MAX_BLOCK_SIZE];
+
+template<int BLOCK_SIZE>
+double cpu_sum(double *d, long length)
+{
+    long num_blocks = ceil(double(length)/double(2*BLOCK_SIZE));
+    
+
+    
+
+    double out = 0.0;
+    
+    for (long i = 0; i < num_blocks; i++)
+    {
+        for (long j = 0; j < 2*BLOCK_SIZE; j++)
+        {
+            long idx = i*2*BLOCK_SIZE + j;
+            
+            if (idx < length)
+                buf[j] = d[idx];
+            else
+                buf[j] = 0.0;
+        }
+        
+            
+        double o = cpu_reduction_sum(buf, BLOCK_SIZE);
+        //    printf("%d: %g %g\n", i, o, out);
+        out += o;
+        
+        
+    }
+
+
+    
+
+    return out;
+}
+
+
+template<int BLOCK_SIZE>
+__global__ void gpu_reduction_sum(double * d,
+                       double * o,
+                       long length)
+{
+   // temporary memory for all tiles in that thread
+    __shared__ double ds_in[2*BLOCK_SIZE];  
+ 
+    // import all the data from global memory
+    int mem_offset1 = 2*(blockDim.x*blockIdx.x + threadIdx.x);
+
+    if (mem_offset1 + 1 < length)
+    {
+        *((double2*)(&(ds_in[2*threadIdx.x]))) = *((double2*)(&(d[mem_offset1])));
+    }
+
+    else if  (mem_offset1 < length)
+    {
+        ds_in[2*threadIdx.x] = d[mem_offset1];
+        ds_in[2*threadIdx.x + 1] = 0.0f;
+    }
+    else
+    {
+        ds_in[2*threadIdx.x] = 0.0f;
+        ds_in[2*threadIdx.x + 1] = 0.0f;
+    }
+    
+    
+    // loop on stride and add
+    for (int stride = blockDim.x; stride > 0; stride /= 2)
+    {
+        __syncthreads();
+        if (threadIdx.x < stride)
+            ds_in[threadIdx.x] += ds_in[threadIdx.x + stride];
+    }
+    
+    __syncthreads();
+    
+    // copy to output
+    
+    if (threadIdx.x == 0)
+       o[blockIdx.x] = ds_in[0];
+    
+}
+
+        
