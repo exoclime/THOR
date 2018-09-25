@@ -673,6 +673,10 @@ int main (int argc,  char** argv){
     printf("   Start output numbering at %d.\n", output_file_idx);
 
 
+    // esp output setup
+    X.SetOutputParam(Planet.simulation_ID, output_path);
+    
+    
     // We'll start writnig data to file and running main loop,
     // setup signal handlers to handle gracefully termination and interrupt
      struct sigaction sigterm_action;
@@ -710,9 +714,7 @@ int main (int argc,  char** argv){
                  Planet.P_Ref        , // Reference surface pressure [Pa]
                  Planet.Top_altitude , // Top of the model's domain [m]
                  Planet.A            , // Planet Radius [m]
-                 Planet.simulation_ID, // Simulation ID (e.g., "Earth")
-                 simulation_time     , // Time of the simulation [s]
-                 output_path);         // directory to save output
+                 simulation_time );    // Time of the simulation [s]
         output_file_idx = 1;
         step_idx = 1;
     }
@@ -798,15 +800,17 @@ int main (int argc,  char** argv){
                      Planet.P_Ref        , // Reference surface pressure [Pa]
                      Planet.Top_altitude , // Top of the model's domain [m]
                      Planet.A            , // Planet radius [m]
-                     Planet.simulation_ID, // Planet ID
-                     simulation_time     , // Simulation time [s]
-                     output_path);         // Directory to save output
+                     simulation_time    ); // Simulation time [s]        
             // increment output file index
             output_file_idx++;
 
             file_output = true;
         }
 
+        X.OutputConservation();
+        
+
+        // Timing information
         std::chrono::system_clock::time_point end_step = std::chrono::system_clock::now();
         
         std::chrono::duration<double, std::ratio<1L,1L>> sim_delta = end_step - start_sim;

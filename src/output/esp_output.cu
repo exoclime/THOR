@@ -85,9 +85,8 @@ __host__ void ESP::Output(int    ntstep         , // Number of integration steps
                           double P_Ref          , // Reference surface pressure [Pa]
                           double Top_altitude   , // Top of the model's domain [m]
                           double A              , // Planet radius [m]
-                          char  *simulation_ID  , // Planet ID
-                          double simulation_time, // Option for deep atmosphere
-                          const std::string & output_dir){
+                          double simulation_time) // Option for deep atmosphere
+{
 
 //
 //  Description: Model output.
@@ -96,7 +95,7 @@ __host__ void ESP::Output(int    ntstep         , // Number of integration steps
     
 //  GRID OUTPUT
     if(ntstep == 0){
-        sprintf(FILE_NAME1, "%s/esp_output_grid_%s.h5", output_dir.c_str(), simulation_ID);
+        sprintf(FILE_NAME1, "%s/esp_output_grid_%s.h5", output_dir.c_str(), simulation_ID.c_str());
 
         storage s(FILE_NAME1);
 
@@ -148,7 +147,7 @@ __host__ void ESP::Output(int    ntstep         , // Number of integration steps
 
 //  PLANET
     if(ntstep == 0){
-        sprintf(FILE_NAME1, "%s/esp_output_planet_%s.h5", output_dir.c_str(), simulation_ID);
+        sprintf(FILE_NAME1, "%s/esp_output_planet_%s.h5", output_dir.c_str(), simulation_ID.c_str());
         storage s(FILE_NAME1);
 
         // glevel
@@ -178,7 +177,7 @@ __host__ void ESP::Output(int    ntstep         , // Number of integration steps
     }
 
 //  ESP OUTPUT
-    sprintf(FILE_NAME1, "%s/esp_output_%s_%d.h5", output_dir.c_str(), simulation_ID, fidx);
+    sprintf(FILE_NAME1, "%s/esp_output_%s_%d.h5", output_dir.c_str(), simulation_ID.c_str(), fidx);
 
     storage s(FILE_NAME1);
     // step index
@@ -288,3 +287,10 @@ __host__ void ESP::Output(int    ntstep         , // Number of integration steps
 
       phy_modules_store(s);
 }
+
+void ESP::OutputConservation()
+{
+
+
+}
+

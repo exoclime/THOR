@@ -354,11 +354,26 @@ public:
                 double,
                 double,
                 double,
-                char* ,
-                double,
-                const std::string & output_dir);
+                double);
 
 
-
+    void SetOutputParam(const std::string & sim_id_,
+                        const std::string & output_dir_ )
+    {
+        simulation_ID = sim_id_;
+        output_dir = output_dir_;
+    };
+    
+    
+    void OutputConservation();
+    
+    
     ~ESP();
+
+
+private:
+    // output variables
+    std::string simulation_ID; // name of output planet
+    std::string output_dir;
+    
 };
