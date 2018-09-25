@@ -704,8 +704,9 @@ int main (int argc,  char** argv){
     double simulation_time = simulation_start_time;
     if (!continue_sim)
     {
+        X.InitTimestep(0, simulation_time, timestep);
+        
         X.Output(0                   , // file index
-                 0                   , // step index
                  Planet.Cp           , // Specific heat capacity [J/(Kg K)]
                  Planet.Rd           , // Gas constant [J/(Kg K)]
                  Planet.Omega        , // Rotation rate [s-1]
@@ -713,8 +714,8 @@ int main (int argc,  char** argv){
                  Planet.Mmol         , // Mean molecular mass of dry air [kg]
                  Planet.P_Ref        , // Reference surface pressure [Pa]
                  Planet.Top_altitude , // Top of the model's domain [m]
-                 Planet.A            , // Planet Radius [m]
-                 simulation_time );    // Time of the simulation [s]
+                 Planet.A           ); // Planet Radius [m]
+ 
         output_file_idx = 1;
         step_idx = 1;
     }
@@ -737,15 +738,35 @@ int main (int argc,  char** argv){
     for(int nstep = step_idx; nstep <= nsmax; ++nstep){
         
         // store step number for file comparison tests
-        X.current_step = nstep;
-
+        // compute simulation time
+        simulation_time = simulation_start_time + (nstep - step_idx+1)*timestep;
+        // set simulation time and step number for simulation engine and output
+        X.InitTimestep(nstep,            // Time-step [s]
+                       simulation_time,  // Simulation time [s]   
+                       timestep);        // Large time step [s]
         
         if (!gcm_off) {
 //
 //        Dynamical Core Integration (THOR)
-          X.Thor (timestep     , // Time-step [s]
-                HyDiff       , // Hyperdiffusion option
-                DivDampP     , // Divergence-damping option
+            X.Thor ( HyDiff       , // Hyperdiffusion option
+                     DivDampP     , // Divergence-damping option
+                     Planet.Omega , // Rotation rate [1/s]
+                     Planet.Cp    , // Specific heat capacity [J/kg/K]
+                     Planet.Rd    , // Gas constant [J/kg/K]
+                     Planet.Mmol  , // Mean molecular mass of dry air [kg]
+                     mu_constant  , // Atomic mass unit [kg]
+                     kb_constant  , // Boltzmann constant [J/K]
+                     Planet.P_Ref , // Reference pressure [Pa]
+                     Planet.Gravit, // Gravity [m/s^2]
+                     Planet.A     , // Planet radius [m]
+                     vulcan       , //
+                     NonHydro     , // Non-hydrostatic option
+                     DeepModel    );// Deep model option
+        }
+//
+//     Physical Core Integration (ProfX)
+        X.ProfX(hstest       , // Held-Suarez test option
+                vulcan       , //
                 Planet.Omega , // Rotation rate [1/s]
                 Planet.Cp    , // Specific heat capacity [J/kg/K]
                 Planet.Rd    , // Gas constant [J/kg/K]
@@ -755,33 +776,30 @@ int main (int argc,  char** argv){
                 Planet.P_Ref , // Reference pressure [Pa]
                 Planet.Gravit, // Gravity [m/s^2]
                 Planet.A     , // Planet radius [m]
-                vulcan       , //
-                NonHydro     , // Non-hydrostatic option
-                DeepModel    );// Deep model option
-          }
-//
-//     Physical Core Integration (ProfX)
-       X.ProfX(nstep        , // Step number
-               hstest       , // Held-Suarez test option
-               vulcan       , // 
-               timestep     , // Time-step [s]
-               Planet.Omega , // Rotation rate [1/s]
-               Planet.Cp    , // Specific heat capacity [J/kg/K]
-               Planet.Rd    , // Gas constant [J/kg/K]
-               Planet.Mmol  , // Mean molecular mass of dry air [kg]
-               mu_constant  , // Atomic mass unit [kg]
-               kb_constant  , // Boltzmann constant [J/K]
-               Planet.P_Ref , // Reference pressure [Pa]
-               Planet.Gravit, // Gravity [m/s^2]
-               Planet.A     , // Planet radius [m]
-               n_out        , 
-               DeepModel    ,
-               SpongeLayer  ,
-               shrink_sponge);
+                DeepModel    ,
+                SpongeLayer  ,
+                shrink_sponge);
 
-       // compute simulation time
-       simulation_time = simulation_start_time + (nstep - step_idx+1)*timestep;
-       bool file_output = false;
+        if(nstep % n_out == 0)
+        {
+            X.Conservation(hstest       , // Held-Suarez test option
+                           vulcan       , //
+                           Planet.Omega , // Rotation rate [1/s]
+                           Planet.Cp    , // Specific heat capacity [J/kg/K]
+                           Planet.Rd    , // Gas constant [J/kg/K]
+                           Planet.Mmol  , // Mean molecular mass of dry air [kg]
+                           mu_constant  , // Atomic mass unit [kg]
+                           kb_constant  , // Boltzmann constant [J/K]
+                           Planet.P_Ref , // Reference pressure [Pa]
+                           Planet.Gravit, // Gravity [m/s^2]
+                           Planet.A     , // Planet radius [m]
+                           DeepModel    ,
+                           SpongeLayer  ,
+                           shrink_sponge);
+            X.OutputConservation();
+        }
+        
+        bool file_output = false;
 
 
 //
@@ -790,8 +808,7 @@ int main (int argc,  char** argv){
         if(nstep % n_out == 0
             || caught_signal != ESIG_NOSIG) {
             X.CopyToHost();
-            X.Output(nstep               ,
-                     output_file_idx     ,
+            X.Output(output_file_idx     ,
                      Planet.Cp           , // Specific heat capacity [J/(Kg K)]
                      Planet.Rd           , // Gas constant [J/(Kg K)]
                      Planet.Omega        , // Rotation rate [s-1]
@@ -799,15 +816,14 @@ int main (int argc,  char** argv){
                      Planet.Mmol         , // Mean molecular mass of dry air [kg]
                      Planet.P_Ref        , // Reference surface pressure [Pa]
                      Planet.Top_altitude , // Top of the model's domain [m]
-                     Planet.A            , // Planet radius [m]
-                     simulation_time    ); // Simulation time [s]        
+                     Planet.A           ); // Planet radius [m]   );     
             // increment output file index
             output_file_idx++;
 
             file_output = true;
         }
 
-        X.OutputConservation();
+        
         
 
         // Timing information

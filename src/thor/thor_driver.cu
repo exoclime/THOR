@@ -57,8 +57,7 @@
 #include "binary_test.h"
 #include "debug_helpers.h"
 
-__host__ void ESP::Thor(double timestep_dyn, // Large timestep.
-                        bool   HyDiff      , // Turn on/off hyper-diffusion.
+__host__ void ESP::Thor(bool   HyDiff      , // Turn on/off hyper-diffusion.
                         bool   DivDampP    , // Turn on/off divergence damping.
                         double Omega       , // Rotation rate.
                         double Cp          , // Heat capaciry.
@@ -124,9 +123,9 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
         if(rk == 1) ns_it = ns_totali/2 ;
         if(rk == 2) ns_it = ns_totali   ;
 
-        if(rk == 0) times = timestep_dyn/3.0      ;
-        if(rk == 1) times = timestep_dyn/ns_totald;
-        if(rk == 2) times = timestep_dyn/ns_totald;
+        if(rk == 0) times = timestep/3.0      ;
+        if(rk == 1) times = timestep/ns_totald;
+        if(rk == 2) times = timestep/ns_totald;
 
         // initialise some memory
 
@@ -314,7 +313,7 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
                                                 DeepModel    );
             //Updates: diffmh_d, diffw_d, diffrh_d, diffpr_d, diff_d
             Diffusion_Op_Poles <5><<<NBDP, 1>>>(diffmh_d     ,
-                                                 diffw_d      ,
+                                                diffw_d      ,
                                                 diffrh_d     ,
                                                 diffpr_d     ,
                                                 diff_d       ,
@@ -346,78 +345,78 @@ __host__ void ESP::Thor(double timestep_dyn, // Large timestep.
             isnan_check_thor<<< 16, NTH >>>(diff_d, nv, 6*point_num, check_d);
             
             if(vulcan == 1){
-    			// Tracers
-    			cudaMemset(diff_d, 0, sizeof(double) *   6 * point_num * nv);
-    			cudaDeviceSynchronize();
-    			Tracer_Eq_Diffusion <LN,LN> <<< NBTR,NT >>>(difftr_d     ,
-    													    diff_d       ,
-    														tracerk_d    ,
-    														Rhok_d       ,
-    														areasTr_d    ,
-    														nvecoa_d     ,
-    														nvecti_d     ,
-    														nvecte_d     ,
-    														Kdh4_d       ,
-    														Altitude_d   ,
-    														A            ,
-    														maps_d       ,
-    													 	ntr          , //
-    														nl_region    ,
-    														0            ,
-    														DeepModel    );
-    						
-    			Tracer_Eq_Diffusion_Poles <5><<<NBTRP,1 >>>(difftr_d     ,
-    														diff_d       ,
-    														tracerk_d    ,												
-    														Rhok_d       ,
-    														areasTr_d    ,
-    														nvecoa_d     ,
-    														nvecti_d     ,
-    														nvecte_d     ,
-    														Kdh4_d       ,
-    														Altitude_d   ,
-    														Altitudeh_d  ,
-    														A            ,
-    														point_local_d,
-    														ntr          ,
-    														point_num    ,
-    														0            ,
-    														DeepModel    );
-    			cudaDeviceSynchronize();
-    			Tracer_Eq_Diffusion <LN,LN> <<< NBTR,NT >>>(difftr_d     ,
-    														diff_d       ,
-    														tracerk_d    ,												
-    														Rhok_d       ,
-    														areasTr_d    ,
-    														nvecoa_d     ,
-    														nvecti_d     ,
-    														nvecte_d     ,
-    														Kdh4_d       ,
-    														Altitude_d   ,
-    														A            ,
-    														maps_d       ,
-    												 	    ntr          , //
-    														nl_region    ,
-    														1            ,
-    														DeepModel    );
+                // Tracers
+                cudaMemset(diff_d, 0, sizeof(double) *   6 * point_num * nv);
+                cudaDeviceSynchronize();
+                Tracer_Eq_Diffusion <LN,LN> <<< NBTR,NT >>>(difftr_d     ,
+                                                            diff_d       ,
+                                                            tracerk_d    ,
+                                                            Rhok_d       ,
+                                                            areasTr_d    ,
+                                                            nvecoa_d     ,
+                                                            nvecti_d     ,
+                                                            nvecte_d     ,
+                                                            Kdh4_d       ,
+                                                            Altitude_d   ,
+                                                            A            ,
+                                                            maps_d       ,
+                                                            ntr          , //
+                                                            nl_region    ,
+                                                            0            ,
+                                                            DeepModel    );
+   	
+                Tracer_Eq_Diffusion_Poles <5><<<NBTRP,1 >>>(difftr_d     ,
+                                                            diff_d       ,
+                                                            tracerk_d    ,
+                                                            Rhok_d       ,
+                                                            areasTr_d    ,
+                                                            nvecoa_d     ,
+                                                            nvecti_d     ,
+                                                            nvecte_d     ,
+                                                            Kdh4_d       ,
+                                                            Altitude_d   ,
+                                                            Altitudeh_d  ,
+                                                            A            ,
+                                                            point_local_d,
+                                                            ntr          ,
+                                                            point_num    ,
+                                                            0            ,
+                                                            DeepModel    );
+                cudaDeviceSynchronize();
+                Tracer_Eq_Diffusion <LN,LN> <<< NBTR,NT >>>(difftr_d     ,
+                                                            diff_d       ,
+                                                            tracerk_d    ,
+                                                            Rhok_d       ,
+                                                            areasTr_d    ,
+                                                            nvecoa_d     ,
+                                                            nvecti_d     ,
+                                                            nvecte_d     ,
+                                                            Kdh4_d       ,
+                                                            Altitude_d   ,
+                                                            A            ,
+                                                            maps_d       ,
+                                                            ntr          , //
+                                                            nl_region    ,
+                                                            1            ,
+                                                            DeepModel    );
     					
-    			Tracer_Eq_Diffusion_Poles <5><<<NBTRP,1 >>>(difftr_d     ,
-    														diff_d       ,
-    														tracerk_d    ,												
-    														Rhok_d       ,
-    														areasTr_d    ,
-    														nvecoa_d     ,
-    														nvecti_d     ,
-    														nvecte_d     ,
-    														Kdh4_d       ,
-    														Altitude_d   ,
-    														Altitudeh_d  ,
-    														A            ,
-    														point_local_d,
-    														ntr          ,
-    														point_num    ,
-    														1            ,
-    														DeepModel    );
+                Tracer_Eq_Diffusion_Poles <5><<<NBTRP,1 >>>(difftr_d     ,
+                                                            diff_d       ,
+                                                            tracerk_d    ,
+                                                            Rhok_d       ,
+                                                            areasTr_d    ,
+                                                            nvecoa_d     ,
+                                                            nvecti_d     ,
+                                                            nvecte_d     ,
+                                                            Kdh4_d       ,
+                                                            Altitude_d   ,
+                                                            Altitudeh_d  ,
+                                                            A            ,
+                                                            point_local_d,
+                                                            ntr          ,
+                                                            point_num    ,
+                                                            1            ,
+                                                            DeepModel    );
             	
                 isnan_check_thor<<< 16, NTH >>>(difftr_d, nv, ntr*point_num, check_d);
                 isnan_check_thor<<< 16, NTH >>>(diff_d, nv, 6*point_num, check_d);            	           	

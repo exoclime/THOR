@@ -50,6 +50,8 @@
 #include <string>
 #include "debug.h"
 
+#include <iostream>
+#include <fstream>
 
 
 
@@ -68,10 +70,7 @@ public:
     const int ntr         ;
     const int glevel      ;
     const bool spring_dynamics;
-    const double spring_beta;
-
-    // step counter for benchmark logging
-    int current_step;
+    const double spring_beta;   
 
 ///////////////////////////
 //  Host
@@ -308,8 +307,17 @@ public:
                        double & simulation_start_time,
                        int & output_file_idx);
 
-    void Thor(double,
-              bool  ,
+    void InitTimestep(int nstep,
+                      double simtime,
+                      double timestep_)
+    {
+        current_step = nstep;
+        simulation_time = simtime;
+        timestep = timestep_;
+    };    
+        
+        
+    void Thor(bool  ,
               bool  ,
               double,
               double,
@@ -326,8 +334,6 @@ public:
 
     void ProfX(int   ,
                int   ,
-               int   ,
-               double,
                double,
                double,
                double,
@@ -338,15 +344,28 @@ public:
                double,
                double,
                bool  ,
-               int   ,
                bool  ,
                bool  );
 
+    void Conservation(int    hstest      , // Held-Suarez test option
+                      int    vulcan      , //
+                      double Omega       , // Rotation rate [1/s]
+                      double Cp          , // Specific heat capacity [J/kg/K]
+                      double Rd          , // Gas constant [J/kg/K]
+                      double Mmol        , // Mean molecular mass of dry air [kg]
+                      double mu          , // Atomic mass unit [kg]
+                      double kb          , // Boltzmann constant [J/K]
+                      double P_Ref       , // Reference pressure [Pa]
+                      double Gravit      , // Gravity [m/s^2]
+                      double A           , // Planet radius [m]
+                      bool   DeepModel   ,
+                      bool   sponge      , // Use sponge layer?
+                      bool   shrink_sponge);
+    
     void CopyToHost();
-
+    void CopyGlobalToHost();
+    
     void Output(int   ,
-                int   ,
-                double,
                 double,
                 double,
                 double,
@@ -358,22 +377,25 @@ public:
 
 
     void SetOutputParam(const std::string & sim_id_,
-                        const std::string & output_dir_ )
-    {
-        simulation_ID = sim_id_;
-        output_dir = output_dir_;
-    };
+                        const std::string & output_dir_ );
     
     
     void OutputConservation();
+    int PrepareConservationFile();
     
     
     ~ESP();
 
 
 private:
+    // step counter for logging
+    int current_step;
+    double simulation_time;
+    double timestep;
+    
     // output variables
     std::string simulation_ID; // name of output planet
     std::string output_dir;
+    std::fstream conservation_output_file;
     
 };
