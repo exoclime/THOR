@@ -62,53 +62,6 @@ using std::abs;
 
 
 
-template<int BLOCK_SIZE>
-double gpu_sum(double *d, long length)
-{
-    int num_blocks = ceil(double(length)/double(2*BLOCK_SIZE));
-    
-    double * out_h = new double[num_blocks];
-    double * out_d;
-    double * in_d;
-
-    //printf("num_blocks: %d\n", num_blocks);
-
-    cudaMalloc((void **)&out_d, num_blocks *     sizeof(double));
-    cudaMalloc((void **)&in_d , length *     sizeof(double));
-    cudaError_t err = cudaGetLastError();
-    if (err != cudaSuccess)
-        printf("Malloc: %s\n", cudaGetErrorString(err));    
-
-
-    cudaMemcpy(in_d, d, length*sizeof(double), cudaMemcpyHostToDevice);
-    err = cudaGetLastError();
-    if (err != cudaSuccess)
-        printf("cpyH2D: %s\n", cudaGetErrorString(err));    
-
-    gpu_reduction_sum<BLOCK_SIZE><<<num_blocks, BLOCK_SIZE>>>(in_d, out_d, length);
-    err = cudaGetLastError();
-    if (err != cudaSuccess)
-        printf("krnl: %s\n", cudaGetErrorString(err));    
-
-    cudaMemcpy(out_h, out_d, num_blocks*sizeof(double), cudaMemcpyDeviceToHost);
-    err = cudaGetLastError();
-    if (err != cudaSuccess)
-        printf("cpyD2H: %s\n", cudaGetErrorString(err));    
-
-    double out = 0.0;
-    for (int i = 0; i < num_blocks; i++)
-    {
-	// printf("%d: %g\n", i, out_h[i]);
-        out += out_h[i];
-    }
-    cudaFree(in_d);
-    cudaFree(out_d);
-    delete[] out_h;
-    
-    
-    return out;
-}
-
 
 template<int BLOCK_SIZE>
 bool cpu_gpu_test(double * s, long size)
@@ -123,7 +76,7 @@ bool cpu_gpu_test(double * s, long size)
         auto duration_cpu = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
         
         start = std::chrono::system_clock::now();
-        double output_val = gpu_sum<BLOCK_SIZE>(s, compute_size);
+        double output_val = gpu_sum_from_host<BLOCK_SIZE>(s, compute_size);
         stop = std::chrono::system_clock::now();
         auto duration_gpu = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);       
         

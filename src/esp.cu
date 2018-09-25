@@ -781,7 +781,7 @@ int main (int argc,  char** argv){
                 SpongeLayer  ,
                 shrink_sponge);
 
-        if(nstep % n_out == 0)
+        //if(nstep % n_out == 0)
         {
             X.Conservation(hstest       , // Held-Suarez test option
                            vulcan       , //

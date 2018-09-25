@@ -54,15 +54,12 @@
 #include "phy_modules.h"
 #include "directories.h"
 
-__host__ void ESP::CopyToHost(){
+#include <iomanip>
 
-//
-//  Description: Transfer diagnostics from the device to the host.
-//
-        cudaMemcpy(Rho_h      , Rho_d      , point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
-        cudaMemcpy(Wh_h       , Wh_d       , point_num * nvi * sizeof(double), cudaMemcpyDeviceToHost);
-        cudaMemcpy(pressure_h , pressure_d , point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
-        cudaMemcpy(Mh_h       , Mh_d       , 3 * point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+
+
+__host__ void ESP::CopyConservationToHost()
+{
         cudaMemcpy(Etotal_h   , Etotal_d   , point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
         cudaMemcpy(Mass_h     , Mass_d     , point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
         cudaMemcpy(AngMomx_h  , AngMomx_d   , point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
@@ -70,13 +67,26 @@ __host__ void ESP::CopyToHost(){
         cudaMemcpy(AngMomz_h  , AngMomz_d   , point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
 }
 
-__host__ void ESP::CopyGlobalToHost(){
+__host__ void ESP::CopyGlobalToHost()
+{
     // Transfer global conservation values to host
         cudaMemcpy(&GlobalE_h   , GlobalE_d    , sizeof(double), cudaMemcpyDeviceToHost);
         cudaMemcpy(&GlobalMass_h, GlobalMass_d , sizeof(double), cudaMemcpyDeviceToHost);
         cudaMemcpy(&GlobalAMx_h , GlobalAMx_d  , sizeof(double), cudaMemcpyDeviceToHost);
         cudaMemcpy(&GlobalAMy_h , GlobalAMy_d  , sizeof(double), cudaMemcpyDeviceToHost);
         cudaMemcpy(&GlobalAMz_h , GlobalAMz_d  , sizeof(double), cudaMemcpyDeviceToHost);
+}
+
+
+__host__ void ESP::CopyToHost()
+{
+//
+//  Description: Transfer diagnostics from the device to the host.
+//
+        cudaMemcpy(Rho_h      , Rho_d      , point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+        cudaMemcpy(Wh_h       , Wh_d       , point_num * nvi * sizeof(double), cudaMemcpyDeviceToHost);
+        cudaMemcpy(pressure_h , pressure_d , point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+        cudaMemcpy(Mh_h       , Mh_d       , 3 * point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
 }
 
 __host__ void ESP::Output(int    fidx           , // Index of output file
@@ -292,9 +302,8 @@ __host__ void ESP::Output(int    fidx           , // Index of output file
 
 void ESP::OutputConservation()
 {
-    // copy global conservation data to host
-    CopyGlobalToHost();
-
+    //printf("output conservation\n");
+    
     // output global conservation values
     conservation_output_file << current_step << "\t"
                              << simulation_time << "\t"
@@ -323,15 +332,28 @@ int ESP::PrepareConservationFile()
     
     path o(output_dir);
 
-    o / ("esp_global_" + simulation_ID + ".txt");
-    
+    o /= ("esp_global_" + simulation_ID + ".txt");
+    //printf("Output conservation file to %s\n", o.to_string().c_str());
+
     // Open for read and write.
     // TODO: will need to handle restart
     // TODO: output header at start of file
-    conservation_output_file.open(o.to_string(),
-                                  std::ofstream::in
-                                  | std::ofstream::out
-                                  | std::ofstream::app);
+    conservation_output_file.open(o.to_string(),std::ofstream::out
+                                  //  std::ofstream::in
+                                  //| std::ofstream::out
+                                  //  | std::ofstream::app // no append for now
+        );
+
+    conservation_output_file << std::setprecision(16);
+    conservation_output_file << "#\t" 
+                             << "current_step" << "\t"
+                             << "simulation_time" << "\t"
+                             << "GlobalE_h" << "\t"
+                             << "GlobalMass_h" << "\t"
+                             << "GlobalAMx_h" << "\t"
+                             << "GlobalAMy_h" << "\t"
+                             << "GlobalAMz_h" << std::endl;
+    
 
     return 0;
     

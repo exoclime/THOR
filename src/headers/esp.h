@@ -364,6 +364,7 @@ public:
     
     void CopyToHost();
     void CopyGlobalToHost();
+    void CopyConservationToHost();
     
     void Output(int   ,
                 double,

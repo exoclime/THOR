@@ -57,6 +57,7 @@
 
 #include "phy_modules.h"
 
+#include "reduction_add.h"
 
 __host__ void ESP::ProfX(int    hstest      , // Held-Suarez test option
                          int    vulcan      , //
@@ -350,46 +351,69 @@ void ESP::Conservation(int    hstest      , // Held-Suarez test option
                               areasT_d     ,
                               point_num    ,
                               DeepModel    );
-
-      CalcTotEnergy <<< NB, NTH >>> (Etotal_d     ,
-                                     GlobalE_d    ,
-                                     Mh_d         ,
-                                     W_d          ,
-                                     Rho_d        ,
-                                     temperature_d,
-                                     Gravit       ,
-                                     Cp           ,
-                                     Rd           ,
-                                     A            ,
-                                     Altitude_d   ,
-                                     Altitudeh_d  ,
-                                     lonlat_d     ,
-                                     areasT_d     ,
-                                     point_num    ,
-                                     DeepModel    );
-
-      CalcAngMom <<< NB, NTH >>> ( AngMomx_d    ,
-                                   AngMomy_d    ,
-                                   AngMomz_d    ,
-                                   GlobalAMx_d  ,
-                                   GlobalAMy_d  ,
-                                   GlobalAMz_d  ,
+    
+    CalcTotEnergy <<< NB, NTH >>> (Etotal_d     ,
+                                   GlobalE_d    ,
                                    Mh_d         ,
+                                   W_d          ,
                                    Rho_d        ,
+                                   temperature_d,
+                                   Gravit       ,
+                                   Cp           ,
+                                   Rd           ,
                                    A            ,
-                                   Omega        ,
                                    Altitude_d   ,
                                    Altitudeh_d  ,
                                    lonlat_d     ,
                                    areasT_d     ,
                                    point_num    ,
                                    DeepModel    );
-
+    
+    CalcAngMom <<< NB, NTH >>> ( AngMomx_d    ,
+                                 AngMomy_d    ,
+                                 AngMomz_d    ,
+                                 GlobalAMx_d  ,
+                                 GlobalAMy_d  ,
+                                 GlobalAMz_d  ,
+                                 Mh_d         ,
+                                 Rho_d        ,
+                                 A            ,
+                                 Omega        ,
+                                 Altitude_d   ,
+                                 Altitudeh_d  ,
+                                 lonlat_d     ,
+                                 areasT_d     ,
+                                 point_num    ,
+                                 DeepModel    );
+#ifdef GLOBAL_CONSERVATION_ATOMICADD
+    // copy global conservation data to host for output
+    CopyGlobalToHost();
+#endif // GLOBAL_CONSERVATION_ATOMICADD
+    
 #ifdef GLOBAL_CONSERVATION_REDUCTIONADD
+    // run conservation on device
 
+    // compute globals
+    GlobalE_h    = gpu_sum_on_device<1024>(Etotal_d, point_num * nv);
+    GlobalMass_h = gpu_sum_on_device<1024>(Mass_d, point_num * nv);
+    GlobalAMx_h  = gpu_sum_on_device<1024>(AngMomx_d, point_num * nv);
+    GlobalAMy_h  = gpu_sum_on_device<1024>(AngMomy_d, point_num * nv);
+    GlobalAMz_h  = gpu_sum_on_device<1024>(AngMomz_d, point_num * nv);
+
+    
 #endif // GLOBAL_CONSERVATION_REDUCTIONADD
 
 #ifdef GLOBAL_CONSERVATION_CPUADD
+    
+    // copy conservation data to host
+    CopyConservationToHost();
+
+    // compute globals
+    GlobalE_h    = cpu_sum<1024>(Etotal_h, point_num * nv);
+    GlobalMass_h = cpu_sum<1024>(Mass_h, point_num * nv);
+    GlobalAMx_h  = cpu_sum<1024>(AngMomx_h, point_num * nv);
+    GlobalAMy_h  = cpu_sum<1024>(AngMomy_h, point_num * nv);
+    GlobalAMz_h  = cpu_sum<1024>(AngMomz_h, point_num * nv);
 
 #endif // GLOBAL_CONSERVATION_CPUADD
 }

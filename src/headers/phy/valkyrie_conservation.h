@@ -99,6 +99,7 @@ __global__ void CalcTotEnergy(double *Etotal_d     ,
       }
 
       //calc cartesian values of vertical wind
+      //  TODO: to optimise, normal vector exists somewhere
       wx = W_d[id*nv+lev]*cos(lonlat_d[id*2+1])*cos(lonlat_d[id*2]);
       wy = W_d[id*nv+lev]*cos(lonlat_d[id*2+1])*sin(lonlat_d[id*2]);
       wz = W_d[id*nv+lev]*sin(lonlat_d[id*2+1]);
