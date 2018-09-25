@@ -236,6 +236,7 @@ int main (int argc,  char** argv){
     bool DeepModel = true;
     bool SpongeLayer = false;
     int nlat = 20;
+    int ntr  = 5;
     double Rv_sponge = 1e-4;
     double ns_sponge = 0.75;
     bool shrink_sponge = false;
@@ -265,7 +266,7 @@ int main (int argc,  char** argv){
     int hstest = 1;
     config_reader.append_config_var("hstest", hstest, hstest_default);
 
- 
+    int vulcan = 1;
 
     int GPU_ID_N = 0;
     config_reader.append_config_var("GPU_ID_N", GPU_ID_N, GPU_ID_N_default);
@@ -448,6 +449,7 @@ int main (int argc,  char** argv){
            spring_beta        , // Parameter beta for spring dynamics
            nlat               , // Number of latitude rings for zonal
                                 // mean wind
+           ntr                , //
            Grid.zonal_mean_tab, // table of zonal means for sponge layer
            Rv_sponge          , // Maximum damping of sponge layer
            ns_sponge          , // lowest level of sponge layer (fraction of model)
@@ -501,6 +503,7 @@ int main (int argc,  char** argv){
                                         SpongeLayer  , // Enable sponge layer
                                         TPprof       , // isothermal = 0, guillot = 1
                                         hstest       , // argh
+                                        vulcan       , //
                                         step_idx     , // current step index
                                         simulation_start_time, // output:
                                                                // simulation start time
@@ -750,6 +753,7 @@ int main (int argc,  char** argv){
                 Planet.P_Ref , // Reference pressure [Pa]
                 Planet.Gravit, // Gravity [m/s^2]
                 Planet.A     , // Planet radius [m]
+                vulcan       , //
                 NonHydro     , // Non-hydrostatic option
                 DeepModel    );// Deep model option
           }
@@ -757,6 +761,7 @@ int main (int argc,  char** argv){
 //     Physical Core Integration (ProfX)
        X.ProfX(nstep        , // Step number
                hstest       , // Held-Suarez test option
+               vulcan       , // 
                timestep     , // Time-step [s]
                Planet.Omega , // Rotation rate [1/s]
                Planet.Cp    , // Specific heat capacity [J/kg/K]

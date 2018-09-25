@@ -51,6 +51,7 @@
 #include "storage.h"
 #include "directories.h"
 #include "../headers/phy/valkyrie_jet_steadystate.h"
+#include "../headers/phy/vulcan_host.h"
 
 #include <map>
 
@@ -78,6 +79,7 @@ __host__ ESP::ESP(int *point_local_    ,
                   bool spring_dynamics_,
                   double spring_beta_  ,
                   int nlat_            ,
+                  int ntr_             ,
                   int *zonal_mean_tab  ,
                   double Rv_sponge_    ,
                   double ns_sponge_    ,
@@ -88,6 +90,7 @@ __host__ ESP::ESP(int *point_local_    ,
                                        nv(nv_),
                                        nvi(nvi_),
                                        nlat(nlat_),
+                                       ntr(ntr_),
                                        glevel(glevel_),
                                        spring_dynamics(spring_dynamics_),
                                        spring_beta(spring_beta_)
@@ -146,6 +149,23 @@ __host__ void ESP::AllocData(){
     AngMomy_h     = (double*)malloc(nv*point_num   * sizeof(double));
     AngMomz_h     = (double*)malloc(nv*point_num   * sizeof(double));
 
+	coeq_h       = (double*)malloc(7425   * sizeof(double));	
+	co2eq_h      = (double*)malloc(7425   * sizeof(double));	
+	ch4eq_h      = (double*)malloc(7425   * sizeof(double));	
+	h2oeq_h      = (double*)malloc(7425   * sizeof(double));	
+	nh3eq_h      = (double*)malloc(7425   * sizeof(double));
+	
+	tauco_h      = (double*)malloc(7425   * sizeof(double));	
+	tauco2_h     = (double*)malloc(7425   * sizeof(double));	
+	tauch4_h     = (double*)malloc(7425   * sizeof(double));	
+	tauh2o_h     = (double*)malloc(7425   * sizeof(double));
+	taunh3_h     = (double*)malloc(7425   * sizeof(double));
+	
+	P_che_h      = (double*)malloc(135    * sizeof(double));	
+	T_che_h      = (double*)malloc(55     * sizeof(double));  
+    
+	tracer_h     = (double*)malloc(nv*point_num*ntr   * sizeof(double));		
+	
 //  Allocate data in device
 //  Grid
     cudaMalloc((void **)&point_local_d, 6 * point_num * sizeof(int));
@@ -175,6 +195,25 @@ __host__ void ESP::AllocData(){
     cudaMalloc((void **)&Rho_d        , nv * point_num   * sizeof(double));
     cudaMalloc((void **)&pressure_d   , nv * point_num   * sizeof(double));
 
+	cudaMalloc((void **)&tracer_d        , nv * point_num * ntr  * sizeof(double));
+	cudaMalloc((void **)&tracers_d       , nv * point_num * ntr  * sizeof(double));
+	cudaMalloc((void **)&tracerk_d       , nv * point_num * ntr  * sizeof(double));
+	
+	cudaMalloc((void **)&coeq_d         , 7425   * sizeof(double));
+	cudaMalloc((void **)&co2eq_d        , 7425   * sizeof(double));
+	cudaMalloc((void **)&ch4eq_d        , 7425   * sizeof(double));
+	cudaMalloc((void **)&h2oeq_d        , 7425   * sizeof(double));
+    cudaMalloc((void **)&nh3eq_d        , 7425   * sizeof(double));
+    
+	cudaMalloc((void **)&tauco_d        , 7425   * sizeof(double));
+	cudaMalloc((void **)&tauco2_d       , 7425   * sizeof(double));
+	cudaMalloc((void **)&tauch4_d       , 7425   * sizeof(double));
+	cudaMalloc((void **)&tauh2o_d       , 7425   * sizeof(double));
+    cudaMalloc((void **)&taunh3_d       , 7425   * sizeof(double));
+
+	cudaMalloc((void **)&P_che_d        , 135    * sizeof(double));
+	cudaMalloc((void **)&T_che_d        , 55     * sizeof(double));	    
+    
 //  Temperature
     cudaMalloc((void **)&temperature_d, nv * point_num *     sizeof(double));
 
@@ -233,6 +272,7 @@ __host__ void ESP::AllocData(){
     cudaMalloc((void **)&diffrh_d       , nv * point_num    * sizeof(double));
     cudaMalloc((void **)&diff_d          , 6 * nv * point_num    * sizeof(double));
     cudaMalloc((void **)&divg_Mh_d       , 3 * nv * point_num    * sizeof(double));
+	cudaMalloc((void **)&difftr_d       ,nv * point_num * ntr * sizeof(double));
 
 //  Extras-nan
     cudaMalloc((void **)&check_d, sizeof (bool));
@@ -274,6 +314,7 @@ __host__ bool ESP::InitialValues(bool rest          ,
                                  bool sponge        ,
                                  int TPprof         ,
                                  int hstest         ,
+                                 int vulcan         ,
                                  int & nstep        ,
                                  double & simulation_start_time,
                                  int & output_file_idx){
@@ -524,6 +565,87 @@ __host__ bool ESP::InitialValues(bool rest          ,
         Kdhz_h[lev] = Diffc*pow(dbar,4.)/timestep_dyn;
     }
 
+// Input for vulcan    
+	FILE *infile1         ;
+	int NT = 55;
+	int NP = 135;
+	double dummy;
+	if(vulcan == 1){
+	    infile1 = fopen("ifile/solar_fEQ_THOR.txt","r"); 
+	    if (infile1 == NULL) {
+		    printf("\nUnable to open input file.\n"); 
+		    exit (EXIT_FAILURE);
+	    }
+	    for(int i = 0; i < NT ; i++)
+		    for(int j = 0; j < NP ; j++)
+			    fscanf(infile1,"%lf %lf %lf %lf %lf %lf %lf", &T_che_h[i], &P_che_h[j], &ch4eq_h[j*NT + i],
+					    &coeq_h[j*NT + i], &h2oeq_h[j*NT + i], &co2eq_h[j*NT + i], &nh3eq_h[j*NT + i]);	
+	    fclose(infile1);
+
+	    infile1 = fopen("ifile/solar_chem_time.txt","r"); 
+	    if (infile1 == NULL) {
+		    printf("\nUnable to open input file.\n"); 
+		    exit (EXIT_FAILURE);
+	    }		
+	    for(int i = 0; i < NT ; i++)
+		    for(int j = 0; j < NP ; j++)
+			    fscanf(infile1,"%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf", &T_che_h[i], &P_che_h[j], &tauch4_h[j*NT + i],
+					    &tauco_h[j*NT + i], &dummy, &dummy, &tauh2o_h[j*NT + i],&tauco2_h[j*NT + i], &taunh3_h[j*NT + i], &dummy);		
+	    for(int j = 0; j < NP ; j++) P_che_h[j] = log(P_che_h[j]);		
+	    fclose(infile1);    
+	   
+	    // CH4
+	    for(int lev = 0; lev < nv ; lev++){
+		    for(int i = 0; i < point_num;i++){
+			    tracer_h[i*nv*ntr + lev*ntr + 0] = Compute_tracer_host (ch4eq_h       ,
+											       	        P_che_h                   ,
+											       	        T_che_h                   ,
+											       	        temperature_h[i*nv + lev] ,
+											       	        pressure_h[i*nv + lev]    )*Rho_h[i*nv + lev];
+		    }
+	    }
+	    // CO
+	    for(int lev = 0; lev < nv ; lev++){
+		    for(int i = 0; i < point_num;i++){
+			    tracer_h[i*nv*ntr + lev*ntr + 1] = Compute_tracer_host (coeq_h        ,
+											       	        P_che_h                   ,
+											       	        T_che_h                   ,
+											       	        temperature_h[i*nv + lev] ,
+											       	        pressure_h[i*nv + lev]    )*Rho_h[i*nv + lev];
+		    }
+	    }	
+	    // H2O
+	    for(int lev = 0; lev < nv ; lev++){
+		    for(int i = 0; i < point_num;i++){
+			    tracer_h[i*nv*ntr + lev*ntr + 2] = Compute_tracer_host (h2oeq_h       ,
+											       	        P_che_h                   ,
+											       	        T_che_h                   ,
+											       	        temperature_h[i*nv + lev] ,
+											       	        pressure_h[i*nv + lev]    )*Rho_h[i*nv + lev];
+		    }
+	    }
+	    // CO2
+	    for(int lev = 0; lev < nv ; lev++){
+		    for(int i = 0; i < point_num;i++){
+			    tracer_h[i*nv*ntr + lev*ntr + 3] = Compute_tracer_host (co2eq_h       ,
+			 								                P_che_h                   ,
+											       	        T_che_h                   ,
+											       	        temperature_h[i*nv + lev] ,
+											       	        pressure_h[i*nv + lev]    )*Rho_h[i*nv + lev];
+		    }
+	    }
+	    // NH3
+	    for(int lev = 0; lev < nv ; lev++){
+		    for(int i = 0; i < point_num;i++){
+			    tracer_h[i*nv*ntr + lev*ntr + 4] = Compute_tracer_host (nh3eq_h       ,
+											       	        P_che_h                   ,
+											       	        T_che_h                   ,
+											       	        temperature_h[i*nv + lev] ,
+											       	        pressure_h[i*nv + lev]    )*Rho_h[i*nv + lev];
+		    }
+	    }
+	}
+    
 //  Copy memory to the devide
     cudaMemcpy(point_local_d, point_local_h, 6 * point_num * sizeof(int), cudaMemcpyHostToDevice);
     cudaMemcpy(maps_d, maps_h, (nl_region + 2)*(nl_region + 2)*nr * sizeof(int), cudaMemcpyHostToDevice);
@@ -550,6 +672,27 @@ __host__ bool ESP::InitialValues(bool rest          ,
     if (sponge==true)
         cudaMemcpy(zonal_mean_tab_d      ,zonal_mean_tab_h, 2*point_num * sizeof(int), cudaMemcpyHostToDevice);
 
+    if(vulcan == 1){
+	    cudaMemcpy(coeq_d  , coeq_h  , 7425 * sizeof(double), cudaMemcpyHostToDevice);
+	    cudaMemcpy(ch4eq_d , ch4eq_h , 7425 * sizeof(double), cudaMemcpyHostToDevice);
+	    cudaMemcpy(h2oeq_d , h2oeq_h , 7425 * sizeof(double), cudaMemcpyHostToDevice);
+	    cudaMemcpy(co2eq_d , co2eq_h , 7425 * sizeof(double), cudaMemcpyHostToDevice);
+	    cudaMemcpy(nh3eq_d , nh3eq_h , 7425 * sizeof(double), cudaMemcpyHostToDevice);
+
+	    cudaMemcpy(tauco_d , tauco_h , 7425 * sizeof(double), cudaMemcpyHostToDevice);
+	    cudaMemcpy(tauch4_d, tauch4_h, 7425 * sizeof(double), cudaMemcpyHostToDevice);
+	    cudaMemcpy(tauh2o_d, tauh2o_h, 7425 * sizeof(double), cudaMemcpyHostToDevice);
+	    cudaMemcpy(tauco2_d, tauco2_h, 7425 * sizeof(double), cudaMemcpyHostToDevice);
+	    cudaMemcpy(taunh3_d, taunh3_h, 7425 * sizeof(double), cudaMemcpyHostToDevice);
+	
+	    cudaMemcpy(P_che_d , P_che_h , 135  * sizeof(double), cudaMemcpyHostToDevice);
+	    cudaMemcpy(T_che_d , T_che_h , 55   * sizeof(double), cudaMemcpyHostToDevice);	
+
+	    cudaMemcpy(tracer_d , tracer_h, point_num * nv * ntr * sizeof(double), cudaMemcpyHostToDevice);	
+	    cudaMemset(tracers_d, 0       ,                      sizeof(double) * nv * point_num * ntr);	
+	    cudaMemset(tracerk_d, 0       ,                      sizeof(double) * nv * point_num * ntr);	
+    }
+    
 //  Initialize arrays
     cudaMemset(Adv_d, 0, sizeof(double) * 3 * point_num * nv);
     cudaMemset(v_d  , 0, sizeof(double) * nv * point_num * 3);
@@ -582,6 +725,7 @@ __host__ bool ESP::InitialValues(bool rest          ,
     cudaMemset(diffrh_d    , 0, sizeof(double) * nv * point_num);
     cudaMemset(diff_d       , 0, sizeof(double) * 6 * nv * point_num);
     cudaMemset(divg_Mh_d    , 0, sizeof(double) * 3 * nv * point_num);
+	cudaMemset(difftr_d    , 0, sizeof(double) * nv * point_num * ntr);
 
     delete [] Kdh4_h;
     delete [] Kdhz_h;
@@ -613,6 +757,21 @@ __host__ ESP::~ESP(){
     free(Mh_h);
     free(W_h);
     free(Wh_h);
+    
+	free(tauch4_h);
+	free(tauco_h) ;
+	free(tauh2o_h);
+	free(tauco2_h);
+	free(taunh3_h);
+	
+	free(ch4eq_h) ;
+	free(coeq_h)  ;
+	free(h2oeq_h) ;
+	free(co2eq_h) ;
+	free(nh3eq_h) ;
+	
+	free(P_che_h);
+	free(T_che_h);
 
 //  Device
     cudaFree(point_local_d);
@@ -655,6 +814,26 @@ __host__ ESP::~ESP(){
     cudaFree(Mhs_d);
     cudaFree(Whs_d);
     cudaFree(Ws_d);
+    
+	cudaFree(ch4eq_d) ;
+	cudaFree(coeq_d)  ;
+	cudaFree(h2oeq_d) ;
+	cudaFree(co2eq_d) ;
+	cudaFree(nh3eq_d) ;
+	
+	cudaFree(tauch4_d);
+	cudaFree(tauco_d) ;
+	cudaFree(tauh2o_d);
+	cudaFree(tauco2_d);
+	cudaFree(taunh3_d);
+
+	cudaFree(tracer_d) ;	
+	cudaFree(tracers_d);	
+	cudaFree(tracerk_d);		
+
+	cudaFree(P_che_d);
+	cudaFree(T_che_d);		
+    
     cudaFree(Sd_d);
     cudaFree(Sp_d);
     cudaFree(Kdhz_d);
@@ -665,6 +844,7 @@ __host__ ESP::~ESP(){
     cudaFree(diffw_d);
     cudaFree(diffrh_d);
     cudaFree(diff_d);
+	cudaFree(difftr_d);
     cudaFree(divg_Mh_d);
 
     //  Conservation quantities

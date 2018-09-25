@@ -41,7 +41,7 @@ Diffc = 0.0048
 # Spring dynamics
 spring_dynamics = true
 # Horizontal resolution level.
-glevel = 5
+glevel = 4
 # Parameter beta for spring dynamics
 spring_beta = 1.15
 # Number of vertical layers

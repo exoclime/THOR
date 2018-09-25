@@ -65,6 +65,7 @@ public:
     const int nl_region   ;
     const int nr          ;
     const int nlat        ;
+    const int ntr         ;
     const int glevel      ;
     const bool spring_dynamics;
     const double spring_beta;
@@ -102,6 +103,24 @@ public:
 
     double *Kdhz_h        ;
     double *Kdh4_h        ;
+	
+	double *tauch4_h;
+	double *tauco_h ;
+	double *tauh2o_h;
+	double *tauco2_h;
+	double *taunh3_h;
+
+	double *ch4eq_h ;
+	double *coeq_h  ;	
+	double *h2oeq_h ;
+	double *co2eq_h ;	
+	double *nh3eq_h;
+	
+	double *P_che_h;
+	double *T_che_h;
+ 
+	double *tracer_h;		
+	
     bool    check_h       ;
 
     int *zonal_mean_tab_h ;
@@ -184,22 +203,39 @@ public:
 
     double *Kdhz_d        ;
     double *Kdh4_d        ;
-
+	
+	double *tauch4_d;
+	double *tauco_d ;
+	double *tauh2o_d;
+	double *tauco2_d;
+	double *taunh3_d;
+	
+	double *ch4eq_d ;
+	double *coeq_d  ;
+	double *h2oeq_d ;
+	double *co2eq_d ;	
+	double *nh3eq_d ;    
+    
+	double *tracer_d ;	
+	double *tracers_d;	
+	double *tracerk_d;	
+	
+	double *P_che_d;
+	double *T_che_d;	
+	
     double *DivM_d        ;
     double *diffpr_d      ;
     double *diffmh_d      ;
     double *diffw_d       ;
     double *diffrh_d      ;
-
+	double *difftr_d      ;
+    
     double *diff_d        ;
     double *divg_Mh_d     ;
     bool   *check_d       ;
 
     double *vbar_d        ;
     int *zonal_mean_tab_d ;
-
-
-
 
 
 //  energy, ang momentum and mass conservation
@@ -239,6 +275,7 @@ public:
         bool spring_dynamics_,
         double spring_beta_  ,
         int nlat_            ,
+        int ntr_             ,
         int * zonal_mean_tab ,
         double Rv_sponge_    ,
         double ns_sponge_    ,
@@ -266,6 +303,7 @@ public:
                        bool sponge              ,
                        int TPprof               ,
                        int hstest               ,
+                       int vulcan               ,
                        int & nsteps             ,
                        double & simulation_start_time,
                        int & output_file_idx);
@@ -282,10 +320,12 @@ public:
               double,
               double,
               double,
+              int   ,
               bool  ,
               bool  );
 
     void ProfX(int   ,
+               int   ,
                int   ,
                double,
                double,
