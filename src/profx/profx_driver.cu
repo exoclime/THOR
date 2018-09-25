@@ -384,4 +384,12 @@ void ESP::Conservation(int    hstest      , // Held-Suarez test option
                                    areasT_d     ,
                                    point_num    ,
                                    DeepModel    );
+
+#ifdef GLOBAL_CONSERVATION_REDUCTIONADD
+
+#endif // GLOBAL_CONSERVATION_REDUCTIONADD
+
+#ifdef GLOBAL_CONSERVATION_CPUADD
+
+#endif // GLOBAL_CONSERVATION_CPUADD
 }

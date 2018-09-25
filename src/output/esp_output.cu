@@ -312,7 +312,7 @@ void ESP::OutputConservation()
 
 // Store path to output and prepare output files
 void ESP::SetOutputParam(const std::string & sim_id_,
-                        const std::string & output_dir_ )
+                         const std::string & output_dir_ )
 {
     simulation_ID = sim_id_;
     output_dir = output_dir_;

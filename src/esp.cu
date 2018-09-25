@@ -675,6 +675,7 @@ int main (int argc,  char** argv){
 
     // esp output setup
     X.SetOutputParam(Planet.simulation_ID, output_path);
+    X.PrepareConservationFile();
     
     
     // We'll start writnig data to file and running main loop,

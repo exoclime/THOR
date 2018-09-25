@@ -42,6 +42,10 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
+#include "debug.h"
+
+
+#ifdef GLOBAL_CONSERVATION_ATOMICADD
 __device__ double atomicAddFunc(double* address, double val){
     unsigned long long int* address_as_ull =(unsigned long long int*)address;
     unsigned long long int old = *address_as_ull, assumed;
@@ -54,7 +58,7 @@ __device__ double atomicAddFunc(double* address, double val){
 
     return __longlong_as_double(old);
 }
-
+#endif // GLOBAL_CONSERVATION_ATOMICADD
 
 __global__ void CalcTotEnergy(double *Etotal_d     ,
                               double *GlobalE_d    ,
@@ -113,7 +117,10 @@ __global__ void CalcTotEnergy(double *Etotal_d     ,
 
       //total energy in the control volume
       Etotal_d[id*nv+lev] = (Ek+Eint+Eg)*Vol;
+
+#ifdef GLOBAL_CONSERVATION_ATOMICADD
       atomicAddFunc(GlobalE_d,Etotal_d[id*nv+lev]);
+#endif // GLOBAL_CONSERVATION_ATOMICADD
       // printf("E = %e\n",Etotal_d[id*nv+lev]);
     }
 }
@@ -179,9 +186,12 @@ __global__ void CalcAngMom(double *AngMomx_d    ,
       AngMomx_d[id*nv+lev] = AMx*Vol;
       AngMomy_d[id*nv+lev] = AMy*Vol;
       AngMomz_d[id*nv+lev] = AMz*Vol;
+
+#ifdef GLOBAL_CONSERVATION_ATOMICADD
       atomicAddFunc(GlobalAMx_d,AngMomx_d[id*nv+lev]);
       atomicAddFunc(GlobalAMy_d,AngMomy_d[id*nv+lev]);
       atomicAddFunc(GlobalAMz_d,AngMomz_d[id*nv+lev]);
+#endif // GLOBAL_CONSERVATION_ATOMICADD
     }
 }
 
@@ -214,6 +224,9 @@ __global__ void CalcMass(double *Mass_d       ,
 
       //mass in control volume = density*volume
       Mass_d[id*nv+lev] = Rho_d[id*nv+lev]*Vol;
+
+#ifdef GLOBAL_CONSERVATION_ATOMICADD
       atomicAddFunc(GlobalMass_d,Mass_d[id*nv+lev]);
+#endif // GLOBAL_CONSERVATION_ATOMICADD
     }
 }
