@@ -33,7 +33,7 @@ Tmean = 642
 # Reference surface pressure [Pa]
 P_ref = 10000000.0
 # Altitude of the top of the model domain [m]
-Top_altitude = 2e6
+Top_altitude = 2.5e6
 # Strength of diffusion
 Diffc = 0.00495
 
@@ -88,7 +88,7 @@ n_out = 13824
 
 # output directory (relative to current working directory)
 # defaults to 'results'
-results_path = gj436b_t2
+results_path = gj436b_t3
 
 Tstar = 3350
 planet_star_dist = 0.02872

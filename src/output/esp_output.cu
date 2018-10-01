@@ -192,13 +192,7 @@ __host__ void ESP::Output(int    ntstep         , // Number of integration steps
             //      Rv
             s.append_value(Rv_sponge, "/Rv_sponge", "1/s", "Stength of sponge layer");
         }
-        // if (hstest == 0) { // might need help from urs for this!
-        //     //      Rv
-        //     write_double_value_to_h5file(file_id, "/Rv_sponge", Rv_sponge, "Strength of sponge layer", "1/s");
-        // }
-        //
-        // H5Fflush(file_id, H5F_SCOPE_LOCAL);
-        // H5Fclose(file_id);
+
         phy_modules_store_init(s);
     }
 
