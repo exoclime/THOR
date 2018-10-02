@@ -6,8 +6,8 @@ import h5py
 import time
 
 plt.rcParams['image.cmap'] = 'magma'
-plt.rcParams['font.family'] = 'sans-serif'
-plt.rcParams['font.sans-serif'] = 'Helvetica-Normal'
+# plt.rcParams['font.family'] = 'sans-serif'
+# plt.rcParams['font.sans-serif'] = 'Helvetica-Normal'
 
 class input:
     def __init__(self,resultsf,simID):

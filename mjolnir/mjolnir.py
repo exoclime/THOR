@@ -43,7 +43,7 @@ parser.add_argument("-f","--file",nargs=1,default=['results'],help='Results fold
 parser.add_argument("-s","--simulation_ID",nargs=1,default=['Earth'],help='Name of simulation (e.g., planet name)')
 parser.add_argument("-i","--initial_file",nargs=1,default=[10],type=int,help='Initial file id number (integer)')
 parser.add_argument("-l","--last_file",nargs=1,default=[10],type=int,help='Last file id number (integer)')
-parser.add_argument("-p","--pressure_lev",nargs=1,default=[2.5e4],help='Pressure level to plot in temperature/velocity/vorticity field')
+parser.add_argument("-p","--pressure_lev",nargs=1,default=[2.5e2],help='Pressure level to plot in temperature/velocity/vorticity field (mbar)')
 parser.add_argument("-pmin","--pressure_min",nargs=1,default=['default'],help='Lowest pressure value to plot in vertical plots')
 parser.add_argument("-slay","--split_layer",nargs=1,default=['no_split'],help='Split conserved quantities into weather and deep layers at this pressure')
 args = parser.parse_args()
@@ -116,22 +116,22 @@ if 'Tver' in pview:
 if 'Tulev' in pview:
     # Averaged temperature and wind field (longitude vs latitude)
     # PR_LV - Pressure level (Pa)
-    PR_LV = np.float(args.pressure_lev[0])
+    PR_LV = np.float(args.pressure_lev[0])*100
     ham.temperature_u_lev(input,grid,output,PR_LV)
 if 'PTver' in pview:
     # Averaged potential temperature (latitude vs pressure)
     ham.potential_temp(input,grid,output,sigmaref)
 if 'ulev' in pview:
-    PR_LV = np.float(args.pressure_lev[0])
+    PR_LV = np.float(args.pressure_lev[0])*100
     ham.uv_lev(input,grid,output,PR_LV)
 if 'PVlev' in pview:
-    PR_LV = np.float(args.pressure_lev[0])
+    PR_LV = np.float(args.pressure_lev[0])*100
     ham.potential_vort_lev(input,grid,output,PR_LV)
 if 'PVver' in pview:
     #sigmaref = np.arange(1,0,-0.05)
     ham.potential_vort_vert(input,grid,output,sigmaref)
 if 'RVlev' in pview:
-    PR_LV = np.float(args.pressure_lev[0])
+    PR_LV = np.float(args.pressure_lev[0])*100
     ham.rela_vort_lev(input,grid,output,PR_LV)
 # if 'vring' in pview:
 #     #still in development...
