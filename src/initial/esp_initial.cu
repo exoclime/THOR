@@ -739,62 +739,21 @@ __host__ bool ESP::InitialValues(bool rest          ,
 
       //  Number of threads per block.
       if (conservation == true) {
-        const int NTH = 256;
-
-        //  Specify the block sizes.
-        dim3 NB((point_num / NTH) + 1, nv, 1);
-        // calculate quantities we hope to conserve!
-        cudaMemset(GlobalE_d     , 0, sizeof(double));
-        cudaMemset(GlobalMass_d  , 0, sizeof(double));
-        cudaMemset(GlobalAMx_d   , 0, sizeof(double));
-        cudaMemset(GlobalAMy_d   , 0, sizeof(double));
-        cudaMemset(GlobalAMz_d   , 0, sizeof(double));
-
-        CalcMass <<< NB, NTH >>> (Mass_d       ,
-                                  GlobalMass_d ,
-                                  Rho_d        ,
-                                  A            ,
-                                  Altitudeh_d  ,
-                                  lonlat_d     ,
-                                  areasT_d     ,
-                                  point_num    ,
-                                  DeepModel    );
-
-        CalcTotEnergy <<< NB, NTH >>> (Etotal_d     ,
-                                       GlobalE_d    ,
-                                       Mh_d         ,
-                                       W_d          ,
-                                       Rho_d        ,
-                                       temperature_d,
-                                       Gravit       ,
-                                       Cp           ,
-                                       Rd           ,
-                                       A            ,
-                                       Altitude_d   ,
-                                       Altitudeh_d  ,
-                                       lonlat_d     ,
-                                       areasT_d     ,
-                                       func_r_d     ,
-                                       point_num    ,
-                                       DeepModel    );
-
-        CalcAngMom <<< NB, NTH >>> ( AngMomx_d    ,
-                                     AngMomy_d    ,
-                                     AngMomz_d    ,
-                                     GlobalAMx_d  ,
-                                     GlobalAMy_d  ,
-                                     GlobalAMz_d  ,
-                                     Mh_d         ,
-                                     Rho_d        ,
-                                     A            ,
-                                     Omega        ,
-                                     Altitude_d   ,
-                                     Altitudeh_d  ,
-                                     lonlat_d     ,
-                                     areasT_d     ,
-                                     point_num    ,
-                                     DeepModel    );
+        Conservation(hstest       , // Held-Suarez test option
+                           vulcan       , //
+                           Omega , // Rotation rate [1/s]
+                           Cp    , // Specific heat capacity [J/kg/K]
+                           Rd    , // Gas constant [J/kg/K]
+                           Mmol  , // Mean molecular mass of dry air [kg]
+                           mu_constant  , // Atomic mass unit [kg]
+                           kb_constant  , // Boltzmann constant [J/K]
+                           P_Ref , // Reference pressure [Pa]
+                           Gravit, // Gravity [m/s^2]
+                           A     , // Planet radius [m]
+                           DeepModel    );
+         OutputConservation();
       }
+
 
     return true;
 }

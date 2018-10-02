@@ -379,9 +379,7 @@ public:
                        double P_Ref       , // Reference pressure [Pa]
                        double Gravit      , // Gravity [m/s^2]
                        double A           , // Planet radius [m]
-                       bool   DeepModel   ,
-                       bool   sponge      , // Use sponge layer?
-                       bool   shrink_sponge);
+                       bool   DeepModel   );
 
     void CopyToHost();
     void CopyConservationToHost();
