@@ -49,7 +49,7 @@ parser.add_argument("-slay","--split_layer",nargs=1,default=['no_split'],help='S
 args = parser.parse_args()
 pview = args.pview
 
-valid = ['uver','Tver','Tulev','PTver','ulev','PVver','PVlev','vring','TP','RVlev','cons','stream','pause']
+valid = ['uver','wver','wprof','Tver','Tulev','PTver','ulev','PVver','PVlev','vring','TP','RVlev','cons','stream','pause']
 if 'all' in pview:
     pview = valid
 else:
@@ -103,6 +103,13 @@ if 'pause' in pview:
 if 'uver' in pview:
     # Averaged zonal winds (latitude vs pressure)
     ham.u(input,grid,output,sigmaref)
+if 'wver' in pview:
+    # Averaged vertical winds (latitude vs pressure)
+    ham.w_ver(input,grid,output,sigmaref)
+
+if 'wprof' in pview:
+    # Averaged vertical winds (latitude vs pressure)
+    ham.w_prof(input,grid,output)
 if 'Tver' in pview:
     # Averaged temperature (latitude vs pressure)
     ham.temperature(input,grid,output,sigmaref)

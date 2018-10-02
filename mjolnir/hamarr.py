@@ -42,15 +42,15 @@ class input:
                 self.ns_sponge = openh5['ns_sponge'][...]
                 self.Rv_sponge = openh5['Rv_sponge'][...]
             self.hstest = openh5['hstest'][...]
-            if self.hstest[0] == 0:
-                self.Tstar = openh5['Tstar'][...]
-                self.planet_star_dist = openh5['planet_star_dist'][...]
-                self.radius_star = openh5['radius_star'][...]
-                self.diff_fac = openh5['diff_fac'][...]
-                self.Tlow = openh5['Tlow'][...]
-                self.albedo = openh5['albedo'][...]
-                self.tausw = openh5['tausw'][...]
-                self.taulw = openh5['taulw'][...]
+            # if self.hstest[0] == 0:
+            #     self.Tstar = openh5['Tstar'][...]
+            #     self.planet_star_dist = openh5['planet_star_dist'][...]
+            #     self.radius_star = openh5['radius_star'][...]
+            #     self.diff_fac = openh5['diff_fac'][...]
+            #     self.Tlow = openh5['Tlow'][...]
+            #     self.albedo = openh5['albedo'][...]
+            #     self.tausw = openh5['tausw'][...]
+            #     self.taulw = openh5['taulw'][...]
         openh5.close()
 
 class grid:
@@ -196,14 +196,14 @@ def temperature(input,grid,output,sigmaref):
     latp = np.arange(-np.pi/2,np.pi/2,res_deg)
 
     # Contour plot
-    C = plt.contourf(latp*180/np.pi,Pref/100,Temperaturelt.T,40)
+    C = plt.contourf(latp*180/np.pi,Pref/1e5,Temperaturelt.T,40)
     for cc in C.collections:
         cc.set_edgecolor("face") #fixes a stupid bug in matplotlib 2.0
     plt.gca().invert_yaxis()
     if np.max(Pref)/np.min(Pref) > 100:
         plt.gca().set_yscale("log")
     plt.xlabel('Latitude (deg)')
-    plt.ylabel('Pressure (mba)')
+    plt.ylabel('Pressure (bar)')
     plt.title('Time = %#.3f - %#.3f days'%(output.time[0],output.time[-1]))
     clb = plt.colorbar(C)
     clb.set_label(r'Temperature (K)')
@@ -292,10 +292,10 @@ def u(input,grid,output,sigmaref):
     latp = np.arange(-np.pi/2,np.pi/2,res_deg)
 
     # Contour plot
-    C = plt.contourf(latp*180/np.pi,Pref/100,ZonalMlt.T,40)
+    C = plt.contourf(latp*180/np.pi,Pref/1e5,ZonalMlt.T,40)
 
     levp = np.arange(np.ceil(np.min(ZonalMlt)/csp)*csp,np.floor(np.max(ZonalMlt)/csp)*csp,csp)
-    c2 = plt.contour(latp*180/np.pi,Pref/100,ZonalMlt.T,levels=levp,colors='w',linewidths=1)
+    c2 = plt.contour(latp*180/np.pi,Pref/1e5,ZonalMlt.T,levels=levp,colors='w',linewidths=1)
     plt.clabel(c2,inline=1,fontsize=10)
     for cc in C.collections:
         cc.set_edgecolor("face") #fixes a stupid bug in matplotlib 2.0
@@ -303,7 +303,7 @@ def u(input,grid,output,sigmaref):
     if np.max(Pref)/np.min(Pref) > 100:
         plt.gca().set_yscale("log")
     plt.xlabel('Latitude (deg)')
-    plt.ylabel('Pressure (mba)')
+    plt.ylabel('Pressure (bar)')
     plt.title('Time = %#.3f - %#.3f days'%(output.time[0],output.time[-1]))
     clb = plt.colorbar(C)
     clb.set_label(r'Velocity (m s$^{-1}$)')
@@ -311,6 +311,168 @@ def u(input,grid,output,sigmaref):
         os.mkdir(input.resultsf+'/figures')
     plt.tight_layout()
     plt.savefig(input.resultsf+'/figures/u_ver_i%d_l%d.pdf'%(output.ntsi,output.nts))
+    plt.close()
+
+def w_prof(input,grid,output):
+    tsp = output.nts-output.ntsi+1
+
+    w = 0.5*(output.Wh[:,1:,:]+output.Wh[:,:-1,:])/output.Rho
+    lon_shift = grid.lon*1.0
+    lon_shift[lon_shift>7*np.pi/4] -= 2*np.pi
+
+    day = np.where(np.logical_and(lon_shift>=-np.pi/4,lon_shift<np.pi/4))[0]
+    eve = np.where(np.logical_and(lon_shift>=np.pi/4,lon_shift<3*np.pi/4))[0]
+    night = np.where(np.logical_and(lon_shift>=3*np.pi/4,lon_shift<5*np.pi/4))[0]
+    morn = np.where(np.logical_and(lon_shift>=5*np.pi/4,lon_shift<7*np.pi/4))[0]
+
+    pday = output.Pressure[day,:,:]
+    peve = output.Pressure[eve,:,:]
+    pnight = output.Pressure[night,:,:]
+    pmorn = output.Pressure[morn,:,:]
+
+    pday_avg = np.mean(np.mean(pday,axis=2),axis=0)
+    peve_avg = np.mean(np.mean(peve,axis=2),axis=0)
+    pnight_avg = np.mean(np.mean(pnight,axis=2),axis=0)
+    pmorn_avg = np.mean(np.mean(pmorn,axis=2),axis=0)
+
+    wday_tmp = w[day,:,:]
+    weve_tmp = w[eve,:,:]
+    wnight_tmp = w[night,:,:]
+    wmorn_tmp = w[morn,:,:]
+
+    wday = np.zeros_like(wday_tmp)
+    weve = np.zeros_like(weve_tmp)
+    wnight = np.zeros_like(wnight_tmp)
+    wmorn = np.zeros_like(wmorn_tmp)
+
+    for t in np.arange(tsp):
+        for i in np.arange(np.max([len(day),len(eve),len(night),len(morn)])):
+            if i < len(day):
+                 wday[i,:,t] = interp.pchip_interpolate(pday[i,::-1,t],wday_tmp[i,::-1,t],pday_avg[::-1])[::-1]
+            if i < len(eve):
+                 weve[i,:,t] = interp.pchip_interpolate(peve[i,::-1,t],weve_tmp[i,::-1,t],peve_avg[::-1])[::-1]
+            if i < len(night):
+                 wnight[i,:,t] = interp.pchip_interpolate(pnight[i,::-1,t],wnight_tmp[i,::-1,t],pnight_avg[::-1])[::-1]
+            if i < len(morn):
+                 wmorn[i,:,t] = interp.pchip_interpolate(pmorn[i,::-1,t],wmorn_tmp[i,::-1,t],pmorn_avg[::-1])[::-1]
+
+    wday_avg = np.mean(np.mean(wday,axis=2),axis=0)
+    weve_avg = np.mean(np.mean(weve,axis=2),axis=0)
+    wnight_avg = np.mean(np.mean(wnight,axis=2),axis=0)
+    wmorn_avg = np.mean(np.mean(wmorn,axis=2),axis=0)
+
+    plt.semilogy(wday_avg,pday_avg/1e5,'r-',label='day')
+    plt.plot(weve_avg,peve_avg/1e5,'g-',label='evening')
+    plt.plot(wnight_avg,pnight_avg/1e5,'b-',label='night')
+    plt.plot(wmorn_avg,pmorn_avg/1e5,'c-',label='morning')
+    plt.gca().invert_yaxis()
+    plt.ylabel('Pressure (bar)')
+    plt.xlabel(r'Vertical wind speed [m s$^{-1}$]')
+    plt.title('Time = %#.3f - %#.3f days'%(output.time[0],output.time[-1]))
+    plt.legend(loc='lower right',fontsize = 8)
+    if not os.path.exists(input.resultsf+'/figures'):
+        os.mkdir(input.resultsf+'/figures')
+    plt.savefig(input.resultsf+'/figures/Wprofile_i%d_l%d.pdf'%(output.ntsi,output.nts))
+    plt.close()
+
+def w_ver(input,grid,output,sigmaref):
+    # contour spacing
+    csp = 200
+
+    # Set the reference pressure
+    Pref = input.P_Ref*sigmaref
+    d_sig = np.size(sigmaref)
+
+    # Set the latitude-longitude grid
+    res_deg = 0.005
+    loni, lati = np.meshgrid(np.arange(0,2*np.pi,res_deg),\
+        np.arange(-np.pi/2,np.pi/2,res_deg))
+    d_lon = np.shape(loni)
+    tsp = output.nts-output.ntsi+1
+
+    ##################
+    # Vert. momentum #
+    ##################
+
+    # Initialize arrays
+    VertMii = np.zeros(grid.nv)
+    VertMi = np.zeros((grid.point_num,d_sig))
+    VertM = np.zeros((d_lon[0],d_lon[1],d_sig,tsp))
+
+    # Wh is output at the vertical interfaces, so we must average
+    VertMtemp = 0.5*(output.Wh[:,1:,:]+output.Wh[:,:-1,:])/output.Rho
+    # ZonalMtemp1 = np.vstack((ZonalMtemp[:,:,0],ZonalMtemp[:,:,1]))
+    #
+    # Ptemp = np.vstack((output.Pressure[:,:,0],output.Pressure[:,:,1]))
+    #
+    # y = np.arange(grid.point_num*tsp)
+    # x = np.arange(grid.nv)
+    # xx, yy = np.meshgrid(x,y)
+    # fint2d = interp.interp2d(Ptemp,yy,ZonalMtemp1)
+    # #ZonalMtemp2 = np.reshape(fint2d(Pref,Ptemp[:,0]),(grid.point_num,len(Pref),tsp))
+    # ZonalMtemp2 = fint2d(Pref,Ptemp[:,0])
+
+    # Compute zonal Winds
+    # v = np.hstack((output.Pressure,ZonalMtemp))
+    for t in np.arange(tsp):
+        for i in np.arange(grid.point_num):
+            sigma = output.Pressure[i,:,t]
+            # for lev in np.arange(grid.nv):
+            #     ZonalMii[lev] = (output.Mh[0,i,lev,t]*(-np.sin(grid.lon[i])) + \
+            #                      output.Mh[1,i,lev,t]*np.cos(grid.lon[i]) + \
+            #                      output.Mh[2,i,lev,t]*(0))/output.Rho[i,lev,t]
+            # Interpolate atmospheric column to the reference pressure
+            # import pdb; pdb.set_trace()
+
+            VertMi[i,:] = interp.pchip_interpolate(sigma[::-1],VertMtemp[i,::-1,t],Pref[::-1])[::-1]
+        # Convert icosahedral grid into lon-lat grid
+        for lev in np.arange(d_sig):
+            VertM[:,:,lev,t] = interp.griddata(np.vstack([grid.lon,grid.lat]).T,VertMi[:,lev],(loni,lati),method='nearest')
+
+    # plt.plot(Pref,ZonalMtemp2[0,:],'b-')
+    # # plt.plot(Pref,ZonalMi[0,:],'r-')
+    # plt.plot(output.Pressure[0,:,0],ZonalMtemp[0,:,0],'k.')
+    # plt.plot(Ptemp[0,:],ZonalMtemp1[0,:],'r-')
+    # plt.show()
+    del VertMii, VertMi
+
+    # Averaging in time and longitude
+    if tsp > 1:
+        VertMl = np.mean(VertM[:,:,:,:],axis=1)
+        del ZonalM
+        VertMlt = np.mean(VertMl[:,:,:],axis=2)
+        del VertMl
+    else:
+        VertMlt = np.mean(VertM[:,:,:,0],axis=1)
+        del VertM
+
+    #################
+    # Create figure #
+    #################
+
+    # Latitude
+    latp = np.arange(-np.pi/2,np.pi/2,res_deg)
+
+    # Contour plot
+    C = plt.contourf(latp*180/np.pi,Pref/1e5,VertMlt.T,40)
+
+    levp = np.arange(np.ceil(np.min(VertMlt)/csp)*csp,np.floor(np.max(VertMlt)/csp)*csp,csp)
+    c2 = plt.contour(latp*180/np.pi,Pref/1e5,VertMlt.T,levels=levp,colors='w',linewidths=1)
+    plt.clabel(c2,inline=1,fontsize=10)
+    for cc in C.collections:
+        cc.set_edgecolor("face") #fixes a stupid bug in matplotlib 2.0
+    plt.gca().invert_yaxis()
+    if np.max(Pref)/np.min(Pref) > 100:
+        plt.gca().set_yscale("log")
+    plt.xlabel('Latitude (deg)')
+    plt.ylabel('Pressure (bar)')
+    plt.title('Time = %#.3f - %#.3f days'%(output.time[0],output.time[-1]))
+    clb = plt.colorbar(C)
+    clb.set_label(r'Velocity (m s$^{-1}$)')
+    if not os.path.exists(input.resultsf+'/figures'):
+        os.mkdir(input.resultsf+'/figures')
+    plt.tight_layout()
+    plt.savefig(input.resultsf+'/figures/w_ver_i%d_l%d.pdf'%(output.ntsi,output.nts))
     plt.close()
 
 def uv_lev(input,grid,output,Plev):
@@ -566,14 +728,14 @@ def potential_temp(input,grid,output,sigmaref):
     latp = np.arange(-np.pi/2,np.pi/2,res_deg)
 
     # Contour plot
-    C = plt.contourf(latp*180/np.pi,Pref/100,Thetalt.T,40,linewidths=None)
+    C = plt.contourf(latp*180/np.pi,Pref/1e5,Thetalt.T,40,linewidths=None)
     for cc in C.collections:
         cc.set_edgecolor("face") #fixes a stupid bug in matplotlib 2.0
     plt.gca().invert_yaxis()
     if np.max(Pref)/np.min(Pref) > 100:
         plt.gca().set_yscale("log")
     plt.xlabel('Latitude (deg)')
-    plt.ylabel('Pressure (mba)')
+    plt.ylabel('Pressure (bar)')
     plt.title('Time = %#.3f - %#.3f days'%(output.time[0],output.time[-1]))
     clb = plt.colorbar(C)
     clb.set_label(r'Potential temperature (K)')
@@ -839,7 +1001,7 @@ def potential_vort_vert(input,grid,output,sigmaref):
     lonp = loni[0,:,0,0]
 
     # Contour plot
-    C = plt.contourf(latp*180/np.pi,Pref/100,Philt.T,40,linewidths=None)
+    C = plt.contourf(latp*180/np.pi,Pref/1e5,Philt.T,40,linewidths=None)
     for cc in C.collections:
         cc.set_edgecolor("face") #fixes a stupid bug in matplotlib 2.0
 
@@ -847,7 +1009,7 @@ def potential_vort_vert(input,grid,output,sigmaref):
     if np.max(Pref)/np.min(Pref) > 100:
         plt.gca().set_yscale("log")
     plt.xlabel('Latitude (deg)')
-    plt.ylabel('Pressure (mba)')
+    plt.ylabel('Pressure (bar)')
     plt.title('Time = %#.3f - %#.3f days'%(output.time[0],output.time[-1]))
     #plt.ylabel('Altitude (m)')
     clb = plt.colorbar(C)
@@ -1117,16 +1279,16 @@ def TPprof(input,grid,output,sigmaref,column):
 
         kappa = input.Rd/input.Cp
 
-        plt.semilogy(T,P/100,'k-',alpha= 0.5,lw=1)
-        plt.plot(T[np.int(np.floor(grid.nv/2))],P[np.int(np.floor(grid.nv/2))]/100,'r+',ms =5,alpha=0.5)
-        plt.plot(T[np.int(np.floor(grid.nv*0.75))],P[np.int(np.floor(grid.nv*0.75))]/100,'g+',ms =5,alpha=0.5)
+        plt.semilogy(T,P/1e5,'k-',alpha= 0.5,lw=1)
+        plt.plot(T[np.int(np.floor(grid.nv/2))],P[np.int(np.floor(grid.nv/2))]/100000,'r+',ms =5,alpha=0.5)
+        plt.plot(T[np.int(np.floor(grid.nv*0.75))],P[np.int(np.floor(grid.nv*0.75))]/100000,'g+',ms =5,alpha=0.5)
 
 
     Tad = T[15]*(P/P[15])**kappa
 
     # plt.plot(Tad,P/100,'r--')
     plt.gca().invert_yaxis()
-    plt.ylabel('Pressure (mbar)')
+    plt.ylabel('Pressure (bar)')
     plt.xlabel('Temperature [K]')
     plt.title('Time = %#.3f - %#.3f days'%(output.time[0],output.time[-1]))
     if not os.path.exists(input.resultsf+'/figures'):
@@ -1197,14 +1359,14 @@ def streamf(input,grid,output,sigmaref):
     #################
 
     # Contour plot
-    C = plt.contourf(latp*180/np.pi,Pref/100,Stream.T,40)
+    C = plt.contourf(latp*180/np.pi,Pref/100000,Stream.T,40)
     for cc in C.collections:
         cc.set_edgecolor("face") #fixes a stupid bug in matplotlib 2.0
     plt.gca().invert_yaxis()
     if np.max(Pref)/np.min(Pref) > 100:
         plt.gca().set_yscale("log")
     plt.xlabel('Latitude (deg)')
-    plt.ylabel('Pressure (mba)')
+    plt.ylabel('Pressure (bar)')
     plt.title('Time = %#.3f - %#.3f days'%(output.time[0],output.time[-1]))
     clb = plt.colorbar(C)
     clb.set_label(r'Stream function (kg s$^{-1}$)')
