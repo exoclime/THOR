@@ -144,7 +144,7 @@ if 'cons' in pview:
     if args.split_layer[0] == 'no_split':
         split = False
     else:
-        split = np.float(args.split_layer[0])
+        split = np.float(args.split_layer[0])*100
     ham.conservation(input,grid,output,split)
 
 if 'stream' in pview:
