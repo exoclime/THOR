@@ -333,6 +333,13 @@ int main (int argc,  char** argv){
         }
     }
 
+    bool run_as_batch_arg = false;
+    bool run_as_batch = false;    
+    if (argparser.get_arg("batch", run_as_batch_arg))
+    {
+        run_as_batch = run_as_batch_arg;
+    }
+
     string continue_filename = "";
     bool continue_sim = false;
 
@@ -342,9 +349,17 @@ int main (int argc,  char** argv){
         rest = false;
         continue_sim = true;
 
+        if (run_as_batch)
+        {
+            printf("--continue and --batch options set, options are exclusive, must set only one\n");
+
+            exit(-1);
+        }
+        
+
         if (initial_condition_arg_set)
         {
-            printf("--continue and --initial options set, must set only one\n");
+            printf("--continue and --initial options set, options are exclusive, must set only one\n");
 
             exit(-1);
         }
@@ -362,12 +377,8 @@ int main (int argc,  char** argv){
     bool force_overwrite = false;
 
     if (argparser.get_arg("overwrite", force_overwrite_arg))
-        force_overwrite = force_overwrite_arg;
-
-    bool run_as_batch_arg = false;
-    bool run_as_batch = false;    
-    if (argparser.get_arg("batch", run_as_batch_arg))
-        run_as_batch = run_as_batch_arg;
+        force_overwrite = force_overwrite_arg;    
+    
     
     
     int nsmax_arg;
@@ -420,6 +431,9 @@ int main (int argc,  char** argv){
         exit(-1);
     }
 
+    //*****************************************************************
+    // Batch mode handling
+    
     //*****************************************************************
 //  Set the GPU device.
     cudaError_t error;
