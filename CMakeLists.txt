@@ -231,7 +231,7 @@ target_link_libraries (test_storage ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES}  )
 add_executable(test_args ${SRC_CMDARGS})
 add_executable(test_config ${SRC_CONFIG})
 add_executable(test_directories ${SRC_DIRECTORIES})
-cuda_add_executable(test_reduction_add ${SRC_REDUCTION_ADD})
+#cuda_add_executable(test_reduction_add ${SRC_REDUCTION_ADD})
 cuda_add_executable(test_gen_init ${SRC_GEN_INIT})
 target_link_libraries (test_gen_init ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES}  )
 

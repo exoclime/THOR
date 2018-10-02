@@ -54,7 +54,6 @@
 #include <chrono>
 #include <iomanip>
 #include <sstream>
-using namespace std;
 
 #include "headers/define.h"
 #include "headers/grid.h"
@@ -72,6 +71,9 @@ using namespace std;
 
 #include <csignal>
 
+using std::string;
+
+
 enum e_sig {
     ESIG_NOSIG = 0,
     ESIG_SIGTERM = 1,
@@ -85,13 +87,13 @@ volatile sig_atomic_t caught_signal = ESIG_NOSIG;
 void sigterm_handler(int sig)
 {
     caught_signal = ESIG_SIGTERM;
-    std::cout << "SIGTERM caught, trying to exit gracefully" << std::endl;
+    printf("SIGTERM caught, trying to exit gracefully.\n");
 }
 
 void sigint_handler(int sig)
 {
     caught_signal = ESIG_SIGINT;
-    std::cout << "SIGINT caught, trying to exit gracefully" << std::endl;
+    printf("SIGINT caught, trying to exit gracefully\n");
 }
 
 
@@ -362,6 +364,12 @@ int main (int argc,  char** argv){
     if (argparser.get_arg("overwrite", force_overwrite_arg))
         force_overwrite = force_overwrite_arg;
 
+    bool run_as_batch_arg = false;
+    bool run_as_batch = false;    
+    if (argparser.get_arg("batch", run_as_batch_arg))
+        run_as_batch = run_as_batch_arg;
+    
+    
     int nsmax_arg;
     if (argparser.get_arg("numsteps", nsmax_arg))
         nsmax = nsmax_arg;
@@ -464,7 +472,7 @@ int main (int argc,  char** argv){
     USE_BENCHMARK();
     INIT_BENCHMARK(X, Grid);
 
-    BENCH_POINT("0", "Grid", vector<string>({}), vector<string>({ "func_r", "areas",
+    BENCH_POINT("0", "Grid", std::vector<string>({}), std::vector<string>({ "func_r", "areas",
                 "areasTr", "areasT", "nvec", "nvecoa", "nvecti", "nvecte", "Altitude", "Altitudeh", "lonlat",
                 "div", "grad"}))
 
@@ -535,11 +543,11 @@ int main (int argc,  char** argv){
     path results(output_path);
 
     // Get the files in the directory
-    vector<string> result_files = get_files_in_directory(results.to_string());
+    std::vector<string> result_files = get_files_in_directory(results.to_string());
 
     // match them to name pattern, get file numbers and check numbers that are greater than the
     // restart file number
-    vector<pair<string,int>> matching_name_result_files;
+    std::vector<std::pair<string,int>> matching_name_result_files;
     for (const auto & r : result_files)
     {
         string basename = "";
@@ -694,7 +702,7 @@ int main (int argc,  char** argv){
      sigterm_action.sa_flags = 0;
 
      if (sigaction(SIGTERM, &sigterm_action, NULL) == -1) {
-         std::cout << "Error: cannot handle SIGTERM" << std::endl; // Should not happen
+         printf("Error: cannot handle SIGTERM\n"); // Should not happen
      }
 
      struct sigaction sigint_action;
@@ -704,7 +712,7 @@ int main (int argc,  char** argv){
      sigint_action.sa_flags = 0;
 
      if (sigaction(SIGINT, &sigint_action, NULL) == -1) {
-         std::cout << "Error: cannot handle SIGINT" << std::endl; // Should not happen
+         printf("Error: cannot handle SIGINT\n"); // Should not happen
      }
 
 //
@@ -882,6 +890,7 @@ int main (int argc,  char** argv){
 
         end_time_str << str_time;
 
+
         printf("\n Time step number = %d/%d || Time = %f days. \n\t Elapsed %s || Left: %s || Completion: %s. %s",
                nstep, nsmax,
                simulation_time/86400.,
@@ -900,17 +909,16 @@ int main (int argc,  char** argv){
 //
 //  Prints the duration of the integration.
     long finishTime = clock();
-    cout << "\n\n Integration time = " << (finishTime - startTime)/CLOCKS_PER_SEC
-                                       << " seconds" << endl;
+    printf("\n\n Integration time = %f seconds\n\n", double((finishTime - startTime))/double(CLOCKS_PER_SEC));
 
 //
 //  Checks for errors in the device.
     cudaDeviceSynchronize();
     error = cudaGetLastError();
-    printf("\n\n CudaMalloc error = %d = %s",error, cudaGetErrorString(error));
+    printf("CudaMalloc error = %d = %s\n\n",error, cudaGetErrorString(error));
 //
 //  END OF THE ESP
-    printf("\n\n End of the ESP!\n\n");
+    printf("End of the ESP!\n\n");
 
     return 0;
 }

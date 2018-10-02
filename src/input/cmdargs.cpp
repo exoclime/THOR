@@ -66,10 +66,11 @@ int arg<bool>::get_nargs()
         return 0;
 };
 
+// Flag it as set, it will use its predefined value
 template<>
 void arg<bool>::set_default()
 {
-    value = true;
+    has_value = true;
 };
 
 
@@ -94,6 +95,12 @@ bool cmdargs::parse(int argc, char ** argv)
     {
         out &= parser_state_machine(argv[i]);
     }
+
+    if (parser_state != PARSE_FOR_KEY)
+    {
+        cout << "Error: parsing ended before reading all arguments" << endl;
+    }
+    
     
     return out;
 }

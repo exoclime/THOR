@@ -92,7 +92,8 @@ class arg : public arg_interface
 public:
     arg( const string & short_form_,
          const string & long_form_,
-         const T & value_,
+         const T & value_,   // To give the type of the argument, value doesn't get used, other than
+                             // for bool that gets set on command line without argument
         const string & help_string_):
         short_form(short_form_),
         long_form(long_form_),
