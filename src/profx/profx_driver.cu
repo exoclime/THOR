@@ -134,12 +134,14 @@ __host__ void ESP::ProfX(int    hstest      , // Held-Suarez test option
                                          point_num    );
 
     BENCH_POINT_I(current_step, "phy_T", vector<string>({}), vector<string>({"Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"}))
-//  Check for nan.
-    check_h = check_array_for_nan(temperature_d,nv*point_num,1,check_d);
-    if(check_h){
-       printf("\n\n Error in NAN check after PROFX:compute_temp!\n");
-       exit(EXIT_FAILURE);
-    }
+
+    #ifdef BENCH_NAN_CHECK
+      check_h = check_array_for_nan(temperature_d,nv*point_num,1,check_d);
+      if(check_h){
+         printf("\n\n Error in NAN check after PROFX:compute_temp!\n");
+         exit(EXIT_FAILURE);
+      }
+    #endif
 
 ///////////////////////
 // HELD SUAREZ TEST  //
@@ -269,14 +271,16 @@ __host__ void ESP::ProfX(int    hstest      , // Held-Suarez test option
                               A           // Planet radius [m]
             );
     }
-    check_h = false;
-    cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
-    isnan_check<<< 16, NTH >>>(temperature_d, nv, point_num, check_d);
-    cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
-    if(check_h){
-       printf("\n\n Error in NAN check after PROFX:RT!\n");
-       exit(EXIT_FAILURE);
-    }
+    #ifdef BENCH_NAN_CHECK
+      check_h = false;
+      cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
+      isnan_check<<< 16, NTH >>>(temperature_d, nv, point_num, check_d);
+      cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
+      if(check_h){
+         printf("\n\n Error in NAN check after PROFX:RT!\n");
+         exit(EXIT_FAILURE);
+      }
+    #endif
 
     BENCH_POINT_I(current_step, "phy_hstest", vector<string>({}), vector<string>({"Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"}))
 //  Computes the new pressures.
@@ -287,6 +291,7 @@ __host__ void ESP::ProfX(int    hstest      , // Held-Suarez test option
                                       Rd           ,
                                       point_num    );
 
+    //always do this nan check so the code doesn't keep computing garbage
     check_h = false;
     cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
     isnan_check<<< 16, NTH >>>(temperature_d, nv, point_num, check_d);

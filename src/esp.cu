@@ -794,7 +794,7 @@ int main (int argc,  char** argv){
        simulation_time = simulation_start_time + (nstep - step_idx+1)*timestep;
        bool file_output = false;
 
-        if(nstep % n_out == 0 && conservation == true )
+        if(conservation == true )
         {
             X.Conservation(hstest       , // Held-Suarez test option
                            vulcan       , //
