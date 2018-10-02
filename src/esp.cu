@@ -158,6 +158,8 @@ int main (int argc,  char** argv){
     argparser.add_arg("N", "numsteps", 48000, "number of steps to run");
     argparser.add_arg("w", "overwrite", true, "Force overwrite of output file if they exist");
 
+    argparser.add_arg("b", "batch", false, "Run as batch");
+    
 
     // Parse arguments, exit on fail
     bool parse_ok = argparser.parse(argc, argv);

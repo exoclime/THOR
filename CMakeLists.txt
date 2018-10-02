@@ -15,14 +15,20 @@
 # to debug makefile by showing commands
 # $ make VERBOSE=1
 
-
+# specify the path to physical modules
+# $ cmake -DMODULES_SRC="src/physics/managers/multi" ..
 
 cmake_minimum_required (VERSION 3.5 FATAL_ERROR)
 
 # check command line args, user can specify SM to override manual setting
 set(SM "0" CACHE STRING "GPU SM value")
+set(MODULES_SRC "0" CACHE STRING "Physics module subdirectory")
 
+if (MODULES_SRC MATCHES "0")
+  set(MODULES_SRC "src/physics/managers/empty")
+endif()
 
+  
 # check what CMAKE version we use, above 3.8, CUDA is recognised as a
 # language and fully integrated. UBUNTU 14 used on the clusters still
 # uses cmake 3.5
@@ -37,7 +43,7 @@ if(${CMAKE_VERSION} VERSION_LESS 3.8)
   SET(CMAKE_CXX_COMPILER g++-5)
   SET(CMAKE_C_COMPILER gcc-5)
 
-  project (THOR C CXX)
+  project (THOR CXX)
   # some C++ flags
   set (CMAKE_CXX_STANDARD 11)
   set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -143,7 +149,8 @@ set(SRC
   src/output/storage.cpp
   src/input/config_file.cpp
   src/input/cmdargs.cpp
-  src/files/directories.cpp)
+  src/files/directories.cpp
+  src/thor/reduction_add.cu)
 
 # source for test program for storage class
 set(SRC_STORAGE
@@ -173,6 +180,17 @@ set(SRC_CMDARGS
 set(SRC_DIRECTORIES
   src/test/directories_test.cpp
   src/files/directories.cpp)
+
+set(SRC_GEN_INIT
+  src/test/gen_init.cpp
+  src/output/storage.cpp
+  src/grid/grid.cu
+  src/initial/planet.cu)
+
+set(SRC_REDUCTION_ADD
+  src/thor/reduction_add.cu
+  src/test/reduction_add_test.cu)
+
 ######################################################################
 # FIND HDF5
 find_package(HDF5 COMPONENTS CXX)
@@ -184,10 +202,26 @@ endif()
 message(STATUS "HDF5 C++libraries " ${HDF5_LIBRARIES})
 include_directories("src/headers")
 
+
+
+######################################################################
+# physics modules subdirectory
+
+set(THOR_ROOT "../../../../")
+set(THOR_ROOT_INCLUDES "${THOR_ROOT}src/headers" )
+set(SHARED_PHY_MODULES_INC_DIR "${THOR_ROOT}src/physics/modules/inc" )
+set(SHARED_PHY_MODULES_SRC_DIR "${THOR_ROOT}src/physics/modules/src" )
+
+add_subdirectory(${MODULES_SRC})
+
+
+set(PHYSICS_LIBRARY_PATH "${MODULES_SRC}/libphy_modules.a")
+
+
 ######################################################################
 # build application
-cuda_add_executable(esp ${SRC} OPTIONS -DBUILD_LEVEL="release")
-target_link_libraries (esp ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES}  )
+cuda_add_executable(esp ${SRC} OPTIONS -DBUILD_LEVEL="release" -DDEVICE_SM=${SM})
+target_link_libraries (esp ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES} phy_modules)
 
 # build tests
 cuda_add_executable(test_storage ${SRC_STORAGE})
@@ -197,7 +231,10 @@ target_link_libraries (test_storage ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES}  )
 add_executable(test_args ${SRC_CMDARGS})
 add_executable(test_config ${SRC_CONFIG})
 add_executable(test_directories ${SRC_DIRECTORIES})
+cuda_add_executable(test_reduction_add ${SRC_REDUCTION_ADD})
+cuda_add_executable(test_gen_init ${SRC_GEN_INIT})
+target_link_libraries (test_gen_init ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES}  )
 
-cuda_add_executable(test_grid ${SRC_GRID} OPTIONS -DBENCHMARKING -DBENCH_POINT_COMPARE)
-target_compile_definitions(test_grid PRIVATE -DBENCHMARKING -DBENCH_POINT_COMPARE)
-target_link_libraries (test_grid ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES}  )
+#cuda_add_executable(test_grid ${SRC_GRID} OPTIONS -DBENCHMARKING -DBENCH_POINT_COMPARE)
+#target_compile_definitions(test_grid PRIVATE -DBENCHMARKING -DBENCH_POINT_COMPARE)
+#target_link_libraries (test_grid ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES}  )
