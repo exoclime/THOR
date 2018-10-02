@@ -15,8 +15,6 @@ $(info h5includes: $(h5include))
 $(info flags: $(flags))
 $(info arch: $(arch))
 
-$(info Sub Makefile variables)
-
 ######################################################################
 # Directories
 THOR_ROOT = ../../../../
@@ -37,7 +35,11 @@ SHARED_MODULES_DIR = $(THOR_ROOT)src/physics/modules/src/
 # object directory
 BUILDDIR = obj
 
+######################################################################
+$(info Sub Makefile variables)
+$(info THOR root from submakefile: $(THOR_ROOT))
 
+######################################################################
 all: libphy_modules.a
 
 # path to local module code

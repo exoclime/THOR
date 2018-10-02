@@ -43,6 +43,8 @@
 #include <string>
 #include <iostream>
 
+using std::cout;
+using std::endl;
 
 // helper function to check a variable against a reference and write
 // out to console if they are not equaly.

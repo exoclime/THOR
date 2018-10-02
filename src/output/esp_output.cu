@@ -52,10 +52,34 @@
 #include "storage.h"
 
 #include "phy_modules.h"
+#include "directories.h"
+
+#include <iomanip>
 
 
-__host__ void ESP::CopyToHost(bool conservation){
 
+__host__ void ESP::CopyConservationToHost()
+{
+        cudaMemcpy(Etotal_h   , Etotal_d   , point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+        cudaMemcpy(Mass_h     , Mass_d     , point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+        cudaMemcpy(AngMomx_h  , AngMomx_d   , point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+        cudaMemcpy(AngMomy_h  , AngMomy_d   , point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+        cudaMemcpy(AngMomz_h  , AngMomz_d   , point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+}
+
+__host__ void ESP::CopyGlobalToHost()
+{
+    // Transfer global conservation values to host
+        cudaMemcpy(&GlobalE_h   , GlobalE_d    , sizeof(double), cudaMemcpyDeviceToHost);
+        cudaMemcpy(&GlobalMass_h, GlobalMass_d , sizeof(double), cudaMemcpyDeviceToHost);
+        cudaMemcpy(&GlobalAMx_h , GlobalAMx_d  , sizeof(double), cudaMemcpyDeviceToHost);
+        cudaMemcpy(&GlobalAMy_h , GlobalAMy_d  , sizeof(double), cudaMemcpyDeviceToHost);
+        cudaMemcpy(&GlobalAMz_h , GlobalAMz_d  , sizeof(double), cudaMemcpyDeviceToHost);
+}
+
+
+__host__ void ESP::CopyToHost()
+{
 //
 //  Description: Transfer diagnostics from the device to the host.
 //
@@ -63,22 +87,9 @@ __host__ void ESP::CopyToHost(bool conservation){
         cudaMemcpy(Wh_h       , Wh_d       , point_num * nvi * sizeof(double), cudaMemcpyDeviceToHost);
         cudaMemcpy(pressure_h , pressure_d , point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
         cudaMemcpy(Mh_h       , Mh_d       , 3 * point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
-        if (conservation == true) {
-          cudaMemcpy(Etotal_h   , Etotal_d   , point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
-          cudaMemcpy(Mass_h     , Mass_d     , point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
-          cudaMemcpy(AngMomx_h  , AngMomx_d   , point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
-          cudaMemcpy(AngMomy_h  , AngMomy_d   , point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
-          cudaMemcpy(AngMomz_h  , AngMomz_d   , point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
-          cudaMemcpy(&GlobalE_h   , GlobalE_d    , sizeof(double), cudaMemcpyDeviceToHost);
-          cudaMemcpy(&GlobalMass_h, GlobalMass_d , sizeof(double), cudaMemcpyDeviceToHost);
-          cudaMemcpy(&GlobalAMx_h , GlobalAMx_d  , sizeof(double), cudaMemcpyDeviceToHost);
-          cudaMemcpy(&GlobalAMy_h , GlobalAMy_d  , sizeof(double), cudaMemcpyDeviceToHost);
-          cudaMemcpy(&GlobalAMz_h , GlobalAMz_d  , sizeof(double), cudaMemcpyDeviceToHost);
-        }
 }
 
-__host__ void ESP::Output(int    ntstep         , // Number of integration steps
-                          int    fidx           , // Index of output file
+__host__ void ESP::Output(int    fidx           , // Index of output file
                           double Cp             , // Specific heat capacities [J/(Kg K)]
                           double Rd             , // Gas constant [J/(Kg K)]
                           double Omega          , // Rotation rate [s-1]
@@ -86,13 +97,10 @@ __host__ void ESP::Output(int    ntstep         , // Number of integration steps
                           double Mmol           , // Mean molecular mass of dry air [kg]
                           double P_Ref          , // Reference surface pressure [Pa]
                           double Top_altitude   , // Top of the model's domain [m]
-                          double A              , // Planet radius [m]
-                          char  *simulation_ID  , // Planet ID
-                          double simulation_time, // Option for deep atmosphere
-                          const std::string & output_dir,
-                          bool conservation     ,
-                          int  hstest           ,
-                          bool SpongeLayer      ){
+                          double A              ,
+                          bool   conservation   ,
+                          int    hstest         ,
+                          bool   SpongeLayer    ){
 
 //
 //  Description: Model output.
@@ -100,8 +108,8 @@ __host__ void ESP::Output(int    ntstep         , // Number of integration steps
     char FILE_NAME1[160];
 
 //  GRID OUTPUT
-    if(ntstep == 0){
-        sprintf(FILE_NAME1, "%s/esp_output_grid_%s.h5", output_dir.c_str(), simulation_ID);
+    if(current_step == 0){
+        sprintf(FILE_NAME1, "%s/esp_output_grid_%s.h5", output_dir.c_str(), simulation_ID.c_str());
 
         storage s(FILE_NAME1);
 
@@ -152,8 +160,8 @@ __host__ void ESP::Output(int    ntstep         , // Number of integration steps
     }
 
 //  PLANET
-    if(ntstep == 0){
-        sprintf(FILE_NAME1, "%s/esp_output_planet_%s.h5", output_dir.c_str(), simulation_ID);
+    if(current_step == 0){
+        sprintf(FILE_NAME1, "%s/esp_output_planet_%s.h5", output_dir.c_str(), simulation_ID.c_str());
         storage s(FILE_NAME1);
 
         // glevel
@@ -197,11 +205,11 @@ __host__ void ESP::Output(int    ntstep         , // Number of integration steps
     }
 
 //  ESP OUTPUT
-    sprintf(FILE_NAME1, "%s/esp_output_%s_%d.h5", output_dir.c_str(), simulation_ID, fidx);
+    sprintf(FILE_NAME1, "%s/esp_output_%s_%d.h5", output_dir.c_str(), simulation_ID.c_str(), fidx);
 
     storage s(FILE_NAME1);
     // step index
-    s.append_value(ntstep,
+    s.append_value(current_step,
                    "/nstep",
                    "-",
                    "Step number");
@@ -308,3 +316,62 @@ __host__ void ESP::Output(int    ntstep         , // Number of integration steps
       }
       phy_modules_store(s);
 }
+
+void ESP::OutputConservation()
+{
+    //printf("output conservation\n");
+
+    // output global conservation values
+    conservation_output_file << current_step << "\t"
+                             << simulation_time << "\t"
+                             << GlobalE_h << "\t"
+                             << GlobalMass_h << "\t"
+                             << GlobalAMx_h << "\t"
+                             << GlobalAMy_h << "\t"
+                             << GlobalAMz_h << std::endl;
+
+
+    // flush file to disk
+    conservation_output_file.flush();
+}
+
+
+// Store path to output and prepare output files
+void ESP::SetOutputParam(const std::string & sim_id_,
+                         const std::string & output_dir_ )
+{
+    simulation_ID = sim_id_;
+    output_dir = output_dir_;
+}
+
+int ESP::PrepareConservationFile()
+{
+
+    path o(output_dir);
+
+    o /= ("esp_global_" + simulation_ID + ".txt");
+    //printf("Output conservation file to %s\n", o.to_string().c_str());
+
+    // Open for read and write.
+    // TODO: will need to handle restart
+    // TODO: output header at start of file
+    conservation_output_file.open(o.to_string(),std::ofstream::out
+                                  //  std::ofstream::in
+                                  //| std::ofstream::out
+                                  //  | std::ofstream::app // no append for now
+        );
+
+    conservation_output_file << std::setprecision(16);
+    conservation_output_file << "#\t"
+                             << "current_step" << "\t"
+                             << "simulation_time" << "\t"
+                             << "GlobalE_h" << "\t"
+                             << "GlobalMass_h" << "\t"
+                             << "GlobalAMx_h" << "\t"
+                             << "GlobalAMy_h" << "\t"
+                             << "GlobalAMz_h" << std::endl;
+
+
+    return 0;
+
+};

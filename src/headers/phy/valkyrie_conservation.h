@@ -43,11 +43,7 @@
 ////////////////////////////////////////////////////////////////////////
 #pragma once
 
-// All code has been moved to profx_driver.cu
-// Here be only declarations
-
 __device__ double atomicAddFunc(double* address, double val);
-
 
 __global__ void CalcTotEnergy(double *Etotal_d     ,
                               double *GlobalE_d    ,
