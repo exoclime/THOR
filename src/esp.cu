@@ -70,6 +70,32 @@ using namespace std;
 #include "phy_modules.h"
 
 
+#include <csignal>
+
+enum e_sig {
+    ESIG_NOSIG = 0,
+    ESIG_SIGTERM = 1,
+    ESIG_SIGINT = 2
+};
+
+    
+volatile sig_atomic_t caught_signal = ESIG_NOSIG;
+
+
+void sigterm_handler(int sig)
+{
+    caught_signal = ESIG_SIGTERM;
+    std::cout << "SIGTERM caught, trying to exit gracefully" << std::endl;
+}
+
+void sigint_handler(int sig)
+{
+    caught_signal = ESIG_SIGINT;
+    std::cout << "SIGINT caught, trying to exit gracefully" << std::endl;
+}
+
+
+
 std::string duration_to_str(std::chrono::duration<double> time_delta)
 {
     double delta = time_delta.count();
@@ -646,13 +672,42 @@ int main (int argc,  char** argv){
     printf("   Output directory = %s \n", output_path.c_str());
     printf("   Start output numbering at %d.\n", output_file_idx);
 
+
+    // esp output setup
+    X.SetOutputParam(Planet.simulation_ID, output_path);
+    X.PrepareConservationFile();
+    
+    
+    // We'll start writnig data to file and running main loop,
+    // setup signal handlers to handle gracefully termination and interrupt
+     struct sigaction sigterm_action;
+
+     sigterm_action.sa_handler = &sigterm_handler;
+     sigemptyset (&sigterm_action.sa_mask);
+     sigterm_action.sa_flags = 0;
+
+     if (sigaction(SIGTERM, &sigterm_action, NULL) == -1) {
+         std::cout << "Error: cannot handle SIGTERM" << std::endl; // Should not happen
+     }
+
+     struct sigaction sigint_action;
+
+     sigint_action.sa_handler = &sigint_handler;
+     sigemptyset (&sigint_action.sa_mask);
+     sigint_action.sa_flags = 0;
+
+     if (sigaction(SIGINT, &sigint_action, NULL) == -1) {
+         std::cout << "Error: cannot handle SIGINT" << std::endl; // Should not happen
+     }
+
 //
 //  Writes initial conditions
     double simulation_time = simulation_start_time;
     if (!continue_sim)
     {
+        X.InitTimestep(0, simulation_time, timestep);
+        
         X.Output(0                   , // file index
-                 0                   , // step index
                  Planet.Cp           , // Specific heat capacity [J/(Kg K)]
                  Planet.Rd           , // Gas constant [J/(Kg K)]
                  Planet.Omega        , // Rotation rate [s-1]
@@ -660,10 +715,8 @@ int main (int argc,  char** argv){
                  Planet.Mmol         , // Mean molecular mass of dry air [kg]
                  Planet.P_Ref        , // Reference surface pressure [Pa]
                  Planet.Top_altitude , // Top of the model's domain [m]
-                 Planet.A            , // Planet Radius [m]
-                 Planet.simulation_ID, // Simulation ID (e.g., "Earth")
-                 simulation_time     , // Time of the simulation [s]
-                 output_path);         // directory to save output
+                 Planet.A           ); // Planet Radius [m]
+ 
         output_file_idx = 1;
         step_idx = 1;
     }
@@ -686,15 +739,35 @@ int main (int argc,  char** argv){
     for(int nstep = step_idx; nstep <= nsmax; ++nstep){
         
         // store step number for file comparison tests
-        X.current_step = nstep;
-
+        // compute simulation time
+        simulation_time = simulation_start_time + (nstep - step_idx+1)*timestep;
+        // set simulation time and step number for simulation engine and output
+        X.InitTimestep(nstep,            // Time-step [s]
+                       simulation_time,  // Simulation time [s]   
+                       timestep);        // Large time step [s]
         
         if (!gcm_off) {
 //
 //        Dynamical Core Integration (THOR)
-          X.Thor (timestep     , // Time-step [s]
-                HyDiff       , // Hyperdiffusion option
-                DivDampP     , // Divergence-damping option
+            X.Thor ( HyDiff       , // Hyperdiffusion option
+                     DivDampP     , // Divergence-damping option
+                     Planet.Omega , // Rotation rate [1/s]
+                     Planet.Cp    , // Specific heat capacity [J/kg/K]
+                     Planet.Rd    , // Gas constant [J/kg/K]
+                     Planet.Mmol  , // Mean molecular mass of dry air [kg]
+                     mu_constant  , // Atomic mass unit [kg]
+                     kb_constant  , // Boltzmann constant [J/K]
+                     Planet.P_Ref , // Reference pressure [Pa]
+                     Planet.Gravit, // Gravity [m/s^2]
+                     Planet.A     , // Planet radius [m]
+                     vulcan       , //
+                     NonHydro     , // Non-hydrostatic option
+                     DeepModel    );// Deep model option
+        }
+//
+//     Physical Core Integration (ProfX)
+        X.ProfX(hstest       , // Held-Suarez test option
+                vulcan       , //
                 Planet.Omega , // Rotation rate [1/s]
                 Planet.Cp    , // Specific heat capacity [J/kg/K]
                 Planet.Rd    , // Gas constant [J/kg/K]
@@ -704,41 +777,39 @@ int main (int argc,  char** argv){
                 Planet.P_Ref , // Reference pressure [Pa]
                 Planet.Gravit, // Gravity [m/s^2]
                 Planet.A     , // Planet radius [m]
-                vulcan       , //
-                NonHydro     , // Non-hydrostatic option
-                DeepModel    );// Deep model option
-          }
-//
-//     Physical Core Integration (ProfX)
-       X.ProfX(nstep        , // Step number
-               hstest       , // Held-Suarez test option
-               vulcan       , // 
-               timestep     , // Time-step [s]
-               Planet.Omega , // Rotation rate [1/s]
-               Planet.Cp    , // Specific heat capacity [J/kg/K]
-               Planet.Rd    , // Gas constant [J/kg/K]
-               Planet.Mmol  , // Mean molecular mass of dry air [kg]
-               mu_constant  , // Atomic mass unit [kg]
-               kb_constant  , // Boltzmann constant [J/K]
-               Planet.P_Ref , // Reference pressure [Pa]
-               Planet.Gravit, // Gravity [m/s^2]
-               Planet.A     , // Planet radius [m]
-               n_out        , 
-               DeepModel    ,
-               SpongeLayer  ,
-               shrink_sponge);
+                DeepModel    ,
+                SpongeLayer  ,
+                shrink_sponge);
 
-       // compute simulation time
-       simulation_time = simulation_start_time + (nstep - step_idx+1)*timestep;
-       bool file_output = false;
+        //if(nstep % n_out == 0)
+        {
+            X.Conservation(hstest       , // Held-Suarez test option
+                           vulcan       , //
+                           Planet.Omega , // Rotation rate [1/s]
+                           Planet.Cp    , // Specific heat capacity [J/kg/K]
+                           Planet.Rd    , // Gas constant [J/kg/K]
+                           Planet.Mmol  , // Mean molecular mass of dry air [kg]
+                           mu_constant  , // Atomic mass unit [kg]
+                           kb_constant  , // Boltzmann constant [J/K]
+                           Planet.P_Ref , // Reference pressure [Pa]
+                           Planet.Gravit, // Gravity [m/s^2]
+                           Planet.A     , // Planet radius [m]
+                           DeepModel    ,
+                           SpongeLayer  ,
+                           shrink_sponge);
+            X.OutputConservation();
+        }
+        
+        bool file_output = false;
 
 
 //
 //      Prints output every nout steps
-        if(nstep % n_out == 0) {
+//      or if caught SIGTERM or SIGINT
+        if(nstep % n_out == 0
+            || caught_signal != ESIG_NOSIG) {
             X.CopyToHost();
-            X.Output(nstep               ,
-                     output_file_idx     ,
+            X.Output(output_file_idx     ,
                      Planet.Cp           , // Specific heat capacity [J/(Kg K)]
                      Planet.Rd           , // Gas constant [J/(Kg K)]
                      Planet.Omega        , // Rotation rate [s-1]
@@ -746,17 +817,17 @@ int main (int argc,  char** argv){
                      Planet.Mmol         , // Mean molecular mass of dry air [kg]
                      Planet.P_Ref        , // Reference surface pressure [Pa]
                      Planet.Top_altitude , // Top of the model's domain [m]
-                     Planet.A            , // Planet radius [m]
-                     Planet.simulation_ID, // Planet ID
-                     simulation_time     , // Simulation time [s]
-                     output_path);         // Directory to save output
+                     Planet.A           ); // Planet radius [m]   );     
             // increment output file index
             output_file_idx++;
 
             file_output = true;
-
         }
 
+        
+        
+
+        // Timing information
         std::chrono::system_clock::time_point end_step = std::chrono::system_clock::now();
         
         std::chrono::duration<double, std::ratio<1L,1L>> sim_delta = end_step - start_sim;
@@ -791,6 +862,13 @@ int main (int argc,  char** argv){
                duration_to_str(time_left).c_str(),               
                end_time_str.str().c_str(),
                file_output?"[saved output]":"");
+
+        if( caught_signal != ESIG_NOSIG ) {
+            //exit loop and application after save on SIGTERM or SIGINT
+            break;
+        }
+        
+
     }
 //
 //  Prints the duration of the integration.

@@ -18,21 +18,25 @@
 //
 //
 //
-// Description: Defines the main model's parameters
+//
+// Description: Computes the reduction sum of an array
+//
 //
 // Method: -
 //
-// Known limitations: None
-//   
+// Known limitations: None.
 //
-// Known issues: None
-//   
+// Known issues: None.
 //
-// If you use this code please cite the following reference: 
 //
-//       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016  
+// If you use this code please cite the following reference:
 //
-// Current Code Owner: Joao Mendonca, EEG. joao.mendonca@csh.unibe.ch
+//       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016
+//
+// Current Code Owner: Joao Mendonca, EEG. joao.mendonca@csh.unibe.ch,
+//                     Russell Deitrick, russell.deitrick@csh.unibe.ch
+//                     Urs Schroffenegger, urs.schroffenegger@csh.unibe.ch
+//
 //
 // History:
 // Version Date       Comment
@@ -42,30 +46,21 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
-// benchmarking
-// if defined run benchmark functions
-//#define BENCHMARKING
-
-// ***************************************
-// * binary comparison
-// compare benchmark point to references
-//#define BENCH_POINT_COMPARE
-// write reference benchmark point
-//#define BENCH_POINT_WRITE
-// print out more debug info, by default, only print out failures
-//#define BENCH_PRINT_DEBUG
-// ***************************************
-// * check for NaNs
-//#define BENCH_NAN_CHECK
-//#define BENCH_CHECK_LAST_CUDA_ERROR
-
-// path to benchmark result directory
-#define BENCHMARK_DUMP_REF_PATH   "results/ref/"
-#define BENCHMARK_DUMP_BASENAME   "bindata_"
+#include "reduction_add.h"
 
 
-//#define GLOBAL_CONSERVATION_ATOMICADD
-#define GLOBAL_CONSERVATION_REDUCTIONADD
-//#define GLOBAL_CONSERVATION_CPUADD
+double cpu_reduction_sum(double * d, long length)
+{
+    
+    for (int stride = length; stride > 0; stride /= 2)
+    {
+        for (int i = 0; i < stride; i++)
+            d[i] += d[i+stride];
+    }
+
+    return d[0];
+}
 
 
+
+  

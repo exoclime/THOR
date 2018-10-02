@@ -44,7 +44,7 @@ SM ?= 35 # Streaming Multiprocessor version
 arch := -arch sm_$(SM)
 
 # objects
-obj_cuda   := esp.o grid.o esp_initial.o planet.o thor_driver.o profx_driver.o esp_output.o debug_helpers.o
+obj_cuda   := esp.o grid.o esp_initial.o planet.o thor_driver.o profx_driver.o esp_output.o debug_helpers.o reduction_add.o
 obj_cpp := storage.o binary_test.o config_file.o cmdargs.o directories.o
 obj := $(obj_cpp) $(obj_cuda)
 
@@ -54,7 +54,7 @@ obj_tests_config := config_test.o config_file.o
 obj_tests_storage := storage_test.o storage.o
 obj_tests_directories := directories_test.o directories.o
 obj_tests_gen_init := gen_init.o storage.o grid.o planet.o
-
+obj_tests_reduction_add := reduction_add_test.o reduction_add.o
 
 #######################################################################
 # flags
@@ -254,7 +254,7 @@ $(MODULES_SRC)/libphy_modules.a:
 #	$(CC) $(arch) $(flags) $(debug_flags) -o $(BINDIR)/$(TESTDIR)/cmdargs_test $(addprefix #$(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_cmdargs))
 #endef
 
-tests: ${BINDIR}/${TESTDIR}/cmdargs_test ${BINDIR}/${TESTDIR}/config_test ${BINDIR}/${TESTDIR}/storage_test ${BINDIR}/${TESTDIR}/directories_test ${BINDIR}/${TESTDIR}/gen_init
+tests: ${BINDIR}/${TESTDIR}/cmdargs_test ${BINDIR}/${TESTDIR}/config_test ${BINDIR}/${TESTDIR}/storage_test ${BINDIR}/${TESTDIR}/directories_test ${BINDIR}/${TESTDIR}/gen_init  ${BINDIR}/${TESTDIR}/reduction_add_test 
 
 $(BINDIR)/$(TESTDIR)/cmdargs_test:  $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_cmdargs)) | $(BINDIR)/${OUTPUTDIR} $(BINDIR)/$(TESTDIR) $(BINDIR) $(RESDIR)
 	@echo $(YELLOW)creating $@ $(END)
@@ -276,6 +276,10 @@ $(BINDIR)/$(TESTDIR)/gen_init:  $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_
 	@echo $(YELLOW)creating $@ $(END)
 	$(CC) $(arch) $(flags) $(debug_flags) -o $(BINDIR)/$(TESTDIR)/gen_init $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_gen_init))  $(h5libdir) $(h5libs)
 
+$(BINDIR)/$(TESTDIR)/reduction_add_test:  $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_reduction_add)) | $(BINDIR)/${OUTPUTDIR} $(BINDIR)/$(TESTDIR) $(BINDIR) $(RESDIR)
+	@echo $(YELLOW)creating $@ $(END)
+	$(CC) $(arch) $(flags) $(debug_flags) -o $(BINDIR)/$(TESTDIR)/reduction_add_test $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_reduction_add))  $(h5libdir) $(h5libs)
+
 #######################################################################
 # Cleanup
 .phony: clean,ar
@@ -294,6 +298,7 @@ clean:
 	-$(RM) $(BINDIR)/tests/config_test
 	-$(RM) $(BINDIR)/tests/directories_test
 	-$(RM) $(BINDIR)/tests/gen_init
+	-$(RM) $(BINDIR)/tests/test_reduction_add
 	@echo $(CYAN)clean up test object files $(END)
 	-$(RM) $(addprefix $(OBJDIR)/debug/,$(obj_tests_storage))
 	-$(RM) $(addprefix $(OBJDIR)/debug/,$(obj_tests_config))
@@ -306,6 +311,7 @@ clean:
 	-$(RM) $(obj_tests_config:%.o=$(OBJDIR)/debug/%.d)
 	-$(RM) $(obj_tests_directories:%.o=$(OBJDIR)/debug/%.d)
 	-$(RM) $(obj_tests_gen_init:%.o=$(OBJDIR)/debug/%.d)
+	-$(RM) $(obj_tests_reduction_add:%.o=$(OBJDIR)/debug/%.d)
 	@echo $(CYAN)clean up symlink $(END)
 	-$(RM) $(BINDIR)/esp
 	@echo $(CYAN)clean up modules directory $(END)
@@ -329,6 +335,7 @@ include $(obj_tests_cmdargs:%.o=$(OBJDIR)/$(OUTPUTDIR)/%.d)
 include $(obj_tests_storage:%.o=$(OBJDIR)/$(OUTPUTDIR)/%.d)
 include $(obj_tests_directories:%.o=$(OBJDIR)/$(OUTPUTDIR)/%.d)
 include $(obj_tests_gen_init:%.o=$(OBJDIR)/$(OUTPUTDIR)/%.d)
+include $(obj_tests_reduce_add:%.o=$(OBJDIR)/$(OUTPUTDIR)/%.d)
 else
 include $(obj:%.o=$(OBJDIR)/$(OUTPUTDIR)/%.d)
 endif
