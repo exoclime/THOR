@@ -495,20 +495,45 @@ int main (int argc,  char** argv){
     // Batch mode handling
     if (run_as_batch)
     {
+        // Get last written file from
+        int last_file_number = 0;
+        int last_iteration_number = 0;
+        string last_file = "";
         
-        // Get output directory
+        bool has_last_file = X.CheckOutputLog(last_file_number, last_iteration_number, last_file);
 
-        // scan output files
+        if (has_last_file)
+        {
+            path o(output_path);
+            o /= last_file;
 
-        // if has output files
-        // check list of outputs
-        // if has last valid output file
-        
-        //    set last valid output file as restart file
-        //    restart simulation
-        // else
-        //    clean up if non valid data
-        //    start from scratch
+            if (path_exists(o.to_string()))
+            {
+                cout << "continuing batch run from file" << last_file << std::endl;
+
+                // we want to continue the simulation
+                continue_sim = true;
+
+                // overwrite the results files we'd encounter
+                force_overwrite = true;
+
+                // reload the last file we found as initial conditions
+                initial_conditions = last_file;
+                X.OpenOutputLogForWrite(true /*open in append mode */);
+            }
+            else
+            {
+                cout << "Did not find last saved file that should exist"<< std::endl;
+                exit(-1);
+            }
+        }
+        else
+        {
+            // we don't have an output file, start from scratch, reinitialising outputs
+            X.OpenOutputLogForWrite(false /*open in non append mode */);        
+        }
+    
+            
 
     }
     else
