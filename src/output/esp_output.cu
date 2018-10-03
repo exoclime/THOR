@@ -330,6 +330,8 @@ bool ESP::CheckOutputLog(int & file_number, int & iteration_number, string & las
 
     o /= ("esp_write_log_" + simulation_ID + ".txt");
 
+    printf("Testing output log for file %s.\n", o.to_string().c_str());
+    
     if (path_exists(o.c_str()))
     {
 
