@@ -431,31 +431,7 @@ int main (int argc,  char** argv){
         exit(-1);
     }
 
-    //*****************************************************************
-    // Batch mode handling
-    if (run_as_batch)
-    {
-        
-    // Get output directory
-
-    // scan output files
-
-    // if has output files
-    // check list of outputs
-    // if has last valid output file
-
-    //    set last valid output file as restart file
-    //    restart simulation
-    // else
-    //    clean up if non valid data
-    //    start from scratch
-
-    }
-    else
-    {
-        OpenOutputLogForWrite(continue_sim /*open in append mode */);        
-    }
-    
+  
     //*****************************************************************
 //  Set the GPU device.
     cudaError_t error;
@@ -512,6 +488,32 @@ int main (int argc,  char** argv){
                 "areasTr", "areasT", "nvec", "nvecoa", "nvecti", "nvecte", "Altitude", "Altitudeh", "lonlat",
                 "div", "grad"}))
 
+
+          //*****************************************************************
+    // Batch mode handling
+    if (run_as_batch)
+    {
+        
+    // Get output directory
+
+    // scan output files
+
+    // if has output files
+    // check list of outputs
+    // if has last valid output file
+
+    //    set last valid output file as restart file
+    //    restart simulation
+    // else
+    //    clean up if non valid data
+    //    start from scratch
+
+    }
+    else
+    {
+        X.OpenOutputLogForWrite(continue_sim /*open in append mode */);        
+    }
+    
 
     printf(" Setting the initial conditions.\n\n");
 

@@ -410,4 +410,6 @@ private:
     std::string output_dir;
     std::fstream conservation_output_file;
 
+    std::fstream fileoutput_output_file;
+
 };

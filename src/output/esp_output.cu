@@ -327,11 +327,10 @@ bool ESP::CheckOutputLog(int & file_number, int & iteration_number, string & las
 
     o /= ("esp_outputlog_" + simulation_ID + ".txt");
 
-    if (path_exists(o))
+    if (path_exists(o.c_str()))
     {
 
         FILE * pFile;
-        char buffer [100];
 
         pFile = fopen (o.to_string().c_str() , "r");
         if (pFile == NULL)
@@ -347,11 +346,16 @@ bool ESP::CheckOutputLog(int & file_number, int & iteration_number, string & las
             
             while ( ! feof (pFile) )
             {
-                fscanf (pFile, "%d %d %s\n", &iteration_number, &file_number, last_file );
+                char buf[256];
+                
+                fscanf (pFile, "%d %d %s\n", &iteration_number, &file_number, buf );
+                last_file = buf;
+                
             }
 
-            cout << "Found last file iteration "<< iteration_number <<
-                 << " file number "<< " filename:" << last_file << endl;
+            cout << "Found last file iteration " << iteration_number 
+                 << " file number "<< file_number
+                 << " filename:" << last_file << std::endl;
             
             fclose (pFile);
 
