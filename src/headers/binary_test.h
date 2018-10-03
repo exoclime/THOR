@@ -18,23 +18,23 @@
 //
 // Description: binary correctness test of output, enabled with compile time switches
 //
-//   
+//
 //
 // Method: [1] - Dumps output to binary file on a flag
 //         [2] - Reads data from binary files on a flag and compare to
 //               dumped output
 //
 // Known limitations: None.
-//      
+//
 //
 // Known issues: None.
-//   
+//
 //
 // Current Code Owner: Joao Mendonca, EEG. joao.mendonca@csh.unibe.ch
 //
-// If you use this code please cite the following reference: 
+// If you use this code please cite the following reference:
 //
-//       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016  
+//       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016
 //
 // History:
 // Version Date       Comment
@@ -120,7 +120,7 @@ public:
     static binary_test & get_instance();
     // no copy constructor and assignement operator
     binary_test(binary_test const&) = delete;
-    void operator=(binary_test const&) = delete; 
+    void operator=(binary_test const&) = delete;
 
     // esp reference dump
     void output_reference(const string & iteration,
@@ -137,7 +137,7 @@ public:
                     const string & ref_name,
                     const vector<string> & input_vars,
                     const vector<string> & output_vars);
-    
+
 
     void set_output(string base_name, string dir)
     {
@@ -145,22 +145,22 @@ public:
         output_base_name = base_name;
     }
 
-    
+
     void set_definitions(const std::map<string, output_def> & defs);
 
      // make constructor private, can only be instantiated through get_instance
     ~binary_test();
-    
 
-    
+
+
 private:
     vector<string> current_input_vars;
 
-    
+
     string output_dir;
     string output_base_name;
-    
-    
+
+
     // make constructor private, can only be instantiated through get_instance
     binary_test(string output_dir,
                 string output_base_name);
@@ -182,7 +182,7 @@ private:
     bool check_nan(const string & iteration,
                    const string & ref_name,
                    const vector<output_def> & data_output);
-    
+
 
     bool output_defined = false;
     std::map<string, output_def> output_definitions;
@@ -201,19 +201,19 @@ bool binary_test::compare_to_saved_data(storage & s,
     int size = 0;
     // print out piece of the table for visual inspection
     bool print_details = false;
-    
+
 //    cout << "Comparing " << name << " :\t";
-    
+
     s.read_table(name, saved_data, size);
 
-    
-    
+
+
     bool b = compare_arrays(size, saved_data.get(),
                             data_size, local_data,
                             name, print_details);
 //    cout << b << endl;
     return b;
-    
+
 }
 
 // Binary comparison of two arrays d1 of size s1 and d2 of size s2
@@ -226,38 +226,38 @@ bool binary_test::compare_arrays(int s1, T * d1,
         if (print)
             std::cout << array << ":\tdifferent sized arrays (" << s1
                       << ":" << s2 << std::endl;
-        
+
         return false;
     }
-    
-    
+
+
     bool same = true;
-    
+
     for (int i = 0; i < s1; i++)
     {
-        
+
         //>
         //double mx = (abs(d1[i]) > abs(d2[i]))?abs(d1[i]):abs(d2[i]);
-        
+
         //if (abs((d1[i] - d2[i])) > 1e-10 )
         if (d1[i] != d2[i])
         {
 //            if (print && i < 10)
             if (print)
                 std::cout <<std::setprecision(20) << std::scientific << array << "["<<i<<"]:\tdifferent value ("<<d1[i]<<":"<<d2[i]<<")"<<std::endl;
-            
+
             same = false;
         }
         else
         {
-            //if (print && i < 10)            
+            //if (print && i < 10)
             //  cout <<std::setprecision(20) << std::scientific << array << "["<<i<<"]:\tsame value ("<<d1[i]<<":"<<d2[i]<<")"<<endl;
             // cout << "same value " << endl;
         }
     }
-    
-    
-    
+
+
+
     return same;
 }
 #endif // BENCHMARKING

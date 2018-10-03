@@ -23,14 +23,14 @@
 // Method: -
 //
 // Known limitations: None
-//   
+//
 //
 // Known issues: None
-//   
 //
-// If you use this code please cite the following reference: 
 //
-//       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016  
+// If you use this code please cite the following reference:
+//
+//       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016
 //
 // Current Code Owner: Joao Mendonca, EEG. joao.mendonca@csh.unibe.ch
 //
@@ -67,5 +67,3 @@
 //#define GLOBAL_CONSERVATION_ATOMICADD
 #define GLOBAL_CONSERVATION_REDUCTIONADD
 //#define GLOBAL_CONSERVATION_CPUADD
-
-

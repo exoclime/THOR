@@ -73,8 +73,8 @@ __host__ void ESP::ProfX(int    hstest      , // Held-Suarez test option
                          bool   DeepModel   ,
                          int    n_out       , // output step (triggers conservation calc)
                          bool   sponge      , // Use sponge layer?
-                         bool   shrink_sponge,
-                         bool   conservation ){ // Shrink sponge after some time
+                         bool   shrink_sponge,  // Shrink sponge after some time (Bonjour Urs!)
+                         bool   conservation ){ // calc/output conservation quantities
     USE_BENCHMARK()
 //
 //  Number of threads per block.

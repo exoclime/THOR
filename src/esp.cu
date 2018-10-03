@@ -713,6 +713,22 @@ int main (int argc,  char** argv){
         X.CopyToHost();
         X.InitTimestep(0, simulation_time, timestep);
 
+        if (conservation == true) {
+          X.Conservation(hstest       , // Held-Suarez test option
+                         vulcan       , //
+                         Planet.Omega , // Rotation rate [1/s]
+                         Planet.Cp    , // Specific heat capacity [J/kg/K]
+                         Planet.Rd    , // Gas constant [J/kg/K]
+                         Planet.Mmol  , // Mean molecular mass of dry air [kg]
+                         mu_constant  , // Atomic mass unit [kg]
+                         kb_constant  , // Boltzmann constant [J/K]
+                         Planet.P_Ref , // Reference pressure [Pa]
+                         Planet.Gravit, // Gravity [m/s^2]
+                         Planet.A     , // Planet radius [m]
+                         DeepModel    );
+           X.OutputConservation();
+        }
+
         X.Output(0                   , // file index
                  Planet.Cp           , // Specific heat capacity [J/(Kg K)]
                  Planet.Rd           , // Gas constant [J/(Kg K)]
@@ -813,7 +829,8 @@ int main (int argc,  char** argv){
 
 //
 //      Prints output every nout steps
-        if(nstep % n_out == 0) {
+        if(nstep % n_out == 0
+            || caught_signal != ESIG_NOSIG) {
             X.CopyToHost();
             X.Output(output_file_idx     ,
                      Planet.Cp           , // Specific heat capacity [J/(Kg K)]

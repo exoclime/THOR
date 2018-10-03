@@ -736,25 +736,7 @@ __host__ bool ESP::InitialValues(bool rest          ,
 
     delete [] Kdh4_h;
     delete [] Kdhz_h;
-
-      //  Number of threads per block.
-      if (conservation == true) {
-        Conservation(hstest       , // Held-Suarez test option
-                           vulcan       , //
-                           Omega , // Rotation rate [1/s]
-                           Cp    , // Specific heat capacity [J/kg/K]
-                           Rd    , // Gas constant [J/kg/K]
-                           Mmol  , // Mean molecular mass of dry air [kg]
-                           mu_constant  , // Atomic mass unit [kg]
-                           kb_constant  , // Boltzmann constant [J/K]
-                           P_Ref , // Reference pressure [Pa]
-                           Gravit, // Gravity [m/s^2]
-                           A     , // Planet radius [m]
-                           DeepModel    );
-         OutputConservation();
-      }
-
-
+    
     return true;
 }
 
