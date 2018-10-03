@@ -315,7 +315,85 @@ __host__ void ESP::Output(int    fidx           , // Index of output file
                      "Global AngMomZ");
       }
       phy_modules_store(s);
+
+      // Write to output f
+      WriteOutputLog(current_step, fidx, string(FILE_NAME1) );
+      
 }
+
+bool ESP::CheckOutputLog(int & file_number, int & iteration_number, string & last_file)
+{
+    path o(output_dir);
+
+    o /= ("esp_outputlog_" + simulation_ID + ".txt");
+
+    if (path_exists(o))
+    {
+
+        FILE * pFile;
+        char buffer [100];
+
+        pFile = fopen (o.to_string().c_str() , "r");
+        if (pFile == NULL)
+        {
+            cout << "Error opening input file: " << o.to_string() << std::endl;
+            return false;
+        }
+        else
+        {
+            file_number = 0;
+            last_file = "";
+            iteration_number = 0;
+            
+            while ( ! feof (pFile) )
+            {
+                fscanf (pFile, "%d %d %s\n", &iteration_number, &file_number, last_file );
+            }
+
+            cout << "Found last file iteration "<< iteration_number <<
+                 << " file number "<< " filename:" << last_file << endl;
+            
+            fclose (pFile);
+
+            return true;
+        }
+    }
+    else
+        return false;
+}
+
+
+void ESP::OpenOutputLogForWrite(bool append)
+{
+    path o(output_dir);
+
+    o /= ("esp_outputlog_" + simulation_ID + ".txt");
+
+    if (append)
+        fileoutput_output_file.open(o.to_string(),std::ofstream::out | std::ofstream::app);
+    else
+    {
+        // start new file
+        fileoutput_output_file.open(o.to_string(),std::ofstream::out);
+        // append header
+        fileoutput_output_file << "#"
+                               << "step_number\t"
+                               << "file_number\t"
+                               << "filename" << std::endl;
+    }
+    
+}
+
+void ESP::WriteOutputLog(int step_number, int file_number, string filename)
+{
+    fileoutput_output_file << step_number << "\t"
+                           << file_number << "\t"
+                           << filename << std::endl;
+
+    fileoutput_output_file.flush();
+}
+
+
 
 void ESP::OutputConservation()
 {
@@ -346,7 +424,6 @@ void ESP::SetOutputParam(const std::string & sim_id_,
 
 int ESP::PrepareConservationFile()
 {
-
     path o(output_dir);
 
     o /= ("esp_global_" + simulation_ID + ".txt");
@@ -362,7 +439,7 @@ int ESP::PrepareConservationFile()
         );
 
     conservation_output_file << std::setprecision(16);
-    conservation_output_file << "#\t"
+    conservation_output_file << "#"
                              << "current_step" << "\t"
                              << "simulation_time" << "\t"
                              << "GlobalE_h" << "\t"

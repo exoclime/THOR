@@ -385,6 +385,13 @@ public:
     void CopyConservationToHost();
     void CopyGlobalToHost();
 
+
+    bool CheckOutputLog(int & file_number, int & iteration_number, std::string & last_file);
+    void OpenOutputLogForWrite(bool append);
+    void WriteOutputLog(int step_number, int file_number, std::string filename);
+
+    
+
     void OutputConservation();
     int PrepareConservationFile();
 
