@@ -328,7 +328,7 @@ bool ESP::CheckOutputLog(int & file_number, int & iteration_number, string & las
 {
     path o(output_dir);
 
-    o /= ("esp_outputlog_" + simulation_ID + ".txt");
+    o /= ("esp_write_log_" + simulation_ID + ".txt");
 
     if (path_exists(o.c_str()))
     {
