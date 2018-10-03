@@ -160,7 +160,7 @@ int main (int argc,  char** argv){
     argparser.add_arg("N", "numsteps", 48000, "number of steps to run");
     argparser.add_arg("w", "overwrite", true, "Force overwrite of output file if they exist");
 
-    argparser.add_arg("b", "batch", false, "Run as batch");
+    argparser.add_arg("b", "batch", true, "Run as batch");
     
 
     // Parse arguments, exit on fail
@@ -495,6 +495,9 @@ int main (int argc,  char** argv){
     // Batch mode handling
     if (run_as_batch)
     {
+        printf("Starting in batch mode.\n");
+        
+            
         // Get last written file from
         int last_file_number = 0;
         int last_iteration_number = 0;
@@ -509,7 +512,7 @@ int main (int argc,  char** argv){
 
             if (path_exists(o.to_string()))
             {
-                cout << "continuing batch run from file" << last_file << std::endl;
+                printf("continuing batch run from file %s\n", last_file.c_str());
 
                 // we want to continue the simulation
                 continue_sim = true;
@@ -523,12 +526,13 @@ int main (int argc,  char** argv){
             }
             else
             {
-                cout << "Did not find last saved file that should exist"<< std::endl;
+                printf("Did not find last saved file that should exist.\n");
                 exit(-1);
             }
         }
         else
         {
+            printf("No batch file found, initialise simulation.\n");
             // we don't have an output file, start from scratch, reinitialising outputs
             X.OpenOutputLogForWrite(false /*open in non append mode */);        
         }
@@ -538,6 +542,7 @@ int main (int argc,  char** argv){
     }
     else
     {
+        printf("Opening result output file.\n");
         X.OpenOutputLogForWrite(continue_sim /*open in append mode */);        
     }
     
