@@ -205,6 +205,7 @@ __host__ void ESP::Output(int    fidx           , // Index of output file
     }
 
 //  ESP OUTPUT
+    
     sprintf(FILE_NAME1, "%s/esp_output_%s_%d.h5", output_dir.c_str(), simulation_ID.c_str(), fidx);
 
     storage s(FILE_NAME1);
@@ -316,9 +317,11 @@ __host__ void ESP::Output(int    fidx           , // Index of output file
       }
       phy_modules_store(s);
 
-      // Write to output f
-      WriteOutputLog(current_step, fidx, string(FILE_NAME1) );
+      char buf[256];
       
+      sprintf(buf, "esp_output_%s_%d.h5", simulation_ID.c_str(), fidx);
+      // Write to output f
+      WriteOutputLog(current_step, fidx, string(buf) );
 }
 
 bool ESP::CheckOutputLog(int & file_number, int & iteration_number, string & last_file)
@@ -371,8 +374,11 @@ void ESP::OpenOutputLogForWrite(bool append)
 {
     path o(output_dir);
 
-    o /= ("esp_outputlog_" + simulation_ID + ".txt");
+    
+    o /= ("esp_write_log_" + simulation_ID + ".txt");
 
+    cout << " Output file for result write log: " << o.to_string() << std::endl;
+    
     if (append)
         fileoutput_output_file.open(o.to_string(),std::ofstream::out | std::ofstream::app);
     else

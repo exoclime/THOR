@@ -496,19 +496,19 @@ int main (int argc,  char** argv){
     if (run_as_batch)
     {
         
-    // Get output directory
+        // Get output directory
 
-    // scan output files
+        // scan output files
 
-    // if has output files
-    // check list of outputs
-    // if has last valid output file
-
-    //    set last valid output file as restart file
-    //    restart simulation
-    // else
-    //    clean up if non valid data
-    //    start from scratch
+        // if has output files
+        // check list of outputs
+        // if has last valid output file
+        
+        //    set last valid output file as restart file
+        //    restart simulation
+        // else
+        //    clean up if non valid data
+        //    start from scratch
 
     }
     else
