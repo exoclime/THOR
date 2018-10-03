@@ -489,7 +489,9 @@ int main (int argc,  char** argv){
                 "div", "grad"}))
 
 
-          //*****************************************************************
+    // esp output setup
+    X.SetOutputParam(Planet.simulation_ID, output_path);
+    //*****************************************************************
     // Batch mode handling
     if (run_as_batch)
     {
@@ -726,8 +728,7 @@ int main (int argc,  char** argv){
     printf("   Start output numbering at %d.\n", output_file_idx);
 
 
-    // esp output setup
-    X.SetOutputParam(Planet.simulation_ID, output_path);
+
     X.PrepareConservationFile();
 
 
