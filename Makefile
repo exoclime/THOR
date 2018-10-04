@@ -7,7 +7,7 @@
 
 # to test localy while forcing g++-5:
 #  make release -j8 ccbin='-ccbin g++-5'
-# 
+#
 # to show commands echoed
 # $ make VERBOSE=1
 
@@ -44,7 +44,7 @@ SM ?= 35 # Streaming Multiprocessor version
 arch := -arch sm_$(SM)
 
 # objects
-obj_cuda   := esp.o grid.o esp_initial.o planet.o thor_driver.o profx_driver.o esp_output.o debug_helpers.o reduction_add.o
+obj_cuda   := esp.o grid.o esp_initial.o planet.o thor_driver.o profx_driver.o esp_output.o debug_helpers.o valkyrie_conservation.o reduction_add.o
 obj_cpp := storage.o binary_test.o config_file.o cmdargs.o directories.o
 obj := $(obj_cpp) $(obj_cuda)
 
@@ -73,7 +73,7 @@ debug_flags := -g -G
 release_flags := -O3
 
 # define profiling flags
-profiling_flags := -pg -lineinfo --default-stream per-thread 
+profiling_flags := -pg -lineinfo --default-stream per-thread
 
 #######################################################################
 # define where to find sources
@@ -254,7 +254,7 @@ $(MODULES_SRC)/libphy_modules.a:
 #	$(CC) $(arch) $(flags) $(debug_flags) -o $(BINDIR)/$(TESTDIR)/cmdargs_test $(addprefix #$(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_cmdargs))
 #endef
 
-tests: ${BINDIR}/${TESTDIR}/cmdargs_test ${BINDIR}/${TESTDIR}/config_test ${BINDIR}/${TESTDIR}/storage_test ${BINDIR}/${TESTDIR}/directories_test ${BINDIR}/${TESTDIR}/gen_init  ${BINDIR}/${TESTDIR}/reduction_add_test 
+tests: ${BINDIR}/${TESTDIR}/cmdargs_test ${BINDIR}/${TESTDIR}/config_test ${BINDIR}/${TESTDIR}/storage_test ${BINDIR}/${TESTDIR}/directories_test ${BINDIR}/${TESTDIR}/gen_init  ${BINDIR}/${TESTDIR}/reduction_add_test
 
 $(BINDIR)/$(TESTDIR)/cmdargs_test:  $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_cmdargs)) | $(BINDIR)/${OUTPUTDIR} $(BINDIR)/$(TESTDIR) $(BINDIR) $(RESDIR)
 	@echo $(YELLOW)creating $@ $(END)

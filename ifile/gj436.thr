@@ -2,40 +2,40 @@
 # config format version
 config_version = 1
 
-# earth model
+# testing sponge layer model
 
 # number of steps
-num_steps = 5184000
+num_steps = 691200
 
-# length of timesteps imn seconds
-timestep = 120
+# length of timesteps in seconds
+timestep = 250
 
 # keys to add
 # TODO: output_dir # relative to working directory
 
 # planet
 # name of simulation for output files
-simulation_ID = HD189
+simulation_ID = gj436b
 # Radius [m]
-radius = 79698540.0
+radius = 26758200.0
 # Rotation rate [s-1]
-rotation_rate = 3.279E-5
+rotation_rate = 2.7506118791319626E-05
 # Gravitational acceleration [m/s^2]
-gravitation = 21.4
+gravitation = 11.9
 # Mean molecular mass of dry air [kg]
 Mmol = 28.964
 # Gas constant [J/(Kg K)]
-Rd = 3779
+Rd = 3443
 # Specific heat capacities [J/(Kg K)]
-Cp = 13226.82
+Cp = 12051
 # Mean atmospheric temperature [K]
-Tmean = 1200.0
+Tmean = 642
 # Reference surface pressure [Pa]
-P_ref = 22000000.0
+P_ref = 10000000.0
 # Altitude of the top of the model domain [m]
 Top_altitude = 2.5e6
 # Strength of diffusion
-Diffc = 0.009973
+Diffc = 0.00495
 
 # grid
 # Spring dynamics
@@ -61,8 +61,13 @@ DeepModel = true
 # Initial conditions
 rest = true
 
+# initial conditions file, used if rest is set to false
+# (path relative to current working directory)
+# defaults to 'ifile/esp.initial.h5'
+initial = wasp43_sponge2/esp_output_Wasp43b_re.h5
+
 # Spongebob
-SpongeLayer = false
+SpongeLayer = true
 # latitude rings
 nlat = 20
 ns_sponge = 0.8
@@ -76,16 +81,24 @@ Rv_sponge = 1e-5
 
 hstest = 0
 
-Tstar = 4875
-planet_star_dist = 0.03099
-radius_star = 0.805
-
 # output
 # output every n steps
-n_out = 10
-results_path = hd189_2
+n_out = 13824
+#n_out = 1000
+
+# output directory (relative to current working directory)
+# defaults to 'results'
+results_path = gj436b_t3
+
+Tstar = 3350
+planet_star_dist = 0.02872
+radius_star = 0.464
+Tlow = 500
+albedo = 0
 
 # GPU ID number
 GPU_ID_N = 0
+
+gcm_off = false
 
 TPprof = 0

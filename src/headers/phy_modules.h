@@ -34,5 +34,4 @@ bool phy_modules_mainloop(ESP & esp,
 
 bool phy_modules_store(storage & s);
 
-
-
+bool phy_modules_store_init(storage & s);

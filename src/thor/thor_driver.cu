@@ -89,7 +89,7 @@ __host__ void ESP::Thor(bool   HyDiff      , // Turn on/off hyper-diffusion.
 	dim3 NBPT(2,1,ntr);              // Number of blocks. (POLES)
 	dim3 NBTR(nr, nv, ntr);          // Number of blocks in the diffusion routine for tracers.
 	dim3 NBTRP(2 , nv, ntr);         // Number of blocks in the diffusion routine for tracers. (POLES)
-    
+
 //  Number of Small steps
     double ns_totald = 6;            // Maximum number of small steps in a large step (double ).
     int    ns_totali = 6;            // Maximum number of small steps in a large step (integer).
@@ -104,7 +104,7 @@ __host__ void ESP::Thor(bool   HyDiff      , // Turn on/off hyper-diffusion.
     cudaMemcpy(Rhok_d      , Rho_d      , point_num * nv *     sizeof(double), cudaMemcpyDeviceToDevice);
     cudaMemcpy(pressurek_d , pressure_d , point_num * nv *     sizeof(double), cudaMemcpyDeviceToDevice);
 	cudaMemcpy(tracerk_d   , tracer_d   , point_num * nv * ntr * sizeof(double), cudaMemcpyDeviceToDevice);
-    
+
     cudaMemset(Mhs_d       , 0, sizeof(double) * 3*point_num * nv);
     cudaMemset(Rhos_d      , 0, sizeof(double) * point_num * nv)  ;
     cudaMemset(Whs_d       , 0, sizeof(double) * point_num * nvi) ;
@@ -138,7 +138,7 @@ __host__ void ESP::Thor(bool   HyDiff      , // Turn on/off hyper-diffusion.
 
 
         // Updates: Adv_d, v_d
-            
+
         Compute_Advec_Cori1<LN,LN><<<NB,NT>>>((double3*)Adv_d      ,
                                               (double3*)v_d        ,
                                               (double3*)Mhk_d      ,
@@ -180,15 +180,17 @@ __host__ void ESP::Thor(bool   HyDiff      , // Turn on/off hyper-diffusion.
                                                               point_num  ,
                                                               DeepModel  );
 
-        check_h = false;
-        cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
-        isnan_check_thor<<< 16, NTH >>>(Adv_d, nv, 3*point_num, check_d);
-        isnan_check_thor<<< 16, NTH >>>(v_d, nv, 3*point_num, check_d);
-        cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
-        if(check_h){
-           printf("\n\n Error in NAN check after Thor:Compute_Advec_Cori!\n");
-           exit(EXIT_FAILURE);
-        }
+        #ifdef BENCH_NAN_CHECK
+          check_h = false;
+          cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
+          isnan_check_thor<<< 16, NTH >>>(Adv_d, nv, 3*point_num, check_d);
+          isnan_check_thor<<< 16, NTH >>>(v_d, nv, 3*point_num, check_d);
+          cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
+          if(check_h){
+             printf("\n\n Error in NAN check after Thor:Compute_Advec_Cori!\n");
+             exit(EXIT_FAILURE);
+          }
+        #endif
 //
 //      Computes temperature, internal energy, potential temperature and effective gravity.
         cudaDeviceSynchronize();
@@ -214,21 +216,23 @@ __host__ void ESP::Thor(bool   HyDiff      , // Turn on/off hyper-diffusion.
                                                                           Altitudeh_d  ,
                                                                           point_num    ,
                                                                           nv           );
+        #ifdef BENCH_NAN_CHECK
+          check_h = false;
+          cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
+          isnan_check_thor<<< 16, NTH >>>(temperature_d, nv, point_num, check_d);
+          isnan_check_thor<<< 16, NTH >>>(h_d, nv, point_num, check_d);
+          isnan_check_thor<<< 16, NTH >>>(hh_d, nv+1, point_num, check_d);
+          isnan_check_thor<<< 16, NTH >>>(pt_d, nv, point_num, check_d);
+          isnan_check_thor<<< 16, NTH >>>(pth_d, nv+1, point_num, check_d);
+          isnan_check_thor<<< 16, NTH >>>(gtil_d, nv, point_num, check_d);
+          isnan_check_thor<<< 16, NTH >>>(gtilh_d, nv+1, point_num, check_d);
+          cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
+          if(check_h){
+             printf("\n\n Error in NAN check after Thor:Compute_Temp!\n");
+             exit(EXIT_FAILURE);
+          }
+        #endif
 
-        check_h = false;
-        cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
-        isnan_check_thor<<< 16, NTH >>>(temperature_d, nv, point_num, check_d);
-        isnan_check_thor<<< 16, NTH >>>(h_d, nv, point_num, check_d);
-        isnan_check_thor<<< 16, NTH >>>(hh_d, nv+1, point_num, check_d);
-        isnan_check_thor<<< 16, NTH >>>(pt_d, nv, point_num, check_d);
-        isnan_check_thor<<< 16, NTH >>>(pth_d, nv+1, point_num, check_d);
-        isnan_check_thor<<< 16, NTH >>>(gtil_d, nv, point_num, check_d);
-        isnan_check_thor<<< 16, NTH >>>(gtilh_d, nv+1, point_num, check_d);
-        cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
-        if(check_h){
-           printf("\n\n Error in NAN check after Thor:Compute_Temp!\n");
-           exit(EXIT_FAILURE);
-        }
 //      Initializes slow terms.
         cudaDeviceSynchronize();
         cudaMemset(SlowMh_d      , 0, sizeof(double) * 3 * point_num * nv);
@@ -335,15 +339,22 @@ __host__ void ESP::Thor(bool   HyDiff      , // Turn on/off hyper-diffusion.
                                                 point_num    ,
                                                 1            ,
                                                 DeepModel    );
-            
-            check_h = false;
-            cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
-            isnan_check_thor<<< 16, NTH >>>(diffmh_d, nv, 3*point_num, check_d);
-            isnan_check_thor<<< 16, NTH >>>(diffw_d, nv, point_num, check_d);
-            isnan_check_thor<<< 16, NTH >>>(diffrh_d, nv, point_num, check_d);
-            isnan_check_thor<<< 16, NTH >>>(diffpr_d, nv, point_num, check_d);
-            isnan_check_thor<<< 16, NTH >>>(diff_d, nv, 6*point_num, check_d);
-            
+            #ifdef BENCH_NAN_CHECK
+              check_h = false;
+              cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
+              isnan_check_thor<<< 16, NTH >>>(diffmh_d, nv, 3*point_num, check_d);
+              isnan_check_thor<<< 16, NTH >>>(diffw_d, nv, point_num, check_d);
+              isnan_check_thor<<< 16, NTH >>>(diffrh_d, nv, point_num, check_d);
+              isnan_check_thor<<< 16, NTH >>>(diffpr_d, nv, point_num, check_d);
+              isnan_check_thor<<< 16, NTH >>>(diff_d, nv, 6*point_num, check_d);
+              isnan_check_thor<<< 16, NTH >>>(difftr_d, nv, ntr*point_num, check_d);
+              cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
+              if(check_h){
+                 printf("\n\n Error in NAN check after Thor:Diffusion_Op!\n");
+                 exit(EXIT_FAILURE);
+              }
+            #endif
+
             if(vulcan == 1){
                 // Tracers
                 cudaMemset(diff_d, 0, sizeof(double) *   6 * point_num * nv);
@@ -364,7 +375,7 @@ __host__ void ESP::Thor(bool   HyDiff      , // Turn on/off hyper-diffusion.
                                                             nl_region    ,
                                                             0            ,
                                                             DeepModel    );
-   	
+
                 Tracer_Eq_Diffusion_Poles <5><<<NBTRP,1 >>>(difftr_d     ,
                                                             diff_d       ,
                                                             tracerk_d    ,
@@ -399,7 +410,7 @@ __host__ void ESP::Thor(bool   HyDiff      , // Turn on/off hyper-diffusion.
                                                             nl_region    ,
                                                             1            ,
                                                             DeepModel    );
-    					
+
                 Tracer_Eq_Diffusion_Poles <5><<<NBTRP,1 >>>(difftr_d     ,
                                                             diff_d       ,
                                                             tracerk_d    ,
@@ -417,19 +428,9 @@ __host__ void ESP::Thor(bool   HyDiff      , // Turn on/off hyper-diffusion.
                                                             point_num    ,
                                                             1            ,
                                                             DeepModel    );
-            	
-                isnan_check_thor<<< 16, NTH >>>(difftr_d, nv, ntr*point_num, check_d);
-                isnan_check_thor<<< 16, NTH >>>(diff_d, nv, 6*point_num, check_d);            	           	
-            	
-            }
-            
-            
-            
-            
-            cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
-            if(check_h){
-               printf("\n\n Error in NAN check after Thor:Diffusion_Op!\n");
-               exit(EXIT_FAILURE);
+
+
+
             }
         }
 
@@ -514,15 +515,18 @@ __host__ void ESP::Thor(bool   HyDiff      , // Turn on/off hyper-diffusion.
                                         point_num    ,
                                         1            ,
                                         DeepModel    );
-            check_h = false;
-            cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
-            isnan_check_thor<<< 16, NTH >>>(DivM_d, nv, 3*point_num, check_d);
-            isnan_check_thor<<< 16, NTH >>>(divg_Mh_d, nv, 3*point_num, check_d);
-            cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
-            if(check_h){
-               printf("\n\n Error in NAN check after Thor:DivM_Op slow!\n");
-               exit(EXIT_FAILURE);
-            }
+
+            #ifdef BENCH_NAN_CHECK
+              check_h = false;
+              cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
+              isnan_check_thor<<< 16, NTH >>>(DivM_d, nv, 3*point_num, check_d);
+              isnan_check_thor<<< 16, NTH >>>(divg_Mh_d, nv, 3*point_num, check_d);
+              cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
+              if(check_h){
+                 printf("\n\n Error in NAN check after Thor:DivM_Op slow!\n");
+                 exit(EXIT_FAILURE);
+              }
+            #endif
         }
 
 //
@@ -593,17 +597,19 @@ __host__ void ESP::Thor(bool   HyDiff      , // Turn on/off hyper-diffusion.
                                               DeepModel     ,
                                               NonHydro      );
 //      Updates or initializes deviations.
-        check_h = false;
-        cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
-        isnan_check_thor<<< 16, NTH >>>(SlowMh_d, nv, 3*point_num, check_d);
-        isnan_check_thor<<< 16, NTH >>>(SlowWh_d, nvi, point_num, check_d);
-        isnan_check_thor<<< 16, NTH >>>(SlowRho_d, nv, point_num, check_d);
-        isnan_check_thor<<< 16, NTH >>>(Slowpressure_d, nv, point_num, check_d);
-        cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
-        if(check_h){
-           printf("\n\n Error in NAN check after Thor:SlowModes!\n");
-           exit(EXIT_FAILURE);
-        }
+        #ifdef BENCH_NAN_CHECK
+          check_h = false;
+          cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
+          isnan_check_thor<<< 16, NTH >>>(SlowMh_d, nv, 3*point_num, check_d);
+          isnan_check_thor<<< 16, NTH >>>(SlowWh_d, nvi, point_num, check_d);
+          isnan_check_thor<<< 16, NTH >>>(SlowRho_d, nv, point_num, check_d);
+          isnan_check_thor<<< 16, NTH >>>(Slowpressure_d, nv, point_num, check_d);
+          cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
+          if(check_h){
+             printf("\n\n Error in NAN check after Thor:SlowModes!\n");
+             exit(EXIT_FAILURE);
+          }
+        #endif
 
         if (rk > 0)
         {
@@ -632,18 +638,21 @@ __host__ void ESP::Thor(bool   HyDiff      , // Turn on/off hyper-diffusion.
                                                          ntr        ,
                                                          point_num  ,
                                                          nv         );
-            check_h = false;
-            cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
-            isnan_check_thor<<< 16, NTH >>>(Mhs_d, nv, 3*point_num, check_d);
-            isnan_check_thor<<< 16, NTH >>>(Whs_d, nvi, point_num, check_d);
-            isnan_check_thor<<< 16, NTH >>>(Ws_d, nv, point_num, check_d);
-            isnan_check_thor<<< 16, NTH >>>(Rhos_d, nv, point_num, check_d);
-            isnan_check_thor<<< 16, NTH >>>(pressures_d, nv, point_num, check_d);
-            cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
-            if(check_h){
-               printf("\n\n Error in NAN check after Thor:UpdateRK!\n");
-               exit(EXIT_FAILURE);
-            }
+
+            #ifdef BENCH_NAN_CHECK
+              check_h = false;
+              cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
+              isnan_check_thor<<< 16, NTH >>>(Mhs_d, nv, 3*point_num, check_d);
+              isnan_check_thor<<< 16, NTH >>>(Whs_d, nvi, point_num, check_d);
+              isnan_check_thor<<< 16, NTH >>>(Ws_d, nv, point_num, check_d);
+              isnan_check_thor<<< 16, NTH >>>(Rhos_d, nv, point_num, check_d);
+              isnan_check_thor<<< 16, NTH >>>(pressures_d, nv, point_num, check_d);
+              cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
+              if(check_h){
+                 printf("\n\n Error in NAN check after Thor:UpdateRK!\n");
+                 exit(EXIT_FAILURE);
+              }
+            #endif
         }
 
 //
@@ -727,15 +736,17 @@ __host__ void ESP::Thor(bool   HyDiff      , // Turn on/off hyper-diffusion.
                                             point_num    ,
                                             1            ,
                                             DeepModel    );
-                check_h = false;
-                cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
-                isnan_check_thor<<< 16, NTH >>>(DivM_d, nv, 3*point_num, check_d);
-                isnan_check_thor<<< 16, NTH >>>(divg_Mh_d, nv, 3*point_num, check_d);
-                cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
-                if(check_h){
-                   printf("\n\n Error in NAN check after Thor:DivOp_fast!\n");
-                   exit(EXIT_FAILURE);
-                }
+                #ifdef BENCH_NAN_CHECK
+                  check_h = false;
+                  cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
+                  isnan_check_thor<<< 16, NTH >>>(DivM_d, nv, 3*point_num, check_d);
+                  isnan_check_thor<<< 16, NTH >>>(divg_Mh_d, nv, 3*point_num, check_d);
+                  cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
+                  if(check_h){
+                     printf("\n\n Error in NAN check after Thor:DivOp_fast!\n");
+                     exit(EXIT_FAILURE);
+                  }
+                #endif
             }
 
 //          Momentum equation.
@@ -767,14 +778,17 @@ __host__ void ESP::Thor(bool   HyDiff      , // Turn on/off hyper-diffusion.
                                             nv           ,
                                             point_num    ,
                                             DeepModel    );
-           check_h = false;
-           cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
-           isnan_check_thor<<< 16, NTH >>>(Mhs_d, nv, 3*point_num, check_d);
-           cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
-           if(check_h){
-              printf("\n\n Error in NAN check after Thor:Momentum_Eq!\n");
-              exit(EXIT_FAILURE);
-           }
+           #ifdef BENCH_NAN_CHECK
+             check_h = false;
+             cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
+             isnan_check_thor<<< 16, NTH >>>(Mhs_d, nv, 3*point_num, check_d);
+             cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
+             if(check_h){
+                printf("\n\n Error in NAN check after Thor:Momentum_Eq!\n");
+                exit(EXIT_FAILURE);
+             }
+           #endif
+
 //          Vertical Momentum
             cudaDeviceSynchronize();
 
@@ -794,15 +808,18 @@ __host__ void ESP::Thor(bool   HyDiff      , // Turn on/off hyper-diffusion.
                                                              maps_d        ,
                                                              nl_region     ,
                                                              DeepModel     );
-           check_h = false;
-           cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
-           isnan_check_thor<<< 16, NTH >>>(Sp_d, nv, point_num, check_d);
-           isnan_check_thor<<< 16, NTH >>>(Sd_d, nv, point_num, check_d);
-           cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
-           if(check_h){
-              printf("\n\n Error in NAN check after Thor:PrepImp!\n");
-              exit(EXIT_FAILURE);
-           }
+           #ifdef BENCH_NAN_CHECK
+             check_h = false;
+             cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
+             isnan_check_thor<<< 16, NTH >>>(Sp_d, nv, point_num, check_d);
+             isnan_check_thor<<< 16, NTH >>>(Sd_d, nv, point_num, check_d);
+             cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
+             if(check_h){
+                printf("\n\n Error in NAN check after Thor:PrepImp!\n");
+                exit(EXIT_FAILURE);
+             }
+           #endif
+
             cudaDeviceSynchronize();
             // Updates: Sp_d, Sd_d
             Prepare_Implicit_Vertical_Poles<6><<<2, 1>>> (Mhs_d         ,
@@ -821,15 +838,19 @@ __host__ void ESP::Thor(bool   HyDiff      , // Turn on/off hyper-diffusion.
                                                           nv            ,
                                                           DeepModel     );
 
-           check_h = false;
-           cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
-           isnan_check_thor<<< 16, NTH >>>(Sp_d, nv, point_num, check_d);
-           isnan_check_thor<<< 16, NTH >>>(Sd_d, nv, point_num, check_d);
-           cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
-           if(check_h){
-              printf("\n\n Error in NAN check after Thor:PrepImpPoles!\n");
-              exit(EXIT_FAILURE);
-           }
+
+          #ifdef BENCH_NAN_CHECK
+             check_h = false;
+             cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
+             isnan_check_thor<<< 16, NTH >>>(Sp_d, nv, point_num, check_d);
+             isnan_check_thor<<< 16, NTH >>>(Sd_d, nv, point_num, check_d);
+             cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
+             if(check_h){
+                printf("\n\n Error in NAN check after Thor:PrepImpPoles!\n");
+                exit(EXIT_FAILURE);
+             }
+          #endif
+
             cudaDeviceSynchronize();
 
             // Updates: Whs_d, Ws_d
@@ -860,15 +881,17 @@ __host__ void ESP::Thor(bool   HyDiff      , // Turn on/off hyper-diffusion.
                                                              DeepModel  );
 
 
-             check_h = false;
-             cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
-             isnan_check_thor<<< 16, NTH >>>(Whs_d, nv+1, point_num, check_d);
-             isnan_check_thor<<< 16, NTH >>>(Ws_d, nv, point_num, check_d);
-             cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
-             if(check_h){
-                printf("\n\n Error in NAN check after Thor:VertEq!\n");
-                exit(EXIT_FAILURE);
-             }
+            #ifdef BENCH_NAN_CHECK
+               check_h = false;
+               cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
+               isnan_check_thor<<< 16, NTH >>>(Whs_d, nv+1, point_num, check_d);
+               isnan_check_thor<<< 16, NTH >>>(Ws_d, nv, point_num, check_d);
+               cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
+               if(check_h){
+                  printf("\n\n Error in NAN check after Thor:VertEq!\n");
+                  exit(EXIT_FAILURE);
+               }
+            #endif
 
             cudaError_t err = cudaGetLastError();
 
@@ -886,11 +909,11 @@ __host__ void ESP::Thor(bool   HyDiff      , // Turn on/off hyper-diffusion.
                             "h_d", "hh_d",
                             "Rhos_d"
                             }))
-            
+
             if(vulcan == 1){
             	//
             	// Tracer equation.
-            	cudaDeviceSynchronize();			
+            	cudaDeviceSynchronize();
             	Tracer_Eq <LN,LN>  <<<NBTR, NT >>> (tracers_d  ,
             										tracerk_d  ,
             										Rhos_d     ,
@@ -904,12 +927,12 @@ __host__ void ESP::Thor(bool   HyDiff      , // Turn on/off hyper-diffusion.
             										Altitude_d ,
             										Altitudeh_d,
             										A          ,
-            										times      ,     
+            										times      ,
             										maps_d     ,
 						   	   	       	       	   ntr        ,
 						   	   	       	       	   nl_region  ,
 						   	   	       	       	   DeepModel  );
-		
+
             	Tracer_Eq_Poles <6> <<<NBPT,1>>>(tracers_d    ,
 			   	       	   	   	   	   	   		tracerk_d    ,
 			   	       	   	   	   	   	   		Rhos_d       ,
@@ -928,9 +951,9 @@ __host__ void ESP::Thor(bool   HyDiff      , // Turn on/off hyper-diffusion.
 			   	       	   	   	   	   	   		ntr          ,
 			   	       	   	   	   	   	   		point_num    ,
 			   	       	   	   	   	   	   		nv           ,
-			   	       	   	   	   	   	   		DeepModel    );   
+			   	       	   	   	   	   	   		DeepModel    );
             }
-  
+
             // Updates: pressures_d, Rhos_d
             Density_Pressure_Eqs <LN,LN>  <<<NB, NT >>>(pressures_d,
                                                         pressurek_d,
@@ -955,15 +978,19 @@ __host__ void ESP::Thor(bool   HyDiff      , // Turn on/off hyper-diffusion.
                                                         maps_d     ,
                                                         nl_region  ,
                                                         DeepModel  );
-           check_h = false;
-           cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
-           isnan_check_thor<<< 16, NTH >>>(pressures_d, nv, point_num, check_d);
-           isnan_check_thor<<< 16, NTH >>>(Rhos_d, nv, point_num, check_d);
-           cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
-           if(check_h){
-              printf("\n\n Error in NAN check after Thor:DensityP!\n");
-              exit(EXIT_FAILURE);
-           }
+
+          #ifdef BENCH_NAN_CHECK
+             check_h = false;
+             cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
+             isnan_check_thor<<< 16, NTH >>>(pressures_d, nv, point_num, check_d);
+             isnan_check_thor<<< 16, NTH >>>(Rhos_d, nv, point_num, check_d);
+             cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
+             if(check_h){
+                printf("\n\n Error in NAN check after Thor:DensityP!\n");
+                exit(EXIT_FAILURE);
+             }
+          #endif
+
             cudaDeviceSynchronize();
             // Updates: pressures_d, Rhos_d
             Density_Pressure_Eqs_Poles<6><<< 2, 1>>>(pressures_d  ,
@@ -990,15 +1017,17 @@ __host__ void ESP::Thor(bool   HyDiff      , // Turn on/off hyper-diffusion.
                                                      point_num    ,
                                                      nv           ,
                                                      DeepModel    );
-             check_h = false;
-             cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
-             isnan_check_thor<<< 16, NTH >>>(pressures_d, nv, point_num, check_d);
-             isnan_check_thor<<< 16, NTH >>>(Rhos_d, nv, point_num, check_d);
-             cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
-             if(check_h){
-                printf("\n\n Error in NAN check after Thor:DensityPPoles!\n");
-                exit(EXIT_FAILURE);
-             }
+            #ifdef BENCH_NAN_CHECK
+               check_h = false;
+               cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
+               isnan_check_thor<<< 16, NTH >>>(pressures_d, nv, point_num, check_d);
+               isnan_check_thor<<< 16, NTH >>>(Rhos_d, nv, point_num, check_d);
+               cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
+               if(check_h){
+                  printf("\n\n Error in NAN check after Thor:DensityPPoles!\n");
+                  exit(EXIT_FAILURE);
+               }
+            #endif
 
         }
 
@@ -1024,6 +1053,7 @@ __host__ void ESP::Thor(bool   HyDiff      , // Turn on/off hyper-diffusion.
                                                      point_num  ,
                                                      nv         );
 
+      #ifdef BENCH_NAN_CHECK
         check_h = false;
         cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
         isnan_check_thor<<< 16, NTH >>>(Mhk_d, nv, 3*point_num, check_d);
@@ -1036,6 +1066,8 @@ __host__ void ESP::Thor(bool   HyDiff      , // Turn on/off hyper-diffusion.
            printf("\n\n Error in NAN check after Thor:UpdateRK2!\n");
            exit(EXIT_FAILURE);
         }
+      #endif
+      
         BENCH_POINT_I_S( current_step, rk, "RK2", vector<string>({}), vector<string>({"Rhos_d", "Rhok_d",
                         "Mhs_d", "Mhk_d", "Whs_d", "Whk_d",
                         "pressures_d", "pressurek_d" }))

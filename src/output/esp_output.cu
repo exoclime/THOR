@@ -97,14 +97,16 @@ __host__ void ESP::Output(int    fidx           , // Index of output file
                           double Mmol           , // Mean molecular mass of dry air [kg]
                           double P_Ref          , // Reference surface pressure [Pa]
                           double Top_altitude   , // Top of the model's domain [m]
-                          double A              ) // Planet radius [m]
-{
+                          double A              ,
+                          bool   conservation   ,
+                          int    hstest         ,
+                          bool   SpongeLayer    ){
 
 //
 //  Description: Model output.
 //
     char FILE_NAME1[160];
-    
+
 //  GRID OUTPUT
     if(current_step == 0){
         sprintf(FILE_NAME1, "%s/esp_output_grid_%s.h5", output_dir.c_str(), simulation_ID.c_str());
@@ -116,34 +118,34 @@ __host__ void ESP::Output(int    fidx           , // Index of output file
                        "/Altitude",
                        "m",
                        "Altitude");
-        
+
 //      Altitudeh
         s.append_table(Altitudeh_h,
                        nv+1,
                        "/Altitudeh",
                        "m",
                        "Altitude at the interfaces");
-        
+
 //      AreasT
         s.append_table(Altitudeh_h,
                        point_num,
                        "/areasT",
                        "m^2",
                        "Main cells areas");
-        
+
 //      Lon-lat grid
         s.append_table(lonlat_h,
                        2*point_num,
                        "/lonlat",
                        "-",
                        "Longitudes and latitudes");
-        
-//      Number of horizontal points        
+
+//      Number of horizontal points
         s.append_value((double)point_num,
                        "/point_num",
                        "-",
                        "Number of grid points in one level");
-        
+
 //      Number of vertical layers
         s.append_value((double)nv,
                        "/nv",
@@ -169,7 +171,7 @@ __host__ void ESP::Output(int    fidx           , // Index of output file
         // spring_dynamics
         s.append_value(spring_dynamics?1.0:0.0, "/spring_dynamics","-", "Spring dynamics");
         // spring beta
-        s.append_value(spring_beta, "/spring_beta", "-","Spring Beta");        
+        s.append_value(spring_beta, "/spring_beta", "-","Spring Beta");
         //      A
         s.append_value(A,"/A","m","Planet radius");
         //      Rd
@@ -186,6 +188,20 @@ __host__ void ESP::Output(int    fidx           , // Index of output file
         s.append_value(Top_altitude,"/Top_altitude", "m", "Top of the model's domain");
         //      CP
         s.append_value(Cp, "/Cp", "J/(Kg K)", "Specific heat capacity");
+        //      SpongeLayer option
+        s.append_value(SpongeLayer?1.0:0.0, "/SpongeLayer", "-", "Using SpongeLayer?");
+        // //      hstest option
+        s.append_value(hstest, "/hstest", "-", "Using benchmark forcing or RT");
+        if (SpongeLayer) {
+            //      nlat
+            s.append_value(nlat, "/nlat", "-", "number of lat rings for sponge layer");
+            //      ns
+            s.append_value(ns_sponge, "/ns_sponge", "-", "Bottom of sponge layer");
+            //      Rv
+            s.append_value(Rv_sponge, "/Rv_sponge", "1/s", "Stength of sponge layer");
+        }
+
+        phy_modules_store_init(s);
     }
 
 //  ESP OUTPUT
@@ -210,7 +226,7 @@ __host__ void ESP::Output(int    fidx           , // Index of output file
                    "/Rho",
                    "kg/m^3",
                    "Density");
-    
+
 //  Pressure
     s.append_table(pressure_h,
                    nv*point_num,
@@ -224,14 +240,15 @@ __host__ void ESP::Output(int    fidx           , // Index of output file
                    "/Mh",
                    "kg m/s",
                    "Horizontal Momentum");
-    
+
 //  Wh
      s.append_table(Wh_h,
                    nvi*point_num,
                    "/Wh",
                    "kg m/s",
                    "Vertical Momentum");
-     
+
+    if (conservation == true)  {
 //  Etotal at each point
      s.append_table( Etotal_h,
                      nv*point_num,
@@ -272,7 +289,7 @@ __host__ void ESP::Output(int    fidx           , // Index of output file
                      "/GlobalE",
                      "kg m^2/s^2",
                      "Global Total Energy");
-     
+
 //  GlobalMass (total atmospheric mass over entire planet)
       s.append_value( GlobalMass_h,
                      "/GlobalMass",
@@ -284,7 +301,7 @@ __host__ void ESP::Output(int    fidx           , // Index of output file
                      "/GlobalAMx",
                      "kg m^2/s",
                      "Global AngMomX");
-      
+
 //  GlobalAMy (total angular momentum in y direction over entire planet)
       s.append_value( GlobalAMy_h,
                      "/GlobalAMy",
@@ -296,14 +313,14 @@ __host__ void ESP::Output(int    fidx           , // Index of output file
                      "/GlobalAMz",
                      "kg m^2/s",
                      "Global AngMomZ");
-
+      }
       phy_modules_store(s);
 }
 
 void ESP::OutputConservation()
 {
     //printf("output conservation\n");
-    
+
     // output global conservation values
     conservation_output_file << current_step << "\t"
                              << simulation_time << "\t"
@@ -312,10 +329,10 @@ void ESP::OutputConservation()
                              << GlobalAMx_h << "\t"
                              << GlobalAMy_h << "\t"
                              << GlobalAMz_h << std::endl;
-    
+
 
     // flush file to disk
-    conservation_output_file.flush();    
+    conservation_output_file.flush();
 }
 
 
@@ -329,7 +346,7 @@ void ESP::SetOutputParam(const std::string & sim_id_,
 
 int ESP::PrepareConservationFile()
 {
-    
+
     path o(output_dir);
 
     o /= ("esp_global_" + simulation_ID + ".txt");
@@ -345,7 +362,7 @@ int ESP::PrepareConservationFile()
         );
 
     conservation_output_file << std::setprecision(16);
-    conservation_output_file << "#\t" 
+    conservation_output_file << "#\t"
                              << "current_step" << "\t"
                              << "simulation_time" << "\t"
                              << "GlobalE_h" << "\t"
@@ -353,8 +370,8 @@ int ESP::PrepareConservationFile()
                              << "GlobalAMx_h" << "\t"
                              << "GlobalAMy_h" << "\t"
                              << "GlobalAMz_h" << std::endl;
-    
+
 
     return 0;
-    
+
 };

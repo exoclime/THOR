@@ -60,7 +60,7 @@
 #include "reduction_add.h"
 
 __host__ void ESP::ProfX(int    hstest      , // Held-Suarez test option
-                         int    vulcan      , //
+                         int    vulcan      , // Use vulcan chemistry
                          double Omega       , // Rotation rate [1/s]
                          double Cp          , // Specific heat capacity [J/kg/K]
                          double Rd          , // Gas constant [J/kg/K]
@@ -71,9 +71,10 @@ __host__ void ESP::ProfX(int    hstest      , // Held-Suarez test option
                          double Gravit      , // Gravity [m/s^2]
                          double A           , // Planet radius [m]
                          bool   DeepModel   ,
+                         int    n_out       , // output step (triggers conservation calc)
                          bool   sponge      , // Use sponge layer?
-                         bool   shrink_sponge){ // Shrink sponge after some time
-
+                         bool   shrink_sponge,  // Shrink sponge after some time (Bonjour Urs!)
+                         bool   conservation ){ // calc/output conservation quantities
     USE_BENCHMARK()
 //
 //  Number of threads per block.
@@ -133,12 +134,14 @@ __host__ void ESP::ProfX(int    hstest      , // Held-Suarez test option
                                          point_num    );
 
     BENCH_POINT_I(current_step, "phy_T", vector<string>({}), vector<string>({"Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"}))
-//  Check for nan.
-    check_h = check_array_for_nan(temperature_d,nv*point_num,1,check_d);
-    if(check_h){
-       printf("\n\n Error in NAN check after PROFX:compute_temp!\n");
-       exit(EXIT_FAILURE);
-    }
+
+    #ifdef BENCH_NAN_CHECK
+      check_h = check_array_for_nan(temperature_d,nv*point_num,1,check_d);
+      if(check_h){
+         printf("\n\n Error in NAN check after PROFX:compute_temp!\n");
+         exit(EXIT_FAILURE);
+      }
+    #endif
 
 ///////////////////////
 // HELD SUAREZ TEST  //
@@ -201,7 +204,7 @@ __host__ void ESP::ProfX(int    hstest      , // Held-Suarez test option
                                   timestep     ,
                                   point_num    );
       }
-      
+
 //
 ////////////////////////
       // Simple Vulcan
@@ -245,12 +248,12 @@ __host__ void ESP::ProfX(int    hstest      , // Held-Suarez test option
                                                 Rho_d        ,
                                                 timestep     ,
                                                 ntr          ,
-                                                point_num    );	   
+                                                point_num    );
     }
-      
-      
-      
-      
+
+
+
+
     if (!hstest) {
         cudaDeviceSynchronize();
         phy_modules_mainloop(*this,
@@ -268,14 +271,16 @@ __host__ void ESP::ProfX(int    hstest      , // Held-Suarez test option
                               A           // Planet radius [m]
             );
     }
-    check_h = false;
-    cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
-    isnan_check<<< 16, NTH >>>(temperature_d, nv, point_num, check_d);
-    cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
-    if(check_h){
-       printf("\n\n Error in NAN check after PROFX:RT!\n");
-       exit(EXIT_FAILURE);
-    }
+    #ifdef BENCH_NAN_CHECK
+      check_h = false;
+      cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
+      isnan_check<<< 16, NTH >>>(temperature_d, nv, point_num, check_d);
+      cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
+      if(check_h){
+         printf("\n\n Error in NAN check after PROFX:RT!\n");
+         exit(EXIT_FAILURE);
+      }
+    #endif
 
     BENCH_POINT_I(current_step, "phy_hstest", vector<string>({}), vector<string>({"Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"}))
 //  Computes the new pressures.
@@ -286,6 +291,7 @@ __host__ void ESP::ProfX(int    hstest      , // Held-Suarez test option
                                       Rd           ,
                                       point_num    );
 
+    //always do this nan check so the code doesn't keep computing garbage
     check_h = false;
     cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
     isnan_check<<< 16, NTH >>>(temperature_d, nv, point_num, check_d);
@@ -306,7 +312,7 @@ __host__ void ESP::ProfX(int    hstest      , // Held-Suarez test option
 
     BENCH_POINT_I(current_step, "phy_END", vector<string>({}), vector<string>({"Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"}));
 
-    
+
 //
 //END OF INTEGRATION
 //
@@ -324,9 +330,7 @@ void ESP::Conservation(int    hstest      , // Held-Suarez test option
                        double P_Ref       , // Reference pressure [Pa]
                        double Gravit      , // Gravity [m/s^2]
                        double A           , // Planet radius [m]
-                       bool   DeepModel   ,
-                       bool   sponge      , // Use sponge layer?
-                       bool   shrink_sponge)
+                       bool   DeepModel   )
 {
     //
 //  Number of threads per block.
@@ -334,14 +338,14 @@ void ESP::Conservation(int    hstest      , // Held-Suarez test option
 
 //  Specify the block sizes.
     dim3 NB((point_num / NTH) + 1, nv, 1);
-    
+
     // calculate quantities we hope to conserve!
     cudaMemset(GlobalE_d     , 0, sizeof(double));
     cudaMemset(GlobalMass_d  , 0, sizeof(double));
     cudaMemset(GlobalAMx_d   , 0, sizeof(double));
     cudaMemset(GlobalAMy_d   , 0, sizeof(double));
     cudaMemset(GlobalAMz_d   , 0, sizeof(double));
-      
+
     CalcMass <<< NB, NTH >>> (Mass_d       ,
                               GlobalMass_d ,
                               Rho_d        ,
@@ -351,7 +355,7 @@ void ESP::Conservation(int    hstest      , // Held-Suarez test option
                               areasT_d     ,
                               point_num    ,
                               DeepModel    );
-    
+
     CalcTotEnergy <<< NB, NTH >>> (Etotal_d     ,
                                    GlobalE_d    ,
                                    Mh_d         ,
@@ -366,9 +370,10 @@ void ESP::Conservation(int    hstest      , // Held-Suarez test option
                                    Altitudeh_d  ,
                                    lonlat_d     ,
                                    areasT_d     ,
+                                   func_r_d     ,
                                    point_num    ,
                                    DeepModel    );
-    
+
     CalcAngMom <<< NB, NTH >>> ( AngMomx_d    ,
                                  AngMomy_d    ,
                                  AngMomz_d    ,
@@ -389,7 +394,7 @@ void ESP::Conservation(int    hstest      , // Held-Suarez test option
     // copy global conservation data to host for output
     CopyGlobalToHost();
 #endif // GLOBAL_CONSERVATION_ATOMICADD
-    
+
 #ifdef GLOBAL_CONSERVATION_REDUCTIONADD
     // run conservation on device
 
@@ -400,11 +405,11 @@ void ESP::Conservation(int    hstest      , // Held-Suarez test option
     GlobalAMy_h  = gpu_sum_on_device<1024>(AngMomy_d, point_num * nv);
     GlobalAMz_h  = gpu_sum_on_device<1024>(AngMomz_d, point_num * nv);
 
-    
+
 #endif // GLOBAL_CONSERVATION_REDUCTIONADD
 
 #ifdef GLOBAL_CONSERVATION_CPUADD
-    
+
     // copy conservation data to host
     CopyConservationToHost();
 

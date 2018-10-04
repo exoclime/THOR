@@ -5,7 +5,7 @@ config_version = 1
 # earth model
 
 # number of steps
-num_steps = 345600
+num_steps = 6912
 
 # length of timesteps imn seconds
 timestep = 300
@@ -85,7 +85,7 @@ albedo = 0.07
 
 # output directory (relative to current working directory)
 # defaults to 'results'
-results_path = hd209_results
+results_path = hd209_results2
 
 # output
 # output every n steps

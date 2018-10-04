@@ -70,7 +70,7 @@ public:
     const int ntr         ;
     const int glevel      ;
     const bool spring_dynamics;
-    const double spring_beta;   
+    const double spring_beta;
 
 ///////////////////////////
 //  Host
@@ -102,7 +102,7 @@ public:
 
     double *Kdhz_h        ;
     double *Kdh4_h        ;
-	
+
 	double *tauch4_h;
 	double *tauco_h ;
 	double *tauh2o_h;
@@ -110,16 +110,16 @@ public:
 	double *taunh3_h;
 
 	double *ch4eq_h ;
-	double *coeq_h  ;	
+	double *coeq_h  ;
 	double *h2oeq_h ;
-	double *co2eq_h ;	
+	double *co2eq_h ;
 	double *nh3eq_h;
-	
+
 	double *P_che_h;
 	double *T_che_h;
- 
-	double *tracer_h;		
-	
+
+	double *tracer_h;
+
     bool    check_h       ;
 
     int *zonal_mean_tab_h ;
@@ -202,33 +202,33 @@ public:
 
     double *Kdhz_d        ;
     double *Kdh4_d        ;
-	
+
 	double *tauch4_d;
 	double *tauco_d ;
 	double *tauh2o_d;
 	double *tauco2_d;
 	double *taunh3_d;
-	
+
 	double *ch4eq_d ;
 	double *coeq_d  ;
 	double *h2oeq_d ;
-	double *co2eq_d ;	
-	double *nh3eq_d ;    
-    
-	double *tracer_d ;	
-	double *tracers_d;	
-	double *tracerk_d;	
-	
+	double *co2eq_d ;
+	double *nh3eq_d ;
+
+	double *tracer_d ;
+	double *tracers_d;
+	double *tracerk_d;
+
 	double *P_che_d;
-	double *T_che_d;	
-	
+	double *T_che_d;
+
     double *DivM_d        ;
     double *diffpr_d      ;
     double *diffmh_d      ;
     double *diffw_d       ;
     double *diffrh_d      ;
 	double *difftr_d      ;
-    
+
     double *diff_d        ;
     double *divg_Mh_d     ;
     bool   *check_d       ;
@@ -279,9 +279,10 @@ public:
         double Rv_sponge_    ,
         double ns_sponge_    ,
         double t_shrink_     ,
-        int point_num_       );
+        int point_num_       ,
+        bool conservation    );
 
-    void AllocData() ;
+    void AllocData(bool) ;
 
     bool InitialValues(bool rest                ,
                        const std::string & initial_conditions_filename,
@@ -300,12 +301,14 @@ public:
                        double mu                ,
                        double Rd                ,
                        bool sponge              ,
+                       bool DeepModel           ,
                        int TPprof               ,
                        int hstest               ,
                        int vulcan               ,
                        int & nsteps             ,
                        double & simulation_start_time,
-                       int & output_file_idx);
+                       int & output_file_idx,
+                       bool conservation);
 
     void InitTimestep(int nstep,
                       double simtime,
@@ -314,9 +317,9 @@ public:
         current_step = nstep;
         simulation_time = simtime;
         timestep = timestep_;
-    };    
-        
-        
+    };
+
+
     void Thor(bool  ,
               bool  ,
               double,
@@ -344,28 +347,11 @@ public:
                double,
                double,
                bool  ,
+               int   ,
+               bool  ,
                bool  ,
                bool  );
 
-    void Conservation(int    hstest      , // Held-Suarez test option
-                      int    vulcan      , //
-                      double Omega       , // Rotation rate [1/s]
-                      double Cp          , // Specific heat capacity [J/kg/K]
-                      double Rd          , // Gas constant [J/kg/K]
-                      double Mmol        , // Mean molecular mass of dry air [kg]
-                      double mu          , // Atomic mass unit [kg]
-                      double kb          , // Boltzmann constant [J/K]
-                      double P_Ref       , // Reference pressure [Pa]
-                      double Gravit      , // Gravity [m/s^2]
-                      double A           , // Planet radius [m]
-                      bool   DeepModel   ,
-                      bool   sponge      , // Use sponge layer?
-                      bool   shrink_sponge);
-    
-    void CopyToHost();
-    void CopyGlobalToHost();
-    void CopyConservationToHost();
-    
     void Output(int   ,
                 double,
                 double,
@@ -374,17 +360,35 @@ public:
                 double,
                 double,
                 double,
-                double);
-
+                double,
+                bool  ,
+                int   ,
+                bool  );
 
     void SetOutputParam(const std::string & sim_id_,
                         const std::string & output_dir_ );
-    
-    
+
+    void Conservation(int    hstest      , // Held-Suarez test option
+                       int    vulcan      , //
+                       double Omega       , // Rotation rate [1/s]
+                       double Cp          , // Specific heat capacity [J/kg/K]
+                       double Rd          , // Gas constant [J/kg/K]
+                       double Mmol        , // Mean molecular mass of dry air [kg]
+                       double mu          , // Atomic mass unit [kg]
+                       double kb          , // Boltzmann constant [J/K]
+                       double P_Ref       , // Reference pressure [Pa]
+                       double Gravit      , // Gravity [m/s^2]
+                       double A           , // Planet radius [m]
+                       bool   DeepModel   );
+
+    void CopyToHost();
+    void CopyConservationToHost();
+    void CopyGlobalToHost();
+
     void OutputConservation();
     int PrepareConservationFile();
-    
-    
+
+
     ~ESP();
 
 
@@ -393,10 +397,10 @@ private:
     int current_step;
     double simulation_time;
     double timestep;
-    
+
     // output variables
     std::string simulation_ID; // name of output planet
     std::string output_dir;
     std::fstream conservation_output_file;
-    
+
 };

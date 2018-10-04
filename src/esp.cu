@@ -78,7 +78,7 @@ enum e_sig {
     ESIG_SIGINT = 2
 };
 
-    
+
 volatile sig_atomic_t caught_signal = ESIG_NOSIG;
 
 
@@ -99,17 +99,17 @@ void sigint_handler(int sig)
 std::string duration_to_str(std::chrono::duration<double> time_delta)
 {
     double delta = time_delta.count();
-    
+
     unsigned int days = delta/(24*3600);
     delta -= days*24.0*3600.0;
-    
+
     unsigned int hours = delta/3600;
     delta -= hours*3600;
-    
+
     unsigned int minutes = delta/60;
     delta -= minutes*60;
-    
-    unsigned int seconds = delta;    
+
+    unsigned int seconds = delta;
     std::ostringstream str;
 
     if (days != 0)
@@ -121,8 +121,8 @@ std::string duration_to_str(std::chrono::duration<double> time_delta)
     str << seconds << "s";
 
     return str.str();
-    
-        
+
+
 
 }
 
@@ -283,11 +283,13 @@ int main (int argc,  char** argv){
     int TPprof = 0;
     config_reader.append_config_var("TPprof", TPprof, TPprof_default);
 
+    bool conservation = false;
+    config_reader.append_config_var("conservation", conservation, conservation_default);
     //*****************************************************************
     // read configs for modules
     phy_modules_generate_config(config_reader);
-    
-    
+
+
     //*****************************************************************
     // Read config file
 
@@ -454,7 +456,8 @@ int main (int argc,  char** argv){
            Rv_sponge          , // Maximum damping of sponge layer
            ns_sponge          , // lowest level of sponge layer (fraction of model)
            t_shrink           , // time to shrink sponge layer
-           Grid.point_num     );// Number of grid points
+           Grid.point_num     , // Number of grid points
+           conservation       );
 
     USE_BENCHMARK();
     INIT_BENCHMARK(X, Grid);
@@ -501,15 +504,17 @@ int main (int argc,  char** argv){
                                         mu_constant  , // Atomic mass unit [kg]
                                         Planet.Rd    , // Gas constant [J/kg/K]
                                         SpongeLayer  , // Enable sponge layer
+                                        DeepModel    , // Use deep model corrections
                                         TPprof       , // isothermal = 0, guillot = 1
                                         hstest       , // argh
                                         vulcan       , //
                                         step_idx     , // current step index
                                         simulation_start_time, // output:
                                                                // simulation start time
-                                        output_file_idx); // output file
+                                        output_file_idx, // output file
                                                           // read + 1, 0
                                                           // if nothing read
+                                        conservation );
 
     if (hstest == 0) {
         phy_modules_init_data();
@@ -676,8 +681,8 @@ int main (int argc,  char** argv){
     // esp output setup
     X.SetOutputParam(Planet.simulation_ID, output_path);
     X.PrepareConservationFile();
-    
-    
+
+
     // We'll start writnig data to file and running main loop,
     // setup signal handlers to handle gracefully termination and interrupt
      struct sigaction sigterm_action;
@@ -705,8 +710,25 @@ int main (int argc,  char** argv){
     double simulation_time = simulation_start_time;
     if (!continue_sim)
     {
+        X.CopyToHost();
         X.InitTimestep(0, simulation_time, timestep);
-        
+
+        if (conservation == true) {
+          X.Conservation(hstest       , // Held-Suarez test option
+                         vulcan       , //
+                         Planet.Omega , // Rotation rate [1/s]
+                         Planet.Cp    , // Specific heat capacity [J/kg/K]
+                         Planet.Rd    , // Gas constant [J/kg/K]
+                         Planet.Mmol  , // Mean molecular mass of dry air [kg]
+                         mu_constant  , // Atomic mass unit [kg]
+                         kb_constant  , // Boltzmann constant [J/K]
+                         Planet.P_Ref , // Reference pressure [Pa]
+                         Planet.Gravit, // Gravity [m/s^2]
+                         Planet.A     , // Planet radius [m]
+                         DeepModel    );
+           X.OutputConservation();
+        }
+
         X.Output(0                   , // file index
                  Planet.Cp           , // Specific heat capacity [J/(Kg K)]
                  Planet.Rd           , // Gas constant [J/(Kg K)]
@@ -715,8 +737,10 @@ int main (int argc,  char** argv){
                  Planet.Mmol         , // Mean molecular mass of dry air [kg]
                  Planet.P_Ref        , // Reference surface pressure [Pa]
                  Planet.Top_altitude , // Top of the model's domain [m]
-                 Planet.A           ); // Planet Radius [m]
- 
+                 Planet.A            , // Planet Radius [m]
+                 conservation        ,
+                 hstest              ,
+                 SpongeLayer         );
         output_file_idx = 1;
         step_idx = 1;
     }
@@ -732,20 +756,19 @@ int main (int argc,  char** argv){
 
     // Start timer
     std::chrono::system_clock::time_point start_sim = std::chrono::system_clock::now();
-    
+
 //
 //  Main loop. nstep is the current step of the integration and nsmax the maximum
 //  number of steps in the integration.
     for(int nstep = step_idx; nstep <= nsmax; ++nstep){
-        
-        // store step number for file comparison tests
+
         // compute simulation time
         simulation_time = simulation_start_time + (nstep - step_idx+1)*timestep;
         // set simulation time and step number for simulation engine and output
         X.InitTimestep(nstep,            // Time-step [s]
-                       simulation_time,  // Simulation time [s]   
+                       simulation_time,  // Simulation time [s]
                        timestep);        // Large time step [s]
-        
+
         if (!gcm_off) {
 //
 //        Dynamical Core Integration (THOR)
@@ -778,10 +801,16 @@ int main (int argc,  char** argv){
                 Planet.Gravit, // Gravity [m/s^2]
                 Planet.A     , // Planet radius [m]
                 DeepModel    ,
-                SpongeLayer  ,
-                shrink_sponge);
+                 n_out        ,
+                 SpongeLayer  ,
+                 shrink_sponge,
+                 conservation );
 
-        //if(nstep % n_out == 0)
+       // compute simulation time
+       simulation_time = simulation_start_time + (nstep - step_idx+1)*timestep;
+       bool file_output = false;
+
+        if(conservation == true )
         {
             X.Conservation(hstest       , // Held-Suarez test option
                            vulcan       , //
@@ -794,18 +823,12 @@ int main (int argc,  char** argv){
                            Planet.P_Ref , // Reference pressure [Pa]
                            Planet.Gravit, // Gravity [m/s^2]
                            Planet.A     , // Planet radius [m]
-                           DeepModel    ,
-                           SpongeLayer  ,
-                           shrink_sponge);
+                           DeepModel    );
             X.OutputConservation();
         }
-        
-        bool file_output = false;
-
 
 //
 //      Prints output every nout steps
-//      or if caught SIGTERM or SIGINT
         if(nstep % n_out == 0
             || caught_signal != ESIG_NOSIG) {
             X.CopyToHost();
@@ -817,49 +840,51 @@ int main (int argc,  char** argv){
                      Planet.Mmol         , // Mean molecular mass of dry air [kg]
                      Planet.P_Ref        , // Reference surface pressure [Pa]
                      Planet.Top_altitude , // Top of the model's domain [m]
-                     Planet.A           ); // Planet radius [m]   );     
+                     Planet.A            , // Planet radius [m]
+                     conservation        ,
+                     hstest              ,
+                     SpongeLayer         );
             // increment output file index
             output_file_idx++;
 
             file_output = true;
         }
 
-        
-        
+
+
 
         // Timing information
         std::chrono::system_clock::time_point end_step = std::chrono::system_clock::now();
-        
+
         std::chrono::duration<double, std::ratio<1L,1L>> sim_delta = end_step - start_sim;
 
-        long num_steps_elapsed = nstep - step_idx;
-                
+        long num_steps_elapsed = nstep - step_idx + 1;
+
         double mean_delta_per_step = sim_delta.count()/double(num_steps_elapsed);
-        
+
         long num_steps_left = nsmax - num_steps_elapsed;
-        
+
 
         std::chrono::duration<double, std::ratio<1L,1L>> time_left(double(num_steps_left)*mean_delta_per_step);
-        
+
         std::chrono::system_clock::time_point sim_end = end_step + std::chrono::duration_cast<std::chrono::microseconds>(time_left);
-        
-        
+
+
         std::time_t end_c = std::chrono::system_clock::to_time_t( sim_end );
- 
+
         std::ostringstream end_time_str;
 
         char str_time[256];
         std::strftime(str_time, sizeof(str_time), "%F %T", std::localtime(&end_c));
-        
-        
+
+
         end_time_str << str_time;
-        
-        
-        printf("\n Time step number = %d/%d || Time = %f days. elapsed %s left: %s total: %s. %s",
+
+        printf("\n Time step number = %d/%d || Time = %f days. \n\t Elapsed %s || Left: %s || Completion: %s. %s",
                nstep, nsmax,
                simulation_time/86400.,
                duration_to_str(sim_delta).c_str(),
-               duration_to_str(time_left).c_str(),               
+               duration_to_str(time_left).c_str(),
                end_time_str.str().c_str(),
                file_output?"[saved output]":"");
 
@@ -867,7 +892,7 @@ int main (int argc,  char** argv){
             //exit loop and application after save on SIGTERM or SIGINT
             break;
         }
-        
+
 
     }
 //
@@ -887,4 +912,3 @@ int main (int argc,  char** argv){
 
     return 0;
 }
-
