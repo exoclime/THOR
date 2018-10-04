@@ -325,27 +325,6 @@ __host__ void ESP::Output(int    fidx           , // Index of output file
       logwriter.WriteOutputLog(current_step, fidx, string(buf) );
 }
 
-
-
-void ESP::OutputConservation()
-{
-    //printf("output conservation\n");
-
-    // output global conservation values
-    conservation_output_file << current_step << "\t"
-                             << simulation_time << "\t"
-                             << GlobalE_h << "\t"
-                             << GlobalMass_h << "\t"
-                             << GlobalAMx_h << "\t"
-                             << GlobalAMy_h << "\t"
-                             << GlobalAMz_h << std::endl;
-
-
-    // flush file to disk
-    conservation_output_file.flush();
-}
-
-
 // Store path to output and prepare output files
 void ESP::SetOutputParam(const std::string & sim_id_,
                          const std::string & output_dir_ )
@@ -354,33 +333,3 @@ void ESP::SetOutputParam(const std::string & sim_id_,
     output_dir = output_dir_;
 }
 
-int ESP::PrepareConservationFile()
-{
-    path o(output_dir);
-
-    o /= ("esp_global_" + simulation_ID + ".txt");
-    //printf("Output conservation file to %s\n", o.to_string().c_str());
-
-    // Open for read and write.
-    // TODO: will need to handle restart
-    // TODO: output header at start of file
-    conservation_output_file.open(o.to_string(),std::ofstream::out
-                                  //  std::ofstream::in
-                                  //| std::ofstream::out
-                                  //  | std::ofstream::app // no append for now
-        );
-
-    conservation_output_file << std::setprecision(16);
-    conservation_output_file << "#"
-                             << "current_step" << "\t"
-                             << "simulation_time" << "\t"
-                             << "GlobalE_h" << "\t"
-                             << "GlobalMass_h" << "\t"
-                             << "GlobalAMx_h" << "\t"
-                             << "GlobalAMy_h" << "\t"
-                             << "GlobalAMz_h" << std::endl;
-
-
-    return 0;
-
-};

@@ -55,10 +55,20 @@ public:
                const std::string & output_dir_ );
     
 
-    
+    // control file log
     bool CheckOutputLog(int & file_number, int & iteration_number, std::string & last_file);
     void OpenOutputLogForWrite(bool append);
     void WriteOutputLog(int step_number, int file_number, std::string filename);
+
+    // conservation file log
+    void OutputConservation(int current_step,
+                            double simulation_time,
+                            double GlobalE_h,
+                            double GlobalMass_h,
+                            double GlobalAMx_h,
+                            double GlobalAMy_h,
+                            double GlobalAMz_h);
+    int PrepareConservationFile(bool append);
 
 private:
     // output variables
@@ -66,6 +76,7 @@ private:
     std::string output_dir;    // output directory
     
     std::fstream fileoutput_output_file;
+    std::fstream conservation_output_file;
 };
 
     

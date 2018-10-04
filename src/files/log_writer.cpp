@@ -46,7 +46,7 @@
 
 #include <stdio.h>
 #include "directories.h"
-
+#include <iomanip>
 #include <stdexcept>
 #include <memory>
 
@@ -167,4 +167,66 @@ void log_writer::WriteOutputLog(int step_number, int file_number, string filenam
                            << filename << std::endl;
 
     fileoutput_output_file.flush();
+}
+
+// *************************************************************************************************
+// * conservation file
+int log_writer::PrepareConservationFile(bool append)
+{
+    path o(output_dir);
+
+    o /= ("esp_global_" + simulation_ID + ".txt");
+    //printf("Output conservation file to %s\n", o.to_string().c_str());
+
+    // Open for write
+    if (append)
+    {
+        // write and append, open at end of file
+        conservation_output_file.open(o.to_string(), std::ofstream::out | std::ofstream::app  );
+    }
+    else
+    {
+        // start a new file
+        conservation_output_file.open(o.to_string(), std::ofstream::out );
+
+        // output file header
+        conservation_output_file << std::setprecision(16);
+        conservation_output_file << "#" 
+                                 << "current_step" << "\t"
+                                 << "simulation_time" << "\t"
+                                 << "GlobalE_h" << "\t"
+                                 << "GlobalMass_h" << "\t"
+                                 << "GlobalAMx_h" << "\t"
+                                 << "GlobalAMy_h" << "\t"
+                                 << "GlobalAMz_h" << std::endl;
+    }
+    
+
+    return 0;
+    
+};
+
+
+void log_writer::OutputConservation(int current_step,
+                                    double simulation_time,
+                                    double GlobalE_h,
+                                    double GlobalMass_h,
+                                    double GlobalAMx_h,
+                                    double GlobalAMy_h,
+                                    double GlobalAMz_h)
+{
+    //printf("output conservation\n");
+    
+    // output global conservation values
+    conservation_output_file << current_step << "\t"
+                             << simulation_time << "\t"
+                             << GlobalE_h << "\t"
+                             << GlobalMass_h << "\t"
+                             << GlobalAMx_h << "\t"
+                             << GlobalAMy_h << "\t"
+                             << GlobalAMz_h << std::endl;
+    
+
+    // flush file to disk
+    conservation_output_file.flush();    
 }

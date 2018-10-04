@@ -469,6 +469,7 @@ int main (int argc,  char** argv){
                 initial_conditions = o.to_string();
                 
                 logwriter.OpenOutputLogForWrite(true /*open in append mode */);
+                logwriter.PrepareConservationFile(true);
             }
             else
             {
@@ -480,7 +481,8 @@ int main (int argc,  char** argv){
         {
             printf("No batch file found, initialise simulation.\n");
             // we don't have an output file, start from scratch, reinitialising outputs
-            logwriter.OpenOutputLogForWrite(false /*open in non append mode */);        
+            logwriter.OpenOutputLogForWrite(false /*open in non append mode */);
+            logwriter.PrepareConservationFile(false);
         }
     
             
@@ -489,7 +491,8 @@ int main (int argc,  char** argv){
     else
     {
         printf("Opening result output file.\n");
-        logwriter.OpenOutputLogForWrite(continue_sim /*open in append mode */);        
+        logwriter.OpenOutputLogForWrite(continue_sim /*open in append mode */);
+        logwriter.PrepareConservationFile(continue_sim);
     }
     
 
@@ -767,10 +770,6 @@ int main (int argc,  char** argv){
     printf("   Start output numbering at %d.\n", output_file_idx);
 
 
-
-    X.PrepareConservationFile();
-
-
     // We'll start writnig data to file and running main loop,
     // setup signal handlers to handle gracefully termination and interrupt
      struct sigaction sigterm_action;
@@ -814,7 +813,14 @@ int main (int argc,  char** argv){
                          Planet.Gravit, // Gravity [m/s^2]
                          Planet.A     , // Planet radius [m]
                          DeepModel    );
-           X.OutputConservation();
+          
+          logwriter.OutputConservation(0,
+                                       simulation_time,
+                                       GlobalE_h,
+                                       GlobalMass_h,
+                                       GlobalAMx_h,
+                                       GlobalAMy_h,
+                                       GlobalAMz_h);
         }
 
         X.Output(0                   , // file index
@@ -912,7 +918,13 @@ int main (int argc,  char** argv){
                            Planet.Gravit, // Gravity [m/s^2]
                            Planet.A     , // Planet radius [m]
                            DeepModel    );
-            X.OutputConservation();
+            X.OutputConservation(nstep,
+                                 simulation_time,
+                                 GlobalE_h,
+                                 GlobalMass_h,
+                                 GlobalAMx_h,
+                                 GlobalAMy_h,
+                                 GlobalAMz_h);
         }
 
 //
