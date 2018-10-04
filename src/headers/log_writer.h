@@ -46,6 +46,10 @@
 
 #include <string>
 #include <fstream>
+#include <cstdio>
+#include <cstdlib>
+#include <ctime>
+
 
 class log_writer
 {
@@ -70,6 +74,19 @@ public:
                             double GlobalAMz_h);
     int PrepareConservationFile(bool append);
 
+    
+    int PrepareDiagnosticsFile(bool append);
+    void OutputDiagnostics(int current_step,
+                           double simulation_time,
+                           size_t total_bytes,
+                           size_t free_bytes,
+                           double elapsed_time,
+                           double time_left,
+                           double mean_delta_per_step,
+                           std::time_t end_time);
+    
+    
+
 private:
     // output variables
     std::string simulation_ID; // name of output planet
@@ -77,6 +94,7 @@ private:
     
     std::fstream fileoutput_output_file;
     std::fstream conservation_output_file;
+    std::fstream diagnostics_output_file;
 };
 
     

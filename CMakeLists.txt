@@ -151,6 +151,7 @@ set(SRC
   src/input/cmdargs.cpp
   src/files/directories.cpp
   src/files/log_writer.cpp
+  src/utils/iteration_timer.cpp
   src/thor/reduction_add.cu)
 
 # source for test program for storage class

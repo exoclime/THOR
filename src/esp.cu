@@ -51,7 +51,7 @@
 #include <cmath>
 #include <iostream>
 #include <string>
-#include <chrono>
+
 #include <iomanip>
 #include <sstream>
 
@@ -60,6 +60,7 @@
 #include "headers/planet.h"
 #include "esp.h"
 
+#include "iteration_timer.h"
 #include "config_file.h"
 #include "cmdargs.h"
 #include "directories.h"
@@ -98,10 +99,8 @@ void sigint_handler(int sig)
 
 
 
-std::string duration_to_str(std::chrono::duration<double> time_delta)
+std::string duration_to_str(double delta)
 {
-    double delta = time_delta.count();
-
     unsigned int days = delta/(24*3600);
     delta -= days*24.0*3600.0;
 
@@ -123,6 +122,19 @@ std::string duration_to_str(std::chrono::duration<double> time_delta)
     str << seconds << "s";
 
     return str.str();
+}
+
+void get_cuda_mem_usage(size_t & total_bytes, size_t & free_bytes)
+{
+        // show memory usage of GPU
+    cudaError_t cuda_status = cudaMemGetInfo( &free_bytes, &total_bytes ) ;
+
+    if ( cudaSuccess != cuda_status )
+    {    
+        printf("Error: cudaMemGetInfo fails, %s \n", cudaGetErrorString(cuda_status) );
+        
+    
+    }
 }
 
 
@@ -470,6 +482,7 @@ int main (int argc,  char** argv){
                 
                 logwriter.OpenOutputLogForWrite(true /*open in append mode */);
                 logwriter.PrepareConservationFile(true);
+                logwriter.PrepareDiagnosticsFile(true);
             }
             else
             {
@@ -483,6 +496,7 @@ int main (int argc,  char** argv){
             // we don't have an output file, start from scratch, reinitialising outputs
             logwriter.OpenOutputLogForWrite(false /*open in non append mode */);
             logwriter.PrepareConservationFile(false);
+            logwriter.PrepareDiagnosticsFile(false);
         }
     
             
@@ -493,6 +507,7 @@ int main (int argc,  char** argv){
         printf("Opening result output file.\n");
         logwriter.OpenOutputLogForWrite(continue_sim /*open in append mode */);
         logwriter.PrepareConservationFile(continue_sim);
+        logwriter.PrepareDiagnosticsFile(continue_sim);
     }
     
 
@@ -816,11 +831,11 @@ int main (int argc,  char** argv){
           
           logwriter.OutputConservation(0,
                                        simulation_time,
-                                       GlobalE_h,
-                                       GlobalMass_h,
-                                       GlobalAMx_h,
-                                       GlobalAMy_h,
-                                       GlobalAMz_h);
+                                       X.GlobalE_h,
+                                       X.GlobalMass_h,
+                                       X.GlobalAMx_h,
+                                       X.GlobalAMy_h,
+                                       X.GlobalAMz_h);
         }
 
         X.Output(0                   , // file index
@@ -849,7 +864,7 @@ int main (int argc,  char** argv){
     printf(" Starting the model integration.\n\n");
 
     // Start timer
-    std::chrono::system_clock::time_point start_sim = std::chrono::system_clock::now();
+    iteration_timer ittimer(step_idx, nsmax);
 
 //
 //  Main loop. nstep is the current step of the integration and nsmax the maximum
@@ -918,13 +933,13 @@ int main (int argc,  char** argv){
                            Planet.Gravit, // Gravity [m/s^2]
                            Planet.A     , // Planet radius [m]
                            DeepModel    );
-            X.OutputConservation(nstep,
-                                 simulation_time,
-                                 GlobalE_h,
-                                 GlobalMass_h,
-                                 GlobalAMx_h,
-                                 GlobalAMy_h,
-                                 GlobalAMz_h);
+            logwriter.OutputConservation(nstep,
+                                         simulation_time,
+                                         X.GlobalE_h,
+                                         X.GlobalMass_h,
+                                         X.GlobalAMx_h,
+                                         X.GlobalAMy_h,
+                                         X.GlobalAMz_h);
         }
 
 //
@@ -954,41 +969,46 @@ int main (int argc,  char** argv){
 
 
         // Timing information
-        std::chrono::system_clock::time_point end_step = std::chrono::system_clock::now();
-
-        std::chrono::duration<double, std::ratio<1L,1L>> sim_delta = end_step - start_sim;
-
-        long num_steps_elapsed = nstep - step_idx + 1;
-
-        double mean_delta_per_step = sim_delta.count()/double(num_steps_elapsed);
-
-        long num_steps_left = nsmax - num_steps_elapsed;
-
-
-        std::chrono::duration<double, std::ratio<1L,1L>> time_left(double(num_steps_left)*mean_delta_per_step);
-
-        std::chrono::system_clock::time_point sim_end = end_step + std::chrono::duration_cast<std::chrono::microseconds>(time_left);
-
-
-        std::time_t end_c = std::chrono::system_clock::to_time_t( sim_end );
-
+        double mean_delta_per_step = 0.0;
+        double elapsed_time = 0.0;
+        double time_left = 0.0;
+        std::time_t end_time;
+        
+        ittimer.iteration(nstep,
+                          mean_delta_per_step,
+                          elapsed_time,
+                          time_left,
+                          end_time);
+        // format end time
         std::ostringstream end_time_str;
-
         char str_time[256];
-        std::strftime(str_time, sizeof(str_time), "%F %T", std::localtime(&end_c));
-
-
+        std::strftime(str_time, sizeof(str_time), "%F %T", std::localtime(&end_time));
         end_time_str << str_time;
 
 
         printf("\n Time step number = %d/%d || Time = %f days. \n\t Elapsed %s || Left: %s || Completion: %s. %s",
                nstep, nsmax,
                simulation_time/86400.,
-               duration_to_str(sim_delta).c_str(),
+               duration_to_str(elapsed_time).c_str(),
                duration_to_str(time_left).c_str(),
                end_time_str.str().c_str(),
                file_output?"[saved output]":"");
 
+        // get memory statistics
+        size_t  total_bytes;
+        size_t  free_bytes;
+        get_cuda_mem_usage( total_bytes, free_bytes);
+        
+            
+        logwriter.OutputDiagnostics(nstep,
+                                    simulation_time,
+                                    total_bytes,
+                                    free_bytes,
+                                    elapsed_time,
+                                    time_left,
+                                    mean_delta_per_step,
+                                    end_time);
+            
         if( caught_signal != ESIG_NOSIG ) {
             //exit loop and application after save on SIGTERM or SIGINT
             break;

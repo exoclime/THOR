@@ -230,3 +230,68 @@ void log_writer::OutputConservation(int current_step,
     // flush file to disk
     conservation_output_file.flush();    
 }
+
+// *************************************************************************************************
+// * diagnostics file
+int log_writer::PrepareDiagnosticsFile(bool append)
+{
+    path o(output_dir);
+
+    o /= ("esp_diagnostics_" + simulation_ID + ".txt");
+    //printf("Output conservation file to %s\n", o.to_string().c_str());
+
+    // Open for write
+    if (append)
+    {
+        // write and append, open at end of file
+        diagnostics_output_file.open(o.to_string(), std::ofstream::out | std::ofstream::app  );
+    }
+    else
+    {
+        // start a new file
+        diagnostics_output_file.open(o.to_string(), std::ofstream::out );
+
+        // output file header
+        diagnostics_output_file << std::setprecision(16);
+        diagnostics_output_file << "#" 
+                                << "current_step" << "\t"
+                                << "simulation_time" << "\t"
+                                << "total_bytes" << "\t"
+                                << "free_bytes" << "\t"
+                                << "elapsed_time"<< "\t"
+                                << "time_left" << "\t"
+                                << "mean_delta_per_step" << "\t"
+                                << "end_time" << std::endl;
+    }
+    
+
+    return 0;
+    
+};
+
+
+void log_writer::OutputDiagnostics(int current_step,
+                                   double simulation_time,
+                                   size_t total_bytes,
+                                   size_t free_bytes,
+                                   double elapsed_time,
+                                   double time_left,
+                                   double mean_delta_per_step,
+                                   std::time_t end_time)
+{
+    //printf("output conservation\n");
+    
+    // output global conservation values
+    diagnostics_output_file << current_step << "\t"
+                             << simulation_time << "\t"
+                             << total_bytes << "\t"
+                             << free_bytes << "\t"
+                             << elapsed_time << "\t"
+                             << time_left << "\t"
+                             << mean_delta_per_step << "\t"
+                             << end_time << std::endl;
+    
+
+    // flush file to disk
+    diagnostics_output_file.flush();    
+}
