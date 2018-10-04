@@ -56,7 +56,8 @@
 
 #include <iomanip>
 
-
+#include <fstream>
+#include <stdexcept>
 
 __host__ void ESP::CopyConservationToHost()
 {
@@ -321,88 +322,7 @@ __host__ void ESP::Output(int    fidx           , // Index of output file
       
       sprintf(buf, "esp_output_%s_%d.h5", simulation_ID.c_str(), fidx);
       // Write to output f
-      WriteOutputLog(current_step, fidx, string(buf) );
-}
-
-bool ESP::CheckOutputLog(int & file_number, int & iteration_number, string & last_file)
-{
-    path o(output_dir);
-
-    o /= ("esp_write_log_" + simulation_ID + ".txt");
-
-    printf("Testing output log for file %s.\n", o.to_string().c_str());
-    
-    if (path_exists(o.c_str()))
-    {
-
-        FILE * pFile;
-
-        pFile = fopen (o.to_string().c_str() , "r");
-        if (pFile == NULL)
-        {
-            cout << "Error opening input file: " << o.to_string() << std::endl;
-            return false;
-        }
-        else
-        {
-            file_number = 0;
-            last_file = "";
-            iteration_number = 0;
-            
-            while ( ! feof (pFile) )
-            {
-                char buf[256];
-                
-                fscanf (pFile, "%d %d %s\n", &iteration_number, &file_number, buf );
-                last_file = buf;
-                
-            }
-
-            cout << "Found last file iteration " << iteration_number 
-                 << " file number "<< file_number
-                 << " filename:" << last_file << std::endl;
-            
-            fclose (pFile);
-
-            return true;
-        }
-    }
-    else
-        return false;
-}
-
-
-void ESP::OpenOutputLogForWrite(bool append)
-{
-    path o(output_dir);
-
-    
-    o /= ("esp_write_log_" + simulation_ID + ".txt");
-
-    cout << " Output file for result write log: " << o.to_string() << std::endl;
-    
-    if (append)
-        fileoutput_output_file.open(o.to_string(),std::ofstream::out | std::ofstream::app);
-    else
-    {
-        // start new file
-        fileoutput_output_file.open(o.to_string(),std::ofstream::out);
-        // append header
-        fileoutput_output_file << "#"
-                               << "step_number\t"
-                               << "file_number\t"
-                               << "filename" << std::endl;
-    }
-    
-}
-
-void ESP::WriteOutputLog(int step_number, int file_number, string filename)
-{
-    fileoutput_output_file << step_number << "\t"
-                           << file_number << "\t"
-                           << filename << std::endl;
-
-    fileoutput_output_file.flush();
+      logwriter.WriteOutputLog(current_step, fidx, string(buf) );
 }
 
 

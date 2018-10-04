@@ -53,7 +53,7 @@
 #include <iostream>
 #include <fstream>
 
-
+#include "log_writer.h"
 
 
 class ESP{
@@ -280,7 +280,10 @@ public:
         double ns_sponge_    ,
         double t_shrink_     ,
         int point_num_       ,
-        bool conservation    );
+        bool conservation    ,
+        log_writer & logwriter_);
+
+    ~ESP();
 
     void AllocData(bool) ;
 
@@ -385,19 +388,8 @@ public:
     void CopyConservationToHost();
     void CopyGlobalToHost();
 
-
-    bool CheckOutputLog(int & file_number, int & iteration_number, std::string & last_file);
-    void OpenOutputLogForWrite(bool append);
-    void WriteOutputLog(int step_number, int file_number, std::string filename);
-
-    
-
     void OutputConservation();
     int PrepareConservationFile();
-
-
-    ~ESP();
-
 
 private:
     // step counter for logging
@@ -410,6 +402,5 @@ private:
     std::string output_dir;
     std::fstream conservation_output_file;
 
-    std::fstream fileoutput_output_file;
-
+    log_writer & logwriter;
 };

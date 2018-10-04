@@ -150,6 +150,7 @@ set(SRC
   src/input/config_file.cpp
   src/input/cmdargs.cpp
   src/files/directories.cpp
+  src/files/log_writer.cpp
   src/thor/reduction_add.cu)
 
 # source for test program for storage class

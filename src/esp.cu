@@ -123,16 +123,10 @@ std::string duration_to_str(std::chrono::duration<double> time_delta)
     str << seconds << "s";
 
     return str.str();
-
-
-
 }
 
 
 int main (int argc,  char** argv){
-
-
-
     //*****************************************************************
     // Parse input arguments
     cmdargs argparser("esp", "run THOR GCM simulation");
@@ -181,9 +175,9 @@ int main (int argc,  char** argv){
     //*****************************************************************
     printf("\n Starting ESP!");
     printf("\n\n version 1.0\n");
-    printf(" Compiled on " __DATE__ " at " __TIME__ "\n");
+    printf(" Compiled on %s at %s.\n", __DATE__, __TIME__);
 
-    printf(" build level: " BUILD_LEVEL "\n");
+    printf(" build level: %s\n", BUILD_LEVEL);
 
 
     //*****************************************************************
@@ -431,6 +425,75 @@ int main (int argc,  char** argv){
         exit(-1);
     }
 
+    //*****************************************************************
+    log_writer logwriter(Planet.simulation_ID, output_path);
+    
+    // Batch mode handling
+    if (run_as_batch)
+    {
+        printf("Starting in batch mode.\n");
+        
+            
+        // Get last written file from
+        int last_file_number = 0;
+        int last_iteration_number = 0;
+        string last_file = "";
+        bool has_last_file = false;
+        
+        try
+        {
+            has_last_file = logwriter.CheckOutputLog(last_file_number, last_iteration_number, last_file);
+        }
+        catch (const std::exception& e) {
+            printf( "[%s:%d] error while checking output log: %s.\n",  __FILE__, __LINE__ , e.what());
+            exit(-1);
+        }
+        
+        if (has_last_file)
+        {
+            path o(output_path);
+            o /= last_file;
+
+            if (path_exists(o.to_string()))
+            {
+                printf("continuing batch run from file %s\n", last_file.c_str());
+
+                // we want to continue the simulation
+                rest = false;
+                continue_sim = true;
+
+                // overwrite the results files we'd encounter
+                force_overwrite = true;
+
+                // reload the last file we found as initial conditions
+                initial_conditions = o.to_string();
+                
+                logwriter.OpenOutputLogForWrite(true /*open in append mode */);
+            }
+            else
+            {
+                printf("Did not find last saved file that should exist.\n");
+                exit(-1);
+            }
+        }
+        else
+        {
+            printf("No batch file found, initialise simulation.\n");
+            // we don't have an output file, start from scratch, reinitialising outputs
+            logwriter.OpenOutputLogForWrite(false /*open in non append mode */);        
+        }
+    
+            
+
+    }
+    else
+    {
+        printf("Opening result output file.\n");
+        logwriter.OpenOutputLogForWrite(continue_sim /*open in append mode */);        
+    }
+    
+
+
   
     //*****************************************************************
 //  Set the GPU device.
@@ -479,7 +542,8 @@ int main (int argc,  char** argv){
            ns_sponge          , // lowest level of sponge layer (fraction of model)
            t_shrink           , // time to shrink sponge layer
            Grid.point_num     , // Number of grid points
-           conservation       );
+           conservation       , // compute conservation values
+           logwriter          );// Log writer
 
     USE_BENCHMARK();
     INIT_BENCHMARK(X, Grid);
@@ -491,62 +555,7 @@ int main (int argc,  char** argv){
 
     // esp output setup
     X.SetOutputParam(Planet.simulation_ID, output_path);
-    //*****************************************************************
-    // Batch mode handling
-    if (run_as_batch)
-    {
-        printf("Starting in batch mode.\n");
-        
-            
-        // Get last written file from
-        int last_file_number = 0;
-        int last_iteration_number = 0;
-        string last_file = "";
-        
-        bool has_last_file = X.CheckOutputLog(last_file_number, last_iteration_number, last_file);
-
-        if (has_last_file)
-        {
-            path o(output_path);
-            o /= last_file;
-
-            if (path_exists(o.to_string()))
-            {
-                printf("continuing batch run from file %s\n", last_file.c_str());
-
-                // we want to continue the simulation
-                continue_sim = true;
-
-                // overwrite the results files we'd encounter
-                force_overwrite = true;
-
-                // reload the last file we found as initial conditions
-                initial_conditions = last_file;
-                X.OpenOutputLogForWrite(true /*open in append mode */);
-            }
-            else
-            {
-                printf("Did not find last saved file that should exist.\n");
-                exit(-1);
-            }
-        }
-        else
-        {
-            printf("No batch file found, initialise simulation.\n");
-            // we don't have an output file, start from scratch, reinitialising outputs
-            X.OpenOutputLogForWrite(false /*open in non append mode */);        
-        }
     
-            
-
-    }
-    else
-    {
-        printf("Opening result output file.\n");
-        X.OpenOutputLogForWrite(continue_sim /*open in append mode */);        
-    }
-    
-
     printf(" Setting the initial conditions.\n\n");
 
     double simulation_start_time = 0.0;
