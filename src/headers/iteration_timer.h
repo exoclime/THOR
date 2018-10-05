@@ -16,14 +16,11 @@
 //     <http://www.gnu.org/licenses/>.
 // ==============================================================================
 //
+// Timer helper to measure tome for iterations, elapsed time and time remaining
 //
+
 //
-// Description: Defines debug parameters and enable helper functions
-//
-// Method: -
-//
-// Known limitations: None
-//
+// Known limitations: 
 //
 // Known issues: None
 //
@@ -42,28 +39,24 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
-// benchmarking
-// if defined run benchmark functions
-//#define BENCHMARKING
+#pragma once
 
-// ***************************************
-// * binary comparison
-// compare benchmark point to references
-//#define BENCH_POINT_COMPARE
-// write reference benchmark point
-//#define BENCH_POINT_WRITE
-// print out more debug info, by default, only print out failures
-//#define BENCH_PRINT_DEBUG
-// ***************************************
-// * check for NaNs
-//#define BENCH_NAN_CHECK
-//#define BENCH_CHECK_LAST_CUDA_ERROR
+#include <chrono>
 
-// path to benchmark result directory
-#define BENCHMARK_DUMP_REF_PATH   "results/ref/"
-#define BENCHMARK_DUMP_BASENAME   "bindata_"
+class iteration_timer
+{
+public:
+   iteration_timer(int initial_num_steps, int max_steps);
 
+   void iteration(int nstep,
+                  double & mean_delta_per_step,
+                  double & elapsed_time,
+                  double & time_left,
+                  std::time_t & end_time);
 
-//#define GLOBAL_CONSERVATION_ATOMICADD
-#define GLOBAL_CONSERVATION_REDUCTIONADD
-//#define GLOBAL_CONSERVATION_CPUADD
+private:
+   int max_steps = 1;
+   int initial_num_steps = 0;
+   std::chrono::system_clock::time_point start_sim;
+};
+

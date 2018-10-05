@@ -50,9 +50,11 @@
 #include <utility>
 #include <vector>
 
+#include <cstring>
+
 #include <sys/stat.h>
 #include <dirent.h>
-
+#include <errno.h>
 
 using namespace std;
 
@@ -74,9 +76,29 @@ bool path_exists(const string & path)
 {
     struct stat st;
     if(stat(path.c_str(),&st) == 0)
+    {
+        //printf("found file %s.\n", path.c_str());
+        
         return true;
+    }
+    
     else
+    {
+        //printf("not found file %s.\n", path.c_str());
+
+        // debug stat error
+        /*
+        int errsv = errno;
+        char buf[256];
+        
+        if (strerror_r(errsv, buf, 256) == 0)
+        {
+            printf("Error reading char: %s.\n", buf);
+        }
+        */
         return false;
+    }
+    
 }
 
 bool create_dir(const string & dir)

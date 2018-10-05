@@ -53,7 +53,7 @@
 #include <iostream>
 #include <fstream>
 
-
+#include "log_writer.h"
 
 
 class ESP{
@@ -280,7 +280,10 @@ public:
         double ns_sponge_    ,
         double t_shrink_     ,
         int point_num_       ,
-        bool conservation    );
+        bool conservation    ,
+        log_writer & logwriter_);
+
+    ~ESP();
 
     void AllocData(bool) ;
 
@@ -369,28 +372,21 @@ public:
                         const std::string & output_dir_ );
 
     void Conservation(int    hstest      , // Held-Suarez test option
-                       int    vulcan      , //
-                       double Omega       , // Rotation rate [1/s]
-                       double Cp          , // Specific heat capacity [J/kg/K]
-                       double Rd          , // Gas constant [J/kg/K]
-                       double Mmol        , // Mean molecular mass of dry air [kg]
-                       double mu          , // Atomic mass unit [kg]
-                       double kb          , // Boltzmann constant [J/K]
-                       double P_Ref       , // Reference pressure [Pa]
-                       double Gravit      , // Gravity [m/s^2]
-                       double A           , // Planet radius [m]
-                       bool   DeepModel   );
-
+                      int    vulcan      , //
+                      double Omega       , // Rotation rate [1/s]
+                      double Cp          , // Specific heat capacity [J/kg/K]
+                      double Rd          , // Gas constant [J/kg/K]
+                      double Mmol        , // Mean molecular mass of dry air [kg]
+                      double mu          , // Atomic mass unit [kg]
+                      double kb          , // Boltzmann constant [J/K]
+                      double P_Ref       , // Reference pressure [Pa]
+                      double Gravit      , // Gravity [m/s^2]
+                      double A           , // Planet radius [m]
+                      bool   DeepModel   );
+    
     void CopyToHost();
     void CopyConservationToHost();
     void CopyGlobalToHost();
-
-    void OutputConservation();
-    int PrepareConservationFile();
-
-
-    ~ESP();
-
 
 private:
     // step counter for logging
@@ -401,6 +397,7 @@ private:
     // output variables
     std::string simulation_ID; // name of output planet
     std::string output_dir;
-    std::fstream conservation_output_file;
+    
 
+    log_writer & logwriter;
 };

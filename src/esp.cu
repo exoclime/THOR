@@ -51,16 +51,16 @@
 #include <cmath>
 #include <iostream>
 #include <string>
-#include <chrono>
+
 #include <iomanip>
 #include <sstream>
-using namespace std;
 
 #include "headers/define.h"
 #include "headers/grid.h"
 #include "headers/planet.h"
 #include "esp.h"
 
+#include "iteration_timer.h"
 #include "config_file.h"
 #include "cmdargs.h"
 #include "directories.h"
@@ -71,6 +71,9 @@ using namespace std;
 
 
 #include <csignal>
+
+using std::string;
+
 
 enum e_sig {
     ESIG_NOSIG = 0,
@@ -85,21 +88,19 @@ volatile sig_atomic_t caught_signal = ESIG_NOSIG;
 void sigterm_handler(int sig)
 {
     caught_signal = ESIG_SIGTERM;
-    std::cout << "SIGTERM caught, trying to exit gracefully" << std::endl;
+    printf("SIGTERM caught, trying to exit gracefully.\n");
 }
 
 void sigint_handler(int sig)
 {
     caught_signal = ESIG_SIGINT;
-    std::cout << "SIGINT caught, trying to exit gracefully" << std::endl;
+    printf("SIGINT caught, trying to exit gracefully\n");
 }
 
 
 
-std::string duration_to_str(std::chrono::duration<double> time_delta)
+std::string duration_to_str(double delta)
 {
-    double delta = time_delta.count();
-
     unsigned int days = delta/(24*3600);
     delta -= days*24.0*3600.0;
 
@@ -121,16 +122,23 @@ std::string duration_to_str(std::chrono::duration<double> time_delta)
     str << seconds << "s";
 
     return str.str();
+}
 
+void get_cuda_mem_usage(size_t & total_bytes, size_t & free_bytes)
+{
+        // show memory usage of GPU
+    cudaError_t cuda_status = cudaMemGetInfo( &free_bytes, &total_bytes ) ;
 
-
+    if ( cudaSuccess != cuda_status )
+    {    
+        printf("Error: cudaMemGetInfo fails, %s \n", cudaGetErrorString(cuda_status) );
+        
+    
+    }
 }
 
 
 int main (int argc,  char** argv){
-
-
-
     //*****************************************************************
     // Parse input arguments
     cmdargs argparser("esp", "run THOR GCM simulation");
@@ -158,6 +166,8 @@ int main (int argc,  char** argv){
     argparser.add_arg("N", "numsteps", 48000, "number of steps to run");
     argparser.add_arg("w", "overwrite", true, "Force overwrite of output file if they exist");
 
+    argparser.add_arg("b", "batch", true, "Run as batch");
+    
 
     // Parse arguments, exit on fail
     bool parse_ok = argparser.parse(argc, argv);
@@ -177,9 +187,9 @@ int main (int argc,  char** argv){
     //*****************************************************************
     printf("\n Starting ESP!");
     printf("\n\n version 1.0\n");
-    printf(" Compiled on " __DATE__ " at " __TIME__ "\n");
+    printf(" Compiled on %s at %s.\n", __DATE__, __TIME__);
 
-    printf(" build level: " BUILD_LEVEL "\n");
+    printf(" build level: %s\n", BUILD_LEVEL);
 
 
     //*****************************************************************
@@ -329,6 +339,13 @@ int main (int argc,  char** argv){
         }
     }
 
+    bool run_as_batch_arg = false;
+    bool run_as_batch = false;    
+    if (argparser.get_arg("batch", run_as_batch_arg))
+    {
+        run_as_batch = run_as_batch_arg;
+    }
+
     string continue_filename = "";
     bool continue_sim = false;
 
@@ -338,9 +355,17 @@ int main (int argc,  char** argv){
         rest = false;
         continue_sim = true;
 
+        if (run_as_batch)
+        {
+            printf("--continue and --batch options set, options are exclusive, must set only one\n");
+
+            exit(-1);
+        }
+        
+
         if (initial_condition_arg_set)
         {
-            printf("--continue and --initial options set, must set only one\n");
+            printf("--continue and --initial options set, options are exclusive, must set only one\n");
 
             exit(-1);
         }
@@ -358,8 +383,10 @@ int main (int argc,  char** argv){
     bool force_overwrite = false;
 
     if (argparser.get_arg("overwrite", force_overwrite_arg))
-        force_overwrite = force_overwrite_arg;
-
+        force_overwrite = force_overwrite_arg;    
+    
+    
+    
     int nsmax_arg;
     if (argparser.get_arg("numsteps", nsmax_arg))
         nsmax = nsmax_arg;
@@ -411,6 +438,82 @@ int main (int argc,  char** argv){
     }
 
     //*****************************************************************
+    log_writer logwriter(Planet.simulation_ID, output_path);
+    
+    // Batch mode handling
+    if (run_as_batch)
+    {
+        printf("Starting in batch mode.\n");
+        
+            
+        // Get last written file from
+        int last_file_number = 0;
+        int last_iteration_number = 0;
+        string last_file = "";
+        bool has_last_file = false;
+        
+        try
+        {
+            has_last_file = logwriter.CheckOutputLog(last_file_number, last_iteration_number, last_file);
+        }
+        catch (const std::exception& e) {
+            printf( "[%s:%d] error while checking output log: %s.\n",  __FILE__, __LINE__ , e.what());
+            exit(-1);
+        }
+        
+        if (has_last_file)
+        {
+            path o(output_path);
+            o /= last_file;
+
+            if (path_exists(o.to_string()))
+            {
+                printf("continuing batch run from file %s\n", last_file.c_str());
+
+                // we want to continue the simulation
+                rest = false;
+                continue_sim = true;
+
+                // overwrite the results files we'd encounter
+                force_overwrite = true;
+
+                // reload the last file we found as initial conditions
+                initial_conditions = o.to_string();
+                
+                logwriter.OpenOutputLogForWrite(true /*open in append mode */);
+                logwriter.PrepareConservationFile(true);
+                logwriter.PrepareDiagnosticsFile(true);
+            }
+            else
+            {
+                printf("Did not find last saved file that should exist.\n");
+                exit(-1);
+            }
+        }
+        else
+        {
+            printf("No batch file found, initialise simulation.\n");
+            // we don't have an output file, start from scratch, reinitialising outputs
+            logwriter.OpenOutputLogForWrite(false /*open in non append mode */);
+            logwriter.PrepareConservationFile(false);
+            logwriter.PrepareDiagnosticsFile(false);
+        }
+    
+            
+
+    }
+    else
+    {
+        printf("Opening result output file.\n");
+        logwriter.OpenOutputLogForWrite(continue_sim /*open in append mode */);
+        logwriter.PrepareConservationFile(continue_sim);
+        logwriter.PrepareDiagnosticsFile(continue_sim);
+    }
+    
+
+
+  
+    //*****************************************************************
 //  Set the GPU device.
     cudaError_t error;
     printf(" Using GPU #%d\n", GPU_ID_N);
@@ -457,16 +560,20 @@ int main (int argc,  char** argv){
            ns_sponge          , // lowest level of sponge layer (fraction of model)
            t_shrink           , // time to shrink sponge layer
            Grid.point_num     , // Number of grid points
-           conservation       );
+           conservation       , // compute conservation values
+           logwriter          );// Log writer
 
     USE_BENCHMARK();
     INIT_BENCHMARK(X, Grid);
 
-    BENCH_POINT("0", "Grid", vector<string>({}), vector<string>({ "func_r", "areas",
+    BENCH_POINT("0", "Grid", std::vector<string>({}), std::vector<string>({ "func_r", "areas",
                 "areasTr", "areasT", "nvec", "nvecoa", "nvecti", "nvecte", "Altitude", "Altitudeh", "lonlat",
                 "div", "grad"}))
 
 
+    // esp output setup
+    X.SetOutputParam(Planet.simulation_ID, output_path);
+    
     printf(" Setting the initial conditions.\n\n");
 
     double simulation_start_time = 0.0;
@@ -533,11 +640,11 @@ int main (int argc,  char** argv){
     path results(output_path);
 
     // Get the files in the directory
-    vector<string> result_files = get_files_in_directory(results.to_string());
+    std::vector<string> result_files = get_files_in_directory(results.to_string());
 
     // match them to name pattern, get file numbers and check numbers that are greater than the
     // restart file number
-    vector<pair<string,int>> matching_name_result_files;
+    std::vector<std::pair<string,int>> matching_name_result_files;
     for (const auto & r : result_files)
     {
         string basename = "";
@@ -678,11 +785,6 @@ int main (int argc,  char** argv){
     printf("   Start output numbering at %d.\n", output_file_idx);
 
 
-    // esp output setup
-    X.SetOutputParam(Planet.simulation_ID, output_path);
-    X.PrepareConservationFile();
-
-
     // We'll start writnig data to file and running main loop,
     // setup signal handlers to handle gracefully termination and interrupt
      struct sigaction sigterm_action;
@@ -692,7 +794,7 @@ int main (int argc,  char** argv){
      sigterm_action.sa_flags = 0;
 
      if (sigaction(SIGTERM, &sigterm_action, NULL) == -1) {
-         std::cout << "Error: cannot handle SIGTERM" << std::endl; // Should not happen
+         printf("Error: cannot handle SIGTERM\n"); // Should not happen
      }
 
      struct sigaction sigint_action;
@@ -702,7 +804,7 @@ int main (int argc,  char** argv){
      sigint_action.sa_flags = 0;
 
      if (sigaction(SIGINT, &sigint_action, NULL) == -1) {
-         std::cout << "Error: cannot handle SIGINT" << std::endl; // Should not happen
+         printf("Error: cannot handle SIGINT\n"); // Should not happen
      }
 
 //
@@ -726,7 +828,14 @@ int main (int argc,  char** argv){
                          Planet.Gravit, // Gravity [m/s^2]
                          Planet.A     , // Planet radius [m]
                          DeepModel    );
-           X.OutputConservation();
+          
+          logwriter.OutputConservation(0,
+                                       simulation_time,
+                                       X.GlobalE_h,
+                                       X.GlobalMass_h,
+                                       X.GlobalAMx_h,
+                                       X.GlobalAMy_h,
+                                       X.GlobalAMz_h);
         }
 
         X.Output(0                   , // file index
@@ -755,7 +864,7 @@ int main (int argc,  char** argv){
     printf(" Starting the model integration.\n\n");
 
     // Start timer
-    std::chrono::system_clock::time_point start_sim = std::chrono::system_clock::now();
+    iteration_timer ittimer(step_idx, nsmax);
 
 //
 //  Main loop. nstep is the current step of the integration and nsmax the maximum
@@ -824,7 +933,13 @@ int main (int argc,  char** argv){
                            Planet.Gravit, // Gravity [m/s^2]
                            Planet.A     , // Planet radius [m]
                            DeepModel    );
-            X.OutputConservation();
+            logwriter.OutputConservation(nstep,
+                                         simulation_time,
+                                         X.GlobalE_h,
+                                         X.GlobalMass_h,
+                                         X.GlobalAMx_h,
+                                         X.GlobalAMy_h,
+                                         X.GlobalAMz_h);
         }
 
 //
@@ -854,40 +969,46 @@ int main (int argc,  char** argv){
 
 
         // Timing information
-        std::chrono::system_clock::time_point end_step = std::chrono::system_clock::now();
-
-        std::chrono::duration<double, std::ratio<1L,1L>> sim_delta = end_step - start_sim;
-
-        long num_steps_elapsed = nstep - step_idx + 1;
-
-        double mean_delta_per_step = sim_delta.count()/double(num_steps_elapsed);
-
-        long num_steps_left = nsmax - num_steps_elapsed;
-
-
-        std::chrono::duration<double, std::ratio<1L,1L>> time_left(double(num_steps_left)*mean_delta_per_step);
-
-        std::chrono::system_clock::time_point sim_end = end_step + std::chrono::duration_cast<std::chrono::microseconds>(time_left);
-
-
-        std::time_t end_c = std::chrono::system_clock::to_time_t( sim_end );
-
+        double mean_delta_per_step = 0.0;
+        double elapsed_time = 0.0;
+        double time_left = 0.0;
+        std::time_t end_time;
+        
+        ittimer.iteration(nstep,
+                          mean_delta_per_step,
+                          elapsed_time,
+                          time_left,
+                          end_time);
+        // format end time
         std::ostringstream end_time_str;
-
         char str_time[256];
-        std::strftime(str_time, sizeof(str_time), "%F %T", std::localtime(&end_c));
-
-
+        std::strftime(str_time, sizeof(str_time), "%F %T", std::localtime(&end_time));
         end_time_str << str_time;
+
 
         printf("\n Time step number = %d/%d || Time = %f days. \n\t Elapsed %s || Left: %s || Completion: %s. %s",
                nstep, nsmax,
                simulation_time/86400.,
-               duration_to_str(sim_delta).c_str(),
+               duration_to_str(elapsed_time).c_str(),
                duration_to_str(time_left).c_str(),
                end_time_str.str().c_str(),
                file_output?"[saved output]":"");
 
+        // get memory statistics
+        size_t  total_bytes;
+        size_t  free_bytes;
+        get_cuda_mem_usage( total_bytes, free_bytes);
+        
+            
+        logwriter.OutputDiagnostics(nstep,
+                                    simulation_time,
+                                    total_bytes,
+                                    free_bytes,
+                                    elapsed_time,
+                                    time_left,
+                                    mean_delta_per_step,
+                                    end_time);
+            
         if( caught_signal != ESIG_NOSIG ) {
             //exit loop and application after save on SIGTERM or SIGINT
             break;
@@ -898,17 +1019,16 @@ int main (int argc,  char** argv){
 //
 //  Prints the duration of the integration.
     long finishTime = clock();
-    cout << "\n\n Integration time = " << (finishTime - startTime)/CLOCKS_PER_SEC
-                                       << " seconds" << endl;
+    printf("\n\n Integration time = %f seconds\n\n", double((finishTime - startTime))/double(CLOCKS_PER_SEC));
 
 //
 //  Checks for errors in the device.
     cudaDeviceSynchronize();
     error = cudaGetLastError();
-    printf("\n\n CudaMalloc error = %d = %s",error, cudaGetErrorString(error));
+    printf("CudaMalloc error = %d = %s\n\n",error, cudaGetErrorString(error));
 //
 //  END OF THE ESP
-    printf("\n\n End of the ESP!\n\n");
+    printf("End of the ESP!\n\n");
 
     return 0;
 }
