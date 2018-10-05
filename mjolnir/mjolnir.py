@@ -94,9 +94,9 @@ if (args.pressure_min[0]=='default'):
     args.pressure_min[0] = np.max(output.Pressure[:,grid.nv-1,:])
 
 if np.max(input.P_Ref)/np.float(args.pressure_min[0]) > 1000:
-    sigmaref = np.logspace(np.log10(input.P_Ref),np.log10(np.float(args.pressure_min[0])),20)/input.P_Ref
+    sigmaref = np.logspace(np.log10(input.P_Ref),np.log10(np.float(args.pressure_min[0])*100),20)/input.P_Ref
 else:
-    sigmaref = np.linspace(input.P_Ref,np.float(args.pressure_min[0]),20)/input.P_Ref
+    sigmaref = np.linspace(input.P_Ref,np.float(args.pressure_min[0])*100,20)/input.P_Ref
 
 if 'pause' in pview:
     import pdb; pdb.set_trace()

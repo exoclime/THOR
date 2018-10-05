@@ -205,6 +205,8 @@ def temperature(input,grid,output,sigmaref):
     plt.xlabel('Latitude (deg)')
     plt.ylabel('Pressure (bar)')
     plt.title('Time = %#.3f - %#.3f days'%(output.time[0],output.time[-1]))
+
+    plt.plot(latp*180/np.pi,np.zeros_like(latp)+np.max(output.Pressure[:,grid.nv-1,:])/1e5,'r--')
     clb = plt.colorbar(C)
     clb.set_label(r'Temperature (K)')
     if not os.path.exists(input.resultsf+'/figures'):
