@@ -306,6 +306,8 @@ def u(input,grid,output,sigmaref):
         plt.gca().set_yscale("log")
     plt.xlabel('Latitude (deg)')
     plt.ylabel('Pressure (bar)')
+    plt.plot(latp*180/np.pi,np.zeros_like(latp)+np.max(output.Pressure[:,grid.nv-1,:])/1e5,'r--')
+
     plt.title('Time = %#.3f - %#.3f days'%(output.time[0],output.time[-1]))
     clb = plt.colorbar(C)
     clb.set_label(r'Velocity (m s$^{-1}$)')
@@ -468,6 +470,8 @@ def w_ver(input,grid,output,sigmaref):
         plt.gca().set_yscale("log")
     plt.xlabel('Latitude (deg)')
     plt.ylabel('Pressure (bar)')
+    plt.plot(latp*180/np.pi,np.zeros_like(latp)+np.max(output.Pressure[:,grid.nv-1,:])/1e5,'r--')
+
     plt.title('Time = %#.3f - %#.3f days'%(output.time[0],output.time[-1]))
     clb = plt.colorbar(C)
     clb.set_label(r'Velocity (m s$^{-1}$)')
@@ -738,6 +742,8 @@ def potential_temp(input,grid,output,sigmaref):
         plt.gca().set_yscale("log")
     plt.xlabel('Latitude (deg)')
     plt.ylabel('Pressure (bar)')
+    plt.plot(latp*180/np.pi,np.zeros_like(latp)+np.max(output.Pressure[:,grid.nv-1,:])/1e5,'r--')
+
     plt.title('Time = %#.3f - %#.3f days'%(output.time[0],output.time[-1]))
     clb = plt.colorbar(C)
     clb.set_label(r'Potential temperature (K)')
@@ -1012,6 +1018,8 @@ def potential_vort_vert(input,grid,output,sigmaref):
         plt.gca().set_yscale("log")
     plt.xlabel('Latitude (deg)')
     plt.ylabel('Pressure (bar)')
+    plt.plot(latp*180/np.pi,np.zeros_like(latp)+np.max(output.Pressure[:,grid.nv-1,:])/1e5,'r--')
+
     plt.title('Time = %#.3f - %#.3f days'%(output.time[0],output.time[-1]))
     #plt.ylabel('Altitude (m)')
     clb = plt.colorbar(C)
@@ -1369,6 +1377,8 @@ def streamf(input,grid,output,sigmaref):
         plt.gca().set_yscale("log")
     plt.xlabel('Latitude (deg)')
     plt.ylabel('Pressure (bar)')
+    plt.plot(latp*180/np.pi,np.zeros_like(latp)+np.max(output.Pressure[:,grid.nv-1,:])/1e5,'r--')
+
     plt.title('Time = %#.3f - %#.3f days'%(output.time[0],output.time[-1]))
     clb = plt.colorbar(C)
     clb.set_label(r'Stream function (kg s$^{-1}$)')

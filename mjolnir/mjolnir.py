@@ -91,7 +91,7 @@ output = outall.output
 #########
 # Sigma values for the plotting
 if (args.pressure_min[0]=='default'):
-    args.pressure_min[0] = np.max(output.Pressure[:,grid.nv-1,:])
+    args.pressure_min[0] = np.max(output.Pressure[:,grid.nv-1,:])/100
 
 if np.max(input.P_Ref)/np.float(args.pressure_min[0]) > 1000:
     sigmaref = np.logspace(np.log10(input.P_Ref),np.log10(np.float(args.pressure_min[0])*100),20)/input.P_Ref
