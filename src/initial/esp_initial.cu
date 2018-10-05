@@ -85,16 +85,19 @@ __host__ ESP::ESP(int *point_local_    ,
                   double ns_sponge_    ,
                   double t_shrink_     ,
                   int point_num_       ,
-                  bool conservation ): nl_region(nl_region_),
-                                       nr(nr_),
-                                       point_num(point_num_),
-                                       nv(nv_),
-                                       nvi(nvi_),
-                                       nlat(nlat_),
-                                       ntr(ntr_),
-                                       glevel(glevel_),
-                                       spring_dynamics(spring_dynamics_),
-                                       spring_beta(spring_beta_)
+                  bool conservation    ,
+                  log_writer & logwriter_) :
+    nl_region(nl_region_),
+    nr(nr_),
+    point_num(point_num_),
+    nv(nv_),
+    nvi(nvi_),
+    nlat(nlat_),
+    ntr(ntr_),
+    glevel(glevel_),
+    spring_dynamics(spring_dynamics_),
+    spring_beta(spring_beta_),
+    logwriter(logwriter_)
 {
 
     point_local_h = point_local_;

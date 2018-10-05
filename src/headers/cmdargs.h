@@ -55,7 +55,7 @@
 // with --initial <initial_file> with *.h5 file, start from there as
 // initial condition instead of rest
 // if no positional argument, use default values?
-
+#pragma once
 
 
 #include <iostream>
@@ -81,6 +81,8 @@ public:
     virtual bool is_key(const string & str) = 0;
     virtual string get_name() = 0;
     virtual void print_desc() = 0;
+
+    virtual void set_default() = 0;
 };
 
 // base template interface class 
@@ -90,7 +92,8 @@ class arg : public arg_interface
 public:
     arg( const string & short_form_,
          const string & long_form_,
-         const T & value_,
+         const T & value_,   // To give the type of the argument, value doesn't get used, other than
+                             // for bool that gets set on command line without argument
         const string & help_string_):
         short_form(short_form_),
         long_form(long_form_),
@@ -115,7 +118,14 @@ public:
             return false;
         }
         
-    }
+    };
+
+    // For arguments that have no value, set as having a value so that it uses its default
+    void set_default()
+    {
+        has_value = true;
+    };
+    
     
     // Number of arguments following this key
     int get_nargs()
@@ -179,6 +189,8 @@ private:
 };
 
 
+    
+    
 // command arguments handling class
 class cmdargs
 {
@@ -334,10 +346,12 @@ bool cmdargs::get_arg(const string & long_form,
 {
     arg<T> * argument  = (arg<T> *)(*this)[long_form];
 
-    value = argument->get();
+    bool is_set = argument->is_set();
+    if (is_set)
+        value = argument->get();
     
     
 
-    return argument->is_set();
+    return is_set;
 }
 

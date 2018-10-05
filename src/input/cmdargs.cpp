@@ -57,6 +57,23 @@ using std::cout;
 using std::endl;
 
 
+
+// Bool argument is just a switch
+// Number of arguments following this key is 0
+template<>
+int arg<bool>::get_nargs()
+{
+        return 0;
+};
+
+// Flag it as set, it will use its predefined value
+template<>
+void arg<bool>::set_default()
+{
+    has_value = true;
+};
+
+
 cmdargs::cmdargs(const string & app_name_,
                  const string & app_desc_)
     : app_name(app_name_),
@@ -67,7 +84,6 @@ cmdargs::cmdargs(const string & app_name_,
 
 bool cmdargs::parse(int argc, char ** argv)
 {
-    
     bool out = true;
 
     // initialise parser
@@ -79,6 +95,12 @@ bool cmdargs::parse(int argc, char ** argv)
     {
         out &= parser_state_machine(argv[i]);
     }
+
+    if (parser_state != PARSE_FOR_KEY)
+    {
+        cout << "Error: parsing ended before reading all arguments" << endl;
+    }
+    
     
     return out;
 }
@@ -134,18 +156,15 @@ bool cmdargs::parser_state_machine(const string & str)
     switch(parser_state) {
     case PARSE_FOR_KEY:
         {
-            
-           
-            
-
+            // Check argument key
             current_arg_interface = args.end();
-            bool match_arg = false;
+            bool match_key = false;
             
             string ma = "";
             
-            if (is_short_cmdargs(str, ma))
+            if (is_short_cmdargs(str, ma) || is_long_cmdargs(str, ma))
             {
-                if (ma == "h")
+                if (ma == "h" || ma == "help")
                 {
                     print_help();
                     exit(0);
@@ -155,31 +174,29 @@ bool cmdargs::parser_state_machine(const string & str)
                                                       args.end(),
                                                       [ma](const std::unique_ptr<arg_interface>  & m)
                                                       -> bool { return m->is_key(ma); });
-                match_arg = true;
+                match_key = true;
             }
-            else if (is_long_cmdargs(str, ma))
-            {                                
-                if (ma == "help")
-                {
-                    print_help();
-                    exit(0);
-                }                                
 
-                current_arg_interface  = std::find_if(args.begin(),
-                                                      args.end(),
-                                                      [ma](const std::unique_ptr<arg_interface>  & m)
-                                                      -> bool { return m->is_key(ma); });
-                match_arg = true;
-            }
-            
-            if (match_arg)
+            // act for argument
+            if (match_key)
             {
                 // is a keyword argument, parse its value
                 
                 if (current_arg_interface != args.end())
                 {
-                    parser_state = GOT_KEY;
+                    // Check if we need follow up arguments
                     parser_state_nargs = (*current_arg_interface)->get_nargs();
+                    if (parser_state_nargs == 0)
+                    {
+                        // No follow up argument, set key to argument default value
+                        (*current_arg_interface)->set_default();
+                        
+                        parser_state = PARSE_FOR_KEY;
+                    }
+                    else
+                    {
+                         parser_state = GOT_KEY;
+                    }
                     
                     
                     return true;
