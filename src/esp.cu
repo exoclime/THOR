@@ -130,10 +130,10 @@ void get_cuda_mem_usage(size_t & total_bytes, size_t & free_bytes)
     cudaError_t cuda_status = cudaMemGetInfo( &free_bytes, &total_bytes ) ;
 
     if ( cudaSuccess != cuda_status )
-    {    
+    {
         printf("Error: cudaMemGetInfo fails, %s \n", cudaGetErrorString(cuda_status) );
-        
-    
+
+
     }
 }
 
@@ -167,7 +167,7 @@ int main (int argc,  char** argv){
     argparser.add_arg("w", "overwrite", true, "Force overwrite of output file if they exist");
 
     argparser.add_arg("b", "batch", true, "Run as batch");
-    
+
 
     // Parse arguments, exit on fail
     bool parse_ok = argparser.parse(argc, argv);
@@ -276,7 +276,8 @@ int main (int argc,  char** argv){
     int hstest = 1;
     config_reader.append_config_var("hstest", hstest, hstest_default);
 
-    int vulcan = 1;
+    int vulcan = 0;
+    config_reader.append_config_var("vulcan", vulcan, vulcan_default);
 
     int GPU_ID_N = 0;
     config_reader.append_config_var("GPU_ID_N", GPU_ID_N, GPU_ID_N_default);
@@ -340,7 +341,7 @@ int main (int argc,  char** argv){
     }
 
     bool run_as_batch_arg = false;
-    bool run_as_batch = false;    
+    bool run_as_batch = false;
     if (argparser.get_arg("batch", run_as_batch_arg))
     {
         run_as_batch = run_as_batch_arg;
@@ -361,7 +362,7 @@ int main (int argc,  char** argv){
 
             exit(-1);
         }
-        
+
 
         if (initial_condition_arg_set)
         {
@@ -383,10 +384,10 @@ int main (int argc,  char** argv){
     bool force_overwrite = false;
 
     if (argparser.get_arg("overwrite", force_overwrite_arg))
-        force_overwrite = force_overwrite_arg;    
-    
-    
-    
+        force_overwrite = force_overwrite_arg;
+
+
+
     int nsmax_arg;
     if (argparser.get_arg("numsteps", nsmax_arg))
         nsmax = nsmax_arg;
@@ -439,19 +440,19 @@ int main (int argc,  char** argv){
 
     //*****************************************************************
     log_writer logwriter(Planet.simulation_ID, output_path);
-    
+
     // Batch mode handling
     if (run_as_batch)
     {
         printf("Starting in batch mode.\n");
-        
-            
+
+
         // Get last written file from
         int last_file_number = 0;
         int last_iteration_number = 0;
         string last_file = "";
         bool has_last_file = false;
-        
+
         try
         {
             has_last_file = logwriter.CheckOutputLog(last_file_number, last_iteration_number, last_file);
@@ -460,7 +461,7 @@ int main (int argc,  char** argv){
             printf( "[%s:%d] error while checking output log: %s.\n",  __FILE__, __LINE__ , e.what());
             exit(-1);
         }
-        
+
         if (has_last_file)
         {
             path o(output_path);
@@ -479,7 +480,7 @@ int main (int argc,  char** argv){
 
                 // reload the last file we found as initial conditions
                 initial_conditions = o.to_string();
-                
+
                 logwriter.OpenOutputLogForWrite(true /*open in append mode */);
                 logwriter.PrepareConservationFile(true);
                 logwriter.PrepareDiagnosticsFile(true);
@@ -498,8 +499,8 @@ int main (int argc,  char** argv){
             logwriter.PrepareConservationFile(false);
             logwriter.PrepareDiagnosticsFile(false);
         }
-    
-            
+
+
 
     }
     else
@@ -509,10 +510,10 @@ int main (int argc,  char** argv){
         logwriter.PrepareConservationFile(continue_sim);
         logwriter.PrepareDiagnosticsFile(continue_sim);
     }
-    
 
 
-  
+
+
     //*****************************************************************
 //  Set the GPU device.
     cudaError_t error;
@@ -573,7 +574,7 @@ int main (int argc,  char** argv){
 
     // esp output setup
     X.SetOutputParam(Planet.simulation_ID, output_path);
-    
+
     printf(" Setting the initial conditions.\n\n");
 
     double simulation_start_time = 0.0;
@@ -828,7 +829,7 @@ int main (int argc,  char** argv){
                          Planet.Gravit, // Gravity [m/s^2]
                          Planet.A     , // Planet radius [m]
                          DeepModel    );
-          
+
           logwriter.OutputConservation(0,
                                        simulation_time,
                                        X.GlobalE_h,
@@ -849,7 +850,8 @@ int main (int argc,  char** argv){
                  Planet.A            , // Planet Radius [m]
                  conservation        ,
                  hstest              ,
-                 SpongeLayer         );
+                 SpongeLayer         ,
+                 vulcan              );
         output_file_idx = 1;
         step_idx = 1;
     }
@@ -958,7 +960,8 @@ int main (int argc,  char** argv){
                      Planet.A            , // Planet radius [m]
                      conservation        ,
                      hstest              ,
-                     SpongeLayer         );
+                     SpongeLayer         ,
+                     vulcan              );
             // increment output file index
             output_file_idx++;
 
@@ -973,7 +976,7 @@ int main (int argc,  char** argv){
         double elapsed_time = 0.0;
         double time_left = 0.0;
         std::time_t end_time;
-        
+
         ittimer.iteration(nstep,
                           mean_delta_per_step,
                           elapsed_time,
@@ -998,8 +1001,8 @@ int main (int argc,  char** argv){
         size_t  total_bytes;
         size_t  free_bytes;
         get_cuda_mem_usage( total_bytes, free_bytes);
-        
-            
+
+
         logwriter.OutputDiagnostics(nstep,
                                     simulation_time,
                                     total_bytes,
@@ -1008,7 +1011,7 @@ int main (int argc,  char** argv){
                                     time_left,
                                     mean_delta_per_step,
                                     end_time);
-            
+
         if( caught_signal != ESIG_NOSIG ) {
             //exit loop and application after save on SIGTERM or SIGINT
             break;

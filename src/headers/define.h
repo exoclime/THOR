@@ -96,3 +96,5 @@
 #define TPprof_default 0           //initial TP profile (0 = isothermal, 1 = guillot)
 
 #define conservation_default false //output energy, mass, angular momentum, etc
+
+#define vulcan_default 0   //use chemical kinetics scheme

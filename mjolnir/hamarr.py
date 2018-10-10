@@ -44,13 +44,15 @@ class input:
             self.hstest = openh5['hstest'][...]
             if self.hstest[0] == 0:
                 self.Tstar = openh5['Tstar'][...]
-                self.planet_star_dist = openh5['planet_star_dist'][...]
-                self.radius_star = openh5['radius_star'][...]
-                self.diff_fac = openh5['diff_fac'][...]
-                self.Tlow = openh5['Tlow'][...]
-                self.albedo = openh5['albedo'][...]
-                self.tausw = openh5['tausw'][...]
-                self.taulw = openh5['taulw'][...]
+                # self.planet_star_dist = openh5['planet_star_dist'][...]
+                # self.radius_star = openh5['radius_star'][...]
+                # self.diff_fac = openh5['diff_fac'][...]
+                # self.Tlow = openh5['Tlow'][...]
+                # self.albedo = openh5['albedo'][...]
+                # self.tausw = openh5['tausw'][...]
+                # self.taulw = openh5['taulw'][...]
+        if 'vulcan' in openh5.keys():
+            self.vulcan = openh5['vulcan'][...]
         openh5.close()
 
 class grid:
@@ -101,6 +103,8 @@ class output:
                 openh5 = h5py.File(fileh5)
             else:
                 raise IOError(fileh5+' not found!')
+
+            import pdb; pdb.set_trace()
             Rhoi = openh5['Rho'][...]
             Pressurei = openh5['Pressure'][...]
             Mhi = openh5['Mh'][...]
@@ -217,7 +221,7 @@ def temperature(input,grid,output,sigmaref):
 
 def u(input,grid,output,sigmaref):
     # contour spacing
-    csp = 200
+    csp = 500
 
     # Set the reference pressure
     Pref = input.P_Ref*sigmaref
@@ -294,7 +298,7 @@ def u(input,grid,output,sigmaref):
     latp = np.arange(-np.pi/2,np.pi/2,res_deg)
 
     # Contour plot
-    C = plt.contourf(latp*180/np.pi,Pref/1e5,ZonalMlt.T,40)
+    C = plt.contourf(latp*180/np.pi,Pref/1e5,ZonalMlt.T,40,cmap='viridis')
 
     levp = np.arange(np.ceil(np.min(ZonalMlt)/csp)*csp,np.floor(np.max(ZonalMlt)/csp)*csp,csp)
     c2 = plt.contour(latp*180/np.pi,Pref/1e5,ZonalMlt.T,levels=levp,colors='w',linewidths=1)
@@ -458,7 +462,7 @@ def w_ver(input,grid,output,sigmaref):
     latp = np.arange(-np.pi/2,np.pi/2,res_deg)
 
     # Contour plot
-    C = plt.contourf(latp*180/np.pi,Pref/1e5,VertMlt.T,40)
+    C = plt.contourf(latp*180/np.pi,Pref/1e5,VertMlt.T,40,cmap='viridis')
 
     levp = np.arange(np.ceil(np.min(VertMlt)/csp)*csp,np.floor(np.max(VertMlt)/csp)*csp,csp)
     c2 = plt.contour(latp*180/np.pi,Pref/1e5,VertMlt.T,levels=levp,colors='w',linewidths=1)
@@ -547,7 +551,7 @@ def uv_lev(input,grid,output,Plev):
     plt.figure()
     lonp = np.arange(0,2*np.pi,res_deg)
     latp = np.arange(-np.pi/2,np.pi/2,res_deg)
-    C = plt.contourf(lonp*180/np.pi,latp*180/np.pi,Uiii,50)
+    C = plt.contourf(lonp*180/np.pi,latp*180/np.pi,Uiii,50,cmap='viridis')
     for cc in C.collections:
         cc.set_edgecolor("face") #fixes a stupid bug in matplotlib 2.0
     plt.ylabel('Latitude (deg)')
@@ -564,7 +568,7 @@ def uv_lev(input,grid,output,Plev):
     plt.figure()
     lonp = np.arange(0,2*np.pi,res_deg)
     latp = np.arange(-np.pi/2,np.pi/2,res_deg)
-    C = plt.contourf(lonp*180/np.pi,latp*180/np.pi,Viii,50)
+    C = plt.contourf(lonp*180/np.pi,latp*180/np.pi,Viii,50,cmap='viridis')
     for cc in C.collections:
         cc.set_edgecolor("face") #fixes a stupid bug in matplotlib 2.0
     plt.ylabel('Latitude (deg)')
@@ -1009,7 +1013,7 @@ def potential_vort_vert(input,grid,output,sigmaref):
     lonp = loni[0,:,0,0]
 
     # Contour plot
-    C = plt.contourf(latp*180/np.pi,Pref/1e5,Philt.T,40,linewidths=None)
+    C = plt.contourf(latp*180/np.pi,Pref/1e5,Philt.T,40,linewidths=None,cmap='plasma')
     for cc in C.collections:
         cc.set_edgecolor("face") #fixes a stupid bug in matplotlib 2.0
 
@@ -1119,7 +1123,7 @@ def potential_vort_lev(input,grid,output,sigmaref):
     lonp = loni[0,:,0,0]
 
     # Contour plot
-    C = plt.contourf(lonp*180/np.pi,latp*180/np.pi,Phi[:,:,0,0],40,linewidths=None)
+    C = plt.contourf(lonp*180/np.pi,latp*180/np.pi,Phi[:,:,0,0],40,linewidths=None,cmap='plasma')
     for cc in C.collections:
         cc.set_edgecolor("face") #fixes a stupid bug in matplotlib 2.0
     # plt.gca().invert_yaxis()
@@ -1223,7 +1227,7 @@ def rela_vort_lev(input,grid,output,sigmaref):
     lonp = loni[0,:,0,0]
 
     # Contour plot
-    C = plt.contourf(lonp*180/np.pi,latp*180/np.pi,curlVz2[:,:,0,0],40,linewidths=None)
+    C = plt.contourf(lonp*180/np.pi,latp*180/np.pi,curlVz2[:,:,0,0],40,linewidths=None,cmap='viridis')
     for cc in C.collections:
         cc.set_edgecolor("face") #fixes a stupid bug in matplotlib 2.0
     # plt.gca().invert_yaxis()
@@ -1326,50 +1330,57 @@ def streamf(input,grid,output,sigmaref):
     vii = (output.Mh[0]*(-np.sin(grid.lat[:,None,None])*np.cos(grid.lon[:,None,None])) + \
                 output.Mh[1]*(-np.sin(grid.lat[:,None,None])*np.sin(grid.lon[:,None,None])) + \
                 output.Mh[2]*np.cos(grid.lat[:,None,None]))/output.Rho
-    vi = np.zeros((grid.point_num,d_sig))
-    v = np.zeros((d_lon[0],d_lon[1],d_sig,tsp))
+    # vi = np.zeros((grid.point_num,d_sig))
+    # v = np.zeros((d_lon[0],d_lon[1],d_sig,tsp))
 
     # Compute meridional wind
+    Strii = np.zeros_like(vii)
+    Stri = np.zeros((grid.point_num,d_sig))
+    Stream = np.zeros((d_lon[0],d_lon[1],d_sig,tsp))
+
     for t in np.arange(tsp):
         for i in np.arange(grid.point_num):
             sigma = output.Pressure[i,:,t]
+            for j in np.arange(0,len(sigma)):
+                # import pdb; pdb.set_trace()
+                Strii[i,j,t] = np.trapz(vii[i,j:,t][::-1],x=sigma[j:][::-1])*np.cos(grid.lat[i])
             # Interpolate atmospheric column ot the reference pressure.
             # Need to reverse index all arrays because pchip only works if x is increasing
-            vi[i,:] = interp.pchip_interpolate(sigma[::-1],vii[i,::-1,t],Pref[::-1])[::-1]
+            Stri[i,:] = interp.pchip_interpolate(sigma[::-1],Strii[i,::-1,t],Pref[::-1])[::-1]
         # Convert icosahedral grid into lon-lat grid
         for lev in np.arange(d_sig):
-            v[:,:,lev,t] = interp.griddata(np.vstack([grid.lon,grid.lat]).T,vi[:,lev],(loni,lati),method='nearest')
+            Stream[:,:,lev,t] = interp.griddata(np.vstack([grid.lon,grid.lat]).T,Stri[:,lev],(loni,lati),method='nearest')
 
-    del vii, vi
+    # del vii, vi
+    del Strii, Stri
 
     # Averaging in time and longitude.
     if tsp > 1:
-        vl = np.mean(v[:,:,:,:],axis=1)
-        del v
-        vlt = np.mean(vl[:,:,:],axis=2)
-        del vl
+        Streaml = np.mean(Stream[:,:,:,:],axis=1)
+        del Stream
+        Streamlt = np.mean(Streaml[:,:,:],axis=2)
+        del Streaml
     else:
-        vlt = np.mean(v[:,:,:,0],axis=1)
-        del v
+        Streamlt = np.mean(Stream[:,:,:,0],axis=1)
+        del Stream
 
     # Latitude
     latp = np.arange(-np.pi/2,np.pi/2,res_deg)
 
-    # Now calculate stream fxn !!!
-    Stream = np.zeros_like(vlt)
-    for i in np.arange(np.shape(vlt)[0]):
-        for j in np.arange(1,np.shape(vlt)[1]):
+    # # Now calculate stream fxn !!!
+    # Stream = np.zeros_like(vlt)
+    # for i in np.arange(np.shape(vlt)[0]):
+    #     for j in np.arange(1,np.shape(vlt)[1]):
+    #         Stream[i,j] = np.trapz(vlt[i,::-1][-j-1:],x=Pref[::-1][-j-1:])*np.cos(latp[i])
 
-            Stream[i,j] = np.trapz(vlt[i,::-1][-j-1:],x=Pref[::-1][-j-1:])*np.cos(latp[i])
-
-    Stream *= 2*np.pi*input.A/input.Gravit
+    Streamlt *= 2*np.pi*input.A/input.Gravit
 
     #################
     # Create figure #
     #################
 
     # Contour plot
-    C = plt.contourf(latp*180/np.pi,Pref/100000,Stream.T,40)
+    C = plt.contourf(latp*180/np.pi,Pref/100000,Streamlt.T,40,cmap='viridis')
     for cc in C.collections:
         cc.set_edgecolor("face") #fixes a stupid bug in matplotlib 2.0
     plt.gca().invert_yaxis()
@@ -1479,7 +1490,6 @@ def CalcEntropy(input,grid,output,split):
 def conservation(input,grid,output,split):
     # plot quantities that are interesting for conservation
     if split == False:
-        import pdb; pdb.set_trace()
         if (output.ConvData == False).any():
             print('Calculating energy, mass, angular momentum...')
             CalcE_M_AM(input,grid,output,split)

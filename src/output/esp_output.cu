@@ -78,7 +78,6 @@ __host__ void ESP::CopyGlobalToHost()
         cudaMemcpy(&GlobalAMz_h , GlobalAMz_d  , sizeof(double), cudaMemcpyDeviceToHost);
 }
 
-
 __host__ void ESP::CopyToHost()
 {
 //
@@ -88,6 +87,7 @@ __host__ void ESP::CopyToHost()
         cudaMemcpy(Wh_h       , Wh_d       , point_num * nvi * sizeof(double), cudaMemcpyDeviceToHost);
         cudaMemcpy(pressure_h , pressure_d , point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
         cudaMemcpy(Mh_h       , Mh_d       , 3 * point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+        cudaMemcpy(tracer_h   , tracer_d   , point_num * nv * ntr * sizeof(double), cudaMemcpyDeviceToHost);
 }
 
 __host__ void ESP::Output(int    fidx           , // Index of output file
@@ -101,7 +101,8 @@ __host__ void ESP::Output(int    fidx           , // Index of output file
                           double A              ,
                           bool   conservation   ,
                           int    hstest         ,
-                          bool   SpongeLayer    ){
+                          bool   SpongeLayer    ,
+                          int    vulcan         ){
 
 //
 //  Description: Model output.
@@ -191,8 +192,10 @@ __host__ void ESP::Output(int    fidx           , // Index of output file
         s.append_value(Cp, "/Cp", "J/(Kg K)", "Specific heat capacity");
         //      SpongeLayer option
         s.append_value(SpongeLayer?1.0:0.0, "/SpongeLayer", "-", "Using SpongeLayer?");
-        // //      hstest option
+        //      hstest option
         s.append_value(hstest, "/hstest", "-", "Using benchmark forcing or RT");
+        //      vulcan option
+        s.append_value(vulcan, "/vulcan", "-", "Using relaxation chemistry");
         if (SpongeLayer) {
             //      nlat
             s.append_value(nlat, "/nlat", "-", "number of lat rings for sponge layer");
@@ -206,7 +209,7 @@ __host__ void ESP::Output(int    fidx           , // Index of output file
     }
 
 //  ESP OUTPUT
-    
+
     sprintf(FILE_NAME1, "%s/esp_output_%s_%d.h5", output_dir.c_str(), simulation_ID.c_str(), fidx);
 
     storage s(FILE_NAME1);
@@ -249,6 +252,15 @@ __host__ void ESP::Output(int    fidx           , // Index of output file
                    "/Wh",
                    "kg m/s",
                    "Vertical Momentum");
+
+    if (vulcan == true) {
+      s.append_table(tracer_h,
+                     nv*point_num*ntr,
+                     "/tracer",
+                     " ",
+                     "Volume mixing ratio");
+
+    }
 
     if (conservation == true)  {
 //  Etotal at each point
@@ -319,7 +331,7 @@ __host__ void ESP::Output(int    fidx           , // Index of output file
       phy_modules_store(s);
 
       char buf[256];
-      
+
       sprintf(buf, "esp_output_%s_%d.h5", simulation_ID.c_str(), fidx);
       // Write to output f
       logwriter.WriteOutputLog(current_step, fidx, string(buf) );
@@ -332,4 +344,3 @@ void ESP::SetOutputParam(const std::string & sim_id_,
     simulation_ID = sim_id_;
     output_dir = output_dir_;
 }
-

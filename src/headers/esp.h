@@ -366,7 +366,8 @@ public:
                 double,
                 bool  ,
                 int   ,
-                bool  );
+                bool  ,
+                int   );
 
     void SetOutputParam(const std::string & sim_id_,
                         const std::string & output_dir_ );
@@ -383,7 +384,7 @@ public:
                       double Gravit      , // Gravity [m/s^2]
                       double A           , // Planet radius [m]
                       bool   DeepModel   );
-    
+
     void CopyToHost();
     void CopyConservationToHost();
     void CopyGlobalToHost();
@@ -397,7 +398,7 @@ private:
     // output variables
     std::string simulation_ID; // name of output planet
     std::string output_dir;
-    
+
 
     log_writer & logwriter;
 };
