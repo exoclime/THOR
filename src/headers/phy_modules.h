@@ -9,7 +9,7 @@
 #include "storage.h"
 
 bool phy_modules_generate_config(config_file & config_reader);
-bool phy_modules_init_data();
+bool phy_modules_init_data(const XPlanet & planet);
 
 
 bool phy_modules_init_mem(const ESP & esp);

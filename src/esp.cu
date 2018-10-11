@@ -625,7 +625,7 @@ int main (int argc,  char** argv){
                                         conservation );
 
     if (hstest == 0) {
-        phy_modules_init_data();
+        phy_modules_init_data(Planet);
     }
 
 

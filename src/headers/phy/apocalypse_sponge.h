@@ -145,10 +145,6 @@ __global__ void sponge_layer (double * M_d             ,
 			du = -kv*(u - vbu)*dt;
 			dv = -kv*(v - vbv)*dt;
 
-      // if (kv >= 5e-6) {
-      //   printf("n = %f, kv = %f\n",n,kv);
-      // }
-
 			vx = du*(-sin(lon))+
 			 	 dv*(-sin(lonlat_d[id*2+1])*cos(lon));
 

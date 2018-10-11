@@ -53,6 +53,8 @@ class input:
                 # self.taulw = openh5['taulw'][...]
         if 'vulcan' in openh5.keys():
             self.vulcan = openh5['vulcan'][...]
+        import pdb; pdb.set_trace()
+
         openh5.close()
 
 class grid:
@@ -104,7 +106,6 @@ class output:
             else:
                 raise IOError(fileh5+' not found!')
 
-            import pdb; pdb.set_trace()
             Rhoi = openh5['Rho'][...]
             Pressurei = openh5['Pressure'][...]
             Mhi = openh5['Mh'][...]

@@ -671,17 +671,6 @@ __host__ void ESP::Thor(bool   HyDiff      , // Turn on/off hyper-diffusion.
                                             point_num    ,
                                             1            ,
                                             DeepModel    );
-                #ifdef BENCH_NAN_CHECK
-                  check_h = false;
-                  cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
-                  isnan_check_thor<<< 16, NTH >>>(DivM_d, nv, 3*point_num, check_d);
-                  isnan_check_thor<<< 16, NTH >>>(divg_Mh_d, nv, 3*point_num, check_d);
-                  cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
-                  if(check_h){
-                     printf("\n\n Error in NAN check after Thor:DivOp_fast!\n");
-                     exit(EXIT_FAILURE);
-                  }
-                #endif
 
                 BENCH_POINT_I_SS( current_step, rk, ns, "DivM_Op_Poles",\
                  vector<string>({}), vector<string>({"DivM_d", "divg_Mh_d"}))
@@ -928,7 +917,7 @@ __host__ void ESP::Thor(bool   HyDiff      , // Turn on/off hyper-diffusion.
                                                      ntr        ,
                                                      point_num  ,
                                                      nv         );
-                                                     
+
         BENCH_POINT_I_S( current_step, rk, "RK2", vector<string>({}), vector<string>({"Rhos_d", "Rhok_d",
                         "Mhs_d", "Mhk_d", "Whs_d", "Whk_d",
                         "pressures_d", "pressurek_d" }))

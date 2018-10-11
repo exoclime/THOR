@@ -94,9 +94,6 @@ __global__ void Compute_pressure    (double *pressure_d   ,
     // Computes absolute pressure
     if (id < num) {
       pressure_d[id*nv + lev] = temperature_d[id*nv + lev] * Rd*Rho_d[id*nv + lev];
-      // if (isnan(pressure_d[id*nv+lev])){
-      //   printf("%d, %d\n",id,lev);
-      // }
     }
 }
 
@@ -118,12 +115,12 @@ __global__ void isnan_check(double *array, int width, int height, bool *check){
     }
 }
 
-__global__ void isnan_loop(double *t, int num, int nv) {
-  int i;
-
-  for (i=0;i<num;i++) {
-    if (isnan(t[i*nv])) {
-      printf("id = %d, lev = %d, t = %f\n",i,0,t[i*nv]);
-    }
-  }
-}
+// __global__ void isnan_loop(double *t, int num, int nv) {
+//   int i;
+//
+//   for (i=0;i<num;i++) {
+//     if (isnan(t[i*nv])) {
+//       printf("id = %d, lev = %d, t = %f\n",i,0,t[i*nv]);
+//     }
+//   }
+// }

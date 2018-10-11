@@ -28,12 +28,12 @@ bool phy_modules_init_mem(const ESP & esp)
     return out;
 }
 
-bool phy_modules_init_data()
+bool phy_modules_init_data(const XPlanet & planet)
 {
     bool out = true;
     // initialise all the modules data
 
-    rt.initial_conditions();
+    rt.initial_conditions(planet);
 
     return out;
 

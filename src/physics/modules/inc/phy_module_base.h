@@ -3,6 +3,7 @@
 #include "esp.h"
 #include "config_file.h"
 #include "storage.h"
+#include "planet.h"
 
 class phy_module_base
 {
@@ -13,7 +14,7 @@ public:
 
 
     virtual bool initialise_memory(const ESP & esp) = 0;
-    virtual bool initial_conditions() = 0;
+    virtual bool initial_conditions(const XPlanet & planet) = 0;
 
     // TBD, how does it get data? friend of ESP ? grid ?
     virtual bool loop(ESP & esp,
@@ -29,15 +30,12 @@ public:
               double P_Ref       , // Reference pressure [Pa]
               double Gravit      , // Gravity [m/s^2]
               double A           // Planet radius [m]);
-        ) = 0; 
+        ) = 0;
 
 
     virtual bool store(storage & s) = 0;
-    
+
     virtual bool  configure(config_file & config_reader) = 0;
 
     virtual bool free_memory() = 0;
 };
-
-
-    
