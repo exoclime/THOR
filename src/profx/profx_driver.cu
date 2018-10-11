@@ -51,6 +51,7 @@
 #include "../headers/phy/apocalypse_sponge.h"
 #include "../headers/phy/valkyrie_conservation.h"
 #include "../headers/phy/vulcan_device.h" // Simple chemistry.
+#include "../headers/phy/dry_conv_adj.h"
 
 #include "binary_test.h"
 #include "debug_helpers.h"
@@ -61,6 +62,7 @@
 
 __host__ void ESP::ProfX(int    hstest      , // Held-Suarez test option
                          int    vulcan      , // Use vulcan chemistry
+                         int    conv        , //
                          double Omega       , // Rotation rate [1/s]
                          double Cp          , // Specific heat capacity [J/kg/K]
                          double Rd          , // Gas constant [J/kg/K]
@@ -251,8 +253,19 @@ __host__ void ESP::ProfX(int    hstest      , // Held-Suarez test option
                                                 point_num    );
     }
 
-
-
+    if (conv){
+ /*       cudaDeviceSynchronize();
+        dry_conv_adj<50><<< NB, NTH >>>(Pressure_d   , // Pressure [Pa] 
+                                        Temperature_d, // Temperature [K]
+                                        Rho_d        , // Density [m^3/kg]
+                                        Cp           , // Specific heat capacity [J/kg/K]
+                                        Rd           , // Gas constant [J/kg/K]
+                                        Gravit       , // Gravity [m/s^2]
+                                        Altitude_d   , // Altitudes of the layers
+                                        Altitudeh_d  , // Altitudes of the interfaces
+                                        num          ); // Number of columns
+ */
+    }
 
     if (!hstest) {
         cudaDeviceSynchronize();
