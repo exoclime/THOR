@@ -150,7 +150,7 @@ __device__ void radcsw(double *phtemp     ,
     double gocp;
     double tau = (tausw/ps0)*(phtemp[id*(nv+1)+nv]);
     double flux_top = incflx*pow(r_orb,-2)*coszrs*(1.0-alb);
-    insol_d[id*nv]
+    // insol_d[id*nv]
 
 	// Extra layer to avoid over heating at the top.
     fnet_dn_d[id*(nv+1) + nv] = flux_top*exp(-(1.0/coszrs)*tau);
@@ -397,8 +397,7 @@ __global__ void rtm_dual_band (double *pressure_d   ,
                              sync_rot ,
                              ecc      ,
                              obliquity,
-                             id       ,
-                             nv       );
+                             id       );
 
 		// Compute opacities
         computetau (tau_d ,
