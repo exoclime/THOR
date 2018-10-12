@@ -98,8 +98,7 @@ __device__ double calc_zenith(double *lonlat_d,  //latitude/longitude grid
                               bool   sync_rot ,
                               double ecc      ,
                               double obliquity,
-                              int    id       ,
-                              int    nv       ){
+                              int    id       ){
 
 // Calculate the insolation (scaling) at a point on the surface
 
@@ -108,22 +107,22 @@ __device__ double calc_zenith(double *lonlat_d,  //latitude/longitude grid
   if (sync_rot) {
     if (ecc < 1e-10) {
       if (obliquity < 1e-10) {  //standard sync, circular, zero obl case
-        coszrs = cos(lonlat_d[id*nv+1])*cos(lonlat_d[id*nv]-alpha_i);
+        coszrs = cos(lonlat_d[id*2+1])*cos(lonlat_d[id*2]-alpha_i);
       } else {   //sync, circular, but some obliquity
-        coszrs = ( sin(lonlat_d[id*nv+1])*sin_decl + \
-                      cos(lonlat_d[id*nv+1])*cos_decl*cos(lonlat_d[id*nv]-alpha_i) );
+        coszrs = ( sin(lonlat_d[id*2+1])*sin_decl + \
+                      cos(lonlat_d[id*2+1])*cos_decl*cos(lonlat_d[id*2]-alpha_i) );
       }
     } else {  //in below cases, watch out for numerical drift of mean(alpha)
       if (obliquity < 1e-10) {  // sync, zero obliquity, but ecc orbit
-        coszrs = cos(lonlat_d[id*nv+1])*cos(lonlat_d[id*nv]-alpha);
+        coszrs = cos(lonlat_d[id*2+1])*cos(lonlat_d[id*2]-alpha);
       } else {  // sync, non-zero obliquity, ecc orbit (full calculation applies)
-        coszrs = ( sin(lonlat_d[id*nv+1])*sin_decl + \
-                      cos(lonlat_d[id*nv+1])*cos_decl*cos(lonlat_d[id*nv]-alpha) );
+        coszrs = ( sin(lonlat_d[id*2+1])*sin_decl + \
+                      cos(lonlat_d[id*2+1])*cos_decl*cos(lonlat_d[id*2]-alpha) );
       }
     }
   } else {
-    coszrs = ( sin(lonlat_d[id*nv+1])*sin_decl + \
-                      cos(lonlat_d[id*nv+1])*cos_decl*cos(lonlat_d[id*nv]-alpha) );
+    coszrs = ( sin(lonlat_d[id*2+1])*sin_decl + \
+                      cos(lonlat_d[id*2+1])*cos_decl*cos(lonlat_d[id*2]-alpha) );
   }
   return coszrs;     //zenith angle
 }
@@ -151,6 +150,7 @@ __device__ void radcsw(double *phtemp     ,
     double gocp;
     double tau = (tausw/ps0)*(phtemp[id*(nv+1)+nv]);
     double flux_top = incflx*pow(r_orb,-2)*coszrs*(1.0-alb);
+    insol_d[id*nv]
 
 	// Extra layer to avoid over heating at the top.
     fnet_dn_d[id*(nv+1) + nv] = flux_top*exp(-(1.0/coszrs)*tau);

@@ -70,6 +70,9 @@ private:
     double alpha          = 0        ;  // right asc of host star (relative to long = 0)
     double longp          = 0        ;  // longitude of periastron (rad)
 
+    double *insol_h;
+    double *insol_d;   
+
     //  These arrays are for temporary usage in RT code
     double *dtemp         ;
     double *phtemp        ;

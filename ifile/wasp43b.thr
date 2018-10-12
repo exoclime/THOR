@@ -89,7 +89,7 @@ n_out = 7200
 
 # output directory (relative to current working directory)
 # defaults to 'results'
-results_path = wasp43b_retry
+results_path = wasp43b_test
 
 Tstar = 4520
 planet_star_dist = 0.015
