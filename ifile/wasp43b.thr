@@ -94,12 +94,7 @@ results_path = wasp43b_test
 Tstar = 4300
 planet_star_dist = 0.015
 radius_star = 0.667
-sync_rot = false
-mean_motion = 7.2e-6
-obliquity = 60
-true_long_i = 90
-alpha_i = 180
-ecc = 0.2
+sync_rot = true
 
 # GPU ID number
 GPU_ID_N = 0

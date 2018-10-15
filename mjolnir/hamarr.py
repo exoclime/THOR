@@ -44,13 +44,13 @@ class input:
             self.hstest = openh5['hstest'][...]
             if self.hstest[0] == 0:
                 self.Tstar = openh5['Tstar'][...]
-                # self.planet_star_dist = openh5['planet_star_dist'][...]
-                # self.radius_star = openh5['radius_star'][...]
-                # self.diff_fac = openh5['diff_fac'][...]
-                # self.Tlow = openh5['Tlow'][...]
-                # self.albedo = openh5['albedo'][...]
-                # self.tausw = openh5['tausw'][...]
-                # self.taulw = openh5['taulw'][...]
+                self.planet_star_dist = openh5['planet_star_dist'][...]
+                self.radius_star = openh5['radius_star'][...]
+                self.diff_fac = openh5['diff_fac'][...]
+                self.Tlow = openh5['Tlow'][...]
+                self.albedo = openh5['albedo'][...]
+                self.tausw = openh5['tausw'][...]
+                self.taulw = openh5['taulw'][...]
         if 'vulcan' in openh5.keys():
             self.vulcan = openh5['vulcan'][...]
 
