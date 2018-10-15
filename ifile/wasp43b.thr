@@ -19,7 +19,7 @@ simulation_ID = Wasp43b
 # Radius [m]
 radius = 72427000.0
 # Rotation rate [s-1]
-rotation_rate = 9.09E-5
+rotation_rate = -9.09E-5
 # Gravitational acceleration [m/s^2]
 gravitation = 47
 # Mean molecular mass of dry air [kg]
@@ -85,7 +85,7 @@ hstest = 0
 
 # output
 # output every n steps
-n_out = 20
+n_out = 1
 
 # output directory (relative to current working directory)
 # defaults to 'results'
@@ -95,6 +95,8 @@ Tstar = 4300
 planet_star_dist = 0.015
 radius_star = 0.667
 sync_rot = true
+
+vulcan = 1
 
 # GPU ID number
 GPU_ID_N = 0

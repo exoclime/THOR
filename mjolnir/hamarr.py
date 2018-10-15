@@ -98,6 +98,13 @@ class output:
         self.ConvData = np.zeros(nts-ntsi+1)
         self.Insol = np.zeros((grid.point_num,nts-ntsi+1))
 
+        self.ch4 = np.zeros((grid.point_num,grid.nv,nts-ntsi+1))
+        self.co = np.zeros((grid.point_num,grid.nv,nts-ntsi+1))
+        self.h2o = np.zeros((grid.point_num,grid.nv,nts-ntsi+1))
+        self.co2 = np.zeros((grid.point_num,grid.nv,nts-ntsi+1))
+        self.nh3 = np.zeros((grid.point_num,grid.nv,nts-ntsi+1))
+
+
         # Read model results
         for t in np.arange(ntsi-1,nts):
             fileh5 = resultsf+'/esp_output_'+simID+'_'+np.str(t+1)+'.h5'
@@ -128,6 +135,8 @@ class output:
                 self.ConvData[t-ntsi+1] = False
             if 'insol' in openh5.keys():
                 self.Insol[:,t-ntsi+1] = openh5['insol'][...]
+            if 'tracer' in openh5.keys():
+                traceri = openh5['tracer'][...]
             openh5.close()
 
             self.Rho[:,:,t-ntsi+1] = np.reshape(Rhoi,(grid.point_num,grid.nv))
@@ -143,6 +152,13 @@ class output:
                 self.AngMomx[:,:,t-ntsi+1] = np.reshape(AngMomxi,(grid.point_num,grid.nv))
                 self.AngMomy[:,:,t-ntsi+1] = np.reshape(AngMomyi,(grid.point_num,grid.nv))
                 self.AngMomz[:,:,t-ntsi+1] = np.reshape(AngMomzi,(grid.point_num,grid.nv))
+
+            if 'traceri' in locals():
+                self.ch4[:,:,t-ntsi+1] = np.reshape(traceri[::5],(grid.point_num,grid.nv))
+                self.co[:,:,t-ntsi+1] = np.reshape(traceri[1::5],(grid.point_num,grid.nv))
+                self.h2o[:,:,t-ntsi+1] = np.reshape(traceri[2::5],(grid.point_num,grid.nv))
+                self.co2[:,:,t-ntsi+1] = np.reshape(traceri[3::5],(grid.point_num,grid.nv))
+                self.nh3[:,:,t-ntsi+1] = np.reshape(traceri[4::5],(grid.point_num,grid.nv))
 
 class GetOutput:
     def __init__(self,resultsf,simID,ntsi,nts):

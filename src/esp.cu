@@ -279,7 +279,7 @@ int main (int argc,  char** argv){
     int vulcan = 0;
     config_reader.append_config_var("vulcan", vulcan, vulcan_default);
 
-    int conv   = 1
+    int conv   = 1;
 
     int GPU_ID_N = 0;
     config_reader.append_config_var("GPU_ID_N", GPU_ID_N, GPU_ID_N_default);
