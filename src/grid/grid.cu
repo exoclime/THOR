@@ -57,6 +57,8 @@
 ////////////////////////////////////////////////////////////////////////
 
 #include "../headers/grid.h"
+#include "vector_operations.h"
+
 
 __host__ Icogrid::Icogrid (bool sprd         ,  // Spring dynamics option
                            double spring_beta,  // Parameter beta for spring dynamics
@@ -310,7 +312,6 @@ void Icogrid::sphere_ico (double *xyz        ,
 
 //  Local variables
     int sizei = pow(2.0, glevel) ;
-    double l                     ;
     int count_points             ;
     int sizeip1 = sizei+1        ;
     int sizei2  = sizeip1*sizeip1;
@@ -322,136 +323,89 @@ void Icogrid::sphere_ico (double *xyz        ,
     rhomb = new int[10*sizei*sizei]();
 
 //  Temporary main vertices.
-    double *xyzi;
-    xyzi = new double[3*(10*sizei2+2)]();
+    double3 *xyzi;
+    xyzi = new double3[(10*sizei2+2)]();
 
     double w = 2.0 * acos(1.0/(2.0*sin(M_PI/5.0)));
 
 //  First icosahedron coordinates (pentagons)
 //  Poles
 //  North
-    xyzi[0*3 + 0] = 0.0;
-    xyzi[0*3 + 1] = 0.0;
-    xyzi[0*3 + 2] = 1.0;
+    xyzi[0] = make_double3( 0.0, 0.0, 1.0);
 // South
-    xyzi[1*3 + 0] = 0.0;
-    xyzi[1*3 + 1] = 0.0;
-    xyzi[1*3 + 2] =-1.0;
+    xyzi[1] = make_double3(0.0, 0.0, -1.0);
 //  Other points of the icosahedron.
 //  3
-    xyzi[2*3 + 0] = cos(-M_PI/5.0)*cos(M_PI/2.0-w);
-    xyzi[2*3 + 1] = sin(-M_PI/5.0)*cos(M_PI/2.0-w);
-    xyzi[2*3 + 2] = sin(M_PI/2.0-w)           ;
+    xyzi[2] = make_double3(cos(-M_PI/5.0)*cos(M_PI/2.0-w),
+                           sin(-M_PI/5.0)*cos(M_PI/2.0-w),
+                           sin(M_PI/2.0-w));
     rhombi[0] = 2;
 //  4
-    xyzi[3*3 + 0] = cos(M_PI/5.0)*cos(M_PI/2.0-w);
-    xyzi[3*3 + 1] = sin(M_PI/5.0)*cos(M_PI/2.0-w);
-    xyzi[3*3 + 2] = sin(M_PI/2.0-w)          ;
+    xyzi[3] = make_double3(cos(M_PI/5.0)*cos(M_PI/2.0-w),
+                           sin(M_PI/5.0)*cos(M_PI/2.0-w),
+                           sin(M_PI/2.0-w)),
     rhombi[1] = 3;
 //  5
-    xyzi[4*3 + 0] = cos(3.0*M_PI/5.0)*cos(M_PI/2.0-w);
-    xyzi[4*3 + 1] = sin(3.0*M_PI/5.0)*cos(M_PI/2.0-w);
-    xyzi[4*3 + 2] = sin(M_PI/2-w)            ;
+    xyzi[4] = make_double3(cos(3.0*M_PI/5.0)*cos(M_PI/2.0-w),
+                           sin(3.0*M_PI/5.0)*cos(M_PI/2.0-w),
+                           sin(M_PI/2-w));
     rhombi[2] = 4;
 //  6
-    xyzi[5*3 + 0] = cos(M_PI)*cos(M_PI/2.0-w);
-    xyzi[5*3 + 1] = sin(M_PI)*cos(M_PI/2.0-w);
-    xyzi[5*3 + 2] = sin(M_PI/2.0-w)           ;
+    xyzi[5] = make_double3(cos(M_PI)*cos(M_PI/2.0-w),
+                           sin(M_PI)*cos(M_PI/2.0-w),
+                           sin(M_PI/2.0-w));
     rhombi[3] = 5;
 //  7
-    xyzi[6*3 + 0] = cos(-(3.0/5.0)*M_PI)*cos(M_PI/2.0-w);
-    xyzi[6*3 + 1] = sin(-(3.0/5.0)*M_PI)*cos(M_PI/2.0-w);
-    xyzi[6*3 + 2] = sin(M_PI/2.0-w);
+    xyzi[6] = make_double3(cos(-(3.0/5.0)*M_PI)*cos(M_PI/2.0-w),
+                           sin(-(3.0/5.0)*M_PI)*cos(M_PI/2.0-w),
+                           sin(M_PI/2.0-w));
     rhombi[4] = 6;
 //  8
-    xyzi[7*3 + 0] = cos(0.0)*cos(w-M_PI/2.0);
-    xyzi[7*3 + 1] = sin(0.0)*cos(w-M_PI/2.0);
-    xyzi[7*3 + 2] = sin(w-M_PI/2.0);
+    xyzi[7] = make_double3(cos(0.0)*cos(w-M_PI/2.0),
+                          sin(0.0)*cos(w-M_PI/2.0),
+                          sin(w-M_PI/2.0));
     rhombi[5] = 7;
 //  9
-    xyzi[8*3 + 0] = cos(2.0*M_PI/5.0)*cos(w-M_PI/2.0);
-    xyzi[8*3 + 1] = sin(2.0*M_PI/5.0)*cos(w-M_PI/2.0);
-    xyzi[8*3 + 2] = sin(w-M_PI/2.0);
+    xyzi[8] = make_double3(cos(2.0*M_PI/5.0)*cos(w-M_PI/2.0),
+                           sin(2.0*M_PI/5.0)*cos(w-M_PI/2.0),
+                           sin(w-M_PI/2.0));
     rhombi[6] = 8;
 //  10
-    xyzi[9*3 + 0] = cos(4.0*M_PI/5.0)*cos(w-M_PI/2.0);
-    xyzi[9*3 + 1] = sin(4.0*M_PI/5.0)*cos(w-M_PI/2.0);
-    xyzi[9*3 + 2] = sin(w-M_PI/2.0);
+    xyzi[9] = make_double3(cos(4.0*M_PI/5.0)*cos(w-M_PI/2.0),
+                           sin(4.0*M_PI/5.0)*cos(w-M_PI/2.0),
+                           sin(w-M_PI/2.0));
     rhombi[7] = 9;
 //  11
-    xyzi[10*3 + 0] = cos(-4.0*M_PI/5.0)*cos(w-M_PI/2.0);
-    xyzi[10*3 + 1] = sin(-4.0*M_PI/5.0)*cos(w-M_PI/2.0);
-    xyzi[10*3 + 2] = sin(w-M_PI/2.0);
+    xyzi[10] = make_double3(cos(-4.0*M_PI/5.0)*cos(w-M_PI/2.0),
+                            sin(-4.0*M_PI/5.0)*cos(w-M_PI/2.0),
+                            sin(w-M_PI/2.0));
     rhombi[8] = 10;
 //  12
-    xyzi[11*3 + 0] = cos(-2.0*M_PI/5.0)*cos(w-M_PI/2.0);
-    xyzi[11*3 + 1] = sin(-2.0*M_PI/5.0)*cos(w-M_PI/2.0);
-    xyzi[11*3 + 2] = sin(w-M_PI/2.0);
+    xyzi[11] = make_double3(cos(-2.0*M_PI/5.0)*cos(w-M_PI/2.0),
+                            sin(-2.0*M_PI/5.0)*cos(w-M_PI/2.0),
+                            sin(w-M_PI/2.0));
     rhombi[9] = 11;
 //
 //  Standard grid points.
 //
+    int rhombi_points [10][4] = {
+            {  2,  0,  7,  3 },
+            {  3,  0,  8,  4 },
+            {  4,  0,  9,  5 },
+            {  5,  0, 10,  6 },
+            {  6,  0, 11,  2 },
+            {  7,  3,  1,  8 },
+            {  8,  4,  1,  9 },
+            {  9,  5,  1, 10 },
+            { 10,  6,  1, 11 },
+            { 11,  2,  1,  7 }
+        };
+    
     for (int faces = 0; faces < 10; faces++){
-        if(faces == 0){
-            rhombi[faces]                               = 2;
-            rhombi[sizei*sizeip1*10 + faces]            = 0;
-            rhombi[sizei*10 + faces]                    = 7;
-            rhombi[sizei*sizeip1*10 + sizei*10 + faces] = 3;
-        }
-        else if(faces ==1){
-            rhombi[faces]                               = 3;
-            rhombi[sizei*sizeip1*10 + faces]            = 0;
-            rhombi[sizei*10 + faces]                    = 8;
-            rhombi[sizei*sizeip1*10 + sizei*10 + faces] = 4;
-        }
-        else if(faces ==2){
-            rhombi[faces]                               = 4;
-            rhombi[sizei*sizeip1*10 + faces]            = 0;
-            rhombi[sizei*10 + faces]                    = 9;
-            rhombi[sizei*sizeip1*10 + sizei*10 + faces] = 5;
-        }
-        else if(faces ==3){
-            rhombi[faces]                               = 5;
-            rhombi[sizei*sizeip1*10 + faces]            = 0;
-            rhombi[sizei*10 + faces]                    = 10;
-            rhombi[sizei*sizeip1*10 + sizei*10 + faces] = 6;
-        }
-        else if(faces ==4){
-            rhombi[faces]                               = 6;
-            rhombi[sizei*sizeip1*10 + faces]            = 0;
-            rhombi[sizei*10 + faces]                    = 11;
-            rhombi[sizei*sizeip1*10 + sizei*10 + faces] = 2;
-        }
-        else if(faces ==5){
-            rhombi[faces]                               = 7;
-            rhombi[sizei*sizeip1*10 + faces]            = 3;
-            rhombi[sizei*10 + faces]                    = 1;
-            rhombi[sizei*sizeip1*10 + sizei*10 + faces] = 8;
-        }
-        else if(faces ==6){
-            rhombi[faces]                               = 8;
-            rhombi[sizei*sizeip1*10 + faces]            = 4;
-            rhombi[sizei*10 + faces]                    = 1;
-            rhombi[sizei*sizeip1*10 + sizei*10 + faces] = 9;
-        }
-        else if(faces ==7){
-            rhombi[faces]                               = 9;
-            rhombi[sizei*sizeip1*10 + faces]            = 5;
-            rhombi[sizei*10 + faces]                    = 1;
-            rhombi[sizei*sizeip1*10 + sizei*10 + faces] = 10;
-        }
-        else if(faces ==8){
-            rhombi[faces]                               = 10;
-            rhombi[sizei*sizeip1*10 + faces]            = 6;
-            rhombi[sizei*10 + faces]                    = 1;
-            rhombi[sizei*sizeip1*10 + sizei*10 + faces] = 11;
-        }
-        else if(faces ==9){
-            rhombi[faces]                               = 11;
-            rhombi[sizei*sizeip1*10 + faces]            = 2;
-            rhombi[sizei*10 + faces]                    = 1;
-            rhombi[sizei*sizeip1*10 + sizei*10 + faces] = 7;
-        }
+            rhombi[faces]                               = rhombi_points[faces][0];
+            rhombi[sizei*sizeip1*10 + faces]            = rhombi_points[faces][1];
+            rhombi[sizei*10 + faces]                    = rhombi_points[faces][2];
+            rhombi[sizei*sizeip1*10 + sizei*10 + faces] = rhombi_points[faces][3];
     }
 
     // Recursive method
@@ -468,13 +422,11 @@ void Icogrid::sphere_ico (double *xyz        ,
                 int indy1 = 0  ;
                 int indx2 = ind-ind_jump;
                 int indy2 = 0  ;
-                xyzi[count_points*3 + 0] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 0] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 0])*0.5;
-                xyzi[count_points*3 + 1] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 1] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 1])*0.5;
-                xyzi[count_points*3 + 2] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 2] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 2])*0.5;
-                l = sqrt(pow(xyzi[count_points*3 + 0],2) + pow(xyzi[count_points*3 + 1],2) + pow(xyzi[count_points*3 + 2],2));
-                xyzi[count_points*3 + 0] = xyzi[count_points*3 + 0]/l;
-                xyzi[count_points*3 + 1] = xyzi[count_points*3 + 1]/l;
-                xyzi[count_points*3 + 2] = xyzi[count_points*3 + 2]/l;
+
+                int r_idx_1 = rhombi[indx1*sizeip1*10 + indy1*10 + faces];
+                int r_idx_2 = rhombi[indx2*sizeip1*10 + indy2*10 + faces];
+                                      
+                xyzi[count_points] = normalize( (xyzi[r_idx_1] + xyzi[r_idx_2])*0.5);
                 count_points += 1;
 
                 indx = 0;
@@ -484,13 +436,12 @@ void Icogrid::sphere_ico (double *xyz        ,
                 indy1 = ind+ind_jump;
                 indx2 = 0;
                 indy2 = ind-ind_jump;
-                xyzi[count_points*3 + 0] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 0] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 0])*0.5;
-                xyzi[count_points*3 + 1] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 1] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 1])*0.5;
-                xyzi[count_points*3 + 2] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 2] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 2])*0.5;
-                l = sqrt(pow(xyzi[count_points*3 + 0],2) + pow(xyzi[count_points*3 + 1],2) + pow(xyzi[count_points*3 + 2],2));
-                xyzi[count_points*3 + 0] = xyzi[count_points*3 + 0]/l;
-                xyzi[count_points*3 + 1] = xyzi[count_points*3 + 1]/l;
-                xyzi[count_points*3 + 2] = xyzi[count_points*3 + 2]/l;
+
+                r_idx_1 = rhombi[indx1*sizeip1*10 + indy1*10 + faces];
+                r_idx_2 = rhombi[indx2*sizeip1*10 + indy2*10 + faces];
+                                      
+                xyzi[count_points] = normalize( (xyzi[r_idx_1] + xyzi[r_idx_2])*0.5);
+                
                 count_points += 1;
 
                 indx = ind;
@@ -500,13 +451,11 @@ void Icogrid::sphere_ico (double *xyz        ,
                 indy1 = ind+ind_jump;
                 indx2 = ind-ind_jump;
                 indy2 = ind-ind_jump;
-                xyzi[count_points*3 + 0] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 0] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 0])*0.5;
-                xyzi[count_points*3 + 1] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 1] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 1])*0.5;
-                xyzi[count_points*3 + 2] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 2] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 2])*0.5;
-                l = sqrt(pow(xyzi[count_points*3 + 0],2) + pow(xyzi[count_points*3 + 1],2) + pow(xyzi[count_points*3 + 2],2));
-                xyzi[count_points*3 + 0] = xyzi[count_points*3 + 0]/l;
-                xyzi[count_points*3 + 1] = xyzi[count_points*3 + 1]/l;
-                xyzi[count_points*3 + 2] = xyzi[count_points*3 + 2]/l;
+                r_idx_1 = rhombi[indx1*sizeip1*10 + indy1*10 + faces];
+                r_idx_2 = rhombi[indx2*sizeip1*10 + indy2*10 + faces];
+                                      
+                xyzi[count_points] = normalize( (xyzi[r_idx_1] + xyzi[r_idx_2])*0.5);
+
                 count_points += 1;
 
                 indx = ind;
@@ -516,13 +465,11 @@ void Icogrid::sphere_ico (double *xyz        ,
                 indy1 = sizei;
                 indx2 = ind-ind_jump;
                 indy2 = sizei;
-                xyzi[count_points*3 + 0] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 0] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 0])*0.5;
-                xyzi[count_points*3 + 1] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 1] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 1])*0.5;
-                xyzi[count_points*3 + 2] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 2] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 2])*0.5;
-                l = sqrt(pow(xyzi[count_points*3 + 0],2) + pow(xyzi[count_points*3 + 1],2) + pow(xyzi[count_points*3 + 2],2));
-                xyzi[count_points*3 + 0] = xyzi[count_points*3 + 0]/l;
-                xyzi[count_points*3 + 1] = xyzi[count_points*3 + 1]/l;
-                xyzi[count_points*3 + 2] = xyzi[count_points*3 + 2]/l;
+                r_idx_1 = rhombi[indx1*sizeip1*10 + indy1*10 + faces];
+                r_idx_2 = rhombi[indx2*sizeip1*10 + indy2*10 + faces];
+                                      
+                xyzi[count_points] = normalize( (xyzi[r_idx_1] + xyzi[r_idx_2])*0.5);
+
                 count_points += 1;
 
                 indx = sizei;
@@ -532,13 +479,12 @@ void Icogrid::sphere_ico (double *xyz        ,
                 indy1 = ind+ind_jump;
                 indx2 = sizei;
                 indy2 = ind-ind_jump;
-                xyzi[count_points*3 + 0] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 0] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 0])*0.5;
-                xyzi[count_points*3 + 1] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 1] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 1])*0.5;
-                xyzi[count_points*3 + 2] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 2] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 2])*0.5;
-                l = sqrt(pow(xyzi[count_points*3 + 0],2) + pow(xyzi[count_points*3 + 1],2) + pow(xyzi[count_points*3 + 2],2));
-                xyzi[count_points*3 + 0] = xyzi[count_points*3 + 0]/l;
-                xyzi[count_points*3 + 1] = xyzi[count_points*3 + 1]/l;
-                xyzi[count_points*3 + 2] = xyzi[count_points*3 + 2]/l;
+                
+                r_idx_1 = rhombi[indx1*sizeip1*10 + indy1*10 + faces];
+                r_idx_2 = rhombi[indx2*sizeip1*10 + indy2*10 + faces];
+                                      
+                xyzi[count_points] = normalize( (xyzi[r_idx_1] + xyzi[r_idx_2])*0.5);
+
                 count_points += 1;
 
                 ind += 2*ind_jump;
@@ -561,13 +507,12 @@ void Icogrid::sphere_ico (double *xyz        ,
                         int indy1 = rindy-ind_jump;
                         int indx2 = rindx+ind_jump;
                         int indy2 = rindy+ind_jump;
-                        xyzi[count_points*3 + 0] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 0] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 0])*0.5;
-                        xyzi[count_points*3 + 1] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 1] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 1])*0.5;
-                        xyzi[count_points*3 + 2] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 2] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 2])*0.5;
-                        l = sqrt(pow(xyzi[count_points*3 + 0],2) + pow(xyzi[count_points*3 + 1],2) + pow(xyzi[count_points*3 + 2],2));
-                        xyzi[count_points*3 + 0] = xyzi[count_points*3 + 0]/l;
-                        xyzi[count_points*3 + 1] = xyzi[count_points*3 + 1]/l;
-                        xyzi[count_points*3 + 2] = xyzi[count_points*3 + 2]/l;
+
+                        int r_idx_1 = rhombi[indx1*sizeip1*10 + indy1*10 + faces];
+                        int r_idx_2 = rhombi[indx2*sizeip1*10 + indy2*10 + faces];
+                        
+                        xyzi[count_points] = normalize((xyzi[r_idx_1] + xyzi[r_idx_2])*0.5);
+                        
                         count_points += 1;
 
                         rhombi[(rindx-ind_jump)*sizeip1*10 + rindy*10 + faces] = count_points;
@@ -575,13 +520,11 @@ void Icogrid::sphere_ico (double *xyz        ,
                         indy1 = rindy-ind_jump;
                         indx2 = rindx-ind_jump;
                         indy2 = rindy+ind_jump;
-                        xyzi[count_points*3 + 0] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 0] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 0])*0.5;
-                        xyzi[count_points*3 + 1] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 1] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 1])*0.5;
-                        xyzi[count_points*3 + 2] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 2] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 2])*0.5;
-                        l = sqrt(pow(xyzi[count_points*3 + 0],2) + pow(xyzi[count_points*3 + 1],2) + pow(xyzi[count_points*3 + 2],2));
-                        xyzi[count_points*3 + 0] = xyzi[count_points*3 + 0]/l;
-                        xyzi[count_points*3 + 1] = xyzi[count_points*3 + 1]/l;
-                        xyzi[count_points*3 + 2] = xyzi[count_points*3 + 2]/l;
+                        r_idx_1 = rhombi[indx1*sizeip1*10 + indy1*10 + faces];
+                        r_idx_2 = rhombi[indx2*sizeip1*10 + indy2*10 + faces];
+                        
+                        xyzi[count_points] = normalize((xyzi[r_idx_1] + xyzi[r_idx_2])*0.5);
+
                         count_points += 1;
 
                         rhombi[rindx*sizeip1*10 + (rindy+ind_jump)*10 + faces] = count_points;
@@ -589,13 +532,11 @@ void Icogrid::sphere_ico (double *xyz        ,
                         indy1 = rindy+ind_jump;
                         indx2 = rindx-ind_jump;
                         indy2 = rindy+ind_jump;
-                        xyzi[count_points*3 + 0] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 0] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 0])*0.5;
-                        xyzi[count_points*3 + 1] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 1] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 1])*0.5;
-                        xyzi[count_points*3 + 2] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 2] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 2])*0.5;
-                        l = sqrt(pow(xyzi[count_points*3 + 0],2) + pow(xyzi[count_points*3 + 1],2) + pow(xyzi[count_points*3 + 2],2));
-                        xyzi[count_points*3 + 0] = xyzi[count_points*3 + 0]/l;
-                        xyzi[count_points*3 + 1] = xyzi[count_points*3 + 1]/l;
-                        xyzi[count_points*3 + 2] = xyzi[count_points*3 + 2]/l;
+                        r_idx_1 = rhombi[indx1*sizeip1*10 + indy1*10 + faces];
+                        r_idx_2 = rhombi[indx2*sizeip1*10 + indy2*10 + faces];
+                        
+                        xyzi[count_points] = normalize((xyzi[r_idx_1] + xyzi[r_idx_2])*0.5);
+
                         count_points += 1;
 
                         indx += 2*ind_jump;
@@ -621,13 +562,11 @@ void Icogrid::sphere_ico (double *xyz        ,
                         int indy1 = rindy-ind_jump;
                         int indx2 = rindx+ind_jump;
                         int indy2 = rindy+ind_jump;
-                        xyzi[count_points*3 + 0] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 0] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 0])*0.5;
-                        xyzi[count_points*3 + 1] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 1] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 1])*0.5;
-                        xyzi[count_points*3 + 2] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 2] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 2])*0.5;
-                        l = sqrt(pow(xyzi[count_points*3 + 0],2) + pow(xyzi[count_points*3 + 1],2) + pow(xyzi[count_points*3 + 2],2));
-                        xyzi[count_points*3 + 0] = xyzi[count_points*3 + 0]/l;
-                        xyzi[count_points*3 + 1] = xyzi[count_points*3 + 1]/l;
-                        xyzi[count_points*3 + 2] = xyzi[count_points*3 + 2]/l;
+
+                        int r_idx_1 = rhombi[indx1*sizeip1*10 + indy1*10 + faces];
+                        int r_idx_2 = rhombi[indx2*sizeip1*10 + indy2*10 + faces];
+                        
+                        xyzi[count_points] = normalize((xyzi[r_idx_1] + xyzi[r_idx_2])*0.5);
                         count_points += 1;
 
                         rhombi[rindx*sizeip1*10 + (rindy-ind_jump)*10 + faces] = count_points;
@@ -635,13 +574,12 @@ void Icogrid::sphere_ico (double *xyz        ,
                         indy1 = rindy-ind_jump;
                         indx2 = rindx+ind_jump;
                         indy2 = rindy-ind_jump;
-                        xyzi[count_points*3 + 0] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 0] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 0])*0.5;
-                        xyzi[count_points*3 + 1] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 1] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 1])*0.5;
-                        xyzi[count_points*3 + 2] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 2] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 2])*0.5;
-                        l = sqrt(pow(xyzi[count_points*3 + 0],2) + pow(xyzi[count_points*3 + 1],2) + pow(xyzi[count_points*3 + 2],2));
-                        xyzi[count_points*3 + 0] = xyzi[count_points*3 + 0]/l;
-                        xyzi[count_points*3 + 1] = xyzi[count_points*3 + 1]/l;
-                        xyzi[count_points*3 + 2] = xyzi[count_points*3 + 2]/l;
+
+                        r_idx_1 = rhombi[indx1*sizeip1*10 + indy1*10 + faces];
+                        r_idx_2 = rhombi[indx2*sizeip1*10 + indy2*10 + faces];
+                        
+                        xyzi[count_points] = normalize((xyzi[r_idx_1] + xyzi[r_idx_2])*0.5);
+                       
                         count_points += 1;
 
                         rhombi[(rindx+ind_jump)*sizeip1*10 + rindy*10 + faces] = count_points;
@@ -649,13 +587,11 @@ void Icogrid::sphere_ico (double *xyz        ,
                         indy1 = rindy+ind_jump;
                         indx2 = rindx+ind_jump;
                         indy2 = rindy-ind_jump;
-                        xyzi[count_points*3 + 0] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 0] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 0])*0.5;
-                        xyzi[count_points*3 + 1] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 1] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 1])*0.5;
-                        xyzi[count_points*3 + 2] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 2] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 2])*0.5;
-                        l = sqrt(pow(xyzi[count_points*3 + 0],2) + pow(xyzi[count_points*3 + 1],2) + pow(xyzi[count_points*3 + 2],2));
-                        xyzi[count_points*3 + 0] = xyzi[count_points*3 + 0]/l;
-                        xyzi[count_points*3 + 1] = xyzi[count_points*3 + 1]/l;
-                        xyzi[count_points*3 + 2] = xyzi[count_points*3 + 2]/l;
+                        r_idx_1 = rhombi[indx1*sizeip1*10 + indy1*10 + faces];
+                        r_idx_2 = rhombi[indx2*sizeip1*10 + indy2*10 + faces];
+                        
+                        xyzi[count_points] = normalize((xyzi[r_idx_1] + xyzi[r_idx_2])*0.5);
+                       
                         count_points += 1;
 
                         indx += 2*ind_jump;
@@ -673,8 +609,17 @@ void Icogrid::sphere_ico (double *xyz        ,
         rhomb[i*sizei*10 + j*10 + fc] = rhombi[i*sizeip1*10 + j*10 + fc];
 
     for (int fc = 0; fc < 10; fc++)    for (int kx = 0; kx < kxl; kx++) for (int ky = 0; ky < kxl; ky++)
-                for (int i = 0; i < nl_region; i++)    for (int j = 0; j < nl_region; j++)    for (int k = 0; k < 3; k++)
-                            xyz[(fc*nfaces*nl2 + ky*kxl*nl2 + kx*nl2 + j*nl_region + i)*3 + k] = xyzi[(rhomb[((ky*nl_region + j)*nli_region + kx*nl_region + i)*10 + fc])*3 + k];
+        for (int i = 0; i < nl_region; i++)    for (int j = 0; j < nl_region; j++){
+             int idx1 = fc*nfaces*nl2 + ky*kxl*nl2 + kx*nl2 + j*nl_region + i;
+             int idx2 = rhomb[((ky*nl_region + j)*nli_region + kx*nl_region + i)*10 + fc];
+                
+             xyz[idx1*3 + 0] = xyzi[idx2].x;
+             xyz[idx1*3 + 1] = xyzi[idx2].y;
+             xyz[idx1*3 + 2] = xyzi[idx2].z;
+            }
+            
+    
+    
 
     //North
     xyz[(num-2)*3 + 0] =0.0;
