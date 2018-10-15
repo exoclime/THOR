@@ -59,6 +59,23 @@
 #include "../headers/grid.h"
 #include "vector_operations.h"
 
+// some helper local functions
+inline double3 normproj(const double3 & v1, const double3 & v2)
+{
+  
+    
+    double l1 = dot(v1,v2);
+    
+    double3 vc1 = cross(v1,v2);
+
+    double l2 = length(vc1);
+
+    vc1 *= atan2(l2, l1)/l2;
+
+    return vc1;
+}
+
+
 
 __host__ Icogrid::Icogrid (bool sprd         ,  // Spring dynamics option
                            double spring_beta,  // Parameter beta for spring dynamics
@@ -2045,129 +2062,35 @@ void Icogrid::relocate_centres(int    *point_local,
     double l1, l2, geo;
 
     // Local arrays-
-    double *v1, *v2;
-    double *vc1, *vc2, *vc3, *vc4, *vc5, *vc6;
-    double *vgc;
+    double3 * xyzq3 = (double3*)xyzq;
+    double3 * xyz3 = (double3*)xyz;
 
-    v1   = new double[3]();
-    v2   = new double[3]();
-    vc1  = new double[3]();
-    vc2  = new double[3]();
-    vc3  = new double[3]();
-    vc4  = new double[3]();
-    vc5  = new double[3]();
-    vc6  = new double[3]();
-    vgc  = new double[3]();
+    // local vectors
+    double3 v1, v2;
+    double3 vc1, vc2, vc3, vc4, vc5, vc6;
+    double3 vgc;
 
     for (int i = 0; i < point_num; i++){
         geo = 6; // Hexagons.
         for (int k = 0; k < 12; k++) if(i == pent_ind[k]) geo = 5; // Pentagons.
         if(geo == 5){
 
-            v1[0] = xyzq[i*6*3 + 1*3 + 0];
-            v1[1] = xyzq[i*6*3 + 1*3 + 1];
-            v1[2] = xyzq[i*6*3 + 1*3 + 2];
-            v2[0] = xyzq[i*6*3 + 0*3 + 0];
-            v2[1] = xyzq[i*6*3 + 0*3 + 1];
-            v2[2] = xyzq[i*6*3 + 0*3 + 2];
 
-            l1 = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
-
-            vc1[0] = v1[1]*v2[2] - v1[2]*v2[1];
-            vc1[1] = v1[2]*v2[0] - v1[0]*v2[2];
-            vc1[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
-            l2 = sqrt(vc1[0] * vc1[0] + vc1[1] * vc1[1] + vc1[2] * vc1[2]);
-
-            vc1[0] = vc1[0] / l2 * atan2(l2, l1);
-            vc1[1] = vc1[1] / l2 * atan2(l2, l1);
-            vc1[2] = vc1[2] / l2 * atan2(l2, l1);
-
-            v1[0] = xyzq[i*6*3 + 2*3 + 0];
-            v1[1] = xyzq[i*6*3 + 2*3 + 1];
-            v1[2] = xyzq[i*6*3 + 2*3 + 2];
-            v2[0] = xyzq[i*6*3 + 1*3 + 0];
-            v2[1] = xyzq[i*6*3 + 1*3 + 1];
-            v2[2] = xyzq[i*6*3 + 1*3 + 2];
-
-            l1 = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
-
-            vc2[0] = v1[1]*v2[2] - v1[2]*v2[1];
-            vc2[1] = v1[2]*v2[0] - v1[0]*v2[2];
-            vc2[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
-            l2 = sqrt(vc2[0] * vc2[0] + vc2[1] * vc2[1] + vc2[2] * vc2[2]);
-
-            vc2[0] = vc2[0] / l2 * atan2(l2, l1);
-            vc2[1] = vc2[1] / l2 * atan2(l2, l1);
-            vc2[2] = vc2[2] / l2 * atan2(l2, l1);
-
-            v1[0] = xyzq[i*6*3 + 3*3 + 0];
-            v1[1] = xyzq[i*6*3 + 3*3 + 1];
-            v1[2] = xyzq[i*6*3 + 3*3 + 2];
-            v2[0] = xyzq[i*6*3 + 2*3 + 0];
-            v2[1] = xyzq[i*6*3 + 2*3 + 1];
-            v2[2] = xyzq[i*6*3 + 2*3 + 2];
-
-            l1 = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
-
-            vc3[0] = v1[1]*v2[2] - v1[2]*v2[1];
-            vc3[1] = v1[2]*v2[0] - v1[0]*v2[2];
-            vc3[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
-            l2 = sqrt(vc3[0] * vc3[0] + vc3[1] * vc3[1] + vc3[2] * vc3[2]);
-
-            vc3[0] = vc3[0] / l2 * atan2(l2, l1);
-            vc3[1] = vc3[1] / l2 * atan2(l2, l1);
-            vc3[2] = vc3[2] / l2 * atan2(l2, l1);
-
-            v1[0] = xyzq[i*6*3 + 4*3 + 0];
-            v1[1] = xyzq[i*6*3 + 4*3 + 1];
-            v1[2] = xyzq[i*6*3 + 4*3 + 2];
-            v2[0] = xyzq[i*6*3 + 3*3 + 0];
-            v2[1] = xyzq[i*6*3 + 3*3 + 1];
-            v2[2] = xyzq[i*6*3 + 3*3 + 2];
-
-            l1 = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
-
-            vc4[0] = v1[1]*v2[2] - v1[2]*v2[1];
-            vc4[1] = v1[2]*v2[0] - v1[0]*v2[2];
-            vc4[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
-            l2 = sqrt(vc4[0] * vc4[0] + vc4[1] * vc4[1] + vc4[2] * vc4[2]);
-
-            vc4[0] = vc4[0] / l2 * atan2(l2, l1);
-            vc4[1] = vc4[1] / l2 * atan2(l2, l1);
-            vc4[2] = vc4[2] / l2 * atan2(l2, l1);
-
-            v1[0] = xyzq[i*6*3 + 0*3 + 0];
-            v1[1] = xyzq[i*6*3 + 0*3 + 1];
-            v1[2] = xyzq[i*6*3 + 0*3 + 2];
-            v2[0] = xyzq[i*6*3 + 4*3 + 0];
-            v2[1] = xyzq[i*6*3 + 4*3 + 1];
-            v2[2] = xyzq[i*6*3 + 4*3 + 2];
-
-            l1 = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
-
-            vc5[0] = v1[1]*v2[2] - v1[2]*v2[1];
-            vc5[1] = v1[2]*v2[0] - v1[0]*v2[2];
-            vc5[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
-            l2 = sqrt(vc5[0] * vc5[0] + vc5[1] * vc5[1] + vc5[2] * vc5[2]);
-
-            vc5[0] = vc5[0] / l2 * atan2(l2, l1);
-            vc5[1] = vc5[1] / l2 * atan2(l2, l1);
-            vc5[2] = vc5[2] / l2 * atan2(l2, l1);
-
+            vc1 = normproj(xyzq3[i*6 + 1], xyzq3[i*6 + 0]);
+            vc2 = normproj(xyzq3[i*6 + 2], xyzq3[i*6 + 1]);
+            vc3 = normproj(xyzq3[i*6 + 3], xyzq3[i*6 + 2]);
+            vc4 = normproj(xyzq3[i*6 + 4], xyzq3[i*6 + 3]);
+            vc5 = normproj(xyzq3[i*6 + 0], xyzq3[i*6 + 4]);
+            
+            vgc = vc1 + vc2 + vc3 + vc4 + vc5;
+            
             vgc[0] = vc1[0] + vc2[0] + vc3[0] + vc4[0] + vc5[0];
             vgc[1] = vc1[1] + vc2[1] + vc3[1] + vc4[1] + vc5[1];
             vgc[2] = vc1[2] + vc2[2] + vc3[2] + vc4[2] + vc5[2];
 
             l2 = sqrt(vgc[0] * vgc[0] + vgc[1] * vgc[1] + vgc[2] * vgc[2]);
 
-            xyz[i*3 + 0] = vgc[0] / l2;
-            xyz[i*3 + 1] = vgc[1] / l2;
-            xyz[i*3 + 2] = vgc[2] / l2;
+            xyz3[i*3] = normalize(vgc);
         }
         else{
             v1[0] = xyzq[i*6*3 + 1*3 + 0];

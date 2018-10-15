@@ -56,8 +56,8 @@ using namespace std;
 
 int main ()
 {
-    bool output = false;
-    bool compare = true;
+    bool output = true;
+    bool compare = false;
     
     Icogrid Grid(true         , // Spring dynamics option
                  1.15         , // Parameter beta for spring dynamics 
