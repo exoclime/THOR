@@ -190,7 +190,8 @@ __host__ Icogrid::Icogrid (bool sprd         ,  // Spring dynamics option
                         point_num  );
 
         //  Finds the q points.
-        point_xyzq = (double*)malloc(6*3*point_num * sizeof(double));
+        point_xyzq = (double*)malloc(6*3*point_num * sizeof(double));        
+        
         find_qpoints (point_local ,
                       point_xyzq  ,
                       point_xyz   ,
@@ -302,16 +303,16 @@ __host__ Icogrid::Icogrid (bool sprd         ,  // Spring dynamics option
 }
 
 
-void Icogrid::sphere_ico (double *xyz        ,
-                          int     glevel     ,
-                          int     n_region   ,
-                          int     nl_region  ,
-                          int     nl2        ,
-                          int     kxl        ,
-                          int     nfaces     ,
-                          int    *pent_ind   ,
-                          int     divide_face,
-                          int     num        ){
+void Icogrid::sphere_ico (double  *xyz_       ,
+                          int      glevel     ,
+                          int      n_region   ,
+                          int      nl_region  ,
+                          int      nl2        ,
+                          int      kxl        ,
+                          int      nfaces     ,
+                          int     *pent_ind   ,
+                          int      divide_face,
+                          int      num        ){
 
 //
 //  Description:
@@ -327,6 +328,8 @@ void Icogrid::sphere_ico (double *xyz        ,
 //          - nl_region - nl_region^2 is the number of points in the faces.
 //          - kxl       - kxl^2 is the number of small rhombi inside the main rhombi.
 
+    double3 * xyz = (double3*)xyz_;
+    
 //  Local variables
     int sizei = pow(2.0, glevel) ;
     int count_points             ;
@@ -338,10 +341,9 @@ void Icogrid::sphere_ico (double *xyz        ,
     rhombi = new int[10*sizei2]();
     int *rhomb;
     rhomb = new int[10*sizei*sizei]();
-
+    
 //  Temporary main vertices.
-    double3 *xyzi;
-    xyzi = new double3[(10*sizei2+2)]();
+    double3 * xyzi = new double3[(10*sizei2+2)]();
 
     double w = 2.0 * acos(1.0/(2.0*sin(M_PI/5.0)));
 
@@ -630,23 +632,17 @@ void Icogrid::sphere_ico (double *xyz        ,
              int idx1 = fc*nfaces*nl2 + ky*kxl*nl2 + kx*nl2 + j*nl_region + i;
              int idx2 = rhomb[((ky*nl_region + j)*nli_region + kx*nl_region + i)*10 + fc];
                 
-             xyz[idx1*3 + 0] = xyzi[idx2].x;
-             xyz[idx1*3 + 1] = xyzi[idx2].y;
-             xyz[idx1*3 + 2] = xyzi[idx2].z;
+             xyz[idx1] = xyzi[idx2];
             }
             
     
     
 
     //North
-    xyz[(num-2)*3 + 0] =0.0;
-    xyz[(num-2)*3 + 1] =0.0;
-    xyz[(num-2)*3 + 2] =1.0;
+    xyz[num-2] = make_double3(0.0, 0.0, 1.0);
 
     //South
-    xyz[(num-1)*3 + 0] =0.0 ;
-    xyz[(num-1)*3 + 1] =0.0 ;
-    xyz[(num-1)*3 + 2] =-1.0;
+    xyz[num-1] = make_double3(0.0, 0.0, -1.0);
 
     //Pentagons' indexes
     for (int faces = 0; faces < 10; faces++) pent_ind[faces] = faces*nfaces*nl2;
@@ -1520,44 +1516,26 @@ void Icogrid::spring_dynamics(int *point_local    ,
 //
 //  Output: - xyz - New vertex's positions
 //
-
+    double3 *xyz3 = (double3*)xyz;
+    
     //  Local variables
-    double Wx, Wy, Wz;
-    double Vx, Vy, Vz;
-    double velx_val, vely_val, velz_val;
-    double Fxnet, Fynet, Fznet;
-    double X, Y, Z;
+    double3 W;
+    double3 V;
+    double3 vel_val;
+    double3 F_v_net;
+    double3 D;
     double l, d, H, max_v;
-
-    //Local arrays.
-    double *xyzi;
-    double *velx, *vely, *velz;
-    double *Px, *Py, *Pz;
-    double *Fx, *Fy, *Fz;
-    double *Px_Nei, *Py_Nei, *Pz_Nei;
-    double *Fx_Nei, *Fy_Nei, *Fz_Nei;
-    double *Fnet;
-
+    
     // Central point
-    xyzi = new double[12*3]();
-    velx = new double[point_num]();
-    vely = new double[point_num]();
-    velz = new double[point_num]();
-    Fnet = new double[point_num]();
-    Fx   = new double[point_num]();
-    Fy   = new double[point_num]();
-    Fz   = new double[point_num]();
-    Px   = new double[point_num]();
-    Py   = new double[point_num]();
-    Pz   = new double[point_num]();
+    double3 * xyzi = new double3[12]();
+    double3 *  vel = new double3[point_num]();
+    double * Fnet = new double[point_num]();
+    double3 * F  = new double3[point_num]();
+    double3 * P   = new double3[point_num]();
 
     // First neighbors.
-    Fx_Nei   = new double[point_num*6]();
-    Fy_Nei   = new double[point_num*6]();
-    Fz_Nei   = new double[point_num*6]();
-    Px_Nei   = new double[point_num*6]();
-    Py_Nei   = new double[point_num*6]();
-    Pz_Nei   = new double[point_num*6]();
+    double3 * F_Nei   = new double3[point_num*6]();
+    double3 * P_Nei   = new double3[point_num*6]();
 
     // Routine parameters.
     double lba       = 2.0*M_PI/(10.0*pow(2.0,glevel-1));
@@ -1571,15 +1549,11 @@ void Icogrid::spring_dynamics(int *point_local    ,
     printf("\n\n Running spring dynamics.\n\n");
 
     for (int i = 0; i < point_num; i++){
-        velx[i] = 0.0;
-        vely[i] = 0.0;
-        velz[i] = 0.0;
+        vel[i] = make_double3(0.0, 0.0, 0.0);
     }
 
     for (int i = 0; i < 12; i++){
-        xyzi[i * 3 + 0] = xyz[pent_ind[i] * 3 + 0];
-        xyzi[i * 3 + 1] = xyz[pent_ind[i] * 3 + 1];
-        xyzi[i * 3 + 2] = xyz[pent_ind[i] * 3 + 2];
+        xyzi[i] = xyz3[pent_ind[i]];
         point_local[pent_ind[i]*6 + 5] = point_local[pent_ind[i]*6];
     }
 
@@ -1587,107 +1561,65 @@ void Icogrid::spring_dynamics(int *point_local    ,
     for (int it = 0; it < lim; it++){
 
         for (int i = 0; i < point_num; i++){
-            Px[i] = xyz[i*3 + 0];
-            Py[i] = xyz[i*3 + 1];
-            Pz[i] = xyz[i*3 + 2];
+            P[i] = xyz3[i];
             for (int j = 0; j < 6; j++){
-                Px_Nei[i*6 + j] = xyz[point_local[i*6 + j]*3 + 0];
-                Py_Nei[i*6 + j] = xyz[point_local[i*6 + j]*3 + 1];
-                Pz_Nei[i*6 + j] = xyz[point_local[i*6 + j]*3 + 2];
+                P_Nei[i*6 + j] = xyz3[point_local[i*6 + j]];
             }
         }
         for (int i = 0; i < point_num; i++){
             for (int j = 0; j < 6; j++){
-
-                Wx = Py[i]*Pz_Nei[i*6 + j] - Pz[i]*Py_Nei[i*6 + j];
-                Wy = Pz[i]*Px_Nei[i*6 + j] - Px[i]*Pz_Nei[i*6 + j];
-                Wz = Px[i]*Py_Nei[i*6 + j] - Py[i]*Px_Nei[i*6 + j];
-
-                Vx = Wy*Pz[i] - Wz*Py[i];
-                Vy = Wz*Px[i] - Wx*Pz[i];
-                Vz = Wx*Py[i] - Wy*Px[i];
-
+                W = cross(P[i], P_Nei[i*6 + j]);
+                
+                V = cross(W, P[i]);
+                
                 //norm
-                l = sqrt(Vx*Vx + Vy*Vy + Vz*Vz);
+                l = length(V);
 
-                d = acos(Px[i]*Px_Nei[i*6 + j] + Py[i]*Py_Nei[i*6 + j] + Pz[i]*Pz_Nei[i*6 + j]);
+                d = acos(dot(P[i],P_Nei[i*6 + j]));
 
-                Fx_Nei[i*6 + j] = (d - dbar) * Vx;
-                Fy_Nei[i*6 + j] = (d - dbar) * Vy;
-                Fz_Nei[i*6 + j] = (d - dbar) * Vz;
-
-                Fx_Nei[i*6 + j] = Fx_Nei[i*6 + j]/l;
-                Fy_Nei[i*6 + j] = Fy_Nei[i*6 + j]/l;
-                Fz_Nei[i*6 + j] = Fz_Nei[i*6 + j]/l;
+                F_Nei[i*6 + j] = ((d - dbar) * V)/l;
             }
         }
 
         for (int i = 0; i < 12; i++){
-
-            Fx_Nei[pent_ind[i]*6 + 5] = 0.0;
-            Fy_Nei[pent_ind[i]*6 + 5] = 0.0;
-            Fz_Nei[pent_ind[i]*6 + 5] = 0.0;
-
+            F_Nei[pent_ind[i]*6 + 5] = make_double3(0.0,0.0,0.0);
         }
 
         for (int i = 0; i < point_num; i++){
+            // Calculate net forces in each point.
+            F_v_net = F_Nei[i*6 + 0] + F_Nei[i*6 + 1] + F_Nei[i*6 + 2] + F_Nei[i*6 + 3] + F_Nei[i*6 + 4] + F_Nei[i*6 + 5];
 
-                // Calculate net forces in each point.
-                Fxnet = Fx_Nei[i*6 + 0] + Fx_Nei[i*6 + 1] + Fx_Nei[i*6 + 2] + Fx_Nei[i*6 + 3] + Fx_Nei[i*6 + 4] + Fx_Nei[i*6 + 5];
-                Fynet = Fy_Nei[i*6 + 0] + Fy_Nei[i*6 + 1] + Fy_Nei[i*6 + 2] + Fy_Nei[i*6 + 3] + Fy_Nei[i*6 + 4] + Fy_Nei[i*6 + 5];
-                Fznet = Fz_Nei[i*6 + 0] + Fz_Nei[i*6 + 1] + Fz_Nei[i*6 + 2] + Fz_Nei[i*6 + 3] + Fz_Nei[i*6 + 4] + Fz_Nei[i*6 + 5];
+            // Used to check convergence.
+            Fnet[i] = length(F_v_net) / lba;
 
-                // Used to check convergence.
-                Fnet[i] = sqrt(Fxnet * Fxnet + Fynet * Fynet + Fznet * Fznet) / lba;
-
-                // Drag move.
-                Fx[i] = Fxnet - drag * velx[i];
-                Fy[i] = Fynet - drag * vely[i];
-                Fz[i] = Fznet - drag * velz[i];
+            // Drag move.
+            F[i] = F_v_net - drag * vel[i];
         }
 
         for (int i = 0; i < point_num; i++){
 
             // Update points
-            X = xyz[i*3 + 0] + velx[i]*tstep;
-            Y = xyz[i*3 + 1] + vely[i]*tstep;
-            Z = xyz[i*3 + 2] + velz[i]*tstep;
+            D = xyz3[i] + vel[i]*tstep;
 
-            l = sqrt(X*X + Y*Y + Z*Z);
-
-            xyz[i*3 + 0] = X/l;
-            xyz[i*3 + 1] = Y/l;
-            xyz[i*3 + 2] = Z/l;
-
+            xyz3[i] = normalize(D);
         }
 
         for (int i = 0; i < point_num; i++){
 
             // Update vel
-            velx_val = velx[i] + Fx[i]*tstep;
-            vely_val = vely[i] + Fy[i]*tstep;
-            velz_val = velz[i] + Fz[i]*tstep;
+            vel_val = vel[i] + F[i]*tstep;
 
-            H = xyz[i*3 + 0]*velx_val + xyz[i*3 + 1]*vely_val + xyz[i*3 + 2]*velz_val;
+            H = dot(xyz3[i],vel_val);
 
             // Remove radial component (if any).
-            velx[i] = velx_val - H*xyz[i*3 + 0];
-            vely[i] = vely_val - H*xyz[i*3 + 1];
-            velz[i] = velz_val - H*xyz[i*3 + 2];
-
+            vel[i] = vel_val - H*xyz3[i];
         }
 
         // Fix Petagon's position.
         for (int i = 0; i < 12; i++){
-
-            velx[pent_ind[i]]      = 0.0;
-            vely[pent_ind[i]]      = 0.0;
-            velz[pent_ind[i]]      = 0.0;
+            vel[pent_ind[i]]      = make_double3(0.0, 0.0, 0.0);
             Fnet[pent_ind[i]]      = 0.0;
-            xyz[pent_ind[i] * 3 + 0] = xyzi[i * 3 + 0];
-            xyz[pent_ind[i] * 3 + 1] = xyzi[i * 3 + 1];
-            xyz[pent_ind[i] * 3 + 2] = xyzi[i * 3 + 2];
-
+            xyz3[pent_ind[i]] = xyzi[i];
         }
 
         // Check convergence.
@@ -1700,22 +1632,12 @@ void Icogrid::spring_dynamics(int *point_local    ,
     printf(" Done!\n\n");
 
     delete [] xyzi;
-    delete [] velx;
-    delete [] vely;
-    delete [] velz;
-    delete [] Fx;
-    delete [] Fy;
-    delete [] Fz;
-    delete [] Px;
-    delete [] Py;
-    delete [] Pz;
+    delete [] vel;
+    delete [] F;
+    delete [] P;
     delete [] Fnet;
-    delete [] Fx_Nei;
-    delete [] Fy_Nei;
-    delete [] Fz_Nei;
-    delete [] Px_Nei;
-    delete [] Py_Nei;
-    delete [] Pz_Nei;
+    delete [] F_Nei;
+    delete [] P_Nei;
 
 }
 
@@ -1748,34 +1670,23 @@ void Icogrid::find_qpoints (int    *point_local,
     for (int i = 0; i < point_num; i++){
         geo = 6; // Hexagons.
         for (int k = 0; k < 12; k++) if(i == pent_ind[k]) geo = 5; // Pentagons.
-        if(geo == 5){
-            for (int j = 0; j < 4; j++){
-                vc1 = normproj( xyz3[point_local[i*6 + j]], xyz3[i] );
-                vc2 = normproj( xyz3[point_local[i*6 + j+1]], xyz3[point_local[i*6 + j]] );
-                vc3 = normproj( xyz3[i], xyz3[point_local[i*6 + j+1]] );
-                xyzq3[i*6 + j] = normalize(vc1 + vc2 + vc3);
-            }
-
-            vc1 = normproj( xyz3[point_local[i*6 + 4]], xyz3[i] );
-            vc2 = normproj( xyz3[point_local[i*6 + 0]], xyz3[point_local[i*6 + 4]] );
-            vc3 = normproj( xyz3[i], xyz3[point_local[i*6 + 0]] );
-
-            xyzq3[i*6 + 4] = normalize(vc1 + vc2 + vc3);
+        
+        
+        
+        for (int j = 0; j < geo - 1; j++){
+            vc1 = normproj( xyz3[point_local[i*6 + j]], xyz3[i] );
+            vc2 = normproj( xyz3[point_local[i*6 + j+1]], xyz3[point_local[i*6 + j]] );
+            vc3 = normproj( xyz3[i], xyz3[point_local[i*6 + j+1]] );
+            xyzq3[i*6 + j] = normalize(vc1 + vc2 + vc3);
         }
-        else{   // Hexagons
-            for (int j = 0; j < 5; j++){
-                vc1 = normproj( xyz3[point_local[i*6 + j]], xyz3[i] );
-                vc2 = normproj( xyz3[point_local[i*6 + j+1]], xyz3[point_local[i*6 + j]] );
-                vc3 = normproj( xyz3[i], xyz3[point_local[i*6 + j+1]] );
-                
-                xyzq3[i*6 + j] = normalize(vc1 + vc2 + vc3);
-            }
-            vc1 = normproj( xyz3[point_local[i*6 + 5]], xyz3[i] );
-            vc2 = normproj( xyz3[point_local[i*6 + 0]], xyz3[point_local[i*6 + 5]] );
-            vc3 = normproj( xyz3[i], xyz3[point_local[i*6 + 0]] );
-            
-            xyzq3[i*6 + 5] = normalize(vc1 + vc2 + vc3);
-        }
+
+        vc1 = normproj( xyz3[point_local[i*6 + geo - 1]], xyz3[i] );
+        vc2 = normproj( xyz3[point_local[i*6 + 0]], xyz3[point_local[i*6 + geo - 1]] );
+        vc3 = normproj( xyz3[i], xyz3[point_local[i*6 + 0]] );
+        
+        xyzq3[i*6 + geo - 1] = normalize(vc1 + vc2 + vc3);
+        if (geo == 5)
+            xyzq3[i*6 + 5] = make_double3(0.0,0.0,0.0);
     }
 }
 
@@ -1809,37 +1720,23 @@ void Icogrid::relocate_centres(int    *point_local,
     double3 * xyz3 = (double3*)xyz;
 
     // local vectors
-    double3 vc1, vc2, vc3, vc4, vc5, vc6;
     double3 vgc;
 
     for (int i = 0; i < point_num; i++){
         geo = 6; // Hexagons.
         for (int k = 0; k < 12; k++) if(i == pent_ind[k]) geo = 5; // Pentagons.
-        if(geo == 5){
 
+        vgc = make_double3(0.0,0.0,0.0);
 
-            vc1 = normproj(xyzq3[i*6 + 1], xyzq3[i*6 + 0]);
-            vc2 = normproj(xyzq3[i*6 + 2], xyzq3[i*6 + 1]);
-            vc3 = normproj(xyzq3[i*6 + 3], xyzq3[i*6 + 2]);
-            vc4 = normproj(xyzq3[i*6 + 4], xyzq3[i*6 + 3]);
-            vc5 = normproj(xyzq3[i*6 + 0], xyzq3[i*6 + 4]);
+        // add all projected vectors
+        for (int j = 1; j < geo; j++)
+            vgc += normproj(xyzq3[i*6 + j], xyzq3[i*6 + j-1]);
+
+        vgc += normproj(xyzq3[i*6 + 0], xyzq3[i*6 + geo -1]);
             
-            vgc = vc1 + vc2 + vc3 + vc4 + vc5;
 
-            xyz3[i] = normalize(vgc);
-        }
-        else{
-            vc1 = normproj(xyzq3[i*6 + 1], xyzq3[i*6 + 0]);
-            vc2 = normproj(xyzq3[i*6 + 2], xyzq3[i*6 + 1]);
-            vc3 = normproj(xyzq3[i*6 + 3], xyzq3[i*6 + 2]);
-            vc4 = normproj(xyzq3[i*6 + 4], xyzq3[i*6 + 3]);
-            vc5 = normproj(xyzq3[i*6 + 5], xyzq3[i*6 + 4]);
-            vc6 = normproj(xyzq3[i*6 + 0], xyzq3[i*6 + 5]);
-            
-            vgc = vc1 + vc2 + vc3 + vc4 + vc5 + vc6;
+        xyz3[i] = normalize(vgc);
 
-            xyz3[i] = normalize(vgc);
-        }
     }
 }
 
