@@ -6,12 +6,9 @@
 IndentWidth: 4
 
 Language: Cpp
-# Force pointers to the type for C++.
-#DerivePointerAlignment: false
-#PointerAlignment: Left
 
 
-AccessModifierOffset: 0
+AccessModifierOffset: -4
 
 
 AlignAfterOpenBracket: Align
