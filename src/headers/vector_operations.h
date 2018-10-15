@@ -70,6 +70,8 @@ inline __host__ __device__ double3 & operator+=(double3 &a, const double3 & b)
     a.x += b.x;
     a.y += b.y;
     a.z += b.z;
+
+    return a;
 }
 
 inline __host__ __device__ double3 operator+(const double3 & a, const double & b)
@@ -145,7 +147,7 @@ inline __host__ __device__ double3 operator/(const double3 & a, const double & b
     return make_double3(a.x / b, a.y / b, a.z / b);
 }
 
-inline __host__ __device__ double3 & void operator/=(double3 &a, const double & b)
+inline __host__ __device__ double3 & operator/=(double3 & a, const double & b)
 {
     a.x /= b;
     a.y /= b;

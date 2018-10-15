@@ -2059,14 +2059,13 @@ void Icogrid::relocate_centres(int    *point_local,
 //
 
     // Local variables.
-    double l1, l2, geo;
+    int geo;
 
     // Local arrays-
     double3 * xyzq3 = (double3*)xyzq;
     double3 * xyz3 = (double3*)xyz;
 
     // local vectors
-    double3 v1, v2;
     double3 vc1, vc2, vc3, vc4, vc5, vc6;
     double3 vgc;
 
@@ -2083,151 +2082,22 @@ void Icogrid::relocate_centres(int    *point_local,
             vc5 = normproj(xyzq3[i*6 + 0], xyzq3[i*6 + 4]);
             
             vgc = vc1 + vc2 + vc3 + vc4 + vc5;
-            
-            vgc[0] = vc1[0] + vc2[0] + vc3[0] + vc4[0] + vc5[0];
-            vgc[1] = vc1[1] + vc2[1] + vc3[1] + vc4[1] + vc5[1];
-            vgc[2] = vc1[2] + vc2[2] + vc3[2] + vc4[2] + vc5[2];
-
-            l2 = sqrt(vgc[0] * vgc[0] + vgc[1] * vgc[1] + vgc[2] * vgc[2]);
 
             xyz3[i*3] = normalize(vgc);
         }
         else{
-            v1[0] = xyzq[i*6*3 + 1*3 + 0];
-            v1[1] = xyzq[i*6*3 + 1*3 + 1];
-            v1[2] = xyzq[i*6*3 + 1*3 + 2];
-            v2[0] = xyzq[i*6*3 + 0*3 + 0];
-            v2[1] = xyzq[i*6*3 + 0*3 + 1];
-            v2[2] = xyzq[i*6*3 + 0*3 + 2];
+            vc1 = normproj(xyzq3[i*6 + 1], xyzq3[i*6 + 0]);
+            vc2 = normproj(xyzq3[i*6 + 2], xyzq3[i*6 + 1]);
+            vc3 = normproj(xyzq3[i*6 + 3], xyzq3[i*6 + 2]);
+            vc4 = normproj(xyzq3[i*6 + 4], xyzq3[i*6 + 3]);
+            vc5 = normproj(xyzq3[i*6 + 5], xyzq3[i*6 + 4]);
+            vc6 = normproj(xyzq3[i*6 + 0], xyzq3[i*6 + 5]);
+            
+            vgc = vc1 + vc2 + vc3 + vc4 + vc5 + vc6;
 
-            l1 = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
-
-            vc1[0] = v1[1]*v2[2] - v1[2]*v2[1];
-            vc1[1] = v1[2]*v2[0] - v1[0]*v2[2];
-            vc1[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
-            l2 = sqrt(vc1[0] * vc1[0] + vc1[1] * vc1[1] + vc1[2] * vc1[2]);
-
-            vc1[0] = vc1[0] / l2 * atan2(l2, l1);
-            vc1[1] = vc1[1] / l2 * atan2(l2, l1);
-            vc1[2] = vc1[2] / l2 * atan2(l2, l1);
-
-            v1[0] = xyzq[i*6*3 + 2*3 + 0];
-            v1[1] = xyzq[i*6*3 + 2*3 + 1];
-            v1[2] = xyzq[i*6*3 + 2*3 + 2];
-            v2[0] = xyzq[i*6*3 + 1*3 + 0];
-            v2[1] = xyzq[i*6*3 + 1*3 + 1];
-            v2[2] = xyzq[i*6*3 + 1*3 + 2];
-
-            l1 = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
-
-            vc2[0] = v1[1]*v2[2] - v1[2]*v2[1];
-            vc2[1] = v1[2]*v2[0] - v1[0]*v2[2];
-            vc2[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
-            l2 = sqrt(vc2[0] * vc2[0] + vc2[1] * vc2[1] + vc2[2] * vc2[2]);
-
-            vc2[0] = vc2[0] / l2 * atan2(l2, l1);
-            vc2[1] = vc2[1] / l2 * atan2(l2, l1);
-            vc2[2] = vc2[2] / l2 * atan2(l2, l1);
-
-            v1[0] = xyzq[i*6*3 + 3*3 + 0];
-            v1[1] = xyzq[i*6*3 + 3*3 + 1];
-            v1[2] = xyzq[i*6*3 + 3*3 + 2];
-            v2[0] = xyzq[i*6*3 + 2*3 + 0];
-            v2[1] = xyzq[i*6*3 + 2*3 + 1];
-            v2[2] = xyzq[i*6*3 + 2*3 + 2];
-
-            l1 = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
-
-            vc3[0] = v1[1]*v2[2] - v1[2]*v2[1];
-            vc3[1] = v1[2]*v2[0] - v1[0]*v2[2];
-            vc3[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
-            l2 = sqrt(vc3[0] * vc3[0] + vc3[1] * vc3[1] + vc3[2] * vc3[2]);
-
-            vc3[0] = vc3[0] / l2 * atan2(l2, l1);
-            vc3[1] = vc3[1] / l2 * atan2(l2, l1);
-            vc3[2] = vc3[2] / l2 * atan2(l2, l1);
-
-            v1[0] = xyzq[i*6*3 + 4*3 + 0];
-            v1[1] = xyzq[i*6*3 + 4*3 + 1];
-            v1[2] = xyzq[i*6*3 + 4*3 + 2];
-            v2[0] = xyzq[i*6*3 + 3*3 + 0];
-            v2[1] = xyzq[i*6*3 + 3*3 + 1];
-            v2[2] = xyzq[i*6*3 + 3*3 + 2];
-
-            l1 = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
-
-            vc4[0] = v1[1]*v2[2] - v1[2]*v2[1];
-            vc4[1] = v1[2]*v2[0] - v1[0]*v2[2];
-            vc4[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
-            l2 = sqrt(vc4[0] * vc4[0] + vc4[1] * vc4[1] + vc4[2] * vc4[2]);
-
-            vc4[0] = vc4[0] / l2 * atan2(l2, l1);
-            vc4[1] = vc4[1] / l2 * atan2(l2, l1);
-            vc4[2] = vc4[2] / l2 * atan2(l2, l1);
-
-            v1[0] = xyzq[i*6*3 + 5*3 + 0];
-            v1[1] = xyzq[i*6*3 + 5*3 + 1];
-            v1[2] = xyzq[i*6*3 + 5*3 + 2];
-            v2[0] = xyzq[i*6*3 + 4*3 + 0];
-            v2[1] = xyzq[i*6*3 + 4*3 + 1];
-            v2[2] = xyzq[i*6*3 + 4*3 + 2];
-
-            l1 = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
-
-            vc5[0] = v1[1]*v2[2] - v1[2]*v2[1];
-            vc5[1] = v1[2]*v2[0] - v1[0]*v2[2];
-            vc5[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
-            l2 = sqrt(vc5[0] * vc5[0] + vc5[1] * vc5[1] + vc5[2] * vc5[2]);
-
-            vc5[0] = vc5[0] / l2 * atan2(l2, l1);
-            vc5[1] = vc5[1] / l2 * atan2(l2, l1);
-            vc5[2] = vc5[2] / l2 * atan2(l2, l1);
-
-            v1[0] = xyzq[i*6*3 + 0*3 + 0];
-            v1[1] = xyzq[i*6*3 + 0*3 + 1];
-            v1[2] = xyzq[i*6*3 + 0*3 + 2];
-            v2[0] = xyzq[i*6*3 + 5*3 + 0];
-            v2[1] = xyzq[i*6*3 + 5*3 + 1];
-            v2[2] = xyzq[i*6*3 + 5*3 + 2];
-
-            l1 = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
-
-            vc6[0] = v1[1]*v2[2] - v1[2]*v2[1];
-            vc6[1] = v1[2]*v2[0] - v1[0]*v2[2];
-            vc6[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
-            l2 = sqrt(vc6[0] * vc6[0] + vc6[1] * vc6[1] + vc6[2] * vc6[2]);
-
-            vc6[0] = vc6[0] / l2 * atan2(l2, l1);
-            vc6[1] = vc6[1] / l2 * atan2(l2, l1);
-            vc6[2] = vc6[2] / l2 * atan2(l2, l1);
-
-            vgc[0] = vc1[0] + vc2[0] + vc3[0] + vc4[0] + vc5[0] + vc6[0];
-            vgc[1] = vc1[1] + vc2[1] + vc3[1] + vc4[1] + vc5[1] + vc6[1];
-            vgc[2] = vc1[2] + vc2[2] + vc3[2] + vc4[2] + vc5[2] + vc6[2];
-
-            l2 = sqrt(vgc[0] * vgc[0] + vgc[1] * vgc[1] + vgc[2] * vgc[2]);
-
-            xyz[i*3 + 0] = vgc[0] / l2;
-            xyz[i*3 + 1] = vgc[1] / l2;
-            xyz[i*3 + 2] = vgc[2] / l2;
+            xyz3[i*3] = normalize(vgc);
         }
     }
-
-    delete [] v1 ;
-    delete [] v2 ;
-    delete [] vc1;
-    delete [] vc2;
-    delete [] vc3;
-    delete [] vc4;
-    delete [] vc5;
-    delete [] vc6;
-    delete [] vgc;
 }
 
 void Icogrid::set_altitudes(double *Altitude    ,

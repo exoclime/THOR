@@ -152,6 +152,7 @@ set(SRC
   src/files/directories.cpp
   src/files/log_writer.cpp
   src/utils/iteration_timer.cpp
+  src/profx/valkyrie_conservation.cu
   src/thor/reduction_add.cu)
 
 # source for test program for storage class
@@ -160,15 +161,16 @@ set(SRC_STORAGE
   src/output/storage.cpp)
 
 set(SRC_GRID
-  src/initial/esp_initial.cu
-  src/output/esp_output.cu
-  src/initial/planet.cu
-  src/profx/profx_driver.cu
-  src/thor/thor_driver.cu
+#  src/initial/esp_initial.cu
+#  src/output/esp_output.cu
+#  src/initial/planet.cu
+#  src/profx/profx_driver.cu
+#  src/thor/thor_driver.cu
   src/grid/grid.cu
   src/test/grid_test.cpp
   src/output/storage.cpp
   src/devel/binary_test.cpp
+  src/devel/debug_helpers.cu
   src/files/directories.cpp)
 
 set(SRC_CONFIG
@@ -237,6 +239,6 @@ add_executable(test_directories ${SRC_DIRECTORIES})
 cuda_add_executable(test_gen_init ${SRC_GEN_INIT})
 target_link_libraries (test_gen_init ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES}  )
 
-#cuda_add_executable(test_grid ${SRC_GRID} OPTIONS -DBENCHMARKING -DBENCH_POINT_COMPARE)
-#target_compile_definitions(test_grid PRIVATE -DBENCHMARKING -DBENCH_POINT_COMPARE)
-#target_link_libraries (test_grid ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES}  )
+cuda_add_executable(test_grid ${SRC_GRID} OPTIONS -DBENCHMARKING -DBENCH_POINT_COMPARE)
+target_compile_definitions(test_grid PRIVATE -DBENCHMARKING -DBENCH_POINT_COMPARE)
+target_link_libraries (test_grid ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES}  )
