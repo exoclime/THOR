@@ -2763,17 +2763,13 @@ void Icogrid::compute_func(double *func_r,
 //
 
     // Local variables:
-    double norm;
+    
+    double3 * func_r3 = (double3*)func_r;
+    double3 * xyz3 = (double3*)xyz;
+    
 
-    for (int i = 0; i < point_num; i++){
-
-        norm = sqrt(pow(xyz[i*3 + 0],2.0) + pow(xyz[i*3 + 1],2.0) + pow(xyz[i*3 + 2],2.0));
-
-        func_r[i*3 + 0] = xyz[i*3 + 0]/norm;
-        func_r[i*3 + 1] = xyz[i*3 + 1]/norm;
-        func_r[i*3 + 2] = xyz[i*3 + 2]/norm;
-
-    }
+    for (int i = 0; i < point_num; i++)
+        func_r3[i] = normalize(xyz3[i]);
 }
 
 void Icogrid::div_operator(double *areasT,
