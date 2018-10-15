@@ -9,7 +9,8 @@ public:
     ~radiative_transfer();
 
     bool initialise_memory(const ESP & esp);
-    bool initial_conditions(const XPlanet & planet);
+    bool initial_conditions(const ESP & esp,
+                            const XPlanet & planet);
 
     // TBD, how does it get data? friend of ESP ? grid ?
     bool loop(ESP & esp,
@@ -27,7 +28,8 @@ public:
               double A           // Planet radius [m]);
         );
 
-    bool store(storage & s);
+    bool store(const ESP & esp,
+               storage & s);
 
     bool store_init(storage & s);
 
@@ -71,7 +73,7 @@ private:
     double longp          = 0        ;  // longitude of periastron (rad)
 
     double *insol_h;
-    double *insol_d;   
+    double *insol_d;
 
     //  These arrays are for temporary usage in RT code
     double *dtemp         ;
@@ -93,7 +95,8 @@ private:
                  double ecc_             ,
                  double alpha_i_         ,
                  double obliquity_       ,
-                 double Omega            );
+                 double Omega            ,
+                 int    point_num);
 
     void update_spin_orbit(double time,
                            double Omega );

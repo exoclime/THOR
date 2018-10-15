@@ -5,7 +5,7 @@ config_version = 1
 # testing sponge layer model
 
 # number of steps
-num_steps = 432000
+num_steps = 3200
 
 # length of timesteps imn seconds
 timestep = 300
@@ -85,15 +85,21 @@ hstest = 0
 
 # output
 # output every n steps
-n_out = 7200
+n_out = 20
 
 # output directory (relative to current working directory)
 # defaults to 'results'
 results_path = wasp43b_test
 
-Tstar = 4520
+Tstar = 4300
 planet_star_dist = 0.015
 radius_star = 0.667
+sync_rot = false
+mean_motion = 7.2e-6
+obliquity = 60
+true_long_i = 90
+alpha_i = 180
+ecc = 0.2
 
 # GPU ID number
 GPU_ID_N = 0

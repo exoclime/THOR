@@ -53,7 +53,6 @@ class input:
                 # self.taulw = openh5['taulw'][...]
         if 'vulcan' in openh5.keys():
             self.vulcan = openh5['vulcan'][...]
-        import pdb; pdb.set_trace()
 
         openh5.close()
 
@@ -97,6 +96,7 @@ class output:
         self.GlobalAMy = np.zeros(nts-ntsi+1)
         self.GlobalAMz = np.zeros(nts-ntsi+1)
         self.ConvData = np.zeros(nts-ntsi+1)
+        self.Insol = np.zeros((grid.point_num,nts-ntsi+1))
 
         # Read model results
         for t in np.arange(ntsi-1,nts):
@@ -126,6 +126,8 @@ class output:
             else:
                 print('Warning: conservation diagnostics not available in file %s'%fileh5)
                 self.ConvData[t-ntsi+1] = False
+            if 'insol' in openh5.keys():
+                self.Insol[:,t-ntsi+1] = openh5['insol'][...]
             openh5.close()
 
             self.Rho[:,:,t-ntsi+1] = np.reshape(Rhoi,(grid.point_num,grid.nv))

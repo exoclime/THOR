@@ -14,7 +14,7 @@ public:
 
 
     virtual bool initialise_memory(const ESP & esp) = 0;
-    virtual bool initial_conditions(const XPlanet & planet) = 0;
+    virtual bool initial_conditions(const ESP & esp, const XPlanet & planet) = 0;
 
     // TBD, how does it get data? friend of ESP ? grid ?
     virtual bool loop(ESP & esp,
@@ -33,7 +33,7 @@ public:
         ) = 0;
 
 
-    virtual bool store(storage & s) = 0;
+    virtual bool store(const ESP & esp, storage & s) = 0;
 
     virtual bool  configure(config_file & config_reader) = 0;
 

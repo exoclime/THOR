@@ -45,7 +45,8 @@ bool radiative_transfer::free_memory()
     return true;
 }
 
-bool radiative_transfer::initial_conditions(const XPlanet & planet)
+bool radiative_transfer::initial_conditions(const ESP & esp,
+                                            const XPlanet & planet)
 {
     RTSetup(Tstar            ,
             planet_star_dist ,
@@ -62,7 +63,8 @@ bool radiative_transfer::initial_conditions(const XPlanet & planet)
             ecc              ,
             alpha_i          ,
             obliquity        ,
-            planet.Omega        );
+            planet.Omega     ,
+            esp.point_num);
     return true;
 
 }
@@ -84,7 +86,11 @@ bool radiative_transfer::loop(ESP & esp,
 {
 
 //  update global insolation properties if necessary
-    if (ecc > 1e-10) {
+    if (sync_rot) {
+      if (ecc > 1e-10) {
+        update_spin_orbit(nstep*time_step, Omega);
+      }
+    } else {
       update_spin_orbit(nstep*time_step, Omega);
     }
 
@@ -134,8 +140,8 @@ bool radiative_transfer::loop(ESP & esp,
                                      cos_decl ,
                                      sync_rot ,
                                      ecc      ,
-                                     obliquity);
-
+                                     obliquity,
+                                     insol_d);
 
     return true;
 }
@@ -154,6 +160,7 @@ bool radiative_transfer::configure(config_file & config_reader)
 
     // orbit/insolation properties
     config_reader.append_config_var("sync_rot", sync_rot, sync_rot);
+    config_reader.append_config_var("mean_motion", mean_motion, mean_motion);
     config_reader.append_config_var("alpha_i", alpha_i, alpha_i);
     config_reader.append_config_var("true_long_i", true_long_i, true_long_i);
     config_reader.append_config_var("ecc", ecc, ecc);
@@ -163,8 +170,15 @@ bool radiative_transfer::configure(config_file & config_reader)
     return true;
 }
 
-bool radiative_transfer::store(storage & s)
+bool radiative_transfer::store(const ESP & esp,
+                               storage & s)
 {
+    cudaMemcpy(insol_h  , insol_d   , esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
+    s.append_table( insol_h,
+                     esp.point_num,
+                     "/insol",
+                     "W m^-2 s^-1",
+                     "insolation (instantaneous)");
 
     return true;
 }
@@ -204,7 +218,8 @@ void radiative_transfer::RTSetup(double Tstar_           ,
                                  double ecc_             ,
                                  double alpha_i_         ,
                                  double obliquity_       ,
-                                 double Omega            )
+                                 double Omega            ,
+                                 int    point_num        )
                                {
 
     double bc = 5.677036E-8; // Stefan–Boltzmann constant [W m−2 K−4]
@@ -234,6 +249,9 @@ void radiative_transfer::RTSetup(double Tstar_           ,
     mean_anomaly_i = fmod(ecc_anomaly_i - ecc*sin(ecc_anomaly_i),(2*M_PI));
     alpha_i = alpha_i_*M_PI/180.0;
     obliquity = obliquity_*M_PI/180.0;
+
+    insol_h        = (double*)malloc(point_num   * sizeof(double));
+    cudaMalloc((void **)&insol_d, point_num *     sizeof(double));
 }
 
 void radiative_transfer::update_spin_orbit(double time  ,

@@ -328,7 +328,7 @@ __host__ void ESP::Output(int    fidx           , // Index of output file
                      "kg m^2/s",
                      "Global AngMomZ");
       }
-      phy_modules_store(s);
+      phy_modules_store(*this, s);
 
       char buf[256];
 

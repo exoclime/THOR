@@ -91,14 +91,14 @@ __host__ double true2ecc_anomaly(double true_anomaly,
 }
 
 __device__ double calc_zenith(double *lonlat_d,  //latitude/longitude grid
-                              double alpha    ,  //current RA of star (relative to zero long on planet)
-                              double alpha_i  ,
-                              double sin_decl ,  //declination of star
-                              double cos_decl ,
-                              bool   sync_rot ,
-                              double ecc      ,
-                              double obliquity,
-                              int    id       ){
+                              const double alpha    ,  //current RA of star (relative to zero long on planet)
+                              const double alpha_i  ,
+                              const double sin_decl ,  //declination of star
+                              const double cos_decl ,
+                              const bool sync_rot ,
+                              const double ecc      ,
+                              const double obliquity,
+                              const int    id       ){
 
 // Calculate the insolation (scaling) at a point on the surface
 
@@ -142,15 +142,16 @@ __device__ void radcsw(double *phtemp     ,
                        double  Cp         ,
                        double  gravit     ,
                        int     id         ,
-                       int     nv         ){
+                       int     nv         ,
+                       double *insol_d    ){
 
 //  Calculate upward, downward, and net flux.
 //  Downward Directed Radiation
 
     double gocp;
     double tau = (tausw/ps0)*(phtemp[id*(nv+1)+nv]);
-    double flux_top = incflx*pow(r_orb,-2)*coszrs*(1.0-alb);
-    // insol_d[id*nv]
+    insol_d[id] = incflx*pow(r_orb,-2)*coszrs;
+    double flux_top = insol_d[id]*(1.0-alb);
 
 	// Extra layer to avoid over heating at the top.
     fnet_dn_d[id*(nv+1) + nv] = flux_top*exp(-(1.0/coszrs)*tau);
@@ -328,9 +329,10 @@ __global__ void rtm_dual_band (double *pressure_d   ,
                                double alpha_i  ,
                                double sin_decl ,  //declination of star
                                double cos_decl ,
-                               double sync_rot ,
+                               bool sync_rot ,
                                double ecc      ,
-                               double obliquity){
+                               double obliquity,
+                               double *insol_d ){
 
 
 //
@@ -424,8 +426,10 @@ __global__ void rtm_dual_band (double *pressure_d   ,
                       Cp         ,
                       gravit     ,
                       id         ,
-                      nv         );
-
+                      nv         ,
+                      insol_d  );
+        } else {
+          insol_d[id] = 0;
         }
 
         for(int lev = 0; lev <=nv; lev++)fnet_up_d[id*nvi + lev] = 0.0;
