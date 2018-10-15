@@ -239,6 +239,6 @@ add_executable(test_directories ${SRC_DIRECTORIES})
 cuda_add_executable(test_gen_init ${SRC_GEN_INIT})
 target_link_libraries (test_gen_init ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES}  )
 
-cuda_add_executable(test_grid ${SRC_GRID} OPTIONS -DBENCHMARKING -DBENCH_POINT_COMPARE)
-target_compile_definitions(test_grid PRIVATE -DBENCHMARKING -DBENCH_POINT_COMPARE)
+cuda_add_executable(test_grid ${SRC_GRID} OPTIONS -DBENCHMARKING -DBENCH_POINT_COMPARE -D BENCH_PRINT_DEBUG)
+target_compile_definitions(test_grid PRIVATE -DBENCHMARKING -DBENCH_POINT_COMPARE -DBENCH_PRINT_DEBUG)
 target_link_libraries (test_grid ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES}  )

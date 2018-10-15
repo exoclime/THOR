@@ -70,7 +70,7 @@ inline double3 normproj(const double3 & v1, const double3 & v2)
 
     double l2 = length(vc1);
 
-    vc1 *= atan2(l2, l1)/l2;
+    vc1 = vc1/l2*atan2(l2, l1);
 
     return vc1;
 }
@@ -2083,7 +2083,7 @@ void Icogrid::relocate_centres(int    *point_local,
             
             vgc = vc1 + vc2 + vc3 + vc4 + vc5;
 
-            xyz3[i*3] = normalize(vgc);
+            xyz3[i] = normalize(vgc);
         }
         else{
             vc1 = normproj(xyzq3[i*6 + 1], xyzq3[i*6 + 0]);
@@ -2095,7 +2095,7 @@ void Icogrid::relocate_centres(int    *point_local,
             
             vgc = vc1 + vc2 + vc3 + vc4 + vc5 + vc6;
 
-            xyz3[i*3] = normalize(vgc);
+            xyz3[i] = normalize(vgc);
         }
     }
 }
