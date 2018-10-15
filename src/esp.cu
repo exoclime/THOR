@@ -279,6 +279,8 @@ int main (int argc,  char** argv){
     int vulcan = 0;
     config_reader.append_config_var("vulcan", vulcan, vulcan_default);
 
+    int conv   = 1
+
     int GPU_ID_N = 0;
     config_reader.append_config_var("GPU_ID_N", GPU_ID_N, GPU_ID_N_default);
 
@@ -902,6 +904,7 @@ int main (int argc,  char** argv){
 //     Physical Core Integration (ProfX)
         X.ProfX(hstest       , // Held-Suarez test option
                 vulcan       , //
+                conv         ,
                 Planet.Omega , // Rotation rate [1/s]
                 Planet.Cp    , // Specific heat capacity [J/kg/K]
                 Planet.Rd    , // Gas constant [J/kg/K]
