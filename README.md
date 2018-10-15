@@ -183,10 +183,115 @@ Keyword argument:
  -g / --gpu_id <N>             GPU_ID to run on
  -o / --output_dir <PATH>      directory to write results to
  -i / --initial <PATH>         initial conditions HDF5 filename
+ -N / --numsteps <N>           number of steps to run 
+ -w / --overwrite              Force overwrite of output file if they exist
+ -c / --continue <PATH>        continue simulation from this output file
+ -b / --batch                  Run as batch 
 ```
 
 Keyword arguments supersede config file arguments. 
 If initial conditions path is given on the command line, it starts from there instead of from rest and ignores the 'rest' setting in the config file.
+
+* -g / --gpu_id
+
+Uses the GPU configured by parameter
+
+* -o / --output_dir
+Writes results to this directory. It will also scan the output directory to check for already existing files and run, continue or restart depending on options.
+
+* -N / --numsteps <N>
+Number of steps of simulation to run. 
+
+* -i / --initial <PATH>
+Instead of starting from rest, use <PATH> as initial conditions, using the provided model parameters. Checks consistency of models parameter with planet and grid definition used in initial file and starts from 0.
+
+
+
+* -w / --overwrite
+
+if output directory already contains files, the simulation does not run and outputs a warning. This forces the simulation to overwrite existing files.
+
+* -c / --continue <PATH>
+Continues a simulation from an output file. Like `--initial`, but continues at the simulation step and time from the input file. This provides the possibility to restart the simulation from a specific step (to contniue simulation, debug, or run with some changes in some parameters).
+
+* -b / --batch
+Run in batch mode in output directory. It checks output directory for result files:
+ - if none exist, start a simulation from scratch.
+ - if some exist, look for last valid written file, and continue from that point. 
+Useful to run simulation on a cluster with a time limit. When the application gets the INT or TERM signal, it writes down the last simulation step to disk. 
+Launching the simulation from a batch script with `-b` in the same folder starts the simulation or continues from the last save point point.
+
+* exclusive options:
+`--initial` and `--continue` are mutually exclusive.
+`--batch` and  `--continue` are mutually exclusive.
+
+
+### SLURM Batch script
+#### Simple Batch script
+Simple batch script launching SLURM on THOR, in `/home/thoruser/THOR`, with job name `earth`, configuration file `ifile/earth.thr`, on 1 task and 1 gpu, with a time limit of 2 hours, in file `esp.job`:
+
+```sh
+#!/bin/bash
+#SBATCH -D /home/thoruser/THOR/
+#SBATCH -J earth
+#SBATCH -n 1 --gres gpu:1
+#SBATCH --time 0-2
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=thoruser@thormail.com
+#SBATCH --output="/home/thoruser/slurm-esp-%j.out"
+
+srun bin/esp ifile/config.thr 
+```
+
+Launch it in the job queue as 
+```
+$ sbatch esp.job
+```
+
+#### Multiple batches with timeout
+
+On a slurm queue with a time limit on jobs, you can run into the issue that the the queue kills your job after some time and you need to restart it to continue. For this, you need to queue several consecutive jobs with dependencies from one to the next.
+
+Base script `simple_slurm.sh`, like the simple script, but starting in batch mode and sending interrupt 60 seconds before the end:
+
+
+
+```sh
+#!/bin/bash
+
+#SBATCH -D /home/thoruser/THOR/
+#SBATCH -J earth
+#SBATCH -n 1 --gres gpu:1
+#SBATCH --time 0-2
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=thoruser@thormail.com
+#SBATCH --output="/home/thoruser/slurm-esp-%j.out"
+#SBATCH --signal=INT@60
+
+srun bin/esp ifile/config.thr -b
+```
+
+Batching script, `slurm_batch.sh` queuing a list of simple batches to restart.
+
+
+```sh
+#!/bin/bash
+
+IDS=$(sbatch simple_slurm.sh)
+ID=${IDS//[!0-9]/}
+echo "ID $ID"
+
+for t in {1..7..1}
+do
+  IDS=$(sbatch --dependency=afterany:$ID simple_slurm.sh)
+  ID=${IDS//[!0-9]/}
+  echo "ID $ID"
+done
+```
+
+
+See `slurm_batch_run.py` for a Python script doing the same in one script.
+
 
 ### Results
 
