@@ -1931,6 +1931,28 @@ void Icogrid::correct_xyz_points ( double A     ,
     }
 }
 
+inline double comp_ang(const double3 & a,const double3 & b, const double3 & c)
+{
+    double3 v0 = a;
+    double3 v1 = b - a;
+    double3 v2 = c - a;
+    
+    double t = 1.0/dot(v0,v0);
+    
+    double fac1       = dot(v0,v1)*t;
+    double fac2       = dot(v0,v2)*t;
+    
+    double3 w1 = v1 - fac1*v0;
+    
+    double3 w2 = v2 - fac2*v0;
+    
+    double ang = dot(w1,w2)/(length(w1)*length(w2));
+    
+    if (ang >  1) ang =  1;
+    if (ang < -1) ang = -1;
+    
+    return acos(ang);
+}
 
 void Icogrid::control_areas ( double *areasT  ,
                               double *areasTr ,
@@ -1956,43 +1978,21 @@ void Icogrid::control_areas ( double *areasT  ,
 //          areasT     - Control volume area.
 //
 
+    // input variables
+    double3 * xyzq3 = (double3*)xyzq;
+    double3 * xyz3 = (double3*)xyz;
+    
     // Local variables.
     int geo;
-    double t11;
-    double t22;
-    double t33;
-    double fac11, fac21, fac12, fac22, fac13, fac23;
 
     double radius;
 
     // Local arrays
-    double *a, *b, *c;
-    double *v01, *v02, *v03;
-    double *v11, *v12, *v13;
-    double *v21, *v22, *v23;
-    double *w11, *w21, *w12, *w22;
-    double *w13, *w23;
-    double *ang, areav;
+    double3 a, b, c;
 
-    a   = new double[3]();
-    b   = new double[3]();
-    c   = new double[3]();
-    v01 = new double[3]();
-    v02 = new double[3]();
-    v03 = new double[3]();
-    v11 = new double[3]();
-    v12 = new double[3]();
-    v13 = new double[3]();
-    v21 = new double[3]();
-    v22 = new double[3]();
-    v23 = new double[3]();
-    w11 = new double[3]();
-    w21 = new double[3]();
-    w12 = new double[3]();
-    w22 = new double[3]();
-    w13 = new double[3]();
-    w23 = new double[3]();
-    ang = new double[3]();
+    double ang[3];
+    double areav;
+
 
     for (int i = 0; i < point_num*6*3; i++) areas[i] = 0.0;
 
@@ -2007,158 +2007,49 @@ void Icogrid::control_areas ( double *areasT  ,
                 for (int k = 0; k < 3; k++){
                     if ( j < 4 ){
                         if (k == 0){
-                            a[0] = xyz[point_local[i*6 + j+1]*3 + 0];
-                            a[1] = xyz[point_local[i*6 + j+1]*3 + 1];
-                            a[2] = xyz[point_local[i*6 + j+1]*3 + 2];
-                            b[0] = xyz[point_local[i*6 + j]*3 + 0];
-                            b[1] = xyz[point_local[i*6 + j]*3 + 1];
-                            b[2] = xyz[point_local[i*6 + j]*3 + 2];
-                            c[0] = xyzq[i*6*3 + j*3 + 0];
-                            c[1] = xyzq[i*6*3 + j*3 + 1];
-                            c[2] = xyzq[i*6*3 + j*3 + 2];
+                            a = xyz3[point_local[i*6 + j+1]];
+                            b = xyz3[point_local[i*6 + j]];
+                            c = xyzq3[i*6 + j];
                         }
                         else if ( k ==1 ){
-                            a[0] = xyz[point_local[i*6 + j+1]*3 + 0];
-                            a[1] = xyz[point_local[i*6 + j+1]*3 + 1];
-                            a[2] = xyz[point_local[i*6 + j+1]*3 + 2];
-                            b[0] = xyz[i*3 + 0];
-                            b[1] = xyz[i*3 + 1];
-                            b[2] = xyz[i*3 + 2];
-                            c[0] = xyzq[i*6*3 + j*3 + 0];
-                            c[1] = xyzq[i*6*3 + j*3 + 1];
-                            c[2] = xyzq[i*6*3 + j*3 + 2];
+                            a = xyz3[point_local[i*6 + j+1]];
+                            b = xyz3[i];
+                            c = xyzq3[i*6 + j];
                         }
                         else{
-                            a[0] = xyz[i*3 + 0];
-                            a[1] = xyz[i*3 + 1];
-                            a[2] = xyz[i*3 + 2];
-                            b[0] = xyz[point_local[i*6 + j]*3 + 0];
-                            b[1] = xyz[point_local[i*6 + j]*3 + 1];
-                            b[2] = xyz[point_local[i*6 + j]*3 + 2];
-                            c[0] = xyzq[i*6*3 + j*3 + 0];
-                            c[1] = xyzq[i*6*3 + j*3 + 1];
-                            c[2] = xyzq[i*6*3 + j*3 + 2];
+                            a = xyz3[i];
+                            b = xyz3[point_local[i*6 + j]];
+                            c = xyzq3[i*6 + j];
                         }
                     }
                     else{
                         if (k == 0){
-                            a[0] = xyz[point_local[i*6 + 0]*3 + 0];
-                            a[1] = xyz[point_local[i*6 + 0]*3 + 1];
-                            a[2] = xyz[point_local[i*6 + 0]*3 + 2];
-                            b[0] = xyz[point_local[i*6 + 4]*3 + 0];
-                            b[1] = xyz[point_local[i*6 + 4]*3 + 1];
-                            b[2] = xyz[point_local[i*6 + 4]*3 + 2];
-                            c[0] = xyzq[i*6*3 + 4*3 + 0];
-                            c[1] = xyzq[i*6*3 + 4*3 + 1];
-                            c[2] = xyzq[i*6*3 + 4*3 + 2];
+                            a = xyz3[point_local[i*6 + 0]];
+                            b = xyz3[point_local[i*6 + 4]];
+                            c = xyzq3[i*6 + 4];
                         }
                         else if ( k ==1 ){
-                            a[0] = xyz[point_local[i*6 + 0]*3 + 0];
-                            a[1] = xyz[point_local[i*6 + 0]*3 + 1];
-                            a[2] = xyz[point_local[i*6 + 0]*3 + 2];
-                            b[0] = xyz[i*3 + 0];
-                            b[1] = xyz[i*3 + 1];
-                            b[2] = xyz[i*3 + 2];
-                            c[0] = xyzq[i*6*3 + 4*3 + 0];
-                            c[1] = xyzq[i*6*3 + 4*3 + 1];
-                            c[2] = xyzq[i*6*3 + 4*3 + 2];
+                            a = xyz3[point_local[i*6 + 0]];
+                            b = xyz3[i];
+                            c = xyzq3[i*6 + 4];
                         }
                         else{
-                            a[0] = xyz[i*3 + 0];
-                            a[1] = xyz[i*3 + 1];
-                            a[2] = xyz[i*3 + 2];
-                            b[0] = xyz[point_local[i*6 + 4]*3 + 0];
-                            b[1] = xyz[point_local[i*6 + 4]*3 + 1];
-                            b[2] = xyz[point_local[i*6 + 4]*3 + 2];
-                            c[0] = xyzq[i*6*3 + 4*3 + 0];
-                            c[1] = xyzq[i*6*3 + 4*3 + 1];
-                            c[2] = xyzq[i*6*3 + 4*3 + 2];
+                            a = xyz3[i];
+                            b = xyz3[point_local[i*6 + 4]];
+                            c = xyzq3[i*6 + 4];
                         }
                     }
-                    for (int v = 0; v < 3; v++){
-                        v01[v] = a[v];
-                        v02[v] = b[v];
-                        v03[v] = c[v];
-
-                        v11[v] = b[v] - a[v];
-                        v12[v] = a[v] - b[v];
-                        v13[v] = a[v] - c[v];
-
-                        v21[v] = c[v] - a[v];
-                        v22[v] = c[v] - b[v];
-                        v23[v] = b[v] - c[v];
-                    }
-
-                    t11 = 1/(v01[0]*v01[0] + v01[1]*v01[1] + v01[2]*v01[2]);
-
-                    fac11       = (v01[0]*v11[0] + v01[1]*v11[1] + v01[2]*v11[2])*t11;
-                    fac21       = (v01[0]*v21[0] + v01[1]*v21[1] + v01[2]*v21[2])*t11;
-
-                    w11[0] = v11[0] - fac11*v01[0];
-                    w11[1] = v11[1] - fac11*v01[1];
-                    w11[2] = v11[2] - fac11*v01[2];
-
-                    w21[0] = v21[0] - fac21*v01[0];
-                    w21[1] = v21[1] - fac21*v01[1];
-                    w21[2] = v21[2] - fac21*v01[2];
-
-                    ang[0] = (w11[0]*w21[0] + w11[1]*w21[1] + w11[2]*w21[2])/
-                        (sqrt(w11[0]*w11[0] + w11[1]*w11[1] + w11[2]*w11[2])*
-                         sqrt(w21[0]*w21[0] + w21[1]*w21[1] + w21[2]*w21[2]));
-
-                    if (ang[0] > 1) ang[0] =  1;
-                    if (ang[0] < -1)ang[0] = -1;
-
-                    ang[0] = acos(ang[0]);
-
-                    t22 = 1/(v02[0]*v02[0] + v02[1]*v02[1] + v02[2]*v02[2]);
-
-                    fac12       = (v02[0]*v12[0] + v02[1]*v12[1] + v02[2]*v12[2])*t22;
-                    fac22       = (v02[0]*v22[0] + v02[1]*v22[1] + v02[2]*v22[2])*t22;
-
-                    w12[0] = v12[0] - fac12*v02[0];
-                    w12[1] = v12[1] - fac12*v02[1];
-                    w12[2] = v12[2] - fac12*v02[2];
-
-                    w22[0] = v22[0] - fac22*v02[0];
-                    w22[1] = v22[1] - fac22*v02[1];
-                    w22[2] = v22[2] - fac22*v02[2];
-
-                    ang[1] = (w12[0]*w22[0] + w12[1]*w22[1] + w12[2]*w22[2])/
-                        (sqrt(w12[0]*w12[0] + w12[1]*w12[1] + w12[2]*w12[2])*
-                         sqrt(w22[0]*w22[0] + w22[1]*w22[1] + w22[2]*w22[2]));
-
-                    if ( ang[1] > 1) ang[1] =  1;
-                    if ( ang[1] < -1)ang[1] = -1;
-
-                    ang[1] = acos(ang[1]);
-
-                    t33 = 1/(v03[0]*v03[0] + v03[1]*v03[1] + v03[2]*v03[2]);
-
-                    fac13       = (v03[0]*v13[0] + v03[1]*v13[1] + v03[2]*v13[2])*t33;
-                    fac23       = (v03[0]*v23[0] + v03[1]*v23[1] + v03[2]*v23[2])*t33;
-
-                    w13[0] = v13[0] - fac13*v03[0];
-                    w13[1] = v13[1] - fac13*v03[1];
-                    w13[2] = v13[2] - fac13*v03[2];
-
-                    w23[0] = v23[0] - fac23*v03[0];
-                    w23[1] = v23[1] - fac23*v03[1];
-                    w23[2] = v23[2] - fac23*v03[2];
-
-                    ang[2] = (w13[0]*w23[0] + w13[1]*w23[1] + w13[2]*w23[2])/
-                        (sqrt(w13[0]*w13[0] + w13[1]*w13[1] + w13[2]*w13[2])*
-                         sqrt(w23[0]*w23[0] + w23[1]*w23[1] + w23[2]*w23[2]));
-
-                    if (ang[2] > 1)    ang[2] =  1;
-                    if (ang[2] < -1)ang[2] = -1;
-
-                    ang[2] = acos(ang[2]);
-
-                    radius = sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]) ;
+                    
+                    ang[0] = comp_ang(a, b, c);
+                    ang[1] = comp_ang(b, a, c);
+                    ang[2] = comp_ang(c, a, b);
+                    
+                    radius = length(a);
                     areasq[i*6*3 + j*3 + k] = (ang[0] + ang[1] + ang[2] - M_PI)*pow(radius,2);
                 }
-                areasTr[i * 6 + j] = areasq[i * 6 * 3 + j * 3 + 0] + areasq[i * 6 * 3 + j * 3 + 1] + areasq[i * 6 * 3 + j * 3 + 2];
+                areasTr[i * 6 + j] = areasq[(i * 6 + j) * 3 + 0]
+                    + areasq[(i * 6 + j)* 3 + 1]
+                    + areasq[(i * 6 + j) * 3 + 2];
             }
             areasTr[i * 6 + 5] = 0.0;
         }
@@ -2167,160 +2058,50 @@ void Icogrid::control_areas ( double *areasT  ,
                 for (int k = 0; k < 3; k++){
                     if ( j < 5 ){
                         if (k == 0){
-                            a[0] = xyz[point_local[i*6 + j+1]*3 + 0];
-                            a[1] = xyz[point_local[i*6 + j+1]*3 + 1];
-                            a[2] = xyz[point_local[i*6 + j+1]*3 + 2];
-                            b[0] = xyz[point_local[i*6 + j]*3 + 0];
-                            b[1] = xyz[point_local[i*6 + j]*3 + 1];
-                            b[2] = xyz[point_local[i*6 + j]*3 + 2];
-                            c[0] = xyzq[i*6*3 + j*3 + 0];
-                            c[1] = xyzq[i*6*3 + j*3 + 1];
-                            c[2] = xyzq[i*6*3 + j*3 + 2];
+                            a = xyz3[point_local[i*6 + j+1]];
+                            b = xyz3[point_local[i*6 + j]];
+                            c = xyzq3[i*6 + j];
                         }
                         else if ( k ==1 ){
-                            a[0] = xyz[point_local[i*6 + j+1]*3 + 0];
-                            a[1] = xyz[point_local[i*6 + j+1]*3 + 1];
-                            a[2] = xyz[point_local[i*6 + j+1]*3 + 2];
-                            b[0] = xyz[i*3 + 0];
-                            b[1] = xyz[i*3 + 1];
-                            b[2] = xyz[i*3 + 2];
-                            c[0] = xyzq[i*6*3 + j*3 + 0];
-                            c[1] = xyzq[i*6*3 + j*3 + 1];
-                            c[2] = xyzq[i*6*3 + j*3 + 2];
+                            a = xyz3[point_local[i*6 + j+1]];
+                            b = xyz3[i];
+                            c = xyzq3[i*6 + j];
                         }
                         else{
-                            a[0] = xyz[i*3 + 0];
-                            a[1] = xyz[i*3 + 1];
-                            a[2] = xyz[i*3 + 2];
-                            b[0] = xyz[point_local[i*6 + j]*3 + 0];
-                            b[1] = xyz[point_local[i*6 + j]*3 + 1];
-                            b[2] = xyz[point_local[i*6 + j]*3 + 2];
-                            c[0] = xyzq[i*6*3 + j*3 + 0];
-                            c[1] = xyzq[i*6*3 + j*3 + 1];
-                            c[2] = xyzq[i*6*3 + j*3 + 2];
+                            a = xyz3[i];
+                            b = xyz3[point_local[i*6 + j]];
+                            c = xyzq3[i*6 + j];
                         }
                     }
                     else{
                         if (k == 0){
-                            a[0] = xyz[point_local[i*6 + 0]*3 + 0];
-                            a[1] = xyz[point_local[i*6 + 0]*3 + 1];
-                            a[2] = xyz[point_local[i*6 + 0]*3 + 2];
-                            b[0] = xyz[point_local[i*6 + 5]*3 + 0];
-                            b[1] = xyz[point_local[i*6 + 5]*3 + 1];
-                            b[2] = xyz[point_local[i*6 + 5]*3 + 2];
-                            c[0] = xyzq[i*6*3 + 5*3 + 0];
-                            c[1] = xyzq[i*6*3 + 5*3 + 1];
-                            c[2] = xyzq[i*6*3 + 5*3 + 2];
+                            a = xyz3[point_local[i*6 + 0]];
+                            b = xyz3[point_local[i*6 + 5]];
+                            c = xyzq3[i*6 + 5];
                         }
                         else if ( k ==1 ){
-                            a[0] = xyz[point_local[i*6 + 0]*3 + 0];
-                            a[1] = xyz[point_local[i*6 + 0]*3 + 1];
-                            a[2] = xyz[point_local[i*6 + 0]*3 + 2];
-                            b[0] = xyz[i*3 + 0];
-                            b[1] = xyz[i*3 + 1];
-                            b[2] = xyz[i*3 + 2];
-                            c[0] = xyzq[i*6*3 + 5*3 + 0];
-                            c[1] = xyzq[i*6*3 + 5*3 + 1];
-                            c[2] = xyzq[i*6*3 + 5*3 + 2];
+                            a = xyz3[point_local[i*6 + 0]];
+                            b = xyz3[i];
+                            c = xyzq3[i*6 + 5];
                         }
                         else{
-                            a[0] = xyz[i*3 + 0];
-                            a[1] = xyz[i*3 + 1];
-                            a[2] = xyz[i*3 + 2];
-                            b[0] = xyz[point_local[i*6 + 5]*3 + 0];
-                            b[1] = xyz[point_local[i*6 + 5]*3 + 1];
-                            b[2] = xyz[point_local[i*6 + 5]*3 + 2];
-                            c[0] = xyzq[i*6*3 + 5*3 + 0];
-                            c[1] = xyzq[i*6*3 + 5*3 + 1];
-                            c[2] = xyzq[i*6*3 + 5*3 + 2];
+                            a = xyz3[i];
+                            b = xyz3[point_local[i*6 + 5]];
+                            c = xyzq3[i*6 + 5];
                         }
                     }
-
-                    for (int v = 0; v < 3; v++){
-                        v01[v] = a[v];
-                        v02[v] = b[v];
-                        v03[v] = c[v];
-
-                        v11[v] = b[v] - a[v];
-                        v12[v] = a[v] - b[v];
-                        v13[v] = a[v] - c[v];
-
-                        v21[v] = c[v] - a[v];
-                        v22[v] = c[v] - b[v];
-                        v23[v] = b[v] - c[v];
-                    }
-
-                    t11 = 1/(v01[0]*v01[0] + v01[1]*v01[1] + v01[2]*v01[2]);
-
-                    fac11       = (v01[0]*v11[0] + v01[1]*v11[1] + v01[2]*v11[2])*t11;
-                    fac21       = (v01[0]*v21[0] + v01[1]*v21[1] + v01[2]*v21[2])*t11;
-
-                    w11[0] = v11[0] - fac11*v01[0];
-                    w11[1] = v11[1] - fac11*v01[1];
-                    w11[2] = v11[2] - fac11*v01[2];
-
-                    w21[0] = v21[0] - fac21*v01[0];
-                    w21[1] = v21[1] - fac21*v01[1];
-                    w21[2] = v21[2] - fac21*v01[2];
-
-                    ang[0] = (w11[0]*w21[0] + w11[1]*w21[1] + w11[2]*w21[2])/
-                        (sqrt(w11[0]*w11[0] + w11[1]*w11[1] + w11[2]*w11[2])*
-                         sqrt(w21[0]*w21[0] + w21[1]*w21[1] + w21[2]*w21[2]));
-
-                    if (ang[0] > 1)    ang[0] =  1;
-                    if (ang[0] < -1)ang[0] = -1;
-
-                    ang[0] = acos(ang[0]);
-
-                    t22 = 1/(v02[0]*v02[0] + v02[1]*v02[1] + v02[2]*v02[2]);
-
-                    fac12       = (v02[0]*v12[0] + v02[1]*v12[1] + v02[2]*v12[2])*t22;
-                    fac22       = (v02[0]*v22[0] + v02[1]*v22[1] + v02[2]*v22[2])*t22;
-
-                    w12[0] = v12[0] - fac12*v02[0];
-                    w12[1] = v12[1] - fac12*v02[1];
-                    w12[2] = v12[2] - fac12*v02[2];
-
-                    w22[0] = v22[0] - fac22*v02[0];
-                    w22[1] = v22[1] - fac22*v02[1];
-                    w22[2] = v22[2] - fac22*v02[2];
-
-                    ang[1] = (w12[0]*w22[0] + w12[1]*w22[1] + w12[2]*w22[2])/
-                        (sqrt(w12[0]*w12[0] + w12[1]*w12[1] + w12[2]*w12[2])*
-                         sqrt(w22[0]*w22[0] + w22[1]*w22[1] + w22[2]*w22[2]));
-
-                    if ( ang[1] > 1) ang[1] =  1;
-                    if ( ang[1] < -1)ang[1] = -1;
-
-                    ang[1] = acos(ang[1]);
-
-                    t33 = 1/(v03[0]*v03[0] + v03[1]*v03[1] + v03[2]*v03[2]);
-
-                    fac13       = (v03[0]*v13[0] + v03[1]*v13[1] + v03[2]*v13[2])*t33;
-                    fac23       = (v03[0]*v23[0] + v03[1]*v23[1] + v03[2]*v23[2])*t33;
-
-                    w13[0] = v13[0] - fac13*v03[0];
-                    w13[1] = v13[1] - fac13*v03[1];
-                    w13[2] = v13[2] - fac13*v03[2];
-
-                    w23[0] = v23[0] - fac23*v03[0];
-                    w23[1] = v23[1] - fac23*v03[1];
-                    w23[2] = v23[2] - fac23*v03[2];
-
-                    ang[2] = (w13[0]*w23[0] + w13[1]*w23[1] + w13[2]*w23[2])/
-                        (sqrt(w13[0]*w13[0] + w13[1]*w13[1] + w13[2]*w13[2])*
-                         sqrt(w23[0]*w23[0] + w23[1]*w23[1] + w23[2]*w23[2]));
-
-                    if (ang[2] > 1)    ang[2] =  1;
-                    if (ang[2] < -1)ang[2] = -1;
-
-                    ang[2] = acos(ang[2]);
-
-                    radius = sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]) ;
+                    
+                    ang[0] = comp_ang(a, b, c);
+                    ang[1] = comp_ang(b, a, c);
+                    ang[2] = comp_ang(c, a, b);
+                    
+                    radius = length(a);
                     areasq[i*6*3 + j*3 + k] =
                         (ang[0] + ang[1] + ang[2] - M_PI)*pow(radius,2);
                 }
-                areasTr[i * 6 + j] = areasq[i * 6 * 3 + j * 3 + 0] + areasq[i * 6 * 3 + j * 3 + 1] + areasq[i * 6 * 3 + j * 3 + 2];
+                areasTr[i * 6 + j] = areasq[(i * 6 + j)*3 + 0]
+                    + areasq[(i * 6 + j)*3 + 1]
+                    + areasq[(i * 6 + j)*3 + 2];
             }
         }
     }
@@ -2335,142 +2116,34 @@ void Icogrid::control_areas ( double *areasT  ,
         for (int k = 0; k < 12; k++) if(i == pent_ind[k]) geo = 5; // Pentagons.
         for (int j = 0; j < 6; j++){
             if (geo == 5 && j == 4){
-                a[0] = xyz[i*3 + 0];
-                a[1] = xyz[i*3 + 1];
-                a[2] = xyz[i*3 + 2];
-                b[0] = xyzq[i*3*6 + 4*3 + 0];
-                b[1] = xyzq[i*3*6 + 4*3 + 1];
-                b[2] = xyzq[i*3*6 + 4*3 + 2];
-                c[0] = xyzq[i*3*6 + 0*3 + 0];
-                c[1] = xyzq[i*3*6 + 0*3 + 1];
-                c[2] = xyzq[i*3*6 + 0*3 + 2];
-
+                a = xyz3[i];
+                b = xyzq3[i*6 + 4];
+                c = xyzq3[i*6 + 0];
             }
             else if (geo == 5 && j == 5){
                 break;
             }
             else if (geo == 6 && j == 5){
-                a[0] = xyz[i*3 + 0];
-                a[1] = xyz[i*3 + 1];
-                a[2] = xyz[i*3 + 2];
-                b[0] = xyzq[i*3*6 + 5*3 + 0];
-                b[1] = xyzq[i*3*6 + 5*3 + 1];
-                b[2] = xyzq[i*3*6 + 5*3 + 2];
-                c[0] = xyzq[i*3*6 + 0*3 + 0];
-                c[1] = xyzq[i*3*6 + 0*3 + 1];
-                c[2] = xyzq[i*3*6 + 0*3 + 2];
+                a = xyz3[i];
+                b = xyzq3[i*6 + 5];
+                c = xyzq3[i*6 + 0];
             }
             else{
-                a[0] = xyz[i*3 + 0];
-                a[1] = xyz[i*3 + 1];
-                a[2] = xyz[i*3 + 2];
-                b[0] = xyzq[i*3*6 + j*3 + 0];
-                b[1] = xyzq[i*3*6 + j*3 + 1];
-                b[2] = xyzq[i*3*6 + j*3 + 2];
-                c[0] = xyzq[i*3*6 + (j+1)*3 + 0];
-                c[1] = xyzq[i*3*6 + (j+1)*3 + 1];
-                c[2] = xyzq[i*3*6 + (j+1)*3 + 2];
-            }
-            for (int v = 0; v < 3; v++){
-                v01[v] = a[v];
-                v02[v] = b[v];
-                v03[v] = c[v];
-
-                v11[v] = b[v] - a[v];
-                v12[v] = a[v] - b[v];
-                v13[v] = a[v] - c[v];
-
-                v21[v] = c[v] - a[v];
-                v22[v] = c[v] - b[v];
-                v23[v] = b[v] - c[v];
+                a = xyz3[i];
+                b = xyzq3[i*6 + j];
+                c = xyzq3[i*6 + (j+1)];
             }
 
-            t11 = 1/(v01[0]*v01[0] + v01[1]*v01[1] + v01[2]*v01[2]);
+            ang[0] = comp_ang(a, b, c);
+            ang[1] = comp_ang(b, a, c);
+            ang[2] = comp_ang(c, a, b);
 
-            fac11       = (v01[0]*v11[0] + v01[1]*v11[1] + v01[2]*v11[2])*t11;
-            fac21       = (v01[0]*v21[0] + v01[1]*v21[1] + v01[2]*v21[2])*t11;
-
-            w11[0] = v11[0] - fac11*v01[0];
-            w11[1] = v11[1] - fac11*v01[1];
-            w11[2] = v11[2] - fac11*v01[2];
-
-            w21[0] = v21[0] - fac21*v01[0];
-            w21[1] = v21[1] - fac21*v01[1];
-            w21[2] = v21[2] - fac21*v01[2];
-
-            ang[0] = (w11[0]*w21[0] + w11[1]*w21[1] + w11[2]*w21[2])/
-                    (sqrt(w11[0]*w11[0] + w11[1]*w11[1] + w11[2]*w11[2])*
-                     sqrt(w21[0]*w21[0] + w21[1]*w21[1] + w21[2]*w21[2]));
-
-            if (ang[0] > 1)    ang[0] = 1 ;
-            if (ang[0] < -1)ang[0] = -1;
-
-            ang[0] = acos(ang[0]);
-
-            t22 = 1/(v02[0]*v02[0] + v02[1]*v02[1] + v02[2]*v02[2]);
-            fac12 = (v02[0]*v12[0] + v02[1]*v12[1] + v02[2]*v12[2])*t22;
-            fac22 = (v02[0]*v22[0] + v02[1]*v22[1] + v02[2]*v22[2])*t22;
-
-            w12[0] = v12[0] - fac12*v02[0];
-            w12[1] = v12[1] - fac12*v02[1];
-            w12[2] = v12[2] - fac12*v02[2];
-
-            w22[0] = v22[0] - fac22*v02[0];
-            w22[1] = v22[1] - fac22*v02[1];
-            w22[2] = v22[2] - fac22*v02[2];
-
-            ang[1] = (w12[0]*w22[0] + w12[1]*w22[1] + w12[2]*w22[2])/
-                    (sqrt(w12[0]*w12[0] + w12[1]*w12[1] + w12[2]*w12[2])*
-                     sqrt(w22[0]*w22[0] + w22[1]*w22[1] + w22[2]*w22[2]));
-
-            if (ang[1] > 1)    ang[1] = 1 ;
-            if (ang[1] <-1)    ang[1] = -1;
-
-            ang[1] = acos(ang[1]);
-
-            t33 = 1/(v03[0]*v03[0] + v03[1]*v03[1] + v03[2]*v03[2]);
-            fac13 = (v03[0]*v13[0] + v03[1]*v13[1] + v03[2]*v13[2])*t33;
-            fac23 = (v03[0]*v23[0] + v03[1]*v23[1] + v03[2]*v23[2])*t33;
-
-            w13[0] = v13[0] - fac13*v03[0];
-            w13[1] = v13[1] - fac13*v03[1];
-            w13[2] = v13[2] - fac13*v03[2];
-
-            w23[0] = v23[0] - fac23*v03[0];
-            w23[1] = v23[1] - fac23*v03[1];
-            w23[2] = v23[2] - fac23*v03[2];
-
-            ang[2] = (w13[0]*w23[0] + w13[1]*w23[1] + w13[2]*w23[2])/
-                    (sqrt(w13[0]*w13[0] + w13[1]*w13[1] + w13[2]*w13[2])*
-                     sqrt(w23[0]*w23[0] + w23[1]*w23[1] + w23[2]*w23[2]));
-
-            if (ang[2] > 1)    ang[2] = 1 ;
-            if (ang[2] <-1)    ang[2] = -1;
-
-            ang[2] = acos(ang[2]);
-
-            radius = sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]) ;
+            radius = length(a);
             areav  = (ang[0] + ang[1] + ang[2] - M_PI)*pow(radius,2);
 
             areasT[i] += areav;
         }
     }
-
-    delete [] a;
-    delete [] b;
-    delete [] c;
-    delete [] v01;
-    delete [] v02;
-    delete [] v03;
-    delete [] v11;
-    delete [] v12;
-    delete [] v13;
-    delete [] v21;
-    delete [] v22;
-    delete [] v23;
-    delete [] w13;
-    delete [] w23;
-    delete [] ang;
 }
 
 
