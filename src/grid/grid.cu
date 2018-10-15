@@ -2167,28 +2167,23 @@ void Icogrid::correct_xyz_points ( double A     ,
     // Local variables.
     int geo;
 
+    double3 * xyzq3 = (double3*)xyzq;
+    double3 * xyz3 = (double3*)xyz;    
+    
     for (int i = 0; i < point_num; i++){
         geo = 6; // Hexagons.
         for (int k = 0; k < 12; k++) if(i == pent_ind[k]) geo = 5; // Pentagons.
         if(geo == 5){
             for (int j = 0; j < 5; j++){    // Pentagons.
-                xyzq[i*6*3 + j*3 + 0] = xyzq[i*6*3 + j*3 + 0]*A;
-                xyzq[i*6*3 + j*3 + 1] = xyzq[i*6*3 + j*3 + 1]*A;
-                xyzq[i*6*3 + j*3 + 2] = xyzq[i*6*3 + j*3 + 2]*A;
+                xyzq3[i*6 + j] = xyzq3[i*6 + j]*A;
             }
-            xyz[i*3 + 0] = xyz[i*3 + 0]*A;
-            xyz[i*3 + 1] = xyz[i*3 + 1]*A;
-            xyz[i*3 + 2] = xyz[i*3 + 2]*A;
+            xyz3[i] = xyz3[i]*A;
         }
         else{
             for (int j = 0; j < 6; j++){    // Hexagons.
-                xyzq[i*6*3 + j*3 + 0] = xyzq[i*6*3 + j*3 + 0]*A;
-                xyzq[i*6*3 + j*3 + 1] = xyzq[i*6*3 + j*3 + 1]*A;
-                xyzq[i*6*3 + j*3 + 2] = xyzq[i*6*3 + j*3 + 2]*A;
+                xyzq3[i*6 + j] = xyzq3[i*6 + j + 0]*A;
             }
-            xyz[i*3 + 0] = xyz[i*3 + 0]*A;
-            xyz[i*3 + 1] = xyz[i*3 + 1]*A;
-            xyz[i*3 + 2] = xyz[i*3 + 2]*A;
+            xyz3[i] = xyz3[i]*A;
         }
     }
 }
