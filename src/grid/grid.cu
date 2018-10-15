@@ -1738,302 +1738,45 @@ void Icogrid::find_qpoints (int    *point_local,
 //  Output:- xyzq       - Q-points coordinates.
 //
 
-    double *v1, *v2;
-    double *vc1, *vc2, *vc3;
-    double *vgc;
-    double l1, l2, geo;
+    double3 * xyz3 = (double3*)xyz;
+    double3 * xyzq3 = (double3*)xyzq;
+    
+    double3 vc1, vc2, vc3;
 
-    v1   = new double[3]();
-    v2   = new double[3]();
-    vc1  = new double[3]();
-    vc2  = new double[3]();
-    vc3  = new double[3]();
-    vgc  = new double[3]();
-
+    int geo;
+    
     for (int i = 0; i < point_num; i++){
         geo = 6; // Hexagons.
         for (int k = 0; k < 12; k++) if(i == pent_ind[k]) geo = 5; // Pentagons.
         if(geo == 5){
             for (int j = 0; j < 4; j++){
-                v2[0] = xyz[i*3 + 0];
-                v2[1] = xyz[i*3 + 1];
-                v2[2] = xyz[i*3 + 2];
-                v1[0] = xyz[point_local[i*6 + j]*3 + 0];
-                v1[1] = xyz[point_local[i*6 + j]*3 + 1];
-                v1[2] = xyz[point_local[i*6 + j]*3 + 2];
-
-                l1 = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
-
-                vc1[0] = v1[1]*v2[2] - v1[2]*v2[1];
-                vc1[1] = v1[2]*v2[0] - v1[0]*v2[2];
-                vc1[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
-                l2 = sqrt(vc1[0] * vc1[0] + vc1[1] * vc1[1] + vc1[2] * vc1[2]);
-
-                vc1[0] = vc1[0] / l2 * atan2(l2, l1);
-                vc1[1] = vc1[1] / l2 * atan2(l2, l1);
-                vc1[2] = vc1[2] / l2 * atan2(l2, l1);
-
-                v2[0] = xyz[point_local[i*6 + j]*3 + 0];
-                v2[1] = xyz[point_local[i*6 + j]*3 + 1];
-                v2[2] = xyz[point_local[i*6 + j]*3 + 2];
-                v1[0] = xyz[point_local[i*6 + j+1]*3 + 0];
-                v1[1] = xyz[point_local[i*6 + j+1]*3 + 1];
-                v1[2] = xyz[point_local[i*6 + j+1]*3 + 2];
-
-                l1 = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
-
-                vc2[0] = v1[1]*v2[2] - v1[2]*v2[1];
-                vc2[1] = v1[2]*v2[0] - v1[0]*v2[2];
-                vc2[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
-                l2 = sqrt(vc2[0] * vc2[0] + vc2[1] * vc2[1] + vc2[2] * vc2[2]);
-
-                vc2[0] = vc2[0] / l2 * atan2(l2, l1);
-                vc2[1] = vc2[1] / l2 * atan2(l2, l1);
-                vc2[2] = vc2[2] / l2 * atan2(l2, l1);
-
-                v2[0] = xyz[point_local[i*6 + j+1]*3 + 0];
-                v2[1] = xyz[point_local[i*6 + j+1]*3 + 1];
-                v2[2] = xyz[point_local[i*6 + j+1]*3 + 2];
-                v1[0] = xyz[i*3 + 0];
-                v1[1] = xyz[i*3 + 1];
-                v1[2] = xyz[i*3 + 2];
-
-                l1 = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
-
-                vc3[0] = v1[1]*v2[2] - v1[2]*v2[1];
-                vc3[1] = v1[2]*v2[0] - v1[0]*v2[2];
-                vc3[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
-                l2 = sqrt(vc3[0] * vc3[0] + vc3[1] * vc3[1] + vc3[2] * vc3[2]);
-
-                vc3[0] = vc3[0] / l2 * atan2(l2, l1);
-                vc3[1] = vc3[1] / l2 * atan2(l2, l1);
-                vc3[2] = vc3[2] / l2 * atan2(l2, l1);
-
-                vgc[0] = vc1[0] + vc2[0] + vc3[0];
-                vgc[1] = vc1[1] + vc2[1] + vc3[1];
-                vgc[2] = vc1[2] + vc2[2] + vc3[2];
-
-                l2 = sqrt(vgc[0] * vgc[0] + vgc[1] * vgc[1] + vgc[2] * vgc[2]);
-
-                xyzq[i*6*3 + j*3 + 0] = vgc[0] / l2;
-                xyzq[i*6*3 + j*3 + 1] = vgc[1] / l2;
-                xyzq[i*6*3 + j*3 + 2] = vgc[2] / l2;
+                vc1 = normproj( xyz3[point_local[i*6 + j]], xyz3[i] );
+                vc2 = normproj( xyz3[point_local[i*6 + j+1]], xyz3[point_local[i*6 + j]] );
+                vc3 = normproj( xyz3[i], xyz3[point_local[i*6 + j+1]] );
+                xyzq3[i*6 + j] = normalize(vc1 + vc2 + vc3);
             }
-            v2[0] = xyz[i*3 + 0];
-            v2[1] = xyz[i*3 + 1];
-            v2[2] = xyz[i*3 + 2];
-            v1[0] = xyz[point_local[i*6 + 4]*3 + 0];
-            v1[1] = xyz[point_local[i*6 + 4]*3 + 1];
-            v1[2] = xyz[point_local[i*6 + 4]*3 + 2];
 
-            l1 = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
+            vc1 = normproj( xyz3[point_local[i*6 + 4]], xyz3[i] );
+            vc2 = normproj( xyz3[point_local[i*6 + 0]], xyz3[point_local[i*6 + 4]] );
+            vc3 = normproj( xyz3[i], xyz3[point_local[i*6 + 0]] );
 
-            vc1[0] = v1[1]*v2[2] - v1[2]*v2[1];
-            vc1[1] = v1[2]*v2[0] - v1[0]*v2[2];
-            vc1[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
-            l2 = sqrt(vc1[0] * vc1[0] + vc1[1] * vc1[1] + vc1[2] * vc1[2]);
-
-            vc1[0] = vc1[0] / l2 * atan2(l2, l1);
-            vc1[1] = vc1[1] / l2 * atan2(l2, l1);
-            vc1[2] = vc1[2] / l2 * atan2(l2, l1);
-
-            v2[0] = xyz[point_local[i*6 + 4]*3 + 0];
-            v2[1] = xyz[point_local[i*6 + 4]*3 + 1];
-            v2[2] = xyz[point_local[i*6 + 4]*3 + 2];
-            v1[0] = xyz[point_local[i*6 + 0]*3 + 0];
-            v1[1] = xyz[point_local[i*6 + 0]*3 + 1];
-            v1[2] = xyz[point_local[i*6 + 0]*3 + 2];
-
-            l1 = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
-
-            vc2[0] = v1[1]*v2[2] - v1[2]*v2[1];
-            vc2[1] = v1[2]*v2[0] - v1[0]*v2[2];
-            vc2[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
-            l2 = sqrt(vc2[0] * vc2[0] + vc2[1] * vc2[1] + vc2[2] * vc2[2]);
-
-            vc2[0] = vc2[0] / l2 * atan2(l2, l1);
-            vc2[1] = vc2[1] / l2 * atan2(l2, l1);
-            vc2[2] = vc2[2] / l2 * atan2(l2, l1);
-
-            v2[0] = xyz[point_local[i*6 + 0]*3 + 0];
-            v2[1] = xyz[point_local[i*6 + 0]*3 + 1];
-            v2[2] = xyz[point_local[i*6 + 0]*3 + 2];
-            v1[0] = xyz[i*3 + 0];
-            v1[1] = xyz[i*3 + 1];
-            v1[2] = xyz[i*3 + 2];
-
-            l1 = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
-
-            vc3[0] = v1[1]*v2[2] - v1[2]*v2[1];
-            vc3[1] = v1[2]*v2[0] - v1[0]*v2[2];
-            vc3[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
-            l2 = sqrt(vc3[0] * vc3[0] + vc3[1] * vc3[1] + vc3[2] * vc3[2]);
-
-            vc3[0] = vc3[0] / l2 * atan2(l2, l1);
-            vc3[1] = vc3[1] / l2 * atan2(l2, l1);
-            vc3[2] = vc3[2] / l2 * atan2(l2, l1);
-
-            vgc[0] = vc1[0] + vc2[0] + vc3[0];
-            vgc[1] = vc1[1] + vc2[1] + vc3[1];
-            vgc[2] = vc1[2] + vc2[2] + vc3[2];
-
-            l2 = sqrt(vgc[0] * vgc[0] + vgc[1] * vgc[1] + vgc[2] * vgc[2]);
-
-            xyzq[i*6*3 + 4*3 + 0] = vgc[0] / l2;
-            xyzq[i*6*3 + 4*3 + 1] = vgc[1] / l2;
-            xyzq[i*6*3 + 4*3 + 2] = vgc[2] / l2;
+            xyzq3[i*6 + 4] = normalize(vc1 + vc2 + vc3);
         }
         else{   // Hexagons
             for (int j = 0; j < 5; j++){
-                v2[0] = xyz[i*3 + 0];
-                v2[1] = xyz[i*3 + 1];
-                v2[2] = xyz[i*3 + 2];
-                v1[0] = xyz[point_local[i*6 + j]*3 + 0];
-                v1[1] = xyz[point_local[i*6 + j]*3 + 1];
-                v1[2] = xyz[point_local[i*6 + j]*3 + 2];
-
-                l1 = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
-
-                vc1[0] = v1[1]*v2[2] - v1[2]*v2[1];
-                vc1[1] = v1[2]*v2[0] - v1[0]*v2[2];
-                vc1[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
-                l2 = sqrt(vc1[0] * vc1[0] + vc1[1] * vc1[1] + vc1[2] * vc1[2]);
-
-                vc1[0] = vc1[0] / l2 * atan2(l2, l1);
-                vc1[1] = vc1[1] / l2 * atan2(l2, l1);
-                vc1[2] = vc1[2] / l2 * atan2(l2, l1);
-
-                v2[0] = xyz[point_local[i*6 + j]*3 + 0];
-                v2[1] = xyz[point_local[i*6 + j]*3 + 1];
-                v2[2] = xyz[point_local[i*6 + j]*3 + 2];
-                v1[0] = xyz[point_local[i*6 + j+1]*3 + 0];
-                v1[1] = xyz[point_local[i*6 + j+1]*3 + 1];
-                v1[2] = xyz[point_local[i*6 + j+1]*3 + 2];
-
-                l1 = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
-
-                vc2[0] = v1[1]*v2[2] - v1[2]*v2[1];
-                vc2[1] = v1[2]*v2[0] - v1[0]*v2[2];
-                vc2[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
-                l2 = sqrt(vc2[0] * vc2[0] + vc2[1] * vc2[1] + vc2[2] * vc2[2]);
-
-                vc2[0] = vc2[0] / l2 * atan2(l2, l1);
-                vc2[1] = vc2[1] / l2 * atan2(l2, l1);
-                vc2[2] = vc2[2] / l2 * atan2(l2, l1);
-
-                v2[0] = xyz[point_local[i*6 + j+1]*3 + 0];
-                v2[1] = xyz[point_local[i*6 + j+1]*3 + 1];
-                v2[2] = xyz[point_local[i*6 + j+1]*3 + 2];
-                v1[0] = xyz[i*3 + 0];
-                v1[1] = xyz[i*3 + 1];
-                v1[2] = xyz[i*3 + 2];
-
-                l1 = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
-
-                vc3[0] = v1[1]*v2[2] - v1[2]*v2[1];
-                vc3[1] = v1[2]*v2[0] - v1[0]*v2[2];
-                vc3[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
-                l2 = sqrt(vc3[0] * vc3[0] + vc3[1] * vc3[1] + vc3[2] * vc3[2]);
-
-                vc3[0] = vc3[0] / l2 * atan2(l2, l1);
-                vc3[1] = vc3[1] / l2 * atan2(l2, l1);
-                vc3[2] = vc3[2] / l2 * atan2(l2, l1);
-
-                vgc[0] = vc1[0] + vc2[0] + vc3[0];
-                vgc[1] = vc1[1] + vc2[1] + vc3[1];
-                vgc[2] = vc1[2] + vc2[2] + vc3[2];
-
-                l2 = sqrt(vgc[0] * vgc[0] + vgc[1] * vgc[1] + vgc[2] * vgc[2]);
-
-                xyzq[i*6*3 + j*3 + 0] = vgc[0] / l2;
-                xyzq[i*6*3 + j*3 + 1] = vgc[1] / l2;
-                xyzq[i*6*3 + j*3 + 2] = vgc[2] / l2;
+                vc1 = normproj( xyz3[point_local[i*6 + j]], xyz3[i] );
+                vc2 = normproj( xyz3[point_local[i*6 + j+1]], xyz3[point_local[i*6 + j]] );
+                vc3 = normproj( xyz3[i], xyz3[point_local[i*6 + j+1]] );
+                
+                xyzq3[i*6 + j] = normalize(vc1 + vc2 + vc3);
             }
-
-            v2[0] = xyz[i*3 + 0];
-            v2[1] = xyz[i*3 + 1];
-            v2[2] = xyz[i*3 + 2];
-            v1[0] = xyz[point_local[i*6 + 5]*3 + 0];
-            v1[1] = xyz[point_local[i*6 + 5]*3 + 1];
-            v1[2] = xyz[point_local[i*6 + 5]*3 + 2];
-
-            l1 = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
-
-            vc1[0] = v1[1]*v2[2] - v1[2]*v2[1];
-            vc1[1] = v1[2]*v2[0] - v1[0]*v2[2];
-            vc1[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
-            l2 = sqrt(vc1[0] * vc1[0] + vc1[1] * vc1[1] + vc1[2] * vc1[2]);
-
-            vc1[0] = vc1[0] / l2 * atan2(l2, l1);
-            vc1[1] = vc1[1] / l2 * atan2(l2, l1);
-            vc1[2] = vc1[2] / l2 * atan2(l2, l1);
-
-            v2[0] = xyz[point_local[i*6 + 5]*3 + 0];
-            v2[1] = xyz[point_local[i*6 + 5]*3 + 1];
-            v2[2] = xyz[point_local[i*6 + 5]*3 + 2];
-            v1[0] = xyz[point_local[i*6 + 0]*3 + 0];
-            v1[1] = xyz[point_local[i*6 + 0]*3 + 1];
-            v1[2] = xyz[point_local[i*6 + 0]*3 + 2];
-
-            l1 = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
-
-            vc2[0] = v1[1]*v2[2] - v1[2]*v2[1];
-            vc2[1] = v1[2]*v2[0] - v1[0]*v2[2];
-            vc2[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
-            l2 = sqrt(vc2[0] * vc2[0] + vc2[1] * vc2[1] + vc2[2] * vc2[2]);
-
-            vc2[0] = vc2[0] / l2 * atan2(l2, l1);
-            vc2[1] = vc2[1] / l2 * atan2(l2, l1);
-            vc2[2] = vc2[2] / l2 * atan2(l2, l1);
-
-            v2[0] = xyz[point_local[i*6 + 0]*3 + 0];
-            v2[1] = xyz[point_local[i*6 + 0]*3 + 1];
-            v2[2] = xyz[point_local[i*6 + 0]*3 + 2];
-            v1[0] = xyz[i*3 + 0];
-            v1[1] = xyz[i*3 + 1];
-            v1[2] = xyz[i*3 + 2];
-
-            l1 = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
-
-            vc3[0] = v1[1]*v2[2] - v1[2]*v2[1];
-            vc3[1] = v1[2]*v2[0] - v1[0]*v2[2];
-            vc3[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
-            l2 = sqrt(vc3[0] * vc3[0] + vc3[1] * vc3[1] + vc3[2] * vc3[2]);
-
-            vc3[0] = vc3[0] / l2 * atan2(l2, l1);
-            vc3[1] = vc3[1] / l2 * atan2(l2, l1);
-            vc3[2] = vc3[2] / l2 * atan2(l2, l1);
-
-            vgc[0] = vc1[0] + vc2[0] + vc3[0];
-            vgc[1] = vc1[1] + vc2[1] + vc3[1];
-            vgc[2] = vc1[2] + vc2[2] + vc3[2];
-
-            l2 = sqrt(vgc[0] * vgc[0] + vgc[1] * vgc[1] + vgc[2] * vgc[2]);
-
-            xyzq[i*6*3 + 5*3 + 0] = vgc[0] / l2;
-            xyzq[i*6*3 + 5*3 + 1] = vgc[1] / l2;
-            xyzq[i*6*3 + 5*3 + 2] = vgc[2] / l2;
+            vc1 = normproj( xyz3[point_local[i*6 + 5]], xyz3[i] );
+            vc2 = normproj( xyz3[point_local[i*6 + 0]], xyz3[point_local[i*6 + 5]] );
+            vc3 = normproj( xyz3[i], xyz3[point_local[i*6 + 0]] );
+            
+            xyzq3[i*6 + 5] = normalize(vc1 + vc2 + vc3);
         }
     }
-
-    delete [] v1;
-    delete [] v2;
-    delete [] vc1;
-    delete [] vc2;
-    delete [] vc3;
-    delete [] vgc;
 }
 
 
