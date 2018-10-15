@@ -2500,7 +2500,14 @@ void Icogrid::control_vec(double *nvec    ,
 //          - nvecti - Vectors normal to the side edges of the triangles.
 //          - nvecte - Vectors normal to the outward edges of the triangles.
 //
+    double3 * nvec3 = (double3*)nvec;
+    double3 * nevcoa3 = (double3*)nevcoa;
+    double3 * nvecti3 = (double3*)nvecti;
+    double3 * nvecte3 = (double3*)nvecte;
 
+    double3 * xyz3 = (double3*)xyz;
+    double3 * xyzq3 = (double3*)xyzq;
+        
     // Local variables.
     double vec_l, l;
     double fac_nv;
@@ -2508,13 +2515,10 @@ void Icogrid::control_vec(double *nvec    ,
     int geo;
 
     // Local arrays.
-    double *v1, *v2;
-    double *nv;
+    double3 v1, v2;
+    double3 nv;
 
-    v1   = new double[3]();
-    v2   = new double[3]();
-    nv   = new double[3]();
-
+    
     for (int i = 0; i < point_num; i++){
 
         geo = 6; // Hexagons.
@@ -2525,88 +2529,56 @@ void Icogrid::control_vec(double *nvec    ,
             for (int j = 0; j < 5; j++){
 
                 if (j < 4){
-                    v2[0] = xyzq[i*6*3 + (j+1)*3 + 0];
-                    v2[1] = xyzq[i*6*3 + (j+1)*3 + 1];
-                    v2[2] = xyzq[i*6*3 + (j+1)*3 + 2];
-                    v1[0] = xyzq[i*6*3 + j*3 + 0];
-                    v1[1] = xyzq[i*6*3 + j*3 + 1];
-                    v1[2] = xyzq[i*6*3 + j*3 + 2];
+                    v2 = xyzq3[i*6 + (j+1)];
+                    v1 = xyzq3[i*6 + j];
                 }
                 else{
-                    v2[0] = xyzq[i*6*3 + 0*3 + 0];
-                    v2[1] = xyzq[i*6*3 + 0*3 + 1];
-                    v2[2] = xyzq[i*6*3 + 0*3 + 2];
-                    v1[0] = xyzq[i*6*3 + 4*3 + 0];
-                    v1[1] = xyzq[i*6*3 + 4*3 + 1];
-                    v1[2] = xyzq[i*6*3 + 4*3 + 2];
+                    v2 = xyzq3[i*6 + 0];
+                    v1 = xyzq3[i*6 + 4];
                 }
 
-                vec_l = sqrt(v1[0]*v1[0] + v1[1]*v1[1] + v1[2]*v1[2]);
+                vec_l = length(v1);
+                
+                l = acos(dot(v1,v2) /(pow(vec_l,2.0)))*vec_l;
 
-                l = acos((v1[0]*v2[0] + v1[1]*v2[1] + v1[2]*v2[2])/(pow(vec_l,2.0)))*vec_l;
+                nv = cross(v1,v2);
+                
 
-                nv[0] = v1[1]*v2[2] - v1[2]*v2[1];
-                nv[1] = v1[2]*v2[0] - v1[0]*v2[2];
-                nv[2] = v1[0]*v2[1] - v1[1]*v2[0];
+                fac_nv = l/length(nv);
 
-                fac_nv = l/sqrt(nv[0]*nv[0] + nv[1]*nv[1] + nv[2]*nv[2]);
+                nvec3[i*6 + j] = nv*fac_nv;
 
-                nvec[i*6*3 + j*3 + 0] = nv[0]*fac_nv;
-                nvec[i*6*3 + j*3 + 1] = nv[1]*fac_nv;
-                nvec[i*6*3 + j*3 + 2] = nv[2]*fac_nv;
-
-                nvecoa[i * 6 * 3 + j * 3 + 0] = nvec[i * 6 * 3 + j * 3 + 0] / areasT[i];
-                nvecoa[i * 6 * 3 + j * 3 + 1] = nvec[i * 6 * 3 + j * 3 + 1] / areasT[i];
-                nvecoa[i * 6 * 3 + j * 3 + 2] = nvec[i * 6 * 3 + j * 3 + 2] / areasT[i];
+                nevcoa3[i * 6 + j] = nvec3[i * 6 + j] / areasT[i];
             }
 
-            nvec[i * 6 * 3 + 5 * 3 + 0] = 0.0;
-            nvec[i * 6 * 3 + 5 * 3 + 1] = 0.0;
-            nvec[i * 6 * 3 + 5 * 3 + 2] = 0.0;
+            nvec3[i * 6  + 5 ] = make_double3(0.0, 0.0, 0.0);
 
-            nvecoa[i * 6 * 3 + 5 * 3 + 0] = 0.0;
-            nvecoa[i * 6 * 3 + 5 * 3 + 1] = 0.0;
-            nvecoa[i * 6 * 3 + 5 * 3 + 2] = 0.0;
-
+            nevcoa3[i * 6 + 5] = make_double3(0.0, 0.0, 0.0);
         }
         else{
 
             for (int j = 0; j < 6; j++){
 
                 if (j < 5){
-                    v2[0] = xyzq[i*6*3 + (j+1)*3 + 0];
-                    v2[1] = xyzq[i*6*3 + (j+1)*3 + 1];
-                    v2[2] = xyzq[i*6*3 + (j+1)*3 + 2];
-                    v1[0] = xyzq[i*6*3 + j*3 + 0];
-                    v1[1] = xyzq[i*6*3 + j*3 + 1];
-                    v1[2] = xyzq[i*6*3 + j*3 + 2];
+                    v2 = xyzq3[i*6 + (j+1)];
+                    v1 = xyzq3[i*6 + j];
                 }
                 else{
-                    v2[0] = xyzq[i*6*3 + 0*3 + 0];
-                    v2[1] = xyzq[i*6*3 + 0*3 + 1];
-                    v2[2] = xyzq[i*6*3 + 0*3 + 2];
-                    v1[0] = xyzq[i*6*3 + 5*3 + 0];
-                    v1[1] = xyzq[i*6*3 + 5*3 + 1];
-                    v1[2] = xyzq[i*6*3 + 5*3 + 2];
+                    v2 = xyzq3[i*6 + 0];
+                    v1 = xyzq3[i*6 + 5];
                 }
+                vec_l = length(v1);
+                
+                l = acos(dot(v1,v2) /(pow(vec_l,2.0)))*vec_l;
 
-                vec_l = sqrt(v1[0]*v1[0] + v1[1]*v1[1] + v1[2]*v1[2]);
+                nv = cross(v1,v2);
+                
 
-                l = acos((v1[0]*v2[0] + v1[1]*v2[1] + v1[2]*v2[2])/(pow(vec_l,2.0)))*vec_l;
+                fac_nv = l/length(nv);
 
-                nv[0] = v1[1]*v2[2] - v1[2]*v2[1];
-                nv[1] = v1[2]*v2[0] - v1[0]*v2[2];
-                nv[2] = v1[0]*v2[1] - v1[1]*v2[0];
+                nvec3[i*6 + j] = nv*fac_nv;
 
-                fac_nv = l/sqrt(nv[0]*nv[0] + nv[1]*nv[1] + nv[2]*nv[2]);
-
-                nvec[i*6*3 + j*3 + 0] = nv[0]*fac_nv;
-                nvec[i*6*3 + j*3 + 1] = nv[1]*fac_nv;
-                nvec[i*6*3 + j*3 + 2] = nv[2]*fac_nv;
-
-                nvecoa[i * 6 * 3 + j * 3 + 0] = nvec[i * 6 * 3 + j * 3 + 0] / areasT[i];
-                nvecoa[i * 6 * 3 + j * 3 + 1] = nvec[i * 6 * 3 + j * 3 + 1] / areasT[i];
-                nvecoa[i * 6 * 3 + j * 3 + 2] = nvec[i * 6 * 3 + j * 3 + 2] / areasT[i];
+                nevcoa3[i * 6 + j] = nvec3[i * 6 + j] / areasT[i];
             }
         }
 
@@ -2614,54 +2586,35 @@ void Icogrid::control_vec(double *nvec    ,
         if(geo == 5){
 
             for (int j = 0; j < 5; j++){
+                v1 = xyz3[point_local[i*6 + j]];
+                v2 = xyz3[i];
+                
+                vec_l = length(v1);
+                
+                l = acos(dot(v1,v2) /(pow(vec_l,2.0)))*vec_l;
 
-                v1[0] = xyz[point_local[i*6 + j]*3 + 0];
-                v1[1] = xyz[point_local[i*6 + j]*3 + 1];
-                v1[2] = xyz[point_local[i*6 + j]*3 + 2];
-                v2[0] = xyz[i*3 + 0];
-                v2[1] = xyz[i*3 + 1];
-                v2[2] = xyz[i*3 + 2];
+                nv = cross(v1,v2);
+                
+                fac_nv = l/length(nv);
 
-                vec_l = sqrt(v1[0]*v1[0] + v1[1]*v1[1] + v1[2]*v1[2]);
-
-                l = acos((v1[0]*v2[0] + v1[1]*v2[1] + v1[2]*v2[2])/(pow(vec_l,2.0)))*vec_l;
-
-                nv[0] = v1[1]*v2[2] - v1[2]*v2[1];
-                nv[1] = v1[2]*v2[0] - v1[0]*v2[2];
-                nv[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
-                fac_nv = l/sqrt(nv[0]*nv[0] + nv[1]*nv[1] + nv[2]*nv[2]);
-
-                nvecti[i*6*3 + j*3 + 0] = nv[0]*fac_nv;
-                nvecti[i*6*3 + j*3 + 1] = nv[1]*fac_nv;
-                nvecti[i*6*3 + j*3 + 2] = nv[2]*fac_nv;
+                nvecti3[i*6 + j] = nv*fac_nv;
             }
-            nvecti[i * 6 * 3 + 5 * 3 + 0] = 0.0;
-            nvecti[i * 6 * 3 + 5 * 3 + 1] = 0.0;
-            nvecti[i * 6 * 3 + 5 * 3 + 2] = 0.0;
+            nvecti3[i*6 + 5] = make_double3(0.0, 0.0, 0.0);
         }
         else{
             for (int j = 0; j < 6; j++){
-                v1[0] = xyz[point_local[i*6 + j]*3 + 0];
-                v1[1] = xyz[point_local[i*6 + j]*3 + 1];
-                v1[2] = xyz[point_local[i*6 + j]*3 + 2];
-                v2[0] = xyz[i*3 + 0];
-                v2[1] = xyz[i*3 + 1];
-                v2[2] = xyz[i*3 + 2];
+                v1 = xyz3[point_local[i*6 + j]];
+                v2 = xyz3[i];
+                
+                vec_l = length(v1);
+                
+                l = acos(dot(v1,v2) /(pow(vec_l,2.0)))*vec_l;
 
-                vec_l = sqrt(v1[0]*v1[0] + v1[1]*v1[1] + v1[2]*v1[2]);
+                nv = cross(v1,v2);
+                
+                fac_nv = l/length(nv);
 
-                l = acos((v1[0]*v2[0] + v1[1]*v2[1] + v1[2]*v2[2])/(pow(vec_l,2.0)))*vec_l;
-
-                nv[0] = v1[1]*v2[2] - v1[2]*v2[1];
-                nv[1] = v1[2]*v2[0] - v1[0]*v2[2];
-                nv[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
-                fac_nv = l/sqrt(nv[0]*nv[0] + nv[1]*nv[1] + nv[2]*nv[2]);
-
-                nvecti[i*6*3 + j*3 + 0] = nv[0]*fac_nv;
-                nvecti[i*6*3 + j*3 + 1] = nv[1]*fac_nv;
-                nvecti[i*6*3 + j*3 + 2] = nv[2]*fac_nv;
+                nvecti3[i*6 + j] = nv*fac_nv;
             }
         }
 
@@ -2670,80 +2623,50 @@ void Icogrid::control_vec(double *nvec    ,
             for (int j = 0; j < 5; j++){
 
                 if (j < 4){
-                    v1[0] = xyz[point_local[i*6 + j]*3 + 0];
-                    v1[1] = xyz[point_local[i*6 + j]*3 + 1];
-                    v1[2] = xyz[point_local[i*6 + j]*3 + 2];
-                    v2[0] = xyz[point_local[i*6 + j+1]*3 + 0];
-                    v2[1] = xyz[point_local[i*6 + j+1]*3 + 1];
-                    v2[2] = xyz[point_local[i*6 + j+1]*3 + 2];
+                    v1 = xyz3[point_local[i*6 + j]];
+                    v2 = xyz3[point_local[i*6 + j+1]];
                 }
                 else{
-                    v1[0] = xyz[point_local[i*6 + 4]*3 + 0];
-                    v1[1] = xyz[point_local[i*6 + 4]*3 + 1];
-                    v1[2] = xyz[point_local[i*6 + 4]*3 + 2];
-                    v2[0] = xyz[point_local[i*6 + 0]*3 + 0];
-                    v2[1] = xyz[point_local[i*6 + 0]*3 + 1];
-                    v2[2] = xyz[point_local[i*6 + 0]*3 + 2];
+                    v1 = xyz3[point_local[i*6 + 4]];
+                    v2 = xyz3[point_local[i*6 + 0]];
                 }
 
-                vec_l = sqrt(v1[0]*v1[0] + v1[1]*v1[1] + v1[2]*v1[2]);
+                vec_l = length(v1);
+                
+                l = acos(dot(v1,v2) /(pow(vec_l,2.0)))*vec_l;
 
-                l = acos((v1[0]*v2[0] + v1[1]*v2[1] + v1[2]*v2[2])/(pow(vec_l,2.0)))*vec_l;
+                nv = cross(v1,v2);
+                
+                fac_nv = l/length(nv);
 
-                nv[0] = v1[1]*v2[2] - v1[2]*v2[1];
-                nv[1] = v1[2]*v2[0] - v1[0]*v2[2];
-                nv[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
-                fac_nv = l/sqrt(nv[0]*nv[0] + nv[1]*nv[1] + nv[2]*nv[2]);
-
-                nvecte[i*6*3 + j*3 + 0] = nv[0]*fac_nv;
-                nvecte[i*6*3 + j*3 + 1] = nv[1]*fac_nv;
-                nvecte[i*6*3 + j*3 + 2] = nv[2]*fac_nv;
+                nvecte3[i*6 + j] = nv*fac_nv;
             }
-            nvecte[i * 6 * 3 + 5 * 3 + 0] = 0.0;
-            nvecte[i * 6 * 3 + 5 * 3 + 1] = 0.0;
-            nvecte[i * 6 * 3 + 5 * 3 + 2] = 0.0;
+            nvecti3[i*6 + 5] = make_double3(0.0, 0.0, 0.0);
         }
         else{
             for (int j = 0; j < 6; j++){
 
                 if (j < 5){
-                    v1[0] = xyz[point_local[i*6 + j]*3 + 0];
-                    v1[1] = xyz[point_local[i*6 + j]*3 + 1];
-                    v1[2] = xyz[point_local[i*6 + j]*3 + 2];
-                    v2[0] = xyz[point_local[i*6 + j+1]*3 + 0];
-                    v2[1] = xyz[point_local[i*6 + j+1]*3 + 1];
-                    v2[2] = xyz[point_local[i*6 + j+1]*3 + 2];
+                    v1 = xyz3[point_local[i*6 + j]];
+                    v2 = xyz3[point_local[i*6 + j+1]];
                 }
                 else{
-                    v1[0] = xyz[point_local[i*6 + 5]*3 + 0];
-                    v1[1] = xyz[point_local[i*6 + 5]*3 + 1];
-                    v1[2] = xyz[point_local[i*6 + 5]*3 + 2];
-                    v2[0] = xyz[point_local[i*6 + 0]*3 + 0];
-                    v2[1] = xyz[point_local[i*6 + 0]*3 + 1];
-                    v2[2] = xyz[point_local[i*6 + 0]*3 + 2];
+                    v1 = xyz3[point_local[i*6 + 5]];
+                    v2 = xyz3[point_local[i*6 + 0]];
                 }
 
-                vec_l = sqrt(v1[0]*v1[0] + v1[1]*v1[1] + v1[2]*v1[2]);
+                vec_l = length(v1);
+                
+                l = acos(dot(v1,v2) /(pow(vec_l,2.0)))*vec_l;
 
-                l = acos((v1[0]*v2[0] + v1[1]*v2[1] + v1[2]*v2[2])/(pow(vec_l,2.0)))*vec_l;
+                nv = cross(v1,v2);
+                
+                fac_nv = l/length(nv);
 
-                nv[0] = v1[1]*v2[2] - v1[2]*v2[1];
-                nv[1] = v1[2]*v2[0] - v1[0]*v2[2];
-                nv[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
-                fac_nv = l/sqrt(nv[0]*nv[0] + nv[1]*nv[1] + nv[2]*nv[2]);
-
-                nvecte[i*6*3 + j*3 + 0] = nv[0]*fac_nv;
-                nvecte[i*6*3 + j*3 + 1] = nv[1]*fac_nv;
-                nvecte[i*6*3 + j*3 + 2] = nv[2]*fac_nv;
+                nvecte3[i*6 + j] = nv*fac_nv;
             }
         }
     }
-
-    delete [] v1;
-    delete [] v2;
-    delete [] nv;
 }
 
 
