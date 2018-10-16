@@ -216,7 +216,6 @@ int main (int argc,  char** argv){
     config_reader.append_config_var("radius", Planet.A, Planet.A);
     config_reader.append_config_var("rotation_rate", Planet.Omega, Planet.Omega);
     config_reader.append_config_var("gravitation", Planet.Gravit, Planet.Gravit);
-    config_reader.append_config_var("Mmol", Planet.Mmol, Planet.Mmol);
     config_reader.append_config_var("Rd", Planet.Rd, Planet.Rd);
     config_reader.append_config_var("Cp", Planet.Cp, Planet.Cp);
     config_reader.append_config_var("Tmean", Planet.Tmean, Planet.Tmean);
@@ -400,7 +399,6 @@ int main (int argc,  char** argv){
     config_OK &= check_greater( "timestep", timestep, 0);
     config_OK &= check_greater( "nsmax", nsmax, 0);
     config_OK &= check_greater( "gravitation", Planet.Gravit, 0.0);
-    config_OK &= check_greater( "Mmol", Planet.Mmol, 0.0);
     config_OK &= check_greater( "Rd", Planet.Rd, 0.0);
     config_OK &= check_greater( "T_mean", Planet.Tmean, 0.0);
     config_OK &= check_greater( "P_Ref", Planet.P_Ref, 0.0);
@@ -610,7 +608,6 @@ int main (int argc,  char** argv){
                                         Planet.Diffc , // Strength of diffusion
                                         kb_constant  , // Boltzmann constant [J/kg]
                                         Planet.Tmean , // Isothermal atmosphere (at temperature Tmean)
-                                        Planet.Mmol  , // Mean molecular mass of dry air [kg]
                                         mu_constant  , // Atomic mass unit [kg]
                                         Planet.Rd    , // Gas constant [J/kg/K]
                                         SpongeLayer  , // Enable sponge layer
@@ -757,7 +754,6 @@ int main (int argc,  char** argv){
     printf("   Radius = %f m\n"       , Planet.A     );
     printf("   Omega  = %f s-1\n"     , Planet.Omega );
     printf("   Gravit = %f m/s2\n"    , Planet.Gravit);
-    printf("   Mmol   = %f kg\n"      , Planet.Mmol  );
     printf("   Rd     = %f J/(Kg K)\n", Planet.Rd    );
     printf("   Cp     = %f J/(Kg K)\n", Planet.Cp    );
     printf("   Tmean  = %f K\n"       , Planet.Tmean );
@@ -824,7 +820,6 @@ int main (int argc,  char** argv){
                          Planet.Omega , // Rotation rate [1/s]
                          Planet.Cp    , // Specific heat capacity [J/kg/K]
                          Planet.Rd    , // Gas constant [J/kg/K]
-                         Planet.Mmol  , // Mean molecular mass of dry air [kg]
                          mu_constant  , // Atomic mass unit [kg]
                          kb_constant  , // Boltzmann constant [J/K]
                          Planet.P_Ref , // Reference pressure [Pa]
@@ -846,7 +841,6 @@ int main (int argc,  char** argv){
                  Planet.Rd           , // Gas constant [J/(Kg K)]
                  Planet.Omega        , // Rotation rate [s-1]
                  Planet.Gravit       , // Gravitational acceleration [m/s2]
-                 Planet.Mmol         , // Mean molecular mass of dry air [kg]
                  Planet.P_Ref        , // Reference surface pressure [Pa]
                  Planet.Top_altitude , // Top of the model's domain [m]
                  Planet.A            , // Planet Radius [m]
@@ -890,7 +884,6 @@ int main (int argc,  char** argv){
                      Planet.Omega , // Rotation rate [1/s]
                      Planet.Cp    , // Specific heat capacity [J/kg/K]
                      Planet.Rd    , // Gas constant [J/kg/K]
-                     Planet.Mmol  , // Mean molecular mass of dry air [kg]
                      mu_constant  , // Atomic mass unit [kg]
                      kb_constant  , // Boltzmann constant [J/K]
                      Planet.P_Ref , // Reference pressure [Pa]
@@ -908,7 +901,6 @@ int main (int argc,  char** argv){
                 Planet.Omega , // Rotation rate [1/s]
                 Planet.Cp    , // Specific heat capacity [J/kg/K]
                 Planet.Rd    , // Gas constant [J/kg/K]
-                Planet.Mmol  , // Mean molecular mass of dry air [kg]
                 mu_constant  , // Atomic mass unit [kg]
                 kb_constant  , // Boltzmann constant [J/K]
                 Planet.P_Ref , // Reference pressure [Pa]
@@ -931,7 +923,6 @@ int main (int argc,  char** argv){
                            Planet.Omega , // Rotation rate [1/s]
                            Planet.Cp    , // Specific heat capacity [J/kg/K]
                            Planet.Rd    , // Gas constant [J/kg/K]
-                           Planet.Mmol  , // Mean molecular mass of dry air [kg]
                            mu_constant  , // Atomic mass unit [kg]
                            kb_constant  , // Boltzmann constant [J/K]
                            Planet.P_Ref , // Reference pressure [Pa]
@@ -957,7 +948,6 @@ int main (int argc,  char** argv){
                      Planet.Rd           , // Gas constant [J/(Kg K)]
                      Planet.Omega        , // Rotation rate [s-1]
                      Planet.Gravit       , // Gravitational acceleration [m/s2]
-                     Planet.Mmol         , // Mean molecular mass of dry air [kg]
                      Planet.P_Ref        , // Reference surface pressure [Pa]
                      Planet.Top_altitude , // Top of the model's domain [m]
                      Planet.A            , // Planet radius [m]

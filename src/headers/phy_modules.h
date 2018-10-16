@@ -23,7 +23,6 @@ bool phy_modules_mainloop(ESP & esp,
                           double Omega       , // Rotation rate [1/s]
                           double Cp          , // Specific heat capacity [J/kg/K]
                           double Rd          , // Gas constant [J/kg/K]
-                          double Mmol        , // Mean molecular mass of dry air [kg]
                           double mu          , // Atomic mass unit [kg]
                           double kb          , // Boltzmann constant [J/K]
                           double P_Ref       , // Reference pressure [Pa]

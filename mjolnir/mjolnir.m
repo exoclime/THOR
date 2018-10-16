@@ -7,7 +7,7 @@ format long;
 % Options
 %
 % nview plot
-% 1     Averaged (time and longitude) zonal winds. 
+% 1     Averaged (time and longitude) zonal winds.
 %       2D Map Latitude Vs Pressure.
 %
 % 2     Averaged (time and longitude) temperatures.
@@ -33,7 +33,6 @@ fileh5 = ['../results/esp_output_' simulation_ID '.h5'];
 A            = h5read(fileh5,'/A'           );
 Rd           = h5read(fileh5,'/Rd'          );
 Omega        = h5read(fileh5,'/Omega'       );
-Mmol         = h5read(fileh5,'/Mmol'        );
 P_Ref        = h5read(fileh5,'/P_Ref'       );
 Top_altitude = h5read(fileh5,'/Top_altitude');
 Cp           = h5read(fileh5,'/Cp'          );
@@ -57,7 +56,7 @@ lat = zeros(point_num,1);
 for i = 1:point_num
    lon(i) = lonlat((i-1)*2 + 1);
    if(lon(i) < 0)
-       lon(i) = lonlat((i-1)*2 + 1) + 2*pi;       
+       lon(i) = lonlat((i-1)*2 + 1) + 2*pi;
    end
    lat(i) = lonlat((i-1)*2 + 2);
 end
@@ -82,22 +81,22 @@ for t = ntsi:nts
     Pressurei= h5read(fileh5,'/Pressure' );
     Mhi      = h5read(fileh5,'/Mh' );
     Whi      = h5read(fileh5,'/Wh' );
-    
+
     for i = 1:point_num
         for j = 1:nv
             Rho(i,j,t-ntsi+1) = Rhoi((i-1)*nv + j);
             Pressure(i,j,t-ntsi+1) = Pressurei((i-1)*nv + j);
             for k = 1:3
-                Mh(k,i,j,t-ntsi+1) = Mhi((i-1)*nv*3 + (j-1)*3 + k);             
+                Mh(k,i,j,t-ntsi+1) = Mhi((i-1)*nv*3 + (j-1)*3 + k);
             end
         end
     end
-    
+
     for i = 1:point_num
         for j = 1:nv+1
             Wh(i,j,t-ntsi+1) = Whi((i-1)*nvi + j);
         end
-    end      
+    end
 end
 
 %%%%%%%%%
@@ -111,7 +110,7 @@ if(nview == 1)
     % Averaged Zonal winds (latitude vs pressure)
     u(Mh, Rho, Pressure, lon, lat, point_num, nts-ntsi+1, P_Ref, nv, sigmaref);
 elseif(nview == 2)
-    % Averaged temperature (latitude vs pressure) 
+    % Averaged temperature (latitude vs pressure)
     temperature(Rho, Pressure, lon, lat, point_num, nts-ntsi+1, Rd, P_Ref, nv, sigmaref);
 elseif(nview == 3)
     % Averaged temperature and wind field (longitude vs latitude)
@@ -121,4 +120,3 @@ elseif(nview == 3)
 end
 
 end
-

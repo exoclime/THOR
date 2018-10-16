@@ -23,7 +23,6 @@ class input:
         self.A = openh5['A'][...]  #'A' is the key for this dataset
         self.Rd = openh5['Rd'][...]  #[...] is syntax for "gimme all the data under this key"
         self.Omega = openh5['Omega'][...]
-        self.Mmol = openh5['Mmol'][...]
         self.P_Ref = openh5['P_Ref'][...]
         self.Top_altitude = openh5['Top_altitude'][...]
         self.Cp = openh5['Cp'][...]

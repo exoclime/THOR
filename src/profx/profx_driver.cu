@@ -66,7 +66,6 @@ __host__ void ESP::ProfX(int    hstest      , // Held-Suarez test option
                          double Omega       , // Rotation rate [1/s]
                          double Cp          , // Specific heat capacity [J/kg/K]
                          double Rd          , // Gas constant [J/kg/K]
-                         double Mmol        , // Mean molecular mass of dry air [kg]
                          double mu          , // Atomic mass unit [kg]
                          double kb          , // Boltzmann constant [J/K]
                          double P_Ref       , // Reference pressure [Pa]
@@ -255,7 +254,7 @@ __host__ void ESP::ProfX(int    hstest      , // Held-Suarez test option
 
     if (conv){
  /*       cudaDeviceSynchronize();
-        dry_conv_adj<50><<< NB, NTH >>>(Pressure_d   , // Pressure [Pa] 
+        dry_conv_adj<50><<< NB, NTH >>>(Pressure_d   , // Pressure [Pa]
                                         Temperature_d, // Temperature [K]
                                         Rho_d        , // Density [m^3/kg]
                                         Cp           , // Specific heat capacity [J/kg/K]
@@ -276,7 +275,6 @@ __host__ void ESP::ProfX(int    hstest      , // Held-Suarez test option
                               Omega       , // Rotation rate [1/s]
                               Cp          , // Specific heat capacity [J/kg/K]
                               Rd          , // Gas constant [J/kg/K]
-                              Mmol        , // Mean molecular mass of dry air [kg]
                               mu          , // Atomic mass unit [kg]
                               kb          , // Boltzmann constant [J/K]
                               P_Ref       , // Reference pressure [Pa]
@@ -337,7 +335,6 @@ void ESP::Conservation(int    hstest      , // Held-Suarez test option
                        double Omega       , // Rotation rate [1/s]
                        double Cp          , // Specific heat capacity [J/kg/K]
                        double Rd          , // Gas constant [J/kg/K]
-                       double Mmol        , // Mean molecular mass of dry air [kg]
                        double mu          , // Atomic mass unit [kg]
                        double kb          , // Boltzmann constant [J/K]
                        double P_Ref       , // Reference pressure [Pa]

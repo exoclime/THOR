@@ -70,7 +70,6 @@ public:
 
     double Rd          ;
     double Cp          ;
-    double Mmol        ;
     double Tmean       ;
     double P_Ref       ;
     double Top_altitude;

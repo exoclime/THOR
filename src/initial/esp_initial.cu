@@ -316,7 +316,6 @@ __host__ bool ESP::InitialValues(bool rest          ,
                                  double Diffc       ,
                                  double kb          ,
                                  double Tmean       ,
-                                 double Mmol        ,
                                  double mu          ,
                                  double Rd          ,
                                  bool sponge        ,
@@ -739,7 +738,7 @@ __host__ bool ESP::InitialValues(bool rest          ,
 
     delete [] Kdh4_h;
     delete [] Kdhz_h;
-    
+
     return true;
 }
 

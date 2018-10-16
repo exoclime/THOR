@@ -95,7 +95,6 @@ __host__ void ESP::Output(int    fidx           , // Index of output file
                           double Rd             , // Gas constant [J/(Kg K)]
                           double Omega          , // Rotation rate [s-1]
                           double Gravit         , // Gravitational acceleration [m/s2]
-                          double Mmol           , // Mean molecular mass of dry air [kg]
                           double P_Ref          , // Reference surface pressure [Pa]
                           double Top_altitude   , // Top of the model's domain [m]
                           double A              ,
@@ -182,8 +181,6 @@ __host__ void ESP::Output(int    fidx           , // Index of output file
         s.append_value(Omega,"/Omega","1/s","Rotation rate");
         //      Gravit
         s.append_value(Gravit,"/Gravit", "m/s^2","Surface gravity");
-        //      Mmol
-        s.append_value(Mmol,"/Mmol","kg","Mean molecular mass of dry air");
         //      P_Ref
         s.append_value( P_Ref,"/P_Ref","Pa","Reference pressure");
         //      Top_altitude

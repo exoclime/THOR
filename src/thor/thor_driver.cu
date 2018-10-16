@@ -62,7 +62,6 @@ __host__ void ESP::Thor(bool   HyDiff      , // Turn on/off hyper-diffusion.
                         double Omega       , // Rotation rate.
                         double Cp          , // Heat capaciry.
                         double Rd          , // Gas constant (atmosphere).
-                        double Mmol        , // Molecular mass (atmosphere).
                         double mu          , // Mass unit.
                         double kb          , // Boltzmann constant.
                         double P_Ref       , // Averaged pressure surface.

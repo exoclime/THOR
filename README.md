@@ -12,17 +12,17 @@ If you use this code please cite: [Mendonca, J.M., Grimm, S.L., Grosheintz, L., 
 
 * Addition of "tidally-locked Earth", "shallow hot jupiter", and "deep hot jupiter" __benchmark__ tests (see [Heng, Menou, & Phillips, 2011](https://academic.oup.com/mnras/article/413/4/2380/962712))
 
-* Inclusion of __grey__ __radiative transfer__ (see [Mendonca, J.M., Malik, M., Demory, B.-O., & Heng, K., AJ, 155, 150, 2018](http://iopscience.iop.org/article/10.3847/1538-3881/aaaebc/meta))
+* Inclusion of __grey radiative transfer__ (see [Mendonca, J.M., Malik, M., Demory, B.-O., & Heng, K., AJ, 155, 150, 2018](http://iopscience.iop.org/article/10.3847/1538-3881/aaaebc/meta))
 
-* Inclusion of top-of-atmosphere Rayleigh drag ("sponge layer") (see [Mendonca, J.M., Tsai, S.-M., Malik, M., Grimm, S.L., & Heng, K.](http://adsabs.harvard.edu/abs/2018arXiv180800501M))
+* Inclusion of top-of-atmosphere __Rayleigh drag__ ("sponge layer") (see [Mendonca, J.M., Tsai, S.-M., Malik, M., Grimm, S.L., & Heng, K.](http://adsabs.harvard.edu/abs/2018arXiv180800501M))
 
-* Inclusion of tracer particles and chemical relaxation scheme (see [Mendonca, J.M., Tsai, S.-M., Malik, M., Grimm, S.L., & Heng, K.](http://adsabs.harvard.edu/abs/2018arXiv180800501M))
+* Inclusion of __tracer particles__ and __chemical relaxation__ scheme (see [Mendonca, J.M., Tsai, S.-M., Malik, M., Grimm, S.L., & Heng, K.](http://adsabs.harvard.edu/abs/2018arXiv180800501M))
 
-* Addition of "conservation" routines, which calculate energy, entropy, mass, and angular momentum
+* Addition of __"conservation"__ routines, which calculate energy, entropy, mass, and angular momentum
 
-* Inclusion of dry convective adjustment scheme (used, though not detailed, in [Mendonca, J.M., Malik, M., Demory, B.-O., & Heng, K., AJ, 155, 150, 2018](http://iopscience.iop.org/article/10.3847/1538-3881/aaaebc/meta))
+* Inclusion of __dry convective adjustment__ scheme for sub-grid scale convection (used, though not detailed, in [Mendonca, J.M., Malik, M., Demory, B.-O., & Heng, K., AJ, 155, 150, 2018](http://iopscience.iop.org/article/10.3847/1538-3881/aaaebc/meta))
 
-* Addition of insolation calculation allowing for arbitrary orbit/rotation state (used with radiative transfer scheme)
+* Addition of __insolation__ calculation allowing for arbitrary orbit/rotation state (used with radiative transfer scheme)
 
 * Compilation process has been completely overhauled to be more reliable and flexible
 

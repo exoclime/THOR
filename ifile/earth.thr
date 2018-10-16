@@ -22,8 +22,6 @@ radius = 6371000.0
 rotation_rate = 7.292E-5
 # Gravitational acceleration [m/s^2]
 gravitation = 9.8
-# Mean molecular mass of dry air [kg]
-Mmol = 28.964
 # Gas constant [J/(Kg K)]
 Rd = 287.0
 # Specific heat capacities [J/(Kg K)]
