@@ -336,10 +336,12 @@ $ mjolnir -i 0 -l 10 -f awesome_results -s coolest_planet Tver
 
 where `-i`, `-l`, `-f`, and `-s` are options flags and `Tver` is a plot type. The available options flags are
 
-* -i / --initial_file : number of the first output file to be opened
-* -l / --last_file
-* -f / --file
-* -s / --simulation_ID
-* -p / --pressure_lev
-* -pmin / --pressure_min
-* -slay / --split_layer
+```sh
+ -i / --initial_file <N>       number of first output file to open
+ -l / --last_file <N>          number of last output file to open
+ -f / --file                   folder containing results
+ -s / --simulation_ID <string> name of planet (used in naming of output files)
+ -p / --pressure_lev           pressure level to use in horizontal plots
+ -pmin / --pressure_min        pressure minimum for vertical plots
+ -slay / --split_layer         splits conservation data into "weather" and "deep"
+```
