@@ -302,7 +302,7 @@ See `slurm_batch_run.py` for a Python script doing the same in one script.
 
 #### Python plotting
 
-The Mjolnir (`THOR/mjolnir/`) plotting scripts are written for Python 3 (compatibility with Python 2 still needs to be tested). Most dependencies are pretty standard for science: `numpy`, `matplotlib`, and `scipy`. Additionally, you'll need to install `h5py`:
+The mjolnir (`THOR/mjolnir/`) plotting scripts are written for Python 3 (compatibility with Python 2 still needs to be tested). Most dependencies are pretty standard for science: `numpy`, `matplotlib`, and `scipy`. Additionally, you'll need to install `h5py`:
 
 ```
 $ pip3 install h5py
@@ -322,7 +322,7 @@ $ conda install h5py
 export PATH="$PATH:<path to thor>/mjolnir"
 ```
 
-to your ~/.bashrc or ~/.bash_profile file, replacing <path to thor> with the actual path to the repository on your system. Probably not the smartest or most pythonic way of setting this up but one thing at a time please. Once that is done, the command to make a plot looks like
+to your ~/.bashrc or ~/.bash_profile file, replacing `<path to thor>` with the actual path to the repository on your system. Probably not the smartest or most pythonic way of setting this up but one thing at a time please. Once that is done, the command to make a plot looks like
 
 ```
 $ mjolnir <options> <type of plot>
