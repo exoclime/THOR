@@ -10,7 +10,7 @@ If you use this code please cite: [Mendonca, J.M., Grimm, S.L., Grosheintz, L., 
 
 ### Changes since version 1
 
-* Addition of "tidally-locked Earth", "shallow hot jupiter", and "deep hot jupiter" benchmark tests (see Heng, Menou, & Phillips, 2011)
+* Addition of "tidally-locked Earth", "shallow hot jupiter", and "deep hot jupiter" benchmark tests (see [Heng, Menou, & Phillips, 2011](https://academic.oup.com/mnras/article/413/4/2380/962712))
 
 * Inclusion of grey radiative transfer (see [Mendonca, J.M., Malik, M., Demory, B.-O., & Heng, K., AJ, 155, 150, 2018](http://iopscience.iop.org/article/10.3847/1538-3881/aaaebc/meta))
 
@@ -22,6 +22,8 @@ If you use this code please cite: [Mendonca, J.M., Grimm, S.L., Grosheintz, L., 
 
 * Inclusion of dry convective adjustment scheme (used, though not detailed, in [Mendonca, J.M., Malik, M., Demory, B.-O., & Heng, K., AJ, 155, 150, 2018](http://iopscience.iop.org/article/10.3847/1538-3881/aaaebc/meta))
 
+* Addition of insolation calculation allowing for arbitrary orbit/rotation state (used with radiative transfer scheme)
+
 * Compilation process has been completely overhauled to be more reliable and flexible
 
 * Initial conditions are no longer hard coded, but are now set in user generated configuration files
@@ -32,7 +34,7 @@ If you use this code please cite: [Mendonca, J.M., Grimm, S.L., Grosheintz, L., 
 
 * Numerous performance and debugging modes have been implemented in the code
 
-* Previous MATLAB plotting routines have been adapted for Python. A number of new plotting options have been added to the Python code
+* Previous MATLAB plotting routines have been adapted for Python. A number of new plotting options have been added to the Python code which were unavailable in the MATLAB code
 
 ### BUILD & RUN THOR
 
