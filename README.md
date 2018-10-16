@@ -10,9 +10,9 @@ If you use this code please cite: [Mendonca, J.M., Grimm, S.L., Grosheintz, L., 
 
 ### Changes since version 1
 
-* Addition of "tidally-locked Earth", "shallow hot jupiter", and "deep hot jupiter" benchmark tests (see [Heng, Menou, & Phillips, 2011](https://academic.oup.com/mnras/article/413/4/2380/962712))
+* Addition of "tidally-locked Earth", "shallow hot jupiter", and "deep hot jupiter" __benchmark__ tests (see [Heng, Menou, & Phillips, 2011](https://academic.oup.com/mnras/article/413/4/2380/962712))
 
-* Inclusion of grey radiative transfer (see [Mendonca, J.M., Malik, M., Demory, B.-O., & Heng, K., AJ, 155, 150, 2018](http://iopscience.iop.org/article/10.3847/1538-3881/aaaebc/meta))
+* Inclusion of __grey__ __radiative transfer__ (see [Mendonca, J.M., Malik, M., Demory, B.-O., & Heng, K., AJ, 155, 150, 2018](http://iopscience.iop.org/article/10.3847/1538-3881/aaaebc/meta))
 
 * Inclusion of top-of-atmosphere Rayleigh drag ("sponge layer") (see [Mendonca, J.M., Tsai, S.-M., Malik, M., Grimm, S.L., & Heng, K.](http://adsabs.harvard.edu/abs/2018arXiv180800501M))
 
@@ -35,6 +35,8 @@ If you use this code please cite: [Mendonca, J.M., Grimm, S.L., Grosheintz, L., 
 * Numerous performance and debugging modes have been implemented in the code
 
 * Previous MATLAB plotting routines have been adapted for Python. A number of new plotting options have been added to the Python code which were unavailable in the MATLAB code
+
+* Output files now contain additional information about model settings and quantities related to the additions described above
 
 ### BUILD & RUN THOR
 
