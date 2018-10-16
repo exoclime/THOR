@@ -322,4 +322,24 @@ $ conda install h5py
 export PATH="$PATH:<path to thor>/mjolnir"
 ```
 
-to your .bashrc or .bash_profile file.
+to your ~/.bashrc or ~/.bash_profile file, replacing <path to thor> with the actual path to the repository on your system. Probably not the smartest or most pythonic way of setting this up but one thing at a time please. Once that is done, the command to make a plot looks like
+
+```
+$ mjolnir <options> <type of plot>
+```
+
+For example,
+
+```
+$ mjolnir -i 0 -l 10 -f awesome_results -s coolest_planet Tver
+```
+
+where `-i`, `-l`, `-f`, and `-s` are options flags and `Tver` is a plot type. The available options flags are
+
+* -i / --initial_file : number of the first output file to be opened
+* -l / --last_file
+* -f / --file
+* -s / --simulation_ID
+* -p / --pressure_lev
+* -pmin / --pressure_min
+* -slay / --split_layer
