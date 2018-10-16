@@ -14,9 +14,9 @@ If you use this code please cite: [Mendonca, J.M., Grimm, S.L., Grosheintz, L., 
 
 * Inclusion of grey radiative transfer (see [Mendonca, J.M., Malik, M., Demory, B.-O., & Heng, K., AJ, 155, 150, 2018](http://iopscience.iop.org/article/10.3847/1538-3881/aaaebc/meta))
 
-* Inclusion of top-of-atmosphere Rayleigh drag ("sponge layer") (see [Mendonca, J.M., Tsai, S.-M., Malik, M., Demory, B.-O., & Heng, K.](http://adsabs.harvard.edu/abs/2018arXiv180800501M))
+* Inclusion of top-of-atmosphere Rayleigh drag ("sponge layer") (see [Mendonca, J.M., Tsai, S.-M., Malik, M., Grimm, S.L., & Heng, K.](http://adsabs.harvard.edu/abs/2018arXiv180800501M))
 
-* Inclusion of tracer particles and chemical relaxation scheme (see [Mendonca, J.M., Tsai, S.-M., Malik, M., Demory, B.-O., & Heng, K.](http://adsabs.harvard.edu/abs/2018arXiv180800501M))
+* Inclusion of tracer particles and chemical relaxation scheme (see [Mendonca, J.M., Tsai, S.-M., Malik, M., Grimm, S.L., & Heng, K.](http://adsabs.harvard.edu/abs/2018arXiv180800501M))
 
 * Addition of "conservation" routines, which calculate energy, entropy, mass, and angular momentum
 
