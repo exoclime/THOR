@@ -302,4 +302,24 @@ See `slurm_batch_run.py` for a Python script doing the same in one script.
 
 #### Python plotting
 
-The Mjolnir (`THOR/mjolnir/`) plotting scripts are written for Python 3 (compatibility with Python 2 still needs to be tested).
+The Mjolnir (`THOR/mjolnir/`) plotting scripts are written for Python 3 (compatibility with Python 2 still needs to be tested). Most dependencies are pretty standard for science: `numpy`, `matplotlib`, and `scipy`. Additionally, you'll need to install `h5py`:
+
+```
+$ pip3 install h5py
+```
+
+or
+
+```
+$ conda install h5py
+```
+
+`h5py` is simply a Python package that allows easy interaction with hdf5 files (THOR's standard output format).
+
+`mjolnir.py` is set up as an executable for command line, but you'll need to add the path to your environment file. In bash, add the line
+
+```
+export PATH="$PATH:<path to thor>/mjolnir"
+```
+
+to your .bashrc or .bash_profile file.
