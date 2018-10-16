@@ -343,5 +343,39 @@ where `-i`, `-l`, `-f`, and `-s` are options flags and `Tver` is a plot type. Th
  -s / --simulation_ID <string> name of planet (used in naming of output files)
  -p / --pressure_lev           pressure level to use in horizontal plots
  -pmin / --pressure_min        pressure minimum for vertical plots
- -slay / --split_layer         splits conservation data into "weather" and "deep"
+ -slay / --split_layer         splits conservation data into "weather" and "deep" layers
+```
+
+mjolnir averages the data over time for the entire range of files read in. So with `-i 0` and `-l 10`, files 0-10 will all be read in, and the plotted quantities will be averaged over all 11 snapshots in time. If you want to plot one instant in time, just set `-i` and `-l` to the same value. The averaging process can get quite long because the data is interpolated in many ways before averaging. Be careful if you are passing mjolnir more than ~50 output files.
+
+There are three basic types of plot mjolnir can make (plus a few other special ones): vertical, horizontal, and profile. Vertical plots are averaged zonally and temporally, resulting in contours on a latitude vs pressure grid. Horizontal plots are averaged only temporally, and plotted at a given pressure level on a latitude vs longitude grid. Profile plots show quantities along single columns or average columns, as a function of pressure.
+
+The `-p` option is used only by the horizontal plot types and is simply the desired pressure level to be viewed. The `-pmin` option is used only by the vertical plot types and is just the lowest pressure level to be plotted. For vertical plots, mjolnir will plot a dashed line representing the maximum pressure at the top of the model--thus data plotted above this line requires some extrapolation and should be viewed skeptically.
+
+Current vertical plot types are
+
+```sh
+ Tver                           time and zonally averaged temperature
+ uver                           time and zonally averaged zonal wind speed
+ wver                           time and zonally averaged vertical wind speed
+ PTver                          time and zonally averaged  potential temperature
+ PVver                          time and zonally averaged  potential vorticity
+ stream                         time and zonally averaged mass streaming function
+```
+
+Current horizontal plot types are
+
+```sh
+ Tulev                          time averaged temperature and horizontal wind along a pressure surface
+ ulev                           time averaged zonal and meridional winds along a pressure surface   
+ PVlev                          time averaged potential vorticity along a pressure surface
+ RVlev                          time averaged relative vorticity along a pressure surface
+ tracer                         time averaged molecular abundances along a pressure surface
+```
+
+Current profile plot types are
+
+```sh
+  TP                            temperature-pressure profiles drawn from all over the grid
+  wprof                         vertical wind vs pressure averaged over 4 quadrants (useful for synchronous rotation)   
 ```
