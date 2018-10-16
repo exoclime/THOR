@@ -339,11 +339,11 @@ where `-i`, `-l`, `-f`, and `-s` are options flags and `Tver` is a plot type. Th
 ```sh
  -i / --initial_file <N>       number of first output file to open
  -l / --last_file <N>          number of last output file to open
- -f / --file                   folder containing results
+ -f / --file <string>          folder containing results
  -s / --simulation_ID <string> name of planet (used in naming of output files)
- -p / --pressure_lev           pressure level to use in horizontal plots
- -pmin / --pressure_min        pressure minimum for vertical plots
- -slay / --split_layer         splits conservation data into "weather" and "deep" layers
+ -p / --pressure_lev <N>       pressure level to use in horizontal plots (mbar units)
+ -pmin / --pressure_min <N>    pressure minimum for vertical plots (mbar units)
+ -slay / --split_layer <N>     splits conservation data into "weather" and "deep" layers (mbar units)
 ```
 
 mjolnir averages the data over time for the entire range of files read in. So with `-i 0` and `-l 10`, files 0-10 will all be read in, and the plotted quantities will be averaged over all 11 snapshots in time. If you want to plot one instant in time, just set `-i` and `-l` to the same value. The averaging process can get quite long because the data is interpolated in many ways before averaging. Be careful if you are passing mjolnir more than ~50 output files.
