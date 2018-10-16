@@ -8,6 +8,32 @@ If you use this code please cite: [Mendonca, J.M., Grimm, S.L., Grosheintz, L., 
 
 ###### Copyright (C) 2017-2018 Exoclimes Simulation Platform ######
 
+### Changes since version 1
+
+* Addition of "tidally-locked Earth", "shallow hot jupiter", and "deep hot jupiter" benchmark tests (see Heng, Menou, & Phillips, 2011)
+
+* Inclusion of grey radiative transfer (see [Mendonca, J.M., Malik, M., Demory, B.-O., & Heng, K., AJ, 155, 150, 2018](http://iopscience.iop.org/article/10.3847/1538-3881/aaaebc/meta))
+
+* Inclusion of top-of-atmosphere Rayleigh drag ("sponge layer") (see [Mendonca, J.M., Tsai, S.-M., Malik, M., Demory, B.-O., & Heng, K.](http://adsabs.harvard.edu/abs/2018arXiv180800501M))
+
+* Inclusion of tracer particles and chemical relaxation scheme (see [Mendonca, J.M., Tsai, S.-M., Malik, M., Demory, B.-O., & Heng, K.](http://adsabs.harvard.edu/abs/2018arXiv180800501M))
+
+* Addition of "conservation" routines, which calculate energy, entropy, mass, and angular momentum
+
+* Inclusion of dry convective adjustment scheme (used, though not detailed, in [Mendonca, J.M., Malik, M., Demory, B.-O., & Heng, K., AJ, 155, 150, 2018](http://iopscience.iop.org/article/10.3847/1538-3881/aaaebc/meta))
+
+* Compilation process has been completely overhauled to be more reliable and flexible
+
+* Initial conditions are no longer hard coded, but are now set in user generated configuration files
+
+* Command line options have been added to allow more flexibility when running the model, particularly for restarting canceled/finished simulations
+
+* Modular structure for additional physics has been put in place and is used for the grey radiative transfer scheme (and hopefully chemistry???)
+
+* Numerous performance and debugging modes have been implemented in the code
+
+* Previous MATLAB plotting routines have been adapted for Python. A number of new plotting options have been added to the Python code
+
 ### BUILD & RUN THOR
 
 Main instructions to compile and run *THOR*. This version uses only a __single__ __GPU__.
@@ -343,7 +369,7 @@ where `-i`, `-l`, `-f`, and `-s` are options flags and `Tver` is a plot type. Th
  -s / --simulation_ID <string> name of planet (used in naming of output files)
  -p / --pressure_lev <N>       pressure level to use in horizontal plots (mbar units)
  -pmin / --pressure_min <N>    pressure minimum for vertical plots (mbar units)
- -slay / --split_layer <N>     splits conservation data into "weather" and "deep" layers (mbar units)
+ -slay / --split_layer <N>     splits conservation data into "weather" and "deep" layers at this pressure (mbar units)
 ```
 
 mjolnir averages the data over time for the entire range of files read in. So with `-i 0` and `-l 10`, files 0-10 will all be read in, and the plotted quantities will be averaged over all 11 snapshots in time. If you want to plot one instant in time, just set `-i` and `-l` to the same value. The averaging process can get quite long because the data is interpolated in many ways before averaging. Be careful if you are passing mjolnir more than ~50 output files.
@@ -355,22 +381,22 @@ The `-p` option is used only by the horizontal plot types and is simply the desi
 Current vertical plot types are
 
 ```sh
- Tver                           time and zonally averaged temperature
- uver                           time and zonally averaged zonal wind speed
- wver                           time and zonally averaged vertical wind speed
- PTver                          time and zonally averaged  potential temperature
- PVver                          time and zonally averaged  potential vorticity
- stream                         time and zonally averaged mass streaming function
+ Tver                           time- and zonally-averaged temperature
+ uver                           time- and zonally-averaged zonal wind speed
+ wver                           time- and zonally-averaged vertical wind speed
+ PTver                          time- and zonally-averaged  potential temperature
+ PVver                          time- and zonally-averaged  potential vorticity
+ stream                         time- and zonally-averaged mass streaming function
 ```
 
 Current horizontal plot types are
 
 ```sh
- Tulev                          time averaged temperature and horizontal wind along a pressure surface
- ulev                           time averaged zonal and meridional winds along a pressure surface   
- PVlev                          time averaged potential vorticity along a pressure surface
- RVlev                          time averaged relative vorticity along a pressure surface
- tracer                         time averaged molecular abundances along a pressure surface
+ Tulev                          time-averaged temperature and horizontal wind along a pressure surface
+ ulev                           time-averaged zonal and meridional winds along a pressure surface   
+ PVlev                          time-averaged potential vorticity along a pressure surface
+ RVlev                          time-averaged relative vorticity along a pressure surface
+ tracer                         time-averaged molecular abundances along a pressure surface
 ```
 
 Current profile plot types are
