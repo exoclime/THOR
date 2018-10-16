@@ -154,11 +154,11 @@ class output:
                 self.AngMomz[:,:,t-ntsi+1] = np.reshape(AngMomzi,(grid.point_num,grid.nv))
 
             if 'traceri' in locals():
-                self.ch4[:,:,t-ntsi+1] = np.reshape(traceri[::5],(grid.point_num,grid.nv))
-                self.co[:,:,t-ntsi+1] = np.reshape(traceri[1::5],(grid.point_num,grid.nv))
-                self.h2o[:,:,t-ntsi+1] = np.reshape(traceri[2::5],(grid.point_num,grid.nv))
-                self.co2[:,:,t-ntsi+1] = np.reshape(traceri[3::5],(grid.point_num,grid.nv))
-                self.nh3[:,:,t-ntsi+1] = np.reshape(traceri[4::5],(grid.point_num,grid.nv))
+                self.ch4[:,:,t-ntsi+1] = np.reshape(traceri[::5],(grid.point_num,grid.nv))/self.Rho[:,:,t-ntsi+1]
+                self.co[:,:,t-ntsi+1] = np.reshape(traceri[1::5],(grid.point_num,grid.nv))/self.Rho[:,:,t-ntsi+1]
+                self.h2o[:,:,t-ntsi+1] = np.reshape(traceri[2::5],(grid.point_num,grid.nv))/self.Rho[:,:,t-ntsi+1]
+                self.co2[:,:,t-ntsi+1] = np.reshape(traceri[3::5],(grid.point_num,grid.nv))/self.Rho[:,:,t-ntsi+1]
+                self.nh3[:,:,t-ntsi+1] = np.reshape(traceri[4::5],(grid.point_num,grid.nv))/self.Rho[:,:,t-ntsi+1]
 
 class GetOutput:
     def __init__(self,resultsf,simID,ntsi,nts):
@@ -699,6 +699,109 @@ def temperature_u_lev(input,grid,output,Plev):
         os.mkdir(input.resultsf+'/figures')
     plt.tight_layout()
     plt.savefig(input.resultsf+'/figures/temperature-uv_lev%#.3fmbar_i%d_l%d.pdf'%(Plev/100,output.ntsi,output.nts))
+    plt.close()
+
+def tracer_u_lev(input,grid,output,Plev,trace):
+    # Set the latitude-longitude grid.
+    res_deg = 0.005
+    loni, lati = np.meshgrid(np.arange(0,2*np.pi,res_deg),\
+        np.arange(-np.pi/2,np.pi/2,res_deg))
+    d_lon = np.shape(loni)
+    tsp = output.nts-output.ntsi+1
+
+    #######################
+    # Winds & Tracer      #
+    #######################
+
+    # id tracer
+    tracer = getattr(output,trace)
+
+    # Initialize arrays
+    tr = np.zeros((grid.nv,1))
+    Pr = np.zeros((grid.nv,1))
+    Mx = np.zeros((grid.nv,1))
+    My = np.zeros((grid.nv,1))
+    Mz = np.zeros((grid.nv,1))
+    tri = np.zeros((grid.point_num,1))
+    Rhot = np.zeros((grid.point_num,1))
+    Mxf = np.zeros((grid.point_num,1))
+    Myf = np.zeros((grid.point_num,1))
+    Mzf = np.zeros((grid.point_num,1))
+    Ui = np.zeros((grid.point_num,1))
+    Vi = np.zeros((grid.point_num,1))
+    trii = np.zeros((d_lon[0],d_lon[1],tsp))
+    Uii = np.zeros((d_lon[0],d_lon[1],tsp))
+    Vii = np.zeros((d_lon[0],d_lon[1],tsp))
+
+    # Compute winds and temperatures
+    for t in np.arange(tsp):
+        for i in np.arange(grid.point_num):
+            for lev in np.arange(grid.nv):
+                Pr[lev] = output.Pressure[i,lev,t]
+                tr[lev] = tracer[i,lev,t]
+                Mx[lev] = output.Mh[0,i,lev,t]
+                My[lev] = output.Mh[1,i,lev,t]
+                Mz[lev] = output.Mh[2,i,lev,t]
+            # Interpolate in pressure
+            Rhot[i] = interp.interp1d(Pr.T[0],output.Rho[i,:,t],kind='linear',fill_value='extrapolate')(Plev)
+            Mxf[i] = interp.interp1d(Pr.T[0],Mx.T[0],kind='linear',fill_value='extrapolate')(Plev)
+            Myf[i] = interp.interp1d(Pr.T[0],My.T[0],kind='linear',fill_value='extrapolate')(Plev)
+            Mzf[i] = interp.interp1d(Pr.T[0],Mz.T[0],kind='linear',fill_value='extrapolate')(Plev)
+            tri[i] = interp.interp1d(Pr.T[0],tr.T[0],kind='linear',fill_value='extrapolate')(Plev)
+        for i in np.arange(grid.point_num):
+            Ui[i] = (Mxf[i]*(-np.sin(grid.lon[i])) + \
+                     Myf[i]*np.cos(grid.lon[i]) + \
+                     Mzf[i]*(0))/Rhot[i]
+            Vi[i] = (Mxf[i]*(-np.sin(grid.lat[i])*np.cos(grid.lon[i])) + \
+                     Myf[i]*(-np.sin(grid.lat[i])*np.sin(grid.lon[i])) + \
+                     Mzf[i]*np.cos(grid.lat[i]))/Rhot[i]
+        # Convert icosahedral grid into lon-lat grid
+        # import pdb; pdb.set_trace()
+        trii[:,:,t] = interp.griddata(np.vstack([grid.lon,grid.lat]).T,tri.T[0],(loni,lati),method='linear')
+        Uii[:,:,t] = interp.griddata(np.vstack([grid.lon,grid.lat]).T,Ui.T[0],(loni,lati),method='cubic')
+        Vii[:,:,t] = interp.griddata(np.vstack([grid.lon,grid.lat]).T,Vi.T[0],(loni,lati),method='cubic')
+
+    # Averaging in time
+    if tsp > 1:
+        tr_plot = np.mean(trii,axis=2)
+        Uiii = np.mean(Uii,axis=2)
+        Viii = np.mean(Vii,axis=2)
+        del trii, Uii, Vii
+    else:
+        tr_plot = trii[:,:,0]
+        Uiii = Uii[:,:,0]
+        Viii = Vii[:,:,0]
+
+    # Wind arrays
+    d_z = np.shape(Uiii)
+    spacing = 80
+    U = Uiii[::spacing,::spacing].ravel()
+    V = Viii[::spacing,::spacing].ravel()
+    lonq = loni[::spacing,::spacing].ravel()
+    latq = lati[::spacing,::spacing].ravel()
+    del Uiii, Viii
+
+    #################
+    # Create Figure #
+    #################
+
+    lonp = np.arange(0,2*np.pi,res_deg)
+    latp = np.arange(-np.pi/2,np.pi/2,res_deg)
+    C = plt.contourf(lonp*180/np.pi,latp*180/np.pi,np.log10(tr_plot),50)
+    for cc in C.collections:
+        cc.set_edgecolor("face") #fixes a stupid bug in matplotlib 2.0
+    plt.ylabel('Latitude (deg)')
+    plt.xlabel('Longitude (deg)')
+    plt.quiver(lonq*180/np.pi,latq*180/np.pi,U,V,color='0.5')
+    #plt.plot(grid.lon*180/np.pi,grid.lat*180/np.pi,'w.')
+    plt.title('Time = %#.3f - %#.3f days'%(output.time[0],output.time[-1]))
+    clb = plt.colorbar(C)
+    clb.set_label(r'Log(mixing ratio)')
+
+    if not os.path.exists(input.resultsf+'/figures'):
+        os.mkdir(input.resultsf+'/figures')
+    plt.tight_layout()
+    plt.savefig(input.resultsf+'/figures/chem-'+trace+'-uv_lev%#.3fmbar_i%d_l%d.pdf'%(Plev/100,output.ntsi,output.nts))
     plt.close()
 
 def potential_temp(input,grid,output,sigmaref):
