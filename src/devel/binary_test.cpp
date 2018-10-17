@@ -275,6 +275,13 @@ bool binary_test::compare_to_reference(const string & iteration,
         string output_name = output_dir + output_base_name
         + ref_name + "_" + iteration + ".h5";
 
+        if (!path_exists(output_name))
+        {
+            cout << "No compare file: " << output_name << endl;
+            return true;
+
+        }
+        
         storage s(output_name, true);
         
         bool out = true;
@@ -288,6 +295,14 @@ bool binary_test::compare_to_reference(const string & iteration,
             
             // copy data to host if needed
             // and write it to the output file
+            if (!s.has_table(def.short_name))
+            {
+                // no table in input
+                oss << " " << def.short_name <<": " << "N/A";
+                
+                continue;
+            }
+            
             if (def.device_ptr)
             {
 	      getDeviceData(def.data, mem_buf.get(), def.size * sizeof(double));
