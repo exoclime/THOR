@@ -69,7 +69,8 @@ bool phy_modules_init_mem(const ESP & esp)
     return true;
 }
 
-bool phy_modules_init_data()
+bool phy_modules_init_data(const ESP & esp,
+                           const XPlanet & planet)
 {
     RTSetup(Tstar            ,
             planet_star_dist ,
@@ -159,7 +160,7 @@ bool phy_modules_store_init(storage & s)
     return true;
 }
 
-bool phy_modules_store(storage & s)
+bool phy_modules_store(const ESP & esp, storage & s)
 {
 
     return true;

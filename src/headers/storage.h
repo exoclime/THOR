@@ -111,6 +111,25 @@ public:
     storage(const string & filename, const bool & read = false);
     
 
+    bool has_table(string name)
+    {
+        if (file != nullptr)
+        {
+            try {  // to determine if the dataset exists in the group
+                DataSet dataset = file->openDataSet( name );
+                return true;
+            }
+            catch( DataSetIException error ) {
+                return false;
+                
+            }
+        }
+        else
+            return false;
+    }
+    
+            
+    
     // Store a table of type T - double or int, in output file
     template<typename T>
     void append_table(T * data,
