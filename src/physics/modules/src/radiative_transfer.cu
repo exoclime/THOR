@@ -26,6 +26,12 @@ bool radiative_transfer::initialise_memory(const ESP & esp)
     cudaMalloc((void **)&ttemp       , esp.nv * esp.point_num *     sizeof(double));
     cudaMalloc((void **)&dtemp       , esp.nv * esp.point_num *     sizeof(double));
 
+    insol_h        = (double*)malloc(esp.point_num   * sizeof(double));
+    cudaMalloc((void **)&insol_d, esp.point_num *     sizeof(double));
+
+    fnet_up_h        = (double*)malloc(esp.nvi * esp.point_num    * sizeof(double));
+    fnet_dn_h        = (double*)malloc(esp.nvi * esp.point_num    * sizeof(double));
+    tau_h            = (double*)malloc(esp.nv * esp.point_num * 2 * sizeof(double));
 
     return true;
 }
@@ -176,8 +182,29 @@ bool radiative_transfer::store(const ESP & esp,
     s.append_table( insol_h,
                      esp.point_num,
                      "/insol",
-                     "W m^-2 s^-1",
+                     "W m^-2",
                      "insolation (instantaneous)");
+
+    cudaMemcpy(fnet_up_h  , fnet_up_d   , esp.nvi * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
+    s.append_table( fnet_up_h,
+                     esp.nvi * esp.point_num,
+                     "/fnet_up",
+                     "W m^-2",
+                     "upward flux");
+
+    cudaMemcpy(fnet_dn_h  , fnet_dn_d   , esp.nvi * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
+    s.append_table( fnet_dn_h,
+                     esp.nvi * esp.point_num,
+                     "/fnet_dn",
+                     "W m^-2",
+                     "downward flux");
+
+    cudaMemcpy(tau_h  , tau_d   , esp.nv * esp.point_num * 2 * sizeof(double), cudaMemcpyDeviceToHost);
+    s.append_table( tau_h,
+                     esp.nv * esp.point_num * 2,
+                     "/tau",
+                     " ",
+                     "optical depth across each layer");
 
     return true;
 }
@@ -248,9 +275,6 @@ void radiative_transfer::RTSetup(double Tstar_           ,
     mean_anomaly_i = fmod(ecc_anomaly_i - ecc*sin(ecc_anomaly_i),(2*M_PI));
     alpha_i = alpha_i_*M_PI/180.0;
     obliquity = obliquity_*M_PI/180.0;
-
-    insol_h        = (double*)malloc(point_num   * sizeof(double));
-    cudaMalloc((void **)&insol_d, point_num *     sizeof(double));
 }
 
 void radiative_transfer::update_spin_orbit(double time  ,
