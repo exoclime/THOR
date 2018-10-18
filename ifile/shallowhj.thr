@@ -65,7 +65,7 @@ rest = true
 # HS test for tidally locked Earth == 2
 # No HS test == 0
 
-hstest = 3
+core_benchmark = 3
 
 #Tstar = 4875
 #planet_star_dist = 0.03099

@@ -18,7 +18,7 @@ bool phy_modules_free_mem();
 // TODO: what do we need here? esp,planet, grid???
 bool phy_modules_mainloop(ESP & esp,
                           int    nstep       , // Step number
-                          int    hstest      , // Held-Suarez test option
+                          int    core_benchmark, // Held-Suarez test option
                           double time_step   , // Time-step [s]
                           double Omega       , // Rotation rate [1/s]
                           double Cp          , // Specific heat capacity [J/kg/K]

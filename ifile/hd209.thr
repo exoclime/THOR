@@ -66,7 +66,7 @@ rest = true
 # No HS test == 0
 # HS test for deep hot Jupiter == 4
 
-hstest = 0
+core_benchmark = 0
 
 # Spongebob
 SpongeLayer = false

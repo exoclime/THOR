@@ -72,7 +72,7 @@ Rv_sponge = 1e-5
 # HS test for tidally locked Earth == 2
 # No HS test == 0
 
-hstest = 0
+core_benchmark = 0
 
 Tstar = 4875
 planet_star_dist = 0.03099

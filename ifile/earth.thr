@@ -71,7 +71,7 @@ initial = earth_hs/esp_output_Earth_3.h5
 # HS test for tidally locked Earth == 2
 # No HS test == 0
 
-hstest = 1
+core_benchmark = 1
 
 # output
 # output every n steps

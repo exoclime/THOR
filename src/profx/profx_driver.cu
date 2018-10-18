@@ -60,7 +60,7 @@
 
 #include "reduction_add.h"
 
-__host__ void ESP::ProfX(int    hstest      , // Held-Suarez test option
+__host__ void ESP::ProfX(int core_benchmark     , // Held-Suarez test option
                          int    vulcan      , // Use vulcan chemistry
                          int    conv        , //
                          double Omega       , // Rotation rate [1/s]
@@ -148,7 +148,7 @@ __host__ void ESP::ProfX(int    hstest      , // Held-Suarez test option
 // HELD SUAREZ TEST  //
 ///////////////////////
 //
-      if (hstest == 1) {
+      if (core_benchmark  == 1) {
         cudaDeviceSynchronize();
         held_suarez<<< NB, NTH >>> (Mh_d         ,
                                     pressure_d   ,
@@ -162,7 +162,7 @@ __host__ void ESP::ProfX(int    hstest      , // Held-Suarez test option
                                     lonlat_d     ,
                                     timestep     ,
                                     point_num    );
-      } else if (hstest == 2) {
+      } else if (core_benchmark  == 2) {
         cudaDeviceSynchronize();
         tidalearth_hs<<< NB, NTH >>> (Mh_d         ,
                                       pressure_d   ,
@@ -176,7 +176,7 @@ __host__ void ESP::ProfX(int    hstest      , // Held-Suarez test option
                                       lonlat_d     ,
                                       timestep     ,
                                       point_num    );
-      } else if (hstest == 3) {
+      } else if (core_benchmark  == 3) {
         cudaDeviceSynchronize();
         shallowHJ_hs<<< NB, NTH >>> (Mh_d         ,
                                      pressure_d   ,
@@ -190,7 +190,7 @@ __host__ void ESP::ProfX(int    hstest      , // Held-Suarez test option
                                      lonlat_d     ,
                                      timestep     ,
                                      point_num    );
-      } else if (hstest == 4) {
+      } else if (core_benchmark  == 4) {
         cudaDeviceSynchronize();
         deepHJ_hs<<< NB, NTH >>> (Mh_d         ,
                                   pressure_d   ,
@@ -266,11 +266,11 @@ __host__ void ESP::ProfX(int    hstest      , // Held-Suarez test option
  */
     }
 
-    if (!hstest) {
+    if (!core_benchmark ) {
         cudaDeviceSynchronize();
         phy_modules_mainloop(*this,
                               current_step, // Step number
-                              hstest      , // Held-Suarez test option
+                            core_benchmark     , // Held-Suarez test option
                               timestep    , // Time-step [s]
                               Omega       , // Rotation rate [1/s]
                               Cp          , // Specific heat capacity [J/kg/K]
@@ -293,7 +293,7 @@ __host__ void ESP::ProfX(int    hstest      , // Held-Suarez test option
       }
     #endif
 
-    BENCH_POINT_I(current_step, "phy_hstest", vector<string>({}), vector<string>({"Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"}))
+    BENCH_POINT_I(current_step, "phy_core_benchmark ", vector<string>({}), vector<string>({"Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"}))
 //  Computes the new pressures.
     cudaDeviceSynchronize();
     Compute_pressure <<< NB, NTH >>> (pressure_d   ,
@@ -330,7 +330,7 @@ __host__ void ESP::ProfX(int    hstest      , // Held-Suarez test option
 }
 
 // TODO: get constants out of arguments
-void ESP::Conservation(int    hstest      , // Held-Suarez test option
+void ESP::Conservation(int    core_benchmark     , // Held-Suarez test option
                        int    vulcan      , //
                        double Omega       , // Rotation rate [1/s]
                        double Cp          , // Specific heat capacity [J/kg/K]

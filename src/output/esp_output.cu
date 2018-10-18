@@ -99,7 +99,7 @@ __host__ void ESP::Output(int    fidx           , // Index of output file
                           double Top_altitude   , // Top of the model's domain [m]
                           double A              ,
                           bool   conservation   ,
-                          int    hstest         ,
+                          int   core_benchmark  ,
                           bool   SpongeLayer    ,
                           int    vulcan         ){
 
@@ -128,7 +128,7 @@ __host__ void ESP::Output(int    fidx           , // Index of output file
                        "Altitude at the interfaces");
 
 //      AreasT
-        s.append_table(Altitudeh_h,
+        s.append_table(areasT_h,
                        point_num,
                        "/areasT",
                        "m^2",
@@ -189,8 +189,8 @@ __host__ void ESP::Output(int    fidx           , // Index of output file
         s.append_value(Cp, "/Cp", "J/(Kg K)", "Specific heat capacity");
         //      SpongeLayer option
         s.append_value(SpongeLayer?1.0:0.0, "/SpongeLayer", "-", "Using SpongeLayer?");
-        //      hstest option
-        s.append_value(hstest, "/hstest", "-", "Using benchmark forcing or RT");
+        //      core_benchmark  option
+        s.append_value(core_benchmark, "/core_benchmark", "-", "Using benchmark forcing or RT");
         //      vulcan option
         s.append_value(vulcan, "/vulcan", "-", "Using relaxation chemistry");
         if (SpongeLayer) {

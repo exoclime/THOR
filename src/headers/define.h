@@ -78,7 +78,7 @@
                                                             // file
 
 // Benchmark test
-#define hstest_default 1          // Held-Suarez test for Earth == 1
+#define core_benchmark_default 1          // Held-Suarez test for Earth == 1
 //  HS test for shallow hot Jupiter == 3
 //  HS test for tidally locked Earth == 2
 //  No HS test == 0

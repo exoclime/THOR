@@ -40,8 +40,11 @@ class input:
                 self.nlat = openh5['nlat'][...]
                 self.ns_sponge = openh5['ns_sponge'][...]
                 self.Rv_sponge = openh5['Rv_sponge'][...]
-            self.hstest = openh5['hstest'][...]
-            if self.hstest[0] == 0:
+            if 'hstest' in openh5.key():
+                self.core_benchmark = openh5['hstest'][...]
+            else:
+                self.core_benchmark = openh5['core_benchmark'][...]
+            if self.core_benchmark[0] == 0:
                 self.Tstar = openh5['Tstar'][...]
                 self.planet_star_dist = openh5['planet_star_dist'][...]
                 self.radius_star = openh5['radius_star'][...]

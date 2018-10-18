@@ -65,8 +65,7 @@ rest = true
 # HS test for tidally locked Earth == 2
 # No HS test == 0
 # HS test for deep hot Jupiter == 4
-
-hstest = 5
+core_benchmark  = 5
 
 #Tstar = 4875
 #planet_star_dist = 0.03099

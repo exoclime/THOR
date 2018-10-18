@@ -15,7 +15,7 @@ public:
     // TBD, how does it get data? friend of ESP ? grid ?
     bool loop(ESP & esp,
               int    nstep       , // Step number
-              int    hstest      , // Held-Suarez test option
+              int core_benchmark      , // Held-Suarez test option
               double time_step   , // Time-step [s]
               double Omega       , // Rotation rate [1/s]
               double Cp          , // Specific heat capacity [J/kg/K]

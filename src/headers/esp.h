@@ -305,7 +305,7 @@ public:
                        bool sponge              ,
                        bool DeepModel           ,
                        int TPprof               ,
-                       int hstest               ,
+                       int core_benchmark       ,
                        int vulcan               ,
                        int & nsteps             ,
                        double & simulation_start_time,
@@ -369,7 +369,7 @@ public:
     void SetOutputParam(const std::string & sim_id_,
                         const std::string & output_dir_ );
 
-    void Conservation(int    hstest      , // Held-Suarez test option
+    void Conservation(int  core_benchmark, // Held-Suarez test option
                       int    vulcan      , //
                       double Omega       , // Rotation rate [1/s]
                       double Cp          , // Specific heat capacity [J/kg/K]

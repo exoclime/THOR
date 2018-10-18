@@ -66,7 +66,7 @@ rest = true
 # No HS test == 0
 # HS test for deep hot Jupiter == 4
 
-hstest = 4
+core_benchmark = 4
 
 #Tstar = 4875
 #planet_star_dist = 0.03099

@@ -99,7 +99,7 @@ bool phy_modules_generate_config(config_file & config_reader)
 
 bool phy_modules_mainloop(ESP & esp,
                           int    nstep       , // Step number
-                          int    hstest      , // Held-Suarez test option
+                          int core_benchmark      , // Held-Suarez test option
                           double time_step   , // Time-step [s]
                           double Omega       , // Rotation rate [1/s]
                           double Cp          , // Specific heat capacity [J/kg/K]

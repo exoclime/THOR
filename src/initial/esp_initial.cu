@@ -321,7 +321,7 @@ __host__ bool ESP::InitialValues(bool rest          ,
                                  bool sponge        ,
                                  bool DeepModel     ,
                                  int TPprof         ,
-                                 int hstest         ,
+                                 int core_benchmark ,
                                  int vulcan         ,
                                  int & nstep        ,
                                  double & simulation_start_time,
@@ -351,7 +351,7 @@ __host__ bool ESP::InitialValues(bool rest          ,
                   temperature_h[i*nv+lev] = pow(3*Tmean*Tmean*Tmean*Tmean*f*(2/3+1/(gamma*sqrt(3))+\
                         (gamma/sqrt(3) - 1/(gamma*sqrt(3)))*exp(-gamma*tau*sqrt(3))),0.25);
                 }
-                if (hstest == 4) {
+                if (core_benchmark == 4) {
                   double Ptil = 0.0;
                   if (pressure_h[i*nv+lev] >= 1e5) {
                     Ptil = log10(pressure_h[i*nv + lev]/100000);
@@ -383,7 +383,7 @@ __host__ bool ESP::InitialValues(bool rest          ,
             }
             Wh_h[i*(nv + 1) + nv] = 0.0;
         }
-        if (hstest == 5) {
+        if (core_benchmark == 5) {
           //  Number of threads per block.
           const int NTH = 256;
 

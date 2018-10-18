@@ -272,8 +272,8 @@ int main (int argc,  char** argv){
                                     string(initial_conditions_default));
 
     // Benchmark test
-    int hstest = 1;
-    config_reader.append_config_var("hstest", hstest, hstest_default);
+    int core_benchmark = 1;
+    config_reader.append_config_var("core_benchmark ", core_benchmark , core_benchmark_default);
 
     int vulcan = 0;
     config_reader.append_config_var("vulcan", vulcan, vulcan_default);
@@ -406,7 +406,7 @@ int main (int argc,  char** argv){
 
     config_OK &= check_range( "glevel", glevel, 3, 8);
     config_OK &= check_greater( "vlevel", vlevel, 0);
-    config_OK &= check_range( "hstest", hstest, -1, 6);
+    config_OK &= check_range( "core_benchmark", core_benchmark, -1, 6);
 
     config_OK &= check_greater( "GPU_ID_N", GPU_ID_N, -1);
     config_OK &= check_greater( "n_out", n_out, 0);
@@ -613,7 +613,7 @@ int main (int argc,  char** argv){
                                         SpongeLayer  , // Enable sponge layer
                                         DeepModel    , // Use deep model corrections
                                         TPprof       , // isothermal = 0, guillot = 1
-                                        hstest       , // argh
+                                        core_benchmark , // argh
                                         vulcan       , //
                                         step_idx     , // current step index
                                         simulation_start_time, // output:
@@ -623,7 +623,7 @@ int main (int argc,  char** argv){
                                                           // if nothing read
                                         conservation );
 
-    if (hstest == 0) {
+    if (core_benchmark == 0) {
         phy_modules_init_data(X,Planet);
     }
 
@@ -815,7 +815,7 @@ int main (int argc,  char** argv){
         X.InitTimestep(0, simulation_time, timestep);
 
         if (conservation == true) {
-          X.Conservation(hstest       , // Held-Suarez test option
+          X.Conservation(core_benchmark , // Held-Suarez test option
                          vulcan       , //
                          Planet.Omega , // Rotation rate [1/s]
                          Planet.Cp    , // Specific heat capacity [J/kg/K]
@@ -845,7 +845,7 @@ int main (int argc,  char** argv){
                  Planet.Top_altitude , // Top of the model's domain [m]
                  Planet.A            , // Planet Radius [m]
                  conservation        ,
-                 hstest              ,
+                 core_benchmark      ,
                  SpongeLayer         ,
                  vulcan              );
         output_file_idx = 1;
@@ -895,7 +895,7 @@ int main (int argc,  char** argv){
         }
 //
 //     Physical Core Integration (ProfX)
-        X.ProfX(hstest       , // Held-Suarez test option
+        X.ProfX(core_benchmark , // Held-Suarez test option
                 vulcan       , //
                 conv         ,
                 Planet.Omega , // Rotation rate [1/s]
@@ -918,7 +918,7 @@ int main (int argc,  char** argv){
 
         if(conservation == true )
         {
-            X.Conservation(hstest       , // Held-Suarez test option
+            X.Conservation(core_benchmark , // Held-Suarez test option
                            vulcan       , //
                            Planet.Omega , // Rotation rate [1/s]
                            Planet.Cp    , // Specific heat capacity [J/kg/K]
@@ -952,7 +952,7 @@ int main (int argc,  char** argv){
                      Planet.Top_altitude , // Top of the model's domain [m]
                      Planet.A            , // Planet radius [m]
                      conservation        ,
-                     hstest              ,
+                     core_benchmark      ,
                      SpongeLayer         ,
                      vulcan              );
             // increment output file index
