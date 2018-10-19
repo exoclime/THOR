@@ -273,7 +273,7 @@ int main (int argc,  char** argv){
 
     // Benchmark test
     int core_benchmark = 1;
-    config_reader.append_config_var("core_benchmark ", core_benchmark , core_benchmark_default);
+    config_reader.append_config_var("core_benchmark", core_benchmark, core_benchmark_default);
 
     int vulcan = 0;
     config_reader.append_config_var("vulcan", vulcan, vulcan_default);
