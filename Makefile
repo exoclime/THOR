@@ -63,7 +63,7 @@ ccbin :=
 # ccbin := -ccbin g++-5
 
 # define common flags
-flags := $(ccbin) --compiler-options -Wall,-Wextra,-Wunused-result,-std=c++11 -DDEVICE_SM=$(SM)
+flags := $(ccbin) --compiler-options -Wall -std=c++11 -DDEVICE_SM=$(SM)
 dep_flags := $(ccbin) -std=c++11
 link_flags := $(ccbin)
 # define debug flags

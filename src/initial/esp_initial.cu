@@ -603,8 +603,8 @@ __host__ bool ESP::InitialValues(bool rest          ,
                 }
             }
         }
-        
-            
+
+
         fclose(infile1);
 
         infile1 = fopen("ifile/solar_chem_time.txt","r");
@@ -631,10 +631,12 @@ __host__ bool ESP::InitialValues(bool rest          ,
                     fclose(infile1);
                     return false;
                 }
+              }
+            }
 
                 for(int j = 0; j < NP ; j++) P_che_h[j] = log(P_che_h[j]);
                 fclose(infile1);
-                
+
                 // CH4
 	    for(int lev = 0; lev < nv ; lev++){
 		    for(int i = 0; i < point_num;i++){

@@ -75,7 +75,7 @@ core_benchmark = 1
 
 # output
 # output every n steps
-n_out = 2000
+n_out = 1000
 
 # output directory (relative to current working directory)
 # defaults to 'results'
