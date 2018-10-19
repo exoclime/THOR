@@ -40,7 +40,7 @@ class input:
                 self.nlat = openh5['nlat'][...]
                 self.ns_sponge = openh5['ns_sponge'][...]
                 self.Rv_sponge = openh5['Rv_sponge'][...]
-            if 'hstest' in openh5.key():
+            if 'hstest' in openh5.keys():
                 self.core_benchmark = openh5['hstest'][...]
             else:
                 self.core_benchmark = openh5['core_benchmark'][...]

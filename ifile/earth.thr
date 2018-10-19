@@ -79,7 +79,7 @@ n_out = 1000
 
 # output directory (relative to current working directory)
 # defaults to 'results'
-results_path = earth_hs_q
+results_path = earth_hs_q2
 conservation = false
 
 # GPU ID number
