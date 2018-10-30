@@ -106,6 +106,10 @@ class output:
         self.co2 = np.zeros((grid.point_num,grid.nv,nts-ntsi+1))
         self.nh3 = np.zeros((grid.point_num,grid.nv,nts-ntsi+1))
 
+        self.tau_sw = np.zeros((grid.point_num,grid.nv,nts-ntsi+1))
+        self.tau_lw = np.zeros((grid.point_num,grid.nv,nts-ntsi+1))
+        self.fnet_up = np.zeros((grid.point_num,grid.nvi,nts-ntsi+1))
+        self.fnet_dn = np.zeros((grid.point_num,grid.nvi,nts-ntsi+1))
 
         # Read model results
         for t in np.arange(ntsi-1,nts):
@@ -139,6 +143,10 @@ class output:
                 self.Insol[:,t-ntsi+1] = openh5['insol'][...]
             if 'tracer' in openh5.keys():
                 traceri = openh5['tracer'][...]
+            if 'tau' in openh5.keys():
+                taui = openh5['tau'][...]
+                fupi = openh5['fnet_up'][...]
+                fdni = openh5['fnet_dn'][...]
             openh5.close()
 
             self.Rho[:,:,t-ntsi+1] = np.reshape(Rhoi,(grid.point_num,grid.nv))
@@ -161,6 +169,13 @@ class output:
                 self.h2o[:,:,t-ntsi+1] = np.reshape(traceri[2::5],(grid.point_num,grid.nv))/self.Rho[:,:,t-ntsi+1]
                 self.co2[:,:,t-ntsi+1] = np.reshape(traceri[3::5],(grid.point_num,grid.nv))/self.Rho[:,:,t-ntsi+1]
                 self.nh3[:,:,t-ntsi+1] = np.reshape(traceri[4::5],(grid.point_num,grid.nv))/self.Rho[:,:,t-ntsi+1]
+
+            if 'taui' in locals():
+                self.tau_sw[:,:,t-ntsi+1] = np.reshape(taui[::2],(grid.point_num,grid.nv))
+                self.tau_lw[:,:,t-ntsi+1] = np.reshape(taui[1::2],(grid.point_num,grid.nv))
+                self.fnet_dn[:,:,t-ntsi+1] = np.reshape(fdni,(grid.point_num,grid.nvi))
+                self.fnet_up[:,:,t-ntsi+1] = np.reshape(fupi,(grid.point_num,grid.nvi))
+
 
 class GetOutput:
     def __init__(self,resultsf,simID,ntsi,nts):
@@ -468,7 +483,7 @@ def w_ver(input,grid,output,sigmaref):
     # Averaging in time and longitude
     if tsp > 1:
         VertMl = np.mean(VertM[:,:,:,:],axis=1)
-        del ZonalM
+        del VertM
         VertMlt = np.mean(VertMl[:,:,:],axis=2)
         del VertMl
     else:

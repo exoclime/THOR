@@ -591,7 +591,9 @@ __host__ void ESP::Thor(bool   HyDiff      , // Turn on/off hyper-diffusion.
 
 //
 //      SMALL-STEPS
+        // printf("\n << nlarge = %d <<<<<<<<<<<<\n",rk);
         for (int ns = 0; ns < ns_it; ns++){
+            // printf("// nsmall = %d //////////////////\n",ns);
             cudaMemset(DivM_d   , 0, sizeof(double)*point_num * 3 * nv);
             cudaMemset(divg_Mh_d, 0, sizeof(double)*point_num * 3 * nv);
             if (DivDampP) {
