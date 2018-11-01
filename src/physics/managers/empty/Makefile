@@ -67,7 +67,7 @@ $(BUILDDIR)/phy_modules.o: phy_modules.cu phy_modules.h phy_module_base.h | $(BU
 	@echo $(YELLOW)creating $@ $(END)
 	# test if we build with compilation database (clang) or not (nvcc)	
 	if test $$CDB = "-MJ" ; then \
-		$(CC) -c $(arch)  $(cuda_flags) $(h5include) $(INCLUDE_DIRS) $(CDB)$@.json -o $@ $<; \
+		$(CC) -c $(arch)  $(cuda_flags) $(h5include) $(INCLUDE_DIRS) $(CDB) $@.json -o $@ $<; \
 	else \
 		$(CC) -c $(arch)  $(cuda_flags) $(h5include) $(INCLUDE_DIRS) -o $@ $<; \
 	fi
@@ -84,7 +84,8 @@ libphy_modules.a: $(BUILDDIR)/phy_modules.o | $(BUILDDIR)
 clean:
 	@echo $(CYAN)clean up library $(END)
 	-$(RM) libphy_modules.a
-	@echo $(CYAN)clean up objects $(END)
+	@echo $(CYAN)clean up modules objects $(END)
 	-$(RM) $(BUILDDIR)/phy_modules.o
-	@echo $(CYAN)remove object dir $(END)
+	-$(RM) $(BUILDDIR)/phy_modules.o.json
+	@echo $(CYAN)remove modules object dir $(END)
 	-$(RM) -d $(BUILDDIR)

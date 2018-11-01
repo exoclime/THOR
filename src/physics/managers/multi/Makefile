@@ -6,13 +6,15 @@ $(info Modules RT Makefile )
 # set some variables if not set 
 includedir ?= unset
 h5include ?= unset
-flags ?= unset
+cpp_flags ?= unset
+cuda_flags ?= unset
 arch ?= unset
 
 $(info Some variables inherited from parent makefiles)
 $(info includes: $(includedir))
 $(info h5includes: $(h5include))
-$(info flags: $(flags))
+$(info cpp_flags: $(cpp_flags))
+$(info cuda_flags: $(cuda_flags))
 $(info arch: $(arch))
 
 ######################################################################
@@ -65,12 +67,19 @@ INCLUDE_DIRS = -I$(SHARED_MODULES_INCLUDE) -I$(THOR_INCLUDE) -I$(LOCAL_INCLUDE)
 
 $(BUILDDIR)/radiative_transfer.o: radiative_transfer.cu radiative_transfer.h phy_modules.h phy_module_base.h | $(BUILDDIR)
 	@echo $(YELLOW)creating $@ $(END)
-	$(CC) $(arch)  $(flags) $(h5include) $(h5libdir) $(INCLUDE_DIRS) -dc -o $@ $<
-
+	if test $$CDB = "-MJ" ; then \
+		$(CC) -c $(arch)  $(cuda_flags) $(h5include) $(h5libdir) $(INCLUDE_DIRS) $(CDB) $@.json -o $@ $<; \
+	else \
+		$(CC) -c $(arch)  $(cuda_flags) $(h5include) $(h5libdir) $(INCLUDE_DIRS) -o $@ $<; \
+	fi
 
 $(BUILDDIR)/phy_modules.o: phy_modules.cu phy_modules.h phy_module_base.h | $(BUILDDIR)
 	@echo $(YELLOW)creating $@ $(END)
-	$(CC) $(arch)  $(flags) $(h5include) $(h5libdir) $(INCLUDE_DIRS) -dc -o $@ $<
+	if test $$CDB = "-MJ" ; then \
+		$(CC) -c $(arch)  $(cuda_flags) $(h5include) $(INCLUDE_DIRS) $(CDB) $@.json -o $@ $<; \
+	else \
+		$(CC) -c $(arch)  $(cuda_flags) $(h5include) $(INCLUDE_DIRS) -o $@ $<; \
+	fi 
 
 
 libphy_modules.a: $(BUILDDIR)/radiative_transfer.o $(BUILDDIR)/phy_modules.o | $(BUILDDIR)
@@ -84,8 +93,10 @@ libphy_modules.a: $(BUILDDIR)/radiative_transfer.o $(BUILDDIR)/phy_modules.o | $
 clean:
 	@echo $(CYAN)clean up library $(END)
 	-$(RM) libphy_modules.a
-	@echo $(CYAN)clean up objects $(END)
+	@echo $(CYAN)clean up modules objects $(END)
 	-$(RM) $(BUILDDIR)/phy_modules.o
-	-$(RM) $(BUILDDIR)/radiative_transfer.o 
-	@echo $(CYAN)remove object dir $(END)
+	-$(RM) $(BUILDDIR)/phy_modules.o.json
+	-$(RM) $(BUILDDIR)/radiative_transfer.o
+	-$(RM) $(BUILDDIR)/radiative_transfer.o.json
+	@echo $(CYAN)remove modules object dir $(END)
 	-$(RM) -d $(BUILDDIR)

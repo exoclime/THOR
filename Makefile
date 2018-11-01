@@ -42,7 +42,7 @@ endif
 # Builds THOR executable
 SM ?= 35 # Streaming Multiprocessor version
 
-
+COMP ?= nvcc
 
 
 
@@ -70,11 +70,12 @@ obj_tests_reduction_add := reduction_add_test.o reduction_add.o
 CUDA_PATH := /usr/lib/cuda/
 CUDA_LIBS := /usr/lib/x86-64-linux-gnu/
 
-ifeq ($(CC), nvcc)
+ifeq ($(COMP), nvcc)
 	# define specific compiler for nvcc. if if fails on newer installations, get it to use g++-5
+	CC = nvcc
 	ccbin :=
 	# ccbin := -ccbin g++-5
-	CDB = 
+	CDB = none
 	arch := -arch sm_$(SM)
 	dependencies_flags = --generate-dependencies
 
@@ -87,7 +88,7 @@ ifeq ($(CC), nvcc)
 	link_flags = $(ccbin)
 else
 	# need to compile with clang for compilation database
-
+	CC := $(COMP)
 	CDB = -MJ
 	arch := --cuda-gpu-arch=sm_$(SM)
 	dependencies_flags := -MM
