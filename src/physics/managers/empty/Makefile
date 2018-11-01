@@ -6,13 +6,15 @@ $(info Modules Template Makefile )
 # set some variables if not set 
 includedir ?= unset
 h5include ?= unset
-flags ?= unset
+cpp_flags ?= unset
+cuda_flags ?= unset
 arch ?= unset
 
 $(info Some variables inherited from parent makefiles)
 $(info includes: $(includedir))
 $(info h5includes: $(h5include))
-$(info flags: $(flags))
+$(info cpp_flags: $(cpp_flags))
+$(info cuda_flags: $(cuda_flags))
 $(info arch: $(arch))
 
 $(info Sub Makefile variables)
@@ -63,7 +65,12 @@ INCLUDE_DIRS = -I$(SHARED_MODULES_INCLUDE) -I$(THOR_INCLUDE) -I$(LOCAL_INCLUDE)
 
 $(BUILDDIR)/phy_modules.o: phy_modules.cu phy_modules.h phy_module_base.h | $(BUILDDIR)
 	@echo $(YELLOW)creating $@ $(END)
-	$(CC) $(arch)  $(flags) $(h5include) $(h5libdir) $(INCLUDE_DIRS) -dc -o $@ $<
+	# test if we build with compilation database (clang) or not (nvcc)	
+	if test $$CDB = "-MJ" ; then \
+		$(CC) -c $(arch)  $(cuda_flags) $(h5include) $(INCLUDE_DIRS) $(CDB)$@.json -o $@ $<; \
+	else \
+		$(CC) -c $(arch)  $(cuda_flags) $(h5include) $(INCLUDE_DIRS) -o $@ $<; \
+	fi
 
 
 libphy_modules.a: $(BUILDDIR)/phy_modules.o | $(BUILDDIR)
