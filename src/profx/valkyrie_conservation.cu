@@ -73,7 +73,8 @@ __global__ void CalcTotEnergy(double *Etotal_d,
 
 #ifdef GLOBAL_CONSERVATION_ATOMICADD
         atomicAddFunc(GlobalE_d, Etotal_d[id * nv + lev]);
-#endif // GLOBAL_CONSERVATION_ATOMICADD \
+#endif // GLOBAL_CONSERVATION_ATOMICADD
+        
     // printf("E = %e\n",Etotal_d[id*nv+lev]);
     }
 }

@@ -286,36 +286,36 @@ public:
 
     ~ESP();
 
-    void AllocData(bool);
+    void alloc_data(bool);
 
-    bool InitialValues(bool               rest,
-                       const std::string &initial_conditions_filename,
-                       const bool &       continue_sim,
-                       double             timestep_dyn,
-                       double             A,
-                       double             Top_altitude,
-                       double             Cp,
-                       double             P_Ref,
-                       double             Gravit,
-                       double             Omega,
-                       double             Diffc,
-                       double             kb,
-                       double             Tmean,
-                       double             mu,
-                       double             Rd,
-                       bool               sponge,
-                       bool               DeepModel,
-                       int                TPprof,
-                       int                core_benchmark,
-                       int                vulcan,
-                       int &              nsteps,
-                       double &           simulation_start_time,
-                       int &              output_file_idx,
-                       bool               conservation);
+    bool initial_values(bool               rest,
+                        const std::string &initial_conditions_filename,
+                        const bool &       continue_sim,
+                        double             timestep_dyn,
+                        double             A,
+                        double             Top_altitude,
+                        double             Cp,
+                        double             P_Ref,
+                        double             Gravit,
+                        double             Omega,
+                        double             Diffc,
+                        double             kb,
+                        double             Tmean,
+                        double             mu,
+                        double             Rd,
+                        bool               sponge,
+                        bool               DeepModel,
+                        int                TPprof,
+                        int                core_benchmark,
+                        int                vulcan,
+                        int &              nsteps,
+                        double &           simulation_start_time,
+                        int &              output_file_idx,
+                        bool               conservation);
 
-    void InitTimestep(int    nstep,
-                      double simtime,
-                      double timestep_) {
+    void init_timestep(int    nstep,
+                       double simtime,
+                       double timestep_) {
         current_step    = nstep;
         simulation_time = simtime;
         timestep        = timestep_;
@@ -353,7 +353,7 @@ public:
                bool,
                bool);
 
-    void Output(int,
+    void output(int,
                 double,
                 double,
                 double,
@@ -366,10 +366,10 @@ public:
                 bool,
                 int);
 
-    void SetOutputParam(const std::string &sim_id_,
-                        const std::string &output_dir_);
+    void set_output_param(const std::string &sim_id_,
+                          const std::string &output_dir_);
 
-    void Conservation(int    core_benchmark, // Held-Suarez test option
+    void conservation(int    core_benchmark, // Held-Suarez test option
                       int    vulcan,         //
                       double Omega,          // Rotation rate [1/s]
                       double Cp,             // Specific heat capacity [J/kg/K]
@@ -381,9 +381,9 @@ public:
                       double A,              // Planet radius [m]
                       bool   DeepModel);
 
-    void CopyToHost();
-    void CopyConservationToHost();
-    void CopyGlobalToHost();
+    void copy_to_host();
+    void copy_conservation_to_host();
+    void copy_global_to_host();
 
 private:
     // step counter for logging

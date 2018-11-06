@@ -430,7 +430,7 @@ int main(int argc, char** argv) {
         bool   has_last_file         = false;
 
         try {
-            has_last_file = logwriter.CheckOutputLog(last_file_number, last_iteration_number, last_file);
+            has_last_file = logwriter.check_output_log(last_file_number, last_iteration_number, last_file);
         } catch (const std::exception& e) {
             printf("[%s:%d] error while checking output log: %s.\n", __FILE__, __LINE__, e.what());
             exit(-1);
@@ -453,9 +453,9 @@ int main(int argc, char** argv) {
                 // reload the last file we found as initial conditions
                 initial_conditions = o.to_string();
 
-                logwriter.OpenOutputLogForWrite(true /*open in append mode */);
-                logwriter.PrepareConservationFile(true);
-                logwriter.PrepareDiagnosticsFile(true);
+                logwriter.open_output_log_for_write(true /*open in append mode */);
+                logwriter.prepare_conservation_file(true);
+                logwriter.prepare_diagnostics_file(true);
             }
             else {
                 printf("Did not find last saved file that should exist.\n");
@@ -465,16 +465,16 @@ int main(int argc, char** argv) {
         else {
             printf("No batch file found, initialise simulation.\n");
             // we don't have an output file, start from scratch, reinitialising outputs
-            logwriter.OpenOutputLogForWrite(false /*open in non append mode */);
-            logwriter.PrepareConservationFile(false);
-            logwriter.PrepareDiagnosticsFile(false);
+            logwriter.open_output_log_for_write(false /*open in non append mode */);
+            logwriter.prepare_conservation_file(false);
+            logwriter.prepare_diagnostics_file(false);
         }
     }
     else {
         printf("Opening result output file.\n");
-        logwriter.OpenOutputLogForWrite(continue_sim /*open in append mode */);
-        logwriter.PrepareConservationFile(continue_sim);
-        logwriter.PrepareDiagnosticsFile(continue_sim);
+        logwriter.open_output_log_for_write(continue_sim /*open in append mode */);
+        logwriter.prepare_conservation_file(continue_sim);
+        logwriter.prepare_diagnostics_file(continue_sim);
     }
 
 
@@ -535,7 +535,7 @@ int main(int argc, char** argv) {
 
 
     // esp output setup
-    X.SetOutputParam(Planet.simulation_ID, output_path);
+    X.set_output_param(Planet.simulation_ID, output_path);
 
     printf(" Setting the initial conditions.\n\n");
 
@@ -545,45 +545,45 @@ int main(int argc, char** argv) {
     int output_file_idx = 0;
     int step_idx        = 0;
 
-    bool load_initial = X.InitialValues(rest,                  // Option to
-                                                               // start the
-                                                               // atmosphere
-                                                               // from rest
-                                        initial_conditions,    // initial conditions if not
-                                                               // started from
-                                                               // rest
-                                        continue_sim,          // if we
-                                                               // specify
-                                                               // initial
-                                                               // conditions,
-                                                               // continue or
-                                                               // start at 0?
-                                        timestep,              // Time-step [s]
-                                        Planet.A,              // Planet
-                                                               // radius [m]
-                                        Planet.Top_altitude,   // Planet
-                                                               // top altitude
-                                        Planet.Cp,             // Specific heat capacity [J /(kg K)]
-                                        Planet.P_Ref,          // Reference pressure [Pa]
-                                        Planet.Gravit,         // Gravity [m/s^2]
-                                        Planet.Omega,          // Rotation rate [1/s]
-                                        Planet.Diffc,          // Strength of diffusion
-                                        kb_constant,           // Boltzmann constant [J/kg]
-                                        Planet.Tmean,          // Isothermal atmosphere (at temperature Tmean)
-                                        mu_constant,           // Atomic mass unit [kg]
-                                        Planet.Rd,             // Gas constant [J/kg/K]
-                                        SpongeLayer,           // Enable sponge layer
-                                        DeepModel,             // Use deep model corrections
-                                        TPprof,                // isothermal = 0, guillot = 1
-                                        core_benchmark,        // argh
-                                        vulcan,                //
-                                        step_idx,              // current step index
-                                        simulation_start_time, // output:
-                                                               // simulation start time
-                                        output_file_idx,       // output file
-                                                               // read + 1, 0
-                                                               // if nothing read
-                                        conservation);
+    bool load_initial = X.initial_values(rest,                  // Option to
+                                                                // start the
+                                                                // atmosphere
+                                                                // from rest
+                                         initial_conditions,    // initial conditions if not
+                                                                // started from
+                                                                // rest
+                                         continue_sim,          // if we
+                                                                // specify
+                                                                // initial
+                                                                // conditions,
+                                                                // continue or
+                                                                // start at 0?
+                                         timestep,              // Time-step [s]
+                                         Planet.A,              // Planet
+                                                                // radius [m]
+                                         Planet.Top_altitude,   // Planet
+                                                                // top altitude
+                                         Planet.Cp,             // Specific heat capacity [J /(kg K)]
+                                         Planet.P_Ref,          // Reference pressure [Pa]
+                                         Planet.Gravit,         // Gravity [m/s^2]
+                                         Planet.Omega,          // Rotation rate [1/s]
+                                         Planet.Diffc,          // Strength of diffusion
+                                         kb_constant,           // Boltzmann constant [J/kg]
+                                         Planet.Tmean,          // Isothermal atmosphere (at temperature Tmean)
+                                         mu_constant,           // Atomic mass unit [kg]
+                                         Planet.Rd,             // Gas constant [J/kg/K]
+                                         SpongeLayer,           // Enable sponge layer
+                                         DeepModel,             // Use deep model corrections
+                                         TPprof,                // isothermal = 0, guillot = 1
+                                         core_benchmark,        // argh
+                                         vulcan,                //
+                                         step_idx,              // current step index
+                                         simulation_start_time, // output:
+                                                                // simulation start time
+                                         output_file_idx,       // output file
+                                                                // read + 1, 0
+                                                                // if nothing read
+                                         conservation);
 
     if (core_benchmark == 0) {
         phy_modules_init_data(X, Planet);
@@ -761,11 +761,11 @@ int main(int argc, char** argv) {
     //  Writes initial conditions
     double simulation_time = simulation_start_time;
     if (!continue_sim) {
-        X.CopyToHost();
-        X.InitTimestep(0, simulation_time, timestep);
+        X.copy_to_host();
+        X.init_timestep(0, simulation_time, timestep);
 
         if (conservation == true) {
-            X.Conservation(core_benchmark, // Held-Suarez test option
+            X.conservation(core_benchmark, // Held-Suarez test option
                            vulcan,         //
                            Planet.Omega,   // Rotation rate [1/s]
                            Planet.Cp,      // Specific heat capacity [J/kg/K]
@@ -777,16 +777,16 @@ int main(int argc, char** argv) {
                            Planet.A,       // Planet radius [m]
                            DeepModel);
 
-            logwriter.OutputConservation(0,
-                                         simulation_time,
-                                         X.GlobalE_h,
-                                         X.GlobalMass_h,
-                                         X.GlobalAMx_h,
-                                         X.GlobalAMy_h,
-                                         X.GlobalAMz_h);
+            logwriter.output_conservation(0,
+                                          simulation_time,
+                                          X.GlobalE_h,
+                                          X.GlobalMass_h,
+                                          X.GlobalAMx_h,
+                                          X.GlobalAMy_h,
+                                          X.GlobalAMz_h);
         }
 
-        X.Output(0,                   // file index
+        X.output(0,                   // file index
                  Planet.Cp,           // Specific heat capacity [J/(Kg K)]
                  Planet.Rd,           // Gas constant [J/(Kg K)]
                  Planet.Omega,        // Rotation rate [s-1]
@@ -821,9 +821,9 @@ int main(int argc, char** argv) {
         // compute simulation time
         simulation_time = simulation_start_time + (nstep - step_idx + 1) * timestep;
         // set simulation time and step number for simulation engine and output
-        X.InitTimestep(nstep,           // Time-step [s]
-                       simulation_time, // Simulation time [s]
-                       timestep);       // Large time step [s]
+        X.init_timestep(nstep,           // Time-step [s]
+                        simulation_time, // Simulation time [s]
+                        timestep);       // Large time step [s]
 
         if (!gcm_off) {
             //
@@ -866,7 +866,7 @@ int main(int argc, char** argv) {
         bool file_output = false;
 
         if (conservation == true) {
-            X.Conservation(core_benchmark, // Held-Suarez test option
+            X.conservation(core_benchmark, // Held-Suarez test option
                            vulcan,         //
                            Planet.Omega,   // Rotation rate [1/s]
                            Planet.Cp,      // Specific heat capacity [J/kg/K]
@@ -877,21 +877,21 @@ int main(int argc, char** argv) {
                            Planet.Gravit,  // Gravity [m/s^2]
                            Planet.A,       // Planet radius [m]
                            DeepModel);
-            logwriter.OutputConservation(nstep,
-                                         simulation_time,
-                                         X.GlobalE_h,
-                                         X.GlobalMass_h,
-                                         X.GlobalAMx_h,
-                                         X.GlobalAMy_h,
-                                         X.GlobalAMz_h);
+            logwriter.output_conservation(nstep,
+                                          simulation_time,
+                                          X.GlobalE_h,
+                                          X.GlobalMass_h,
+                                          X.GlobalAMx_h,
+                                          X.GlobalAMy_h,
+                                          X.GlobalAMz_h);
         }
 
         //
         //      Prints output every nout steps
         if (nstep % n_out == 0
             || caught_signal != ESIG_NOSIG) {
-            X.CopyToHost();
-            X.Output(output_file_idx,
+            X.copy_to_host();
+            X.output(output_file_idx,
                      Planet.Cp,           // Specific heat capacity [J/(Kg K)]
                      Planet.Rd,           // Gas constant [J/(Kg K)]
                      Planet.Omega,        // Rotation rate [s-1]
@@ -943,14 +943,14 @@ int main(int argc, char** argv) {
         get_cuda_mem_usage(total_bytes, free_bytes);
 
 
-        logwriter.OutputDiagnostics(nstep,
-                                    simulation_time,
-                                    total_bytes,
-                                    free_bytes,
-                                    elapsed_time,
-                                    time_left,
-                                    mean_delta_per_step,
-                                    end_time);
+        logwriter.output_diagnostics(nstep,
+                                     simulation_time,
+                                     total_bytes,
+                                     free_bytes,
+                                     elapsed_time,
+                                     time_left,
+                                     mean_delta_per_step,
+                                     end_time);
 
         if (caught_signal != ESIG_NOSIG) {
             //exit loop and application after save on SIGTERM or SIGINT

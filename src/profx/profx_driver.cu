@@ -333,7 +333,7 @@ __host__ void ESP::ProfX(int    core_benchmark, // Held-Suarez test option
 }
 
 // TODO: get constants out of arguments
-void ESP::Conservation(int    core_benchmark, // Held-Suarez test option
+void ESP::conservation(int    core_benchmark, // Held-Suarez test option
                        int    vulcan,         //
                        double Omega,          // Rotation rate [1/s]
                        double Cp,             // Specific heat capacity [J/kg/K]
@@ -404,7 +404,7 @@ void ESP::Conservation(int    core_benchmark, // Held-Suarez test option
                             DeepModel);
 #ifdef GLOBAL_CONSERVATION_ATOMICADD
     // copy global conservation data to host for output
-    CopyGlobalToHost();
+    copy_global_to_host();
 #endif // GLOBAL_CONSERVATION_ATOMICADD
 
 #ifdef GLOBAL_CONSERVATION_REDUCTIONADD
@@ -423,7 +423,7 @@ void ESP::Conservation(int    core_benchmark, // Held-Suarez test option
 #ifdef GLOBAL_CONSERVATION_CPUADD
 
     // copy conservation data to host
-    CopyConservationToHost();
+    copy_conservation_to_host();
 
     // compute globals
     GlobalE_h    = cpu_sum<1024>(Etotal_h, point_num * nv);

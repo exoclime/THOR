@@ -61,7 +61,7 @@ log_writer::log_writer(const std::string& sim_id_,
 // returns true if exists and found names of output files, false if not
 // if exists, returns name of last written output file, last file number, and iteration number
 // throws an exception if it couldn't parse the file or open the file
-bool log_writer::CheckOutputLog(int& file_number, int& iteration_number, std::string& last_file) {
+bool log_writer::check_output_log(int& file_number, int& iteration_number, std::string& last_file) {
     path o(output_dir);
 
     o /= ("esp_write_log_" + simulation_ID + ".txt");
@@ -124,7 +124,7 @@ bool log_writer::CheckOutputLog(int& file_number, int& iteration_number, std::st
 }
 
 
-void log_writer::OpenOutputLogForWrite(bool append) {
+void log_writer::open_output_log_for_write(bool append) {
     path o(output_dir);
 
 
@@ -145,7 +145,7 @@ void log_writer::OpenOutputLogForWrite(bool append) {
     }
 }
 
-void log_writer::WriteOutputLog(int step_number, int file_number, string filename) {
+void log_writer::write_output_log(int step_number, int file_number, string filename) {
     fileoutput_output_file << step_number << "\t"
                            << file_number << "\t"
                            << filename << std::endl;
@@ -155,7 +155,7 @@ void log_writer::WriteOutputLog(int step_number, int file_number, string filenam
 
 // *************************************************************************************************
 // * conservation file
-int log_writer::PrepareConservationFile(bool append) {
+int log_writer::prepare_conservation_file(bool append) {
     path o(output_dir);
 
     o /= ("esp_global_" + simulation_ID + ".txt");
@@ -193,13 +193,13 @@ int log_writer::PrepareConservationFile(bool append) {
 };
 
 
-void log_writer::OutputConservation(int    current_step,
-                                    double simulation_time,
-                                    double GlobalE_h,
-                                    double GlobalMass_h,
-                                    double GlobalAMx_h,
-                                    double GlobalAMy_h,
-                                    double GlobalAMz_h) {
+void log_writer::output_conservation(int    current_step,
+                                     double simulation_time,
+                                     double GlobalE_h,
+                                     double GlobalMass_h,
+                                     double GlobalAMx_h,
+                                     double GlobalAMy_h,
+                                     double GlobalAMz_h) {
     //printf("output conservation\n");
 
     // output global conservation values
@@ -218,7 +218,7 @@ void log_writer::OutputConservation(int    current_step,
 
 // *************************************************************************************************
 // * diagnostics file
-int log_writer::PrepareDiagnosticsFile(bool append) {
+int log_writer::prepare_diagnostics_file(bool append) {
     path o(output_dir);
 
     o /= ("esp_diagnostics_" + simulation_ID + ".txt");
@@ -258,14 +258,14 @@ int log_writer::PrepareDiagnosticsFile(bool append) {
 };
 
 
-void log_writer::OutputDiagnostics(int         current_step,
-                                   double      simulation_time,
-                                   size_t      total_bytes,
-                                   size_t      free_bytes,
-                                   double      elapsed_time,
-                                   double      time_left,
-                                   double      mean_delta_per_step,
-                                   std::time_t end_time) {
+void log_writer::output_diagnostics(int         current_step,
+                                    double      simulation_time,
+                                    size_t      total_bytes,
+                                    size_t      free_bytes,
+                                    double      elapsed_time,
+                                    double      time_left,
+                                    double      mean_delta_per_step,
+                                    std::time_t end_time) {
     //printf("output conservation\n");
 
     // output global conservation values

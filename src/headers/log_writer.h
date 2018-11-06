@@ -59,30 +59,30 @@ public:
 
 
     // control file log
-    bool CheckOutputLog(int& file_number, int& iteration_number, std::string& last_file);
-    void OpenOutputLogForWrite(bool append);
-    void WriteOutputLog(int step_number, int file_number, std::string filename);
+    bool check_output_log(int& file_number, int& iteration_number, std::string& last_file);
+    void open_output_log_for_write(bool append);
+    void write_output_log(int step_number, int file_number, std::string filename);
 
     // conservation file log
-    void OutputConservation(int    current_step,
-                            double simulation_time,
-                            double GlobalE_h,
-                            double GlobalMass_h,
-                            double GlobalAMx_h,
-                            double GlobalAMy_h,
-                            double GlobalAMz_h);
-    int  PrepareConservationFile(bool append);
+    void output_conservation(int    current_step,
+                             double simulation_time,
+                             double GlobalE_h,
+                             double GlobalMass_h,
+                             double GlobalAMx_h,
+                             double GlobalAMy_h,
+                             double GlobalAMz_h);
+    int  prepare_conservation_file(bool append);
 
 
-    int  PrepareDiagnosticsFile(bool append);
-    void OutputDiagnostics(int         current_step,
-                           double      simulation_time,
-                           size_t      total_bytes,
-                           size_t      free_bytes,
-                           double      elapsed_time,
-                           double      time_left,
-                           double      mean_delta_per_step,
-                           std::time_t end_time);
+    int  prepare_diagnostics_file(bool append);
+    void output_diagnostics(int         current_step,
+                            double      simulation_time,
+                            size_t      total_bytes,
+                            size_t      free_bytes,
+                            double      elapsed_time,
+                            double      time_left,
+                            double      mean_delta_per_step,
+                            std::time_t end_time);
 
 
 private:

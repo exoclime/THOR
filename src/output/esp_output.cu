@@ -59,7 +59,7 @@
 #include <fstream>
 #include <stdexcept>
 
-__host__ void ESP::CopyConservationToHost() {
+__host__ void ESP::copy_conservation_to_host() {
     cudaMemcpy(Etotal_h, Etotal_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
     cudaMemcpy(Mass_h, Mass_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
     cudaMemcpy(AngMomx_h, AngMomx_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
@@ -67,7 +67,7 @@ __host__ void ESP::CopyConservationToHost() {
     cudaMemcpy(AngMomz_h, AngMomz_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
 }
 
-__host__ void ESP::CopyGlobalToHost() {
+__host__ void ESP::copy_global_to_host() {
     // Transfer global conservation values to host
     cudaMemcpy(&GlobalE_h, GlobalE_d, sizeof(double), cudaMemcpyDeviceToHost);
     cudaMemcpy(&GlobalMass_h, GlobalMass_d, sizeof(double), cudaMemcpyDeviceToHost);
@@ -76,7 +76,7 @@ __host__ void ESP::CopyGlobalToHost() {
     cudaMemcpy(&GlobalAMz_h, GlobalAMz_d, sizeof(double), cudaMemcpyDeviceToHost);
 }
 
-__host__ void ESP::CopyToHost() {
+__host__ void ESP::copy_to_host() {
     //
     //  Description: Transfer diagnostics from the device to the host.
     //
@@ -87,7 +87,7 @@ __host__ void ESP::CopyToHost() {
     cudaMemcpy(tracer_h, tracer_d, point_num * nv * ntr * sizeof(double), cudaMemcpyDeviceToHost);
 }
 
-__host__ void ESP::Output(int    fidx,         // Index of output file
+__host__ void ESP::output(int    fidx,         // Index of output file
                           double Cp,           // Specific heat capacities [J/(Kg K)]
                           double Rd,           // Gas constant [J/(Kg K)]
                           double Omega,        // Rotation rate [s-1]
@@ -327,12 +327,12 @@ __host__ void ESP::Output(int    fidx,         // Index of output file
 
     sprintf(buf, "esp_output_%s_%d.h5", simulation_ID.c_str(), fidx);
     // Write to output f
-    logwriter.WriteOutputLog(current_step, fidx, string(buf));
+    logwriter.write_output_log(current_step, fidx, string(buf));
 }
 
 // Store path to output and prepare output files
-void ESP::SetOutputParam(const std::string& sim_id_,
-                         const std::string& output_dir_) {
+void ESP::set_output_param(const std::string& sim_id_,
+                           const std::string& output_dir_) {
     simulation_ID = sim_id_;
     output_dir    = output_dir_;
 }

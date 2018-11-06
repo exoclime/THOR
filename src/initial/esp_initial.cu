@@ -125,10 +125,10 @@ __host__ ESP::ESP(int *       point_local_,
     t_shrink  = t_shrink_;
     //
     //  Allocate Data
-    AllocData(conservation);
+    alloc_data(conservation);
 }
 
-__host__ void ESP::AllocData(bool conservation) {
+__host__ void ESP::alloc_data(bool conservation) {
 
 
     //
@@ -300,30 +300,30 @@ __host__ void ESP::AllocData(bool conservation) {
     phy_modules_init_mem(*this);
 }
 
-__host__ bool ESP::InitialValues(bool               rest,
-                                 const std::string &initial_conditions_filename,
-                                 const bool &       continue_sim,
-                                 double             timestep_dyn,
-                                 double             A,
-                                 double             Top_altitude,
-                                 double             Cp,
-                                 double             P_Ref,
-                                 double             Gravit,
-                                 double             Omega,
-                                 double             Diffc,
-                                 double             kb,
-                                 double             Tmean,
-                                 double             mu,
-                                 double             Rd,
-                                 bool               sponge,
-                                 bool               DeepModel,
-                                 int                TPprof,
-                                 int                core_benchmark,
-                                 int                vulcan,
-                                 int &              nstep,
-                                 double &           simulation_start_time,
-                                 int &              output_file_idx,
-                                 bool               conservation) {
+__host__ bool ESP::initial_values(bool               rest,
+                                  const std::string &initial_conditions_filename,
+                                  const bool &       continue_sim,
+                                  double             timestep_dyn,
+                                  double             A,
+                                  double             Top_altitude,
+                                  double             Cp,
+                                  double             P_Ref,
+                                  double             Gravit,
+                                  double             Omega,
+                                  double             Diffc,
+                                  double             kb,
+                                  double             Tmean,
+                                  double             mu,
+                                  double             Rd,
+                                  bool               sponge,
+                                  bool               DeepModel,
+                                  int                TPprof,
+                                  int                core_benchmark,
+                                  int                vulcan,
+                                  int &              nstep,
+                                  double &           simulation_start_time,
+                                  int &              output_file_idx,
+                                  bool               conservation) {
 
     output_file_idx = 0;
     nstep           = 0;
@@ -548,9 +548,10 @@ __host__ bool ESP::InitialValues(bool               rest,
     for (int i = 0; i < point_num; i++)
         for (int lev = 0; lev < nv; lev++)
             temperature_h[i * nv + lev] = pressure_h[i * nv + lev] / (Rd * Rho_h[i * nv + lev]);
-#endif // BENCHMARKING \
-       //  Diffusion   \
-       //  Horizontal
+#endif // BENCHMARKING
+
+    //  Diffusion
+    //  Horizontal
     double *Kdhz_h, *Kdh4_h;
     Kdhz_h = new double[nv];
     Kdh4_h = new double[nv];

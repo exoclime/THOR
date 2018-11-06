@@ -70,12 +70,7 @@
 
 // Initial conditions
 #define rest_default true                                 // Starting from rest
-#define initial_conditions_default "ifile/esp_initial.h5" // start      \
-                                                          // from       \
-                                                          // this       \
-                                                          // initial    \
-                                                          // conditions \
-                                                          // file
+#define initial_conditions_default "ifile/esp_initial.h5" // start from this initial conditions file
 
 // Benchmark test
 #define core_benchmark_default 1 // Held-Suarez test for Earth == 1
