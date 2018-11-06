@@ -300,13 +300,12 @@ public:
                        double Diffc             ,
                        double kb                ,
                        double Tmean             ,
-                       double Mmol              ,
                        double mu                ,
                        double Rd                ,
                        bool sponge              ,
                        bool DeepModel           ,
                        int TPprof               ,
-                       int hstest               ,
+                       int core_benchmark       ,
                        int vulcan               ,
                        int & nsteps             ,
                        double & simulation_start_time,
@@ -333,7 +332,6 @@ public:
               double,
               double,
               double,
-              double,
               int   ,
               bool  ,
               bool  );
@@ -341,7 +339,6 @@ public:
     void ProfX(int   ,
                int   ,
                int   ,
-               double,
                double,
                double,
                double,
@@ -364,27 +361,26 @@ public:
                 double,
                 double,
                 double,
-                double,
                 bool  ,
                 int   ,
-                bool  );
+                bool  ,
+                int   );
 
     void SetOutputParam(const std::string & sim_id_,
                         const std::string & output_dir_ );
 
-    void Conservation(int    hstest      , // Held-Suarez test option
+    void Conservation(int  core_benchmark, // Held-Suarez test option
                       int    vulcan      , //
                       double Omega       , // Rotation rate [1/s]
                       double Cp          , // Specific heat capacity [J/kg/K]
                       double Rd          , // Gas constant [J/kg/K]
-                      double Mmol        , // Mean molecular mass of dry air [kg]
                       double mu          , // Atomic mass unit [kg]
                       double kb          , // Boltzmann constant [J/K]
                       double P_Ref       , // Reference pressure [Pa]
                       double Gravit      , // Gravity [m/s^2]
                       double A           , // Planet radius [m]
                       bool   DeepModel   );
-    
+
     void CopyToHost();
     void CopyConservationToHost();
     void CopyGlobalToHost();
@@ -398,7 +394,7 @@ private:
     // output variables
     std::string simulation_ID; // name of output planet
     std::string output_dir;
-    
+
 
     log_writer & logwriter;
 };

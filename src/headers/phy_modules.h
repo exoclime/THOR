@@ -9,7 +9,7 @@
 #include "storage.h"
 
 bool phy_modules_generate_config(config_file & config_reader);
-bool phy_modules_init_data();
+bool phy_modules_init_data(const ESP & esp, const XPlanet & planet);
 
 
 bool phy_modules_init_mem(const ESP & esp);
@@ -18,12 +18,11 @@ bool phy_modules_free_mem();
 // TODO: what do we need here? esp,planet, grid???
 bool phy_modules_mainloop(ESP & esp,
                           int    nstep       , // Step number
-                          int    hstest      , // Held-Suarez test option
+                          int    core_benchmark, // Held-Suarez test option
                           double time_step   , // Time-step [s]
                           double Omega       , // Rotation rate [1/s]
                           double Cp          , // Specific heat capacity [J/kg/K]
                           double Rd          , // Gas constant [J/kg/K]
-                          double Mmol        , // Mean molecular mass of dry air [kg]
                           double mu          , // Atomic mass unit [kg]
                           double kb          , // Boltzmann constant [J/K]
                           double P_Ref       , // Reference pressure [Pa]
@@ -32,6 +31,7 @@ bool phy_modules_mainloop(ESP & esp,
     );
 
 
-bool phy_modules_store(storage & s);
+bool phy_modules_store(const ESP & esp,
+                       storage & s);
 
 bool phy_modules_store_init(storage & s);

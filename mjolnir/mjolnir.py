@@ -49,7 +49,7 @@ parser.add_argument("-slay","--split_layer",nargs=1,default=['no_split'],help='S
 args = parser.parse_args()
 pview = args.pview
 
-valid = ['uver','wver','wprof','Tver','Tulev','PTver','ulev','PVver','PVlev','vring','TP','RVlev','cons','stream','pause']
+valid = ['uver','wver','wprof','Tver','Tulev','PTver','ulev','PVver','PVlev','TP','RVlev','cons','stream','pause','tracer']
 if 'all' in pview:
     pview = valid
 else:
@@ -91,12 +91,12 @@ output = outall.output
 #########
 # Sigma values for the plotting
 if (args.pressure_min[0]=='default'):
-    args.pressure_min[0] = np.max(output.Pressure[:,grid.nv-1,:])
+    args.pressure_min[0] = np.max(output.Pressure[:,grid.nv-1,:])/100
 
 if np.max(input.P_Ref)/np.float(args.pressure_min[0]) > 1000:
-    sigmaref = np.logspace(np.log10(input.P_Ref),np.log10(np.float(args.pressure_min[0])),20)/input.P_Ref
+    sigmaref = np.logspace(np.log10(input.P_Ref),np.log10(np.float(args.pressure_min[0])*100),20)/input.P_Ref
 else:
-    sigmaref = np.linspace(input.P_Ref,np.float(args.pressure_min[0]),20)/input.P_Ref
+    sigmaref = np.linspace(input.P_Ref,np.float(args.pressure_min[0])*100,20)/input.P_Ref
 
 if 'pause' in pview:
     import pdb; pdb.set_trace()
@@ -149,10 +149,18 @@ if 'cons' in pview:
 
 if 'stream' in pview:
     if np.max(input.P_Ref)/np.float(args.pressure_min[0]) > 1000:
-        sigmaref = np.logspace(np.log10(input.P_Ref),np.log10(np.float(args.pressure_min[0])),grid.nv)/input.P_Ref
+        sigmaref = np.logspace(np.log10(input.P_Ref),np.log10(np.float(args.pressure_min[0])*100),grid.nv)/input.P_Ref
     else:
-        sigmaref = np.linspace(input.P_Ref,np.float(args.pressure_min[0]),grid.nv)/input.P_Ref
+        sigmaref = np.linspace(input.P_Ref,np.float(args.pressure_min[0])*100,grid.nv)/input.P_Ref
     ham.streamf(input,grid,output,sigmaref)
+
+if 'tracer' in pview:
+    PR_LV = np.float(args.pressure_lev[0])*100
+    ham.tracer_u_lev(input,grid,output,PR_LV,'ch4')
+    ham.tracer_u_lev(input,grid,output,PR_LV,'co')
+    ham.tracer_u_lev(input,grid,output,PR_LV,'h2o')
+    ham.tracer_u_lev(input,grid,output,PR_LV,'co2')
+    ham.tracer_u_lev(input,grid,output,PR_LV,'nh3')
 
 last = time.time()
 print(last-first)

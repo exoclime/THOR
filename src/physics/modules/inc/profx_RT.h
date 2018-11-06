@@ -23,9 +23,114 @@
 // 1.0
 //
 ////////////////////////////////////////////////////////////////////////
+__host__ double sign(double val){
+  if (val < 0.0) return -1.0;
+  else return 1.0;
+}
 
-__device__ void radcsw(double *phtemp         ,
+__host__ double solve_kepler(double mean_anomaly,
+                             double ecc         ) {
+
+// Solve Kepler's equation (see Murray & Dermott 1999)
+// Get eccentric anomaly from mean anomaly and eccentricity
+
+  double ecc_anomaly, fi, fi_1, fi_2, fi_3, di_1, di_2, di_3;
+
+  ecc_anomaly = mean_anomaly + sign(sin(mean_anomaly))*0.85*ecc;
+  di_3 = 1.0;
+
+  while (di_3 > 1e-15) {
+    fi = ecc_anomaly - ecc*sin(ecc_anomaly) - mean_anomaly;
+    fi_1 = 1.0 - ecc*cos(ecc_anomaly);
+    fi_2 = ecc*sin(ecc_anomaly);
+    fi_3 = ecc*cos(ecc_anomaly);
+    di_1 = -fi / fi_1;
+    di_2 = -fi / (fi_1 + 0.5*di_1*fi_2);
+    di_3 = -fi / (fi_1 + 0.5*di_2*fi_2 + 1./6.*di_2*di_2*fi_3);
+    ecc_anomaly = ecc_anomaly + di_3;
+  }
+  return ecc_anomaly;
+}
+
+__host__ double calc_r_orb(double ecc_anomaly,
+                           double ecc        ) {
+
+// Calc relative distance between planet and star (units of semi-major axis)
+
+  double r = 1.0 - ecc*cos(ecc_anomaly);
+  return r;
+}
+
+__host__ double ecc2true_anomaly(double ecc_anomaly,
+                                 double ecc        ){
+
+// Convert from eccentric to true anomaly
+
+  double tanf2, true_anomaly;
+  tanf2 = sqrt((1.0+ecc)/(1.0-ecc))*tan(ecc_anomaly/2.0);
+  true_anomaly = 2.0*atan(tanf2);
+  if (true_anomaly<0.0) true_anomaly += 2*M_PI;
+  return true_anomaly;
+}
+
+__host__ double true2ecc_anomaly(double true_anomaly,
+                                 double ecc         ){
+
+// Convert from true to eccentric anomaly
+
+  double cosE, ecc_anomaly;
+  while (true_anomaly<0.0) true_anomaly += 2*M_PI;
+  while (true_anomaly>=2*M_PI) true_anomaly -= 2*M_PI;
+  cosE = (cos(true_anomaly) + ecc) / (1.0 + ecc*cos(true_anomaly));
+  if (true_anomaly < M_PI){
+    ecc_anomaly = acos(cosE);
+  } else {
+    ecc_anomaly = 2*M_PI - acos(cosE);
+  }
+  return ecc_anomaly;
+}
+
+__device__ double calc_zenith(double *lonlat_d,  //latitude/longitude grid
+                              const double alpha    ,  //current RA of star (relative to zero long on planet)
+                              const double alpha_i  ,
+                              const double sin_decl ,  //declination of star
+                              const double cos_decl ,
+                              const bool sync_rot ,
+                              const double ecc      ,
+                              const double obliquity,
+                              const int    id       ){
+
+// Calculate the insolation (scaling) at a point on the surface
+
+  double coszrs;
+
+  if (sync_rot) {
+    if (ecc < 1e-10) {
+      if (obliquity < 1e-10) {  //standard sync, circular, zero obl case
+        coszrs = cos(lonlat_d[id*2+1])*cos(lonlat_d[id*2]-alpha_i);
+      } else {   //sync, circular, but some obliquity
+        coszrs = ( sin(lonlat_d[id*2+1])*sin_decl + \
+                      cos(lonlat_d[id*2+1])*cos_decl*cos(lonlat_d[id*2]-alpha_i) );
+      }
+    } else {  //in below cases, watch out for numerical drift of mean(alpha)
+      if (obliquity < 1e-10) {  // sync, zero obliquity, but ecc orbit
+        coszrs = cos(lonlat_d[id*2+1])*cos(lonlat_d[id*2]-alpha);
+      } else {  // sync, non-zero obliquity, ecc orbit (full calculation applies)
+        coszrs = ( sin(lonlat_d[id*2+1])*sin_decl + \
+                      cos(lonlat_d[id*2+1])*cos_decl*cos(lonlat_d[id*2]-alpha) );
+      }
+    }
+  } else {
+    coszrs = ( sin(lonlat_d[id*2+1])*sin_decl + \
+                      cos(lonlat_d[id*2+1])*cos_decl*cos(lonlat_d[id*2]-alpha) );
+  }
+  return coszrs;     //zenith angle
+}
+
+
+__device__ void radcsw(double *phtemp     ,
                        double  coszrs     ,
+                       double  r_orb      ,
                        double *dtemp      ,
                        double *tau_d      ,
                        double *fnet_up_d  ,
@@ -37,37 +142,28 @@ __device__ void radcsw(double *phtemp         ,
                        double  Cp         ,
                        double  gravit     ,
                        int     id         ,
-                       int     nv         ){
+                       int     nv         ,
+                       double *insol_d    ){
 
 //  Calculate upward, downward, and net flux.
 //  Downward Directed Radiation
 
     double gocp;
     double tau = (tausw/ps0)*(phtemp[id*(nv+1)+nv]);
-    double flux_top = incflx*coszrs*(1.0-alb);
+    insol_d[id] = incflx*pow(r_orb,-2)*coszrs;
+    double flux_top = insol_d[id]*(1.0-alb);
 
 	// Extra layer to avoid over heating at the top.
     fnet_dn_d[id*(nv+1) + nv] = flux_top*exp(-(1.0/coszrs)*tau);
-    // if (isnan(fnet_dn_d[id*(nv+1)+nv]) || isinf(fnet_dn_d[id*(nv+1)+nv])) {
-    //   printf("%d, %d\n",id,nv);
-    // }
 
     // Normal integration
 	for(int lev = nv;lev >= 1;lev--) fnet_dn_d[id*(nv+1) + lev-1] = fnet_dn_d[id*(nv+1) + lev]*exp(-(1.0/coszrs)*tau_d[id*nv*2 + (lev-1)*2]);
 	for(int lev = 0;lev <= nv;lev++) fnet_up_d[id*(nv+1) + lev]   = 0.0;
 
 	// Update temperature rates.
-  // if (id==0) printf("shortwave down = \n");
   for(int lev = 0;lev < nv;lev++){
         gocp  = gravit/Cp;
         dtemp[id*nv+lev]     = gocp * ((fnet_up_d[id*(nv+1) + lev] - fnet_dn_d[id*(nv+1) + lev]) - (fnet_up_d[id*(nv+1) + lev+1] - fnet_dn_d[id*(nv+1) + lev+1])) / (phtemp[id*(nv+1)+lev] - phtemp[id*(nv+1)+lev +1]);
-
-        // if (isnan(dtemp[id*nv+lev])) {
-        //   printf("%d, %d\n",id,lev);
-        // }
-        // if (id == 0){
-        //   printf("%f, ",fnet_dn_d[id*(nv+1)+lev-1]);
-        // }
     }
 }
 
@@ -176,20 +272,10 @@ __device__ void radclw(double *phtemp         ,
         fnet_up_d[id*(nv+1) + lev] = eu + fnet_up_d[id*(nv+1) + lev-1] * exp(-(1./diff_fac)*tau_d[id*nv*2 + 2*(lev-1) + 1]);
     }
 
-    // if(id==0) printf("\nlongwave down = \n");
     for(int lev = 0;lev < nv;lev++) {
         dtemp[id*nv+lev] = dtemp[id*nv+lev] + gocp * ((fnet_up_d[id*(nv+1) + lev] - fnet_dn_d[id*(nv+1) + lev]) - (fnet_up_d[id*(nv+1) + lev+1] - fnet_dn_d[id*(nv+1) + lev+1])) /
                                     (phtemp[id*(nv+1)+lev] - phtemp[id*(nv+1)+lev + 1]);
-
-        // if (isnan(dtemp[id*nv+lev])) {
-        //   printf("%d, %d\n",id,lev);
-        // }
     }
-    // if(id==0) printf("\nlongwave up = \n");
-    // for(int lev = 0;lev < nv;lev++) {
-    //     // if(id==0) printf("%f, ",fnet_up_d[id*(nv+1)+lev]);
-    // }
-
 }
 
 
@@ -237,7 +323,16 @@ __global__ void rtm_dual_band (double *pressure_d   ,
                                int num              ,
                                int nv               ,
                                int nvi              ,
-                               double A             ){
+                               double A             ,
+                               double r_orb         ,
+                               double alpha    ,  //current RA of star (relative to zero long on planet)
+                               double alpha_i  ,
+                               double sin_decl ,  //declination of star
+                               double cos_decl ,
+                               bool sync_rot ,
+                               double ecc      ,
+                               double obliquity,
+                               double *insol_d ){
 
 
 //
@@ -251,32 +346,10 @@ __global__ void rtm_dual_band (double *pressure_d   ,
 //
 
     int id = blockIdx.x * blockDim.x + threadIdx.x;
-    //int id;
-    //for (id=0;id<num;id++){
 
     double coszrs;
-
-    // double *ph, *th, *t;
     double ps, psm;
     double pp, ptop;
-
-
-    // RTM parameters
-    // double bc = 5.677036E-8; // Stefan–Boltzmann constant [W m−2 K−4]
-
-	//Star
-	// double tstar = 4520; //10170;                                   // Star effective temperature [K]
-  //   double planet_star_dist = 0.015*149597870.7; //0.03462*149597870.7;          // Planet-star distance [km]
-  //   double radius_star = 0.667*695508; //2.362*695508;                      // Star radius [km]
-  //   double resc_flx = pow(radius_star/planet_star_dist,2.0);//
-  //   double incflx = resc_flx*bc*tstar*tstar*tstar*tstar;                // Incoming stellar flux [W m-2]
-	// //Planet
-	// double diff_fac = 0.5;         // Diffusivity factor: 0.5-1.0
-	// double tlow       = 970; // 3500;        // Lower boundary temperature: upward flux coming from the planet's interior
-  //   double alb      = 0.18; //0.1;         // Bond albedo
-  //   double tausw    = 532.0;       // Absorption coefficient for the shortwaves
-  //   double taulw    = 1064.0;      // Absorption coefficient for the longwaves
-  //   double ps0      = 10000000;    // Reference bottom pressure
 
     double xi, xip, xim, a, b;
 
@@ -315,22 +388,18 @@ __global__ void rtm_dual_band (double *pressure_d   ,
                 phtemp[id*nvi+lev] = pressure_d[id*nv + lev-1]*a + pressure_d[id*nv + lev]*b;
                 thtemp[id*nvi+lev] = temperature_d[id*nv + lev-1]*a + ttemp[id*nv+lev]*b;
             }
-            // if (id==431){
-            //   printf("%f, ",pressure_d[lev]);
-            // }
-            // if (phtemp[id*nvi+lev]<=0){
-            //   printf("%d, %d",id,lev);
-            // }
         }
 
-        // if (phtemp[id*nvi+nv]<=0){
-        //   for (int lev = 0; lev < nv; lev++ ){
-        //     printf("%f, ",pressure_d[id*nv+lev]);
-        //   }
-        //   printf("stop");
-        // }
-		// Cosine of the zenith angle
-        coszrs = cos(lonlat_d[id*2 + 1])*cos(lonlat_d[id*2 + 0]);
+        // zenith angle
+        coszrs = calc_zenith(lonlat_d ,  //latitude/longitude grid
+                             alpha    ,  //current RA of star (relative to zero long on planet)
+                             alpha_i  ,
+                             sin_decl ,  //declination of star
+                             cos_decl ,
+                             sync_rot ,
+                             ecc      ,
+                             obliquity,
+                             id       );
 
 		// Compute opacities
         computetau (tau_d ,
@@ -342,25 +411,10 @@ __global__ void rtm_dual_band (double *pressure_d   ,
                     id    ,
                     nv    );
 
-        // for(int lev = 0; lev <=nv; lev++){
-        //       fnet_up_d[id*nvi + lev] = 0.0;
-        //       if(id==0) {
-        //         printf("%f, ",tau_d[2*lev]);
-        //       }
-        // }
-        // for(int lev = 0; lev <=nv; lev++) {
-        //       fnet_dn_d[id*nvi + lev] = 0.0;
-        //       if(id==0) printf("%f, ",tau_d[2*lev+1]);
-        // }
-        //
-        // if (id == 0){
-        //   printf("stop\n");
-        // }
-
         if(coszrs > 0.0){
-
                radcsw(phtemp         ,
                       coszrs     ,
+                      r_orb      ,
                       dtemp      ,
                       tau_d      ,
                       fnet_up_d  ,
@@ -372,13 +426,11 @@ __global__ void rtm_dual_band (double *pressure_d   ,
                       Cp         ,
                       gravit     ,
                       id         ,
-                      nv         );
-
+                      nv         ,
+                      insol_d  );
+        } else {
+          insol_d[id] = 0;
         }
-
-        // if (id == 0){
-        //   printf("stop\n");
-        // }
 
         for(int lev = 0; lev <=nv; lev++)fnet_up_d[id*nvi + lev] = 0.0;
         for(int lev = 0; lev <=nv; lev++)fnet_dn_d[id*nvi + lev] = 0.0;
@@ -397,16 +449,8 @@ __global__ void rtm_dual_band (double *pressure_d   ,
                id       ,
                nv       );
 
-        // if(id==0) printf("\ndT = \n");
         for(int lev = 0; lev < nv; lev++) {
           temperature_d[id*nv + lev] = ttemp[id*nv+lev] + dtemp[id*nv+lev]*timestep;
-          // if (id==0) printf("%e, ",dtemp[id*nv+lev]);
-          if (isnan(temperature_d[id*nv+lev])) {
-            printf("%d, %d\n",id,lev);
-          }
-          if (temperature_d[id*nv+lev]<0) {
-            printf("%d, %d\n",id,lev);
-          }
         }
     }
 }

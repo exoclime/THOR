@@ -9,17 +9,17 @@ public:
     ~radiative_transfer();
 
     bool initialise_memory(const ESP & esp);
-    bool initial_conditions();
+    bool initial_conditions(const ESP & esp,
+                            const XPlanet & planet);
 
     // TBD, how does it get data? friend of ESP ? grid ?
     bool loop(ESP & esp,
               int    nstep       , // Step number
-              int    hstest      , // Held-Suarez test option
+              int core_benchmark      , // Held-Suarez test option
               double time_step   , // Time-step [s]
               double Omega       , // Rotation rate [1/s]
               double Cp          , // Specific heat capacity [J/kg/K]
               double Rd          , // Gas constant [J/kg/K]
-              double Mmol        , // Mean molecular mass of dry air [kg]
               double mu          , // Atomic mass unit [kg]
               double kb          , // Boltzmann constant [J/K]
               double P_Ref       , // Reference pressure [Pa]
@@ -27,7 +27,8 @@ public:
               double A           // Planet radius [m]);
         );
 
-    bool store(storage & s);
+    bool store(const ESP & esp,
+               storage & s);
 
     bool store_init(storage & s);
 
@@ -55,6 +56,29 @@ private:
     double *fnet_dn_d     ;
     double *tau_d         ;
 
+    double *fnet_up_h     ;
+    double *fnet_dn_h     ;
+    double *tau_h         ;
+
+
+    // orbit/insolation properties
+    bool   sync_rot       = true     ;  // is planet syncronously rotating?
+    double mean_motion    = 1.991e-7 ;  // orbital mean motion (rad/s)
+    double mean_anomaly_i = 0        ;  // initial mean anomaly at start (rad)
+    double mean_anomaly   = 0        ;  // current mean anomaly of planet (rad)
+    double true_long_i    = 0        ;  // initial true longitude of planet (rad)
+    double ecc            = 0        ;  // orbital eccentricity
+    double obliquity      = 0        ;  // obliquity (tilt of spin axis) (rad)
+    double r_orb          = 1        ;  // orbital distance/semi-major axis
+    double sin_decl       = 0        ;  // declination of host star (relative to equator)
+    double cos_decl       = 1        ;
+    double alpha_i        = 0        ;  // initial right asc of host star (relative to long = 0)
+    double alpha          = 0        ;  // right asc of host star (relative to long = 0)
+    double longp          = 0        ;  // longitude of periastron (rad)
+
+    double *insol_h;
+    double *insol_d;
+
     //  These arrays are for temporary usage in RT code
     double *dtemp         ;
     double *phtemp        ;
@@ -67,5 +91,17 @@ private:
                  double Tlow_            ,
                  double albedo_          ,
                  double tausw_           ,
-                 double taulw_           );
+                 double taulw_           ,
+                 bool   sync_rot_        ,
+                 double mean_motion_     ,
+                 double true_long_i_     ,
+                 double longp_           ,
+                 double ecc_             ,
+                 double alpha_i_         ,
+                 double obliquity_       ,
+                 double Omega            ,
+                 int    point_num);
+
+    void update_spin_orbit(double time,
+                           double Omega );
 };

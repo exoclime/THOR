@@ -171,9 +171,6 @@ __global__ void Compute_Temperature_H_Pt_Geff(double * temperature_d,
                 gtil_d[id * nv + lev-1] = gtilh * intt + gtilht * intl;
                 gtilh = gtilht;
             }
-            if (isnan(pth_d[id*(nv+1)+lev])){
-              printf("%d, %d\n",id,lev);
-            }
         }
 
 
@@ -288,7 +285,7 @@ __global__ void UpdateRK(double * M_d        ,
 // Tracers
             if(vulcan==1){
             	for (int itr = 0; itr < ntr; itr++){
-            		tracer_d[id * nv * ntr + lev * ntr + itr] = traceri_d[id * nv * ntr + lev * ntr + itr] - 
+            		tracer_d[id * nv * ntr + lev * ntr + itr] = traceri_d[id * nv * ntr + lev * ntr + itr] -
             													tracerk_d[id * nv * ntr + lev * ntr + itr];
             	}
             }
@@ -386,10 +383,8 @@ __global__ void UpdateRK2(double * M_d        ,
 
 // Pressure
             pressurek_d[id * nv + lev] += pressure_d[id*nv + lev];
-            if (pressurek_d[id*nv+lev]<0) {
-              printf("%d, %d\n",id, lev);
-            }
-//Tracers			
+
+//Tracers
             if(vulcan == 1)
             	for (int itr = 0; itr < ntr; itr++) tracerk_d[id * nv * ntr + lev * ntr + itr] += tracer_d[id * nv * ntr + lev * ntr + itr];
 

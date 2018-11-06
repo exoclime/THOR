@@ -8,17 +8,47 @@ If you use this code please cite: [Mendonca, J.M., Grimm, S.L., Grosheintz, L., 
 
 ###### Copyright (C) 2017-2018 Exoclimes Simulation Platform ######
 
+### Changes since version 1
+
+* Addition of "tidally-locked Earth", "shallow hot jupiter", and "deep hot jupiter" __benchmark__ tests (see [Heng, Menou, & Phillips, 2011](https://academic.oup.com/mnras/article/413/4/2380/962712))
+
+* Inclusion of __grey radiative transfer__ (see [Mendonca, J.M., Malik, M., Demory, B.-O., & Heng, K., AJ, 155, 150, 2018](http://iopscience.iop.org/article/10.3847/1538-3881/aaaebc/meta))
+
+* Inclusion of top-of-atmosphere __Rayleigh drag__ ("sponge layer") (see [Mendonca, J.M., Tsai, S.-M., Malik, M., Grimm, S.L., & Heng, K.](http://adsabs.harvard.edu/abs/2018arXiv180800501M))
+
+* Inclusion of __tracer particles__ and __chemical relaxation__ scheme (see [Mendonca, J.M., Tsai, S.-M., Malik, M., Grimm, S.L., & Heng, K.](http://adsabs.harvard.edu/abs/2018arXiv180800501M))
+
+* Addition of __"conservation"__ routines, which calculate energy, entropy, mass, and angular momentum
+
+* Inclusion of __dry convective adjustment__ scheme for sub-grid scale convection (used, though not detailed, in [Mendonca, J.M., Malik, M., Demory, B.-O., & Heng, K., AJ, 155, 150, 2018](http://iopscience.iop.org/article/10.3847/1538-3881/aaaebc/meta))
+
+* Addition of __insolation__ calculation allowing for arbitrary orbit/rotation state (used with radiative transfer scheme)
+
+* Compilation process has been completely overhauled to be more reliable and flexible
+
+* Initial conditions are no longer hard coded, but are now set in user generated configuration files
+
+* Command line options have been added to allow more flexibility when running the model, particularly for restarting canceled/finished simulations
+
+* Modular structure for additional physics has been put in place and is used for the grey radiative transfer scheme (and hopefully chemistry???)
+
+* Numerous performance and debugging modes have been implemented in the code
+
+* Previous MATLAB plotting routines have been adapted for Python. A number of new plotting options have been added to the Python code which were unavailable in the MATLAB code
+
+* Output files now contain additional information about model settings and quantities related to the additions described above
+
 ### BUILD & RUN THOR
 
 Main instructions to compile and run *THOR*. This version uses only a __single__ __GPU__.
 
-Current code owners: Joao Mendonca: joao.mendonca@space.dtu.dk, Russell Deitrick: russel.deitrick@csh.unibe.ch, Urs Schroffenegger: urs.schroffenegger@csh.unibe.ch
+Current code owners: Joao Mendonca: joao.mendonca@space.dtu.dk, Russell Deitrick: russell.deitrick@csh.unibe.ch, Urs Schroffenegger: urs.schroffenegger@csh.unibe.ch
 
 ### INSTALL
 
 Tested on *UBUNTU* *17.04* *Debian unstable*
 
-1- Install cuda. 
+1- Install cuda.
 
 ```sh
    $ sudo apt-get install nvidia-cuda-toolkit
@@ -38,10 +68,10 @@ The python package is for analysis scripts.
 #### Find your SM number
 
 This depends on the GPU you are using. SM stands for Streaming Multiprocessor and the number indicates the features supported by the architecture. See https://developer.nvidia.com/cuda-gpus.
-   Example: Tesla K20 -> 35. To get information on your GPU, type in the terminal: 
+   Example: Tesla K20 -> 35. To get information on your GPU, type in the terminal:
 
 ```sh
-   $ nvidia-smi 
+   $ nvidia-smi
 ```
 
 (cmake will try to guess that for you, if you compile with Makefile, you need to set this).
@@ -86,7 +116,7 @@ To show commands echoed
 If if fails, check the makefile variables output at the beginning of the compilation, it shows the variables and the path detected for h5, which is a common cause of issue during compilation.
 
 ##### Define a local configuration Makefile.
-Copy `Makefile.conf.template` to `Makefile.conf`. This defines a local makefile configuration that wont be added to git. You can define the `SM` number in there, so that you don't need to modify the main makefile that can be overwritten when pulling from git or add it to the command line each time. 
+Copy `Makefile.conf.template` to `Makefile.conf`. This defines a local makefile configuration that wont be added to git. You can define the `SM` number in there, so that you don't need to modify the main makefile that can be overwritten when pulling from git or add it to the command line each time.
 
 #### Physics modules
 You can use your own physics modules by setting the path to the physics module in the local makefile configuration file `Makefile.conf`, see [How to add your own physics modules](physics_modules.org).
@@ -125,37 +155,37 @@ For more verbosity to debug makefile by showing commands:
 
 ### INSTALL HDF5 from source
 
-1- Install hdf5 (https://support.hdfgroup.org/HDF5/release/obtainsrc.html). 
+1- Install hdf5 (https://support.hdfgroup.org/HDF5/release/obtainsrc.html).
    Download the source code.
    Follow all the steps from the instructions, for example:
 
 ```sh
    $ cd <install_directory>
-   
+
    $ mkdir build
-   
+
    $ cd build
-   
+
    $ sudo /path_to_HDF5_source/configure
-   
+
    $ sudo make
-   
+
    $ sudo make check
-   
+
    $ sudo make install
-   
+
    $ sudo apt install hdf5-helpers
 ```
 
-   
+
 2- Create a config file in "/etc/ld.so.config.d" called for example "mylib.conf" with the following line:
 
    > /path_to_hdf5_libs
-   
-   Run: 
-   
+
+   Run:
+
 ```sh
-   $ sudo ldconfig 
+   $ sudo ldconfig
 ```
 
 ### RUN
@@ -167,15 +197,15 @@ Copy that file where you'd like as an initial condition file. e.g.: "init/myplan
 
 1- Set the planet's and model's parameters in "init/myplanet.thr".
 
-2- Run 
+2- Run
 
 ```sh
-   $ ./bin/esp init/myplanet.thr 
+   $ ./bin/esp init/myplanet.thr
 ```
 
 3- Press enter and go grab a coffee. Or lunch.
 
-* command line arguments * 
+* command line arguments *
 Positional argument: config filename (e.g. init/myplanet.thr)
 
 Keyword argument:
@@ -183,13 +213,13 @@ Keyword argument:
  -g / --gpu_id <N>             GPU_ID to run on
  -o / --output_dir <PATH>      directory to write results to
  -i / --initial <PATH>         initial conditions HDF5 filename
- -N / --numsteps <N>           number of steps to run 
+ -N / --numsteps <N>           number of steps to run
  -w / --overwrite              Force overwrite of output file if they exist
  -c / --continue <PATH>        continue simulation from this output file
- -b / --batch                  Run as batch 
+ -b / --batch                  Run as batch
 ```
 
-Keyword arguments supersede config file arguments. 
+Keyword arguments supersede config file arguments.
 If initial conditions path is given on the command line, it starts from there instead of from rest and ignores the 'rest' setting in the config file.
 
 * -g / --gpu_id
@@ -200,7 +230,7 @@ Uses the GPU configured by parameter
 Writes results to this directory. It will also scan the output directory to check for already existing files and run, continue or restart depending on options.
 
 * -N / --numsteps <N>
-Number of steps of simulation to run. 
+Number of steps of simulation to run.
 
 * -i / --initial <PATH>
 Instead of starting from rest, use <PATH> as initial conditions, using the provided model parameters. Checks consistency of models parameter with planet and grid definition used in initial file and starts from 0.
@@ -217,8 +247,8 @@ Continues a simulation from an output file. Like `--initial`, but continues at t
 * -b / --batch
 Run in batch mode in output directory. It checks output directory for result files:
  - if none exist, start a simulation from scratch.
- - if some exist, look for last valid written file, and continue from that point. 
-Useful to run simulation on a cluster with a time limit. When the application gets the INT or TERM signal, it writes down the last simulation step to disk. 
+ - if some exist, look for last valid written file, and continue from that point.
+Useful to run simulation on a cluster with a time limit. When the application gets the INT or TERM signal, it writes down the last simulation step to disk.
 Launching the simulation from a batch script with `-b` in the same folder starts the simulation or continues from the last save point point.
 
 * exclusive options:
@@ -240,10 +270,10 @@ Simple batch script launching SLURM on THOR, in `/home/thoruser/THOR`, with job 
 #SBATCH --mail-user=thoruser@thormail.com
 #SBATCH --output="/home/thoruser/slurm-esp-%j.out"
 
-srun bin/esp ifile/config.thr 
+srun bin/esp ifile/config.thr
 ```
 
-Launch it in the job queue as 
+Launch it in the job queue as
 ```
 $ sbatch esp.job
 ```
@@ -299,3 +329,83 @@ See `slurm_batch_run.py` for a Python script doing the same in one script.
 * Very useful command lines to quickly explore the hdf5 files can be found in support.hdfgroup.org/HDFS/Tutor/cmdtools.html
   or type the command ">> man h5dump".
 * You can find some Matlab and Python routines to explore the results in "mjolnir" folder.
+
+#### Python plotting
+
+The mjolnir (`THOR/mjolnir/`) plotting scripts are written for Python 3 (compatibility with Python 2 still needs to be tested). Most dependencies are pretty standard for science: `numpy`, `matplotlib`, and `scipy`. Additionally, you'll need to install `h5py`:
+
+```
+$ pip3 install h5py
+```
+
+or
+
+```
+$ conda install h5py
+```
+
+`h5py` is simply a Python package that allows easy interaction with hdf5 files (THOR's standard output format).
+
+`mjolnir.py` is set up as an executable for command line, but you'll need to add the path to your environment file. In bash, add the line
+
+```
+export PATH="$PATH:<path to thor>/mjolnir"
+```
+
+to your ~/.bashrc or ~/.bash_profile file, replacing `<path to thor>` with the actual path to the repository on your system. Probably not the smartest or most pythonic way of setting this up but one thing at a time please. Once that is done, the command to make a plot looks like
+
+```
+$ mjolnir <options> <type of plot>
+```
+
+For example,
+
+```
+$ mjolnir -i 0 -l 10 -f awesome_results -s coolest_planet Tver
+```
+
+where `-i`, `-l`, `-f`, and `-s` are options flags and `Tver` is a plot type. The available options flags are
+
+```sh
+ -i / --initial_file <N>       number of first output file to open
+ -l / --last_file <N>          number of last output file to open
+ -f / --file <string>          folder containing results
+ -s / --simulation_ID <string> name of planet (used in naming of output files)
+ -p / --pressure_lev <N>       pressure level to use in horizontal plots (mbar units)
+ -pmin / --pressure_min <N>    pressure minimum for vertical plots (mbar units)
+ -slay / --split_layer <N>     splits conservation data into "weather" and "deep" layers at this pressure (mbar units)
+```
+
+mjolnir averages the data over time for the entire range of files read in. So with `-i 0` and `-l 10`, files 0-10 will all be read in, and the plotted quantities will be averaged over all 11 snapshots in time. If you want to plot one instant in time, just set `-i` and `-l` to the same value. The averaging process can get quite long because the data is interpolated in many ways before averaging. Be careful if you are passing mjolnir more than ~50 output files.
+
+There are three basic types of plot mjolnir can make (plus a few other special ones): vertical, horizontal, and profile. Vertical plots are averaged zonally and temporally, resulting in contours on a latitude vs pressure grid. Horizontal plots are averaged only temporally, and plotted at a given pressure level on a latitude vs longitude grid. Profile plots show quantities along single columns or average columns, as a function of pressure.
+
+The `-p` option is used only by the horizontal plot types and is simply the desired pressure level to be viewed. The `-pmin` option is used only by the vertical plot types and is just the lowest pressure level to be plotted. For vertical plots, mjolnir will plot a dashed line representing the maximum pressure at the top of the model--thus data plotted above this line requires some extrapolation and should be viewed skeptically.
+
+Current vertical plot types are
+
+```sh
+ Tver                           time- and zonally-averaged temperature
+ uver                           time- and zonally-averaged zonal wind speed
+ wver                           time- and zonally-averaged vertical wind speed
+ PTver                          time- and zonally-averaged  potential temperature
+ PVver                          time- and zonally-averaged  potential vorticity
+ stream                         time- and zonally-averaged mass streaming function
+```
+
+Current horizontal plot types are
+
+```sh
+ Tulev                          time-averaged temperature and horizontal wind along a pressure surface
+ ulev                           time-averaged zonal and meridional winds along a pressure surface   
+ PVlev                          time-averaged potential vorticity along a pressure surface
+ RVlev                          time-averaged relative vorticity along a pressure surface
+ tracer                         time-averaged molecular abundances along a pressure surface
+```
+
+Current profile plot types are
+
+```sh
+  TP                            temperature-pressure profiles drawn from all over the grid
+  wprof                         vertical wind vs pressure averaged over 4 quadrants (useful for synchronous rotation)   
+```

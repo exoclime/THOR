@@ -136,9 +136,6 @@ __global__ void deepHJ_hs(double *Mh_d         ,
           Teq_hs = Tnight;
         }
 
-        // if (id==899 && lev==38){
-        //   printf("%f\n",Teq_hs);
-        // }
 //      Momentum dissipation constant.
         kv_hs = 0.0;  //no boundary layer friction
 
@@ -146,8 +143,5 @@ __global__ void deepHJ_hs(double *Mh_d         ,
         for(int k = 0; k < 3; k++) Mh_d[id*3*nv + lev*3 + k] = Mh_d[id*3*nv + lev*3 + k]/(1.0 + kv_hs*time_step);;
 //      Update temperature
         temperature_d[id*nv + lev] -= kt_hs * time_step * (temperature_d[id*nv + lev] - Teq_hs);
-        if (isnan(temperature_d[id*nv+lev])){
-          printf("%d,%d\n",id,lev);
-        }
     }
 }

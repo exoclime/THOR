@@ -22,8 +22,6 @@ radius = 132201701.0
 rotation_rate = 4.9099E-5
 # Gravitational acceleration [m/s^2]
 gravitation = 19.95
-# Mean molecular mass of dry air [kg]
-Mmol = 28.964
 # Gas constant [J/(Kg K)]
 Rd = 5000
 # Specific heat capacities [J/(Kg K)]
@@ -79,7 +77,7 @@ Rv_sponge = 2.5e-6
 # HS test for tidally locked Earth == 2
 # No HS test == 0
 
-hstest = 0
+core_benchmark = 0
 
 # output
 # output every n steps

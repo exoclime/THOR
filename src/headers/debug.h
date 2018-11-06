@@ -43,7 +43,7 @@
 ////////////////////////////////////////////////////////////////////////
 
 // benchmarking
-// if defined run benchmark functions
+// if defined run benchmark functions?
 //#define BENCHMARKING
 
 // ***************************************

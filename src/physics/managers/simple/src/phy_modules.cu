@@ -37,7 +37,7 @@ void RTSetup(double Tstar_           ,
              double albedo_          ,
              double tausw_           ,
              double taulw_           ) {
-    
+
    double bc = 5.677036E-8; // Stefan–Boltzmann constant [W m−2 K−4]
 
    Tstar = Tstar_;
@@ -65,11 +65,12 @@ bool phy_modules_init_mem(const ESP & esp)
     cudaMalloc((void **)&ttemp       , esp.nv * esp.point_num *     sizeof(double));
     cudaMalloc((void **)&dtemp       , esp.nv * esp.point_num *     sizeof(double));
 
-    
+
     return true;
 }
 
-bool phy_modules_init_data()
+bool phy_modules_init_data(const ESP & esp,
+                           const XPlanet & planet)
 {
     RTSetup(Tstar            ,
             planet_star_dist ,
@@ -98,12 +99,11 @@ bool phy_modules_generate_config(config_file & config_reader)
 
 bool phy_modules_mainloop(ESP & esp,
                           int    nstep       , // Step number
-                          int    hstest      , // Held-Suarez test option
+                          int core_benchmark      , // Held-Suarez test option
                           double time_step   , // Time-step [s]
                           double Omega       , // Rotation rate [1/s]
                           double Cp          , // Specific heat capacity [J/kg/K]
                           double Rd          , // Gas constant [J/kg/K]
-                          double Mmol        , // Mean molecular mass of dry air [kg]
                           double mu          , // Atomic mass unit [kg]
                           double kb          , // Boltzmann constant [J/K]
                           double P_Ref       , // Reference pressure [Pa]
@@ -118,7 +118,7 @@ bool phy_modules_mainloop(ESP & esp,
 //  Specify the block sizes.
     dim3 NB((esp.point_num / NTH) + 1, esp.nv, 1);
     dim3 NBRT((esp.point_num/NTH) + 1, 1, 1);
-    
+
     rtm_dual_band <<< NBRT, NTH >>> (esp.pressure_d   ,
       //rtm_dual_band <<< 1,1 >>> (pressure_d         ,
                                      esp.Rho_d        ,
@@ -150,7 +150,7 @@ bool phy_modules_mainloop(ESP & esp,
                                      esp.nv           ,
                                      esp.nvi          ,
                                      A             );
-        
+
     return true;
 }
 
@@ -160,7 +160,7 @@ bool phy_modules_store_init(storage & s)
     return true;
 }
 
-bool phy_modules_store(storage & s)
+bool phy_modules_store(const ESP & esp, storage & s)
 {
 
     return true;

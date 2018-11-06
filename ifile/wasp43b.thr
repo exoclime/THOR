@@ -5,7 +5,7 @@ config_version = 1
 # testing sponge layer model
 
 # number of steps
-num_steps = 345600
+num_steps = 3200
 
 # length of timesteps imn seconds
 timestep = 300
@@ -19,11 +19,9 @@ simulation_ID = Wasp43b
 # Radius [m]
 radius = 72427000.0
 # Rotation rate [s-1]
-rotation_rate = 9.09E-5
+rotation_rate = -9.09E-5
 # Gravitational acceleration [m/s^2]
 gravitation = 47
-# Mean molecular mass of dry air [kg]
-Mmol = 28.964
 # Gas constant [J/(Kg K)]
 Rd = 3714
 # Specific heat capacities [J/(Kg K)]
@@ -35,7 +33,7 @@ P_ref = 10000000.0
 # Altitude of the top of the model domain [m]
 Top_altitude = 1.4e6
 # Strength of diffusion
-Diffc = 0.0099
+Diffc = 0.015
 
 # grid
 # Spring dynamics
@@ -72,8 +70,8 @@ SpongeLayer = true
 nlat = 20
 ns_sponge = 0.75
 Rv_sponge = 1e-5
-shrink_sponge = true
-t_shrink = 1
+#shrink_sponge = true
+#t_shrink = 1
 
 # Benchmark test
 # Held-Suarez test for Earth == 1
@@ -81,23 +79,26 @@ t_shrink = 1
 # HS test for tidally locked Earth == 2
 # No HS test == 0
 
-hstest = 0
+core_benchmark = 0
 
 # output
 # output every n steps
-n_out = 100
+n_out = 1
 
 # output directory (relative to current working directory)
 # defaults to 'results'
-results_path = wasp43_shrinktest
+results_path = wasp43b_test
 
-Tstar = 4520
+Tstar = 4300
 planet_star_dist = 0.015
 radius_star = 0.667
+sync_rot = true
+
+vulcan = 1
 
 # GPU ID number
 GPU_ID_N = 0
 
 gcm_off = false
 
-TPprof = 1
+TPprof = 0

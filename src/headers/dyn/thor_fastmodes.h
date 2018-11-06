@@ -467,22 +467,24 @@ __global__ void Density_Pressure_Eqs(double *pressure_d ,
 
     aux = -(nflxpt_s[iri] + dwptdz)*dt;
     r   = Rhok_d[id * nv + lev] + Rho_d[id * nv + lev];
-    aux += pt_s[ir]*r;
 
+    double pt;
+    pt = (P_Ref / (Rd * r))*pow((pressure_d[id * nv + lev] + pressurek_d[id * nv + lev]) / P_Ref, Cv/Cp);
+
+    aux += pt*r;
+    //aux += pt_s[ir]*r;
+
+    // printf("***** (pt_small - pt_large) = %g \n*******",(pt-pt_s[ir]));
     // Updates pressure
     p = P_Ref*pow(Rd*aux / P_Ref, Cp / Cv);
     pressure_d[id * nv + lev] = p - pressurek_d[id * nv + lev] + diffpr_d[id * nv + lev] * dt;
 
-    if(isnan(pressure_d[id*nv+lev])){
-      printf("Vertical wind gradient too large at %d, %d\n",id,lev);
-    }
-    if(pressurek_d[id*nv+lev]<-pressure_d[id*nv+lev]){
-      printf("Pressure negative at %d, %d\n",id,lev);
-    }
-
     // Updates density
     nflxr_s[iri] += dwdz;
     Rho_d[id * nv + lev] += (SlowRho_d[id * nv + lev] - nflxr_s[iri])*dt;
+    // if (isnan(pressure_d[id * nv + lev])) {
+    //   printf("(id, lev) = (%d, %d)",id,lev);
+    // }
 }
 
 template <int NN>

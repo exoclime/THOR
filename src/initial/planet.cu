@@ -65,7 +65,6 @@ XPlanet::XPlanet(){
     ////////////////
     // ATMOSPHERE //
     ////////////////
-    Mmol = 2.24        ; // Mean molecular mass of dry air [kg]
     Rd   = 3714          ; // Gas constant [J/(Kg K)]
     Cp   = 13000        ; // Specific heat capacities [J/(Kg K)]
     Tmean= 1400          ; // Mean atmospheric temperature [K]

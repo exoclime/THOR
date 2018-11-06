@@ -22,8 +22,6 @@ radius = 79698540.0
 rotation_rate = 3.279E-5
 # Gravitational acceleration [m/s^2]
 gravitation = 21.4
-# Mean molecular mass of dry air [kg]
-Mmol = 28.964
 # Gas constant [J/(Kg K)]
 Rd = 3779
 # Specific heat capacities [J/(Kg K)]
@@ -74,7 +72,7 @@ Rv_sponge = 1e-5
 # HS test for tidally locked Earth == 2
 # No HS test == 0
 
-hstest = 0
+core_benchmark = 0
 
 Tstar = 4875
 planet_star_dist = 0.03099

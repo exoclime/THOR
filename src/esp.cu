@@ -130,10 +130,10 @@ void get_cuda_mem_usage(size_t & total_bytes, size_t & free_bytes)
     cudaError_t cuda_status = cudaMemGetInfo( &free_bytes, &total_bytes ) ;
 
     if ( cudaSuccess != cuda_status )
-    {    
+    {
         printf("Error: cudaMemGetInfo fails, %s \n", cudaGetErrorString(cuda_status) );
-        
-    
+
+
     }
 }
 
@@ -167,7 +167,7 @@ int main (int argc,  char** argv){
     argparser.add_arg("w", "overwrite", true, "Force overwrite of output file if they exist");
 
     argparser.add_arg("b", "batch", true, "Run as batch");
-    
+
 
     // Parse arguments, exit on fail
     bool parse_ok = argparser.parse(argc, argv);
@@ -216,7 +216,6 @@ int main (int argc,  char** argv){
     config_reader.append_config_var("radius", Planet.A, Planet.A);
     config_reader.append_config_var("rotation_rate", Planet.Omega, Planet.Omega);
     config_reader.append_config_var("gravitation", Planet.Gravit, Planet.Gravit);
-    config_reader.append_config_var("Mmol", Planet.Mmol, Planet.Mmol);
     config_reader.append_config_var("Rd", Planet.Rd, Planet.Rd);
     config_reader.append_config_var("Cp", Planet.Cp, Planet.Cp);
     config_reader.append_config_var("Tmean", Planet.Tmean, Planet.Tmean);
@@ -273,11 +272,13 @@ int main (int argc,  char** argv){
                                     string(initial_conditions_default));
 
     // Benchmark test
-    int hstest = 1;
-    config_reader.append_config_var("hstest", hstest, hstest_default);
+    int core_benchmark = 1;
+    config_reader.append_config_var("core_benchmark", core_benchmark, core_benchmark_default);
 
-    int vulcan = 1; //
-    int conv   = 1; //
+    int vulcan = 0;
+    config_reader.append_config_var("vulcan", vulcan, vulcan_default);
+
+    int conv   = 1;
 
     int GPU_ID_N = 0;
     config_reader.append_config_var("GPU_ID_N", GPU_ID_N, GPU_ID_N_default);
@@ -341,7 +342,7 @@ int main (int argc,  char** argv){
     }
 
     bool run_as_batch_arg = false;
-    bool run_as_batch = false;    
+    bool run_as_batch = false;
     if (argparser.get_arg("batch", run_as_batch_arg))
     {
         run_as_batch = run_as_batch_arg;
@@ -362,7 +363,7 @@ int main (int argc,  char** argv){
 
             exit(-1);
         }
-        
+
 
         if (initial_condition_arg_set)
         {
@@ -384,10 +385,10 @@ int main (int argc,  char** argv){
     bool force_overwrite = false;
 
     if (argparser.get_arg("overwrite", force_overwrite_arg))
-        force_overwrite = force_overwrite_arg;    
-    
-    
-    
+        force_overwrite = force_overwrite_arg;
+
+
+
     int nsmax_arg;
     if (argparser.get_arg("numsteps", nsmax_arg))
         nsmax = nsmax_arg;
@@ -398,7 +399,6 @@ int main (int argc,  char** argv){
     config_OK &= check_greater( "timestep", timestep, 0);
     config_OK &= check_greater( "nsmax", nsmax, 0);
     config_OK &= check_greater( "gravitation", Planet.Gravit, 0.0);
-    config_OK &= check_greater( "Mmol", Planet.Mmol, 0.0);
     config_OK &= check_greater( "Rd", Planet.Rd, 0.0);
     config_OK &= check_greater( "T_mean", Planet.Tmean, 0.0);
     config_OK &= check_greater( "P_Ref", Planet.P_Ref, 0.0);
@@ -406,7 +406,7 @@ int main (int argc,  char** argv){
 
     config_OK &= check_range( "glevel", glevel, 3, 8);
     config_OK &= check_greater( "vlevel", vlevel, 0);
-    config_OK &= check_range( "hstest", hstest, -1, 6);
+    config_OK &= check_range( "core_benchmark", core_benchmark, -1, 6);
 
     config_OK &= check_greater( "GPU_ID_N", GPU_ID_N, -1);
     config_OK &= check_greater( "n_out", n_out, 0);
@@ -440,19 +440,19 @@ int main (int argc,  char** argv){
 
     //*****************************************************************
     log_writer logwriter(Planet.simulation_ID, output_path);
-    
+
     // Batch mode handling
     if (run_as_batch)
     {
         printf("Starting in batch mode.\n");
-        
-            
+
+
         // Get last written file from
         int last_file_number = 0;
         int last_iteration_number = 0;
         string last_file = "";
         bool has_last_file = false;
-        
+
         try
         {
             has_last_file = logwriter.CheckOutputLog(last_file_number, last_iteration_number, last_file);
@@ -461,7 +461,7 @@ int main (int argc,  char** argv){
             printf( "[%s:%d] error while checking output log: %s.\n",  __FILE__, __LINE__ , e.what());
             exit(-1);
         }
-        
+
         if (has_last_file)
         {
             path o(output_path);
@@ -480,7 +480,7 @@ int main (int argc,  char** argv){
 
                 // reload the last file we found as initial conditions
                 initial_conditions = o.to_string();
-                
+
                 logwriter.OpenOutputLogForWrite(true /*open in append mode */);
                 logwriter.PrepareConservationFile(true);
                 logwriter.PrepareDiagnosticsFile(true);
@@ -499,8 +499,8 @@ int main (int argc,  char** argv){
             logwriter.PrepareConservationFile(false);
             logwriter.PrepareDiagnosticsFile(false);
         }
-    
-            
+
+
 
     }
     else
@@ -510,10 +510,10 @@ int main (int argc,  char** argv){
         logwriter.PrepareConservationFile(continue_sim);
         logwriter.PrepareDiagnosticsFile(continue_sim);
     }
-    
 
 
-  
+
+
     //*****************************************************************
 //  Set the GPU device.
     cudaError_t error;
@@ -574,7 +574,7 @@ int main (int argc,  char** argv){
 
     // esp output setup
     X.SetOutputParam(Planet.simulation_ID, output_path);
-    
+
     printf(" Setting the initial conditions.\n\n");
 
     double simulation_start_time = 0.0;
@@ -608,13 +608,12 @@ int main (int argc,  char** argv){
                                         Planet.Diffc , // Strength of diffusion
                                         kb_constant  , // Boltzmann constant [J/kg]
                                         Planet.Tmean , // Isothermal atmosphere (at temperature Tmean)
-                                        Planet.Mmol  , // Mean molecular mass of dry air [kg]
                                         mu_constant  , // Atomic mass unit [kg]
                                         Planet.Rd    , // Gas constant [J/kg/K]
                                         SpongeLayer  , // Enable sponge layer
                                         DeepModel    , // Use deep model corrections
                                         TPprof       , // isothermal = 0, guillot = 1
-                                        hstest       , // argh
+                                        core_benchmark , // argh
                                         vulcan       , //
                                         step_idx     , // current step index
                                         simulation_start_time, // output:
@@ -624,8 +623,8 @@ int main (int argc,  char** argv){
                                                           // if nothing read
                                         conservation );
 
-    if (hstest == 0) {
-        phy_modules_init_data();
+    if (core_benchmark == 0) {
+        phy_modules_init_data(X,Planet);
     }
 
 
@@ -755,7 +754,6 @@ int main (int argc,  char** argv){
     printf("   Radius = %f m\n"       , Planet.A     );
     printf("   Omega  = %f s-1\n"     , Planet.Omega );
     printf("   Gravit = %f m/s2\n"    , Planet.Gravit);
-    printf("   Mmol   = %f kg\n"      , Planet.Mmol  );
     printf("   Rd     = %f J/(Kg K)\n", Planet.Rd    );
     printf("   Cp     = %f J/(Kg K)\n", Planet.Cp    );
     printf("   Tmean  = %f K\n"       , Planet.Tmean );
@@ -817,19 +815,18 @@ int main (int argc,  char** argv){
         X.InitTimestep(0, simulation_time, timestep);
 
         if (conservation == true) {
-          X.Conservation(hstest       , // Held-Suarez test option
+          X.Conservation(core_benchmark , // Held-Suarez test option
                          vulcan       , //
                          Planet.Omega , // Rotation rate [1/s]
                          Planet.Cp    , // Specific heat capacity [J/kg/K]
                          Planet.Rd    , // Gas constant [J/kg/K]
-                         Planet.Mmol  , // Mean molecular mass of dry air [kg]
                          mu_constant  , // Atomic mass unit [kg]
                          kb_constant  , // Boltzmann constant [J/K]
                          Planet.P_Ref , // Reference pressure [Pa]
                          Planet.Gravit, // Gravity [m/s^2]
                          Planet.A     , // Planet radius [m]
                          DeepModel    );
-          
+
           logwriter.OutputConservation(0,
                                        simulation_time,
                                        X.GlobalE_h,
@@ -844,13 +841,13 @@ int main (int argc,  char** argv){
                  Planet.Rd           , // Gas constant [J/(Kg K)]
                  Planet.Omega        , // Rotation rate [s-1]
                  Planet.Gravit       , // Gravitational acceleration [m/s2]
-                 Planet.Mmol         , // Mean molecular mass of dry air [kg]
                  Planet.P_Ref        , // Reference surface pressure [Pa]
                  Planet.Top_altitude , // Top of the model's domain [m]
                  Planet.A            , // Planet Radius [m]
                  conservation        ,
-                 hstest              ,
-                 SpongeLayer         );
+                 core_benchmark      ,
+                 SpongeLayer         ,
+                 vulcan              );
         output_file_idx = 1;
         step_idx = 1;
     }
@@ -887,7 +884,6 @@ int main (int argc,  char** argv){
                      Planet.Omega , // Rotation rate [1/s]
                      Planet.Cp    , // Specific heat capacity [J/kg/K]
                      Planet.Rd    , // Gas constant [J/kg/K]
-                     Planet.Mmol  , // Mean molecular mass of dry air [kg]
                      mu_constant  , // Atomic mass unit [kg]
                      kb_constant  , // Boltzmann constant [J/K]
                      Planet.P_Ref , // Reference pressure [Pa]
@@ -899,13 +895,12 @@ int main (int argc,  char** argv){
         }
 //
 //     Physical Core Integration (ProfX)
-        X.ProfX(hstest       , // Held-Suarez test option
+        X.ProfX(core_benchmark , // Held-Suarez test option
                 vulcan       , //
                 conv         ,
                 Planet.Omega , // Rotation rate [1/s]
                 Planet.Cp    , // Specific heat capacity [J/kg/K]
                 Planet.Rd    , // Gas constant [J/kg/K]
-                Planet.Mmol  , // Mean molecular mass of dry air [kg]
                 mu_constant  , // Atomic mass unit [kg]
                 kb_constant  , // Boltzmann constant [J/K]
                 Planet.P_Ref , // Reference pressure [Pa]
@@ -923,12 +918,11 @@ int main (int argc,  char** argv){
 
         if(conservation == true )
         {
-            X.Conservation(hstest       , // Held-Suarez test option
+            X.Conservation(core_benchmark , // Held-Suarez test option
                            vulcan       , //
                            Planet.Omega , // Rotation rate [1/s]
                            Planet.Cp    , // Specific heat capacity [J/kg/K]
                            Planet.Rd    , // Gas constant [J/kg/K]
-                           Planet.Mmol  , // Mean molecular mass of dry air [kg]
                            mu_constant  , // Atomic mass unit [kg]
                            kb_constant  , // Boltzmann constant [J/K]
                            Planet.P_Ref , // Reference pressure [Pa]
@@ -954,13 +948,13 @@ int main (int argc,  char** argv){
                      Planet.Rd           , // Gas constant [J/(Kg K)]
                      Planet.Omega        , // Rotation rate [s-1]
                      Planet.Gravit       , // Gravitational acceleration [m/s2]
-                     Planet.Mmol         , // Mean molecular mass of dry air [kg]
                      Planet.P_Ref        , // Reference surface pressure [Pa]
                      Planet.Top_altitude , // Top of the model's domain [m]
                      Planet.A            , // Planet radius [m]
                      conservation        ,
-                     hstest              ,
-                     SpongeLayer         );
+                     core_benchmark      ,
+                     SpongeLayer         ,
+                     vulcan              );
             // increment output file index
             output_file_idx++;
 
@@ -975,7 +969,7 @@ int main (int argc,  char** argv){
         double elapsed_time = 0.0;
         double time_left = 0.0;
         std::time_t end_time;
-        
+
         ittimer.iteration(nstep,
                           mean_delta_per_step,
                           elapsed_time,
@@ -1000,8 +994,8 @@ int main (int argc,  char** argv){
         size_t  total_bytes;
         size_t  free_bytes;
         get_cuda_mem_usage( total_bytes, free_bytes);
-        
-            
+
+
         logwriter.OutputDiagnostics(nstep,
                                     simulation_time,
                                     total_bytes,
@@ -1010,7 +1004,7 @@ int main (int argc,  char** argv){
                                     time_left,
                                     mean_delta_per_step,
                                     end_time);
-            
+
         if( caught_signal != ESIG_NOSIG ) {
             //exit loop and application after save on SIGTERM or SIGINT
             break;

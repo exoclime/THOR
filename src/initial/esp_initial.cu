@@ -316,13 +316,12 @@ __host__ bool ESP::InitialValues(bool rest          ,
                                  double Diffc       ,
                                  double kb          ,
                                  double Tmean       ,
-                                 double Mmol        ,
                                  double mu          ,
                                  double Rd          ,
                                  bool sponge        ,
                                  bool DeepModel     ,
                                  int TPprof         ,
-                                 int hstest         ,
+                                 int core_benchmark ,
                                  int vulcan         ,
                                  int & nstep        ,
                                  double & simulation_start_time,
@@ -352,7 +351,7 @@ __host__ bool ESP::InitialValues(bool rest          ,
                   temperature_h[i*nv+lev] = pow(3*Tmean*Tmean*Tmean*Tmean*f*(2/3+1/(gamma*sqrt(3))+\
                         (gamma/sqrt(3) - 1/(gamma*sqrt(3)))*exp(-gamma*tau*sqrt(3))),0.25);
                 }
-                if (hstest == 4) {
+                if (core_benchmark == 4) {
                   double Ptil = 0.0;
                   if (pressure_h[i*nv+lev] >= 1e5) {
                     Ptil = log10(pressure_h[i*nv + lev]/100000);
@@ -384,7 +383,7 @@ __host__ bool ESP::InitialValues(bool rest          ,
             }
             Wh_h[i*(nv + 1) + nv] = 0.0;
         }
-        if (hstest == 5) {
+        if (core_benchmark == 5) {
           //  Number of threads per block.
           const int NTH = 256;
 
@@ -576,35 +575,69 @@ __host__ bool ESP::InitialValues(bool rest          ,
     }
 
 // Input for vulcan
-	FILE *infile1         ;
-	int NT = 55;
-	int NP = 135;
-	double dummy;
-	if(vulcan == 1){
-	    infile1 = fopen("ifile/solar_fEQ_THOR.txt","r");
-	    if (infile1 == NULL) {
-		    printf("\nUnable to open input file.\n");
-		    exit (EXIT_FAILURE);
-	    }
-	    for(int i = 0; i < NT ; i++)
-		    for(int j = 0; j < NP ; j++)
-			    fscanf(infile1,"%lf %lf %lf %lf %lf %lf %lf", &T_che_h[i], &P_che_h[j], &ch4eq_h[j*NT + i],
-					    &coeq_h[j*NT + i], &h2oeq_h[j*NT + i], &co2eq_h[j*NT + i], &nh3eq_h[j*NT + i]);
-	    fclose(infile1);
+    FILE *infile1         ;
+    int NT = 55;
+    int NP = 135;
+    double dummy;
+    if(vulcan == 1){
+        infile1 = fopen("ifile/solar_fEQ_THOR.txt","r");
+        if (infile1 == NULL) {
+            printf("\nUnable to open input file.\n");
+            exit (EXIT_FAILURE);
+        }
+        for(int i = 0; i < NT ; i++) {
+            for(int j = 0; j < NP ; j++) {
+                if ( fscanf(infile1,
+                            "%lf %lf %lf %lf %lf %lf %lf",
+                            &T_che_h[i],
+                            &P_che_h[j],
+                            &ch4eq_h[j*NT + i],
+                            &coeq_h[j*NT + i],
+                            &h2oeq_h[j*NT + i],
+                            &co2eq_h[j*NT + i],
+                            &nh3eq_h[j*NT + i]) != 7)
+                {
+                    printf("error parsing ifile/solar_fEQ_THOR.txt\n");
+                    fclose(infile1);
+                    return false;
+                }
+            }
+        }
 
-	    infile1 = fopen("ifile/solar_chem_time.txt","r");
-	    if (infile1 == NULL) {
-		    printf("\nUnable to open input file.\n");
-		    exit (EXIT_FAILURE);
-	    }
-	    for(int i = 0; i < NT ; i++)
-		    for(int j = 0; j < NP ; j++)
-			    fscanf(infile1,"%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf", &T_che_h[i], &P_che_h[j], &tauch4_h[j*NT + i],
-					    &tauco_h[j*NT + i], &dummy, &dummy, &tauh2o_h[j*NT + i],&tauco2_h[j*NT + i], &taunh3_h[j*NT + i], &dummy);
-	    for(int j = 0; j < NP ; j++) P_che_h[j] = log(P_che_h[j]);
-	    fclose(infile1);
 
-	    // CH4
+        fclose(infile1);
+
+        infile1 = fopen("ifile/solar_chem_time.txt","r");
+        if (infile1 == NULL) {
+            printf("\nUnable to open input file.\n");
+            return false;
+        }
+        for(int i = 0; i < NT ; i++){
+            for(int j = 0; j < NP ; j++){
+                if ( fscanf(infile1,
+                            "%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf",
+                            &T_che_h[i],
+                            &P_che_h[j],
+                            &tauch4_h[j*NT + i],
+                            &tauco_h[j*NT + i],
+                            &dummy,
+                            &dummy,
+                            &tauh2o_h[j*NT + i],
+                            &tauco2_h[j*NT + i],
+                            &taunh3_h[j*NT + i],
+                            &dummy) != 10)
+                {
+                    printf("error parsing ifile/solar_chem_time.txt\n");
+                    fclose(infile1);
+                    return false;
+                }
+              }
+            }
+
+                for(int j = 0; j < NP ; j++) P_che_h[j] = log(P_che_h[j]);
+                fclose(infile1);
+
+                // CH4
 	    for(int lev = 0; lev < nv ; lev++){
 		    for(int i = 0; i < point_num;i++){
 			    tracer_h[i*nv*ntr + lev*ntr + 0] = Compute_tracer_host (ch4eq_h       ,
@@ -739,7 +772,7 @@ __host__ bool ESP::InitialValues(bool rest          ,
 
     delete [] Kdh4_h;
     delete [] Kdhz_h;
-    
+
     return true;
 }
 

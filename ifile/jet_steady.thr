@@ -22,8 +22,6 @@ radius = 1e8
 rotation_rate = 2.1e-5
 # Gravitational acceleration [m/s^2]
 gravitation = 9.8
-# Mean molecular mass of dry air [kg]
-Mmol = 28.964
 # Gas constant [J/(Kg K)]
 Rd = 3500
 # Specific heat capacities [J/(Kg K)]
@@ -67,8 +65,7 @@ rest = true
 # HS test for tidally locked Earth == 2
 # No HS test == 0
 # HS test for deep hot Jupiter == 4
-
-hstest = 5
+core_benchmark  = 5
 
 #Tstar = 4875
 #planet_star_dist = 0.03099

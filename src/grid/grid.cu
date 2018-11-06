@@ -57,6 +57,25 @@
 ////////////////////////////////////////////////////////////////////////
 
 #include "../headers/grid.h"
+#include "vector_operations.h"
+
+// some helper local functions
+inline double3 normproj(const double3 & v1, const double3 & v2)
+{
+  
+    
+    double l1 = dot(v1,v2);
+    
+    double3 vc1 = cross(v1,v2);
+
+    double l2 = length(vc1);
+
+    vc1 = vc1/l2*atan2(l2, l1);
+
+    return vc1;
+}
+
+
 
 __host__ Icogrid::Icogrid (bool sprd         ,  // Spring dynamics option
                            double spring_beta,  // Parameter beta for spring dynamics
@@ -171,7 +190,8 @@ __host__ Icogrid::Icogrid (bool sprd         ,  // Spring dynamics option
                         point_num  );
 
         //  Finds the q points.
-        point_xyzq = (double*)malloc(6*3*point_num * sizeof(double));
+        point_xyzq = (double*)malloc(6*3*point_num * sizeof(double));        
+        
         find_qpoints (point_local ,
                       point_xyzq  ,
                       point_xyz   ,
@@ -283,16 +303,16 @@ __host__ Icogrid::Icogrid (bool sprd         ,  // Spring dynamics option
 }
 
 
-void Icogrid::sphere_ico (double *xyz        ,
-                          int     glevel     ,
-                          int     n_region   ,
-                          int     nl_region  ,
-                          int     nl2        ,
-                          int     kxl        ,
-                          int     nfaces     ,
-                          int    *pent_ind   ,
-                          int     divide_face,
-                          int     num        ){
+void Icogrid::sphere_ico (double  *xyz_       ,
+                          int      glevel     ,
+                          int      n_region   ,
+                          int      nl_region  ,
+                          int      nl2        ,
+                          int      kxl        ,
+                          int      nfaces     ,
+                          int     *pent_ind   ,
+                          int      divide_face,
+                          int      num        ){
 
 //
 //  Description:
@@ -308,9 +328,10 @@ void Icogrid::sphere_ico (double *xyz        ,
 //          - nl_region - nl_region^2 is the number of points in the faces.
 //          - kxl       - kxl^2 is the number of small rhombi inside the main rhombi.
 
+    double3 * xyz = (double3*)xyz_;
+    
 //  Local variables
     int sizei = pow(2.0, glevel) ;
-    double l                     ;
     int count_points             ;
     int sizeip1 = sizei+1        ;
     int sizei2  = sizeip1*sizeip1;
@@ -320,138 +341,90 @@ void Icogrid::sphere_ico (double *xyz        ,
     rhombi = new int[10*sizei2]();
     int *rhomb;
     rhomb = new int[10*sizei*sizei]();
-
+    
 //  Temporary main vertices.
-    double *xyzi;
-    xyzi = new double[3*(10*sizei2+2)]();
+    double3 * xyzi = new double3[(10*sizei2+2)]();
 
     double w = 2.0 * acos(1.0/(2.0*sin(M_PI/5.0)));
 
 //  First icosahedron coordinates (pentagons)
 //  Poles
 //  North
-    xyzi[0*3 + 0] = 0.0;
-    xyzi[0*3 + 1] = 0.0;
-    xyzi[0*3 + 2] = 1.0;
+    xyzi[0] = make_double3( 0.0, 0.0, 1.0);
 // South
-    xyzi[1*3 + 0] = 0.0;
-    xyzi[1*3 + 1] = 0.0;
-    xyzi[1*3 + 2] =-1.0;
+    xyzi[1] = make_double3(0.0, 0.0, -1.0);
 //  Other points of the icosahedron.
 //  3
-    xyzi[2*3 + 0] = cos(-M_PI/5.0)*cos(M_PI/2.0-w);
-    xyzi[2*3 + 1] = sin(-M_PI/5.0)*cos(M_PI/2.0-w);
-    xyzi[2*3 + 2] = sin(M_PI/2.0-w)           ;
+    xyzi[2] = make_double3(cos(-M_PI/5.0)*cos(M_PI/2.0-w),
+                           sin(-M_PI/5.0)*cos(M_PI/2.0-w),
+                           sin(M_PI/2.0-w));
     rhombi[0] = 2;
 //  4
-    xyzi[3*3 + 0] = cos(M_PI/5.0)*cos(M_PI/2.0-w);
-    xyzi[3*3 + 1] = sin(M_PI/5.0)*cos(M_PI/2.0-w);
-    xyzi[3*3 + 2] = sin(M_PI/2.0-w)          ;
+    xyzi[3] = make_double3(cos(M_PI/5.0)*cos(M_PI/2.0-w),
+                           sin(M_PI/5.0)*cos(M_PI/2.0-w),
+                           sin(M_PI/2.0-w)),
     rhombi[1] = 3;
 //  5
-    xyzi[4*3 + 0] = cos(3.0*M_PI/5.0)*cos(M_PI/2.0-w);
-    xyzi[4*3 + 1] = sin(3.0*M_PI/5.0)*cos(M_PI/2.0-w);
-    xyzi[4*3 + 2] = sin(M_PI/2-w)            ;
+    xyzi[4] = make_double3(cos(3.0*M_PI/5.0)*cos(M_PI/2.0-w),
+                           sin(3.0*M_PI/5.0)*cos(M_PI/2.0-w),
+                           sin(M_PI/2-w));
     rhombi[2] = 4;
 //  6
-    xyzi[5*3 + 0] = cos(M_PI)*cos(M_PI/2.0-w);
-    xyzi[5*3 + 1] = sin(M_PI)*cos(M_PI/2.0-w);
-    xyzi[5*3 + 2] = sin(M_PI/2.0-w)           ;
+    xyzi[5] = make_double3(cos(M_PI)*cos(M_PI/2.0-w),
+                           sin(M_PI)*cos(M_PI/2.0-w),
+                           sin(M_PI/2.0-w));
     rhombi[3] = 5;
 //  7
-    xyzi[6*3 + 0] = cos(-(3.0/5.0)*M_PI)*cos(M_PI/2.0-w);
-    xyzi[6*3 + 1] = sin(-(3.0/5.0)*M_PI)*cos(M_PI/2.0-w);
-    xyzi[6*3 + 2] = sin(M_PI/2.0-w);
+    xyzi[6] = make_double3(cos(-(3.0/5.0)*M_PI)*cos(M_PI/2.0-w),
+                           sin(-(3.0/5.0)*M_PI)*cos(M_PI/2.0-w),
+                           sin(M_PI/2.0-w));
     rhombi[4] = 6;
 //  8
-    xyzi[7*3 + 0] = cos(0.0)*cos(w-M_PI/2.0);
-    xyzi[7*3 + 1] = sin(0.0)*cos(w-M_PI/2.0);
-    xyzi[7*3 + 2] = sin(w-M_PI/2.0);
+    xyzi[7] = make_double3(cos(0.0)*cos(w-M_PI/2.0),
+                          sin(0.0)*cos(w-M_PI/2.0),
+                          sin(w-M_PI/2.0));
     rhombi[5] = 7;
 //  9
-    xyzi[8*3 + 0] = cos(2.0*M_PI/5.0)*cos(w-M_PI/2.0);
-    xyzi[8*3 + 1] = sin(2.0*M_PI/5.0)*cos(w-M_PI/2.0);
-    xyzi[8*3 + 2] = sin(w-M_PI/2.0);
+    xyzi[8] = make_double3(cos(2.0*M_PI/5.0)*cos(w-M_PI/2.0),
+                           sin(2.0*M_PI/5.0)*cos(w-M_PI/2.0),
+                           sin(w-M_PI/2.0));
     rhombi[6] = 8;
 //  10
-    xyzi[9*3 + 0] = cos(4.0*M_PI/5.0)*cos(w-M_PI/2.0);
-    xyzi[9*3 + 1] = sin(4.0*M_PI/5.0)*cos(w-M_PI/2.0);
-    xyzi[9*3 + 2] = sin(w-M_PI/2.0);
+    xyzi[9] = make_double3(cos(4.0*M_PI/5.0)*cos(w-M_PI/2.0),
+                           sin(4.0*M_PI/5.0)*cos(w-M_PI/2.0),
+                           sin(w-M_PI/2.0));
     rhombi[7] = 9;
 //  11
-    xyzi[10*3 + 0] = cos(-4.0*M_PI/5.0)*cos(w-M_PI/2.0);
-    xyzi[10*3 + 1] = sin(-4.0*M_PI/5.0)*cos(w-M_PI/2.0);
-    xyzi[10*3 + 2] = sin(w-M_PI/2.0);
+    xyzi[10] = make_double3(cos(-4.0*M_PI/5.0)*cos(w-M_PI/2.0),
+                            sin(-4.0*M_PI/5.0)*cos(w-M_PI/2.0),
+                            sin(w-M_PI/2.0));
     rhombi[8] = 10;
 //  12
-    xyzi[11*3 + 0] = cos(-2.0*M_PI/5.0)*cos(w-M_PI/2.0);
-    xyzi[11*3 + 1] = sin(-2.0*M_PI/5.0)*cos(w-M_PI/2.0);
-    xyzi[11*3 + 2] = sin(w-M_PI/2.0);
+    xyzi[11] = make_double3(cos(-2.0*M_PI/5.0)*cos(w-M_PI/2.0),
+                            sin(-2.0*M_PI/5.0)*cos(w-M_PI/2.0),
+                            sin(w-M_PI/2.0));
     rhombi[9] = 11;
 //
 //  Standard grid points.
 //
+    int rhombi_points [10][4] = {
+            {  2,  0,  7,  3 },
+            {  3,  0,  8,  4 },
+            {  4,  0,  9,  5 },
+            {  5,  0, 10,  6 },
+            {  6,  0, 11,  2 },
+            {  7,  3,  1,  8 },
+            {  8,  4,  1,  9 },
+            {  9,  5,  1, 10 },
+            { 10,  6,  1, 11 },
+            { 11,  2,  1,  7 }
+        };
+    
     for (int faces = 0; faces < 10; faces++){
-        if(faces == 0){
-            rhombi[faces]                               = 2;
-            rhombi[sizei*sizeip1*10 + faces]            = 0;
-            rhombi[sizei*10 + faces]                    = 7;
-            rhombi[sizei*sizeip1*10 + sizei*10 + faces] = 3;
-        }
-        else if(faces ==1){
-            rhombi[faces]                               = 3;
-            rhombi[sizei*sizeip1*10 + faces]            = 0;
-            rhombi[sizei*10 + faces]                    = 8;
-            rhombi[sizei*sizeip1*10 + sizei*10 + faces] = 4;
-        }
-        else if(faces ==2){
-            rhombi[faces]                               = 4;
-            rhombi[sizei*sizeip1*10 + faces]            = 0;
-            rhombi[sizei*10 + faces]                    = 9;
-            rhombi[sizei*sizeip1*10 + sizei*10 + faces] = 5;
-        }
-        else if(faces ==3){
-            rhombi[faces]                               = 5;
-            rhombi[sizei*sizeip1*10 + faces]            = 0;
-            rhombi[sizei*10 + faces]                    = 10;
-            rhombi[sizei*sizeip1*10 + sizei*10 + faces] = 6;
-        }
-        else if(faces ==4){
-            rhombi[faces]                               = 6;
-            rhombi[sizei*sizeip1*10 + faces]            = 0;
-            rhombi[sizei*10 + faces]                    = 11;
-            rhombi[sizei*sizeip1*10 + sizei*10 + faces] = 2;
-        }
-        else if(faces ==5){
-            rhombi[faces]                               = 7;
-            rhombi[sizei*sizeip1*10 + faces]            = 3;
-            rhombi[sizei*10 + faces]                    = 1;
-            rhombi[sizei*sizeip1*10 + sizei*10 + faces] = 8;
-        }
-        else if(faces ==6){
-            rhombi[faces]                               = 8;
-            rhombi[sizei*sizeip1*10 + faces]            = 4;
-            rhombi[sizei*10 + faces]                    = 1;
-            rhombi[sizei*sizeip1*10 + sizei*10 + faces] = 9;
-        }
-        else if(faces ==7){
-            rhombi[faces]                               = 9;
-            rhombi[sizei*sizeip1*10 + faces]            = 5;
-            rhombi[sizei*10 + faces]                    = 1;
-            rhombi[sizei*sizeip1*10 + sizei*10 + faces] = 10;
-        }
-        else if(faces ==8){
-            rhombi[faces]                               = 10;
-            rhombi[sizei*sizeip1*10 + faces]            = 6;
-            rhombi[sizei*10 + faces]                    = 1;
-            rhombi[sizei*sizeip1*10 + sizei*10 + faces] = 11;
-        }
-        else if(faces ==9){
-            rhombi[faces]                               = 11;
-            rhombi[sizei*sizeip1*10 + faces]            = 2;
-            rhombi[sizei*10 + faces]                    = 1;
-            rhombi[sizei*sizeip1*10 + sizei*10 + faces] = 7;
-        }
+            rhombi[faces]                               = rhombi_points[faces][0];
+            rhombi[sizei*sizeip1*10 + faces]            = rhombi_points[faces][1];
+            rhombi[sizei*10 + faces]                    = rhombi_points[faces][2];
+            rhombi[sizei*sizeip1*10 + sizei*10 + faces] = rhombi_points[faces][3];
     }
 
     // Recursive method
@@ -468,13 +441,11 @@ void Icogrid::sphere_ico (double *xyz        ,
                 int indy1 = 0  ;
                 int indx2 = ind-ind_jump;
                 int indy2 = 0  ;
-                xyzi[count_points*3 + 0] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 0] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 0])*0.5;
-                xyzi[count_points*3 + 1] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 1] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 1])*0.5;
-                xyzi[count_points*3 + 2] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 2] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 2])*0.5;
-                l = sqrt(pow(xyzi[count_points*3 + 0],2) + pow(xyzi[count_points*3 + 1],2) + pow(xyzi[count_points*3 + 2],2));
-                xyzi[count_points*3 + 0] = xyzi[count_points*3 + 0]/l;
-                xyzi[count_points*3 + 1] = xyzi[count_points*3 + 1]/l;
-                xyzi[count_points*3 + 2] = xyzi[count_points*3 + 2]/l;
+
+                int r_idx_1 = rhombi[indx1*sizeip1*10 + indy1*10 + faces];
+                int r_idx_2 = rhombi[indx2*sizeip1*10 + indy2*10 + faces];
+                                      
+                xyzi[count_points] = normalize( (xyzi[r_idx_1] + xyzi[r_idx_2])*0.5);
                 count_points += 1;
 
                 indx = 0;
@@ -484,13 +455,12 @@ void Icogrid::sphere_ico (double *xyz        ,
                 indy1 = ind+ind_jump;
                 indx2 = 0;
                 indy2 = ind-ind_jump;
-                xyzi[count_points*3 + 0] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 0] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 0])*0.5;
-                xyzi[count_points*3 + 1] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 1] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 1])*0.5;
-                xyzi[count_points*3 + 2] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 2] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 2])*0.5;
-                l = sqrt(pow(xyzi[count_points*3 + 0],2) + pow(xyzi[count_points*3 + 1],2) + pow(xyzi[count_points*3 + 2],2));
-                xyzi[count_points*3 + 0] = xyzi[count_points*3 + 0]/l;
-                xyzi[count_points*3 + 1] = xyzi[count_points*3 + 1]/l;
-                xyzi[count_points*3 + 2] = xyzi[count_points*3 + 2]/l;
+
+                r_idx_1 = rhombi[indx1*sizeip1*10 + indy1*10 + faces];
+                r_idx_2 = rhombi[indx2*sizeip1*10 + indy2*10 + faces];
+                                      
+                xyzi[count_points] = normalize( (xyzi[r_idx_1] + xyzi[r_idx_2])*0.5);
+                
                 count_points += 1;
 
                 indx = ind;
@@ -500,13 +470,11 @@ void Icogrid::sphere_ico (double *xyz        ,
                 indy1 = ind+ind_jump;
                 indx2 = ind-ind_jump;
                 indy2 = ind-ind_jump;
-                xyzi[count_points*3 + 0] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 0] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 0])*0.5;
-                xyzi[count_points*3 + 1] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 1] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 1])*0.5;
-                xyzi[count_points*3 + 2] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 2] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 2])*0.5;
-                l = sqrt(pow(xyzi[count_points*3 + 0],2) + pow(xyzi[count_points*3 + 1],2) + pow(xyzi[count_points*3 + 2],2));
-                xyzi[count_points*3 + 0] = xyzi[count_points*3 + 0]/l;
-                xyzi[count_points*3 + 1] = xyzi[count_points*3 + 1]/l;
-                xyzi[count_points*3 + 2] = xyzi[count_points*3 + 2]/l;
+                r_idx_1 = rhombi[indx1*sizeip1*10 + indy1*10 + faces];
+                r_idx_2 = rhombi[indx2*sizeip1*10 + indy2*10 + faces];
+                                      
+                xyzi[count_points] = normalize( (xyzi[r_idx_1] + xyzi[r_idx_2])*0.5);
+
                 count_points += 1;
 
                 indx = ind;
@@ -516,13 +484,11 @@ void Icogrid::sphere_ico (double *xyz        ,
                 indy1 = sizei;
                 indx2 = ind-ind_jump;
                 indy2 = sizei;
-                xyzi[count_points*3 + 0] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 0] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 0])*0.5;
-                xyzi[count_points*3 + 1] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 1] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 1])*0.5;
-                xyzi[count_points*3 + 2] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 2] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 2])*0.5;
-                l = sqrt(pow(xyzi[count_points*3 + 0],2) + pow(xyzi[count_points*3 + 1],2) + pow(xyzi[count_points*3 + 2],2));
-                xyzi[count_points*3 + 0] = xyzi[count_points*3 + 0]/l;
-                xyzi[count_points*3 + 1] = xyzi[count_points*3 + 1]/l;
-                xyzi[count_points*3 + 2] = xyzi[count_points*3 + 2]/l;
+                r_idx_1 = rhombi[indx1*sizeip1*10 + indy1*10 + faces];
+                r_idx_2 = rhombi[indx2*sizeip1*10 + indy2*10 + faces];
+                                      
+                xyzi[count_points] = normalize( (xyzi[r_idx_1] + xyzi[r_idx_2])*0.5);
+
                 count_points += 1;
 
                 indx = sizei;
@@ -532,13 +498,12 @@ void Icogrid::sphere_ico (double *xyz        ,
                 indy1 = ind+ind_jump;
                 indx2 = sizei;
                 indy2 = ind-ind_jump;
-                xyzi[count_points*3 + 0] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 0] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 0])*0.5;
-                xyzi[count_points*3 + 1] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 1] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 1])*0.5;
-                xyzi[count_points*3 + 2] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 2] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 2])*0.5;
-                l = sqrt(pow(xyzi[count_points*3 + 0],2) + pow(xyzi[count_points*3 + 1],2) + pow(xyzi[count_points*3 + 2],2));
-                xyzi[count_points*3 + 0] = xyzi[count_points*3 + 0]/l;
-                xyzi[count_points*3 + 1] = xyzi[count_points*3 + 1]/l;
-                xyzi[count_points*3 + 2] = xyzi[count_points*3 + 2]/l;
+                
+                r_idx_1 = rhombi[indx1*sizeip1*10 + indy1*10 + faces];
+                r_idx_2 = rhombi[indx2*sizeip1*10 + indy2*10 + faces];
+                                      
+                xyzi[count_points] = normalize( (xyzi[r_idx_1] + xyzi[r_idx_2])*0.5);
+
                 count_points += 1;
 
                 ind += 2*ind_jump;
@@ -561,13 +526,12 @@ void Icogrid::sphere_ico (double *xyz        ,
                         int indy1 = rindy-ind_jump;
                         int indx2 = rindx+ind_jump;
                         int indy2 = rindy+ind_jump;
-                        xyzi[count_points*3 + 0] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 0] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 0])*0.5;
-                        xyzi[count_points*3 + 1] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 1] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 1])*0.5;
-                        xyzi[count_points*3 + 2] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 2] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 2])*0.5;
-                        l = sqrt(pow(xyzi[count_points*3 + 0],2) + pow(xyzi[count_points*3 + 1],2) + pow(xyzi[count_points*3 + 2],2));
-                        xyzi[count_points*3 + 0] = xyzi[count_points*3 + 0]/l;
-                        xyzi[count_points*3 + 1] = xyzi[count_points*3 + 1]/l;
-                        xyzi[count_points*3 + 2] = xyzi[count_points*3 + 2]/l;
+
+                        int r_idx_1 = rhombi[indx1*sizeip1*10 + indy1*10 + faces];
+                        int r_idx_2 = rhombi[indx2*sizeip1*10 + indy2*10 + faces];
+                        
+                        xyzi[count_points] = normalize((xyzi[r_idx_1] + xyzi[r_idx_2])*0.5);
+                        
                         count_points += 1;
 
                         rhombi[(rindx-ind_jump)*sizeip1*10 + rindy*10 + faces] = count_points;
@@ -575,13 +539,11 @@ void Icogrid::sphere_ico (double *xyz        ,
                         indy1 = rindy-ind_jump;
                         indx2 = rindx-ind_jump;
                         indy2 = rindy+ind_jump;
-                        xyzi[count_points*3 + 0] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 0] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 0])*0.5;
-                        xyzi[count_points*3 + 1] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 1] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 1])*0.5;
-                        xyzi[count_points*3 + 2] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 2] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 2])*0.5;
-                        l = sqrt(pow(xyzi[count_points*3 + 0],2) + pow(xyzi[count_points*3 + 1],2) + pow(xyzi[count_points*3 + 2],2));
-                        xyzi[count_points*3 + 0] = xyzi[count_points*3 + 0]/l;
-                        xyzi[count_points*3 + 1] = xyzi[count_points*3 + 1]/l;
-                        xyzi[count_points*3 + 2] = xyzi[count_points*3 + 2]/l;
+                        r_idx_1 = rhombi[indx1*sizeip1*10 + indy1*10 + faces];
+                        r_idx_2 = rhombi[indx2*sizeip1*10 + indy2*10 + faces];
+                        
+                        xyzi[count_points] = normalize((xyzi[r_idx_1] + xyzi[r_idx_2])*0.5);
+
                         count_points += 1;
 
                         rhombi[rindx*sizeip1*10 + (rindy+ind_jump)*10 + faces] = count_points;
@@ -589,13 +551,11 @@ void Icogrid::sphere_ico (double *xyz        ,
                         indy1 = rindy+ind_jump;
                         indx2 = rindx-ind_jump;
                         indy2 = rindy+ind_jump;
-                        xyzi[count_points*3 + 0] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 0] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 0])*0.5;
-                        xyzi[count_points*3 + 1] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 1] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 1])*0.5;
-                        xyzi[count_points*3 + 2] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 2] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 2])*0.5;
-                        l = sqrt(pow(xyzi[count_points*3 + 0],2) + pow(xyzi[count_points*3 + 1],2) + pow(xyzi[count_points*3 + 2],2));
-                        xyzi[count_points*3 + 0] = xyzi[count_points*3 + 0]/l;
-                        xyzi[count_points*3 + 1] = xyzi[count_points*3 + 1]/l;
-                        xyzi[count_points*3 + 2] = xyzi[count_points*3 + 2]/l;
+                        r_idx_1 = rhombi[indx1*sizeip1*10 + indy1*10 + faces];
+                        r_idx_2 = rhombi[indx2*sizeip1*10 + indy2*10 + faces];
+                        
+                        xyzi[count_points] = normalize((xyzi[r_idx_1] + xyzi[r_idx_2])*0.5);
+
                         count_points += 1;
 
                         indx += 2*ind_jump;
@@ -621,13 +581,11 @@ void Icogrid::sphere_ico (double *xyz        ,
                         int indy1 = rindy-ind_jump;
                         int indx2 = rindx+ind_jump;
                         int indy2 = rindy+ind_jump;
-                        xyzi[count_points*3 + 0] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 0] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 0])*0.5;
-                        xyzi[count_points*3 + 1] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 1] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 1])*0.5;
-                        xyzi[count_points*3 + 2] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 2] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 2])*0.5;
-                        l = sqrt(pow(xyzi[count_points*3 + 0],2) + pow(xyzi[count_points*3 + 1],2) + pow(xyzi[count_points*3 + 2],2));
-                        xyzi[count_points*3 + 0] = xyzi[count_points*3 + 0]/l;
-                        xyzi[count_points*3 + 1] = xyzi[count_points*3 + 1]/l;
-                        xyzi[count_points*3 + 2] = xyzi[count_points*3 + 2]/l;
+
+                        int r_idx_1 = rhombi[indx1*sizeip1*10 + indy1*10 + faces];
+                        int r_idx_2 = rhombi[indx2*sizeip1*10 + indy2*10 + faces];
+                        
+                        xyzi[count_points] = normalize((xyzi[r_idx_1] + xyzi[r_idx_2])*0.5);
                         count_points += 1;
 
                         rhombi[rindx*sizeip1*10 + (rindy-ind_jump)*10 + faces] = count_points;
@@ -635,13 +593,12 @@ void Icogrid::sphere_ico (double *xyz        ,
                         indy1 = rindy-ind_jump;
                         indx2 = rindx+ind_jump;
                         indy2 = rindy-ind_jump;
-                        xyzi[count_points*3 + 0] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 0] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 0])*0.5;
-                        xyzi[count_points*3 + 1] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 1] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 1])*0.5;
-                        xyzi[count_points*3 + 2] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 2] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 2])*0.5;
-                        l = sqrt(pow(xyzi[count_points*3 + 0],2) + pow(xyzi[count_points*3 + 1],2) + pow(xyzi[count_points*3 + 2],2));
-                        xyzi[count_points*3 + 0] = xyzi[count_points*3 + 0]/l;
-                        xyzi[count_points*3 + 1] = xyzi[count_points*3 + 1]/l;
-                        xyzi[count_points*3 + 2] = xyzi[count_points*3 + 2]/l;
+
+                        r_idx_1 = rhombi[indx1*sizeip1*10 + indy1*10 + faces];
+                        r_idx_2 = rhombi[indx2*sizeip1*10 + indy2*10 + faces];
+                        
+                        xyzi[count_points] = normalize((xyzi[r_idx_1] + xyzi[r_idx_2])*0.5);
+                       
                         count_points += 1;
 
                         rhombi[(rindx+ind_jump)*sizeip1*10 + rindy*10 + faces] = count_points;
@@ -649,13 +606,11 @@ void Icogrid::sphere_ico (double *xyz        ,
                         indy1 = rindy+ind_jump;
                         indx2 = rindx+ind_jump;
                         indy2 = rindy-ind_jump;
-                        xyzi[count_points*3 + 0] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 0] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 0])*0.5;
-                        xyzi[count_points*3 + 1] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 1] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 1])*0.5;
-                        xyzi[count_points*3 + 2] = (xyzi[rhombi[indx1*sizeip1*10 + indy1*10 + faces]*3 + 2] + xyzi[rhombi[indx2*sizeip1*10 + indy2*10 + faces]*3 + 2])*0.5;
-                        l = sqrt(pow(xyzi[count_points*3 + 0],2) + pow(xyzi[count_points*3 + 1],2) + pow(xyzi[count_points*3 + 2],2));
-                        xyzi[count_points*3 + 0] = xyzi[count_points*3 + 0]/l;
-                        xyzi[count_points*3 + 1] = xyzi[count_points*3 + 1]/l;
-                        xyzi[count_points*3 + 2] = xyzi[count_points*3 + 2]/l;
+                        r_idx_1 = rhombi[indx1*sizeip1*10 + indy1*10 + faces];
+                        r_idx_2 = rhombi[indx2*sizeip1*10 + indy2*10 + faces];
+                        
+                        xyzi[count_points] = normalize((xyzi[r_idx_1] + xyzi[r_idx_2])*0.5);
+                       
                         count_points += 1;
 
                         indx += 2*ind_jump;
@@ -673,18 +628,21 @@ void Icogrid::sphere_ico (double *xyz        ,
         rhomb[i*sizei*10 + j*10 + fc] = rhombi[i*sizeip1*10 + j*10 + fc];
 
     for (int fc = 0; fc < 10; fc++)    for (int kx = 0; kx < kxl; kx++) for (int ky = 0; ky < kxl; ky++)
-                for (int i = 0; i < nl_region; i++)    for (int j = 0; j < nl_region; j++)    for (int k = 0; k < 3; k++)
-                            xyz[(fc*nfaces*nl2 + ky*kxl*nl2 + kx*nl2 + j*nl_region + i)*3 + k] = xyzi[(rhomb[((ky*nl_region + j)*nli_region + kx*nl_region + i)*10 + fc])*3 + k];
+        for (int i = 0; i < nl_region; i++)    for (int j = 0; j < nl_region; j++){
+             int idx1 = fc*nfaces*nl2 + ky*kxl*nl2 + kx*nl2 + j*nl_region + i;
+             int idx2 = rhomb[((ky*nl_region + j)*nli_region + kx*nl_region + i)*10 + fc];
+                
+             xyz[idx1] = xyzi[idx2];
+            }
+            
+    
+    
 
     //North
-    xyz[(num-2)*3 + 0] =0.0;
-    xyz[(num-2)*3 + 1] =0.0;
-    xyz[(num-2)*3 + 2] =1.0;
+    xyz[num-2] = make_double3(0.0, 0.0, 1.0);
 
     //South
-    xyz[(num-1)*3 + 0] =0.0 ;
-    xyz[(num-1)*3 + 1] =0.0 ;
-    xyz[(num-1)*3 + 2] =-1.0;
+    xyz[num-1] = make_double3(0.0, 0.0, -1.0);
 
     //Pentagons' indexes
     for (int faces = 0; faces < 10; faces++) pent_ind[faces] = faces*nfaces*nl2;
@@ -1558,44 +1516,26 @@ void Icogrid::spring_dynamics(int *point_local    ,
 //
 //  Output: - xyz - New vertex's positions
 //
-
+    double3 *xyz3 = (double3*)xyz;
+    
     //  Local variables
-    double Wx, Wy, Wz;
-    double Vx, Vy, Vz;
-    double velx_val, vely_val, velz_val;
-    double Fxnet, Fynet, Fznet;
-    double X, Y, Z;
+    double3 W;
+    double3 V;
+    double3 vel_val;
+    double3 F_v_net;
+    double3 D;
     double l, d, H, max_v;
-
-    //Local arrays.
-    double *xyzi;
-    double *velx, *vely, *velz;
-    double *Px, *Py, *Pz;
-    double *Fx, *Fy, *Fz;
-    double *Px_Nei, *Py_Nei, *Pz_Nei;
-    double *Fx_Nei, *Fy_Nei, *Fz_Nei;
-    double *Fnet;
-
+    
     // Central point
-    xyzi = new double[12*3]();
-    velx = new double[point_num]();
-    vely = new double[point_num]();
-    velz = new double[point_num]();
-    Fnet = new double[point_num]();
-    Fx   = new double[point_num]();
-    Fy   = new double[point_num]();
-    Fz   = new double[point_num]();
-    Px   = new double[point_num]();
-    Py   = new double[point_num]();
-    Pz   = new double[point_num]();
+    double3 * xyzi = new double3[12]();
+    double3 *  vel = new double3[point_num]();
+    double * Fnet = new double[point_num]();
+    double3 * F  = new double3[point_num]();
+    double3 * P   = new double3[point_num]();
 
     // First neighbors.
-    Fx_Nei   = new double[point_num*6]();
-    Fy_Nei   = new double[point_num*6]();
-    Fz_Nei   = new double[point_num*6]();
-    Px_Nei   = new double[point_num*6]();
-    Py_Nei   = new double[point_num*6]();
-    Pz_Nei   = new double[point_num*6]();
+    double3 * F_Nei   = new double3[point_num*6]();
+    double3 * P_Nei   = new double3[point_num*6]();
 
     // Routine parameters.
     double lba       = 2.0*M_PI/(10.0*pow(2.0,glevel-1));
@@ -1609,15 +1549,11 @@ void Icogrid::spring_dynamics(int *point_local    ,
     printf("\n\n Running spring dynamics.\n\n");
 
     for (int i = 0; i < point_num; i++){
-        velx[i] = 0.0;
-        vely[i] = 0.0;
-        velz[i] = 0.0;
+        vel[i] = make_double3(0.0, 0.0, 0.0);
     }
 
     for (int i = 0; i < 12; i++){
-        xyzi[i * 3 + 0] = xyz[pent_ind[i] * 3 + 0];
-        xyzi[i * 3 + 1] = xyz[pent_ind[i] * 3 + 1];
-        xyzi[i * 3 + 2] = xyz[pent_ind[i] * 3 + 2];
+        xyzi[i] = xyz3[pent_ind[i]];
         point_local[pent_ind[i]*6 + 5] = point_local[pent_ind[i]*6];
     }
 
@@ -1625,107 +1561,65 @@ void Icogrid::spring_dynamics(int *point_local    ,
     for (int it = 0; it < lim; it++){
 
         for (int i = 0; i < point_num; i++){
-            Px[i] = xyz[i*3 + 0];
-            Py[i] = xyz[i*3 + 1];
-            Pz[i] = xyz[i*3 + 2];
+            P[i] = xyz3[i];
             for (int j = 0; j < 6; j++){
-                Px_Nei[i*6 + j] = xyz[point_local[i*6 + j]*3 + 0];
-                Py_Nei[i*6 + j] = xyz[point_local[i*6 + j]*3 + 1];
-                Pz_Nei[i*6 + j] = xyz[point_local[i*6 + j]*3 + 2];
+                P_Nei[i*6 + j] = xyz3[point_local[i*6 + j]];
             }
         }
         for (int i = 0; i < point_num; i++){
             for (int j = 0; j < 6; j++){
-
-                Wx = Py[i]*Pz_Nei[i*6 + j] - Pz[i]*Py_Nei[i*6 + j];
-                Wy = Pz[i]*Px_Nei[i*6 + j] - Px[i]*Pz_Nei[i*6 + j];
-                Wz = Px[i]*Py_Nei[i*6 + j] - Py[i]*Px_Nei[i*6 + j];
-
-                Vx = Wy*Pz[i] - Wz*Py[i];
-                Vy = Wz*Px[i] - Wx*Pz[i];
-                Vz = Wx*Py[i] - Wy*Px[i];
-
+                W = cross(P[i], P_Nei[i*6 + j]);
+                
+                V = cross(W, P[i]);
+                
                 //norm
-                l = sqrt(Vx*Vx + Vy*Vy + Vz*Vz);
+                l = length(V);
 
-                d = acos(Px[i]*Px_Nei[i*6 + j] + Py[i]*Py_Nei[i*6 + j] + Pz[i]*Pz_Nei[i*6 + j]);
+                d = acos(dot(P[i],P_Nei[i*6 + j]));
 
-                Fx_Nei[i*6 + j] = (d - dbar) * Vx;
-                Fy_Nei[i*6 + j] = (d - dbar) * Vy;
-                Fz_Nei[i*6 + j] = (d - dbar) * Vz;
-
-                Fx_Nei[i*6 + j] = Fx_Nei[i*6 + j]/l;
-                Fy_Nei[i*6 + j] = Fy_Nei[i*6 + j]/l;
-                Fz_Nei[i*6 + j] = Fz_Nei[i*6 + j]/l;
+                F_Nei[i*6 + j] = ((d - dbar) * V)/l;
             }
         }
 
         for (int i = 0; i < 12; i++){
-
-            Fx_Nei[pent_ind[i]*6 + 5] = 0.0;
-            Fy_Nei[pent_ind[i]*6 + 5] = 0.0;
-            Fz_Nei[pent_ind[i]*6 + 5] = 0.0;
-
+            F_Nei[pent_ind[i]*6 + 5] = make_double3(0.0,0.0,0.0);
         }
 
         for (int i = 0; i < point_num; i++){
+            // Calculate net forces in each point.
+            F_v_net = F_Nei[i*6 + 0] + F_Nei[i*6 + 1] + F_Nei[i*6 + 2] + F_Nei[i*6 + 3] + F_Nei[i*6 + 4] + F_Nei[i*6 + 5];
 
-                // Calculate net forces in each point.
-                Fxnet = Fx_Nei[i*6 + 0] + Fx_Nei[i*6 + 1] + Fx_Nei[i*6 + 2] + Fx_Nei[i*6 + 3] + Fx_Nei[i*6 + 4] + Fx_Nei[i*6 + 5];
-                Fynet = Fy_Nei[i*6 + 0] + Fy_Nei[i*6 + 1] + Fy_Nei[i*6 + 2] + Fy_Nei[i*6 + 3] + Fy_Nei[i*6 + 4] + Fy_Nei[i*6 + 5];
-                Fznet = Fz_Nei[i*6 + 0] + Fz_Nei[i*6 + 1] + Fz_Nei[i*6 + 2] + Fz_Nei[i*6 + 3] + Fz_Nei[i*6 + 4] + Fz_Nei[i*6 + 5];
+            // Used to check convergence.
+            Fnet[i] = length(F_v_net) / lba;
 
-                // Used to check convergence.
-                Fnet[i] = sqrt(Fxnet * Fxnet + Fynet * Fynet + Fznet * Fznet) / lba;
-
-                // Drag move.
-                Fx[i] = Fxnet - drag * velx[i];
-                Fy[i] = Fynet - drag * vely[i];
-                Fz[i] = Fznet - drag * velz[i];
+            // Drag move.
+            F[i] = F_v_net - drag * vel[i];
         }
 
         for (int i = 0; i < point_num; i++){
 
             // Update points
-            X = xyz[i*3 + 0] + velx[i]*tstep;
-            Y = xyz[i*3 + 1] + vely[i]*tstep;
-            Z = xyz[i*3 + 2] + velz[i]*tstep;
+            D = xyz3[i] + vel[i]*tstep;
 
-            l = sqrt(X*X + Y*Y + Z*Z);
-
-            xyz[i*3 + 0] = X/l;
-            xyz[i*3 + 1] = Y/l;
-            xyz[i*3 + 2] = Z/l;
-
+            xyz3[i] = normalize(D);
         }
 
         for (int i = 0; i < point_num; i++){
 
             // Update vel
-            velx_val = velx[i] + Fx[i]*tstep;
-            vely_val = vely[i] + Fy[i]*tstep;
-            velz_val = velz[i] + Fz[i]*tstep;
+            vel_val = vel[i] + F[i]*tstep;
 
-            H = xyz[i*3 + 0]*velx_val + xyz[i*3 + 1]*vely_val + xyz[i*3 + 2]*velz_val;
+            H = dot(xyz3[i],vel_val);
 
             // Remove radial component (if any).
-            velx[i] = velx_val - H*xyz[i*3 + 0];
-            vely[i] = vely_val - H*xyz[i*3 + 1];
-            velz[i] = velz_val - H*xyz[i*3 + 2];
-
+            vel[i] = vel_val - H*xyz3[i];
         }
 
         // Fix Petagon's position.
         for (int i = 0; i < 12; i++){
-
-            velx[pent_ind[i]]      = 0.0;
-            vely[pent_ind[i]]      = 0.0;
-            velz[pent_ind[i]]      = 0.0;
+            vel[pent_ind[i]]      = make_double3(0.0, 0.0, 0.0);
             Fnet[pent_ind[i]]      = 0.0;
-            xyz[pent_ind[i] * 3 + 0] = xyzi[i * 3 + 0];
-            xyz[pent_ind[i] * 3 + 1] = xyzi[i * 3 + 1];
-            xyz[pent_ind[i] * 3 + 2] = xyzi[i * 3 + 2];
-
+            xyz3[pent_ind[i]] = xyzi[i];
         }
 
         // Check convergence.
@@ -1738,22 +1632,12 @@ void Icogrid::spring_dynamics(int *point_local    ,
     printf(" Done!\n\n");
 
     delete [] xyzi;
-    delete [] velx;
-    delete [] vely;
-    delete [] velz;
-    delete [] Fx;
-    delete [] Fy;
-    delete [] Fz;
-    delete [] Px;
-    delete [] Py;
-    delete [] Pz;
+    delete [] vel;
+    delete [] F;
+    delete [] P;
     delete [] Fnet;
-    delete [] Fx_Nei;
-    delete [] Fy_Nei;
-    delete [] Fz_Nei;
-    delete [] Px_Nei;
-    delete [] Py_Nei;
-    delete [] Pz_Nei;
+    delete [] F_Nei;
+    delete [] P_Nei;
 
 }
 
@@ -1776,302 +1660,34 @@ void Icogrid::find_qpoints (int    *point_local,
 //  Output:- xyzq       - Q-points coordinates.
 //
 
-    double *v1, *v2;
-    double *vc1, *vc2, *vc3;
-    double *vgc;
-    double l1, l2, geo;
+    double3 * xyz3 = (double3*)xyz;
+    double3 * xyzq3 = (double3*)xyzq;
+    
+    double3 vc1, vc2, vc3;
 
-    v1   = new double[3]();
-    v2   = new double[3]();
-    vc1  = new double[3]();
-    vc2  = new double[3]();
-    vc3  = new double[3]();
-    vgc  = new double[3]();
-
+    int geo;
+    
     for (int i = 0; i < point_num; i++){
         geo = 6; // Hexagons.
         for (int k = 0; k < 12; k++) if(i == pent_ind[k]) geo = 5; // Pentagons.
-        if(geo == 5){
-            for (int j = 0; j < 4; j++){
-                v2[0] = xyz[i*3 + 0];
-                v2[1] = xyz[i*3 + 1];
-                v2[2] = xyz[i*3 + 2];
-                v1[0] = xyz[point_local[i*6 + j]*3 + 0];
-                v1[1] = xyz[point_local[i*6 + j]*3 + 1];
-                v1[2] = xyz[point_local[i*6 + j]*3 + 2];
-
-                l1 = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
-
-                vc1[0] = v1[1]*v2[2] - v1[2]*v2[1];
-                vc1[1] = v1[2]*v2[0] - v1[0]*v2[2];
-                vc1[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
-                l2 = sqrt(vc1[0] * vc1[0] + vc1[1] * vc1[1] + vc1[2] * vc1[2]);
-
-                vc1[0] = vc1[0] / l2 * atan2(l2, l1);
-                vc1[1] = vc1[1] / l2 * atan2(l2, l1);
-                vc1[2] = vc1[2] / l2 * atan2(l2, l1);
-
-                v2[0] = xyz[point_local[i*6 + j]*3 + 0];
-                v2[1] = xyz[point_local[i*6 + j]*3 + 1];
-                v2[2] = xyz[point_local[i*6 + j]*3 + 2];
-                v1[0] = xyz[point_local[i*6 + j+1]*3 + 0];
-                v1[1] = xyz[point_local[i*6 + j+1]*3 + 1];
-                v1[2] = xyz[point_local[i*6 + j+1]*3 + 2];
-
-                l1 = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
-
-                vc2[0] = v1[1]*v2[2] - v1[2]*v2[1];
-                vc2[1] = v1[2]*v2[0] - v1[0]*v2[2];
-                vc2[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
-                l2 = sqrt(vc2[0] * vc2[0] + vc2[1] * vc2[1] + vc2[2] * vc2[2]);
-
-                vc2[0] = vc2[0] / l2 * atan2(l2, l1);
-                vc2[1] = vc2[1] / l2 * atan2(l2, l1);
-                vc2[2] = vc2[2] / l2 * atan2(l2, l1);
-
-                v2[0] = xyz[point_local[i*6 + j+1]*3 + 0];
-                v2[1] = xyz[point_local[i*6 + j+1]*3 + 1];
-                v2[2] = xyz[point_local[i*6 + j+1]*3 + 2];
-                v1[0] = xyz[i*3 + 0];
-                v1[1] = xyz[i*3 + 1];
-                v1[2] = xyz[i*3 + 2];
-
-                l1 = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
-
-                vc3[0] = v1[1]*v2[2] - v1[2]*v2[1];
-                vc3[1] = v1[2]*v2[0] - v1[0]*v2[2];
-                vc3[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
-                l2 = sqrt(vc3[0] * vc3[0] + vc3[1] * vc3[1] + vc3[2] * vc3[2]);
-
-                vc3[0] = vc3[0] / l2 * atan2(l2, l1);
-                vc3[1] = vc3[1] / l2 * atan2(l2, l1);
-                vc3[2] = vc3[2] / l2 * atan2(l2, l1);
-
-                vgc[0] = vc1[0] + vc2[0] + vc3[0];
-                vgc[1] = vc1[1] + vc2[1] + vc3[1];
-                vgc[2] = vc1[2] + vc2[2] + vc3[2];
-
-                l2 = sqrt(vgc[0] * vgc[0] + vgc[1] * vgc[1] + vgc[2] * vgc[2]);
-
-                xyzq[i*6*3 + j*3 + 0] = vgc[0] / l2;
-                xyzq[i*6*3 + j*3 + 1] = vgc[1] / l2;
-                xyzq[i*6*3 + j*3 + 2] = vgc[2] / l2;
-            }
-            v2[0] = xyz[i*3 + 0];
-            v2[1] = xyz[i*3 + 1];
-            v2[2] = xyz[i*3 + 2];
-            v1[0] = xyz[point_local[i*6 + 4]*3 + 0];
-            v1[1] = xyz[point_local[i*6 + 4]*3 + 1];
-            v1[2] = xyz[point_local[i*6 + 4]*3 + 2];
-
-            l1 = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
-
-            vc1[0] = v1[1]*v2[2] - v1[2]*v2[1];
-            vc1[1] = v1[2]*v2[0] - v1[0]*v2[2];
-            vc1[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
-            l2 = sqrt(vc1[0] * vc1[0] + vc1[1] * vc1[1] + vc1[2] * vc1[2]);
-
-            vc1[0] = vc1[0] / l2 * atan2(l2, l1);
-            vc1[1] = vc1[1] / l2 * atan2(l2, l1);
-            vc1[2] = vc1[2] / l2 * atan2(l2, l1);
-
-            v2[0] = xyz[point_local[i*6 + 4]*3 + 0];
-            v2[1] = xyz[point_local[i*6 + 4]*3 + 1];
-            v2[2] = xyz[point_local[i*6 + 4]*3 + 2];
-            v1[0] = xyz[point_local[i*6 + 0]*3 + 0];
-            v1[1] = xyz[point_local[i*6 + 0]*3 + 1];
-            v1[2] = xyz[point_local[i*6 + 0]*3 + 2];
-
-            l1 = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
-
-            vc2[0] = v1[1]*v2[2] - v1[2]*v2[1];
-            vc2[1] = v1[2]*v2[0] - v1[0]*v2[2];
-            vc2[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
-            l2 = sqrt(vc2[0] * vc2[0] + vc2[1] * vc2[1] + vc2[2] * vc2[2]);
-
-            vc2[0] = vc2[0] / l2 * atan2(l2, l1);
-            vc2[1] = vc2[1] / l2 * atan2(l2, l1);
-            vc2[2] = vc2[2] / l2 * atan2(l2, l1);
-
-            v2[0] = xyz[point_local[i*6 + 0]*3 + 0];
-            v2[1] = xyz[point_local[i*6 + 0]*3 + 1];
-            v2[2] = xyz[point_local[i*6 + 0]*3 + 2];
-            v1[0] = xyz[i*3 + 0];
-            v1[1] = xyz[i*3 + 1];
-            v1[2] = xyz[i*3 + 2];
-
-            l1 = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
-
-            vc3[0] = v1[1]*v2[2] - v1[2]*v2[1];
-            vc3[1] = v1[2]*v2[0] - v1[0]*v2[2];
-            vc3[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
-            l2 = sqrt(vc3[0] * vc3[0] + vc3[1] * vc3[1] + vc3[2] * vc3[2]);
-
-            vc3[0] = vc3[0] / l2 * atan2(l2, l1);
-            vc3[1] = vc3[1] / l2 * atan2(l2, l1);
-            vc3[2] = vc3[2] / l2 * atan2(l2, l1);
-
-            vgc[0] = vc1[0] + vc2[0] + vc3[0];
-            vgc[1] = vc1[1] + vc2[1] + vc3[1];
-            vgc[2] = vc1[2] + vc2[2] + vc3[2];
-
-            l2 = sqrt(vgc[0] * vgc[0] + vgc[1] * vgc[1] + vgc[2] * vgc[2]);
-
-            xyzq[i*6*3 + 4*3 + 0] = vgc[0] / l2;
-            xyzq[i*6*3 + 4*3 + 1] = vgc[1] / l2;
-            xyzq[i*6*3 + 4*3 + 2] = vgc[2] / l2;
+        
+        
+        
+        for (int j = 0; j < geo - 1; j++){
+            vc1 = normproj( xyz3[point_local[i*6 + j]], xyz3[i] );
+            vc2 = normproj( xyz3[point_local[i*6 + j+1]], xyz3[point_local[i*6 + j]] );
+            vc3 = normproj( xyz3[i], xyz3[point_local[i*6 + j+1]] );
+            xyzq3[i*6 + j] = normalize(vc1 + vc2 + vc3);
         }
-        else{   // Hexagons
-            for (int j = 0; j < 5; j++){
-                v2[0] = xyz[i*3 + 0];
-                v2[1] = xyz[i*3 + 1];
-                v2[2] = xyz[i*3 + 2];
-                v1[0] = xyz[point_local[i*6 + j]*3 + 0];
-                v1[1] = xyz[point_local[i*6 + j]*3 + 1];
-                v1[2] = xyz[point_local[i*6 + j]*3 + 2];
 
-                l1 = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
-
-                vc1[0] = v1[1]*v2[2] - v1[2]*v2[1];
-                vc1[1] = v1[2]*v2[0] - v1[0]*v2[2];
-                vc1[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
-                l2 = sqrt(vc1[0] * vc1[0] + vc1[1] * vc1[1] + vc1[2] * vc1[2]);
-
-                vc1[0] = vc1[0] / l2 * atan2(l2, l1);
-                vc1[1] = vc1[1] / l2 * atan2(l2, l1);
-                vc1[2] = vc1[2] / l2 * atan2(l2, l1);
-
-                v2[0] = xyz[point_local[i*6 + j]*3 + 0];
-                v2[1] = xyz[point_local[i*6 + j]*3 + 1];
-                v2[2] = xyz[point_local[i*6 + j]*3 + 2];
-                v1[0] = xyz[point_local[i*6 + j+1]*3 + 0];
-                v1[1] = xyz[point_local[i*6 + j+1]*3 + 1];
-                v1[2] = xyz[point_local[i*6 + j+1]*3 + 2];
-
-                l1 = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
-
-                vc2[0] = v1[1]*v2[2] - v1[2]*v2[1];
-                vc2[1] = v1[2]*v2[0] - v1[0]*v2[2];
-                vc2[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
-                l2 = sqrt(vc2[0] * vc2[0] + vc2[1] * vc2[1] + vc2[2] * vc2[2]);
-
-                vc2[0] = vc2[0] / l2 * atan2(l2, l1);
-                vc2[1] = vc2[1] / l2 * atan2(l2, l1);
-                vc2[2] = vc2[2] / l2 * atan2(l2, l1);
-
-                v2[0] = xyz[point_local[i*6 + j+1]*3 + 0];
-                v2[1] = xyz[point_local[i*6 + j+1]*3 + 1];
-                v2[2] = xyz[point_local[i*6 + j+1]*3 + 2];
-                v1[0] = xyz[i*3 + 0];
-                v1[1] = xyz[i*3 + 1];
-                v1[2] = xyz[i*3 + 2];
-
-                l1 = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
-
-                vc3[0] = v1[1]*v2[2] - v1[2]*v2[1];
-                vc3[1] = v1[2]*v2[0] - v1[0]*v2[2];
-                vc3[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
-                l2 = sqrt(vc3[0] * vc3[0] + vc3[1] * vc3[1] + vc3[2] * vc3[2]);
-
-                vc3[0] = vc3[0] / l2 * atan2(l2, l1);
-                vc3[1] = vc3[1] / l2 * atan2(l2, l1);
-                vc3[2] = vc3[2] / l2 * atan2(l2, l1);
-
-                vgc[0] = vc1[0] + vc2[0] + vc3[0];
-                vgc[1] = vc1[1] + vc2[1] + vc3[1];
-                vgc[2] = vc1[2] + vc2[2] + vc3[2];
-
-                l2 = sqrt(vgc[0] * vgc[0] + vgc[1] * vgc[1] + vgc[2] * vgc[2]);
-
-                xyzq[i*6*3 + j*3 + 0] = vgc[0] / l2;
-                xyzq[i*6*3 + j*3 + 1] = vgc[1] / l2;
-                xyzq[i*6*3 + j*3 + 2] = vgc[2] / l2;
-            }
-
-            v2[0] = xyz[i*3 + 0];
-            v2[1] = xyz[i*3 + 1];
-            v2[2] = xyz[i*3 + 2];
-            v1[0] = xyz[point_local[i*6 + 5]*3 + 0];
-            v1[1] = xyz[point_local[i*6 + 5]*3 + 1];
-            v1[2] = xyz[point_local[i*6 + 5]*3 + 2];
-
-            l1 = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
-
-            vc1[0] = v1[1]*v2[2] - v1[2]*v2[1];
-            vc1[1] = v1[2]*v2[0] - v1[0]*v2[2];
-            vc1[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
-            l2 = sqrt(vc1[0] * vc1[0] + vc1[1] * vc1[1] + vc1[2] * vc1[2]);
-
-            vc1[0] = vc1[0] / l2 * atan2(l2, l1);
-            vc1[1] = vc1[1] / l2 * atan2(l2, l1);
-            vc1[2] = vc1[2] / l2 * atan2(l2, l1);
-
-            v2[0] = xyz[point_local[i*6 + 5]*3 + 0];
-            v2[1] = xyz[point_local[i*6 + 5]*3 + 1];
-            v2[2] = xyz[point_local[i*6 + 5]*3 + 2];
-            v1[0] = xyz[point_local[i*6 + 0]*3 + 0];
-            v1[1] = xyz[point_local[i*6 + 0]*3 + 1];
-            v1[2] = xyz[point_local[i*6 + 0]*3 + 2];
-
-            l1 = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
-
-            vc2[0] = v1[1]*v2[2] - v1[2]*v2[1];
-            vc2[1] = v1[2]*v2[0] - v1[0]*v2[2];
-            vc2[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
-            l2 = sqrt(vc2[0] * vc2[0] + vc2[1] * vc2[1] + vc2[2] * vc2[2]);
-
-            vc2[0] = vc2[0] / l2 * atan2(l2, l1);
-            vc2[1] = vc2[1] / l2 * atan2(l2, l1);
-            vc2[2] = vc2[2] / l2 * atan2(l2, l1);
-
-            v2[0] = xyz[point_local[i*6 + 0]*3 + 0];
-            v2[1] = xyz[point_local[i*6 + 0]*3 + 1];
-            v2[2] = xyz[point_local[i*6 + 0]*3 + 2];
-            v1[0] = xyz[i*3 + 0];
-            v1[1] = xyz[i*3 + 1];
-            v1[2] = xyz[i*3 + 2];
-
-            l1 = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
-
-            vc3[0] = v1[1]*v2[2] - v1[2]*v2[1];
-            vc3[1] = v1[2]*v2[0] - v1[0]*v2[2];
-            vc3[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
-            l2 = sqrt(vc3[0] * vc3[0] + vc3[1] * vc3[1] + vc3[2] * vc3[2]);
-
-            vc3[0] = vc3[0] / l2 * atan2(l2, l1);
-            vc3[1] = vc3[1] / l2 * atan2(l2, l1);
-            vc3[2] = vc3[2] / l2 * atan2(l2, l1);
-
-            vgc[0] = vc1[0] + vc2[0] + vc3[0];
-            vgc[1] = vc1[1] + vc2[1] + vc3[1];
-            vgc[2] = vc1[2] + vc2[2] + vc3[2];
-
-            l2 = sqrt(vgc[0] * vgc[0] + vgc[1] * vgc[1] + vgc[2] * vgc[2]);
-
-            xyzq[i*6*3 + 5*3 + 0] = vgc[0] / l2;
-            xyzq[i*6*3 + 5*3 + 1] = vgc[1] / l2;
-            xyzq[i*6*3 + 5*3 + 2] = vgc[2] / l2;
-        }
+        vc1 = normproj( xyz3[point_local[i*6 + geo - 1]], xyz3[i] );
+        vc2 = normproj( xyz3[point_local[i*6 + 0]], xyz3[point_local[i*6 + geo - 1]] );
+        vc3 = normproj( xyz3[i], xyz3[point_local[i*6 + 0]] );
+        
+        xyzq3[i*6 + geo - 1] = normalize(vc1 + vc2 + vc3);
+        if (geo == 5)
+            xyzq3[i*6 + 5] = make_double3(0.0,0.0,0.0);
     }
-
-    delete [] v1;
-    delete [] v2;
-    delete [] vc1;
-    delete [] vc2;
-    delete [] vc3;
-    delete [] vgc;
 }
 
 
@@ -2097,269 +1713,31 @@ void Icogrid::relocate_centres(int    *point_local,
 //
 
     // Local variables.
-    double l1, l2, geo;
+    int geo;
 
     // Local arrays-
-    double *v1, *v2;
-    double *vc1, *vc2, *vc3, *vc4, *vc5, *vc6;
-    double *vgc;
+    double3 * xyzq3 = (double3*)xyzq;
+    double3 * xyz3 = (double3*)xyz;
 
-    v1   = new double[3]();
-    v2   = new double[3]();
-    vc1  = new double[3]();
-    vc2  = new double[3]();
-    vc3  = new double[3]();
-    vc4  = new double[3]();
-    vc5  = new double[3]();
-    vc6  = new double[3]();
-    vgc  = new double[3]();
+    // local vectors
+    double3 vgc;
 
     for (int i = 0; i < point_num; i++){
         geo = 6; // Hexagons.
         for (int k = 0; k < 12; k++) if(i == pent_ind[k]) geo = 5; // Pentagons.
-        if(geo == 5){
 
-            v1[0] = xyzq[i*6*3 + 1*3 + 0];
-            v1[1] = xyzq[i*6*3 + 1*3 + 1];
-            v1[2] = xyzq[i*6*3 + 1*3 + 2];
-            v2[0] = xyzq[i*6*3 + 0*3 + 0];
-            v2[1] = xyzq[i*6*3 + 0*3 + 1];
-            v2[2] = xyzq[i*6*3 + 0*3 + 2];
+        vgc = make_double3(0.0,0.0,0.0);
 
-            l1 = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
+        // add all projected vectors
+        for (int j = 1; j < geo; j++)
+            vgc += normproj(xyzq3[i*6 + j], xyzq3[i*6 + j-1]);
 
-            vc1[0] = v1[1]*v2[2] - v1[2]*v2[1];
-            vc1[1] = v1[2]*v2[0] - v1[0]*v2[2];
-            vc1[2] = v1[0]*v2[1] - v1[1]*v2[0];
+        vgc += normproj(xyzq3[i*6 + 0], xyzq3[i*6 + geo -1]);
+            
 
-            l2 = sqrt(vc1[0] * vc1[0] + vc1[1] * vc1[1] + vc1[2] * vc1[2]);
+        xyz3[i] = normalize(vgc);
 
-            vc1[0] = vc1[0] / l2 * atan2(l2, l1);
-            vc1[1] = vc1[1] / l2 * atan2(l2, l1);
-            vc1[2] = vc1[2] / l2 * atan2(l2, l1);
-
-            v1[0] = xyzq[i*6*3 + 2*3 + 0];
-            v1[1] = xyzq[i*6*3 + 2*3 + 1];
-            v1[2] = xyzq[i*6*3 + 2*3 + 2];
-            v2[0] = xyzq[i*6*3 + 1*3 + 0];
-            v2[1] = xyzq[i*6*3 + 1*3 + 1];
-            v2[2] = xyzq[i*6*3 + 1*3 + 2];
-
-            l1 = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
-
-            vc2[0] = v1[1]*v2[2] - v1[2]*v2[1];
-            vc2[1] = v1[2]*v2[0] - v1[0]*v2[2];
-            vc2[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
-            l2 = sqrt(vc2[0] * vc2[0] + vc2[1] * vc2[1] + vc2[2] * vc2[2]);
-
-            vc2[0] = vc2[0] / l2 * atan2(l2, l1);
-            vc2[1] = vc2[1] / l2 * atan2(l2, l1);
-            vc2[2] = vc2[2] / l2 * atan2(l2, l1);
-
-            v1[0] = xyzq[i*6*3 + 3*3 + 0];
-            v1[1] = xyzq[i*6*3 + 3*3 + 1];
-            v1[2] = xyzq[i*6*3 + 3*3 + 2];
-            v2[0] = xyzq[i*6*3 + 2*3 + 0];
-            v2[1] = xyzq[i*6*3 + 2*3 + 1];
-            v2[2] = xyzq[i*6*3 + 2*3 + 2];
-
-            l1 = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
-
-            vc3[0] = v1[1]*v2[2] - v1[2]*v2[1];
-            vc3[1] = v1[2]*v2[0] - v1[0]*v2[2];
-            vc3[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
-            l2 = sqrt(vc3[0] * vc3[0] + vc3[1] * vc3[1] + vc3[2] * vc3[2]);
-
-            vc3[0] = vc3[0] / l2 * atan2(l2, l1);
-            vc3[1] = vc3[1] / l2 * atan2(l2, l1);
-            vc3[2] = vc3[2] / l2 * atan2(l2, l1);
-
-            v1[0] = xyzq[i*6*3 + 4*3 + 0];
-            v1[1] = xyzq[i*6*3 + 4*3 + 1];
-            v1[2] = xyzq[i*6*3 + 4*3 + 2];
-            v2[0] = xyzq[i*6*3 + 3*3 + 0];
-            v2[1] = xyzq[i*6*3 + 3*3 + 1];
-            v2[2] = xyzq[i*6*3 + 3*3 + 2];
-
-            l1 = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
-
-            vc4[0] = v1[1]*v2[2] - v1[2]*v2[1];
-            vc4[1] = v1[2]*v2[0] - v1[0]*v2[2];
-            vc4[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
-            l2 = sqrt(vc4[0] * vc4[0] + vc4[1] * vc4[1] + vc4[2] * vc4[2]);
-
-            vc4[0] = vc4[0] / l2 * atan2(l2, l1);
-            vc4[1] = vc4[1] / l2 * atan2(l2, l1);
-            vc4[2] = vc4[2] / l2 * atan2(l2, l1);
-
-            v1[0] = xyzq[i*6*3 + 0*3 + 0];
-            v1[1] = xyzq[i*6*3 + 0*3 + 1];
-            v1[2] = xyzq[i*6*3 + 0*3 + 2];
-            v2[0] = xyzq[i*6*3 + 4*3 + 0];
-            v2[1] = xyzq[i*6*3 + 4*3 + 1];
-            v2[2] = xyzq[i*6*3 + 4*3 + 2];
-
-            l1 = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
-
-            vc5[0] = v1[1]*v2[2] - v1[2]*v2[1];
-            vc5[1] = v1[2]*v2[0] - v1[0]*v2[2];
-            vc5[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
-            l2 = sqrt(vc5[0] * vc5[0] + vc5[1] * vc5[1] + vc5[2] * vc5[2]);
-
-            vc5[0] = vc5[0] / l2 * atan2(l2, l1);
-            vc5[1] = vc5[1] / l2 * atan2(l2, l1);
-            vc5[2] = vc5[2] / l2 * atan2(l2, l1);
-
-            vgc[0] = vc1[0] + vc2[0] + vc3[0] + vc4[0] + vc5[0];
-            vgc[1] = vc1[1] + vc2[1] + vc3[1] + vc4[1] + vc5[1];
-            vgc[2] = vc1[2] + vc2[2] + vc3[2] + vc4[2] + vc5[2];
-
-            l2 = sqrt(vgc[0] * vgc[0] + vgc[1] * vgc[1] + vgc[2] * vgc[2]);
-
-            xyz[i*3 + 0] = vgc[0] / l2;
-            xyz[i*3 + 1] = vgc[1] / l2;
-            xyz[i*3 + 2] = vgc[2] / l2;
-        }
-        else{
-            v1[0] = xyzq[i*6*3 + 1*3 + 0];
-            v1[1] = xyzq[i*6*3 + 1*3 + 1];
-            v1[2] = xyzq[i*6*3 + 1*3 + 2];
-            v2[0] = xyzq[i*6*3 + 0*3 + 0];
-            v2[1] = xyzq[i*6*3 + 0*3 + 1];
-            v2[2] = xyzq[i*6*3 + 0*3 + 2];
-
-            l1 = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
-
-            vc1[0] = v1[1]*v2[2] - v1[2]*v2[1];
-            vc1[1] = v1[2]*v2[0] - v1[0]*v2[2];
-            vc1[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
-            l2 = sqrt(vc1[0] * vc1[0] + vc1[1] * vc1[1] + vc1[2] * vc1[2]);
-
-            vc1[0] = vc1[0] / l2 * atan2(l2, l1);
-            vc1[1] = vc1[1] / l2 * atan2(l2, l1);
-            vc1[2] = vc1[2] / l2 * atan2(l2, l1);
-
-            v1[0] = xyzq[i*6*3 + 2*3 + 0];
-            v1[1] = xyzq[i*6*3 + 2*3 + 1];
-            v1[2] = xyzq[i*6*3 + 2*3 + 2];
-            v2[0] = xyzq[i*6*3 + 1*3 + 0];
-            v2[1] = xyzq[i*6*3 + 1*3 + 1];
-            v2[2] = xyzq[i*6*3 + 1*3 + 2];
-
-            l1 = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
-
-            vc2[0] = v1[1]*v2[2] - v1[2]*v2[1];
-            vc2[1] = v1[2]*v2[0] - v1[0]*v2[2];
-            vc2[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
-            l2 = sqrt(vc2[0] * vc2[0] + vc2[1] * vc2[1] + vc2[2] * vc2[2]);
-
-            vc2[0] = vc2[0] / l2 * atan2(l2, l1);
-            vc2[1] = vc2[1] / l2 * atan2(l2, l1);
-            vc2[2] = vc2[2] / l2 * atan2(l2, l1);
-
-            v1[0] = xyzq[i*6*3 + 3*3 + 0];
-            v1[1] = xyzq[i*6*3 + 3*3 + 1];
-            v1[2] = xyzq[i*6*3 + 3*3 + 2];
-            v2[0] = xyzq[i*6*3 + 2*3 + 0];
-            v2[1] = xyzq[i*6*3 + 2*3 + 1];
-            v2[2] = xyzq[i*6*3 + 2*3 + 2];
-
-            l1 = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
-
-            vc3[0] = v1[1]*v2[2] - v1[2]*v2[1];
-            vc3[1] = v1[2]*v2[0] - v1[0]*v2[2];
-            vc3[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
-            l2 = sqrt(vc3[0] * vc3[0] + vc3[1] * vc3[1] + vc3[2] * vc3[2]);
-
-            vc3[0] = vc3[0] / l2 * atan2(l2, l1);
-            vc3[1] = vc3[1] / l2 * atan2(l2, l1);
-            vc3[2] = vc3[2] / l2 * atan2(l2, l1);
-
-            v1[0] = xyzq[i*6*3 + 4*3 + 0];
-            v1[1] = xyzq[i*6*3 + 4*3 + 1];
-            v1[2] = xyzq[i*6*3 + 4*3 + 2];
-            v2[0] = xyzq[i*6*3 + 3*3 + 0];
-            v2[1] = xyzq[i*6*3 + 3*3 + 1];
-            v2[2] = xyzq[i*6*3 + 3*3 + 2];
-
-            l1 = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
-
-            vc4[0] = v1[1]*v2[2] - v1[2]*v2[1];
-            vc4[1] = v1[2]*v2[0] - v1[0]*v2[2];
-            vc4[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
-            l2 = sqrt(vc4[0] * vc4[0] + vc4[1] * vc4[1] + vc4[2] * vc4[2]);
-
-            vc4[0] = vc4[0] / l2 * atan2(l2, l1);
-            vc4[1] = vc4[1] / l2 * atan2(l2, l1);
-            vc4[2] = vc4[2] / l2 * atan2(l2, l1);
-
-            v1[0] = xyzq[i*6*3 + 5*3 + 0];
-            v1[1] = xyzq[i*6*3 + 5*3 + 1];
-            v1[2] = xyzq[i*6*3 + 5*3 + 2];
-            v2[0] = xyzq[i*6*3 + 4*3 + 0];
-            v2[1] = xyzq[i*6*3 + 4*3 + 1];
-            v2[2] = xyzq[i*6*3 + 4*3 + 2];
-
-            l1 = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
-
-            vc5[0] = v1[1]*v2[2] - v1[2]*v2[1];
-            vc5[1] = v1[2]*v2[0] - v1[0]*v2[2];
-            vc5[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
-            l2 = sqrt(vc5[0] * vc5[0] + vc5[1] * vc5[1] + vc5[2] * vc5[2]);
-
-            vc5[0] = vc5[0] / l2 * atan2(l2, l1);
-            vc5[1] = vc5[1] / l2 * atan2(l2, l1);
-            vc5[2] = vc5[2] / l2 * atan2(l2, l1);
-
-            v1[0] = xyzq[i*6*3 + 0*3 + 0];
-            v1[1] = xyzq[i*6*3 + 0*3 + 1];
-            v1[2] = xyzq[i*6*3 + 0*3 + 2];
-            v2[0] = xyzq[i*6*3 + 5*3 + 0];
-            v2[1] = xyzq[i*6*3 + 5*3 + 1];
-            v2[2] = xyzq[i*6*3 + 5*3 + 2];
-
-            l1 = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
-
-            vc6[0] = v1[1]*v2[2] - v1[2]*v2[1];
-            vc6[1] = v1[2]*v2[0] - v1[0]*v2[2];
-            vc6[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
-            l2 = sqrt(vc6[0] * vc6[0] + vc6[1] * vc6[1] + vc6[2] * vc6[2]);
-
-            vc6[0] = vc6[0] / l2 * atan2(l2, l1);
-            vc6[1] = vc6[1] / l2 * atan2(l2, l1);
-            vc6[2] = vc6[2] / l2 * atan2(l2, l1);
-
-            vgc[0] = vc1[0] + vc2[0] + vc3[0] + vc4[0] + vc5[0] + vc6[0];
-            vgc[1] = vc1[1] + vc2[1] + vc3[1] + vc4[1] + vc5[1] + vc6[1];
-            vgc[2] = vc1[2] + vc2[2] + vc3[2] + vc4[2] + vc5[2] + vc6[2];
-
-            l2 = sqrt(vgc[0] * vgc[0] + vgc[1] * vgc[1] + vgc[2] * vgc[2]);
-
-            xyz[i*3 + 0] = vgc[0] / l2;
-            xyz[i*3 + 1] = vgc[1] / l2;
-            xyz[i*3 + 2] = vgc[2] / l2;
-        }
     }
-
-    delete [] v1 ;
-    delete [] v2 ;
-    delete [] vc1;
-    delete [] vc2;
-    delete [] vc3;
-    delete [] vc4;
-    delete [] vc5;
-    delete [] vc6;
-    delete [] vgc;
 }
 
 void Icogrid::set_altitudes(double *Altitude    ,
@@ -2429,32 +1807,49 @@ void Icogrid::correct_xyz_points ( double A     ,
     // Local variables.
     int geo;
 
+    double3 * xyzq3 = (double3*)xyzq;
+    double3 * xyz3 = (double3*)xyz;    
+    
     for (int i = 0; i < point_num; i++){
         geo = 6; // Hexagons.
         for (int k = 0; k < 12; k++) if(i == pent_ind[k]) geo = 5; // Pentagons.
         if(geo == 5){
             for (int j = 0; j < 5; j++){    // Pentagons.
-                xyzq[i*6*3 + j*3 + 0] = xyzq[i*6*3 + j*3 + 0]*A;
-                xyzq[i*6*3 + j*3 + 1] = xyzq[i*6*3 + j*3 + 1]*A;
-                xyzq[i*6*3 + j*3 + 2] = xyzq[i*6*3 + j*3 + 2]*A;
+                xyzq3[i*6 + j] = xyzq3[i*6 + j]*A;
             }
-            xyz[i*3 + 0] = xyz[i*3 + 0]*A;
-            xyz[i*3 + 1] = xyz[i*3 + 1]*A;
-            xyz[i*3 + 2] = xyz[i*3 + 2]*A;
+            xyz3[i] = xyz3[i]*A;
         }
         else{
             for (int j = 0; j < 6; j++){    // Hexagons.
-                xyzq[i*6*3 + j*3 + 0] = xyzq[i*6*3 + j*3 + 0]*A;
-                xyzq[i*6*3 + j*3 + 1] = xyzq[i*6*3 + j*3 + 1]*A;
-                xyzq[i*6*3 + j*3 + 2] = xyzq[i*6*3 + j*3 + 2]*A;
+                xyzq3[i*6 + j] = xyzq3[i*6 + j + 0]*A;
             }
-            xyz[i*3 + 0] = xyz[i*3 + 0]*A;
-            xyz[i*3 + 1] = xyz[i*3 + 1]*A;
-            xyz[i*3 + 2] = xyz[i*3 + 2]*A;
+            xyz3[i] = xyz3[i]*A;
         }
     }
 }
 
+inline double comp_ang(const double3 & a,const double3 & b, const double3 & c)
+{
+    double3 v0 = a;
+    double3 v1 = b - a;
+    double3 v2 = c - a;
+    
+    double t = 1.0/dot(v0,v0);
+    
+    double fac1       = dot(v0,v1)*t;
+    double fac2       = dot(v0,v2)*t;
+    
+    double3 w1 = v1 - fac1*v0;
+    
+    double3 w2 = v2 - fac2*v0;
+    
+    double ang = dot(w1,w2)/(length(w1)*length(w2));
+    
+    if (ang >  1) ang =  1;
+    if (ang < -1) ang = -1;
+    
+    return acos(ang);
+}
 
 void Icogrid::control_areas ( double *areasT  ,
                               double *areasTr ,
@@ -2480,43 +1875,21 @@ void Icogrid::control_areas ( double *areasT  ,
 //          areasT     - Control volume area.
 //
 
+    // input variables
+    double3 * xyzq3 = (double3*)xyzq;
+    double3 * xyz3 = (double3*)xyz;
+    
     // Local variables.
     int geo;
-    double t11;
-    double t22;
-    double t33;
-    double fac11, fac21, fac12, fac22, fac13, fac23;
 
     double radius;
 
     // Local arrays
-    double *a, *b, *c;
-    double *v01, *v02, *v03;
-    double *v11, *v12, *v13;
-    double *v21, *v22, *v23;
-    double *w11, *w21, *w12, *w22;
-    double *w13, *w23;
-    double *ang, areav;
+    double3 a, b, c;
 
-    a   = new double[3]();
-    b   = new double[3]();
-    c   = new double[3]();
-    v01 = new double[3]();
-    v02 = new double[3]();
-    v03 = new double[3]();
-    v11 = new double[3]();
-    v12 = new double[3]();
-    v13 = new double[3]();
-    v21 = new double[3]();
-    v22 = new double[3]();
-    v23 = new double[3]();
-    w11 = new double[3]();
-    w21 = new double[3]();
-    w12 = new double[3]();
-    w22 = new double[3]();
-    w13 = new double[3]();
-    w23 = new double[3]();
-    ang = new double[3]();
+    double ang[3];
+    double areav;
+
 
     for (int i = 0; i < point_num*6*3; i++) areas[i] = 0.0;
 
@@ -2531,158 +1904,49 @@ void Icogrid::control_areas ( double *areasT  ,
                 for (int k = 0; k < 3; k++){
                     if ( j < 4 ){
                         if (k == 0){
-                            a[0] = xyz[point_local[i*6 + j+1]*3 + 0];
-                            a[1] = xyz[point_local[i*6 + j+1]*3 + 1];
-                            a[2] = xyz[point_local[i*6 + j+1]*3 + 2];
-                            b[0] = xyz[point_local[i*6 + j]*3 + 0];
-                            b[1] = xyz[point_local[i*6 + j]*3 + 1];
-                            b[2] = xyz[point_local[i*6 + j]*3 + 2];
-                            c[0] = xyzq[i*6*3 + j*3 + 0];
-                            c[1] = xyzq[i*6*3 + j*3 + 1];
-                            c[2] = xyzq[i*6*3 + j*3 + 2];
+                            a = xyz3[point_local[i*6 + j+1]];
+                            b = xyz3[point_local[i*6 + j]];
+                            c = xyzq3[i*6 + j];
                         }
                         else if ( k ==1 ){
-                            a[0] = xyz[point_local[i*6 + j+1]*3 + 0];
-                            a[1] = xyz[point_local[i*6 + j+1]*3 + 1];
-                            a[2] = xyz[point_local[i*6 + j+1]*3 + 2];
-                            b[0] = xyz[i*3 + 0];
-                            b[1] = xyz[i*3 + 1];
-                            b[2] = xyz[i*3 + 2];
-                            c[0] = xyzq[i*6*3 + j*3 + 0];
-                            c[1] = xyzq[i*6*3 + j*3 + 1];
-                            c[2] = xyzq[i*6*3 + j*3 + 2];
+                            a = xyz3[point_local[i*6 + j+1]];
+                            b = xyz3[i];
+                            c = xyzq3[i*6 + j];
                         }
                         else{
-                            a[0] = xyz[i*3 + 0];
-                            a[1] = xyz[i*3 + 1];
-                            a[2] = xyz[i*3 + 2];
-                            b[0] = xyz[point_local[i*6 + j]*3 + 0];
-                            b[1] = xyz[point_local[i*6 + j]*3 + 1];
-                            b[2] = xyz[point_local[i*6 + j]*3 + 2];
-                            c[0] = xyzq[i*6*3 + j*3 + 0];
-                            c[1] = xyzq[i*6*3 + j*3 + 1];
-                            c[2] = xyzq[i*6*3 + j*3 + 2];
+                            a = xyz3[i];
+                            b = xyz3[point_local[i*6 + j]];
+                            c = xyzq3[i*6 + j];
                         }
                     }
                     else{
                         if (k == 0){
-                            a[0] = xyz[point_local[i*6 + 0]*3 + 0];
-                            a[1] = xyz[point_local[i*6 + 0]*3 + 1];
-                            a[2] = xyz[point_local[i*6 + 0]*3 + 2];
-                            b[0] = xyz[point_local[i*6 + 4]*3 + 0];
-                            b[1] = xyz[point_local[i*6 + 4]*3 + 1];
-                            b[2] = xyz[point_local[i*6 + 4]*3 + 2];
-                            c[0] = xyzq[i*6*3 + 4*3 + 0];
-                            c[1] = xyzq[i*6*3 + 4*3 + 1];
-                            c[2] = xyzq[i*6*3 + 4*3 + 2];
+                            a = xyz3[point_local[i*6 + 0]];
+                            b = xyz3[point_local[i*6 + 4]];
+                            c = xyzq3[i*6 + 4];
                         }
                         else if ( k ==1 ){
-                            a[0] = xyz[point_local[i*6 + 0]*3 + 0];
-                            a[1] = xyz[point_local[i*6 + 0]*3 + 1];
-                            a[2] = xyz[point_local[i*6 + 0]*3 + 2];
-                            b[0] = xyz[i*3 + 0];
-                            b[1] = xyz[i*3 + 1];
-                            b[2] = xyz[i*3 + 2];
-                            c[0] = xyzq[i*6*3 + 4*3 + 0];
-                            c[1] = xyzq[i*6*3 + 4*3 + 1];
-                            c[2] = xyzq[i*6*3 + 4*3 + 2];
+                            a = xyz3[point_local[i*6 + 0]];
+                            b = xyz3[i];
+                            c = xyzq3[i*6 + 4];
                         }
                         else{
-                            a[0] = xyz[i*3 + 0];
-                            a[1] = xyz[i*3 + 1];
-                            a[2] = xyz[i*3 + 2];
-                            b[0] = xyz[point_local[i*6 + 4]*3 + 0];
-                            b[1] = xyz[point_local[i*6 + 4]*3 + 1];
-                            b[2] = xyz[point_local[i*6 + 4]*3 + 2];
-                            c[0] = xyzq[i*6*3 + 4*3 + 0];
-                            c[1] = xyzq[i*6*3 + 4*3 + 1];
-                            c[2] = xyzq[i*6*3 + 4*3 + 2];
+                            a = xyz3[i];
+                            b = xyz3[point_local[i*6 + 4]];
+                            c = xyzq3[i*6 + 4];
                         }
                     }
-                    for (int v = 0; v < 3; v++){
-                        v01[v] = a[v];
-                        v02[v] = b[v];
-                        v03[v] = c[v];
-
-                        v11[v] = b[v] - a[v];
-                        v12[v] = a[v] - b[v];
-                        v13[v] = a[v] - c[v];
-
-                        v21[v] = c[v] - a[v];
-                        v22[v] = c[v] - b[v];
-                        v23[v] = b[v] - c[v];
-                    }
-
-                    t11 = 1/(v01[0]*v01[0] + v01[1]*v01[1] + v01[2]*v01[2]);
-
-                    fac11       = (v01[0]*v11[0] + v01[1]*v11[1] + v01[2]*v11[2])*t11;
-                    fac21       = (v01[0]*v21[0] + v01[1]*v21[1] + v01[2]*v21[2])*t11;
-
-                    w11[0] = v11[0] - fac11*v01[0];
-                    w11[1] = v11[1] - fac11*v01[1];
-                    w11[2] = v11[2] - fac11*v01[2];
-
-                    w21[0] = v21[0] - fac21*v01[0];
-                    w21[1] = v21[1] - fac21*v01[1];
-                    w21[2] = v21[2] - fac21*v01[2];
-
-                    ang[0] = (w11[0]*w21[0] + w11[1]*w21[1] + w11[2]*w21[2])/
-                        (sqrt(w11[0]*w11[0] + w11[1]*w11[1] + w11[2]*w11[2])*
-                         sqrt(w21[0]*w21[0] + w21[1]*w21[1] + w21[2]*w21[2]));
-
-                    if (ang[0] > 1) ang[0] =  1;
-                    if (ang[0] < -1)ang[0] = -1;
-
-                    ang[0] = acos(ang[0]);
-
-                    t22 = 1/(v02[0]*v02[0] + v02[1]*v02[1] + v02[2]*v02[2]);
-
-                    fac12       = (v02[0]*v12[0] + v02[1]*v12[1] + v02[2]*v12[2])*t22;
-                    fac22       = (v02[0]*v22[0] + v02[1]*v22[1] + v02[2]*v22[2])*t22;
-
-                    w12[0] = v12[0] - fac12*v02[0];
-                    w12[1] = v12[1] - fac12*v02[1];
-                    w12[2] = v12[2] - fac12*v02[2];
-
-                    w22[0] = v22[0] - fac22*v02[0];
-                    w22[1] = v22[1] - fac22*v02[1];
-                    w22[2] = v22[2] - fac22*v02[2];
-
-                    ang[1] = (w12[0]*w22[0] + w12[1]*w22[1] + w12[2]*w22[2])/
-                        (sqrt(w12[0]*w12[0] + w12[1]*w12[1] + w12[2]*w12[2])*
-                         sqrt(w22[0]*w22[0] + w22[1]*w22[1] + w22[2]*w22[2]));
-
-                    if ( ang[1] > 1) ang[1] =  1;
-                    if ( ang[1] < -1)ang[1] = -1;
-
-                    ang[1] = acos(ang[1]);
-
-                    t33 = 1/(v03[0]*v03[0] + v03[1]*v03[1] + v03[2]*v03[2]);
-
-                    fac13       = (v03[0]*v13[0] + v03[1]*v13[1] + v03[2]*v13[2])*t33;
-                    fac23       = (v03[0]*v23[0] + v03[1]*v23[1] + v03[2]*v23[2])*t33;
-
-                    w13[0] = v13[0] - fac13*v03[0];
-                    w13[1] = v13[1] - fac13*v03[1];
-                    w13[2] = v13[2] - fac13*v03[2];
-
-                    w23[0] = v23[0] - fac23*v03[0];
-                    w23[1] = v23[1] - fac23*v03[1];
-                    w23[2] = v23[2] - fac23*v03[2];
-
-                    ang[2] = (w13[0]*w23[0] + w13[1]*w23[1] + w13[2]*w23[2])/
-                        (sqrt(w13[0]*w13[0] + w13[1]*w13[1] + w13[2]*w13[2])*
-                         sqrt(w23[0]*w23[0] + w23[1]*w23[1] + w23[2]*w23[2]));
-
-                    if (ang[2] > 1)    ang[2] =  1;
-                    if (ang[2] < -1)ang[2] = -1;
-
-                    ang[2] = acos(ang[2]);
-
-                    radius = sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]) ;
+                    
+                    ang[0] = comp_ang(a, b, c);
+                    ang[1] = comp_ang(b, a, c);
+                    ang[2] = comp_ang(c, a, b);
+                    
+                    radius = length(a);
                     areasq[i*6*3 + j*3 + k] = (ang[0] + ang[1] + ang[2] - M_PI)*pow(radius,2);
                 }
-                areasTr[i * 6 + j] = areasq[i * 6 * 3 + j * 3 + 0] + areasq[i * 6 * 3 + j * 3 + 1] + areasq[i * 6 * 3 + j * 3 + 2];
+                areasTr[i * 6 + j] = areasq[(i * 6 + j) * 3 + 0]
+                    + areasq[(i * 6 + j)* 3 + 1]
+                    + areasq[(i * 6 + j) * 3 + 2];
             }
             areasTr[i * 6 + 5] = 0.0;
         }
@@ -2691,160 +1955,50 @@ void Icogrid::control_areas ( double *areasT  ,
                 for (int k = 0; k < 3; k++){
                     if ( j < 5 ){
                         if (k == 0){
-                            a[0] = xyz[point_local[i*6 + j+1]*3 + 0];
-                            a[1] = xyz[point_local[i*6 + j+1]*3 + 1];
-                            a[2] = xyz[point_local[i*6 + j+1]*3 + 2];
-                            b[0] = xyz[point_local[i*6 + j]*3 + 0];
-                            b[1] = xyz[point_local[i*6 + j]*3 + 1];
-                            b[2] = xyz[point_local[i*6 + j]*3 + 2];
-                            c[0] = xyzq[i*6*3 + j*3 + 0];
-                            c[1] = xyzq[i*6*3 + j*3 + 1];
-                            c[2] = xyzq[i*6*3 + j*3 + 2];
+                            a = xyz3[point_local[i*6 + j+1]];
+                            b = xyz3[point_local[i*6 + j]];
+                            c = xyzq3[i*6 + j];
                         }
                         else if ( k ==1 ){
-                            a[0] = xyz[point_local[i*6 + j+1]*3 + 0];
-                            a[1] = xyz[point_local[i*6 + j+1]*3 + 1];
-                            a[2] = xyz[point_local[i*6 + j+1]*3 + 2];
-                            b[0] = xyz[i*3 + 0];
-                            b[1] = xyz[i*3 + 1];
-                            b[2] = xyz[i*3 + 2];
-                            c[0] = xyzq[i*6*3 + j*3 + 0];
-                            c[1] = xyzq[i*6*3 + j*3 + 1];
-                            c[2] = xyzq[i*6*3 + j*3 + 2];
+                            a = xyz3[point_local[i*6 + j+1]];
+                            b = xyz3[i];
+                            c = xyzq3[i*6 + j];
                         }
                         else{
-                            a[0] = xyz[i*3 + 0];
-                            a[1] = xyz[i*3 + 1];
-                            a[2] = xyz[i*3 + 2];
-                            b[0] = xyz[point_local[i*6 + j]*3 + 0];
-                            b[1] = xyz[point_local[i*6 + j]*3 + 1];
-                            b[2] = xyz[point_local[i*6 + j]*3 + 2];
-                            c[0] = xyzq[i*6*3 + j*3 + 0];
-                            c[1] = xyzq[i*6*3 + j*3 + 1];
-                            c[2] = xyzq[i*6*3 + j*3 + 2];
+                            a = xyz3[i];
+                            b = xyz3[point_local[i*6 + j]];
+                            c = xyzq3[i*6 + j];
                         }
                     }
                     else{
                         if (k == 0){
-                            a[0] = xyz[point_local[i*6 + 0]*3 + 0];
-                            a[1] = xyz[point_local[i*6 + 0]*3 + 1];
-                            a[2] = xyz[point_local[i*6 + 0]*3 + 2];
-                            b[0] = xyz[point_local[i*6 + 5]*3 + 0];
-                            b[1] = xyz[point_local[i*6 + 5]*3 + 1];
-                            b[2] = xyz[point_local[i*6 + 5]*3 + 2];
-                            c[0] = xyzq[i*6*3 + 5*3 + 0];
-                            c[1] = xyzq[i*6*3 + 5*3 + 1];
-                            c[2] = xyzq[i*6*3 + 5*3 + 2];
+                            a = xyz3[point_local[i*6 + 0]];
+                            b = xyz3[point_local[i*6 + 5]];
+                            c = xyzq3[i*6 + 5];
                         }
                         else if ( k ==1 ){
-                            a[0] = xyz[point_local[i*6 + 0]*3 + 0];
-                            a[1] = xyz[point_local[i*6 + 0]*3 + 1];
-                            a[2] = xyz[point_local[i*6 + 0]*3 + 2];
-                            b[0] = xyz[i*3 + 0];
-                            b[1] = xyz[i*3 + 1];
-                            b[2] = xyz[i*3 + 2];
-                            c[0] = xyzq[i*6*3 + 5*3 + 0];
-                            c[1] = xyzq[i*6*3 + 5*3 + 1];
-                            c[2] = xyzq[i*6*3 + 5*3 + 2];
+                            a = xyz3[point_local[i*6 + 0]];
+                            b = xyz3[i];
+                            c = xyzq3[i*6 + 5];
                         }
                         else{
-                            a[0] = xyz[i*3 + 0];
-                            a[1] = xyz[i*3 + 1];
-                            a[2] = xyz[i*3 + 2];
-                            b[0] = xyz[point_local[i*6 + 5]*3 + 0];
-                            b[1] = xyz[point_local[i*6 + 5]*3 + 1];
-                            b[2] = xyz[point_local[i*6 + 5]*3 + 2];
-                            c[0] = xyzq[i*6*3 + 5*3 + 0];
-                            c[1] = xyzq[i*6*3 + 5*3 + 1];
-                            c[2] = xyzq[i*6*3 + 5*3 + 2];
+                            a = xyz3[i];
+                            b = xyz3[point_local[i*6 + 5]];
+                            c = xyzq3[i*6 + 5];
                         }
                     }
-
-                    for (int v = 0; v < 3; v++){
-                        v01[v] = a[v];
-                        v02[v] = b[v];
-                        v03[v] = c[v];
-
-                        v11[v] = b[v] - a[v];
-                        v12[v] = a[v] - b[v];
-                        v13[v] = a[v] - c[v];
-
-                        v21[v] = c[v] - a[v];
-                        v22[v] = c[v] - b[v];
-                        v23[v] = b[v] - c[v];
-                    }
-
-                    t11 = 1/(v01[0]*v01[0] + v01[1]*v01[1] + v01[2]*v01[2]);
-
-                    fac11       = (v01[0]*v11[0] + v01[1]*v11[1] + v01[2]*v11[2])*t11;
-                    fac21       = (v01[0]*v21[0] + v01[1]*v21[1] + v01[2]*v21[2])*t11;
-
-                    w11[0] = v11[0] - fac11*v01[0];
-                    w11[1] = v11[1] - fac11*v01[1];
-                    w11[2] = v11[2] - fac11*v01[2];
-
-                    w21[0] = v21[0] - fac21*v01[0];
-                    w21[1] = v21[1] - fac21*v01[1];
-                    w21[2] = v21[2] - fac21*v01[2];
-
-                    ang[0] = (w11[0]*w21[0] + w11[1]*w21[1] + w11[2]*w21[2])/
-                        (sqrt(w11[0]*w11[0] + w11[1]*w11[1] + w11[2]*w11[2])*
-                         sqrt(w21[0]*w21[0] + w21[1]*w21[1] + w21[2]*w21[2]));
-
-                    if (ang[0] > 1)    ang[0] =  1;
-                    if (ang[0] < -1)ang[0] = -1;
-
-                    ang[0] = acos(ang[0]);
-
-                    t22 = 1/(v02[0]*v02[0] + v02[1]*v02[1] + v02[2]*v02[2]);
-
-                    fac12       = (v02[0]*v12[0] + v02[1]*v12[1] + v02[2]*v12[2])*t22;
-                    fac22       = (v02[0]*v22[0] + v02[1]*v22[1] + v02[2]*v22[2])*t22;
-
-                    w12[0] = v12[0] - fac12*v02[0];
-                    w12[1] = v12[1] - fac12*v02[1];
-                    w12[2] = v12[2] - fac12*v02[2];
-
-                    w22[0] = v22[0] - fac22*v02[0];
-                    w22[1] = v22[1] - fac22*v02[1];
-                    w22[2] = v22[2] - fac22*v02[2];
-
-                    ang[1] = (w12[0]*w22[0] + w12[1]*w22[1] + w12[2]*w22[2])/
-                        (sqrt(w12[0]*w12[0] + w12[1]*w12[1] + w12[2]*w12[2])*
-                         sqrt(w22[0]*w22[0] + w22[1]*w22[1] + w22[2]*w22[2]));
-
-                    if ( ang[1] > 1) ang[1] =  1;
-                    if ( ang[1] < -1)ang[1] = -1;
-
-                    ang[1] = acos(ang[1]);
-
-                    t33 = 1/(v03[0]*v03[0] + v03[1]*v03[1] + v03[2]*v03[2]);
-
-                    fac13       = (v03[0]*v13[0] + v03[1]*v13[1] + v03[2]*v13[2])*t33;
-                    fac23       = (v03[0]*v23[0] + v03[1]*v23[1] + v03[2]*v23[2])*t33;
-
-                    w13[0] = v13[0] - fac13*v03[0];
-                    w13[1] = v13[1] - fac13*v03[1];
-                    w13[2] = v13[2] - fac13*v03[2];
-
-                    w23[0] = v23[0] - fac23*v03[0];
-                    w23[1] = v23[1] - fac23*v03[1];
-                    w23[2] = v23[2] - fac23*v03[2];
-
-                    ang[2] = (w13[0]*w23[0] + w13[1]*w23[1] + w13[2]*w23[2])/
-                        (sqrt(w13[0]*w13[0] + w13[1]*w13[1] + w13[2]*w13[2])*
-                         sqrt(w23[0]*w23[0] + w23[1]*w23[1] + w23[2]*w23[2]));
-
-                    if (ang[2] > 1)    ang[2] =  1;
-                    if (ang[2] < -1)ang[2] = -1;
-
-                    ang[2] = acos(ang[2]);
-
-                    radius = sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]) ;
+                    
+                    ang[0] = comp_ang(a, b, c);
+                    ang[1] = comp_ang(b, a, c);
+                    ang[2] = comp_ang(c, a, b);
+                    
+                    radius = length(a);
                     areasq[i*6*3 + j*3 + k] =
                         (ang[0] + ang[1] + ang[2] - M_PI)*pow(radius,2);
                 }
-                areasTr[i * 6 + j] = areasq[i * 6 * 3 + j * 3 + 0] + areasq[i * 6 * 3 + j * 3 + 1] + areasq[i * 6 * 3 + j * 3 + 2];
+                areasTr[i * 6 + j] = areasq[(i * 6 + j)*3 + 0]
+                    + areasq[(i * 6 + j)*3 + 1]
+                    + areasq[(i * 6 + j)*3 + 2];
             }
         }
     }
@@ -2859,142 +2013,34 @@ void Icogrid::control_areas ( double *areasT  ,
         for (int k = 0; k < 12; k++) if(i == pent_ind[k]) geo = 5; // Pentagons.
         for (int j = 0; j < 6; j++){
             if (geo == 5 && j == 4){
-                a[0] = xyz[i*3 + 0];
-                a[1] = xyz[i*3 + 1];
-                a[2] = xyz[i*3 + 2];
-                b[0] = xyzq[i*3*6 + 4*3 + 0];
-                b[1] = xyzq[i*3*6 + 4*3 + 1];
-                b[2] = xyzq[i*3*6 + 4*3 + 2];
-                c[0] = xyzq[i*3*6 + 0*3 + 0];
-                c[1] = xyzq[i*3*6 + 0*3 + 1];
-                c[2] = xyzq[i*3*6 + 0*3 + 2];
-
+                a = xyz3[i];
+                b = xyzq3[i*6 + 4];
+                c = xyzq3[i*6 + 0];
             }
             else if (geo == 5 && j == 5){
                 break;
             }
             else if (geo == 6 && j == 5){
-                a[0] = xyz[i*3 + 0];
-                a[1] = xyz[i*3 + 1];
-                a[2] = xyz[i*3 + 2];
-                b[0] = xyzq[i*3*6 + 5*3 + 0];
-                b[1] = xyzq[i*3*6 + 5*3 + 1];
-                b[2] = xyzq[i*3*6 + 5*3 + 2];
-                c[0] = xyzq[i*3*6 + 0*3 + 0];
-                c[1] = xyzq[i*3*6 + 0*3 + 1];
-                c[2] = xyzq[i*3*6 + 0*3 + 2];
+                a = xyz3[i];
+                b = xyzq3[i*6 + 5];
+                c = xyzq3[i*6 + 0];
             }
             else{
-                a[0] = xyz[i*3 + 0];
-                a[1] = xyz[i*3 + 1];
-                a[2] = xyz[i*3 + 2];
-                b[0] = xyzq[i*3*6 + j*3 + 0];
-                b[1] = xyzq[i*3*6 + j*3 + 1];
-                b[2] = xyzq[i*3*6 + j*3 + 2];
-                c[0] = xyzq[i*3*6 + (j+1)*3 + 0];
-                c[1] = xyzq[i*3*6 + (j+1)*3 + 1];
-                c[2] = xyzq[i*3*6 + (j+1)*3 + 2];
-            }
-            for (int v = 0; v < 3; v++){
-                v01[v] = a[v];
-                v02[v] = b[v];
-                v03[v] = c[v];
-
-                v11[v] = b[v] - a[v];
-                v12[v] = a[v] - b[v];
-                v13[v] = a[v] - c[v];
-
-                v21[v] = c[v] - a[v];
-                v22[v] = c[v] - b[v];
-                v23[v] = b[v] - c[v];
+                a = xyz3[i];
+                b = xyzq3[i*6 + j];
+                c = xyzq3[i*6 + (j+1)];
             }
 
-            t11 = 1/(v01[0]*v01[0] + v01[1]*v01[1] + v01[2]*v01[2]);
+            ang[0] = comp_ang(a, b, c);
+            ang[1] = comp_ang(b, a, c);
+            ang[2] = comp_ang(c, a, b);
 
-            fac11       = (v01[0]*v11[0] + v01[1]*v11[1] + v01[2]*v11[2])*t11;
-            fac21       = (v01[0]*v21[0] + v01[1]*v21[1] + v01[2]*v21[2])*t11;
-
-            w11[0] = v11[0] - fac11*v01[0];
-            w11[1] = v11[1] - fac11*v01[1];
-            w11[2] = v11[2] - fac11*v01[2];
-
-            w21[0] = v21[0] - fac21*v01[0];
-            w21[1] = v21[1] - fac21*v01[1];
-            w21[2] = v21[2] - fac21*v01[2];
-
-            ang[0] = (w11[0]*w21[0] + w11[1]*w21[1] + w11[2]*w21[2])/
-                    (sqrt(w11[0]*w11[0] + w11[1]*w11[1] + w11[2]*w11[2])*
-                     sqrt(w21[0]*w21[0] + w21[1]*w21[1] + w21[2]*w21[2]));
-
-            if (ang[0] > 1)    ang[0] = 1 ;
-            if (ang[0] < -1)ang[0] = -1;
-
-            ang[0] = acos(ang[0]);
-
-            t22 = 1/(v02[0]*v02[0] + v02[1]*v02[1] + v02[2]*v02[2]);
-            fac12 = (v02[0]*v12[0] + v02[1]*v12[1] + v02[2]*v12[2])*t22;
-            fac22 = (v02[0]*v22[0] + v02[1]*v22[1] + v02[2]*v22[2])*t22;
-
-            w12[0] = v12[0] - fac12*v02[0];
-            w12[1] = v12[1] - fac12*v02[1];
-            w12[2] = v12[2] - fac12*v02[2];
-
-            w22[0] = v22[0] - fac22*v02[0];
-            w22[1] = v22[1] - fac22*v02[1];
-            w22[2] = v22[2] - fac22*v02[2];
-
-            ang[1] = (w12[0]*w22[0] + w12[1]*w22[1] + w12[2]*w22[2])/
-                    (sqrt(w12[0]*w12[0] + w12[1]*w12[1] + w12[2]*w12[2])*
-                     sqrt(w22[0]*w22[0] + w22[1]*w22[1] + w22[2]*w22[2]));
-
-            if (ang[1] > 1)    ang[1] = 1 ;
-            if (ang[1] <-1)    ang[1] = -1;
-
-            ang[1] = acos(ang[1]);
-
-            t33 = 1/(v03[0]*v03[0] + v03[1]*v03[1] + v03[2]*v03[2]);
-            fac13 = (v03[0]*v13[0] + v03[1]*v13[1] + v03[2]*v13[2])*t33;
-            fac23 = (v03[0]*v23[0] + v03[1]*v23[1] + v03[2]*v23[2])*t33;
-
-            w13[0] = v13[0] - fac13*v03[0];
-            w13[1] = v13[1] - fac13*v03[1];
-            w13[2] = v13[2] - fac13*v03[2];
-
-            w23[0] = v23[0] - fac23*v03[0];
-            w23[1] = v23[1] - fac23*v03[1];
-            w23[2] = v23[2] - fac23*v03[2];
-
-            ang[2] = (w13[0]*w23[0] + w13[1]*w23[1] + w13[2]*w23[2])/
-                    (sqrt(w13[0]*w13[0] + w13[1]*w13[1] + w13[2]*w13[2])*
-                     sqrt(w23[0]*w23[0] + w23[1]*w23[1] + w23[2]*w23[2]));
-
-            if (ang[2] > 1)    ang[2] = 1 ;
-            if (ang[2] <-1)    ang[2] = -1;
-
-            ang[2] = acos(ang[2]);
-
-            radius = sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]) ;
+            radius = length(a);
             areav  = (ang[0] + ang[1] + ang[2] - M_PI)*pow(radius,2);
 
             areasT[i] += areav;
         }
     }
-
-    delete [] a;
-    delete [] b;
-    delete [] c;
-    delete [] v01;
-    delete [] v02;
-    delete [] v03;
-    delete [] v11;
-    delete [] v12;
-    delete [] v13;
-    delete [] v21;
-    delete [] v22;
-    delete [] v23;
-    delete [] w13;
-    delete [] w23;
-    delete [] ang;
 }
 
 
@@ -3024,7 +2070,14 @@ void Icogrid::control_vec(double *nvec    ,
 //          - nvecti - Vectors normal to the side edges of the triangles.
 //          - nvecte - Vectors normal to the outward edges of the triangles.
 //
+    double3 * nvec3 = (double3*)nvec;
+    double3 * nevcoa3 = (double3*)nevcoa;
+    double3 * nvecti3 = (double3*)nvecti;
+    double3 * nvecte3 = (double3*)nvecte;
 
+    double3 * xyz3 = (double3*)xyz;
+    double3 * xyzq3 = (double3*)xyzq;
+        
     // Local variables.
     double vec_l, l;
     double fac_nv;
@@ -3032,13 +2085,10 @@ void Icogrid::control_vec(double *nvec    ,
     int geo;
 
     // Local arrays.
-    double *v1, *v2;
-    double *nv;
+    double3 v1, v2;
+    double3 nv;
 
-    v1   = new double[3]();
-    v2   = new double[3]();
-    nv   = new double[3]();
-
+    
     for (int i = 0; i < point_num; i++){
 
         geo = 6; // Hexagons.
@@ -3049,88 +2099,56 @@ void Icogrid::control_vec(double *nvec    ,
             for (int j = 0; j < 5; j++){
 
                 if (j < 4){
-                    v2[0] = xyzq[i*6*3 + (j+1)*3 + 0];
-                    v2[1] = xyzq[i*6*3 + (j+1)*3 + 1];
-                    v2[2] = xyzq[i*6*3 + (j+1)*3 + 2];
-                    v1[0] = xyzq[i*6*3 + j*3 + 0];
-                    v1[1] = xyzq[i*6*3 + j*3 + 1];
-                    v1[2] = xyzq[i*6*3 + j*3 + 2];
+                    v2 = xyzq3[i*6 + (j+1)];
+                    v1 = xyzq3[i*6 + j];
                 }
                 else{
-                    v2[0] = xyzq[i*6*3 + 0*3 + 0];
-                    v2[1] = xyzq[i*6*3 + 0*3 + 1];
-                    v2[2] = xyzq[i*6*3 + 0*3 + 2];
-                    v1[0] = xyzq[i*6*3 + 4*3 + 0];
-                    v1[1] = xyzq[i*6*3 + 4*3 + 1];
-                    v1[2] = xyzq[i*6*3 + 4*3 + 2];
+                    v2 = xyzq3[i*6 + 0];
+                    v1 = xyzq3[i*6 + 4];
                 }
 
-                vec_l = sqrt(v1[0]*v1[0] + v1[1]*v1[1] + v1[2]*v1[2]);
+                vec_l = length(v1);
+                
+                l = acos(dot(v1,v2) /(pow(vec_l,2.0)))*vec_l;
 
-                l = acos((v1[0]*v2[0] + v1[1]*v2[1] + v1[2]*v2[2])/(pow(vec_l,2.0)))*vec_l;
+                nv = cross(v1,v2);
+                
 
-                nv[0] = v1[1]*v2[2] - v1[2]*v2[1];
-                nv[1] = v1[2]*v2[0] - v1[0]*v2[2];
-                nv[2] = v1[0]*v2[1] - v1[1]*v2[0];
+                fac_nv = l/length(nv);
 
-                fac_nv = l/sqrt(nv[0]*nv[0] + nv[1]*nv[1] + nv[2]*nv[2]);
+                nvec3[i*6 + j] = nv*fac_nv;
 
-                nvec[i*6*3 + j*3 + 0] = nv[0]*fac_nv;
-                nvec[i*6*3 + j*3 + 1] = nv[1]*fac_nv;
-                nvec[i*6*3 + j*3 + 2] = nv[2]*fac_nv;
-
-                nvecoa[i * 6 * 3 + j * 3 + 0] = nvec[i * 6 * 3 + j * 3 + 0] / areasT[i];
-                nvecoa[i * 6 * 3 + j * 3 + 1] = nvec[i * 6 * 3 + j * 3 + 1] / areasT[i];
-                nvecoa[i * 6 * 3 + j * 3 + 2] = nvec[i * 6 * 3 + j * 3 + 2] / areasT[i];
+                nevcoa3[i * 6 + j] = nvec3[i * 6 + j] / areasT[i];
             }
 
-            nvec[i * 6 * 3 + 5 * 3 + 0] = 0.0;
-            nvec[i * 6 * 3 + 5 * 3 + 1] = 0.0;
-            nvec[i * 6 * 3 + 5 * 3 + 2] = 0.0;
+            nvec3[i * 6  + 5 ] = make_double3(0.0, 0.0, 0.0);
 
-            nvecoa[i * 6 * 3 + 5 * 3 + 0] = 0.0;
-            nvecoa[i * 6 * 3 + 5 * 3 + 1] = 0.0;
-            nvecoa[i * 6 * 3 + 5 * 3 + 2] = 0.0;
-
+            nevcoa3[i * 6 + 5] = make_double3(0.0, 0.0, 0.0);
         }
         else{
 
             for (int j = 0; j < 6; j++){
 
                 if (j < 5){
-                    v2[0] = xyzq[i*6*3 + (j+1)*3 + 0];
-                    v2[1] = xyzq[i*6*3 + (j+1)*3 + 1];
-                    v2[2] = xyzq[i*6*3 + (j+1)*3 + 2];
-                    v1[0] = xyzq[i*6*3 + j*3 + 0];
-                    v1[1] = xyzq[i*6*3 + j*3 + 1];
-                    v1[2] = xyzq[i*6*3 + j*3 + 2];
+                    v2 = xyzq3[i*6 + (j+1)];
+                    v1 = xyzq3[i*6 + j];
                 }
                 else{
-                    v2[0] = xyzq[i*6*3 + 0*3 + 0];
-                    v2[1] = xyzq[i*6*3 + 0*3 + 1];
-                    v2[2] = xyzq[i*6*3 + 0*3 + 2];
-                    v1[0] = xyzq[i*6*3 + 5*3 + 0];
-                    v1[1] = xyzq[i*6*3 + 5*3 + 1];
-                    v1[2] = xyzq[i*6*3 + 5*3 + 2];
+                    v2 = xyzq3[i*6 + 0];
+                    v1 = xyzq3[i*6 + 5];
                 }
+                vec_l = length(v1);
+                
+                l = acos(dot(v1,v2) /(pow(vec_l,2.0)))*vec_l;
 
-                vec_l = sqrt(v1[0]*v1[0] + v1[1]*v1[1] + v1[2]*v1[2]);
+                nv = cross(v1,v2);
+                
 
-                l = acos((v1[0]*v2[0] + v1[1]*v2[1] + v1[2]*v2[2])/(pow(vec_l,2.0)))*vec_l;
+                fac_nv = l/length(nv);
 
-                nv[0] = v1[1]*v2[2] - v1[2]*v2[1];
-                nv[1] = v1[2]*v2[0] - v1[0]*v2[2];
-                nv[2] = v1[0]*v2[1] - v1[1]*v2[0];
+                nvec3[i*6 + j] = nv*fac_nv;
 
-                fac_nv = l/sqrt(nv[0]*nv[0] + nv[1]*nv[1] + nv[2]*nv[2]);
-
-                nvec[i*6*3 + j*3 + 0] = nv[0]*fac_nv;
-                nvec[i*6*3 + j*3 + 1] = nv[1]*fac_nv;
-                nvec[i*6*3 + j*3 + 2] = nv[2]*fac_nv;
-
-                nvecoa[i * 6 * 3 + j * 3 + 0] = nvec[i * 6 * 3 + j * 3 + 0] / areasT[i];
-                nvecoa[i * 6 * 3 + j * 3 + 1] = nvec[i * 6 * 3 + j * 3 + 1] / areasT[i];
-                nvecoa[i * 6 * 3 + j * 3 + 2] = nvec[i * 6 * 3 + j * 3 + 2] / areasT[i];
+                nevcoa3[i * 6 + j] = nvec3[i * 6 + j] / areasT[i];
             }
         }
 
@@ -3138,54 +2156,35 @@ void Icogrid::control_vec(double *nvec    ,
         if(geo == 5){
 
             for (int j = 0; j < 5; j++){
+                v1 = xyz3[point_local[i*6 + j]];
+                v2 = xyz3[i];
+                
+                vec_l = length(v1);
+                
+                l = acos(dot(v1,v2) /(pow(vec_l,2.0)))*vec_l;
 
-                v1[0] = xyz[point_local[i*6 + j]*3 + 0];
-                v1[1] = xyz[point_local[i*6 + j]*3 + 1];
-                v1[2] = xyz[point_local[i*6 + j]*3 + 2];
-                v2[0] = xyz[i*3 + 0];
-                v2[1] = xyz[i*3 + 1];
-                v2[2] = xyz[i*3 + 2];
+                nv = cross(v1,v2);
+                
+                fac_nv = l/length(nv);
 
-                vec_l = sqrt(v1[0]*v1[0] + v1[1]*v1[1] + v1[2]*v1[2]);
-
-                l = acos((v1[0]*v2[0] + v1[1]*v2[1] + v1[2]*v2[2])/(pow(vec_l,2.0)))*vec_l;
-
-                nv[0] = v1[1]*v2[2] - v1[2]*v2[1];
-                nv[1] = v1[2]*v2[0] - v1[0]*v2[2];
-                nv[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
-                fac_nv = l/sqrt(nv[0]*nv[0] + nv[1]*nv[1] + nv[2]*nv[2]);
-
-                nvecti[i*6*3 + j*3 + 0] = nv[0]*fac_nv;
-                nvecti[i*6*3 + j*3 + 1] = nv[1]*fac_nv;
-                nvecti[i*6*3 + j*3 + 2] = nv[2]*fac_nv;
+                nvecti3[i*6 + j] = nv*fac_nv;
             }
-            nvecti[i * 6 * 3 + 5 * 3 + 0] = 0.0;
-            nvecti[i * 6 * 3 + 5 * 3 + 1] = 0.0;
-            nvecti[i * 6 * 3 + 5 * 3 + 2] = 0.0;
+            nvecti3[i*6 + 5] = make_double3(0.0, 0.0, 0.0);
         }
         else{
             for (int j = 0; j < 6; j++){
-                v1[0] = xyz[point_local[i*6 + j]*3 + 0];
-                v1[1] = xyz[point_local[i*6 + j]*3 + 1];
-                v1[2] = xyz[point_local[i*6 + j]*3 + 2];
-                v2[0] = xyz[i*3 + 0];
-                v2[1] = xyz[i*3 + 1];
-                v2[2] = xyz[i*3 + 2];
+                v1 = xyz3[point_local[i*6 + j]];
+                v2 = xyz3[i];
+                
+                vec_l = length(v1);
+                
+                l = acos(dot(v1,v2) /(pow(vec_l,2.0)))*vec_l;
 
-                vec_l = sqrt(v1[0]*v1[0] + v1[1]*v1[1] + v1[2]*v1[2]);
+                nv = cross(v1,v2);
+                
+                fac_nv = l/length(nv);
 
-                l = acos((v1[0]*v2[0] + v1[1]*v2[1] + v1[2]*v2[2])/(pow(vec_l,2.0)))*vec_l;
-
-                nv[0] = v1[1]*v2[2] - v1[2]*v2[1];
-                nv[1] = v1[2]*v2[0] - v1[0]*v2[2];
-                nv[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
-                fac_nv = l/sqrt(nv[0]*nv[0] + nv[1]*nv[1] + nv[2]*nv[2]);
-
-                nvecti[i*6*3 + j*3 + 0] = nv[0]*fac_nv;
-                nvecti[i*6*3 + j*3 + 1] = nv[1]*fac_nv;
-                nvecti[i*6*3 + j*3 + 2] = nv[2]*fac_nv;
+                nvecti3[i*6 + j] = nv*fac_nv;
             }
         }
 
@@ -3194,80 +2193,50 @@ void Icogrid::control_vec(double *nvec    ,
             for (int j = 0; j < 5; j++){
 
                 if (j < 4){
-                    v1[0] = xyz[point_local[i*6 + j]*3 + 0];
-                    v1[1] = xyz[point_local[i*6 + j]*3 + 1];
-                    v1[2] = xyz[point_local[i*6 + j]*3 + 2];
-                    v2[0] = xyz[point_local[i*6 + j+1]*3 + 0];
-                    v2[1] = xyz[point_local[i*6 + j+1]*3 + 1];
-                    v2[2] = xyz[point_local[i*6 + j+1]*3 + 2];
+                    v1 = xyz3[point_local[i*6 + j]];
+                    v2 = xyz3[point_local[i*6 + j+1]];
                 }
                 else{
-                    v1[0] = xyz[point_local[i*6 + 4]*3 + 0];
-                    v1[1] = xyz[point_local[i*6 + 4]*3 + 1];
-                    v1[2] = xyz[point_local[i*6 + 4]*3 + 2];
-                    v2[0] = xyz[point_local[i*6 + 0]*3 + 0];
-                    v2[1] = xyz[point_local[i*6 + 0]*3 + 1];
-                    v2[2] = xyz[point_local[i*6 + 0]*3 + 2];
+                    v1 = xyz3[point_local[i*6 + 4]];
+                    v2 = xyz3[point_local[i*6 + 0]];
                 }
 
-                vec_l = sqrt(v1[0]*v1[0] + v1[1]*v1[1] + v1[2]*v1[2]);
+                vec_l = length(v1);
+                
+                l = acos(dot(v1,v2) /(pow(vec_l,2.0)))*vec_l;
 
-                l = acos((v1[0]*v2[0] + v1[1]*v2[1] + v1[2]*v2[2])/(pow(vec_l,2.0)))*vec_l;
+                nv = cross(v1,v2);
+                
+                fac_nv = l/length(nv);
 
-                nv[0] = v1[1]*v2[2] - v1[2]*v2[1];
-                nv[1] = v1[2]*v2[0] - v1[0]*v2[2];
-                nv[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
-                fac_nv = l/sqrt(nv[0]*nv[0] + nv[1]*nv[1] + nv[2]*nv[2]);
-
-                nvecte[i*6*3 + j*3 + 0] = nv[0]*fac_nv;
-                nvecte[i*6*3 + j*3 + 1] = nv[1]*fac_nv;
-                nvecte[i*6*3 + j*3 + 2] = nv[2]*fac_nv;
+                nvecte3[i*6 + j] = nv*fac_nv;
             }
-            nvecte[i * 6 * 3 + 5 * 3 + 0] = 0.0;
-            nvecte[i * 6 * 3 + 5 * 3 + 1] = 0.0;
-            nvecte[i * 6 * 3 + 5 * 3 + 2] = 0.0;
+            nvecti3[i*6 + 5] = make_double3(0.0, 0.0, 0.0);
         }
         else{
             for (int j = 0; j < 6; j++){
 
                 if (j < 5){
-                    v1[0] = xyz[point_local[i*6 + j]*3 + 0];
-                    v1[1] = xyz[point_local[i*6 + j]*3 + 1];
-                    v1[2] = xyz[point_local[i*6 + j]*3 + 2];
-                    v2[0] = xyz[point_local[i*6 + j+1]*3 + 0];
-                    v2[1] = xyz[point_local[i*6 + j+1]*3 + 1];
-                    v2[2] = xyz[point_local[i*6 + j+1]*3 + 2];
+                    v1 = xyz3[point_local[i*6 + j]];
+                    v2 = xyz3[point_local[i*6 + j+1]];
                 }
                 else{
-                    v1[0] = xyz[point_local[i*6 + 5]*3 + 0];
-                    v1[1] = xyz[point_local[i*6 + 5]*3 + 1];
-                    v1[2] = xyz[point_local[i*6 + 5]*3 + 2];
-                    v2[0] = xyz[point_local[i*6 + 0]*3 + 0];
-                    v2[1] = xyz[point_local[i*6 + 0]*3 + 1];
-                    v2[2] = xyz[point_local[i*6 + 0]*3 + 2];
+                    v1 = xyz3[point_local[i*6 + 5]];
+                    v2 = xyz3[point_local[i*6 + 0]];
                 }
 
-                vec_l = sqrt(v1[0]*v1[0] + v1[1]*v1[1] + v1[2]*v1[2]);
+                vec_l = length(v1);
+                
+                l = acos(dot(v1,v2) /(pow(vec_l,2.0)))*vec_l;
 
-                l = acos((v1[0]*v2[0] + v1[1]*v2[1] + v1[2]*v2[2])/(pow(vec_l,2.0)))*vec_l;
+                nv = cross(v1,v2);
+                
+                fac_nv = l/length(nv);
 
-                nv[0] = v1[1]*v2[2] - v1[2]*v2[1];
-                nv[1] = v1[2]*v2[0] - v1[0]*v2[2];
-                nv[2] = v1[0]*v2[1] - v1[1]*v2[0];
-
-                fac_nv = l/sqrt(nv[0]*nv[0] + nv[1]*nv[1] + nv[2]*nv[2]);
-
-                nvecte[i*6*3 + j*3 + 0] = nv[0]*fac_nv;
-                nvecte[i*6*3 + j*3 + 1] = nv[1]*fac_nv;
-                nvecte[i*6*3 + j*3 + 2] = nv[2]*fac_nv;
+                nvecte3[i*6 + j] = nv*fac_nv;
             }
         }
     }
-
-    delete [] v1;
-    delete [] v2;
-    delete [] nv;
 }
 
 
@@ -3287,17 +2256,13 @@ void Icogrid::compute_func(double *func_r,
 //
 
     // Local variables:
-    double norm;
+    
+    double3 * func_r3 = (double3*)func_r;
+    double3 * xyz3 = (double3*)xyz;
+    
 
-    for (int i = 0; i < point_num; i++){
-
-        norm = sqrt(pow(xyz[i*3 + 0],2.0) + pow(xyz[i*3 + 1],2.0) + pow(xyz[i*3 + 2],2.0));
-
-        func_r[i*3 + 0] = xyz[i*3 + 0]/norm;
-        func_r[i*3 + 1] = xyz[i*3 + 1]/norm;
-        func_r[i*3 + 2] = xyz[i*3 + 2]/norm;
-
-    }
+    for (int i = 0; i < point_num; i++)
+        func_r3[i] = normalize(xyz3[i]);
 }
 
 void Icogrid::div_operator(double *areasT,
