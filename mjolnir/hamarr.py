@@ -361,6 +361,7 @@ def w_prof(input,grid,output):
     tsp = output.nts-output.ntsi+1
 
     w = 0.5*(output.Wh[:,1:,:]+output.Wh[:,:-1,:])/output.Rho
+
     lon_shift = grid.lon*1.0
     lon_shift[lon_shift>7*np.pi/4] -= 2*np.pi
 
@@ -483,11 +484,14 @@ def w_ver(input,grid,output,sigmaref):
     # Averaging in time and longitude
     if tsp > 1:
         VertMl = np.mean(VertM[:,:,:,:],axis=1)
+        VertMeq = np.mean(VertM[np.logical_and(lati>=-np.pi/9,lati<=np.pi/9)[:,1],:,:,:],axis=0)
         del VertM
         VertMlt = np.mean(VertMl[:,:,:],axis=2)
-        del VertMl
+        VertMeqt = np.mean(VertMeq[:,:,:],axis=2)
+        del VertMl, VertMeq
     else:
         VertMlt = np.mean(VertM[:,:,:,0],axis=1)
+        VertMeqt = np.mean(VertM[np.logical_and(lati>=-np.pi/9,lati<=np.pi/9)[:,1],:,:,0],axis=0)
         del VertM
 
     #################
@@ -496,6 +500,7 @@ def w_ver(input,grid,output,sigmaref):
 
     # Latitude
     latp = np.arange(-np.pi/2,np.pi/2,res_deg)
+    lonp = np.arange(0,2*np.pi,res_deg)
 
     # Contour plot
     C = plt.contourf(latp*180/np.pi,Pref/1e5,VertMlt.T,40,cmap='viridis')
@@ -520,6 +525,31 @@ def w_ver(input,grid,output,sigmaref):
     plt.tight_layout()
     plt.savefig(input.resultsf+'/figures/w_ver_i%d_l%d.pdf'%(output.ntsi,output.nts))
     plt.close()
+
+    plt.figure()
+    C = plt.contourf(lonp*180/np.pi,Pref/1e5,VertMeqt.T,40,cmap='viridis')
+
+    levp = np.arange(np.ceil(np.min(VertMeqt)/csp)*csp,np.floor(np.max(VertMeqt)/csp)*csp,csp)
+    c2 = plt.contour(lonp*180/np.pi,Pref/1e5,VertMeqt.T,levels=levp,colors='w',linewidths=1)
+    plt.clabel(c2,inline=1,fontsize=10)
+    for cc in C.collections:
+        cc.set_edgecolor("face") #fixes a stupid bug in matplotlib 2.0
+    plt.gca().invert_yaxis()
+    if np.max(Pref)/np.min(Pref) > 100:
+        plt.gca().set_yscale("log")
+    plt.xlabel('Longitude (deg)')
+    plt.ylabel('Pressure (bar)')
+    plt.plot(lonp*180/np.pi,np.zeros_like(lonp)+np.max(output.Pressure[:,grid.nv-1,:])/1e5,'r--')
+
+    plt.title('Time = %#.3f - %#.3f days'%(output.time[0],output.time[-1]))
+    clb = plt.colorbar(C)
+    clb.set_label(r'Velocity (m s$^{-1}$)')
+    if not os.path.exists(input.resultsf+'/figures'):
+        os.mkdir(input.resultsf+'/figures')
+    plt.tight_layout()
+    plt.savefig(input.resultsf+'/figures/weq_ver_i%d_l%d.pdf'%(output.ntsi,output.nts))
+    plt.close()
+
 
 def uv_lev(input,grid,output,Plev):
     # Set the latitude-longitude grid.

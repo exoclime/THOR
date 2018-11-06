@@ -8,6 +8,7 @@ import h5py
 from imp import reload
 reload(ham)
 import time
+import subprocess as spr
 
 first = time.time()
 ###########################################################################
@@ -40,7 +41,7 @@ first = time.time()
 parser = argparse.ArgumentParser()
 parser.add_argument('pview',metavar='nview',nargs='*',help='Type of plot to make (integer)')
 parser.add_argument("-f","--file",nargs=1,default=['results'],help='Results folder to use for plotting')
-parser.add_argument("-s","--simulation_ID",nargs=1,default=['Earth'],help='Name of simulation (e.g., planet name)')
+parser.add_argument("-s","--simulation_ID",nargs=1,default=['auto'],help='Name of simulation (e.g., planet name)')
 parser.add_argument("-i","--initial_file",nargs=1,default=[10],type=int,help='Initial file id number (integer)')
 parser.add_argument("-l","--last_file",nargs=1,default=[10],type=int,help='Last file id number (integer)')
 parser.add_argument("-p","--pressure_lev",nargs=1,default=[2.5e2],help='Pressure level to plot in temperature/velocity/vorticity field (mbar)')
@@ -63,8 +64,13 @@ nts      = args.last_file[0]     # last file id number
 if ntsi > nts:
     nts = ntsi
 
-simulation_ID = args.simulation_ID[0]
 resultsf = args.file[0]
+if args.simulation_ID[0] == 'auto':
+    outname = spr.check_output('ls '+resultsf+'/esp_output_*_0.h5',shell=True)
+    file0 = outname.decode().split(sep='/')[-1]
+    simulation_ID = file0.split(sep='_')[2]
+else:
+    simulation_ID = args.simulation_ID[0]
 
 outall = ham.GetOutput(resultsf,simulation_ID,ntsi,nts)
 
