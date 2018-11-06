@@ -37,11 +37,15 @@ endif
 #######################################################################
 # Set up variables for files and compilation
 
-# Builds THOR executable
-CC = nvcc
 
+
+# Builds THOR executable
 SM ?= 35 # Streaming Multiprocessor version
-arch := -arch sm_$(SM)
+
+COMP ?= nvcc
+
+
+
 
 # objects
 obj_cuda   := esp.o grid.o esp_initial.o planet.o thor_driver.o profx_driver.o esp_output.o debug_helpers.o valkyrie_conservation.o reduction_add.o
@@ -56,16 +60,52 @@ obj_tests_directories := directories_test.o directories.o
 obj_tests_gen_init := gen_init.o storage.o grid.o planet.o
 obj_tests_reduction_add := reduction_add_test.o reduction_add.o
 
+
+
+
 #######################################################################
 # flags
-# define specific compiler. if if fails on newer installations, get it to use g++-5
-ccbin :=
-# ccbin := -ccbin g++-5
 
-# define common flags
-flags := $(ccbin) --compiler-options -Wall -std=c++11 -DDEVICE_SM=$(SM)
-dep_flags := $(ccbin) -std=c++11
-link_flags := $(ccbin)
+
+CUDA_PATH := /usr/lib/cuda/
+CUDA_LIBS := /usr/lib/x86-64-linux-gnu/
+
+ifeq ($(COMP), nvcc)
+	# define specific compiler for nvcc. if if fails on newer installations, get it to use g++-5
+	CC = nvcc
+	ccbin :=
+	# ccbin := -ccbin g++-5
+	CDB = none
+	arch := -arch sm_$(SM)
+	dependencies_flags = --generate-dependencies
+
+	# define common flags
+	cpp_flags := $(ccbin)  --compiler-options  -Wall -std=c++11 -DDEVICE_SM=$(SM) 
+	cuda_flags := $(ccbin) --compiler-options  -Wall -std=c++11 -DDEVICE_SM=$(SM) 
+
+	cpp_dep_flags := $(ccbin) -std=c++11 
+	cuda_dep_flags := $(ccbin)
+	link_flags = $(ccbin)
+else
+	# need to compile with clang for compilation database
+	CC := $(COMP)
+	CDB = -MJ
+	arch := --cuda-gpu-arch=sm_$(SM)
+	dependencies_flags := -MM
+
+	# define common flags
+	cpp_flags := -Wall -std=c++11 -DDEVICE_SM=$(SM)
+	cuda_flags := -Wall -std=c++11 -DDEVICE_SM=$(SM) --cuda-path=$(CUDA_PATH)
+
+	cpp_dep_flags := -std=c++11
+	cuda_dep_flags := -std=c++11 --cuda-path=$(CUDA_PATH) 
+	link_flags = --cuda-path=$(CUDA_PATH) -L$(CUDA_LIBS) -lcudart_static -ldl -lrt -pthread
+endif
+
+
+
+
+
 # define debug flags
 debug_flags := -g -G
 
@@ -120,35 +160,40 @@ MODE := UNDEF
 
 # profiling target
 ifeq "$(findstring prof, $(MAKECMDGOALS))" "prof"
-	flags += $(profiling_flags) -DBUILD_LEVEL="\"profiling\""
+	cuda_flags += $(profiling_flags) -DBUILD_LEVEL="\"profiling\""
+	cpp_flags += $(profiling_flags) -DBUILD_LEVEL="\"profiling\""
 	MODE := prof
 	OUTPUTDIR := prof
 endif
 
 # debug target
 ifeq "$(findstring debug, $(MAKECMDGOALS))" "debug"
-	flags += $(debug_flags) -DBUILD_LEVEL="\"debug\""
+	cuda_flags += $(debug_flags) -DBUILD_LEVEL="\"debug\""
+	cpp_flags += $(debug_flags) -DBUILD_LEVEL="\"debug\""
 	MODE := debug
 	OUTPUTDIR := debug
 endif
 
 # release target
 ifeq "$(findstring release, $(MAKECMDGOALS))" "release"
-	flags += $(release_flags) -DBUILD_LEVEL="\"release\""
+	cuda_flags += $(release_flags) -DBUILD_LEVEL="\"release\""
+	cpp_flags += $(release_flags) -DBUILD_LEVEL="\"release\""
 	MODE := release
 	OUTPUTDIR := release
 endif
 
 # test target
 ifeq "$(findstring tests, $(MAKECMDGOALS))" "tests"
-	flags += $(debug_flags) -DBUILD_LEVEL="\"test\""
+	cuda_flags += $(debug_flags) -DBUILD_LEVEL="\"test\""
+	cpp_flags += $(debug_flags) -DBUILD_LEVEL="\"test\""
 	MODE := tests
 	OUTPUTDIR := debug
 endif
 
 # by default, build release target
 ifeq "$(MODE)" "UNDEF"
-	flags += $(release_flags) -DBUILD_LEVEL="\"release\""
+	cuda_flags += $(release_flags) -DBUILD_LEVEL="\"release\""
+	cpp_flags += $(release_flags) -DBUILD_LEVEL="\"release\""
 	MODE := release
 	OUTPUTDIR := release
 endif
@@ -156,17 +201,20 @@ endif
 debug: symlink
 release: symlink
 prof: symlink
-
+cdb: 
 
 
 #######################################################################
 # main binary
 all: symlink
 
+$(info Compiler: $(CC))
 $(info Compile mode: $(MODE))
 $(info Output objects to: $(OBJDIR)/$(OUTPUTDIR))
 $(info Output tests to: $(BINDIR)/$(TESTDIR))
-$(info flags: $(flags) )
+$(info cuda_flags: $(cuda_flags) )
+$(info cpp_flags: $(cpp_flags) )
+$(info link_flags: $(link_flags) )
 $(info arch: $(arch) )
 $(info MODULES_SRC: $(MODULES_SRC))
 
@@ -199,16 +247,17 @@ $(BINDIR)/${TESTDIR}: $(BINDIR)
 # for CUDA files
 $(OBJDIR)/${OUTPUTDIR}/%.d: %.cu | $(OBJDIR)/$(OUTPUTDIR) $(OBJDIR)
 	@echo $(BLUE)computing dependencies $@ $(END)
-	@set -e; rm -f $@; \
-	$(CC) $(arch) $(dep_flags) $(h5include) $(h5libdir) -I$(includedir) --generate-dependencies $< > $@.$$$$; \
+	set -e; rm -f $@; \
+	$(CC) $(dependencies_flags) $(arch) $(cuda_dep_flags) $(h5include) -I$(includedir)  $< > $@.$$$$; \
 	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
-	rm -f $@.$$$$
+	rm -f $@.$$$$ 
+
 
 # for C++ files
 $(OBJDIR)/${OUTPUTDIR}/%.d: %.cpp | $(OBJDIR)/$(OUTPUTDIR) $(OBJDIR)
 	@echo $(BLUE)computing dependencies $@ $(END)
-	@set -e; rm -f $@; \
-	$(CC) $(arch) $(dep_flags) $(h5include) $(h5libdir) -I$(includedir)  --generate-dependencies  $< > $@.$$$$; \
+	set -e; rm -f $@; \
+	$(CC) $(dependencies_flags) $(cpp_dep_flags) $(h5include) -I$(includedir) $< > $@.$$$$; \
 	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
 	rm -f $@.$$$$
 
@@ -217,18 +266,32 @@ $(OBJDIR)/${OUTPUTDIR}/%.d: %.cpp | $(OBJDIR)/$(OUTPUTDIR) $(OBJDIR)
 # CUDA files
 $(OBJDIR)/${OUTPUTDIR}/%.o: %.cu $(OBJDIR)/$(OUTPUTDIR)/%.d| $(OBJDIR)/$(OUTPUTDIR) $(OBJDIR)
 	@echo $(YELLOW)creating $@ $(END)
-	$(CC) $(arch)  $(flags) $(h5include) $(h5libdir) -I$(includedir) -dc -o $@ $<
+	if test $$CDB = "-MJ" ; then \
+		$(CC) -c $(arch)  $(cuda_flags) $(h5include) -I$(includedir) $(CDB) $@.json -o $@ $<; \
+	else \
+		$(CC) -c $(arch)  $(cuda_flags) $(h5include) -I$(includedir) -o $@ $<; \
+	fi
 
 # C++ files
 $(OBJDIR)/${OUTPUTDIR}/%.o: %.cpp $(OBJDIR)/$(OUTPUTDIR)/%.d| $(OBJDIR)/$(OUTPUTDIR) $(OBJDIR)
 	@echo $(YELLOW)creating $@ $(END)
-	$(CC) $(arch)  $(flags) $(h5include) $(h5libdir) -I$(includedir) -dc -o $@ $<
+	if test $$CDB = "-MJ" ; then \
+		$(CC) -c $(cpp_flags) $(h5include) -I$(includedir) $(CDB) $@.json -o $@ $<; \
+	else \
+		$(CC) -c $(cpp_flags) $(h5include) -I$(includedir) -o $@ $<; \
+	fi
 
 
 # link *.o objects
 $(BINDIR)/${OUTPUTDIR}/esp: $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj)) $(MODULES_SRC)/libphy_modules.a | $(BINDIR) $(RESDIR) $(BINDIR)/$(OUTPUTDIR)  $(OBJDIR)
 	@echo $(YELLOW)creating $@ $(END)
-	$(CC) $(arch) $(link_flags) -o $(BINDIR)/$(OUTPUTDIR)/esp $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj)) -L$(MODULES_SRC) -lphy_modules $(h5libdir) $(h5libs)
+	$(CC) -o $(BINDIR)/$(OUTPUTDIR)/esp $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj)) -L$(MODULES_SRC) -lphy_modules $(h5libdir) $(h5libs) $(link_flags)
+	if test $$CDB = "-MJ" ; then \
+	rm -f compile_commands.json; \
+	sed -e '1s/^/[\n/' -e '$$s/,$$/\n]/' $(OBJDIR)/$(OUTPUTDIR)/*.o.json $(MODULES_SRC)/obj/*.o.json > compile_commands.json; \
+	sed -i.bak s/-xcuda/-xc++/g compile_commands.json; \
+	rm -f compile_commands.json.bak; \
+	fi
 
 # phony so that it will always be run
 .PHONY: symlink
@@ -245,7 +308,7 @@ export
 .PHONY: $(MODULES_SRC)/libphy_modules.a
 $(MODULES_SRC)/libphy_modules.a:
 	@echo $(MAGENTA)Creating physics module from subdir $(MODULES_SRC)$(END)
-	$(MAKE) -C $(MODULES_SRC)
+	$(MAKE) -f Makefile -C $(MODULES_SRC)
 
 #######################################################################
 # Build Tests
@@ -258,27 +321,27 @@ tests: ${BINDIR}/${TESTDIR}/cmdargs_test ${BINDIR}/${TESTDIR}/config_test ${BIND
 
 $(BINDIR)/$(TESTDIR)/cmdargs_test:  $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_cmdargs)) | $(BINDIR)/${OUTPUTDIR} $(BINDIR)/$(TESTDIR) $(BINDIR) $(RESDIR)
 	@echo $(YELLOW)creating $@ $(END)
-	$(CC) $(arch) $(flags) $(debug_flags) -o $(BINDIR)/$(TESTDIR)/cmdargs_test $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_cmdargs))
+	$(CC) $(CDB) $(arch) $(link_flags) -o $(BINDIR)/$(TESTDIR)/cmdargs_test $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_cmdargs))
 
 $(BINDIR)/$(TESTDIR)/config_test:  $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_config)) | $(BINDIR)/${OUTPUTDIR} $(BINDIR)/$(TESTDIR) $(BINDIR) $(RESDIR)
 	@echo $(YELLOW)creating $@ $(END)
-	$(CC) $(arch) $(flags) $(debug_flags) -o $(BINDIR)/$(TESTDIR)/config_test $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_config))
+	$(CC) $(CDB) $(arch) $(link_flags) -o $(BINDIR)/$(TESTDIR)/config_test $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_config))
 
 $(BINDIR)/$(TESTDIR)/directories_test:  $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_directories)) | $(BINDIR)/${OUTPUTDIR} $(BINDIR)/$(TESTDIR) $(BINDIR) $(RESDIR)
 	@echo $(YELLOW)creating $@ $(END)
-	$(CC) $(arch) $(flags) $(debug_flags) -o $(BINDIR)/$(TESTDIR)/directories_test $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_directories))
+	$(CC) $(CDB) $(arch) $(link_flags) -o $(BINDIR)/$(TESTDIR)/directories_test $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_directories))
 
 $(BINDIR)/$(TESTDIR)/storage_test:  $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_storage)) | $(BINDIR)/${OUTPUTDIR} $(BINDIR)/$(TESTDIR) $(BINDIR) $(RESDIR)
 	@echo $(YELLOW)creating $@ $(END)
-	$(CC) $(arch) $(flags) $(debug_flags) -o $(BINDIR)/$(TESTDIR)/storage_test $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_storage))  $(h5libdir) $(h5libs)
+	$(CC) $(CDB) $(arch) $(link_flags) -o $(BINDIR)/$(TESTDIR)/storage_test $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_storage))  $(h5libdir) $(h5libs)
 
 $(BINDIR)/$(TESTDIR)/gen_init:  $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_gen_init)) | $(BINDIR)/${OUTPUTDIR} $(BINDIR)/$(TESTDIR) $(BINDIR) $(RESDIR)
 	@echo $(YELLOW)creating $@ $(END)
-	$(CC) $(arch) $(flags) $(debug_flags) -o $(BINDIR)/$(TESTDIR)/gen_init $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_gen_init))  $(h5libdir) $(h5libs)
+	$(CC) $(CDB) $(arch) $(link_flags) -o $(BINDIR)/$(TESTDIR)/gen_init $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_gen_init))  $(h5libdir) $(h5libs)
 
 $(BINDIR)/$(TESTDIR)/reduction_add_test:  $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_reduction_add)) | $(BINDIR)/${OUTPUTDIR} $(BINDIR)/$(TESTDIR) $(BINDIR) $(RESDIR)
 	@echo $(YELLOW)creating $@ $(END)
-	$(CC) $(arch) $(flags) $(debug_flags) -o $(BINDIR)/$(TESTDIR)/reduction_add_test $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_reduction_add))  $(h5libdir) $(h5libs)
+	$(CC) $(CDB) $(arch) $(link_flags) -o $(BINDIR)/$(TESTDIR)/reduction_add_test $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_reduction_add))  $(h5libdir) $(h5libs)
 
 #######################################################################
 # Cleanup
@@ -289,9 +352,9 @@ clean:
 	-$(RM) $(BINDIR)/release/esp
 	-$(RM) $(BINDIR)/prof/esp
 	@echo $(CYAN)clean up objects files and dependencies $(END)
-	-$(RM) $(addprefix $(OBJDIR)/debug/,$(obj)) $(obj:%.o=$(OBJDIR)/debug/%.d)
-	-$(RM) $(addprefix $(OBJDIR)/release/,$(obj)) $(obj:%.o=$(OBJDIR)/release/%.d)
-	-$(RM) $(addprefix $(OBJDIR)/prof/,$(obj)) $(obj:%.o=$(OBJDIR)/prof/%.d)
+	-$(RM) $(addprefix $(OBJDIR)/debug/,$(obj)) $(obj:%.o=$(OBJDIR)/debug/%.d) $(obj:%.o=$(OBJDIR)/debug/%.o.json)
+	-$(RM) $(addprefix $(OBJDIR)/release/,$(obj)) $(obj:%.o=$(OBJDIR)/release/%.d) $(obj:%.o=$(OBJDIR)/release/%.o.json)
+	-$(RM) $(addprefix $(OBJDIR)/prof/,$(obj)) $(obj:%.o=$(OBJDIR)/prof/%.d) $(obj:%.o=$(OBJDIR)/prof/%.o.json)
 	@echo $(CYAN)clean up tests binaries $(END)
 	-$(RM) $(BINDIR)/tests/cmdargs_test
 	-$(RM) $(BINDIR)/tests/storage_test
