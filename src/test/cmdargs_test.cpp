@@ -43,7 +43,6 @@
 ////////////////////////////////////////////////////////////////////////
 
 
-
 #include <iostream>
 #include <sstream>
 
@@ -53,10 +52,7 @@
 using namespace std;
 
 
-
-
-int main(int argc,  char** argv)
-{
+int main(int argc, char** argv) {
     cout << "commandline file test" << endl;
 
     cmdargs argparser("cmdargs_test", "tester for argument parser");
@@ -71,34 +67,31 @@ int main(int argc,  char** argv)
     argparser.parse(argc, argv);
 
     // positional args
-    string positional_arg_string = "fart";
-    bool positional_arg_string_set = argparser.get_positional_arg(positional_arg_string);
+    string positional_arg_string     = "fart";
+    bool   positional_arg_string_set = argparser.get_positional_arg(positional_arg_string);
     printf("# positional argument - value: %s\tset: %d\n", positional_arg_string.c_str(), positional_arg_string_set);
 
 
     // keyqord args
-    int test_arg_int = -100;
+    int  test_arg_int     = -100;
     bool test_arg_int_set = argparser.get_arg("int", test_arg_int);
     printf("int - value: %d\tset: %d\n", test_arg_int, test_arg_int_set);
 
     // In this example case, boolean is false by default and key puts it to true
-    bool test_arg_bool = false;
+    bool test_arg_bool     = false;
     bool test_arg_bool_set = argparser.get_arg("bool", test_arg_bool);
     printf("bool - value: %d\tset: %d\n", test_arg_bool, test_arg_bool_set);
 
     // In this example case, boolean is true by default and key puts it to false
-    bool test_arg_negbool = true;
+    bool test_arg_negbool     = true;
     bool test_arg_negbool_set = argparser.get_arg("negbool", test_arg_negbool);
     printf("negbool - value: %d\tset: %d\n", test_arg_negbool, test_arg_negbool_set);
 
-    double test_arg_double = -1e5;
-    bool test_arg_double_set = argparser.get_arg("double", test_arg_double);
+    double test_arg_double     = -1e5;
+    bool   test_arg_double_set = argparser.get_arg("double", test_arg_double);
     printf("double - value: %e\tset: %d\n", test_arg_double, test_arg_double_set);
 
-    string test_arg_string = "fart";
-    bool test_arg_string_set = argparser.get_arg("string", test_arg_string);
+    string test_arg_string     = "fart";
+    bool   test_arg_string_set = argparser.get_arg("string", test_arg_string);
     printf("string - value: %s\tset: %d\n", test_arg_string.c_str(), test_arg_string_set);
-
-
-
 }

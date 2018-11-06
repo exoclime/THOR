@@ -22,16 +22,16 @@
 // Method: writes an array to a file and reloads it
 //
 // Known limitations: None.
-//      
+//
 //
 // Known issues: None.
-//   
+//
 //
 // Current Code Owner: Joao Mendonca, EEG. joao.mendonca@csh.unibe.ch
 //
-// If you use this code please cite the following reference: 
+// If you use this code please cite the following reference:
 //
-//       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016  
+//       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016
 //
 // History:
 // Version Date       Comment
@@ -40,7 +40,6 @@
 // 1.0     16/08/2017 Released version  (JM)
 //
 ////////////////////////////////////////////////////////////////////////
-
 
 
 #include <iostream>
@@ -55,96 +54,85 @@ const int num_d = 1024;
 const int num_i = 100;
 
 
-int main()
-{
+int main() {
     cout << "Storage test" << endl;
 
     {
-        
+
         storage f("out.h5");
 
         uint32_t s = num_d;
-    
+
         double d[s];
-        
+
         for (int i = 0; i < num_d; i++)
-            d[i] = double(i)/double(s);
+            d[i] = double(i) / double(s);
 
         f.append_table(d, s, "Numbers", "m", "Number table");
 
         uint32_t s2 = num_i;
-        
+
         int d2[s2];
         for (int i = 0; i < num_i; i++)
             d2[i] = i;
-        
-        f.append_table(d2, s2, "Indices", "m^2", "indices table");       
+
+        f.append_table(d2, s2, "Indices", "m^2", "indices table");
     }
 
     {
-        
-        storage f("out.h5" , true);
+
+        storage f("out.h5", true);
 
         {
-            
+
             int size_out = 0;
 
             std::unique_ptr<double[]> data_ptr = nullptr;
-    
+
             f.read_table("Numbers", data_ptr, size_out);
             if (size_out != num_d)
                 cout << "error on size of table. Got: " << size_out
                      << "\texpected: " << num_d << endl;
-            else
-            {
+            else {
                 int cnt = 0;
-                
-                for (int i = 0; i < size_out; i++)
-                {
-                    double dat = double(i)/double(size_out);
-                    
-                    if (data_ptr[i] != dat)
-                    {
-                        
-                        cout << "wrong data(" << i <<")" << "\tGot:\t"
+
+                for (int i = 0; i < size_out; i++) {
+                    double dat = double(i) / double(size_out);
+
+                    if (data_ptr[i] != dat) {
+
+                        cout << "wrong data(" << i << ")"
+                             << "\tGot:\t"
                              << data_ptr[i] << "\texpected:\t" << dat << endl;
                         cnt++;
-                        
                     }
-                    
                 }
                 if (cnt > 0)
                     cout << "got " << cnt << " wrong data points" << endl;
-                
             }
-            
-            
         }
-        
+
         {
             int size_out = 0;
-            
+
             std::unique_ptr<int[]> data_ptr = nullptr;
-    
+
             f.read_table("Indices", data_ptr, size_out);
             if (size_out != num_i)
                 cout << "error on size of table. Got: " << size_out
                      << "\texpected: " << num_i << endl;
-            else
-            {
+            else {
                 int cnt = 0;
-                
-                for (int i = 0; i < size_out; i++)
-                {
-                    if (data_ptr[i] != i) 
-                        cout << "wrong data(" << i <<")" << "\tGot:\t"
+
+                for (int i = 0; i < size_out; i++) {
+                    if (data_ptr[i] != i)
+                        cout << "wrong data(" << i << ")"
+                             << "\tGot:\t"
                              << data_ptr[i] << "\texpected:\t" << i << endl;
                 }
-                 if (cnt > 0)
+                if (cnt > 0)
                     cout << "got " << cnt << " wrong data points" << endl;
             }
-            
         }
     }
-    
 }

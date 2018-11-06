@@ -43,15 +43,15 @@
 ////////////////////////////////////////////////////////////////////////
 
 #include "../headers/esp.h"
+#include "../headers/phy/apocalypse_sponge.h"
+#include "../headers/phy/dry_conv_adj.h"
 #include "../headers/phy/profx_auxiliary.h"
+#include "../headers/phy/profx_deepHJ_hs.h"
 #include "../headers/phy/profx_held_suarez.h"
 #include "../headers/phy/profx_shallowHJ_hs.h"
-#include "../headers/phy/profx_deepHJ_hs.h"
 #include "../headers/phy/profx_tidalearth_hs.h"
-#include "../headers/phy/apocalypse_sponge.h"
 #include "../headers/phy/valkyrie_conservation.h"
 #include "../headers/phy/vulcan_device.h" // Simple chemistry.
-#include "../headers/phy/dry_conv_adj.h"
 
 #include "binary_test.h"
 #include "debug_helpers.h"
@@ -60,200 +60,203 @@
 
 #include "reduction_add.h"
 
-__host__ void ESP::ProfX(int core_benchmark     , // Held-Suarez test option
-                         int    vulcan      , // Use vulcan chemistry
-                         int    conv        , //
-                         double Omega       , // Rotation rate [1/s]
-                         double Cp          , // Specific heat capacity [J/kg/K]
-                         double Rd          , // Gas constant [J/kg/K]
-                         double mu          , // Atomic mass unit [kg]
-                         double kb          , // Boltzmann constant [J/K]
-                         double P_Ref       , // Reference pressure [Pa]
-                         double Gravit      , // Gravity [m/s^2]
-                         double A           , // Planet radius [m]
-                         bool   DeepModel   ,
-                         int    n_out       , // output step (triggers conservation calc)
-                         bool   sponge      , // Use sponge layer?
-                         bool   shrink_sponge,  // Shrink sponge after some time (Bonjour Urs!)
-                         bool   conservation ){ // calc/output conservation quantities
+__host__ void ESP::ProfX(int    core_benchmark, // Held-Suarez test option
+                         int    vulcan,         // Use vulcan chemistry
+                         int    conv,           //
+                         double Omega,          // Rotation rate [1/s]
+                         double Cp,             // Specific heat capacity [J/kg/K]
+                         double Rd,             // Gas constant [J/kg/K]
+                         double mu,             // Atomic mass unit [kg]
+                         double kb,             // Boltzmann constant [J/K]
+                         double P_Ref,          // Reference pressure [Pa]
+                         double Gravit,         // Gravity [m/s^2]
+                         double A,              // Planet radius [m]
+                         bool   DeepModel,
+                         int    n_out,         // output step (triggers conservation calc)
+                         bool   sponge,        // Use sponge layer?
+                         bool   shrink_sponge, // Shrink sponge after some time (Bonjour Urs!)
+                         bool   conservation) {  // calc/output conservation quantities
     USE_BENCHMARK()
-//
-//  Number of threads per block.
+    //
+    //  Number of threads per block.
     const int NTH = 256;
 
-//  Specify the block sizes.
+    //  Specify the block sizes.
     dim3 NB((point_num / NTH) + 1, nv, 1);
-    dim3 NBRT((point_num/NTH) + 1, 1, 1);
-	dim3 NBTR((point_num / NTH) + 1, nv, ntr);
+    dim3 NBRT((point_num / NTH) + 1, 1, 1);
+    dim3 NBTR((point_num / NTH) + 1, nv, ntr);
 
-    if (sponge==true) {
-      dim3 NBT((point_num / NTH) + 1, nv, 1);
+    if (sponge == true) {
+        dim3 NBT((point_num / NTH) + 1, nv, 1);
 
-      cudaMemset(vbar_d, 0, sizeof(double) * 3 * nlat * nv);
-      zonal_v <<<NBT,NTH >>>(Mh_d                     ,
-                             W_d                       ,
-                             Rho_d                    ,
-                             vbar_d                    ,
-                             zonal_mean_tab_d,
-                             lonlat_d                  ,
-                             point_num                        );
+        cudaMemset(vbar_d, 0, sizeof(double) * 3 * nlat * nv);
+        zonal_v<<<NBT, NTH>>>(Mh_d,
+                              W_d,
+                              Rho_d,
+                              vbar_d,
+                              zonal_mean_tab_d,
+                              lonlat_d,
+                              point_num);
 
-      cudaDeviceSynchronize();
+        cudaDeviceSynchronize();
 
-      if (shrink_sponge == true) {
-        if (current_step*timestep >= t_shrink*86400) {
-          ns_sponge = 1.0 - 0.5*(1.0-ns_sponge);
-          shrink_sponge = false;
+        if (shrink_sponge == true) {
+            if (current_step * timestep >= t_shrink * 86400) {
+                ns_sponge     = 1.0 - 0.5 * (1.0 - ns_sponge);
+                shrink_sponge = false;
+            }
         }
-      }
 
-      sponge_layer <<< NB,NTH >>>(Mh_d                      ,
-                                  Rho_d                    ,
-                                  W_d                       ,
-                                  Wh_d                     ,
-                                  vbar_d                    ,
+        sponge_layer<<<NB, NTH>>>(Mh_d,
+                                  Rho_d,
+                                  W_d,
+                                  Wh_d,
+                                  vbar_d,
                                   zonal_mean_tab_d,
-                                  lonlat_d                  ,
-                                  Altitude_d               ,
-                                  Altitudeh_d             ,
-                                  Rv_sponge             ,
-                                  ns_sponge              ,
-                                  timestep                  ,
-                                  nlat                       ,
-                                  point_num                  ,
-                                  nv                           );
+                                  lonlat_d,
+                                  Altitude_d,
+                                  Altitudeh_d,
+                                  Rv_sponge,
+                                  ns_sponge,
+                                  timestep,
+                                  nlat,
+                                  point_num,
+                                  nv);
     }
 
-//  Computes the initial temperature.
-    Compute_temperature <<< NB, NTH >>> (temperature_d,
-                                         pt_d         ,
-                                         pressure_d   ,
-                                         Rho_d        ,
-                                         P_Ref        ,
-                                         Rd           ,
-                                         Cp           ,
-                                         point_num    );
+    //  Computes the initial temperature.
+    Compute_temperature<<<NB, NTH>>>(temperature_d,
+                                     pt_d,
+                                     pressure_d,
+                                     Rho_d,
+                                     P_Ref,
+                                     Rd,
+                                     Cp,
+                                     point_num);
 
     BENCH_POINT_I(current_step, "phy_T", vector<string>({}), vector<string>({"Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"}))
 
-    #ifdef BENCH_NAN_CHECK
-      check_h = check_array_for_nan(temperature_d,nv*point_num,1,check_d);
-      if(check_h){
-         printf("\n\n Error in NAN check after PROFX:compute_temp!\n");
-         exit(EXIT_FAILURE);
-      }
-    #endif
+#ifdef BENCH_NAN_CHECK
+    check_h = check_array_for_nan(temperature_d, nv * point_num, 1, check_d);
+    if (check_h) {
+        printf("\n\n Error in NAN check after PROFX:compute_temp!\n");
+        exit(EXIT_FAILURE);
+    }
+#endif
 
-///////////////////////
-// HELD SUAREZ TEST  //
-///////////////////////
-//
-      if (core_benchmark  == 1) {
+    ///////////////////////
+    // HELD SUAREZ TEST  //
+    ///////////////////////
+    //
+    if (core_benchmark == 1) {
         cudaDeviceSynchronize();
-        held_suarez<<< NB, NTH >>> (Mh_d         ,
-                                    pressure_d   ,
-                                    Rho_d        ,
-                                    temperature_d,
-                                    Gravit       ,
-                                    Cp           ,
-                                    Rd           ,
-                                    Altitude_d   ,
-                                    Altitudeh_d  ,
-                                    lonlat_d     ,
-                                    timestep     ,
-                                    point_num    );
-      } else if (core_benchmark  == 2) {
+        held_suarez<<<NB, NTH>>>(Mh_d,
+                                 pressure_d,
+                                 Rho_d,
+                                 temperature_d,
+                                 Gravit,
+                                 Cp,
+                                 Rd,
+                                 Altitude_d,
+                                 Altitudeh_d,
+                                 lonlat_d,
+                                 timestep,
+                                 point_num);
+    }
+    else if (core_benchmark == 2) {
         cudaDeviceSynchronize();
-        tidalearth_hs<<< NB, NTH >>> (Mh_d         ,
-                                      pressure_d   ,
-                                      Rho_d        ,
-                                      temperature_d,
-                                      Gravit       ,
-                                      Cp           ,
-                                      Rd           ,
-                                      Altitude_d   ,
-                                      Altitudeh_d  ,
-                                      lonlat_d     ,
-                                      timestep     ,
-                                      point_num    );
-      } else if (core_benchmark  == 3) {
+        tidalearth_hs<<<NB, NTH>>>(Mh_d,
+                                   pressure_d,
+                                   Rho_d,
+                                   temperature_d,
+                                   Gravit,
+                                   Cp,
+                                   Rd,
+                                   Altitude_d,
+                                   Altitudeh_d,
+                                   lonlat_d,
+                                   timestep,
+                                   point_num);
+    }
+    else if (core_benchmark == 3) {
         cudaDeviceSynchronize();
-        shallowHJ_hs<<< NB, NTH >>> (Mh_d         ,
-                                     pressure_d   ,
-                                     Rho_d        ,
-                                     temperature_d,
-                                     Gravit       ,
-                                     Cp           ,
-                                     Rd           ,
-                                     Altitude_d   ,
-                                     Altitudeh_d  ,
-                                     lonlat_d     ,
-                                     timestep     ,
-                                     point_num    );
-      } else if (core_benchmark  == 4) {
-        cudaDeviceSynchronize();
-        deepHJ_hs<<< NB, NTH >>> (Mh_d         ,
-                                  pressure_d   ,
-                                  Rho_d        ,
+        shallowHJ_hs<<<NB, NTH>>>(Mh_d,
+                                  pressure_d,
+                                  Rho_d,
                                   temperature_d,
-                                  Gravit       ,
-                                  Cp           ,
-                                  Rd           ,
-                                  Altitude_d   ,
-                                  Altitudeh_d  ,
-                                  lonlat_d     ,
-                                  timestep     ,
-                                  point_num    );
-      }
-
-//
-////////////////////////
-      // Simple Vulcan
-      if(vulcan == 1) {
-          cudaDeviceSynchronize();
-          Tracers_relax_vulcan_co2<<< NBTR, NTH >>>(tracer_d     ,
-                                                    tauch4_d     ,
-                                                    tauco_d      ,
-                                                    tauh2o_d     ,
-                                                    tauco2_d     ,
-                                                    taunh3_d     ,
-                                                    ch4eq_d      ,
-                                                    coeq_d       ,
-                                                    h2oeq_d      ,
-                                                    co2eq_d      ,
-                                                    nh3eq_d      ,
-                                                    P_che_d      ,
-                                                    T_che_d      ,
-                                                    temperature_d,
-                                                    pressure_d   ,
-                                                    Rho_d        ,
-                                                    timestep     ,
-                                                    ntr          ,
-                                                    point_num    );
-          cudaDeviceSynchronize();
-          Tracers_relax_vulcan<<< NBTR, NTH >>>(tracer_d     ,
-                                                tauch4_d     ,
-                                                tauco_d      ,
-                                                tauh2o_d     ,
-                                                tauco2_d     ,
-                                                taunh3_d     ,
-                                                ch4eq_d      ,
-                                                coeq_d       ,
-                                                h2oeq_d      ,
-                                                co2eq_d      ,
-                                                nh3eq_d      ,
-                                                P_che_d      ,
-                                                T_che_d      ,
-                                                temperature_d,
-                                                pressure_d   ,
-                                                Rho_d        ,
-                                                timestep     ,
-                                                ntr          ,
-                                                point_num    );
+                                  Gravit,
+                                  Cp,
+                                  Rd,
+                                  Altitude_d,
+                                  Altitudeh_d,
+                                  lonlat_d,
+                                  timestep,
+                                  point_num);
+    }
+    else if (core_benchmark == 4) {
+        cudaDeviceSynchronize();
+        deepHJ_hs<<<NB, NTH>>>(Mh_d,
+                               pressure_d,
+                               Rho_d,
+                               temperature_d,
+                               Gravit,
+                               Cp,
+                               Rd,
+                               Altitude_d,
+                               Altitudeh_d,
+                               lonlat_d,
+                               timestep,
+                               point_num);
     }
 
-    if (conv){
- /*       cudaDeviceSynchronize();
+    //
+    ////////////////////////
+    // Simple Vulcan
+    if (vulcan == 1) {
+        cudaDeviceSynchronize();
+        Tracers_relax_vulcan_co2<<<NBTR, NTH>>>(tracer_d,
+                                                tauch4_d,
+                                                tauco_d,
+                                                tauh2o_d,
+                                                tauco2_d,
+                                                taunh3_d,
+                                                ch4eq_d,
+                                                coeq_d,
+                                                h2oeq_d,
+                                                co2eq_d,
+                                                nh3eq_d,
+                                                P_che_d,
+                                                T_che_d,
+                                                temperature_d,
+                                                pressure_d,
+                                                Rho_d,
+                                                timestep,
+                                                ntr,
+                                                point_num);
+        cudaDeviceSynchronize();
+        Tracers_relax_vulcan<<<NBTR, NTH>>>(tracer_d,
+                                            tauch4_d,
+                                            tauco_d,
+                                            tauh2o_d,
+                                            tauco2_d,
+                                            taunh3_d,
+                                            ch4eq_d,
+                                            coeq_d,
+                                            h2oeq_d,
+                                            co2eq_d,
+                                            nh3eq_d,
+                                            P_che_d,
+                                            T_che_d,
+                                            temperature_d,
+                                            pressure_d,
+                                            Rho_d,
+                                            timestep,
+                                            ntr,
+                                            point_num);
+    }
+
+    if (conv) {
+        /*       cudaDeviceSynchronize();
         dry_conv_adj<50><<< NB, NTH >>>(Pressure_d   , // Pressure [Pa]
                                         Temperature_d, // Temperature [K]
                                         Rho_d        , // Density [m^3/kg]
@@ -266,140 +269,139 @@ __host__ void ESP::ProfX(int core_benchmark     , // Held-Suarez test option
  */
     }
 
-    if (!core_benchmark ) {
+    if (!core_benchmark) {
         cudaDeviceSynchronize();
         phy_modules_mainloop(*this,
-                              current_step, // Step number
-                            core_benchmark     , // Held-Suarez test option
-                              timestep    , // Time-step [s]
-                              Omega       , // Rotation rate [1/s]
-                              Cp          , // Specific heat capacity [J/kg/K]
-                              Rd          , // Gas constant [J/kg/K]
-                              mu          , // Atomic mass unit [kg]
-                              kb          , // Boltzmann constant [J/K]
-                              P_Ref       , // Reference pressure [Pa]
-                              Gravit      , // Gravity [m/s^2]
-                              A           // Planet radius [m]
-            );
+                             current_step,   // Step number
+                             core_benchmark, // Held-Suarez test option
+                             timestep,       // Time-step [s]
+                             Omega,          // Rotation rate [1/s]
+                             Cp,             // Specific heat capacity [J/kg/K]
+                             Rd,             // Gas constant [J/kg/K]
+                             mu,             // Atomic mass unit [kg]
+                             kb,             // Boltzmann constant [J/K]
+                             P_Ref,          // Reference pressure [Pa]
+                             Gravit,         // Gravity [m/s^2]
+                             A               // Planet radius [m]
+        );
     }
-    #ifdef BENCH_NAN_CHECK
-      check_h = false;
-      cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
-      isnan_check<<< 16, NTH >>>(temperature_d, nv, point_num, check_d);
-      cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
-      if(check_h){
-         printf("\n\n Error in NAN check after PROFX:RT!\n");
-         exit(EXIT_FAILURE);
-      }
-    #endif
+#ifdef BENCH_NAN_CHECK
+    check_h = false;
+    cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
+    isnan_check<<<16, NTH>>>(temperature_d, nv, point_num, check_d);
+    cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
+    if (check_h) {
+        printf("\n\n Error in NAN check after PROFX:RT!\n");
+        exit(EXIT_FAILURE);
+    }
+#endif
 
     BENCH_POINT_I(current_step, "phy_core_benchmark ", vector<string>({}), vector<string>({"Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"}))
-//  Computes the new pressures.
+    //  Computes the new pressures.
     cudaDeviceSynchronize();
-    Compute_pressure <<< NB, NTH >>> (pressure_d   ,
-                                      temperature_d,
-                                      Rho_d        ,
-                                      Rd           ,
-                                      point_num    );
+    Compute_pressure<<<NB, NTH>>>(pressure_d,
+                                  temperature_d,
+                                  Rho_d,
+                                  Rd,
+                                  point_num);
 
     //always do this nan check so the code doesn't keep computing garbage
     check_h = false;
     cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
-    isnan_check<<< 16, NTH >>>(temperature_d, nv, point_num, check_d);
+    isnan_check<<<16, NTH>>>(temperature_d, nv, point_num, check_d);
     cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
-    if(check_h){
-       printf("\n\n Error in NAN check after PROFX:compute_pressure!\n");
-       exit(EXIT_FAILURE);
+    if (check_h) {
+        printf("\n\n Error in NAN check after PROFX:compute_pressure!\n");
+        exit(EXIT_FAILURE);
     }
 
 #ifdef BENCHMARKING
     // recompute temperature from pressure and density, to avoid rounding issues when comparing
-    Compute_temperature_only <<< NB, NTH >>> (temperature_d,
-                                              pressure_d   ,
-                                              Rho_d        ,
-                                              Rd           ,
-                                              point_num    );
+    Compute_temperature_only<<<NB, NTH>>>(temperature_d,
+                                          pressure_d,
+                                          Rho_d,
+                                          Rd,
+                                          point_num);
 #endif // BENCHMARKING
 
     BENCH_POINT_I(current_step, "phy_END", vector<string>({}), vector<string>({"Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"}));
 
 
-//
-//END OF INTEGRATION
-//
+    //
+    //END OF INTEGRATION
+    //
 }
 
 // TODO: get constants out of arguments
-void ESP::Conservation(int    core_benchmark     , // Held-Suarez test option
-                       int    vulcan      , //
-                       double Omega       , // Rotation rate [1/s]
-                       double Cp          , // Specific heat capacity [J/kg/K]
-                       double Rd          , // Gas constant [J/kg/K]
-                       double mu          , // Atomic mass unit [kg]
-                       double kb          , // Boltzmann constant [J/K]
-                       double P_Ref       , // Reference pressure [Pa]
-                       double Gravit      , // Gravity [m/s^2]
-                       double A           , // Planet radius [m]
-                       bool   DeepModel   )
-{
+void ESP::Conservation(int    core_benchmark, // Held-Suarez test option
+                       int    vulcan,         //
+                       double Omega,          // Rotation rate [1/s]
+                       double Cp,             // Specific heat capacity [J/kg/K]
+                       double Rd,             // Gas constant [J/kg/K]
+                       double mu,             // Atomic mass unit [kg]
+                       double kb,             // Boltzmann constant [J/K]
+                       double P_Ref,          // Reference pressure [Pa]
+                       double Gravit,         // Gravity [m/s^2]
+                       double A,              // Planet radius [m]
+                       bool   DeepModel) {
     //
-//  Number of threads per block.
+    //  Number of threads per block.
     const int NTH = 256;
 
-//  Specify the block sizes.
+    //  Specify the block sizes.
     dim3 NB((point_num / NTH) + 1, nv, 1);
 
     // calculate quantities we hope to conserve!
-    cudaMemset(GlobalE_d     , 0, sizeof(double));
-    cudaMemset(GlobalMass_d  , 0, sizeof(double));
-    cudaMemset(GlobalAMx_d   , 0, sizeof(double));
-    cudaMemset(GlobalAMy_d   , 0, sizeof(double));
-    cudaMemset(GlobalAMz_d   , 0, sizeof(double));
+    cudaMemset(GlobalE_d, 0, sizeof(double));
+    cudaMemset(GlobalMass_d, 0, sizeof(double));
+    cudaMemset(GlobalAMx_d, 0, sizeof(double));
+    cudaMemset(GlobalAMy_d, 0, sizeof(double));
+    cudaMemset(GlobalAMz_d, 0, sizeof(double));
 
-    CalcMass <<< NB, NTH >>> (Mass_d       ,
-                              GlobalMass_d ,
-                              Rho_d        ,
-                              A            ,
-                              Altitudeh_d  ,
-                              lonlat_d     ,
-                              areasT_d     ,
-                              point_num    ,
-                              DeepModel    );
+    CalcMass<<<NB, NTH>>>(Mass_d,
+                          GlobalMass_d,
+                          Rho_d,
+                          A,
+                          Altitudeh_d,
+                          lonlat_d,
+                          areasT_d,
+                          point_num,
+                          DeepModel);
 
-    CalcTotEnergy <<< NB, NTH >>> (Etotal_d     ,
-                                   GlobalE_d    ,
-                                   Mh_d         ,
-                                   W_d          ,
-                                   Rho_d        ,
-                                   temperature_d,
-                                   Gravit       ,
-                                   Cp           ,
-                                   Rd           ,
-                                   A            ,
-                                   Altitude_d   ,
-                                   Altitudeh_d  ,
-                                   lonlat_d     ,
-                                   areasT_d     ,
-                                   func_r_d     ,
-                                   point_num    ,
-                                   DeepModel    );
+    CalcTotEnergy<<<NB, NTH>>>(Etotal_d,
+                               GlobalE_d,
+                               Mh_d,
+                               W_d,
+                               Rho_d,
+                               temperature_d,
+                               Gravit,
+                               Cp,
+                               Rd,
+                               A,
+                               Altitude_d,
+                               Altitudeh_d,
+                               lonlat_d,
+                               areasT_d,
+                               func_r_d,
+                               point_num,
+                               DeepModel);
 
-    CalcAngMom <<< NB, NTH >>> ( AngMomx_d    ,
-                                 AngMomy_d    ,
-                                 AngMomz_d    ,
-                                 GlobalAMx_d  ,
-                                 GlobalAMy_d  ,
-                                 GlobalAMz_d  ,
-                                 Mh_d         ,
-                                 Rho_d        ,
-                                 A            ,
-                                 Omega        ,
-                                 Altitude_d   ,
-                                 Altitudeh_d  ,
-                                 lonlat_d     ,
-                                 areasT_d     ,
-                                 point_num    ,
-                                 DeepModel    );
+    CalcAngMom<<<NB, NTH>>>(AngMomx_d,
+                            AngMomy_d,
+                            AngMomz_d,
+                            GlobalAMx_d,
+                            GlobalAMy_d,
+                            GlobalAMz_d,
+                            Mh_d,
+                            Rho_d,
+                            A,
+                            Omega,
+                            Altitude_d,
+                            Altitudeh_d,
+                            lonlat_d,
+                            areasT_d,
+                            point_num,
+                            DeepModel);
 #ifdef GLOBAL_CONSERVATION_ATOMICADD
     // copy global conservation data to host for output
     CopyGlobalToHost();

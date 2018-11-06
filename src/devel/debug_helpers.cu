@@ -46,72 +46,60 @@
 #include <iostream>
 
 
-__host__ void getDeviceData(const double * device, double * host, int size)
-{
+__host__ void getDeviceData(const double *device, double *host, int size) {
     cudaMemcpy(host, device, size, cudaMemcpyDeviceToHost);
 }
 
-bool * init_device_mem_check(bool * ptr)
-{
-    cudaMalloc((void **)&ptr, sizeof (bool));
+bool *init_device_mem_check(bool *ptr) {
+    cudaMalloc((void **)&ptr, sizeof(bool));
 
     return ptr;
-
 }
 
-void deinit_device_mem_check(bool *ptr)
-{
+void deinit_device_mem_check(bool *ptr) {
     cudaFree(ptr);
 }
 
 
 // returns true if data contains a NaN
-__global__ void isnan_check_device(double *array, int size, bool *check)
-{
-//
-//  Description: Check for nan in array.
+__global__ void isnan_check_device(double *array, int size, bool *check) {
+    //
+    //  Description: Check for nan in array.
 
-  int idx = threadIdx.x+blockDim.x*blockIdx.x;
+    int idx = threadIdx.x + blockDim.x * blockIdx.x;
 
-  if (idx < size && ::isnan(array[idx])) {
-      *check = true;
-  }
-
+    if (idx < size && ::isnan(array[idx])) {
+        *check = true;
+    }
 }
 
 
 // check data for NaNs
 // returns true if data contains a NaN
-__host__ bool check_array_for_nan(double * ptr, int size, bool on_device, bool * check_d)
-{
+__host__ bool check_array_for_nan(double *ptr, int size, bool on_device, bool *check_d) {
     // TODO: could probably act on multiple arrays through streams
-    if (on_device)
-    {
+    if (on_device) {
         bool check_h = false;
         cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
-        isnan_check_device<<< size/256+1, 256 >>>(ptr, size, check_d);
+        isnan_check_device<<<size / 256 + 1, 256>>>(ptr, size, check_d);
         cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
 
         return check_h;
     }
-    else
-    {
+    else {
         bool isnan = false;
-        for (int i = 0; i < size; i++)
-        {
+        for (int i = 0; i < size; i++) {
             isnan |= std::isnan(ptr[i]);
         }
         return isnan;
     }
 }
 
-void check_last_cuda_error(std::string ref_name)
-{
+void check_last_cuda_error(std::string ref_name) {
     cudaError_t err = cudaGetLastError();
 
     // Check device query
-    if (err != cudaSuccess)
-    {
+    if (err != cudaSuccess) {
         printf("'%s' cuda error: %s\n", ref_name.c_str(), cudaGetErrorString(err));
     }
 }
