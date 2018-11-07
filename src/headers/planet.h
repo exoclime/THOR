@@ -46,34 +46,34 @@
 #pragma once
 
 // Physical Constants
-#define kb_constant 1.38e-23   // Boltzmann constant [J/K]
-#define mu_constant 1.660e-27  // Atomic mass unit   [kg]
+#define kb_constant 1.38e-23  // Boltzmann constant [J/K]
+#define mu_constant 1.660e-27 // Atomic mass unit   [kg]
 
 
-class XPlanet{
+class XPlanet
+{
 
 public:
-
     char simulation_ID[160];
 
     //////////////
     // BULK     //
     //////////////
 
-    double A      ;
-    double Omega  ;
-    double Gravit ;
+    double A;
+    double Omega;
+    double Gravit;
 
     ////////////////
     // ATMOSPHERE //
     ////////////////
 
-    double Rd          ;
-    double Cp          ;
-    double Tmean       ;
-    double P_Ref       ;
+    double Rd;
+    double Cp;
+    double Tmean;
+    double P_Ref;
     double Top_altitude;
-    double Diffc       ;
+    double Diffc;
 
     XPlanet();
 };

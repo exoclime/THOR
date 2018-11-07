@@ -54,19 +54,16 @@
 #include <math.h>
 
 // negation
-inline __host__ __device__ double3 operator-(const double3 &a)
-{
+inline __host__ __device__ double3 operator-(const double3 &a) {
     return make_double3(-a.x, -a.y, -a.z);
 }
 
 //adition
-inline __host__ __device__ double3 operator+(const double3 & a, const double3 & b)
-{
+inline __host__ __device__ double3 operator+(const double3 &a, const double3 &b) {
     return make_double3(a.x + b.x, a.y + b.y, a.z + b.z);
 }
 
-inline __host__ __device__ double3 & operator+=(double3 &a, const double3 & b)
-{
+inline __host__ __device__ double3 &operator+=(double3 &a, const double3 &b) {
     a.x += b.x;
     a.y += b.y;
     a.z += b.z;
@@ -74,16 +71,13 @@ inline __host__ __device__ double3 & operator+=(double3 &a, const double3 & b)
     return a;
 }
 
-inline __host__ __device__ double3 operator+(const double3 & a, const double & b)
-{
+inline __host__ __device__ double3 operator+(const double3 &a, const double &b) {
     return make_double3(a.x + b, a.y + b, a.z + b);
 }
-inline __host__ __device__ double3 operator+(const double & b, const double3 & a)
-{
+inline __host__ __device__ double3 operator+(const double &b, const double3 &a) {
     return make_double3(a.x + b, a.y + b, a.z + b);
 }
-inline __host__ __device__ double3 & operator+=(double3 &a, const double & b)
-{
+inline __host__ __device__ double3 &operator+=(double3 &a, const double &b) {
     a.x += b;
     a.y += b;
     a.z += b;
@@ -92,13 +86,11 @@ inline __host__ __device__ double3 & operator+=(double3 &a, const double & b)
 }
 
 // subtraction
-inline __host__ __device__ double3 operator-(const double3 & a, const double3 & b)
-{
+inline __host__ __device__ double3 operator-(const double3 &a, const double3 &b) {
     return make_double3(a.x - b.x, a.y - b.y, a.z - b.z);
 }
 
-inline __host__ __device__ double3 & operator-=(double3 &a, const double3 & b)
-{
+inline __host__ __device__ double3 &operator-=(double3 &a, const double3 &b) {
     a.x -= b.x;
     a.y -= b.y;
     a.z -= b.z;
@@ -106,16 +98,13 @@ inline __host__ __device__ double3 & operator-=(double3 &a, const double3 & b)
     return a;
 }
 
-inline __host__ __device__ double3 operator-(const double3 & a, const double & b)
-{
+inline __host__ __device__ double3 operator-(const double3 &a, const double &b) {
     return make_double3(a.x - b, a.y - b, a.z - b);
 }
-inline __host__ __device__ double3 operator-(const double & b, const double3 & a)
-{
+inline __host__ __device__ double3 operator-(const double &b, const double3 &a) {
     return make_double3(b - a.x, b - a.y, b - a.z);
 }
-inline __host__ __device__ double3 & operator-=(double3 &a, const double & b)
-{
+inline __host__ __device__ double3 &operator-=(double3 &a, const double &b) {
     a.x -= b;
     a.y -= b;
     a.z -= b;
@@ -124,16 +113,13 @@ inline __host__ __device__ double3 & operator-=(double3 &a, const double & b)
 }
 
 // multiplication
-inline __host__ __device__ double3 operator*(const double3 & a, const double & b)
-{
+inline __host__ __device__ double3 operator*(const double3 &a, const double &b) {
     return make_double3(a.x * b, a.y * b, a.z * b);
 }
-inline __host__ __device__ double3 operator*(const double b, const double3  & a)
-{
+inline __host__ __device__ double3 operator*(const double b, const double3 &a) {
     return make_double3(b * a.x, b * a.y, b * a.z);
 }
-inline __host__ __device__ double3 & operator*=(double3 &a, const double & b)
-{
+inline __host__ __device__ double3 &operator*=(double3 &a, const double &b) {
     a.x *= b;
     a.y *= b;
     a.z *= b;
@@ -142,13 +128,11 @@ inline __host__ __device__ double3 & operator*=(double3 &a, const double & b)
 }
 
 // division
-inline __host__ __device__ double3 operator/(const double3 & a, const double & b)
-{
+inline __host__ __device__ double3 operator/(const double3 &a, const double &b) {
     return make_double3(a.x / b, a.y / b, a.z / b);
 }
 
-inline __host__ __device__ double3 & operator/=(double3 & a, const double & b)
-{
+inline __host__ __device__ double3 &operator/=(double3 &a, const double &b) {
     a.x /= b;
     a.y /= b;
     a.z /= b;
@@ -156,26 +140,20 @@ inline __host__ __device__ double3 & operator/=(double3 & a, const double & b)
     return a;
 }
 
-inline __host__ __device__ double dot(const double3 & a, const double3 & b)
-{
-    return a.x*b.x + a.y*b.y + a.z*b.z;
+inline __host__ __device__ double dot(const double3 &a, const double3 &b) {
+    return a.x * b.x + a.y * b.y + a.z * b.z;
 }
 
-inline __host__ __device__ double length(const double3 & a)
-{
-    return sqrt(dot(a,a));
+inline __host__ __device__ double length(const double3 &a) {
+    return sqrt(dot(a, a));
 }
 
-inline __host__ __device__ double3 normalize(const double3 & a)
-{
-    return a/length(a);
+inline __host__ __device__ double3 normalize(const double3 &a) {
+    return a / length(a);
 }
 
-inline __host__ __device__ double3 cross(const double3 & a, const double3 & b)
-{
-    return make_double3(a.y*b.z - a.z*b.y,
-                        a.z*b.x - a.x*b.z,
-                        a.x*b.y - a.y*b.x);
-        
+inline __host__ __device__ double3 cross(const double3 &a, const double3 &b) {
+    return make_double3(a.y * b.z - a.z * b.y,
+                        a.z * b.x - a.x * b.z,
+                        a.x * b.y - a.y * b.x);
 }
-

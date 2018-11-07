@@ -23,11 +23,11 @@
 // Known limitations: - Runs in a single GPU.
 //
 // Known issues: None
-//   
 //
-// If you use this code please cite the following reference: 
 //
-//       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016  
+// If you use this code please cite the following reference:
+//
+//       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016
 //
 // Current Code Owner: Joao Mendonca, EEG. joao.mendonca@csh.unibe.ch
 //                     Russell Deitrick, russell.deitrick@csh.unibe.ch
@@ -44,46 +44,41 @@
 #include "directories.h"
 
 
-#include <istream>
 #include <iostream>
+#include <istream>
 #include <sstream>
 #include <utility>
 #include <vector>
 
 #include <cstring>
 
-#include <sys/stat.h>
 #include <dirent.h>
 #include <errno.h>
+#include <sys/stat.h>
 
 using namespace std;
 
 
-vector<string> split(const string& s, char delimiter)
-{
-   vector<string> tokens;
-   string token;
-   istringstream tokenStream(s);
-   while (getline(tokenStream, token, delimiter))
-   {
-      tokens.push_back(token);
-   }
-   
-   return tokens;
+vector<string> split(const string &s, char delimiter) {
+    vector<string> tokens;
+    string         token;
+    istringstream  tokenStream(s);
+    while (getline(tokenStream, token, delimiter)) {
+        tokens.push_back(token);
+    }
+
+    return tokens;
 }
 
-bool path_exists(const string & path)
-{
+bool path_exists(const string &path) {
     struct stat st;
-    if(stat(path.c_str(),&st) == 0)
-    {
+    if (stat(path.c_str(), &st) == 0) {
         //printf("found file %s.\n", path.c_str());
-        
+
         return true;
     }
-    
-    else
-    {
+
+    else {
         //printf("not found file %s.\n", path.c_str());
 
         // debug stat error
@@ -98,199 +93,162 @@ bool path_exists(const string & path)
         */
         return false;
     }
-    
 }
 
-bool create_dir(const string & dir)
-{
+bool create_dir(const string &dir) {
     if (mkdir(dir.c_str(), S_IRWXU | S_IRWXG) == 0)
         return true;
     else
         return false;
-    
-
 }
 
-    
-    
-bool create_output_dir(const string & output_dir)
-{
+
+bool create_output_dir(const string &output_dir) {
     vector<string> directories = split(output_dir, '/');
 
     string path = "";
 
-    for (const auto & dir : directories)
-    {
+    for (const auto &dir : directories) {
         // check if directory exists
-        if (path!= "")
+        if (path != "")
             path += string("/");
         path += dir;
 
-        if (path_exists(path))
-        {
+        if (path_exists(path)) {
             //cout << path << " exists"<<endl;
-            
+
             // continue
         }
-        else
-        {
+        else {
             //cout << path << " does not exist, creating"<<endl;
-            
+
             // create directory
-            if (create_dir(path))
-            {
+            if (create_dir(path)) {
                 //cout << "created " << path << " path"<<endl;
                 // continue
             }
-            else
-            {
+            else {
                 // creation failed, failed
-                std::cout << "failed creating directory "<<path<<endl;
+                std::cout << "failed creating directory " << path << endl;
                 return false;
-                
             }
         }
-        
-            
-            
-        
     }
-    
-    
+
+
     return true;
 }
 
 
-string path::suffix()
-{
-    if (elements.size() > 0)
-    {
+string path::suffix() {
+    if (elements.size() > 0) {
         vector<string> tokens = split(elements.back(), '.');
-        return tokens.back();        
+        return tokens.back();
     }
     else
         return "";
 }
 
-vector<string> path::suffixes()
-{
+vector<string> path::suffixes() {
     vector<string> out;
 
-    if (elements.size() > 0)
-    {
+    if (elements.size() > 0) {
         vector<string> tokens = split(elements.back(), '.');
         for (unsigned int i = 1; i < tokens.size(); i++)
             out.push_back(tokens[i]);
     }
-    
+
     return out;
 }
 
 
-vector<string> path::parts()
-{
-    
+vector<string> path::parts() {
+
     return elements;
 }
 
-string path::name()
-{
+string path::name() {
     if (elements.size() > 0)
         return elements.back();
     else
-        return "";    
+        return "";
 }
 
-string path::stem()
-{
+string path::stem() {
     string out("");
 
-    if (elements.size() > 0)
-    {
+    if (elements.size() > 0) {
         vector<string> tokens = split(elements.back(), '.');
         if (tokens.size() > 0)
             out = tokens[0];
-        
+
         for (unsigned int i = 1; i < tokens.size() - 1; i++)
             out += "." + tokens[i];
     }
-    
+
     return out;
 }
 
-string path::parent()
-{
+string path::parent() {
     string p = "";
     if (is_absolute_path)
         p += "/";
 
-    for (unsigned int i = 0; i < elements.size() - 1; i++)
-    {
+    for (unsigned int i = 0; i < elements.size() - 1; i++) {
         p += elements[i];
-        
-        if(i != elements.size() - 2) // last element
+
+        if (i != elements.size() - 2) // last element
             p += "/";
-            
     }
-    
+
     return p;
-    
 }
 
-string path::to_string()
-{
+string path::to_string() {
     string p = "";
     if (is_absolute_path)
         p += "/";
-        
-    for (unsigned int i = 0; i < elements.size(); i++)
-    {
+
+    for (unsigned int i = 0; i < elements.size(); i++) {
         p += elements[i];
-        
-        if(i != elements.size() - 1) // last element
+
+        if (i != elements.size() - 1) // last element
             p += "/";
     }
-    
+
     return p;
-    
 }
 
-const char * path::c_str()
-{
+const char *path::c_str() {
     return to_string().c_str();
 }
 
 
-path::path(const string & p)
-{    
+path::path(const string &p) {
     vector<string> tokens = split(p, '/');
     if (tokens.size() > 0 && tokens[0] == "")
         is_absolute_path = true;
-    
-    for (const auto & el : tokens)
-    {
+
+    for (const auto &el : tokens) {
         if (el != "")
             elements.push_back(el);
     }
 }
 
 
-
-vector<string> get_files_in_directory(const string & dir_name)
-{
+vector<string> get_files_in_directory(const string &dir_name) {
     vector<string> files;
 
-    DIR *dir;
+    DIR *          dir;
     struct dirent *ent;
-    if ((dir = opendir (dir_name.c_str() ) ) != NULL)
-    {
+    if ((dir = opendir(dir_name.c_str())) != NULL) {
         /* print all the files and directories within directory */
-        while ((ent = readdir (dir)) != NULL)
-        {
+        while ((ent = readdir(dir)) != NULL) {
             files.push_back(dir_name + "/" + ent->d_name);
         }
-        closedir (dir);
-    } else {
+        closedir(dir);
+    }
+    else {
         printf("Could not open directory %s.", dir_name.c_str());
     }
     return files;
@@ -300,12 +258,11 @@ vector<string> get_files_in_directory(const string & dir_name)
 // match filename to output pattern
 // esp_output_[PLANETNAME]_[OUTPUT_NUMBER].h5
 // returns planet name and output number
-bool match_output_file_numbering_scheme(const string & file_path, string & basename, int & number )
-{
+bool match_output_file_numbering_scheme(const string &file_path, string &basename, int &number) {
     path p(file_path);
     basename = "";
-    number = -1;
-    
+    number   = -1;
+
     if (p.suffix() != "h5")
         return false;
 
@@ -314,42 +271,33 @@ bool match_output_file_numbering_scheme(const string & file_path, string & basen
     // split through underscores
     vector<string> split_underscores = split(filename_base, '_');
 
-    if (split_underscores.size() >= 4 )
-    {
-        try
-        {
-            number = stoi(split_underscores.back() );
-            
-            
-        }
-        catch(...)
-        {
+    if (split_underscores.size() >= 4) {
+        try {
+            number = stoi(split_underscores.back());
+
+
+        } catch (...) {
             number = -1;
-            
+
             return false;
         }
-        
-        
-            
+
+
         if (split_underscores[0] == "esp"
             && split_underscores[1] == "output"
-            && number > -1)
-        {
+            && number > -1) {
             basename = split_underscores[2];
 
-            for (unsigned int i = 3; i < split_underscores.size() -1; i++)
-            {
+            for (unsigned int i = 3; i < split_underscores.size() - 1; i++) {
                 basename += "_" + split_underscores[i];
             }
 
             return true;
         }
         else
-            return false;        
+            return false;
     }
-    else
-    {
+    else {
         return false;
     }
 }
-

@@ -49,18 +49,12 @@
 #include "reduction_add.h"
 
 
-double cpu_reduction_sum(double * d, long length)
-{
-    
-    for (int stride = length; stride > 0; stride /= 2)
-    {
+double cpu_reduction_sum(double* d, long length) {
+
+    for (int stride = length; stride > 0; stride /= 2) {
         for (int i = 0; i < stride; i++)
-            d[i] += d[i+stride];
+            d[i] += d[i + stride];
     }
 
     return d[0];
 }
-
-
-
-  
