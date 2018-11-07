@@ -52,7 +52,7 @@
 #include "../headers/dyn/thor_fastmodes.h"    // Fast terms.
 #include "../headers/dyn/thor_slowmodes.h"    // Slow terms.
 #include "../headers/dyn/thor_vertical_int.h" // Vertical momentum.
-#include "../headers/dyn/thor_vulcan.h"       // Simple chemistry.
+#include "../headers/dyn/thor_chemistry.h"       // Simple chemistry.
 
 #include "binary_test.h"
 #include "debug_helpers.h"
@@ -67,7 +67,7 @@ __host__ void ESP::Thor(bool   HyDiff,   // Turn on/off hyper-diffusion.
                         double P_Ref,    // Averaged pressure surface.
                         double Gravit,   // Gravity.
                         double A,        // Planet radius.
-                        int    vulcan,
+                        int    chemistry,
                         bool   NonHydro,  // Turn on/off non-hydrostatic.
                         bool   DeepModel) { // Turn on/off deep atmosphere.
                                           //
@@ -318,7 +318,7 @@ __host__ void ESP::Thor(bool   HyDiff,   // Turn on/off hyper-diffusion.
             BENCH_POINT_I_S(current_step, rk, "Diffusion_Op_Poles", vector<string>({}), vector<string>({"diffmh_d", "diffw_d", "diffrh_d", "diffpr_d", "diff_d", "difftr_d"}))
 
 
-            if (vulcan == 1) {
+            if (chemistry == 1) {
                 // Tracers
                 cudaMemset(diff_d, 0, sizeof(double) * 6 * point_num * nv);
                 cudaDeviceSynchronize();
@@ -575,7 +575,7 @@ __host__ void ESP::Thor(bool   HyDiff,   // Turn on/off hyper-diffusion.
                                                      func_r_d,
                                                      Altitude_d,
                                                      Altitudeh_d,
-                                                     vulcan,
+                                                     chemistry,
                                                      ntr,
                                                      point_num,
                                                      nv);
@@ -783,7 +783,7 @@ __host__ void ESP::Thor(bool   HyDiff,   // Turn on/off hyper-diffusion.
             cudaDeviceSynchronize();
             BENCH_POINT_I_SS(current_step, rk, ns, "Vertical_Eq", vector<string>({}), vector<string>({"Whs_d", "Ws_d", "pressures_d", "h_d", "hh_d", "Rhos_d"}))
 
-            if (vulcan == 1) {
+            if (chemistry == 1) {
                 //
                 // Tracer equation.
                 cudaDeviceSynchronize();
@@ -899,7 +899,7 @@ __host__ void ESP::Thor(bool   HyDiff,   // Turn on/off hyper-diffusion.
                                                   func_r_d,
                                                   Altitude_d,
                                                   Altitudeh_d,
-                                                  vulcan,
+                                                  chemistry,
                                                   ntr,
                                                   point_num,
                                                   nv);

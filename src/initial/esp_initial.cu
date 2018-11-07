@@ -47,7 +47,7 @@
 
 #include "../headers/phy/valkyrie_conservation.h"
 #include "../headers/phy/valkyrie_jet_steadystate.h"
-#include "../headers/phy/vulcan_host.h"
+#include "../headers/phy/chemistry_host.h"
 #include "directories.h"
 #include "esp.h"
 #include "hdf5.h"
@@ -319,7 +319,7 @@ __host__ bool ESP::initial_values(bool               rest,
                                   bool               DeepModel,
                                   int                TPprof,
                                   int                core_benchmark,
-                                  int                vulcan,
+                                  int                chemistry,
                                   int &              nstep,
                                   double &           simulation_start_time,
                                   int &              output_file_idx,
@@ -562,12 +562,12 @@ __host__ bool ESP::initial_values(bool               rest,
         Kdhz_h[lev] = Diffc * pow(dbar, 4.) / timestep_dyn;
     }
 
-    // Input for vulcan
+    // Input for chemistry
     FILE * infile1;
     int    NT = 55;
     int    NP = 135;
     double dummy;
-    if (vulcan == 1) {
+    if (chemistry == 1) {
         infile1 = fopen("ifile/solar_fEQ_THOR.txt", "r");
         if (infile1 == NULL) {
             printf("\nUnable to open input file.\n");
@@ -708,7 +708,7 @@ __host__ bool ESP::initial_values(bool               rest,
     if (sponge == true)
         cudaMemcpy(zonal_mean_tab_d, zonal_mean_tab_h, 2 * point_num * sizeof(int), cudaMemcpyHostToDevice);
 
-    if (vulcan == 1) {
+    if (chemistry == 1) {
         cudaMemcpy(coeq_d, coeq_h, 7425 * sizeof(double), cudaMemcpyHostToDevice);
         cudaMemcpy(ch4eq_d, ch4eq_h, 7425 * sizeof(double), cudaMemcpyHostToDevice);
         cudaMemcpy(h2oeq_d, h2oeq_h, 7425 * sizeof(double), cudaMemcpyHostToDevice);

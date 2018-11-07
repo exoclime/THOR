@@ -1,0 +1,105 @@
+# config file for THOR
+# config format version
+config_version = 1
+
+# earth held-suarez model
+
+
+#-- Time stepping and output options -----------------------------------------#
+# number of steps
+num_steps = 103680
+
+# length of timesteps in seconds
+timestep = 1000
+
+# output
+# output every n steps
+n_out = 1920
+
+# output directory (relative to current working directory)
+# defaults to 'results'
+results_path = earth_hs
+# calculate and output quantities we hope to conserve
+# angular momentum, energy, mass, (entropy soon)
+conservation = true
+
+
+#-- Planetary parameters -----------------------------------------------------#
+# name of simulation for output files
+simulation_ID = Earth
+# Radius [m]
+radius = 6371000.0
+# Rotation rate [rad s^-1]
+rotation_rate = 7.292E-5
+# Gravitational acceleration [m/s^2]
+gravitation = 9.8
+# Gas constant [J/(Kg K)] (R_univ/mean_molecular_mass)
+Rd = 287.0
+# Specific heat capacities [J/(Kg K)]
+Cp = 1005.0
+# Mean atmospheric temperature [K]
+Tmean = 300.0
+# Reference surface pressure [Pa] (pressure at bottom of model)
+P_ref = 100000.0
+# Altitude of the top of the model domain [m]
+Top_altitude = 36000.0
+
+
+#-- Grid options -------------------------------------------------------------#
+# Spring dynamics
+spring_dynamics = true
+# Horizontal resolution level.
+glevel = 4
+# Parameter beta for spring dynamics
+spring_beta = 1.15
+# Number of vertical layers
+vlevel = 32
+
+# diffusion
+# Hyper-diffusion
+HyDiff  =    true
+# Divergence-damping
+DivDampP =    true
+# Strength of diffusion
+Diffc = 0.0048
+
+
+#-- Model options ------------------------------------------------------------#
+# Non-hydrostatic parameter
+NonHydro = true
+# Deep atmosphere
+DeepModel = true
+# Initial conditions
+rest = true
+
+# initial conditions file, used if rest is set to false
+# (path relative to current working directory)
+# defaults to 'ifile/esp.initial.h5'
+initial = earth_hs/esp_output_Earth_3.h5
+
+# Core benchmark test
+# Held-Suarez test for Earth == 1
+# Benchmark test for tidally locked Earth == 2
+# Benchmark test for shallow hot Jupiter == 3
+# Benchmark test for deep hot Jupiter == 3
+# No HS test == 0 (model is then forced with grey RT by default)
+core_benchmark = 1
+
+
+#-- Radiative transfer options (core_benchmark = 0) --------------------------#
+# RT parameters
+Tstar = 5800
+planet_star_dist = 1
+radius_star = 1
+albedo = 0.3
+taulw = 10
+tausw = 1.67
+Tlow = 50
+
+# insolation (orbit, spin state) parameters
+mean_motion = 1.98e-7
+
+
+#-- Device options -----------------------------------------------------------#
+# GPU ID number
+GPU_ID_N = 0

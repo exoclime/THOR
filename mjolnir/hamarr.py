@@ -53,8 +53,8 @@ class input:
                 self.albedo = openh5['albedo'][...]
                 self.tausw = openh5['tausw'][...]
                 self.taulw = openh5['taulw'][...]
-        if 'vulcan' in openh5.keys():
-            self.vulcan = openh5['vulcan'][...]
+        if 'vulcan' or 'chemistry' in openh5.keys():
+            self.chemistry = openh5['chemistry'][...]
 
         openh5.close()
 

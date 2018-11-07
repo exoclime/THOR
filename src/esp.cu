@@ -265,8 +265,8 @@ int main(int argc, char** argv) {
     int core_benchmark = 1;
     config_reader.append_config_var("core_benchmark", core_benchmark, core_benchmark_default);
 
-    int vulcan = 0;
-    config_reader.append_config_var("vulcan", vulcan, vulcan_default);
+    int chemistry = 0;
+    config_reader.append_config_var("chemistry", chemistry, chemistry_default);
 
     int conv = 1;
 
@@ -576,7 +576,7 @@ int main(int argc, char** argv) {
                                          DeepModel,             // Use deep model corrections
                                          TPprof,                // isothermal = 0, guillot = 1
                                          core_benchmark,        // argh
-                                         vulcan,                //
+                                         chemistry,                //
                                          step_idx,              // current step index
                                          simulation_start_time, // output:
                                                                 // simulation start time
@@ -766,7 +766,7 @@ int main(int argc, char** argv) {
 
         if (conservation == true) {
             X.conservation(core_benchmark, // Held-Suarez test option
-                           vulcan,         //
+                           chemistry,         //
                            Planet.Omega,   // Rotation rate [1/s]
                            Planet.Cp,      // Specific heat capacity [J/kg/K]
                            Planet.Rd,      // Gas constant [J/kg/K]
@@ -797,7 +797,7 @@ int main(int argc, char** argv) {
                  conservation,
                  core_benchmark,
                  SpongeLayer,
-                 vulcan);
+                 chemistry);
         output_file_idx = 1;
         step_idx        = 1;
     }
@@ -838,14 +838,14 @@ int main(int argc, char** argv) {
                    Planet.P_Ref,  // Reference pressure [Pa]
                    Planet.Gravit, // Gravity [m/s^2]
                    Planet.A,      // Planet radius [m]
-                   vulcan,        //
+                   chemistry,        //
                    NonHydro,      // Non-hydrostatic option
                    DeepModel);    // Deep model option
         }
         //
         //     Physical Core Integration (ProfX)
         X.ProfX(core_benchmark, // Held-Suarez test option
-                vulcan,         //
+                chemistry,         //
                 conv,
                 Planet.Omega,  // Rotation rate [1/s]
                 Planet.Cp,     // Specific heat capacity [J/kg/K]
@@ -867,7 +867,7 @@ int main(int argc, char** argv) {
 
         if (conservation == true) {
             X.conservation(core_benchmark, // Held-Suarez test option
-                           vulcan,         //
+                           chemistry,         //
                            Planet.Omega,   // Rotation rate [1/s]
                            Planet.Cp,      // Specific heat capacity [J/kg/K]
                            Planet.Rd,      // Gas constant [J/kg/K]
@@ -902,7 +902,7 @@ int main(int argc, char** argv) {
                      conservation,
                      core_benchmark,
                      SpongeLayer,
-                     vulcan);
+                     chemistry);
             // increment output file index
             output_file_idx++;
 

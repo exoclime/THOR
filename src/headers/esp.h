@@ -307,7 +307,7 @@ public:
                         bool               DeepModel,
                         int                TPprof,
                         int                core_benchmark,
-                        int                vulcan,
+                        int                chemistry,
                         int &              nsteps,
                         double &           simulation_start_time,
                         int &              output_file_idx,
@@ -370,7 +370,7 @@ public:
                           const std::string &output_dir_);
 
     void conservation(int    core_benchmark, // Held-Suarez test option
-                      int    vulcan,         //
+                      int    chemistry,         //
                       double Omega,          // Rotation rate [1/s]
                       double Cp,             // Specific heat capacity [J/kg/K]
                       double Rd,             // Gas constant [J/kg/K]
