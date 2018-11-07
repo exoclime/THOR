@@ -80,11 +80,11 @@ ifeq ($(COMP), nvcc)
 	dependencies_flags = --generate-dependencies
 
 	# define common flags
-	cpp_flags := $(ccbin)  --compiler-options  -Wall -std=c++11 -DDEVICE_SM=$(SM) 
-	cuda_flags := $(ccbin) --compiler-options  -Wall -std=c++11 -DDEVICE_SM=$(SM) 
+	cpp_flags := $(ccbin)  --compiler-options  -Wall -std=c++11 -DDEVICE_SM=$(SM)
+	cuda_flags := $(ccbin) --compiler-options  -Wall -std=c++11 -DDEVICE_SM=$(SM)
 
-	cpp_dep_flags := $(ccbin) -std=c++11 
-	cuda_dep_flags := $(ccbin)
+	cpp_dep_flags := $(ccbin) -std=c++11
+	cuda_dep_flags := $(ccbin) -std=c++11 
 	link_flags = $(ccbin)
 else
 	# need to compile with clang for compilation database
@@ -98,7 +98,7 @@ else
 	cuda_flags := -Wall -std=c++11 -DDEVICE_SM=$(SM) --cuda-path=$(CUDA_PATH)
 
 	cpp_dep_flags := -std=c++11
-	cuda_dep_flags := -std=c++11 --cuda-path=$(CUDA_PATH) 
+	cuda_dep_flags := -std=c++11 --cuda-path=$(CUDA_PATH)
 	link_flags = --cuda-path=$(CUDA_PATH) -L$(CUDA_LIBS) -lcudart_static -ldl -lrt -pthread
 endif
 
@@ -201,7 +201,7 @@ endif
 debug: symlink
 release: symlink
 prof: symlink
-cdb: 
+cdb:
 
 
 #######################################################################
@@ -250,7 +250,7 @@ $(OBJDIR)/${OUTPUTDIR}/%.d: %.cu | $(OBJDIR)/$(OUTPUTDIR) $(OBJDIR)
 	set -e; rm -f $@; \
 	$(CC) $(dependencies_flags) $(arch) $(cuda_dep_flags) $(h5include) -I$(includedir)  $< > $@.$$$$; \
 	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
-	rm -f $@.$$$$ 
+	rm -f $@.$$$$
 
 
 # for C++ files
