@@ -98,7 +98,7 @@ __host__ void ESP::output(int    fidx,         // Index of output file
                           bool   conservation,
                           int    core_benchmark,
                           bool   SpongeLayer,
-                          int    vulcan) {
+                          int    chemistry) {
 
     //
     //  Description: Model output.
@@ -188,8 +188,8 @@ __host__ void ESP::output(int    fidx,         // Index of output file
         s.append_value(SpongeLayer ? 1.0 : 0.0, "/SpongeLayer", "-", "Using SpongeLayer?");
         //      core_benchmark  option
         s.append_value(core_benchmark, "/core_benchmark", "-", "Using benchmark forcing or RT");
-        //      vulcan option
-        s.append_value(vulcan, "/vulcan", "-", "Using relaxation chemistry");
+        //      chemistry option
+        s.append_value(chemistry, "/chemistry", "-", "Using relaxation chemistry");
         if (SpongeLayer) {
             //      nlat
             s.append_value(nlat, "/nlat", "-", "number of lat rings for sponge layer");
@@ -247,7 +247,7 @@ __host__ void ESP::output(int    fidx,         // Index of output file
                    "kg m/s",
                    "Vertical Momentum");
 
-    if (vulcan == true) {
+    if (chemistry == true) {
         s.append_table(tracer_h,
                        nv * point_num * ntr,
                        "/tracer",

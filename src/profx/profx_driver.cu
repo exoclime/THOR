@@ -51,7 +51,7 @@
 #include "../headers/phy/profx_shallowHJ_hs.h"
 #include "../headers/phy/profx_tidalearth_hs.h"
 #include "../headers/phy/valkyrie_conservation.h"
-#include "../headers/phy/vulcan_device.h" // Simple chemistry.
+#include "../headers/phy/chemistry_device.h" // Simple chemistry.
 
 #include "binary_test.h"
 #include "debug_helpers.h"
@@ -61,7 +61,7 @@
 #include "reduction_add.h"
 
 __host__ void ESP::ProfX(int    core_benchmark, // Held-Suarez test option
-                         int    vulcan,         // Use vulcan chemistry
+                         int    chemistry,         // Use chemistry
                          int    conv,           //
                          double Omega,          // Rotation rate [1/s]
                          double Cp,             // Specific heat capacity [J/kg/K]
@@ -211,10 +211,10 @@ __host__ void ESP::ProfX(int    core_benchmark, // Held-Suarez test option
 
     //
     ////////////////////////
-    // Simple Vulcan
-    if (vulcan == 1) {
+    // Simple chemistry
+    if (chemistry == 1) {
         cudaDeviceSynchronize();
-        Tracers_relax_vulcan_co2<<<NBTR, NTH>>>(tracer_d,
+        Tracers_relax_chemistry_co2<<<NBTR, NTH>>>(tracer_d,
                                                 tauch4_d,
                                                 tauco_d,
                                                 tauh2o_d,
@@ -234,7 +234,7 @@ __host__ void ESP::ProfX(int    core_benchmark, // Held-Suarez test option
                                                 ntr,
                                                 point_num);
         cudaDeviceSynchronize();
-        Tracers_relax_vulcan<<<NBTR, NTH>>>(tracer_d,
+        Tracers_relax_chemistry<<<NBTR, NTH>>>(tracer_d,
                                             tauch4_d,
                                             tauco_d,
                                             tauh2o_d,
@@ -334,7 +334,7 @@ __host__ void ESP::ProfX(int    core_benchmark, // Held-Suarez test option
 
 // TODO: get constants out of arguments
 void ESP::conservation(int    core_benchmark, // Held-Suarez test option
-                       int    vulcan,         //
+                       int    chemistry,         //
                        double Omega,          // Rotation rate [1/s]
                        double Cp,             // Specific heat capacity [J/kg/K]
                        double Rd,             // Gas constant [J/kg/K]

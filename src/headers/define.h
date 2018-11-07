@@ -92,4 +92,4 @@
 
 #define conservation_default false //output energy, mass, angular momentum, etc
 
-#define vulcan_default 0 //use chemical kinetics scheme
+#define chemistry_default 0 //use chemical kinetics scheme

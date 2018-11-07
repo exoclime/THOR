@@ -67,7 +67,7 @@ __device__ int locate_max_i_dev(double *array_d,
 }
 
 
-__global__ void Tracers_relax_vulcan(double *tracer_d,
+__global__ void Tracers_relax_chemistry(double *tracer_d,
                                      double *tauch4_d,
                                      double *tauco_d,
                                      double *tauh2o_d,
@@ -241,7 +241,7 @@ __global__ void Tracers_relax_vulcan(double *tracer_d,
     }
 }
 
-__global__ void Tracers_relax_vulcan_co2(double *tracer_d,
+__global__ void Tracers_relax_chemistry_co2(double *tracer_d,
                                          double *tauch4_d,
                                          double *tauco_d,
                                          double *tauh2o_d,
