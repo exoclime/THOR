@@ -60,8 +60,8 @@
 //#define BENCH_CHECK_LAST_CUDA_ERROR
 
 // path to benchmark result directory
-#define BENCHMARK_DUMP_REF_PATH   "results/ref/"
-#define BENCHMARK_DUMP_BASENAME   "bindata_"
+#define BENCHMARK_DUMP_REF_PATH "results/ref/"
+#define BENCHMARK_DUMP_BASENAME "bindata_"
 
 
 //#define GLOBAL_CONSERVATION_ATOMICADD

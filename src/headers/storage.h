@@ -18,21 +18,21 @@
 //
 // Description: Store binary arrays to file
 //
-//   
+//
 //
 // Method: Write to HDF5 files
 //
 // Known limitations: None.
-//      
+//
 //
 // Known issues: None.
-//   
+//
 //
 // Current Code Owner: Joao Mendonca, EEG. joao.mendonca@csh.unibe.ch
 //
-// If you use this code please cite the following reference: 
+// If you use this code please cite the following reference:
 //
-//       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016  
+//       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016
 //
 // History:
 // Version Date       Comment
@@ -44,9 +44,9 @@
 
 #pragma once
 
-#include <string>
-#include <memory>
 #include <iostream>
+#include <memory>
+#include <string>
 
 #include "H5Cpp.h"
 
@@ -57,205 +57,187 @@ using std::string;
 using namespace H5;
 
 
-bool write_double_value_to_h5file(hid_t       file_id,
-                                   const string & tablename,
-                                  const double & out_value,
-                                  const string & name,
-                                  const string & unit );
+bool write_double_value_to_h5file(hid_t         file_id,
+                                  const string& tablename,
+                                  const double& out_value,
+                                  const string& name,
+                                  const string& unit);
 
-    
-bool write_double_table_to_h5file(hid_t       file_id,
-                                  const string & tablename,
-                                  double * double_table,
-                                  int size,
-                                  const string & name,
-                                  const string & unit);
 
-    
-bool load_double_table_from_h5file(hid_t       file_id,
-                                   const string & tablename,
-                                   double * double_table,
-                                   int expected_size );
+bool write_double_table_to_h5file(hid_t         file_id,
+                                  const string& tablename,
+                                  double*       double_table,
+                                  int           size,
+                                  const string& name,
+                                  const string& unit);
 
-bool load_double_value_from_h5file(hid_t       file_id,
-                                   const string & tablename,
-                                   double & out_value);
 
-bool write_int_value_to_h5file(hid_t       file_id,
-                               const string & tablename,
-                               const int & out_value,
-                               const string & name,
-                               const string & unit );
+bool load_double_table_from_h5file(hid_t         file_id,
+                                   const string& tablename,
+                                   double*       double_table,
+                                   int           expected_size);
 
-    
-bool write_int_table_to_h5file(hid_t       file_id,
-                               const string & tablename,
-                               int * double_table,
-                               int size,
-                               const string & name,
-                               const string & unit);
+bool load_double_value_from_h5file(hid_t         file_id,
+                                   const string& tablename,
+                                   double&       out_value);
 
-    
-bool load_int_table_from_h5file(hid_t       file_id,
-                                const string & tablename,
-                                int * double_table,
-                                int expected_size );
+bool write_int_value_to_h5file(hid_t         file_id,
+                               const string& tablename,
+                               const int&    out_value,
+                               const string& name,
+                               const string& unit);
 
-bool load_int_value_from_h5file(hid_t       file_id,
-                                const string & tablename,
-                                int & out_value);
-    
+
+bool write_int_table_to_h5file(hid_t         file_id,
+                               const string& tablename,
+                               int*          double_table,
+                               int           size,
+                               const string& name,
+                               const string& unit);
+
+
+bool load_int_table_from_h5file(hid_t         file_id,
+                                const string& tablename,
+                                int*          double_table,
+                                int           expected_size);
+
+bool load_int_value_from_h5file(hid_t         file_id,
+                                const string& tablename,
+                                int&          out_value);
+
 class storage
 {
 public:
-    storage(const string & filename, const bool & read = false);
-    
+    storage(const string& filename, const bool& read = false);
 
-    bool has_table(string name)
-    {
-        if (file != nullptr)
-        {
-            try {  // to determine if the dataset exists in the group
-                DataSet dataset = file->openDataSet( name );
+
+    bool has_table(string name) {
+        if (file != nullptr) {
+            try { // to determine if the dataset exists in the group
+                DataSet dataset = file->openDataSet(name);
                 return true;
-            }
-            catch( DataSetIException error ) {
+            } catch (DataSetIException error) {
                 return false;
-                
             }
         }
         else
             return false;
     }
-    
-            
-    
+
+
     // Store a table of type T - double or int, in output file
     template<typename T>
-    void append_table(T * data,
-                      const int & size,
-                      string name,
-                      string unit,
-                      string description);
+    void append_table(T*         data,
+                      const int& size,
+                      string     name,
+                      string     unit,
+                      string     description);
 
     // read table of type T from output file
     template<typename T>
-    bool read_table(const string & name,
-                    std::unique_ptr<T[]> & data,
-                    int & size);
+    bool read_table(const string&         name,
+                    std::unique_ptr<T[]>& data,
+                    int&                  size);
 
     // write a scalar value to output
     template<typename T>
-    void append_value(T value,
+    void append_value(T      value,
                       string name,
                       string unit,
-                      string description)
-    {
+                      string description) {
         append_table(&value, 1, name, unit, description);
     }
 
     // read a scalar value from input
     template<typename T>
-    void read_value(const string & name,
-                    T & data)
-    {
+    void read_value(const string& name,
+                    T&            data) {
         std::unique_ptr<T[]> buf = &data;
-        
+
         read_table(name, buf, 1);
     }
-    
-    
+
+
     // Template functions for data type detection in append_table function.
     template<typename T>
-    DataType get_datatype(T & input)
-    {
+    DataType get_datatype(T& input) {
         cout << "data type not supported for storage" << endl;
-        
+
         throw std::runtime_error("data type not supported for storage");
-        
+
         //       return PredType::STD_REF_OBJ;
     }
-    
-    DataType get_datatype(double & input)
-    {
+
+    DataType get_datatype(double& input) {
         return PredType::IEEE_F64LE;
     }
-    
-    DataType get_datatype(int & input)
-    {
+
+    DataType get_datatype(int& input) {
         return PredType::STD_I32LE;
     }
 
 private:
     std::unique_ptr<H5File> file;
-    
-                    
 };
 
 template<typename T>
-void storage::append_table(T * data,
-                           const int & size,
-                           string name,
-                           string unit,
-                           string description)
-{
-    if (file != nullptr)
-    {
-        try
-        {
+void storage::append_table(T*         data,
+                           const int& size,
+                           string     name,
+                           string     unit,
+                           string     description) {
+    if (file != nullptr) {
+        try {
 
             DataType dt = get_datatype(data[0]);
-            
-        
+
+
             //create dataspace
-            hsize_t dims[] = {(hsize_t)size}; // dimensions of dataset
-            DataSpace dataspace( 1, dims );
-            
+            hsize_t   dims[] = {(hsize_t)size}; // dimensions of dataset
+            DataSpace dataspace(1, dims);
+
             // create dataset with default properties
             DataSet dataset(file->createDataSet("/" + name,
                                                 dt,
                                                 dataspace));
 
-            dataset.write(data,  dt);
+            dataset.write(data, dt);
 
-            {          
-                StrType strdatatype(PredType::C_S1, description.length());
+            {
+                StrType   strdatatype(PredType::C_S1, description.length());
                 DataSpace attrspace = H5::DataSpace(H5S_SCALAR);
-                Attribute attr = dataset.createAttribute("Variable",
+                Attribute attr      = dataset.createAttribute("Variable",
                                                          strdatatype,
                                                          attrspace);
                 attr.write(strdatatype, description.c_str());
             }
-            {          
-                StrType strdatatype(PredType::C_S1, unit.length());
+            {
+                StrType   strdatatype(PredType::C_S1, unit.length());
                 DataSpace attrspace = H5::DataSpace(H5S_SCALAR);
-                Attribute attr = dataset.createAttribute("units",
+                Attribute attr      = dataset.createAttribute("units",
                                                          strdatatype,
                                                          attrspace);
                 attr.write(strdatatype, unit.c_str());
-            }            
-        }  // end of try block
+            }
+        } // end of try block
         // catch failure caused by the H5File operations
-        catch( FileIException error )
-        {
+        catch (FileIException error) {
             cout << "FileIException: " << name
                  << "\t" << data
                  << "\t" << size << endl;
-            
+
             error.printError();
         }
         // catch failure caused by the DataSet operations
-        catch( DataSetIException error )
-        {
+        catch (DataSetIException error) {
             cout << "DataSetIException: " << name
                  << "\t" << data
                  << "\t" << size << endl;
 
-            error.printError();      
+            error.printError();
         }
         // catch failure caused by the DataSpace operations
-        catch( DataSpaceIException error )
-        {
+        catch (DataSpaceIException error) {
             cout << "DataSpaceIException: " << name
                  << "\t" << data
                  << "\t" << size << endl;
@@ -263,8 +245,7 @@ void storage::append_table(T * data,
             error.printError();
         }
         // catch failure caused by the DataSpace operations
-        catch( DataTypeIException error )
-        {
+        catch (DataTypeIException error) {
             cout << "DataTypeIException: " << name
                  << "\t" << data
                  << "\t" << size << endl;
@@ -275,111 +256,97 @@ void storage::append_table(T * data,
 }
 
 template<typename T>
-bool storage::read_table(const string & name,
-                    std::unique_ptr<T[]> & data,
-                    int & size)
-{
+bool storage::read_table(const string&         name,
+                         std::unique_ptr<T[]>& data,
+                         int&                  size) {
     size = 0;
-    
-    if (file != nullptr)
-    {
+
+    if (file != nullptr) {
         DataType dt = get_datatype(data[0]);
-        
-        try
-        {
-        
-            DataSet dataset = file->openDataSet( name );
+
+        try {
+
+            DataSet dataset = file->openDataSet(name);
 
             // get type in dataset
             DataType type = dataset.getDataType();
 
-                  
-            if( type == dt )
-            {
+
+            if (type == dt) {
                 // cout << "Data set has correct type" << endl;
             }
-            else
-            {
+            else {
                 data = nullptr;
                 size = 0;
-                
+
                 return false;
             }
-            
+
             // get dataspace
             DataSpace dataspace = dataset.getSpace();
             // get dimensions and rank
-            int rank = dataspace.getSimpleExtentNdims();
+            int     rank        = dataspace.getSimpleExtentNdims();
             hsize_t dims_out[1] = {0};
-            if (rank == 1)
-            {
-                
-                
-                dataspace.getSimpleExtentDims( dims_out, NULL);
+            if (rank == 1) {
+
+
+                dataspace.getSimpleExtentDims(dims_out, NULL);
                 // cout << "rank " << rank << ", dimensions " <<
                 //    (unsigned long)(dims_out[0]) << " x " << endl;
             }
-            else
-            {
+            else {
                 data = nullptr;
                 size = 0;
-                
+
                 return false;
             }
             size = int(dims_out[0]);
-            
+
             // build output array
             data = std::unique_ptr<T[]>(new T[(int)dims_out[0]], std::default_delete<T[]>());
 
-            
+
             dataset.read(data.get(), dt);
-            
+
         }
-        
+
         // end of try block
         // catch failure caused by the H5File operations
-        catch( FileIException error )
-        {
+        catch (FileIException error) {
             error.printError();
             data = nullptr;
-        
+
             return false;
         }
         // catch failure caused by the DataSet operations
-        catch( DataSetIException error )
-        {
+        catch (DataSetIException error) {
             error.printError();
             data = nullptr;
-        
+
             return false;
         }
         // catch failure caused by the DataSpace operations
-        catch( DataSpaceIException error )
-        {
+        catch (DataSpaceIException error) {
             error.printError();
             data = nullptr;
-        
+
             return false;
         }
         // catch failure caused by the DataSpace operations
-        catch( DataTypeIException error )
-        {
+        catch (DataTypeIException error) {
             error.printError();
             data = nullptr;
             size = 0;
-            
+
             return false;
         }
     }
-    else
-    {
+    else {
         data = nullptr;
         size = 0;
-        
+
         return false;
     }
 
     return true;
-    
-    
 }

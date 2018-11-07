@@ -20,7 +20,7 @@
 //
 
 //
-// Known limitations: 
+// Known limitations:
 //
 // Known issues: None
 //
@@ -46,17 +46,16 @@
 class iteration_timer
 {
 public:
-   iteration_timer(int initial_num_steps, int max_steps);
+    iteration_timer(int initial_num_steps, int max_steps);
 
-   void iteration(int nstep,
-                  double & mean_delta_per_step,
-                  double & elapsed_time,
-                  double & time_left,
-                  std::time_t & end_time);
+    void iteration(int          nstep,
+                   double&      mean_delta_per_step,
+                   double&      elapsed_time,
+                   double&      time_left,
+                   std::time_t& end_time);
 
 private:
-   int max_steps = 1;
-   int initial_num_steps = 0;
-   std::chrono::system_clock::time_point start_sim;
+    int                                   max_steps         = 1;
+    int                                   initial_num_steps = 0;
+    std::chrono::system_clock::time_point start_sim;
 };
-

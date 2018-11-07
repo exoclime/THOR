@@ -49,74 +49,74 @@
 #include <stdlib.h>
 
 #ifdef _MSC_VER
-#define _USE_MATH_DEFINES
+#    define _USE_MATH_DEFINES
 #endif
 
 #include <math.h>
 
-class Icogrid{
+class Icogrid
+{
 
 public:
-
     // Variables associated with the grid
-    int    point_num;      // number of horizontal points
-    int    nv       ;      // number of vertical layers
-    int    nvi      ;      // number of interfaces between leyers
-    int    nl_region;      // number of  points in one side of a rhombus
-    int    nr       ;      // number of rombi
+    int point_num; // number of horizontal points
+    int nv;        // number of vertical layers
+    int nvi;       // number of interfaces between leyers
+    int nl_region; // number of  points in one side of a rhombus
+    int nr;        // number of rombi
 
-    int    grid_level;// Number of recursive iterations to increase horizontal resolution.
+    int grid_level; // Number of recursive iterations to increase horizontal resolution.
 
-    int    nh       ;      // number of points in halo
+    int nh; // number of points in halo
 
-    double *point_xyz ;
+    double *point_xyz;
     double *point_xyzq;
 
     int *pent_ind;
-    int *halo    ;
-    int *maps    ;          // Grid domains
+    int *halo;
+    int *maps; // Grid domains
 
-    double *Altitude;       // Altitudes
-    double *Altitudeh;      // Altitude at the interfaces between layers
+    double *Altitude;  // Altitudes
+    double *Altitudeh; // Altitude at the interfaces between layers
 
-    double *lonlat;         // Longitude and latitude of the grid points
+    double *lonlat; // Longitude and latitude of the grid points
 
-    double *areas  ;
-    double *areasT ;        // Areas of the main cells
-    double *areasTr;        // Areas of the triangles
+    double *areas;
+    double *areasT;  // Areas of the main cells
+    double *areasTr; // Areas of the triangles
 
-    double *nvec  ;
-    double *nvecoa;         // Normal vectors for diffusion 1
-    double *nvecte;         // Normal vectors for diffusion 3
-    double *nvecti;         // Normal vectors for diffusion 2
+    double *nvec;
+    double *nvecoa; // Normal vectors for diffusion 1
+    double *nvecte; // Normal vectors for diffusion 3
+    double *nvecti; // Normal vectors for diffusion 2
 
-    double *div ;           // Divergence operator
-    double *grad;           // Gradient operator
+    double *div;  // Divergence operator
+    double *grad; // Gradient operator
 
-    int    *point_local;    // First neighbours
+    int *point_local; // First neighbours
 
-    double *func_r;         // Normalised vector
+    double *func_r; // Normalised vector
 
-    int *zonal_mean_tab;  //something something
+    int *zonal_mean_tab; //something something
 
-    Icogrid (bool, double, int, int, int, double, double, bool);
+    Icogrid(bool, double, int, int, int, double, double, bool);
 
 private:
     // Functions to build the grid
-    void sphere_ico (double *, int, int, int, int, int, int, int *, int, int);
-    void neighbors_indx ( int *, double *, int *, int);
-    void reorder_neighbors_indx (int *, double *, int*, int );
+    void sphere_ico(double *, int, int, int, int, int, int, int *, int, int);
+    void neighbors_indx(int *, double *, int *, int);
+    void reorder_neighbors_indx(int *, double *, int *, int);
     void neighbors_indx_pl(int *, double *, int *, int);
-    void reorder_neighbors_indx_pl(int *, double *, int*, int);
+    void reorder_neighbors_indx_pl(int *, double *, int *, int);
     void generate_halos(int *, int *, int, int);
-    void reorder_neighbors_indx_rhombi (int *, int *,int *, int, int, int, int, int);
+    void reorder_neighbors_indx_rhombi(int *, int *, int *, int, int, int, int, int);
     void produce_maps(int *, int *, int, int);
     void spring_dynamics(int *, int *, int, double, double *, int);
-    void find_qpoints (int *, double *, double *, int *, int);
-    void relocate_centres (int *, double *, double *, int *, int);
+    void find_qpoints(int *, double *, double *, int *, int);
+    void relocate_centres(int *, double *, double *, int *, int);
     void set_altitudes(double *, double *, double, int);
-    void cart2sphe ( double *, double *, int);
-    void correct_xyz_points (double , double *, double *, int *, int);
+    void cart2sphe(double *, double *, int);
+    void correct_xyz_points(double, double *, double *, int *, int);
     void control_areas(double *, double *, double *, int *, double *, double *, int *, int);
     void control_vec(double *, double *, double *, double *, double *, double *, double *, int *, int *, int);
     void compute_func(double *, double *, int);

@@ -43,75 +43,75 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
-__global__ void Compute_temperature_only (double *temperature_d,
-                                     double *pressure_d   ,
-                                     double *Rho_d        ,
-                                     double  Rd           ,
-                                     int     num          ){
+__global__ void Compute_temperature_only(double *temperature_d,
+                                         double *pressure_d,
+                                         double *Rho_d,
+                                         double  Rd,
+                                         int     num) {
 
-    int id = blockIdx.x * blockDim.x + threadIdx.x;
-    int nv = gridDim.y;
+    int id  = blockIdx.x * blockDim.x + threadIdx.x;
+    int nv  = gridDim.y;
     int lev = blockIdx.y;
 
     // Computes absolute temperature
-    if(id < num) temperature_d[id*nv + lev] = pressure_d[id*nv + lev]/(Rd*Rho_d[id*nv + lev]);
+    if (id < num) temperature_d[id * nv + lev] = pressure_d[id * nv + lev] / (Rd * Rho_d[id * nv + lev]);
 }
 
-__global__ void Compute_temperature (double *temperature_d,
-                                     double *pt_d         ,
-                                     double *pressure_d   ,
-                                     double *Rho_d        ,
-                                     double  P_Ref        ,
-                                     double  Rd           ,
-                                     double  Cp           ,
-                                     int     num          ){
+__global__ void Compute_temperature(double *temperature_d,
+                                    double *pt_d,
+                                    double *pressure_d,
+                                    double *Rho_d,
+                                    double  P_Ref,
+                                    double  Rd,
+                                    double  Cp,
+                                    int     num) {
 
-    int id = blockIdx.x * blockDim.x + threadIdx.x;
-    int nv = gridDim.y;
+    int id  = blockIdx.x * blockDim.x + threadIdx.x;
+    int nv  = gridDim.y;
     int lev = blockIdx.y;
 
-    double Cv = Cp - Rd;
+    double Cv    = Cp - Rd;
     double CvoCp = Cv / Cp;
 
     // Computes absolute and potential temperature
-    if(id < num) {
-      temperature_d[id*nv + lev] = pressure_d[id*nv + lev]/(Rd*Rho_d[id*nv + lev]);
+    if (id < num) {
+        temperature_d[id * nv + lev] = pressure_d[id * nv + lev] / (Rd * Rho_d[id * nv + lev]);
     }
-    if(id < num) pt_d[id * nv + lev] = (P_Ref / (Rd * Rho_d[id*nv + lev]))*pow(pressure_d[id*nv + lev] / P_Ref, CvoCp);
+    if (id < num) pt_d[id * nv + lev] = (P_Ref / (Rd * Rho_d[id * nv + lev])) * pow(pressure_d[id * nv + lev] / P_Ref, CvoCp);
 }
 
-__global__ void Compute_pressure    (double *pressure_d   ,
-                                     double *temperature_d,
-                                     double *Rho_d        ,
-                                     double  Rd           ,
-                                     int     num          ){
+__global__ void Compute_pressure(double *pressure_d,
+                                 double *temperature_d,
+                                 double *Rho_d,
+                                 double  Rd,
+                                 int     num) {
 
 
-    int id = blockIdx.x * blockDim.x + threadIdx.x;
-    int nv = gridDim.y;
+    int id  = blockIdx.x * blockDim.x + threadIdx.x;
+    int nv  = gridDim.y;
     int lev = blockIdx.y;
 
     // Computes absolute pressure
     if (id < num) {
-      pressure_d[id*nv + lev] = temperature_d[id*nv + lev] * Rd*Rho_d[id*nv + lev];
+        pressure_d[id * nv + lev] = temperature_d[id * nv + lev] * Rd * Rho_d[id * nv + lev];
     }
 }
 
 
-__global__ void isnan_check(double *array, int width, int height, bool *check){
+__global__ void isnan_check(double *array, int width, int height, bool *check) {
 
-//
-//  Description: Check for nan in the temperature array.
-//
+    //
+    //  Description: Check for nan in the temperature array.
+    //
 
-  int idx = threadIdx.x+blockDim.x*blockIdx.x;
+    int idx = threadIdx.x + blockDim.x * blockIdx.x;
 
-  while (idx < width){
-    for (int i = 0; i < height; i++)
-      if (isnan(array[(i*width) + idx])) {
-        *check = true;
-      }
-      idx += gridDim.x+blockDim.x;
+    while (idx < width) {
+        for (int i = 0; i < height; i++)
+            if (isnan(array[(i * width) + idx])) {
+                *check = true;
+            }
+        idx += gridDim.x + blockDim.x;
     }
 }
 

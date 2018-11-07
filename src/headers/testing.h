@@ -20,16 +20,16 @@
 //
 //
 // Known limitations: None.
-//      
+//
 //
 // Known issues: None.
-//   
+//
 //
 // Current Code Owner: Joao Mendonca, EEG. joao.mendonca@csh.unibe.ch
 //
-// If you use this code please cite the following reference: 
+// If you use this code please cite the following reference:
 //
-//       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016  
+//       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016
 //
 // History:
 // Version Date       Comment
@@ -40,26 +40,23 @@
 ////////////////////////////////////////////////////////////////////////
 #pragma once
 
-#include <string>
 #include <iostream>
+#include <string>
 
 using std::cout;
 using std::endl;
 
 // helper function to check a variable against a reference and write
 // out to console if they are not equaly.
-template <typename T>
-bool test_val(const string & txt, const T & val, const T & ref)
-{
+template<typename T>
+bool test_val(const string& txt, const T& val, const T& ref) {
     if (val == ref)
         return true;
-    else
-    {
+    else {
         cout << "wrong value: "
              << txt
-             << " expected: "<<ref
+             << " expected: " << ref
              << " got: " << val << endl;
         return false;
     }
 }
-

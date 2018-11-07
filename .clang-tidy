@@ -1,15 +1,70 @@
-Checks: 'clang-diagnostic-*,bugprone-*,readability-*'
+Checks: 'readability-'
 # 'clang-diagnostic-*,clang-analyzer-*,bugprone-*,cppcoreguidelines-*,misc-*,modernize-*,performance-*,readability-*'
 WarningsAsErrors: ''
 HeaderFilterRegex: ''
 CheckOptions:
   - { key: readability-identifier-naming.NamespaceCase,       value: lower_case }
   - { key: readability-identifier-naming.ClassCase,           value: CamelCase  }
-  - { key: readability-identifier-naming.PrivateMemberPrefix, value: m_         }
+  - { key: readability-identifier-naming.EnumCase,            value: CamelCase  }
   - { key: readability-identifier-naming.StructCase,          value: CamelCase  }
-  - { key: readability-identifier-naming.FunctionCase,        value: lower_case }
-  - { key: readability-identifier-naming.VariableCase,        value: lower_case }
-  - { key: readability-identifier-naming.GlobalConstantCase,  value: UPPER_CASE }
+  - { key: readability-identifier-naming.StructPrefix,        value: struct   }
+  - { key: readability-identifier-naming.ClassMethod,         value: lower_case  }
+  - { key: readability-identifier-naming.Constant,            value: UPPER_CASE  }
+  - { key: readability-identifier-naming.GlobalFunction,      value: lower_case  }
+  - { key: readability-identifier-naming.ClassMethod,         value: lower_case  }
+  - { key: readability-identifier-naming.Method,              value: lower_case  }
+    
+  # - { key: readability-identifier-naming.PrivateMemberPrefix, value:            }
+  # - { key: readability-identifier-naming.StructCase,          value: CamelCase  }
+  # - { key: readability-identifier-naming.FunctionCase,        value: lower_case }
+  # - { key: readability-identifier-naming.VariableCase,        value: lower_case }
+  # - { key: readability-identifier-naming.GlobalConstantCase,  value: UPPER_CASE }
+
+# m(Namespace) \
+#     m(InlineNamespace) \
+#     m(EnumConstant) \
+#     m(ConstexprVariable) \
+#     m(ConstantMember) \
+#     m(PrivateMember) \
+#     m(ProtectedMember) \
+#     m(PublicMember) \
+#     m(Member) \
+#     m(ClassConstant) \
+#     m(ClassMember) \
+#     m(GlobalConstant) \
+#     m(GlobalVariable) \
+#     m(LocalConstant) \
+#     m(LocalVariable) \
+#     m(StaticConstant) \
+#     m(StaticVariable) \
+#     m(Constant) \
+#     m(Variable) \
+#     m(ConstantParameter) \
+#     m(ParameterPack) \
+#     m(Parameter) \
+#     m(AbstractClass) \
+#     m(Struct) \
+#     m(Class) \
+#     m(Union) \
+#     m(Enum) \
+#     m(GlobalFunction) \
+#     m(ConstexprFunction) \
+#     m(Function) \
+#     m(ConstexprMethod) \
+#     m(VirtualMethod) \
+#     m(ClassMethod) \
+#     m(PrivateMethod) \
+#     m(ProtectedMethod) \
+#     m(PublicMethod) \
+#     m(Method) \
+#     m(Typedef) \
+#     m(TypeTemplateParameter) \
+#     m(ValueTemplateParameter) \
+#     m(TemplateTemplateParameter) \
+#     m(TemplateParameter) \
+#     m(TypeAlias) \
+#     m(MacroDefinition) \
+
   
 # AnalyzeTemporaryDtors: false
 # FormatStyle:     none

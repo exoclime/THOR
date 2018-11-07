@@ -59,57 +59,59 @@
 // BENCH_POINT_WRITE enables writing data out to reference files
 // BENCH_POINT_COMPARE enables comparing current value with reference files
 #ifdef BENCHMARKING
-  #warning "Compiling with benchmarktest enabled"
+#    warning "Compiling with benchmarktest enabled"
 
-  #define USE_BENCHMARK() binary_test & btester = binary_test::get_instance();
-  #define INIT_BENCHMARK(esp, grid) binary_test::get_instance().set_definitions(build_definitions(esp, grid));
-  #define BENCH_POINT( iteration, name, in, out)  btester.check_data( iteration, name, in, out);
-  #define BENCH_POINT_I( iteration, name, in, out)  btester.check_data( std::to_string(iteration), name, in, out);
-  #define BENCH_POINT_I_S( iteration, subiteration, name, in, out)  btester.check_data(std::to_string(iteration) \
-                                                                                     +"-" \
-                                                                                     +std::to_string(subiteration), \
-                                                                                     name, in, out);
-  #define BENCH_POINT_I_SS( iteration, subiteration, subsubiteration, name, in, out)  btester.check_data(std::to_string(iteration) \
-                                                                                                       +"-" \
-                                                                                                       +std::to_string(subiteration) \
-                                                                                                       +"-" \
-                                                                                                       +std::to_string(subsubiteration), \
-                                                                                                       name, in, out);
+#    define USE_BENCHMARK() binary_test& btester = binary_test::get_instance();
+#    define INIT_BENCHMARK(esp, grid) binary_test::get_instance().set_definitions(build_definitions(esp, grid));
+#    define BENCH_POINT(iteration, name, in, out) btester.check_data(iteration, name, in, out);
+#    define BENCH_POINT_I(iteration, name, in, out) btester.check_data(std::to_string(iteration), name, in, out);
+#    define BENCH_POINT_I_S(iteration, subiteration, name, in, out) btester.check_data(std::to_string(iteration)           \
+                                                                                           + "-"                           \
+                                                                                           + std::to_string(subiteration), \
+                                                                                       name,                               \
+                                                                                       in,                                 \
+                                                                                       out);
+#    define BENCH_POINT_I_SS(iteration, subiteration, subsubiteration, name, in, out) btester.check_data(std::to_string(iteration)              \
+                                                                                                             + "-"                              \
+                                                                                                             + std::to_string(subiteration)     \
+                                                                                                             + "-"                              \
+                                                                                                             + std::to_string(subsubiteration), \
+                                                                                                         name,                                  \
+                                                                                                         in,                                    \
+                                                                                                         out);
 
 #else // do nothing
-  #define USE_BENCHMARK()
-#define INIT_BENCHMARK(esp, grid)
-#define BENCH_POINT(iteration, name, in, out)
-#define BENCH_POINT_I(iteration, name, in, out)
-#define BENCH_POINT_I_S(iteration, subiteration, name, in, out)
-#define BENCH_POINT_I_SS(iteration, subiteration, subsubiteration,  name, in, out)
+#    define USE_BENCHMARK()
+#    define INIT_BENCHMARK(esp, grid)
+#    define BENCH_POINT(iteration, name, in, out)
+#    define BENCH_POINT_I(iteration, name, in, out)
+#    define BENCH_POINT_I_S(iteration, subiteration, name, in, out)
+#    define BENCH_POINT_I_SS(iteration, subiteration, subsubiteration, name, in, out)
 #endif // BENCHMARKING
 
 #ifdef BENCHMARKING
-#include "esp.h"
-#include "grid.h"
-#include <memory>
-#include "storage.h"
-#include <vector>
-#include <map>
+#    include "esp.h"
+#    include "grid.h"
+#    include "storage.h"
+#    include <map>
+#    include <memory>
+#    include <vector>
 
+using std::map;
 using std::string;
 using std::vector;
-using std::map;
 
 
-struct output_def
-{
-    double *& data;
-    int size;
-    string name;
-    string short_name;
-    bool device_ptr;
+struct output_def {
+    double*& data;
+    int      size;
+    string   name;
+    string   short_name;
+    bool     device_ptr;
 };
 
 
-
-map<string, output_def> build_definitions(ESP & esp, Icogrid & grd);
+map<string, output_def> build_definitions(ESP& esp, Icogrid& grd);
 
 // singleton storing class for debug
 class binary_test
@@ -117,40 +119,38 @@ class binary_test
 public:
     // make a singleton, so that the object exists only once
     // use this to get a reference to the object
-    static binary_test & get_instance();
+    static binary_test& get_instance();
     // no copy constructor and assignement operator
     binary_test(binary_test const&) = delete;
     void operator=(binary_test const&) = delete;
 
     // esp reference dump
-    void output_reference(const string & iteration,
-                          const string & ref_name,
-                          const vector<output_def> & output_reference);
+    void output_reference(const string&             iteration,
+                          const string&             ref_name,
+                          const vector<output_def>& output_reference);
 
     // comparison
-    bool compare_to_reference(const string & iteration,
-                              const string & ref_name,
-                              const vector<output_def> & output_reference);
+    bool compare_to_reference(const string&             iteration,
+                              const string&             ref_name,
+                              const vector<output_def>& output_reference);
 
 
-    void check_data(const string & iteration,
-                    const string & ref_name,
-                    const vector<string> & input_vars,
-                    const vector<string> & output_vars);
+    void check_data(const string&         iteration,
+                    const string&         ref_name,
+                    const vector<string>& input_vars,
+                    const vector<string>& output_vars);
 
 
-    void set_output(string base_name, string dir)
-    {
-        output_dir = dir;
+    void set_output(string base_name, string dir) {
+        output_dir       = dir;
         output_base_name = base_name;
     }
 
 
-    void set_definitions(const std::map<string, output_def> & defs);
+    void set_definitions(const std::map<string, output_def>& defs);
 
-     // make constructor private, can only be instantiated through get_instance
+    // make constructor private, can only be instantiated through get_instance
     ~binary_test();
-
 
 
 private:
@@ -167,62 +167,52 @@ private:
 
     // helper function to compare two arrays for equality
     template<typename T>
-    bool compare_arrays(int s1, T * d1,
-                        int s2, T * d2,
-                        string array = string(""),
-                        bool print = false);
+    bool compare_arrays(int s1, T* d1, int s2, T* d2, string array = string(""), bool print = false);
 
     // helper function to compare application array to saved array
     template<typename T>
-    bool compare_to_saved_data(storage & s,
-                               const string & name,
-                               T * local_data,
-                               const int & data_size);
+    bool compare_to_saved_data(storage&      s,
+                               const string& name,
+                               T*            local_data,
+                               const int&    data_size);
 
-    bool check_nan(const string & iteration,
-                   const string & ref_name,
-                   const vector<output_def> & data_output);
+    bool check_nan(const string&             iteration,
+                   const string&             ref_name,
+                   const vector<output_def>& data_output);
 
 
-    bool output_defined = false;
+    bool                         output_defined = false;
     std::map<string, output_def> output_definitions;
-    std::unique_ptr<double[]> mem_buf = nullptr;
+    std::unique_ptr<double[]>    mem_buf = nullptr;
 
-    bool * nan_check_d;
+    bool* nan_check_d;
 };
 
 // Compare binary table to saved table in storage output
 template<typename T>
-bool binary_test::compare_to_saved_data(storage & s,
-                                        const string & name,
-                                        T * local_data,
-                                        const int & data_size) {
+bool binary_test::compare_to_saved_data(storage&      s,
+                                        const string& name,
+                                        T*            local_data,
+                                        const int&    data_size) {
     std::unique_ptr<T[]> saved_data = nullptr;
-    int size = 0;
+    int                  size       = 0;
     // print out piece of the table for visual inspection
     bool print_details = false;
 
-//    cout << "Comparing " << name << " :\t";
+    //    cout << "Comparing " << name << " :\t";
 
     s.read_table(name, saved_data, size);
 
 
-
-    bool b = compare_arrays(size, saved_data.get(),
-                            data_size, local_data,
-                            name, print_details);
-//    cout << b << endl;
+    bool b = compare_arrays(size, saved_data.get(), data_size, local_data, name, print_details);
+    //    cout << b << endl;
     return b;
-
 }
 
 // Binary comparison of two arrays d1 of size s1 and d2 of size s2
 template<typename T>
-bool binary_test::compare_arrays(int s1, T * d1,
-                                 int s2, T * d2, string array, bool print)
-{
-    if (s1 != s2)
-    {
+bool binary_test::compare_arrays(int s1, T* d1, int s2, T* d2, string array, bool print) {
+    if (s1 != s2) {
         if (print)
             std::cout << array << ":\tdifferent sized arrays (" << s1
                       << ":" << s2 << std::endl;
@@ -233,29 +223,25 @@ bool binary_test::compare_arrays(int s1, T * d1,
 
     bool same = true;
 
-    for (int i = 0; i < s1; i++)
-    {
+    for (int i = 0; i < s1; i++) {
 
         //>
         //double mx = (abs(d1[i]) > abs(d2[i]))?abs(d1[i]):abs(d2[i]);
 
         //if (abs((d1[i] - d2[i])) > 1e-10 )
-        if (d1[i] != d2[i])
-        {
-//            if (print && i < 10)
+        if (d1[i] != d2[i]) {
+            //            if (print && i < 10)
             if (print)
-                std::cout <<std::setprecision(20) << std::scientific << array << "["<<i<<"]:\tdifferent value ("<<d1[i]<<":"<<d2[i]<<")"<<std::endl;
+                std::cout << std::setprecision(20) << std::scientific << array << "[" << i << "]:\tdifferent value (" << d1[i] << ":" << d2[i] << ")" << std::endl;
 
             same = false;
         }
-        else
-        {
+        else {
             //if (print && i < 10)
             //  cout <<std::setprecision(20) << std::scientific << array << "["<<i<<"]:\tsame value ("<<d1[i]<<":"<<d2[i]<<")"<<endl;
             // cout << "same value " << endl;
         }
     }
-
 
 
     return same;

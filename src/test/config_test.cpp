@@ -22,16 +22,16 @@
 // Method: writes an array to a file and reloads it
 //
 // Known limitations: None.
-//      
+//
 //
 // Known issues: None.
-//   
+//
 //
 // Current Code Owner: Joao Mendonca, EEG. joao.mendonca@csh.unibe.ch
 //
-// If you use this code please cite the following reference: 
+// If you use this code please cite the following reference:
 //
-//       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016  
+//       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016
 //
 // History:
 // Version Date       Comment
@@ -42,10 +42,9 @@
 ////////////////////////////////////////////////////////////////////////
 
 
-
+#include <iomanip>
 #include <iostream>
 #include <sstream>
-#include <iomanip>
 
 #include "config_file.h"
 #include "testing.h"
@@ -53,41 +52,34 @@
 using namespace std;
 
 
-    
-    
-
-int main()
-{
+int main() {
     cout << "config file test" << endl;
 
     config_file cf;
 
     string config = "int1 = 0\n"
-        " int2=  1234567890 \n"
-        "int3\t=-1234567890\t\n"
-        "# comment line\n"
-        "other = false\n"
-        " # moar comments\n"
-        "othertest = icle\n"
-        "onemore = true # line with comment\n" 
-        "   \t  \n"
-        "\t# undefined, check default value\n"
-        "double1 = 1.0\n"
-        "double2 = -3.14e19\n"
-        "double3 = 1242E+32\n"
-        ;
-    
-    int i = 1;
+                    " int2=  1234567890 \n"
+                    "int3\t=-1234567890\t\n"
+                    "# comment line\n"
+                    "other = false\n"
+                    " # moar comments\n"
+                    "othertest = icle\n"
+                    "onemore = true # line with comment\n"
+                    "   \t  \n"
+                    "\t# undefined, check default value\n"
+                    "double1 = 1.0\n"
+                    "double2 = -3.14e19\n"
+                    "double3 = 1242E+32\n";
+
+    int           i = 1;
     istringstream iss(config);
-    
 
-    for (string line; getline(iss, line); )
-    {
-        
+
+    for (string line; getline(iss, line);) {
+
         cout << setw(4) << i << ":\t" << line << endl;
-        i++;            
+        i++;
     }
-
 
 
     cout << "appending configurations" << endl;
@@ -97,7 +89,7 @@ int main()
     cf.append_config_var("int2", int2, 2);
     int int3 = -1;
     cf.append_config_var("int3", int3, 2);
-    
+
     double double1 = 0.0;
     cf.append_config_var("double1", double1, -1.0);
     double double2 = 0.0;
@@ -115,20 +107,19 @@ int main()
     // default values
     bool def_bool = false;
     cf.append_config_var("def_bool", def_bool, true);
-    int def_int= -2;
+    int def_int = -2;
     cf.append_config_var("def_int", def_int, 42);
     double def_double = 3.14;
     cf.append_config_var("def_double", def_double, 2.18);
     string def_string("wrong");
     cf.append_config_var("def_string", def_string, string("default"));
-    
-    
-                         
-    cout << "start parsing" << endl << endl;
+
+
+    cout << "start parsing" << endl
+         << endl;
 
     std::basic_istringstream<char> istr(config);
-    
-    
+
 
     bool success = true;
     success &= cf.parse_config(istr);
@@ -145,13 +136,12 @@ int main()
     success &= test_val<int>("def_int", def_int, 42);
     success &= test_val<double>("def_double", def_double, 2.18);
     success &= test_val<string>("def_string", def_string, string("default"));
-        
+
     if (success)
         cout << "Test PASS" << endl;
-    else 
+    else
         cout << "Test FAIL" << endl;
-            
+
 
     exit(0);
-    
 }
