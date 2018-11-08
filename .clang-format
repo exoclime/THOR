@@ -35,7 +35,7 @@ AlwaysBreakAfterReturnType: None
 AlwaysBreakBeforeMultilineStrings: false
 
 # template declaration always on its own line
-AlwaysBreakTemplateDeclarations: Yes
+#-clang-8 AlwaysBreakTemplateDeclarations: Yes
 
 # arguments and parameters all on one line or all on multiple lines
 BinPackArguments: false
@@ -61,7 +61,7 @@ BraceWrapping:
 BreakBeforeBinaryOperators: NonAssignment
 BreakBeforeTernaryOperators: true
 BreakConstructorInitializers: AfterColon
-BreakInheritanceList: AfterColon
+#-clang-8 BreakInheritanceList: AfterColon
 
 BreakStringLiterals: true
 
@@ -134,13 +134,13 @@ SortUsingDeclarations: true
 SpaceAfterCStyleCast: false
 SpaceAfterTemplateKeyword: false
 SpaceBeforeAssignmentOperators: true
-SpaceBeforeCpp11BracedList: true
-SpaceBeforeCtorInitializerColon: false
-SpaceBeforeInheritanceColon: false
+#-clang-8 SpaceBeforeCpp11BracedList: true
+#-clang-8 SpaceBeforeCtorInitializerColon: false
+#-clang-8 SpaceBeforeInheritanceColon: false
 
 # looks like if has no space, for has space...
 SpaceBeforeParens: true
-SpaceBeforeRangeBasedForLoopColon: true
+#-clang-8 SpaceBeforeRangeBasedForLoopColon: true
 
 SpaceInEmptyParentheses: false
 
