@@ -559,24 +559,14 @@ int main(int argc, char** argv) {
                                                                 // continue or
                                                                 // start at 0?
                                          timestep,              // Time-step [s]
-                                         Planet.A,              // Planet
-                                                                // radius [m]
-                                         Planet.Top_altitude,   // Planet
-                                                                // top altitude
-                                         Planet.Cp,             // Specific heat capacity [J /(kg K)]
-                                         Planet.P_Ref,          // Reference pressure [Pa]
-                                         Planet.Gravit,         // Gravity [m/s^2]
-                                         Planet.Omega,          // Rotation rate [1/s]
-                                         Planet.Diffc,          // Strength of diffusion
+                                         Planet,                // Planet
                                          kb_constant,           // Boltzmann constant [J/kg]
-                                         Planet.Tmean,          // Isothermal atmosphere (at temperature Tmean)
                                          mu_constant,           // Atomic mass unit [kg]
-                                         Planet.Rd,             // Gas constant [J/kg/K]
                                          SpongeLayer,           // Enable sponge layer
                                          DeepModel,             // Use deep model corrections
                                          TPprof,                // isothermal = 0, guillot = 1
                                          core_benchmark,        // argh
-                                         chemistry,                //
+                                         chemistry,             //
                                          step_idx,              // current step index
                                          simulation_start_time, // output:
                                                                 // simulation start time
@@ -766,7 +756,7 @@ int main(int argc, char** argv) {
 
         if (conservation == true) {
             X.conservation(core_benchmark, // Held-Suarez test option
-                           chemistry,         //
+                           chemistry,      //
                            Planet.Omega,   // Rotation rate [1/s]
                            Planet.Cp,      // Specific heat capacity [J/kg/K]
                            Planet.Rd,      // Gas constant [J/kg/K]
@@ -838,14 +828,14 @@ int main(int argc, char** argv) {
                    Planet.P_Ref,  // Reference pressure [Pa]
                    Planet.Gravit, // Gravity [m/s^2]
                    Planet.A,      // Planet radius [m]
-                   chemistry,        //
+                   chemistry,     //
                    NonHydro,      // Non-hydrostatic option
                    DeepModel);    // Deep model option
         }
         //
         //     Physical Core Integration (ProfX)
         X.ProfX(core_benchmark, // Held-Suarez test option
-                chemistry,         //
+                chemistry,      //
                 conv,
                 Planet.Omega,  // Rotation rate [1/s]
                 Planet.Cp,     // Specific heat capacity [J/kg/K]
@@ -867,7 +857,7 @@ int main(int argc, char** argv) {
 
         if (conservation == true) {
             X.conservation(core_benchmark, // Held-Suarez test option
-                           chemistry,         //
+                           chemistry,      //
                            Planet.Omega,   // Rotation rate [1/s]
                            Planet.Cp,      // Specific heat capacity [J/kg/K]
                            Planet.Rd,      // Gas constant [J/kg/K]
