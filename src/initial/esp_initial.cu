@@ -45,9 +45,9 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
-#include "../headers/phy/valkyrie_conservation.h"
-#include "../headers/phy/valkyrie_jet_steadystate.h"
 #include "../headers/phy/chemistry_host.h"
+#include "../headers/phy/profx_conservation.h"
+#include "../headers/phy/valkyrie_jet_steadystate.h"
 #include "directories.h"
 #include "esp.h"
 #include "hdf5.h"
@@ -86,7 +86,7 @@ __host__ ESP::ESP(int *       point_local_,
                   double      t_shrink_,
                   int         point_num_,
                   bool        conservation,
-                  log_writer &logwriter_):
+                  log_writer &logwriter_) :
     nl_region(nl_region_),
     nr(nr_),
     point_num(point_num_),

@@ -1,5 +1,5 @@
 
-#include "../headers/phy/valkyrie_conservation.h"
+#include "../headers/phy/profx_conservation.h"
 
 __device__ double atomicAddFunc(double *address, double val) {
     unsigned long long int *address_as_ull = (unsigned long long int *)address;
@@ -74,8 +74,8 @@ __global__ void CalcTotEnergy(double *Etotal_d,
 #ifdef GLOBAL_CONSERVATION_ATOMICADD
         atomicAddFunc(GlobalE_d, Etotal_d[id * nv + lev]);
 #endif // GLOBAL_CONSERVATION_ATOMICADD
-        
-    // printf("E = %e\n",Etotal_d[id*nv+lev]);
+
+        // printf("E = %e\n",Etotal_d[id*nv+lev]);
     }
 }
 

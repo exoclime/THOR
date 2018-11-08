@@ -48,7 +48,7 @@ COMP ?= nvcc
 
 
 # objects
-obj_cuda   := esp.o grid.o esp_initial.o planet.o thor_driver.o profx_driver.o esp_output.o debug_helpers.o valkyrie_conservation.o reduction_add.o
+obj_cuda   := esp.o grid.o esp_initial.o planet.o thor_driver.o profx_driver.o esp_output.o debug_helpers.o profx_conservation.o reduction_add.o
 obj_cpp := storage.o binary_test.o config_file.o cmdargs.o directories.o log_writer.o iteration_timer.o
 obj := $(obj_cpp) $(obj_cuda)
 
@@ -84,7 +84,7 @@ ifeq ($(COMP), nvcc)
 	cuda_flags := $(ccbin) --compiler-options  -Wall -std=c++11 -DDEVICE_SM=$(SM)
 
 	cpp_dep_flags := $(ccbin) -std=c++11
-	cuda_dep_flags := $(ccbin) -std=c++11 
+	cuda_dep_flags := $(ccbin) -std=c++11
 	link_flags = $(ccbin)
 else
 	# need to compile with clang for compilation database

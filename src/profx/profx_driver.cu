@@ -43,15 +43,15 @@
 ////////////////////////////////////////////////////////////////////////
 
 #include "../headers/esp.h"
-#include "../headers/phy/apocalypse_sponge.h"
+#include "../headers/phy/chemistry_device.h" // Simple chemistry.
 #include "../headers/phy/dry_conv_adj.h"
 #include "../headers/phy/profx_auxiliary.h"
+#include "../headers/phy/profx_conservation.h"
 #include "../headers/phy/profx_deepHJ_hs.h"
 #include "../headers/phy/profx_held_suarez.h"
 #include "../headers/phy/profx_shallowHJ_hs.h"
+#include "../headers/phy/profx_sponge.h"
 #include "../headers/phy/profx_tidalearth_hs.h"
-#include "../headers/phy/valkyrie_conservation.h"
-#include "../headers/phy/chemistry_device.h" // Simple chemistry.
 
 #include "binary_test.h"
 #include "debug_helpers.h"
@@ -61,7 +61,7 @@
 #include "reduction_add.h"
 
 __host__ void ESP::ProfX(int    core_benchmark, // Held-Suarez test option
-                         int    chemistry,         // Use chemistry
+                         int    chemistry,      // Use chemistry
                          int    conv,           //
                          double Omega,          // Rotation rate [1/s]
                          double Cp,             // Specific heat capacity [J/kg/K]
@@ -82,9 +82,9 @@ __host__ void ESP::ProfX(int    core_benchmark, // Held-Suarez test option
     const int NTH = 256;
 
     //  Specify the block sizes.
-    dim3 NB((point_num / NTH) + 1, nv, 1);
-    dim3 NBRT((point_num / NTH) + 1, 1, 1);
-    dim3 NBTR((point_num / NTH) + 1, nv, ntr);
+    dim3      NB((point_num / NTH) + 1, nv, 1);
+    dim3      NBRT((point_num / NTH) + 1, 1, 1);
+    dim3      NBTR((point_num / NTH) + 1, nv, ntr);
 
     if (sponge == true) {
         dim3 NBT((point_num / NTH) + 1, nv, 1);
@@ -215,44 +215,44 @@ __host__ void ESP::ProfX(int    core_benchmark, // Held-Suarez test option
     if (chemistry == 1) {
         cudaDeviceSynchronize();
         Tracers_relax_chemistry_co2<<<NBTR, NTH>>>(tracer_d,
-                                                tauch4_d,
-                                                tauco_d,
-                                                tauh2o_d,
-                                                tauco2_d,
-                                                taunh3_d,
-                                                ch4eq_d,
-                                                coeq_d,
-                                                h2oeq_d,
-                                                co2eq_d,
-                                                nh3eq_d,
-                                                P_che_d,
-                                                T_che_d,
-                                                temperature_d,
-                                                pressure_d,
-                                                Rho_d,
-                                                timestep,
-                                                ntr,
-                                                point_num);
+                                                   tauch4_d,
+                                                   tauco_d,
+                                                   tauh2o_d,
+                                                   tauco2_d,
+                                                   taunh3_d,
+                                                   ch4eq_d,
+                                                   coeq_d,
+                                                   h2oeq_d,
+                                                   co2eq_d,
+                                                   nh3eq_d,
+                                                   P_che_d,
+                                                   T_che_d,
+                                                   temperature_d,
+                                                   pressure_d,
+                                                   Rho_d,
+                                                   timestep,
+                                                   ntr,
+                                                   point_num);
         cudaDeviceSynchronize();
         Tracers_relax_chemistry<<<NBTR, NTH>>>(tracer_d,
-                                            tauch4_d,
-                                            tauco_d,
-                                            tauh2o_d,
-                                            tauco2_d,
-                                            taunh3_d,
-                                            ch4eq_d,
-                                            coeq_d,
-                                            h2oeq_d,
-                                            co2eq_d,
-                                            nh3eq_d,
-                                            P_che_d,
-                                            T_che_d,
-                                            temperature_d,
-                                            pressure_d,
-                                            Rho_d,
-                                            timestep,
-                                            ntr,
-                                            point_num);
+                                               tauch4_d,
+                                               tauco_d,
+                                               tauh2o_d,
+                                               tauco2_d,
+                                               taunh3_d,
+                                               ch4eq_d,
+                                               coeq_d,
+                                               h2oeq_d,
+                                               co2eq_d,
+                                               nh3eq_d,
+                                               P_che_d,
+                                               T_che_d,
+                                               temperature_d,
+                                               pressure_d,
+                                               Rho_d,
+                                               timestep,
+                                               ntr,
+                                               point_num);
     }
 
     if (conv) {
@@ -334,7 +334,7 @@ __host__ void ESP::ProfX(int    core_benchmark, // Held-Suarez test option
 
 // TODO: get constants out of arguments
 void ESP::conservation(int    core_benchmark, // Held-Suarez test option
-                       int    chemistry,         //
+                       int    chemistry,      //
                        double Omega,          // Rotation rate [1/s]
                        double Cp,             // Specific heat capacity [J/kg/K]
                        double Rd,             // Gas constant [J/kg/K]
