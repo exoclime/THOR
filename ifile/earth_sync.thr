@@ -2,23 +2,23 @@
 # config format version
 config_version = 1
 
-# earth held-suarez model (Held & Suarez 1994)
+# synchronously rotating earth benchmark (Heng+ 2011)
 
 
 #-- Time stepping and output options -----------------------------------------#
 # number of steps
-num_steps = 103680
+num_steps = 172800
 
 # length of timesteps in seconds
-timestep = 1000
+timestep = 600
 
 # output
 # output every n steps
-n_out = 1920
+n_out = 3456
 
 # output directory (relative to current working directory)
 # defaults to 'results'
-results_path = earth_hs
+results_path = tidalearth_results
 
 # calculate and output quantities we hope to conserve
 # angular momentum, energy, mass, (entropy soon)
@@ -33,12 +33,12 @@ simulation_ID = Earth
 radius = 6371000.0
 
 # Rotation rate [rad s^-1]
-rotation_rate = 7.292E-5
+rotation_rate = 1.9964407939767282e-07
 
 # Gravitational acceleration [m/s^2]
 gravitation = 9.8
 
-# Gas constant [J/(Kg K)] (R_univ/mean_molecular_mass)
+# Gas constant [J/(Kg K)]
 Rd = 287.0
 
 # Specific heat capacities [J/(Kg K)]
@@ -47,7 +47,7 @@ Cp = 1005.0
 # Mean atmospheric temperature [K]
 Tmean = 300.0
 
-# Reference surface pressure [Pa] (pressure at bottom of model)
+# Reference surface pressure [Pa]
 P_ref = 100000.0
 
 # Initialize atmosphere with Guillot TP profile (0 = isothermal)?
@@ -59,7 +59,7 @@ TPprof = 0
 Top_altitude = 36000.0
 
 # Horizontal resolution level.
-glevel = 5
+glevel = 4
 
 # Number of vertical layers
 vlevel = 32
@@ -86,7 +86,7 @@ Diffc = 0.0048
 # Non-hydrostatic parameter
 NonHydro = true
 
-# Deep atmosphere (scale quantities for altitude + radius)
+# Deep atmosphere
 DeepModel = true
 
 # Initial conditions
@@ -95,15 +95,15 @@ rest = true
 # initial conditions file, used if rest is set to false
 # (path relative to current working directory)
 # defaults to 'ifile/esp.initial.h5'
-initial = earth_hs/esp_output_Earth_3.h5
+initial = tidalearth_results/esp_output_Earth_29.h5
 
-# Core benchmark tests
+# Core benchmark test
 # Held-Suarez test for Earth == 1
 # Benchmark test for tidally locked Earth == 2
 # Benchmark test for shallow hot Jupiter == 3
 # Benchmark test for deep hot Jupiter == 4
 # No HS test == 0 (model is then forced with grey RT by default)
-core_benchmark = 1
+core_benchmark = 2
 
 # Switch off dynamical core (gcm)
 # This is useful for testing/debugging physics modules
@@ -180,6 +180,7 @@ sync_rot = true
 # (stupid Earth convention applies)
 #longp = 0
 #########################################################
+
 
 #-- Device options -----------------------------------------------------------#
 # GPU ID number

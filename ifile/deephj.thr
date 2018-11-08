@@ -2,75 +2,15 @@
 # config format version
 config_version = 1
 
-# earth model
+# deep hot jupiter benchmark (Heng+ 2011)
 
+
+#-- Time stepping and output options -----------------------------------------#
 # number of steps
 num_steps = 345600
 
-# length of timesteps imn seconds
+# length of timesteps in seconds
 timestep = 300
-
-# keys to add
-# TODO: output_dir # relative to working directory
-
-# planet
-# name of simulation for output files
-simulation_ID = deep
-# Radius [m]
-radius = 9.44e7
-# Rotation rate [s-1]
-rotation_rate = 2.06e-5
-# Gravitational acceleration [m/s^2]
-gravitation = 9.42
-# Gas constant [J/(Kg K)]
-Rd = 4593
-# Specific heat capacities [J/(Kg K)]
-Cp = 14308.4
-# Mean atmospheric temperature [K]
-Tmean = 1759
-# Reference surface pressure [Pa]
-P_ref = 22000000.0
-# Altitude of the top of the model domain [m]
-Top_altitude = 8e6
-# Strength of diffusion
-Diffc = 0.0099
-
-# grid
-# Spring dynamics
-spring_dynamics = true
-# Horizontal resolution level.
-glevel = 4
-# Parameter beta for spring dynamics
-spring_beta = 1.15
-# Number of vertical layers
-vlevel = 40
-
-# diffusion
-# Hyper-diffusion
-HyDiff  =    true
-# Divergence-damping
-DivDampP =    true
-
-# Model options
-# Non-hydrostatic parameter
-NonHydro = true
-# Deep atmosphere
-DeepModel = true
-# Initial conditions
-rest = true
-
-# Benchmark test
-# Held-Suarez test for Earth == 1
-# HS test for shallow hot Jupiter == 3
-# HS test for tidally locked Earth == 2
-# No HS test == 0
-# HS test for deep hot Jupiter == 4
-
-core_benchmark = 4
-
-#Tstar = 4875
-#planet_star_dist = 0.03099
-#radius_star = 0.805
 
 # output directory (relative to current working directory)
 # defaults to 'results'
@@ -80,8 +20,168 @@ results_path = deephj_results
 # output every n steps
 n_out = 6912
 
+# calculate and output quantities we hope to conserve
+# angular momentum, energy, mass, (entropy soon)
+conservation = true
+
+
+#-- Planetary parameters -----------------------------------------------------#
+# name of simulation for output files
+simulation_ID = deep
+
+# Radius [m]
+radius = 9.44e7
+
+# Rotation rate [rad s^-1]
+rotation_rate = 2.06e-5
+
+# Gravitational acceleration [m/s^2]
+gravitation = 9.42
+
+# Gas constant [J/(Kg K)]
+Rd = 4593
+
+# Specific heat capacities [J/(Kg K)]
+Cp = 14308.4
+
+# Mean atmospheric temperature [K]
+Tmean = 1759
+
+# Reference surface pressure [Pa]
+P_ref = 22000000.0
+
+# Initialize atmosphere with Guillot TP profile (0 = isothermal)?
+TPprof = 0
+
+
+#-- Grid options -------------------------------------------------------------#
+# Altitude of the top of the model domain [m]
+Top_altitude = 8e6
+
+# Horizontal resolution level.
+glevel = 4
+
+# Number of vertical layers
+vlevel = 40
+
+# Spring dynamics
+spring_dynamics = true
+
+# Parameter beta for spring dynamics
+spring_beta = 1.15
+
+## diffusion ############################################
+# Hyper-diffusion
+HyDiff  =    true
+
+# Divergence-damping
+DivDampP =    true
+
+# Strength of diffusion
+Diffc = 0.0099
+#########################################################
+
+
+#-- Model options ------------------------------------------------------------#
+# Non-hydrostatic parameter
+NonHydro = true
+
+# Deep atmosphere
+DeepModel = true
+
+# Initial conditions
+rest = true
+
+# initial conditions file, used if rest is set to false
+# (path relative to current working directory)
+# defaults to 'ifile/esp.initial.h5'
+initial = earth_hs/esp_output_Earth_3.h5
+
+# Core benchmark tests
+# Held-Suarez test for Earth == 1
+# Benchmark test for tidally locked Earth == 2
+# Benchmark test for shallow hot Jupiter == 3
+# Benchmark test for deep hot Jupiter == 4
+# No HS test == 0 (model is then forced with grey RT by default)
+core_benchmark = 4
+
+# Switch off dynamical core (gcm)
+# This is useful for testing/debugging physics modules
+gcm_off = false
+
+
+#-- Sponge layer (Rayleigh drag) ---------------------------------------------#
+# use sponge layer (Rayleigh drag) at top of atmosphere?
+SpongeLayer = false
+
+# latitude rings (zonal mean is calculated over these)
+nlat = 20
+
+# bottom of sponge layer (fractional height)
+ns_sponge = 0.75
+
+# strength of sponge layer (1/damping time)
+Rv_sponge = 1e-5
+
+# shrink sponge by half after some time (experimental)
+#shrink_sponge = true
+
+# when to shrink sponge (days)
+#t_shrink = 1
+
+
+#-- Radiative transfer options (core_benchmark = 0) --------------------------#
+## RT parameters #######################################
+# stellar temperature (k)
+Tstar = 5800
+
+# orbital distance or semi-major axis (au)
+planet_star_dist = 1
+
+# radius of host star (R_sun)
+radius_star = 1
+
+# bond albedo of planet
+albedo = 0.3
+
+# grey opt. depth of thermal wavelengths (at ref pressure)
+taulw = 10
+
+# grey opt. depth of incoming stellar flux (at ref pressure)
+tausw = 1.67
+
+# temperature of internal heat flux (bottom boundary) (K)
+Tlow = 50
+
+# diffusivity factor
+diff_fac = 0.5
+#########################################################
+
+## insolation (orbit + spin-state) parameters ###########
+# synchronous rotation (tidally-locking at 1:1)
+sync_rot = true
+
+# mean motion of orbit (if sync_rot=false and ecc>0) (rad/s)
+#mean_motion = 1.98e-7
+
+# initial substellar longitude (deg)
+#alpha_i = 0
+
+# initial orbital position (deg)
+#true_long_i = 0
+
+# eccentricity of orbit
+#ecc = 0
+
+# obliquity (axial-tilt) (deg)
+#obliquity = 0
+
+# longitude of periastron (relative to equinox) (deg)
+# (stupid Earth convention applies)
+#longp = 0
+#########################################################
+
+
+#-- Device options -----------------------------------------------------------#
 # GPU ID number
 GPU_ID_N = 0
-
-TPprof = 0
-gcm_off = false

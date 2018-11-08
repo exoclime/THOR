@@ -2,73 +2,67 @@
 # config format version
 config_version = 1
 
-# earth held-suarez model (Held & Suarez 1994)
+# WASP-43b with grey RT and sponge layer (Mendonca+ 2018)
 
 
 #-- Time stepping and output options -----------------------------------------#
 # number of steps
-num_steps = 103680
+num_steps = 432000
 
 # length of timesteps in seconds
-timestep = 1000
+timestep = 300
 
 # output
 # output every n steps
-n_out = 1920
+n_out = 7200
 
 # output directory (relative to current working directory)
 # defaults to 'results'
-results_path = earth_hs
-
-# calculate and output quantities we hope to conserve
-# angular momentum, energy, mass, (entropy soon)
-conservation = true
+results_path = wasp43b_example
 
 
 #-- Planetary parameters -----------------------------------------------------#
 # name of simulation for output files
-simulation_ID = Earth
+simulation_ID = Wasp43b
 
 # Radius [m]
-radius = 6371000.0
+radius = 72427000.0
 
 # Rotation rate [rad s^-1]
-rotation_rate = 7.292E-5
+rotation_rate = -9.09E-5
 
 # Gravitational acceleration [m/s^2]
-gravitation = 9.8
+gravitation = 47
 
-# Gas constant [J/(Kg K)] (R_univ/mean_molecular_mass)
-Rd = 287.0
+# Gas constant [J/(Kg K)]
+Rd = 3714
 
 # Specific heat capacities [J/(Kg K)]
-Cp = 1005.0
+Cp = 13000
 
 # Mean atmospheric temperature [K]
-Tmean = 300.0
+Tmean = 1800.0
 
-# Reference surface pressure [Pa] (pressure at bottom of model)
-P_ref = 100000.0
-
-# Initialize atmosphere with Guillot TP profile (0 = isothermal)?
-TPprof = 0
+# Reference surface pressure [Pa]
+P_ref = 10000000.0
 
 
 #-- Grid options -------------------------------------------------------------#
 # Altitude of the top of the model domain [m]
-Top_altitude = 36000.0
+Top_altitude = 1.4e6
 
 # Horizontal resolution level.
-glevel = 5
+glevel = 4
 
 # Number of vertical layers
-vlevel = 32
+vlevel = 40
 
 # Spring dynamics
 spring_dynamics = true
 
 # Parameter beta for spring dynamics
 spring_beta = 1.15
+
 
 ## diffusion ############################################
 # Hyper-diffusion
@@ -78,7 +72,7 @@ HyDiff  =    true
 DivDampP =    true
 
 # Strength of diffusion
-Diffc = 0.0048
+Diffc = 0.015
 #########################################################
 
 
@@ -86,7 +80,7 @@ Diffc = 0.0048
 # Non-hydrostatic parameter
 NonHydro = true
 
-# Deep atmosphere (scale quantities for altitude + radius)
+# Deep atmosphere
 DeepModel = true
 
 # Initial conditions
@@ -95,15 +89,15 @@ rest = true
 # initial conditions file, used if rest is set to false
 # (path relative to current working directory)
 # defaults to 'ifile/esp.initial.h5'
-initial = earth_hs/esp_output_Earth_3.h5
+initial = wasp43_sponge2/esp_output_Wasp43b_re.h5
 
-# Core benchmark tests
+# Core benchmark test
 # Held-Suarez test for Earth == 1
 # Benchmark test for tidally locked Earth == 2
 # Benchmark test for shallow hot Jupiter == 3
 # Benchmark test for deep hot Jupiter == 4
 # No HS test == 0 (model is then forced with grey RT by default)
-core_benchmark = 1
+core_benchmark = 0
 
 # Switch off dynamical core (gcm)
 # This is useful for testing/debugging physics modules
@@ -130,28 +124,34 @@ Rv_sponge = 1e-5
 #t_shrink = 1
 
 
+
+Tstar = 4300
+planet_star_dist = 0.015
+radius_star = 0.667
+sync_rot = true
+
 #-- Radiative transfer options (core_benchmark = 0) --------------------------#
 ## RT parameters #######################################
 # stellar temperature (k)
-Tstar = 5800
+Tstar = 4300
 
 # orbital distance or semi-major axis (au)
-planet_star_dist = 1
+planet_star_dist = 0.015
 
 # radius of host star (R_sun)
-radius_star = 1
+radius_star = 0.667
 
 # bond albedo of planet
-albedo = 0.3
+albedo = 0.18
 
 # grey opt. depth of thermal wavelengths (at ref pressure)
-taulw = 10
+taulw = 1064
 
 # grey opt. depth of incoming stellar flux (at ref pressure)
-tausw = 1.67
+tausw = 532
 
 # temperature of internal heat flux (bottom boundary) (K)
-Tlow = 50
+Tlow = 970
 
 # diffusivity factor
 diff_fac = 0.5
@@ -180,6 +180,7 @@ sync_rot = true
 # (stupid Earth convention applies)
 #longp = 0
 #########################################################
+
 
 #-- Device options -----------------------------------------------------------#
 # GPU ID number
