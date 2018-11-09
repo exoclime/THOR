@@ -1481,6 +1481,40 @@ def TPprof(input,grid,output,sigmaref,column):
     plt.savefig(input.resultsf+'/figures/TPprofile_i%d_l%d.pdf'%(output.ntsi,output.nts))
     plt.close()
 
+def PTPprof(input,grid,output,sigmaref,column):
+    Pref = input.P_Ref*sigmaref
+    d_sig = np.size(sigmaref)
+    kappa_ad = input.Rd/input.Cp  # adiabatic coefficient
+
+    tsp = output.nts-output.ntsi+1
+
+    for column in np.arange(0,grid.point_num,50):
+        if tsp > 1:
+            P = np.mean(output.Pressure[column,:,:],axis=2)
+            PT = np.mean(output.Pressure[column,:,:]/(input.Rd*output.Rho[column,:,:]) * \
+                                    (output.Pressure[column,:,:]/input.P_Ref)**(-kappa_ad),axis=2)
+        else:
+            P = output.Pressure[column,:,0]
+            PT = output.Pressure[column,:,0]/(input.Rd*output.Rho[column,:,0]) * \
+                                    (output.Pressure[column,:,0]/input.P_Ref)**(-kappa_ad)
+
+        plt.semilogy(PT,P/1e5,'k-',alpha= 0.5,lw=1)
+        plt.plot(PT[np.int(np.floor(grid.nv/2))],P[np.int(np.floor(grid.nv/2))]/100000,'r+',ms =5,alpha=0.5)
+        plt.plot(PT[np.int(np.floor(grid.nv*0.75))],P[np.int(np.floor(grid.nv*0.75))]/100000,'g+',ms =5,alpha=0.5)
+
+
+    # Tad = T[15]*(P/P[15])**kappa
+
+    # plt.plot(Tad,P/100,'r--')
+    plt.gca().invert_yaxis()
+    plt.ylabel('Pressure (bar)')
+    plt.xlabel('Potential Temperature [K]')
+    plt.title('Time = %#.3f - %#.3f days'%(output.time[0],output.time[-1]))
+    if not os.path.exists(input.resultsf+'/figures'):
+        os.mkdir(input.resultsf+'/figures')
+    plt.savefig(input.resultsf+'/figures/PTPprofile_i%d_l%d.pdf'%(output.ntsi,output.nts))
+    plt.close()
+
 def streamf(input,grid,output,sigmaref):
     # eulerian stream function or mass stream function
     # Set the reference pressure

@@ -50,7 +50,7 @@ parser.add_argument("-slay","--split_layer",nargs=1,default=['no_split'],help='S
 args = parser.parse_args()
 pview = args.pview
 
-valid = ['uver','wver','wprof','Tver','Tulev','PTver','ulev','PVver','PVlev','TP','RVlev','cons','stream','pause','tracer']
+valid = ['uver','wver','wprof','Tver','Tulev','PTver','ulev','PVver','PVlev','TP','RVlev','cons','stream','pause','tracer','PTP']
 if 'all' in pview:
     pview = valid
 else:
@@ -149,6 +149,10 @@ if 'RVlev' in pview:
 #     ham.vring(input,grid,output,sigmaref)
 if 'TP' in pview:
     ham.TPprof(input,grid,output,sigmaref,1902)
+
+if 'PTP' in pview:
+    ham.PTPprof(input,grid,output,sigmaref,1902)
+
 
 if 'cons' in pview:
     if args.split_layer[0] == 'no_split':
