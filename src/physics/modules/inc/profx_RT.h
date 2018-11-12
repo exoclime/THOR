@@ -131,6 +131,14 @@ __device__ double calc_zenith(double *     lonlat_d, //latitude/longitude grid
     return coszrs; //zenith angle
 }
 
+__global__ void annual_insol(double *insol_ann_d,
+                             double *insol_d,
+                             int     nstep) {
+
+    int id = blockIdx.x * blockDim.x + threadIdx.x;
+
+    insol_ann_d[id] = insol_ann_d[id] * (nstep - 1) / nstep + insol_d[id] / nstep;
+}
 
 __device__ void radcsw(double *phtemp,
                        double  coszrs,

@@ -93,3 +93,5 @@
 #define conservation_default false //output energy, mass, angular momentum, etc
 
 #define chemistry_default 0 //use chemical kinetics scheme
+
+#define conv_adj_default 0 // use convective adjustment scheme

@@ -268,7 +268,8 @@ int main(int argc, char** argv) {
     int chemistry = 0;
     config_reader.append_config_var("chemistry", chemistry, chemistry_default);
 
-    int conv = 1;
+    int conv_adj = 1;
+    config_reader.append_config_var("conv_adj", conv_adj, conv_adj_default);
 
     int GPU_ID_N = 0;
     config_reader.append_config_var("GPU_ID_N", GPU_ID_N, GPU_ID_N_default);
@@ -576,7 +577,7 @@ int main(int argc, char** argv) {
                                          DeepModel,             // Use deep model corrections
                                          TPprof,                // isothermal = 0, guillot = 1
                                          core_benchmark,        // argh
-                                         chemistry,                //
+                                         chemistry,             //
                                          step_idx,              // current step index
                                          simulation_start_time, // output:
                                                                 // simulation start time
@@ -766,7 +767,7 @@ int main(int argc, char** argv) {
 
         if (conservation == true) {
             X.conservation(core_benchmark, // Held-Suarez test option
-                           chemistry,         //
+                           chemistry,      //
                            Planet.Omega,   // Rotation rate [1/s]
                            Planet.Cp,      // Specific heat capacity [J/kg/K]
                            Planet.Rd,      // Gas constant [J/kg/K]
@@ -838,15 +839,15 @@ int main(int argc, char** argv) {
                    Planet.P_Ref,  // Reference pressure [Pa]
                    Planet.Gravit, // Gravity [m/s^2]
                    Planet.A,      // Planet radius [m]
-                   chemistry,        //
+                   chemistry,     //
                    NonHydro,      // Non-hydrostatic option
                    DeepModel);    // Deep model option
         }
         //
         //     Physical Core Integration (ProfX)
         X.ProfX(core_benchmark, // Held-Suarez test option
-                chemistry,         //
-                conv,
+                chemistry,      //
+                conv_adj,
                 Planet.Omega,  // Rotation rate [1/s]
                 Planet.Cp,     // Specific heat capacity [J/kg/K]
                 Planet.Rd,     // Gas constant [J/kg/K]
@@ -867,7 +868,7 @@ int main(int argc, char** argv) {
 
         if (conservation == true) {
             X.conservation(core_benchmark, // Held-Suarez test option
-                           chemistry,         //
+                           chemistry,      //
                            Planet.Omega,   // Rotation rate [1/s]
                            Planet.Cp,      // Specific heat capacity [J/kg/K]
                            Planet.Rd,      // Gas constant [J/kg/K]

@@ -21,6 +21,8 @@ bool radiative_transfer::initialise_memory(const ESP &esp) {
 
     insol_h = (double *)malloc(esp.point_num * sizeof(double));
     cudaMalloc((void **)&insol_d, esp.point_num * sizeof(double));
+    insol_ann_h = (double *)malloc(esp.point_num * sizeof(double));
+    cudaMalloc((void **)&insol_ann_d, esp.point_num * sizeof(double));
 
     fnet_up_h = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
     fnet_dn_h = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
@@ -138,6 +140,13 @@ bool radiative_transfer::loop(ESP &  esp,
                                  obliquity,
                                  insol_d);
 
+    if (nstep * time_step < (2 * M_PI / mean_motion)) {
+        // stationary orbit/obliquity
+        // calculate annually average of insolation for the first orbit
+        annual_insol<<<NBRT, NTH>>>(insol_ann_d,
+                                    insol_d,
+                                    nstep);
+    }
     return true;
 }
 
@@ -172,6 +181,13 @@ bool radiative_transfer::store(const ESP &esp,
                    "/insol",
                    "W m^-2",
                    "insolation (instantaneous)");
+
+    cudaMemcpy(insol_ann_h, insol_ann_d, esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
+    s.append_table(insol_ann_h,
+                   esp.point_num,
+                   "/insol_annual",
+                   "W m^-2",
+                   "insolation (annual/orbit averaged)");
 
     cudaMemcpy(fnet_up_h, fnet_up_d, esp.nvi * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
     s.append_table(fnet_up_h,

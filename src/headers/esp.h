@@ -236,7 +236,7 @@ public:
 
     double *vbar_d;
     int *   zonal_mean_tab_d;
-
+    double *pressureh_d; // midpoint pressure used in dry conv adj
 
     //  energy, ang momentum and mass conservation
     double *Etotal_d;     //total energy (internal+kinetic+gravit) in control volume
@@ -370,7 +370,7 @@ public:
                           const std::string &output_dir_);
 
     void conservation(int    core_benchmark, // Held-Suarez test option
-                      int    chemistry,         //
+                      int    chemistry,      //
                       double Omega,          // Rotation rate [1/s]
                       double Cp,             // Specific heat capacity [J/kg/K]
                       double Rd,             // Gas constant [J/kg/K]

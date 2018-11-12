@@ -109,6 +109,9 @@ core_benchmark = 1
 # This is useful for testing/debugging physics modules
 gcm_off = false
 
+# enable convective adjustment scheme
+conv_adj = 0
+
 
 #-- Sponge layer (Rayleigh drag) ---------------------------------------------#
 # use sponge layer (Rayleigh drag) at top of atmosphere?

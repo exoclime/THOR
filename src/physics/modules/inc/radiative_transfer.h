@@ -2,7 +2,7 @@
 
 #include "phy_module_base.h"
 
-class radiative_transfer: public phy_module_base
+class radiative_transfer : public phy_module_base
 {
 public:
     radiative_transfer();
@@ -76,6 +76,8 @@ private:
 
     double *insol_h;
     double *insol_d;
+    double *insol_ann_h;
+    double *insol_ann_d;
 
     //  These arrays are for temporary usage in RT code
     double *dtemp;

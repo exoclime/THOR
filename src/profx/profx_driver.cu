@@ -144,6 +144,25 @@ __host__ void ESP::ProfX(int    core_benchmark, // Held-Suarez test option
     }
 #endif
 
+    if (conv) {
+        cudaDeviceSynchronize();
+        dry_conv_adj<<<NB, NTH>>>(pressure_d,    // Pressure [Pa]
+                                  pressureh_d,   // mid-point pressure [Pa]
+                                  temperature_d, // Temperature [K]
+                                  pt_d,          // Pot temperature [K]
+                                  Rho_d,         // Density [m^3/kg]
+                                  Cp,            // Specific heat capacity [J/kg/K]
+                                  Rd,            // Gas constant [J/kg/K]
+                                  Gravit,        // Gravity [m/s^2]
+                                  Altitude_d,    // Altitudes of the layers
+                                  Altitudeh_d,   // Altitudes of the interfaces
+                                  point_num,     // Number of columns
+                                  nv);           // number of vertical layers
+    }
+
+    BENCH_POINT_I(current_step, "dry_conv_adj ", vector<string>({}), vector<string>({"Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"}))
+
+
     ///////////////////////
     // HELD SUAREZ TEST  //
     ///////////////////////
@@ -255,19 +274,6 @@ __host__ void ESP::ProfX(int    core_benchmark, // Held-Suarez test option
                                                point_num);
     }
 
-    if (conv) {
-        /*       cudaDeviceSynchronize();
-        dry_conv_adj<50><<< NB, NTH >>>(Pressure_d   , // Pressure [Pa]
-                                        Temperature_d, // Temperature [K]
-                                        Rho_d        , // Density [m^3/kg]
-                                        Cp           , // Specific heat capacity [J/kg/K]
-                                        Rd           , // Gas constant [J/kg/K]
-                                        Gravit       , // Gravity [m/s^2]
-                                        Altitude_d   , // Altitudes of the layers
-                                        Altitudeh_d  , // Altitudes of the interfaces
-                                        num          ); // Number of columns
- */
-    }
 
     if (!core_benchmark) {
         cudaDeviceSynchronize();
@@ -285,16 +291,6 @@ __host__ void ESP::ProfX(int    core_benchmark, // Held-Suarez test option
                              A               // Planet radius [m]
         );
     }
-#ifdef BENCH_NAN_CHECK
-    check_h = false;
-    cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
-    isnan_check<<<16, NTH>>>(temperature_d, nv, point_num, check_d);
-    cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
-    if (check_h) {
-        printf("\n\n Error in NAN check after PROFX:RT!\n");
-        exit(EXIT_FAILURE);
-    }
-#endif
 
     BENCH_POINT_I(current_step, "phy_core_benchmark ", vector<string>({}), vector<string>({"Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"}))
     //  Computes the new pressures.
