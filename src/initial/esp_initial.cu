@@ -304,17 +304,9 @@ __host__ bool ESP::initial_values(bool               rest,
                                   const std::string &initial_conditions_filename,
                                   const bool &       continue_sim,
                                   double             timestep_dyn,
-                                  double             A,
-                                  double             Top_altitude,
-                                  double             Cp,
-                                  double             P_Ref,
-                                  double             Gravit,
-                                  double             Omega,
-                                  double             Diffc,
+                                  XPlanet & xplanet,
                                   double             kb,
-                                  double             Tmean,
                                   double             mu,
-                                  double             Rd,
                                   bool               sponge,
                                   bool               DeepModel,
                                   int                TPprof,
@@ -327,26 +319,30 @@ __host__ bool ESP::initial_values(bool               rest,
 
     output_file_idx = 0;
     nstep           = 0;
+
+    planet = xplanet;
+    
     //  Set initial conditions.
     //
     //
     //  Initial atmospheric conditions
     if (rest) {
+        double Ha = planet.Rd * planet.Tmean / planet.Gravit;
         for (int i = 0; i < point_num; i++) {
             //
             //          Initial conditions for an isothermal Atmosphere
             //
-            double Ha = Rd * Tmean / Gravit;
+
             for (int lev = 0; lev < nv; lev++) {
-                pressure_h[i * nv + lev] = P_Ref * exp(-Altitude_h[lev] / Ha);
+                pressure_h[i * nv + lev] = planet.P_Ref * exp(-Altitude_h[lev] / Ha);
                 if (TPprof == 0) {
-                    temperature_h[i * nv + lev] = Tmean;
+                    temperature_h[i * nv + lev] = planet.Tmean;
                 }
                 else if (TPprof == 1) {
                     double tau                  = pressure_h[i * nv + lev] / (1e4); //tau = 1 at 0.1 bar
                     double gamma                = 0.6;                              // ratio of sw to lw opacity
                     double f                    = 0.25;
-                    temperature_h[i * nv + lev] = pow(3 * Tmean * Tmean * Tmean * Tmean * f * (2 / 3 + 1 / (gamma * sqrt(3)) + (gamma / sqrt(3) - 1 / (gamma * sqrt(3))) * exp(-gamma * tau * sqrt(3))), 0.25);
+                    temperature_h[i * nv + lev] = pow(3 * planet.Tmean * planet.Tmean * planet.Tmean * planet.Tmean * f * (2 / 3 + 1 / (gamma * sqrt(3)) + (gamma / sqrt(3) - 1 / (gamma * sqrt(3))) * exp(-gamma * tau * sqrt(3))), 0.25);
                 }
                 if (core_benchmark == 4) {
                     double Ptil = 0.0;
@@ -366,7 +362,7 @@ __host__ bool ESP::initial_values(bool               rest,
 
             for (int lev = 0; lev < nv; lev++) {
                 //              Density [kg/m3]
-                Rho_h[i * nv + lev] = pressure_h[i * nv + lev] / (temperature_h[i * nv + lev] * Rd);
+                Rho_h[i * nv + lev] = pressure_h[i * nv + lev] / (temperature_h[i * nv + lev] * planet.Rd);
 
                 //              Momentum [kg/m3 m/s]
                 Mh_h[i * 3 * nv + 3 * lev + 0] = 0.0;
@@ -397,10 +393,10 @@ __host__ bool ESP::initial_values(bool               rest,
                                    pressure_d,
                                    Rho_d,
                                    temperature_d,
-                                   Cp,
-                                   Rd,
-                                   Omega,
-                                   A,
+                                   planet.Cp,
+                                   planet.Rd,
+                                   planet.Omega,
+                                   planet.A,
                                    Altitude_d,
                                    lonlat_d,
                                    point_num);
@@ -465,8 +461,8 @@ __host__ bool ESP::initial_values(bool               rest,
             // values to check agains variable
             map<string, double> mapValues;
 
-            mapValues["/A"]            = A;
-            mapValues["/Top_altitude"] = Top_altitude;
+            mapValues["/A"]            = planet.A;
+            mapValues["/Top_altitude"] = planet.Top_altitude;
             mapValues["/glevel"]       = glevel;
             mapValues["/vlevel"]       = nv;
 
@@ -528,7 +524,7 @@ __host__ bool ESP::initial_values(bool               rest,
 
         for (int i = 0; i < point_num; i++)
             for (int lev = 0; lev < nv; lev++)
-                temperature_h[i * nv + lev] = pressure_h[i * nv + lev] / (Rd * Rho_h[i * nv + lev]);
+                temperature_h[i * nv + lev] = pressure_h[i * nv + lev] / (planet.Rd * Rho_h[i * nv + lev]);
 
         for (int i = 0; i < point_num; i++) {
             for (int lev = 0; lev < nv; lev++) {
@@ -547,7 +543,7 @@ __host__ bool ESP::initial_values(bool               rest,
     // recompute temperature from pressure and density, to have correct rounding for binary comparison
     for (int i = 0; i < point_num; i++)
         for (int lev = 0; lev < nv; lev++)
-            temperature_h[i * nv + lev] = pressure_h[i * nv + lev] / (Rd * Rho_h[i * nv + lev]);
+            temperature_h[i * nv + lev] = pressure_h[i * nv + lev] / (planet.Rd * Rho_h[i * nv + lev]);
 #endif // BENCHMARKING
 
     //  Diffusion
@@ -557,9 +553,9 @@ __host__ bool ESP::initial_values(bool               rest,
     Kdh4_h = new double[nv];
     for (int lev = 0; lev < nv; lev++) {
         //      Diffusion constant.
-        double dbar = sqrt(2 * M_PI / 5) * A / (pow(2, glevel));
-        Kdh4_h[lev] = Diffc * pow(dbar, 4.) / timestep_dyn;
-        Kdhz_h[lev] = Diffc * pow(dbar, 4.) / timestep_dyn;
+        double dbar = sqrt(2 * M_PI / 5) * planet.A / (pow(2, glevel));
+        Kdh4_h[lev] = planet.Diffc * pow(dbar, 4.) / timestep_dyn;
+        Kdhz_h[lev] = planet.Diffc * pow(dbar, 4.) / timestep_dyn;
     }
 
     // Input for chemistry

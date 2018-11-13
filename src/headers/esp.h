@@ -54,6 +54,7 @@
 #include <iostream>
 
 #include "log_writer.h"
+#include "planet.h"
 
 
 class ESP
@@ -292,17 +293,9 @@ public:
                         const std::string &initial_conditions_filename,
                         const bool &       continue_sim,
                         double             timestep_dyn,
-                        double             A,
-                        double             Top_altitude,
-                        double             Cp,
-                        double             P_Ref,
-                        double             Gravit,
-                        double             Omega,
-                        double             Diffc,
+                        XPlanet &          xplanet,
                         double             kb,
-                        double             Tmean,
                         double             mu,
-                        double             Rd,
                         bool               sponge,
                         bool               DeepModel,
                         int                TPprof,
@@ -370,7 +363,7 @@ public:
                           const std::string &output_dir_);
 
     void conservation(int    core_benchmark, // Held-Suarez test option
-                      int    chemistry,         //
+                      int    chemistry,      //
                       double Omega,          // Rotation rate [1/s]
                       double Cp,             // Specific heat capacity [J/kg/K]
                       double Rd,             // Gas constant [J/kg/K]
@@ -390,6 +383,8 @@ private:
     int    current_step;
     double simulation_time;
     double timestep;
+
+    XPlanet planet;
 
     // output variables
     std::string simulation_ID; // name of output planet
