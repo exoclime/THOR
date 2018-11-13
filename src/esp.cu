@@ -560,19 +560,9 @@ int main(int argc, char** argv) {
                                                                 // continue or
                                                                 // start at 0?
                                          timestep,              // Time-step [s]
-                                         Planet.A,              // Planet
-                                                                // radius [m]
-                                         Planet.Top_altitude,   // Planet
-                                                                // top altitude
-                                         Planet.Cp,             // Specific heat capacity [J /(kg K)]
-                                         Planet.P_Ref,          // Reference pressure [Pa]
-                                         Planet.Gravit,         // Gravity [m/s^2]
-                                         Planet.Omega,          // Rotation rate [1/s]
-                                         Planet.Diffc,          // Strength of diffusion
+                                         Planet,                // Planet
                                          kb_constant,           // Boltzmann constant [J/kg]
-                                         Planet.Tmean,          // Isothermal atmosphere (at temperature Tmean)
                                          mu_constant,           // Atomic mass unit [kg]
-                                         Planet.Rd,             // Gas constant [J/kg/K]
                                          SpongeLayer,           // Enable sponge layer
                                          DeepModel,             // Use deep model corrections
                                          TPprof,                // isothermal = 0, guillot = 1

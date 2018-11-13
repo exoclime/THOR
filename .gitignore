@@ -15,12 +15,15 @@ Makefile.conf
 #  submodule binary and object files
 src/physics/managers/empty/libphy_modules.a
 src/physics/managers/empty/obj/*
+src/physics/managers/empty/*.o
 src/physics/managers/multi/libphy_modules.a
 src/physics/managers/multi/obj/*
-src/physics/managers/simple/libphy_modules.a
-src/physics/managers/simple/obj/*
+src/physics/managers/multi/*.o
 # output data
 results*/
 # profiling data
 profiling/*
+# compile command database
+compile_commands.json
+
 

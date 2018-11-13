@@ -5,10 +5,10 @@ config_version = 1
 # earth model
 
 # number of steps
-num_steps = 5184000
+num_steps = 432000
 
 # length of timesteps imn seconds
-timestep = 120
+timestep = 300
 
 # keys to add
 # TODO: output_dir # relative to working directory
@@ -27,11 +27,11 @@ Rd = 3779
 # Specific heat capacities [J/(Kg K)]
 Cp = 13226.82
 # Mean atmospheric temperature [K]
-Tmean = 1200.0
+Tmean = 1600.0
 # Reference surface pressure [Pa]
 P_ref = 22000000.0
 # Altitude of the top of the model domain [m]
-Top_altitude = 2.5e6
+Top_altitude = 3.5e6
 # Strength of diffusion
 Diffc = 0.009973
 
@@ -60,7 +60,7 @@ DeepModel = true
 rest = true
 
 # Spongebob
-SpongeLayer = false
+SpongeLayer = true
 # latitude rings
 nlat = 20
 ns_sponge = 0.8
@@ -77,11 +77,13 @@ core_benchmark = 0
 Tstar = 4875
 planet_star_dist = 0.03099
 radius_star = 0.805
+taulw = 2340
+tausw = 1170
 
 # output
 # output every n steps
-n_out = 10
-results_path = hd189_test
+n_out = 7200
+results_path = hd189_big_dt
 conv_adj = 0
 
 # GPU ID number
