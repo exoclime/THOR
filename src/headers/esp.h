@@ -53,9 +53,9 @@
 #include <fstream>
 #include <iostream>
 
+#include "define.h"
 #include "log_writer.h"
 #include "planet.h"
-
 
 class ESP
 {
@@ -299,7 +299,7 @@ public:
                         bool               sponge,
                         bool               DeepModel,
                         int                TPprof,
-                        int                core_benchmark,
+                        benchmark_types    core_benchmark,
                         int                chemistry,
                         int &              nsteps,
                         double &           simulation_start_time,
@@ -329,7 +329,7 @@ public:
               bool,
               bool);
 
-    void ProfX(int,
+    void ProfX(benchmark_types,
                int,
                int,
                double,
@@ -355,24 +355,24 @@ public:
                 double,
                 double,
                 bool,
-                int,
+                benchmark_types,
                 bool,
                 int);
 
     void set_output_param(const std::string &sim_id_,
                           const std::string &output_dir_);
 
-    void conservation(int    core_benchmark, // Held-Suarez test option
-                      int    chemistry,      //
-                      double Omega,          // Rotation rate [1/s]
-                      double Cp,             // Specific heat capacity [J/kg/K]
-                      double Rd,             // Gas constant [J/kg/K]
-                      double mu,             // Atomic mass unit [kg]
-                      double kb,             // Boltzmann constant [J/K]
-                      double P_Ref,          // Reference pressure [Pa]
-                      double Gravit,         // Gravity [m/s^2]
-                      double A,              // Planet radius [m]
-                      bool   DeepModel);
+    void conservation(benchmark_types core_benchmark, // Held-Suarez test option
+                      int             chemistry,      //
+                      double          Omega,          // Rotation rate [1/s]
+                      double          Cp,             // Specific heat capacity [J/kg/K]
+                      double          Rd,             // Gas constant [J/kg/K]
+                      double          mu,             // Atomic mass unit [kg]
+                      double          kb,             // Boltzmann constant [J/K]
+                      double          P_Ref,          // Reference pressure [Pa]
+                      double          Gravit,         // Gravity [m/s^2]
+                      double          A,              // Planet radius [m]
+                      bool            DeepModel);
 
     void copy_to_host();
     void copy_conservation_to_host();

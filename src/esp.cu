@@ -262,8 +262,8 @@ int main(int argc, char** argv) {
     config_reader.append_config_var("initial", initial_conditions, string(initial_conditions_default));
 
     // Benchmark test
-    int core_benchmark = 1;
-    config_reader.append_config_var("core_benchmark", core_benchmark, core_benchmark_default);
+    string core_benchmark_str("HeldSuarez");
+    config_reader.append_config_var("core_benchmark", core_benchmark_str, string(core_benchmark_default));
 
     int chemistry = 0;
     config_reader.append_config_var("chemistry", chemistry, chemistry_default);
@@ -387,7 +387,6 @@ int main(int argc, char** argv) {
 
     config_OK &= check_range("glevel", glevel, 3, 8);
     config_OK &= check_greater("vlevel", vlevel, 0);
-    config_OK &= check_range("core_benchmark", core_benchmark, -1, 6);
 
     config_OK &= check_greater("GPU_ID_N", GPU_ID_N, -1);
     config_OK &= check_greater("n_out", n_out, 0);
@@ -402,6 +401,39 @@ int main(int argc, char** argv) {
 
         config_OK = false;
     }
+
+    // Check core benchmark string
+    benchmark_types core_benchmark = HELD_SUAREZ;
+
+    if (core_benchmark_str == "NoBenchmark") {
+        core_benchmark = NO_BENCHMARK;
+        config_OK &= true;
+    }
+    else if (core_benchmark_str == "HeldSuarez") {
+        core_benchmark = HELD_SUAREZ;
+        config_OK &= true;
+    }
+    else if (core_benchmark_str == "HSShallowHotJupiter") {
+        core_benchmark = HS_SHALLOW_HOT_JUPITER;
+        config_OK &= true;
+    }
+    else if (core_benchmark_str == "HSDeepHotJupiter") {
+        core_benchmark = HS_DEEP_HOT_JUPITER;
+        config_OK &= true;
+    }
+    else if (core_benchmark_str == "HSTidallyLockedEarth") {
+        core_benchmark = HS_TIDALLY_LOCKED_EARTH;
+        config_OK &= true;
+    }
+    else if (core_benchmark_str == "JetSteady") {
+        core_benchmark = JET_STEADY;
+        config_OK &= true;
+    }
+    else {
+        printf("core_benchmark config item not recognised: [%s]\n", core_benchmark_str.c_str());
+        config_OK &= false;
+    }
+
 
     if (!config_OK) {
         printf("Error in configuration file\n");
@@ -575,7 +607,7 @@ int main(int argc, char** argv) {
                                                                 // if nothing read
                                          conservation);
 
-    if (core_benchmark == 0) {
+    if (core_benchmark == NO_BENCHMARK) {
         phy_modules_init_data(X, Planet);
     }
 
@@ -718,6 +750,10 @@ int main(int argc, char** argv) {
 
     printf("    \n");
 
+    printf("   Running Core Benchmark test \"%s\" (%d).\n", core_benchmark_str.c_str(), int(core_benchmark));
+    
+    printf("    \n");
+    
     printf("   Start from rest = %s \n", rest ? "true" : "false");
     if (!rest)
         printf("   Loading initial conditions from = %s \n", initial_conditions.c_str());

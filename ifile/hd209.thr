@@ -59,14 +59,13 @@ DeepModel = true
 # Initial conditions
 rest = true
 
-# Benchmark test
-# Held-Suarez test for Earth == 1
-# HS test for shallow hot Jupiter == 3
-# HS test for tidally locked Earth == 2
-# No HS test == 0
-# HS test for deep hot Jupiter == 4
-
-core_benchmark = 0
+# Core benchmark tests
+# Held-Suarez test for Earth == HeldSuarez
+# Benchmark test for shallow hot Jupiter == HSShallowHotJupiter
+# Benchmark test for deep hot Jupiter == HSDeepHotJupiter
+# Benchmark test for tidally locked Earth == HSTidallyLockedEarth
+# No HS test == NoBenchmark (model is then forced with grey RT by default)
+core_benchmark = NoBenchmark
 
 # Spongebob
 SpongeLayer = false

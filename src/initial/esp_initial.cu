@@ -45,9 +45,9 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
+#include "../headers/phy/chemistry_host.h"
 #include "../headers/phy/valkyrie_conservation.h"
 #include "../headers/phy/valkyrie_jet_steadystate.h"
-#include "../headers/phy/chemistry_host.h"
 #include "directories.h"
 #include "esp.h"
 #include "hdf5.h"
@@ -86,7 +86,7 @@ __host__ ESP::ESP(int *       point_local_,
                   double      t_shrink_,
                   int         point_num_,
                   bool        conservation,
-                  log_writer &logwriter_):
+                  log_writer &logwriter_) :
     nl_region(nl_region_),
     nr(nr_),
     point_num(point_num_),
@@ -304,13 +304,13 @@ __host__ bool ESP::initial_values(bool               rest,
                                   const std::string &initial_conditions_filename,
                                   const bool &       continue_sim,
                                   double             timestep_dyn,
-                                  XPlanet & xplanet,
+                                  XPlanet &          xplanet,
                                   double             kb,
                                   double             mu,
                                   bool               sponge,
                                   bool               DeepModel,
                                   int                TPprof,
-                                  int                core_benchmark,
+                                  benchmark_types    core_benchmark,
                                   int                chemistry,
                                   int &              nstep,
                                   double &           simulation_start_time,
@@ -321,7 +321,7 @@ __host__ bool ESP::initial_values(bool               rest,
     nstep           = 0;
 
     planet = xplanet;
-    
+
     //  Set initial conditions.
     //
     //
@@ -344,7 +344,7 @@ __host__ bool ESP::initial_values(bool               rest,
                     double f                    = 0.25;
                     temperature_h[i * nv + lev] = pow(3 * planet.Tmean * planet.Tmean * planet.Tmean * planet.Tmean * f * (2 / 3 + 1 / (gamma * sqrt(3)) + (gamma / sqrt(3) - 1 / (gamma * sqrt(3))) * exp(-gamma * tau * sqrt(3))), 0.25);
                 }
-                if (core_benchmark == 4) {
+                if (core_benchmark == HS_DEEP_HOT_JUPITER) {
                     double Ptil = 0.0;
                     if (pressure_h[i * nv + lev] >= 1e5) {
                         Ptil = log10(pressure_h[i * nv + lev] / 100000);
@@ -375,7 +375,7 @@ __host__ bool ESP::initial_values(bool               rest,
             }
             Wh_h[i * (nv + 1) + nv] = 0.0;
         }
-        if (core_benchmark == 5) {
+        if (core_benchmark == JET_STEADY) {
             //  Number of threads per block.
             const int NTH = 256;
 
