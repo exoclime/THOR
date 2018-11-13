@@ -128,7 +128,7 @@ __host__ ESP::ESP(int *           point_local_,
 
     //
     //  Allocate Data
-    if (core_benchmark != NO_BENCHMARK)
+    if (core_benchmark == NO_BENCHMARK)
         alloc_data(conservation);
 }
 
@@ -301,7 +301,7 @@ __host__ void ESP::alloc_data(bool conservation) {
         cudaMalloc((void **)&GlobalAMz_d, 1 * sizeof(double));
     }
     // PHY modules
-    if (core_benchmark != NO_BENCHMARK)
+    if (core_benchmark == NO_BENCHMARK)
         phy_modules_init_mem(*this);
 }
 
@@ -895,7 +895,7 @@ __host__ ESP::~ESP() {
     cudaFree(GlobalAMy_d);
     cudaFree(GlobalAMz_d);
 
-    if (core_benchmark != NO_BENCHMARK)
+    if (core_benchmark == NO_BENCHMARK)
         phy_modules_free_mem();
 
 
