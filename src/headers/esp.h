@@ -57,6 +57,8 @@
 #include "log_writer.h"
 #include "planet.h"
 
+#include "dyn/phy_modules_device.h"
+
 class ESP
 {
 
@@ -392,4 +394,6 @@ private:
 
 
     log_writer &logwriter;
+
+    device_RK_array_manager phy_modules_core_arrays;
 };

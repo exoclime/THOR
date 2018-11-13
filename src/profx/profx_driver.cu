@@ -42,16 +42,16 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
-#include "../headers/esp.h"
-#include "../headers/phy/chemistry_device.h" // Simple chemistry.
-#include "../headers/phy/dry_conv_adj.h"
-#include "../headers/phy/profx_auxiliary.h"
-#include "../headers/phy/profx_conservation.h"
-#include "../headers/phy/profx_deepHJ.h"
-#include "../headers/phy/profx_held_suarez.h"
-#include "../headers/phy/profx_shallowHJ.h"
-#include "../headers/phy/profx_sponge.h"
-#include "../headers/phy/profx_tidalearth.h"
+#include "esp.h"
+#include "phy/profx_sponge.h"
+#include "phy/chemistry_device.h" // Simple chemistry.
+#include "phy/dry_conv_adj.h"
+#include "phy/profx_auxiliary.h"
+#include "phy/profx_deepHJ_hs.h"
+#include "phy/profx_held_suarez.h"
+#include "phy/profx_shallowHJ_hs.h"
+#include "phy/profx_tidalearth_hs.h"
+#include "phy/profx_conservation.h"
 
 #include "binary_test.h"
 #include "debug_helpers.h"

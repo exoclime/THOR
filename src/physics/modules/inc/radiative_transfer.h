@@ -20,7 +20,7 @@
 //
 //
 //
-// Method: Chemistry physics module
+// Method: Radiative transfer physics module
 //
 //
 // Known limitations: - Runs in a single GPU.

@@ -43,6 +43,11 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
+#include "phy_modules_device.h"
+
+extern __constant__ device_RK_array* dynamical_core_phy_modules_arrays;
+extern __constant__ int              num_dynamical_arrays;
+
 __global__ void Compute_Temperature_H_Pt_Geff(double *temperature_d,
                                               double *pressure_d,
                                               double *Rho_d,
@@ -282,12 +287,24 @@ __global__ void UpdateRK(double *M_d,
             // Pressure
             pressure_d[id * nv + lev] = pressurei_d[id * nv + lev] - pressurek_d[id * nv + lev];
 
+            // phy modules arrays from array defs
+            for (int i = 0; i < num_dynamical_arrays; i++) {
+                int     num_dim = dynamical_core_phy_modules_arrays[i].dimensions;
+                double *array   = dynamical_core_phy_modules_arrays[i].array_d;
+                double *arrayi  = dynamical_core_phy_modules_arrays[i].arrayi_d;
+                double *arrayk  = dynamical_core_phy_modules_arrays[i].arrayk_d;
+                for (int itr = 0; itr < num_dim; itr++) {
+                    array[(id * nv + lev) * num_dim + itr] = arrayi[(id * nv + lev) * num_dim + itr] - arrayk[(id * nv + lev) * num_dim + itr];
+                }
+            }
+            /*
             // Tracers
             if (vulcan == 1) {
                 for (int itr = 0; itr < ntr; itr++) {
                     tracer_d[id * nv * ntr + lev * ntr + itr] = traceri_d[id * nv * ntr + lev * ntr + itr] - tracerk_d[id * nv * ntr + lev * ntr + itr];
                 }
             }
+            */
         }
         // Wh
         for (int lev = 0; lev < nv + 1; lev++) {
@@ -385,9 +402,22 @@ __global__ void UpdateRK2(double *M_d,
             // Pressure
             pressurek_d[id * nv + lev] += pressure_d[id * nv + lev];
 
+            // phy modules arrays from array defs
+            for (int i = 0; i < num_dynamical_arrays; i++) {
+                int     num_dim = dynamical_core_phy_modules_arrays[i].dimensions;
+                double *array   = dynamical_core_phy_modules_arrays[i].array_d;
+                double *arrayk  = dynamical_core_phy_modules_arrays[i].arrayk_d;
+                for (int itr = 0; itr < num_dim; itr++) {
+                    arrayk[(id * nv + lev) * num_dim + itr] += array[(id * nv + lev) * num_dim + itr];
+                }
+            }
+
+            /*
             //Tracers
             if (vulcan == 1)
-                for (int itr = 0; itr < ntr; itr++) tracerk_d[id * nv * ntr + lev * ntr + itr] += tracer_d[id * nv * ntr + lev * ntr + itr];
+                for (int itr = 0; itr < ntr; itr++) tracerk_d[id * nv * ntr + lev * ntr + itr] +=
+            tracer_d[id * nv * ntr + lev * ntr + itr];
+            */
         }
         // Wh
         for (int lev = 0; lev < nv + 1; lev++) {
