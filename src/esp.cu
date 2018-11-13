@@ -558,6 +558,7 @@ int main(int argc, char** argv) {
           t_shrink,                   // time to shrink sponge layer
           Grid.point_num,             // Number of grid points
           conservation,               // compute conservation values
+          core_benchmark,             // benchmark test type
           logwriter);                 // Log writer
 
     USE_BENCHMARK();
@@ -597,7 +598,6 @@ int main(int argc, char** argv) {
                                          SpongeLayer,           // Enable sponge layer
                                          DeepModel,             // Use deep model corrections
                                          TPprof,                // isothermal = 0, guillot = 1
-                                         core_benchmark,        // argh
                                          chemistry,             //
                                          step_idx,              // current step index
                                          simulation_start_time, // output:
@@ -751,9 +751,9 @@ int main(int argc, char** argv) {
     printf("    \n");
 
     printf("   Running Core Benchmark test \"%s\" (%d).\n", core_benchmark_str.c_str(), int(core_benchmark));
-    
+
     printf("    \n");
-    
+
     printf("   Start from rest = %s \n", rest ? "true" : "false");
     if (!rest)
         printf("   Loading initial conditions from = %s \n", initial_conditions.c_str());
@@ -791,16 +791,15 @@ int main(int argc, char** argv) {
         X.init_timestep(0, simulation_time, timestep);
 
         if (conservation == true) {
-            X.conservation(core_benchmark, // Held-Suarez test option
-                           chemistry,      //
-                           Planet.Omega,   // Rotation rate [1/s]
-                           Planet.Cp,      // Specific heat capacity [J/kg/K]
-                           Planet.Rd,      // Gas constant [J/kg/K]
-                           mu_constant,    // Atomic mass unit [kg]
-                           kb_constant,    // Boltzmann constant [J/K]
-                           Planet.P_Ref,   // Reference pressure [Pa]
-                           Planet.Gravit,  // Gravity [m/s^2]
-                           Planet.A,       // Planet radius [m]
+            X.conservation(chemistry,     //
+                           Planet.Omega,  // Rotation rate [1/s]
+                           Planet.Cp,     // Specific heat capacity [J/kg/K]
+                           Planet.Rd,     // Gas constant [J/kg/K]
+                           mu_constant,   // Atomic mass unit [kg]
+                           kb_constant,   // Boltzmann constant [J/K]
+                           Planet.P_Ref,  // Reference pressure [Pa]
+                           Planet.Gravit, // Gravity [m/s^2]
+                           Planet.A,      // Planet radius [m]
                            DeepModel);
 
             logwriter.output_conservation(0,
@@ -821,7 +820,6 @@ int main(int argc, char** argv) {
                  Planet.Top_altitude, // Top of the model's domain [m]
                  Planet.A,            // Planet Radius [m]
                  conservation,
-                 core_benchmark,
                  SpongeLayer,
                  chemistry);
         output_file_idx = 1;
@@ -870,8 +868,7 @@ int main(int argc, char** argv) {
         }
         //
         //     Physical Core Integration (ProfX)
-        X.ProfX(core_benchmark, // Held-Suarez test option
-                chemistry,      //
+        X.ProfX(chemistry, //
                 conv,
                 Planet.Omega,  // Rotation rate [1/s]
                 Planet.Cp,     // Specific heat capacity [J/kg/K]
@@ -892,8 +889,7 @@ int main(int argc, char** argv) {
         bool file_output = false;
 
         if (conservation == true) {
-            X.conservation(core_benchmark, // Held-Suarez test option
-                           chemistry,      //
+            X.conservation(chemistry,      //
                            Planet.Omega,   // Rotation rate [1/s]
                            Planet.Cp,      // Specific heat capacity [J/kg/K]
                            Planet.Rd,      // Gas constant [J/kg/K]
@@ -926,7 +922,6 @@ int main(int argc, char** argv) {
                      Planet.Top_altitude, // Top of the model's domain [m]
                      Planet.A,            // Planet radius [m]
                      conservation,
-                     core_benchmark,
                      SpongeLayer,
                      chemistry);
             // increment output file index

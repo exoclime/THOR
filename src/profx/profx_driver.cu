@@ -60,22 +60,21 @@
 
 #include "reduction_add.h"
 
-__host__ void ESP::ProfX(benchmark_types core_benchmark, // Held-Suarez test option
-                         int             chemistry,      // Use chemistry
-                         int             conv,           //
-                         double          Omega,          // Rotation rate [1/s]
-                         double          Cp,             // Specific heat capacity [J/kg/K]
-                         double          Rd,             // Gas constant [J/kg/K]
-                         double          mu,             // Atomic mass unit [kg]
-                         double          kb,             // Boltzmann constant [J/K]
-                         double          P_Ref,          // Reference pressure [Pa]
-                         double          Gravit,         // Gravity [m/s^2]
-                         double          A,              // Planet radius [m]
-                         bool            DeepModel,
-                         int             n_out,         // output step (triggers conservation calc)
-                         bool            sponge,        // Use sponge layer?
-                         bool            shrink_sponge, // Shrink sponge after some time (Bonjour Urs!)
-                         bool            conservation) {           // calc/output conservation quantities
+__host__ void ESP::ProfX(int    chemistry, // Use chemistry
+                         int    conv,      //
+                         double Omega,     // Rotation rate [1/s]
+                         double Cp,        // Specific heat capacity [J/kg/K]
+                         double Rd,        // Gas constant [J/kg/K]
+                         double mu,        // Atomic mass unit [kg]
+                         double kb,        // Boltzmann constant [J/K]
+                         double P_Ref,     // Reference pressure [Pa]
+                         double Gravit,    // Gravity [m/s^2]
+                         double A,         // Planet radius [m]
+                         bool   DeepModel,
+                         int    n_out,         // output step (triggers conservation calc)
+                         bool   sponge,        // Use sponge layer?
+                         bool   shrink_sponge, // Shrink sponge after some time (Bonjour Urs!)
+                         bool   conservation) {  // calc/output conservation quantities
     USE_BENCHMARK()
     //
     //  Number of threads per block.
@@ -333,17 +332,16 @@ __host__ void ESP::ProfX(benchmark_types core_benchmark, // Held-Suarez test opt
 }
 
 // TODO: get constants out of arguments
-void ESP::conservation(benchmark_types core_benchmark, // Held-Suarez test option
-                       int             chemistry,      //
-                       double          Omega,          // Rotation rate [1/s]
-                       double          Cp,             // Specific heat capacity [J/kg/K]
-                       double          Rd,             // Gas constant [J/kg/K]
-                       double          mu,             // Atomic mass unit [kg]
-                       double          kb,             // Boltzmann constant [J/K]
-                       double          P_Ref,          // Reference pressure [Pa]
-                       double          Gravit,         // Gravity [m/s^2]
-                       double          A,              // Planet radius [m]
-                       bool            DeepModel) {
+void ESP::conservation(int    chemistry, //
+                       double Omega,     // Rotation rate [1/s]
+                       double Cp,        // Specific heat capacity [J/kg/K]
+                       double Rd,        // Gas constant [J/kg/K]
+                       double mu,        // Atomic mass unit [kg]
+                       double kb,        // Boltzmann constant [J/K]
+                       double P_Ref,     // Reference pressure [Pa]
+                       double Gravit,    // Gravity [m/s^2]
+                       double A,         // Planet radius [m]
+                       bool   DeepModel) {
     //
     //  Number of threads per block.
     const int NTH = 256;

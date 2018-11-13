@@ -61,7 +61,7 @@ rest = true
 
 # Core benchmark tests
 # Held-Suarez test for Earth == HeldSuarez
-# Benchmark test for shallow hot Jupiter == HSHotJupiter
+# Benchmark test for shallow hot Jupiter == HSShallowHotJupiter
 # Benchmark test for deep hot Jupiter == HSDeepHotJupiter
 # Benchmark test for tidally locked Earth == HSTidallyLockedEarth
 # No HS test == NoBenchmark (model is then forced with grey RT by default)

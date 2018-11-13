@@ -96,7 +96,6 @@ __host__ void ESP::output(int             fidx,         // Index of output file
                           double          Top_altitude, // Top of the model's domain [m]
                           double          A,
                           bool            conservation,
-                          benchmark_types core_benchmark,
                           bool            SpongeLayer,
                           int             chemistry) {
 
@@ -199,7 +198,8 @@ __host__ void ESP::output(int             fidx,         // Index of output file
             s.append_value(Rv_sponge, "/Rv_sponge", "1/s", "Stength of sponge layer");
         }
 
-        phy_modules_store_init(s);
+        if (core_benchmark == NO_BENCHMARK)
+            phy_modules_store_init(s);
     }
 
     //  ESP OUTPUT
@@ -321,7 +321,9 @@ __host__ void ESP::output(int             fidx,         // Index of output file
                        "kg m^2/s",
                        "Global AngMomZ");
     }
-    phy_modules_store(*this, s);
+
+    if (core_benchmark == NO_BENCHMARK)
+        phy_modules_store(*this, s);
 
     char buf[256];
 
