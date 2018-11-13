@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <string>
+
 #include "config_file.h"
 #include "define.h"
 #include "esp.h"
@@ -9,12 +11,22 @@
 #include "planet.h"
 #include "storage.h"
 
+// return name of module for storage to output files
+std::string phy_modules_get_name();
+
+// can print out configurations 
+void phy_modules_print_config();
+
+// add config variables for this module to main config reader
 bool phy_modules_generate_config(config_file& config_reader);
-bool phy_modules_init_data(const ESP& esp, const XPlanet& planet);
 
-
+// allocate and free memory localy and on device for this module
 bool phy_modules_init_mem(const ESP& esp);
 bool phy_modules_free_mem();
+
+// initialise data
+bool phy_modules_init_data(const ESP& esp, const XPlanet& planet);
+
 
 // TODO: what do we need here? esp,planet, grid???
 bool phy_modules_mainloop(ESP&            esp,

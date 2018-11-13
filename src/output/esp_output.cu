@@ -195,11 +195,18 @@ __host__ void ESP::output(int             fidx,         // Index of output file
             //      ns
             s.append_value(ns_sponge, "/ns_sponge", "-", "Bottom of sponge layer");
             //      Rv
-            s.append_value(Rv_sponge, "/Rv_sponge", "1/s", "Stength of sponge layer");
+            s.append_value(Rv_sponge, "/Rv_sponge", "1/s", "Strength of sponge layer");
         }
-
+                
+        // store module name in the description
+        s.append_value(0.0, "/phy_module", "-", phy_modules_get_name());
+        
         if (core_benchmark == NO_BENCHMARK)
+        {
+            
             phy_modules_store_init(s);
+        }
+        
     }
 
     //  ESP OUTPUT

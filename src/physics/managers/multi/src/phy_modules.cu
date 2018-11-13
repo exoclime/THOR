@@ -15,7 +15,19 @@
 // define all the modules we want to use
 radiative_transfer rt;
 
+std::string phy_modules_get_name()
+{
+    return std::string("multi");
+}
 
+void phy_modules_print_config()
+{
+    printf("  multi physics module, with radiative transfer\n");
+    rt.print_config();
+}
+
+
+        
 bool phy_modules_init_mem(const ESP& esp) {
     // initialise all the modules memory
 

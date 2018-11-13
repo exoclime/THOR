@@ -749,13 +749,26 @@ int main(int argc, char** argv) {
     printf("   Time integration =  %d s.\n", nsmax * timestep);
     printf("   Large time-step  =  %d s.\n", timestep);
     printf("   Start time       =  %f s.\n", simulation_start_time);
-
+    
     printf("    \n");
 
     printf("   Running Core Benchmark test \"%s\" (%d).\n", core_benchmark_str.c_str(), int(core_benchmark));
 
     printf("    \n");
 
+    printf(" Physics module: %s   \n", phy_modules_get_name().c_str());
+    
+    if (core_benchmark == NO_BENCHMARK)
+    {
+
+        printf("    \n");
+        phy_modules_print_config();
+        printf("    \n");
+    }
+    
+    printf("    \n");
+    printf(" Simulation\n");
+    
     printf("   Start from rest = %s \n", rest ? "true" : "false");
     if (!rest)
         printf("   Loading initial conditions from = %s \n", initial_conditions.c_str());

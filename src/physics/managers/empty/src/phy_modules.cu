@@ -5,6 +5,16 @@
 
 #include "phy_modules.h"
 
+std::string phy_modules_get_name()
+{
+    return std::string("empty");
+}
+
+void phy_modules_print_config()
+{
+    printf("  empty physics module\n");
+    
+}
 
 bool phy_modules_init_mem(const ESP& esp) {
 
