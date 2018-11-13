@@ -325,7 +325,7 @@ __host__ bool ESP::initial_values(bool               rest,
     nstep           = 0;
 
     // Store some general configs
-    planet         = xplanet;
+    planet = xplanet;
 
     //  Set initial conditions.
     //
@@ -501,7 +501,6 @@ __host__ bool ESP::initial_values(bool               rest,
 
         //      Restart from an existing simulation.
         {
-
             // Load atmospheric data
             hid_t file_id;
             file_id = H5Fopen(initial_conditions_filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
