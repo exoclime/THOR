@@ -39,9 +39,16 @@ bool phy_modules_init_mem(const ESP& esp) {
 }
 
 bool phy_modules_init_data(const ESP&     esp,
-                           const XPlanet& planet) {
+                           const XPlanet& planet,
+                           storage * s) {
     bool out = true;
     // initialise all the modules data
+
+    if (s != nullptr)
+    {
+        // load initialisation data from storage s
+    }
+    
 
     rt.initial_conditions(esp, planet);
 

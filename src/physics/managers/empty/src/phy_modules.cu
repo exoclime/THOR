@@ -22,7 +22,8 @@ bool phy_modules_init_mem(const ESP& esp) {
 }
 
 bool phy_modules_init_data(const ESP&     esp,
-                           const XPlanet& planet) {
+                           const XPlanet& planet,
+                           storage * s) {
 
     return true;
 }

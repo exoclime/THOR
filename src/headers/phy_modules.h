@@ -25,7 +25,9 @@ bool phy_modules_init_mem(const ESP& esp);
 bool phy_modules_free_mem();
 
 // initialise data
-bool phy_modules_init_data(const ESP& esp, const XPlanet& planet);
+bool phy_modules_init_data(const ESP& esp,
+                           const XPlanet& planet,
+                           storage * s = nullptr);
 
 
 // TODO: what do we need here? esp,planet, grid???

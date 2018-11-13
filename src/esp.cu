@@ -670,6 +670,7 @@ int main(int argc, char** argv) {
                                                                 // read + 1, 0
                                                                 // if nothing read
                                          conservation);
+    
     if (core_benchmark == NO_BENCHMARK) {
         phy_modules_init_data(X, Planet);
     }

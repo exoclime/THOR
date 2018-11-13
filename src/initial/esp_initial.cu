@@ -683,7 +683,7 @@ __host__ bool ESP::initial_values(bool               rest,
         }
     }
 
-    //  Copy memory to the devide
+    //  Copy memory to the device
     cudaMemcpy(point_local_d, point_local_h, 6 * point_num * sizeof(int), cudaMemcpyHostToDevice);
     cudaMemcpy(maps_d, maps_h, (nl_region + 2) * (nl_region + 2) * nr * sizeof(int), cudaMemcpyHostToDevice);
     cudaMemcpy(Altitude_d, Altitude_h, nv * sizeof(double), cudaMemcpyHostToDevice);
@@ -767,6 +767,18 @@ __host__ bool ESP::initial_values(bool               rest,
     delete[] Kdh4_h;
     delete[] Kdhz_h;
 
+
+    if (core_benchmark == NO_BENCHMARK) {
+        if (rest)
+            phy_modules_init_data(*this, planet, nullptr);
+        else
+        {
+            storage s(initial_conditions_filename);
+            
+            phy_modules_init_data(*this, planet, &s);
+        }
+    }
+    
     return true;
 }
 
