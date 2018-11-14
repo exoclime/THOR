@@ -69,6 +69,10 @@
 
 #include "phy_modules.h"
 
+#include "debug.h"
+#ifdef BENCHMARKING
+#    warning "Compiling with benchmarktest enabled"
+#endif 
 
 #include <csignal>
 

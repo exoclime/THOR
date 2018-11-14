@@ -307,16 +307,17 @@ bool binary_test::compare_to_reference(const string&             iteration,
     return out;
 }
 
-void binary_test::set_definitions(const map<string, output_def>& defs) {
-    output_definitions = defs;
+void binary_test::append_definitions(const map<string, output_def>& defs) {
+    output_definitions.insert(defs.begin(), defs.end());
     int memsize        = 0;
-    for (auto& d : defs) {
+    for (auto& d : output_definitions) {
         if (d.second.size > memsize)
             memsize = d.second.size;
     }
 
     mem_buf = std::unique_ptr<double[]>(new double[memsize], std::default_delete<double[]>());
 }
+
 
 
 #endif // BENCHMARKING

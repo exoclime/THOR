@@ -59,10 +59,9 @@
 // BENCH_POINT_WRITE enables writing data out to reference files
 // BENCH_POINT_COMPARE enables comparing current value with reference files
 #ifdef BENCHMARKING
-#    warning "Compiling with benchmarktest enabled"
 
 #    define USE_BENCHMARK() binary_test& btester = binary_test::get_instance();
-#    define INIT_BENCHMARK(esp, grid) binary_test::get_instance().set_definitions(build_definitions(esp, grid));
+#    define INIT_BENCHMARK(esp, grid) binary_test::get_instance().append_definitions(build_definitions(esp, grid));
 #    define BENCH_POINT(iteration, name, in, out) btester.check_data(iteration, name, in, out);
 #    define BENCH_POINT_I(iteration, name, in, out) btester.check_data(std::to_string(iteration), name, in, out);
 #    define BENCH_POINT_I_S(iteration, subiteration, name, in, out) btester.check_data(std::to_string(iteration)           \
@@ -147,7 +146,7 @@ public:
     }
 
 
-    void set_definitions(const std::map<string, output_def>& defs);
+    void append_definitions(const std::map<string, output_def>& defs);
 
     // make constructor private, can only be instantiated through get_instance
     ~binary_test();

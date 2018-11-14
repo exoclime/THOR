@@ -262,11 +262,23 @@ __host__ void ESP::alloc_data(bool conservation) {
         cudaMalloc((void **)&GlobalAMz_d, 1 * sizeof(double));
     }
     // PHY modules
+    printf("  Dynamical core memory initialised.\n");
+    
     if (core_benchmark == NO_BENCHMARK) {
 
-        phy_modules_init_mem(*this, phy_modules_core_arrays);
-
+        bool init_modules = phy_modules_init_mem(*this, phy_modules_core_arrays);
         phy_modules_core_arrays.allocate_device_array();
+        if (init_modules)
+            printf("  Module memory initialised.\n");
+        else
+        {
+            printf("  Error initialising module memory.\n");
+            exit(-1);
+            
+        }
+        
+                
+
     }
 }
 

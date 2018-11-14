@@ -48,14 +48,13 @@ bool phy_modules_init_data(const ESP&     esp,
     }
 
 
-    rt.initial_conditions(esp, planet);
-
+    out &= rt.initial_conditions(esp, planet);
     return out;
 }
 
 bool phy_modules_generate_config(config_file& config_reader) {
     bool out = true;
-xs
+
     rt.configure(config_reader);
 
     return out;
