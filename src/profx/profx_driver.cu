@@ -47,11 +47,11 @@
 #include "../headers/phy/dry_conv_adj.h"
 #include "../headers/phy/profx_auxiliary.h"
 #include "../headers/phy/profx_conservation.h"
-#include "../headers/phy/profx_deepHJ_hs.h"
+#include "../headers/phy/profx_deepHJ.h"
 #include "../headers/phy/profx_held_suarez.h"
-#include "../headers/phy/profx_shallowHJ_hs.h"
+#include "../headers/phy/profx_shallowHJ.h"
 #include "../headers/phy/profx_sponge.h"
-#include "../headers/phy/profx_tidalearth_hs.h"
+#include "../headers/phy/profx_tidalearth.h"
 
 #include "binary_test.h"
 #include "debug_helpers.h"
@@ -60,17 +60,16 @@
 
 #include "reduction_add.h"
 
-__host__ void ESP::ProfX(int    core_benchmark, // Held-Suarez test option
-                         int    chemistry,      // Use chemistry
-                         int    conv,           //
-                         double Omega,          // Rotation rate [1/s]
-                         double Cp,             // Specific heat capacity [J/kg/K]
-                         double Rd,             // Gas constant [J/kg/K]
-                         double mu,             // Atomic mass unit [kg]
-                         double kb,             // Boltzmann constant [J/K]
-                         double P_Ref,          // Reference pressure [Pa]
-                         double Gravit,         // Gravity [m/s^2]
-                         double A,              // Planet radius [m]
+__host__ void ESP::ProfX(int    chemistry, // Use chemistry
+                         int    conv,      //
+                         double Omega,     // Rotation rate [1/s]
+                         double Cp,        // Specific heat capacity [J/kg/K]
+                         double Rd,        // Gas constant [J/kg/K]
+                         double mu,        // Atomic mass unit [kg]
+                         double kb,        // Boltzmann constant [J/K]
+                         double P_Ref,     // Reference pressure [Pa]
+                         double Gravit,    // Gravity [m/s^2]
+                         double A,         // Planet radius [m]
                          bool   DeepModel,
                          int    n_out,         // output step (triggers conservation calc)
                          bool   sponge,        // Use sponge layer?
@@ -167,7 +166,7 @@ __host__ void ESP::ProfX(int    core_benchmark, // Held-Suarez test option
     // HELD SUAREZ TEST  //
     ///////////////////////
     //
-    if (core_benchmark == 1) {
+    if (core_benchmark == HELD_SUAREZ) {
         cudaDeviceSynchronize();
         held_suarez<<<NB, NTH>>>(Mh_d,
                                  pressure_d,
@@ -182,39 +181,24 @@ __host__ void ESP::ProfX(int    core_benchmark, // Held-Suarez test option
                                  timestep,
                                  point_num);
     }
-    else if (core_benchmark == 2) {
+    else if (core_benchmark == TIDALLY_LOCKED_EARTH) {
         cudaDeviceSynchronize();
-        tidalearth_hs<<<NB, NTH>>>(Mh_d,
-                                   pressure_d,
-                                   Rho_d,
-                                   temperature_d,
-                                   Gravit,
-                                   Cp,
-                                   Rd,
-                                   Altitude_d,
-                                   Altitudeh_d,
-                                   lonlat_d,
-                                   timestep,
-                                   point_num);
+        tidalearth<<<NB, NTH>>>(Mh_d,
+                                pressure_d,
+                                Rho_d,
+                                temperature_d,
+                                Gravit,
+                                Cp,
+                                Rd,
+                                Altitude_d,
+                                Altitudeh_d,
+                                lonlat_d,
+                                timestep,
+                                point_num);
     }
-    else if (core_benchmark == 3) {
+    else if (core_benchmark == SHALLOW_HOT_JUPITER) {
         cudaDeviceSynchronize();
-        shallowHJ_hs<<<NB, NTH>>>(Mh_d,
-                                  pressure_d,
-                                  Rho_d,
-                                  temperature_d,
-                                  Gravit,
-                                  Cp,
-                                  Rd,
-                                  Altitude_d,
-                                  Altitudeh_d,
-                                  lonlat_d,
-                                  timestep,
-                                  point_num);
-    }
-    else if (core_benchmark == 4) {
-        cudaDeviceSynchronize();
-        deepHJ_hs<<<NB, NTH>>>(Mh_d,
+        shallowHJ<<<NB, NTH>>>(Mh_d,
                                pressure_d,
                                Rho_d,
                                temperature_d,
@@ -226,6 +210,21 @@ __host__ void ESP::ProfX(int    core_benchmark, // Held-Suarez test option
                                lonlat_d,
                                timestep,
                                point_num);
+    }
+    else if (core_benchmark == DEEP_HOT_JUPITER) {
+        cudaDeviceSynchronize();
+        deepHJ<<<NB, NTH>>>(Mh_d,
+                            pressure_d,
+                            Rho_d,
+                            temperature_d,
+                            Gravit,
+                            Cp,
+                            Rd,
+                            Altitude_d,
+                            Altitudeh_d,
+                            lonlat_d,
+                            timestep,
+                            point_num);
     }
 
     //
@@ -275,7 +274,7 @@ __host__ void ESP::ProfX(int    core_benchmark, // Held-Suarez test option
     }
 
 
-    if (!core_benchmark) {
+    if (core_benchmark == NO_BENCHMARK) {
         cudaDeviceSynchronize();
         phy_modules_mainloop(*this,
                              current_step,   // Step number
@@ -329,16 +328,15 @@ __host__ void ESP::ProfX(int    core_benchmark, // Held-Suarez test option
 }
 
 // TODO: get constants out of arguments
-void ESP::conservation(int    core_benchmark, // Held-Suarez test option
-                       int    chemistry,      //
-                       double Omega,          // Rotation rate [1/s]
-                       double Cp,             // Specific heat capacity [J/kg/K]
-                       double Rd,             // Gas constant [J/kg/K]
-                       double mu,             // Atomic mass unit [kg]
-                       double kb,             // Boltzmann constant [J/K]
-                       double P_Ref,          // Reference pressure [Pa]
-                       double Gravit,         // Gravity [m/s^2]
-                       double A,              // Planet radius [m]
+void ESP::conservation(int    chemistry, //
+                       double Omega,     // Rotation rate [1/s]
+                       double Cp,        // Specific heat capacity [J/kg/K]
+                       double Rd,        // Gas constant [J/kg/K]
+                       double mu,        // Atomic mass unit [kg]
+                       double kb,        // Boltzmann constant [J/K]
+                       double P_Ref,     // Reference pressure [Pa]
+                       double Gravit,    // Gravity [m/s^2]
+                       double A,         // Planet radius [m]
                        bool   DeepModel) {
     //
     //  Number of threads per block.

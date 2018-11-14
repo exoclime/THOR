@@ -89,6 +89,7 @@ class output:
         self.ntsi = ntsi
         self.nts = nts
         self.time = np.zeros(nts-ntsi+1)
+        self.nstep = np.zeros(nts-ntsi+1)
         self.Etotal = np.zeros((grid.point_num,grid.nv,nts-ntsi+1))
         self.Mass = np.zeros((grid.point_num,grid.nv,nts-ntsi+1))
         self.AngMomx = np.zeros((grid.point_num,grid.nv,nts-ntsi+1))
@@ -126,6 +127,7 @@ class output:
             Mhi = openh5['Mh'][...]
             Whi = openh5['Wh'][...]
             time = openh5['simulation_time'][0]/86400
+            nstep = openh5['nstep'][0]
             if 'Etotal' in openh5.keys():
                 Etotali = openh5['Etotal'][...]
                 Massi = openh5['Mass'][...]
@@ -158,6 +160,7 @@ class output:
             self.Mh[2,:,:,t-ntsi+1] = np.reshape(Mhi[2::3],(grid.point_num,grid.nv))
             self.Wh[:,:,t-ntsi+1] = np.reshape(Whi,(grid.point_num,grid.nvi))
             self.time[t-ntsi+1] = time
+            self.nstep[t-ntsi+1] = nstep
             if 'Etotali' in locals():
                 self.Etotal[:,:,t-ntsi+1] = np.reshape(Etotali,(grid.point_num,grid.nv))
                 self.Mass[:,:,t-ntsi+1] = np.reshape(Massi,(grid.point_num,grid.nv))

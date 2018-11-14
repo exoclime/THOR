@@ -41,6 +41,7 @@
 // 1.0     16/08/2017 Released version  (JM)
 //
 ////////////////////////////////////////////////////////////////////////
+#pragma once
 
 // Integration time
 #define nsmax_default 48000   // Number of time steps
@@ -73,10 +74,11 @@
 #define initial_conditions_default "ifile/esp_initial.h5" // start from this initial conditions file
 
 // Benchmark test
-#define core_benchmark_default 1 // Held-Suarez test for Earth == 1
-//  HS test for shallow hot Jupiter == 3
-//  HS test for tidally locked Earth == 2
-//  No HS test == 0
+#define core_benchmark_default "HeldSuarez" // Held-Suarez test for Earth == "HeldSuarez"
+//  HS test for shallow hot Jupiter == "HSShallowHotJupiter"
+//  HS test for deep hot Jupiter == "HSDeepHotJupiter"
+//  HS test for tidally locked Earth == "HSTidallyLockedEarth"
+//  No HS test == "NoBenchmark"
 
 // GPU ID
 #define GPU_ID_N_default 0 // Set GPU ID number
@@ -93,5 +95,13 @@
 #define conservation_default false //output energy, mass, angular momentum, etc
 
 #define chemistry_default 0 //use chemical kinetics scheme
+#define conv_adj_default 0  // use convective adjustment scheme
 
-#define conv_adj_default 0 // use convective adjustment scheme
+enum benchmark_types {
+    NO_BENCHMARK         = 0,
+    HELD_SUAREZ          = 1,
+    TIDALLY_LOCKED_EARTH = 2,
+    SHALLOW_HOT_JUPITER  = 3,
+    DEEP_HOT_JUPITER     = 4,
+    JET_STEADY           = 5
+};

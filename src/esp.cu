@@ -262,8 +262,8 @@ int main(int argc, char** argv) {
     config_reader.append_config_var("initial", initial_conditions, string(initial_conditions_default));
 
     // Benchmark test
-    int core_benchmark = 1;
-    config_reader.append_config_var("core_benchmark", core_benchmark, core_benchmark_default);
+    string core_benchmark_str("HeldSuarez");
+    config_reader.append_config_var("core_benchmark", core_benchmark_str, string(core_benchmark_default));
 
     int chemistry = 0;
     config_reader.append_config_var("chemistry", chemistry, chemistry_default);
@@ -388,7 +388,6 @@ int main(int argc, char** argv) {
 
     config_OK &= check_range("glevel", glevel, 3, 8);
     config_OK &= check_greater("vlevel", vlevel, 0);
-    config_OK &= check_range("core_benchmark", core_benchmark, -1, 6);
 
     config_OK &= check_greater("GPU_ID_N", GPU_ID_N, -1);
     config_OK &= check_greater("n_out", n_out, 0);
@@ -403,6 +402,39 @@ int main(int argc, char** argv) {
 
         config_OK = false;
     }
+
+    // Check core benchmark string
+    benchmark_types core_benchmark = HELD_SUAREZ;
+
+    if (core_benchmark_str == "NoBenchmark") {
+        core_benchmark = NO_BENCHMARK;
+        config_OK &= true;
+    }
+    else if (core_benchmark_str == "HeldSuarez") {
+        core_benchmark = HELD_SUAREZ;
+        config_OK &= true;
+    }
+    else if (core_benchmark_str == "ShallowHotJupiter") {
+        core_benchmark = SHALLOW_HOT_JUPITER;
+        config_OK &= true;
+    }
+    else if (core_benchmark_str == "DeepHotJupiter") {
+        core_benchmark = DEEP_HOT_JUPITER;
+        config_OK &= true;
+    }
+    else if (core_benchmark_str == "TidallyLockedEarth") {
+        core_benchmark = TIDALLY_LOCKED_EARTH;
+        config_OK &= true;
+    }
+    else if (core_benchmark_str == "JetSteady") {
+        core_benchmark = JET_STEADY;
+        config_OK &= true;
+    }
+    else {
+        printf("core_benchmark config item not recognised: [%s]\n", core_benchmark_str.c_str());
+        config_OK &= false;
+    }
+
 
     if (!config_OK) {
         printf("Error in configuration file\n");
@@ -527,6 +559,7 @@ int main(int argc, char** argv) {
           t_shrink,                   // time to shrink sponge layer
           Grid.point_num,             // Number of grid points
           conservation,               // compute conservation values
+          core_benchmark,             // benchmark test type
           logwriter);                 // Log writer
 
     USE_BENCHMARK();
@@ -566,7 +599,6 @@ int main(int argc, char** argv) {
                                          SpongeLayer,           // Enable sponge layer
                                          DeepModel,             // Use deep model corrections
                                          TPprof,                // isothermal = 0, guillot = 1
-                                         core_benchmark,        // argh
                                          chemistry,             //
                                          step_idx,              // current step index
                                          simulation_start_time, // output:
@@ -576,7 +608,7 @@ int main(int argc, char** argv) {
                                                                 // if nothing read
                                          conservation);
 
-    if (core_benchmark == 0) {
+    if (core_benchmark == NO_BENCHMARK) {
         phy_modules_init_data(X, Planet);
     }
 
@@ -719,6 +751,10 @@ int main(int argc, char** argv) {
 
     printf("    \n");
 
+    printf("   Running Core Benchmark test \"%s\" (%d).\n", core_benchmark_str.c_str(), int(core_benchmark));
+
+    printf("    \n");
+
     printf("   Start from rest = %s \n", rest ? "true" : "false");
     if (!rest)
         printf("   Loading initial conditions from = %s \n", initial_conditions.c_str());
@@ -756,16 +792,15 @@ int main(int argc, char** argv) {
         X.init_timestep(0, simulation_time, timestep);
 
         if (conservation == true) {
-            X.conservation(core_benchmark, // Held-Suarez test option
-                           chemistry,      //
-                           Planet.Omega,   // Rotation rate [1/s]
-                           Planet.Cp,      // Specific heat capacity [J/kg/K]
-                           Planet.Rd,      // Gas constant [J/kg/K]
-                           mu_constant,    // Atomic mass unit [kg]
-                           kb_constant,    // Boltzmann constant [J/K]
-                           Planet.P_Ref,   // Reference pressure [Pa]
-                           Planet.Gravit,  // Gravity [m/s^2]
-                           Planet.A,       // Planet radius [m]
+            X.conservation(chemistry,     //
+                           Planet.Omega,  // Rotation rate [1/s]
+                           Planet.Cp,     // Specific heat capacity [J/kg/K]
+                           Planet.Rd,     // Gas constant [J/kg/K]
+                           mu_constant,   // Atomic mass unit [kg]
+                           kb_constant,   // Boltzmann constant [J/K]
+                           Planet.P_Ref,  // Reference pressure [Pa]
+                           Planet.Gravit, // Gravity [m/s^2]
+                           Planet.A,      // Planet radius [m]
                            DeepModel);
 
             logwriter.output_conservation(0,
@@ -786,7 +821,6 @@ int main(int argc, char** argv) {
                  Planet.Top_altitude, // Top of the model's domain [m]
                  Planet.A,            // Planet Radius [m]
                  conservation,
-                 core_benchmark,
                  SpongeLayer,
                  chemistry);
         output_file_idx = 1;
@@ -835,8 +869,7 @@ int main(int argc, char** argv) {
         }
         //
         //     Physical Core Integration (ProfX)
-        X.ProfX(core_benchmark, // Held-Suarez test option
-                chemistry,      //
+        X.ProfX(chemistry, //
                 conv_adj,
                 Planet.Omega,  // Rotation rate [1/s]
                 Planet.Cp,     // Specific heat capacity [J/kg/K]
@@ -857,16 +890,15 @@ int main(int argc, char** argv) {
         bool file_output = false;
 
         if (conservation == true) {
-            X.conservation(core_benchmark, // Held-Suarez test option
-                           chemistry,      //
-                           Planet.Omega,   // Rotation rate [1/s]
-                           Planet.Cp,      // Specific heat capacity [J/kg/K]
-                           Planet.Rd,      // Gas constant [J/kg/K]
-                           mu_constant,    // Atomic mass unit [kg]
-                           kb_constant,    // Boltzmann constant [J/K]
-                           Planet.P_Ref,   // Reference pressure [Pa]
-                           Planet.Gravit,  // Gravity [m/s^2]
-                           Planet.A,       // Planet radius [m]
+            X.conservation(chemistry,     //
+                           Planet.Omega,  // Rotation rate [1/s]
+                           Planet.Cp,     // Specific heat capacity [J/kg/K]
+                           Planet.Rd,     // Gas constant [J/kg/K]
+                           mu_constant,   // Atomic mass unit [kg]
+                           kb_constant,   // Boltzmann constant [J/K]
+                           Planet.P_Ref,  // Reference pressure [Pa]
+                           Planet.Gravit, // Gravity [m/s^2]
+                           Planet.A,      // Planet radius [m]
                            DeepModel);
             logwriter.output_conservation(nstep,
                                           simulation_time,
@@ -891,7 +923,6 @@ int main(int argc, char** argv) {
                      Planet.Top_altitude, // Top of the model's domain [m]
                      Planet.A,            // Planet radius [m]
                      conservation,
-                     core_benchmark,
                      SpongeLayer,
                      chemistry);
             // increment output file index

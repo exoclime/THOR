@@ -5,35 +5,35 @@ config_version = 1
 # earth model
 
 # number of steps
-num_steps = 6912
+num_steps = 172800
 
 # length of timesteps imn seconds
-timestep = 300
+timestep = 600
 
 # keys to add
 # TODO: output_dir # relative to working directory
 
 # planet
 # name of simulation for output files
-simulation_ID = hd209b
+simulation_ID = Earth
 # Radius [m]
-radius = 9.44e7
+radius = 6371000.0
 # Rotation rate [s-1]
-rotation_rate = 2.06e-5
+rotation_rate = 1.9964407939767282e-07
 # Gravitational acceleration [m/s^2]
-gravitation = 9.42
+gravitation = 9.8
 # Gas constant [J/(Kg K)]
-Rd = 4593
+Rd = 287.0
 # Specific heat capacities [J/(Kg K)]
-Cp = 14308.4
+Cp = 1005.0
 # Mean atmospheric temperature [K]
-Tmean = 1759
+Tmean = 300.0
 # Reference surface pressure [Pa]
-P_ref = 22000000.0
+P_ref = 100000.0
 # Altitude of the top of the model domain [m]
-Top_altitude = 9e6
+Top_altitude = 36000.0
 # Strength of diffusion
-Diffc = 0.00495
+Diffc = 0.0048
 
 # grid
 # Spring dynamics
@@ -43,7 +43,7 @@ glevel = 4
 # Parameter beta for spring dynamics
 spring_beta = 1.15
 # Number of vertical layers
-vlevel = 40
+vlevel = 32
 
 # diffusion
 # Hyper-diffusion
@@ -59,38 +59,28 @@ DeepModel = true
 # Initial conditions
 rest = true
 
+# initial conditions file, used if rest is set to false
+# (path relative to current working directory)
+# defaults to 'ifile/esp.initial.h5'
+initial = tidalearth_results/esp_output_Earth_29.h5
+
+
 # Core benchmark tests
 # Held-Suarez test for Earth == HeldSuarez
 # Benchmark test for shallow hot Jupiter == HSShallowHotJupiter
 # Benchmark test for deep hot Jupiter == HSDeepHotJupiter
 # Benchmark test for tidally locked Earth == HSTidallyLockedEarth
 # No HS test == NoBenchmark (model is then forced with grey RT by default)
-core_benchmark = NoBenchmark
+core_benchmark = HSTidallyLockedEarth
 
-# Spongebob
-SpongeLayer = false
-# latitude rings
-nlat = 20
-ns_sponge = 0.5
-Rv_sponge = 1e-5
-
-Tstar = 6000
-planet_star_dist = 0.045
-radius_star = 1.14
-#set albedo so irradiation roughly matches Heng+ 2011b
-albedo = 0.07
-
-# output directory (relative to current working directory)
-# defaults to 'results'
-results_path = hd209_results2
 
 # output
 # output every n steps
-n_out = 6912
-#n_out = 100
+n_out = 3456
+
+# output directory (relative to current working directory)
+# defaults to 'results'
+results_path = tidalearth_results
 
 # GPU ID number
 GPU_ID_N = 0
-
-TPprof = 0
-gcm_off = false

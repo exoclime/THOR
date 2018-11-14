@@ -46,18 +46,18 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
-__global__ void deepHJ_hs(double *Mh_d,
-                          double *pressure_d,
-                          double *Rho_d,
-                          double *temperature_d,
-                          double  Gravit,
-                          double  Cp,
-                          double  Rd,
-                          double *Altitude_d,
-                          double *Altitudeh_d,
-                          double *lonlat_d,
-                          double  time_step,
-                          int     num) {
+__global__ void deepHJ(double *Mh_d,
+                       double *pressure_d,
+                       double *Rho_d,
+                       double *temperature_d,
+                       double  Gravit,
+                       double  Cp,
+                       double  Rd,
+                       double *Altitude_d,
+                       double *Altitudeh_d,
+                       double *lonlat_d,
+                       double  time_step,
+                       int     num) {
 
     int id  = blockIdx.x * blockDim.x + threadIdx.x;
     int nv  = gridDim.y;

@@ -98,12 +98,12 @@ rest = true
 initial = earth_hs/esp_output_Earth_3.h5
 
 # Core benchmark tests
-# Held-Suarez test for Earth == 1
-# Benchmark test for tidally locked Earth == 2
-# Benchmark test for shallow hot Jupiter == 3
-# Benchmark test for deep hot Jupiter == 4
-# No HS test == 0 (model is then forced with grey RT by default)
-core_benchmark = 4
+# Held-Suarez test for Earth == HeldSuarez
+# Benchmark test for shallow hot Jupiter == ShallowHotJupiter
+# Benchmark test for deep hot Jupiter == DeepHotJupiter
+# Benchmark test for tidally locked Earth == TidallyLockedEarth
+# No benchmark test == NoBenchmark (model is then forced with grey RT by default)
+core_benchmark = DeepHotJupiter
 
 # Switch off dynamical core (gcm)
 # This is useful for testing/debugging physics modules

@@ -255,6 +255,16 @@ Launching the simulation from a batch script with `-b` in the same folder starts
 `--initial` and `--continue` are mutually exclusive.
 `--batch` and  `--continue` are mutually exclusive.
 
+#### Running benchmark tests
+The benchmark tests will disable the aditional physics and enable forcing on the simulation. 
+Set the `core_benchmark` key in the config file
+Available values are:
+1) HeldSuarez: Held-Suarez test for earth
+2) HSShallowHotJupiter: Benchmark test for shallow hot Jupiter 
+3) HSDeepHotJupiter: Benchmark test for deep hot Jupiter 
+4) HSTidallyLockedEarth: Benchmark test for tidally locked Earth
+5) NoBenchmark: No benchmark test - enables external physics module
+
 
 ### SLURM Batch script
 #### Simple Batch script

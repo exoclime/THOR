@@ -139,6 +139,8 @@ bool load_double_table_from_h5file(hid_t         file_id,
     }
     H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, double_table);
 
+    H5Dclose(dataset_id);
+    
     return true;
 }
 
@@ -227,6 +229,8 @@ bool load_int_table_from_h5file(hid_t         file_id,
     }
     H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, int_table);
 
+    H5Dclose(dataset_id);
+        
     return true;
 }
 

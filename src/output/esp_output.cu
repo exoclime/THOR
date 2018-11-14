@@ -87,18 +87,17 @@ __host__ void ESP::copy_to_host() {
     cudaMemcpy(tracer_h, tracer_d, point_num * nv * ntr * sizeof(double), cudaMemcpyDeviceToHost);
 }
 
-__host__ void ESP::output(int    fidx,         // Index of output file
-                          double Cp,           // Specific heat capacities [J/(Kg K)]
-                          double Rd,           // Gas constant [J/(Kg K)]
-                          double Omega,        // Rotation rate [s-1]
-                          double Gravit,       // Gravitational acceleration [m/s2]
-                          double P_Ref,        // Reference surface pressure [Pa]
-                          double Top_altitude, // Top of the model's domain [m]
-                          double A,
-                          bool   conservation,
-                          int    core_benchmark,
-                          bool   SpongeLayer,
-                          int    chemistry) {
+__host__ void ESP::output(int             fidx,         // Index of output file
+                          double          Cp,           // Specific heat capacities [J/(Kg K)]
+                          double          Rd,           // Gas constant [J/(Kg K)]
+                          double          Omega,        // Rotation rate [s-1]
+                          double          Gravit,       // Gravitational acceleration [m/s2]
+                          double          P_Ref,        // Reference surface pressure [Pa]
+                          double          Top_altitude, // Top of the model's domain [m]
+                          double          A,
+                          bool            conservation,
+                          bool            SpongeLayer,
+                          int             chemistry) {
 
     //
     //  Description: Model output.
@@ -187,7 +186,7 @@ __host__ void ESP::output(int    fidx,         // Index of output file
         //      SpongeLayer option
         s.append_value(SpongeLayer ? 1.0 : 0.0, "/SpongeLayer", "-", "Using SpongeLayer?");
         //      core_benchmark  option
-        s.append_value(core_benchmark, "/core_benchmark", "-", "Using benchmark forcing or RT");
+        s.append_value(int(core_benchmark), "/core_benchmark", "-", "Using benchmark forcing or RT");
         //      chemistry option
         s.append_value(chemistry, "/chemistry", "-", "Using relaxation chemistry");
         if (SpongeLayer) {
@@ -199,7 +198,8 @@ __host__ void ESP::output(int    fidx,         // Index of output file
             s.append_value(Rv_sponge, "/Rv_sponge", "1/s", "Stength of sponge layer");
         }
 
-        phy_modules_store_init(s);
+        if (core_benchmark == NO_BENCHMARK)
+            phy_modules_store_init(s);
     }
 
     //  ESP OUTPUT
@@ -321,7 +321,9 @@ __host__ void ESP::output(int    fidx,         // Index of output file
                        "kg m^2/s",
                        "Global AngMomZ");
     }
-    phy_modules_store(*this, s);
+
+    if (core_benchmark == NO_BENCHMARK)
+        phy_modules_store(*this, s);
 
     char buf[256];
 
