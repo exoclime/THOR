@@ -46,7 +46,7 @@
 #include "dyn/phy_modules_device.h"
 
 extern __constant__ device_RK_array dynamical_core_phy_modules_arrays[NUM_PHY_MODULES_DYN_CORE_ARRAYS];
-extern __constant__ int              num_dynamical_arrays[1];
+extern __constant__ int             num_dynamical_arrays[1];
 
 
 __global__ void Compute_Temperature_H_Pt_Geff(double *temperature_d,
@@ -231,14 +231,9 @@ __global__ void UpdateRK(double *M_d,
                          double *pressure_d,
                          double *pressurek_d,
                          double *pressurei_d,
-                         double *tracer_d,  //
-                         double *tracerk_d, //
-                         double *traceri_d, //
                          double *func_r_d,
                          double *Altitude_d,
                          double *Altitudeh_d,
-                         int     vulcan,
-                         int     ntr,
                          int     num,
                          int     nv) {
 
@@ -298,14 +293,6 @@ __global__ void UpdateRK(double *M_d,
                     array[(id * nv + lev) * num_dim + itr] = arrayi[(id * nv + lev) * num_dim + itr] - arrayk[(id * nv + lev) * num_dim + itr];
                 }
             }
-            /*
-            // Tracers
-            if (vulcan == 1) {
-                for (int itr = 0; itr < ntr; itr++) {
-                    tracer_d[id * nv * ntr + lev * ntr + itr] = traceri_d[id * nv * ntr + lev * ntr + itr] - tracerk_d[id * nv * ntr + lev * ntr + itr];
-                }
-            }
-            */
         }
         // Wh
         for (int lev = 0; lev < nv + 1; lev++) {
@@ -347,13 +334,9 @@ __global__ void UpdateRK2(double *M_d,
                           double *Rhok_d,
                           double *pressure_d,
                           double *pressurek_d,
-                          double *tracer_d,  //
-                          double *tracerk_d, //
                           double *func_r_d,
                           double *Altitude_d,
                           double *Altitudeh_d,
-                          int     vulcan,
-                          int     ntr,
                           int     num,
                           int     nv) {
 
@@ -376,10 +359,6 @@ __global__ void UpdateRK2(double *M_d,
 
     double intt, intl;
     double wht, whl;
-
-    bool print = false;
-    if (blockIdx.x == 0 && threadIdx.x == 0)
-        print = true;
 
 
     if (id < num) {
@@ -408,32 +387,18 @@ __global__ void UpdateRK2(double *M_d,
             // Pressure
             pressurek_d[id * nv + lev] += pressure_d[id * nv + lev];
 
-            if (print) {
-
-                printf("ts: %p, tk: %p\n", tracer_d, tracerk_d);
-                printf("num dyn arrays: %d\n", num_dynamical_arrays[0]);
-            }
 
             int sz = num_dynamical_arrays[0];
-//            int sz = 1;
             // phy modules arrays from array defs
             for (int i = 0; i < sz; i++) {
                 int     num_dim = dynamical_core_phy_modules_arrays[i].dimensions;
                 double *array   = dynamical_core_phy_modules_arrays[i].array_d;
                 double *arrayk  = dynamical_core_phy_modules_arrays[i].arrayk_d;
-                if (print)
-                    printf("as: %p, ak: %p n: %d\n", array, arrayk, num_dim);
+
                 for (int itr = 0; itr < num_dim; itr++) {
                     arrayk[(id * nv + lev) * num_dim + itr] += array[(id * nv + lev) * num_dim + itr];
                 }
             }
-
-            /*
-            //Tracers
-            if (vulcan == 1)
-                for (int itr = 0; itr < ntr; itr++) tracerk_d[id * nv * ntr + lev * ntr + itr] +=
-            tracer_d[id * nv * ntr + lev * ntr + itr];
-            */
         }
         // Wh
         for (int lev = 0; lev < nv + 1; lev++) {

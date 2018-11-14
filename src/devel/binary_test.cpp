@@ -79,11 +79,11 @@ map<string, output_def> build_definitions(ESP& esp, Icogrid& grid) {
             {"hh_d", {esp.hh_d, esp.nvi * esp.point_num, "Entalphy hh", "hh", true}},
             // RK variables
             {"pressure_d", {esp.pressure_d, esp.nv * esp.point_num, "RK pressure", "pp", true}},
-
+/*
             {"tracer_d", {esp.tracer_d, esp.nv * esp.point_num * esp.ntr, "RK tracer", "ti", true}},
             {"tracers_d", {esp.tracers_d, esp.nv * esp.point_num * esp.ntr, "RK tracers", "ts", true}},
             {"tracerk_d", {esp.tracerk_d, esp.nv * esp.point_num * esp.ntr, "RK tracerk", "tk", true}},
-              
+*/
             {"pressures_d", {esp.pressures_d, esp.nv * esp.point_num, "RK pressures", "ps", true}},
             {"Rhos_d", {esp.Rhos_d, esp.nv * esp.point_num, "RK Rhos", "rhos", true}},
             {"Mhs_d", {esp.Mhs_d, esp.nv * esp.point_num * 3, "RK Mhs", "Mhs", true}},

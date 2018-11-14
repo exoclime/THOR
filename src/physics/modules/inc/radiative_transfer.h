@@ -52,24 +52,18 @@ public:
     radiative_transfer();
     ~radiative_transfer();
 
-    bool initialise_memory(const ESP &esp);
+    bool initialise_memory(const ESP &              esp,
+                           device_RK_array_manager &phy_modules_core_arrays);
     bool initial_conditions(const ESP &    esp,
                             const XPlanet &planet);
 
     // TBD, how does it get data? friend of ESP ? grid ?
-    bool loop(ESP &           esp,
-              int             nstep,          // Step number
-              benchmark_types core_benchmark, // Held-Suarez test option
-              double          time_step,      // Time-step [s]
-              double          Omega,          // Rotation rate [1/s]
-              double          Cp,             // Specific heat capacity [J/kg/K]
-              double          Rd,             // Gas constant [J/kg/K]
-              double          mu,             // Atomic mass unit [kg]
-              double          kb,             // Boltzmann constant [J/K]
-              double          P_Ref,          // Reference pressure [Pa]
-              double          Gravit,         // Gravity [m/s^2]
-              double          A               // Planet radius [m]);
-    );
+     bool phy_loop(ESP &          esp,
+                  const XPlanet &planet,
+                  int            nstep,     // Step number
+                  double         time_step, // Time-step [s]
+                  double         mu,        // Atomic mass unit [kg]
+                  double         kb);
 
     bool store(const ESP &esp,
                storage &  s);

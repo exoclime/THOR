@@ -14,7 +14,8 @@ bool device_RK_array_manager::register_array(double* array_d,
                                              int     dimensions) {
 
     if (data.size() == NUM_PHY_MODULES_DYN_CORE_ARRAYS) {
-        printf("Not enough space to allocate array definition for phy_modules\n");
+        printf("Not enough space to allocate array definitions for phy_modules\n"
+               "  increase NUM_PHY_MODULES_DYN_CORE_ARRAYS\n");
         return false;
     }
 
@@ -37,6 +38,7 @@ void device_RK_array_manager::allocate_device_array() {
     }
     
     int datasize = data.size();
+#ifdef __DEBUG
     printf("Num data: %d\n", datasize);
     
     for (auto & d : data)
@@ -45,7 +47,7 @@ void device_RK_array_manager::allocate_device_array() {
                (void*)d.array_d,
                (void*)d.arrayk_d,
                (void*)d.arrayi_d);
-
+#endif // __DEBUG
 
 
     // maybe this needs a pointer ?

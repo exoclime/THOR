@@ -236,7 +236,6 @@ int main(int argc, char** argv) {
     bool   DeepModel     = true;
     bool   SpongeLayer   = false;
     int    nlat          = 20;
-    int    ntr           = 5;
     double Rv_sponge     = 1e-4;
     double ns_sponge     = 0.75;
     bool   shrink_sponge = false;
@@ -264,10 +263,7 @@ int main(int argc, char** argv) {
     // Benchmark test
     string core_benchmark_str("HeldSuarez");
     config_reader.append_config_var("core_benchmark", core_benchmark_str, string(core_benchmark_default));
-
-    int chemistry = 0;
-    config_reader.append_config_var("chemistry", chemistry, chemistry_default);
-
+    
     int conv_adj = 1;
     config_reader.append_config_var("conv_adj", conv_adj, conv_adj_default);
 
@@ -617,7 +613,6 @@ int main(int argc, char** argv) {
           spring_beta,                // Parameter beta for spring dynamics
           nlat,                       // Number of latitude rings for zonal
                                       // mean wind
-          ntr,                        //
           Grid.zonal_mean_tab,        // table of zonal means for sponge layer
           Rv_sponge,                  // Maximum damping of sponge layer
           ns_sponge,                  // lowest level of sponge layer (fraction of model)
@@ -662,7 +657,6 @@ int main(int argc, char** argv) {
                                          SpongeLayer,           // Enable sponge layer
                                          DeepModel,             // Use deep model corrections
                                          TPprof,                // isothermal = 0, guillot = 1
-                                         chemistry,             //
                                          step_idx,              // current step index
                                          simulation_start_time, // output:
                                                                 // simulation start time
@@ -750,7 +744,7 @@ int main(int argc, char** argv) {
     printf("   Time integration =  %d s.\n", nsmax * timestep);
     printf("   Large time-step  =  %d s.\n", timestep);
     printf("   Start time       =  %f s.\n", simulation_start_time);
-    
+
     printf("    \n");
 
     printf("   Running Core Benchmark test \"%s\" (%d).\n", core_benchmark_str.c_str(), int(core_benchmark));
@@ -758,18 +752,17 @@ int main(int argc, char** argv) {
     printf("    \n");
 
     printf(" Physics module: %s   \n", phy_modules_get_name().c_str());
-    
-    if (core_benchmark == NO_BENCHMARK)
-    {
+
+    if (core_benchmark == NO_BENCHMARK) {
 
         printf("    \n");
         phy_modules_print_config();
         printf("    \n");
     }
-    
+
     printf("    \n");
     printf(" Simulation\n");
-    
+
     printf("   Start from rest = %s \n", rest ? "true" : "false");
     if (!rest)
         printf("   Loading initial conditions from = %s \n", initial_conditions.c_str());
@@ -807,8 +800,7 @@ int main(int argc, char** argv) {
         X.init_timestep(0, simulation_time, timestep);
 
         if (conservation == true) {
-            X.conservation(chemistry,     //
-                           Planet.Omega,  // Rotation rate [1/s]
+            X.conservation(Planet.Omega,  // Rotation rate [1/s]
                            Planet.Cp,     // Specific heat capacity [J/kg/K]
                            Planet.Rd,     // Gas constant [J/kg/K]
                            mu_constant,   // Atomic mass unit [kg]
@@ -836,8 +828,7 @@ int main(int argc, char** argv) {
                  Planet.Top_altitude, // Top of the model's domain [m]
                  Planet.A,            // Planet Radius [m]
                  conservation,
-                 SpongeLayer,
-                 chemistry);
+                 SpongeLayer);
         output_file_idx = 1;
         step_idx        = 1;
     }
@@ -878,14 +869,12 @@ int main(int argc, char** argv) {
                    Planet.P_Ref,  // Reference pressure [Pa]
                    Planet.Gravit, // Gravity [m/s^2]
                    Planet.A,      // Planet radius [m]
-                   chemistry,     //
                    NonHydro,      // Non-hydrostatic option
                    DeepModel);    // Deep model option
         }
         //
         //     Physical Core Integration (ProfX)
-        X.ProfX(chemistry, //
-                conv_adj,
+        X.ProfX(conv_adj,
                 Planet.Omega,  // Rotation rate [1/s]
                 Planet.Cp,     // Specific heat capacity [J/kg/K]
                 Planet.Rd,     // Gas constant [J/kg/K]
@@ -905,8 +894,7 @@ int main(int argc, char** argv) {
         bool file_output = false;
 
         if (conservation == true) {
-            X.conservation(chemistry,     //
-                           Planet.Omega,  // Rotation rate [1/s]
+            X.conservation(Planet.Omega,  // Rotation rate [1/s]
                            Planet.Cp,     // Specific heat capacity [J/kg/K]
                            Planet.Rd,     // Gas constant [J/kg/K]
                            mu_constant,   // Atomic mass unit [kg]
@@ -938,8 +926,7 @@ int main(int argc, char** argv) {
                      Planet.Top_altitude, // Top of the model's domain [m]
                      Planet.A,            // Planet radius [m]
                      conservation,
-                     SpongeLayer,
-                     chemistry);
+                     SpongeLayer);
             // increment output file index
             output_file_idx++;
 

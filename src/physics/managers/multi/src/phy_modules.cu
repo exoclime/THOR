@@ -15,40 +15,38 @@
 // define all the modules we want to use
 radiative_transfer rt;
 
-std::string phy_modules_get_name()
-{
+std::string phy_modules_get_name() {
     return std::string("multi");
 }
 
-void phy_modules_print_config()
-{
-    printf("  multi physics module, with radiative transfer\n");
+void phy_modules_print_config() {
+    printf("  multi physics module, with radiative transfer and chemistry\n");
     rt.print_config();
 }
 
 
-        
-bool phy_modules_init_mem(const ESP& esp) {
+bool phy_modules_init_mem(const ESP&               esp,
+                          device_RK_array_manager& phy_modules_core_arrays) {
     // initialise all the modules memory
 
     bool out = true;
 
-    rt.initialise_memory(esp);
+    rt.initialise_memory(esp, phy_modules_core_arrays);
+
 
     return out;
 }
 
 bool phy_modules_init_data(const ESP&     esp,
                            const XPlanet& planet,
-                           storage * s) {
+                           storage*       s) {
     bool out = true;
     // initialise all the modules data
 
-    if (s != nullptr)
-    {
+    if (s != nullptr) {
         // load initialisation data from storage s
     }
-    
+
 
     rt.initial_conditions(esp, planet);
 
@@ -57,51 +55,71 @@ bool phy_modules_init_data(const ESP&     esp,
 
 bool phy_modules_generate_config(config_file& config_reader) {
     bool out = true;
-
+xs
     rt.configure(config_reader);
 
     return out;
 }
 
-bool phy_modules_mainloop(ESP&            esp,
-                          int             nstep,          // Step number
-                          benchmark_types core_benchmark, // Held-Suarez test option
-                          double          time_step,      // Time-step [s]
-                          double          Omega,          // Rotation rate [1/s]
-                          double          Cp,             // Specific heat capacity [J/kg/K]
-                          double          Rd,             // Gas constant [J/kg/K]
-                          double          mu,             // Atomic mass unit [kg]
-                          double          kb,             // Boltzmann constant [J/K]
-                          double          P_Ref,          // Reference pressure [Pa]
-                          double          Gravit,         // Gravity [m/s^2]
-                          double          A               // Planet radius [m]
+bool phy_modules_dyn_core_loop_init(const ESP& esp) {
+
+    return true;
+}
+
+bool phy_modules_dyn_core_loop_slow_modes(const ESP&     esp,
+                                          const XPlanet& planet,
+                                          int            nstep, // Step number
+                                          double         times, // Time-step [s]
+                                          double         mu,    // Atomic mass unit [kg]
+                                          double         kb,    // Boltzmann constant [J/K]
+                                          bool           HyDiff) {
+
+    return true;
+}
+
+bool phy_modules_dyn_core_loop_fast_modes(const ESP&     esp,
+                                          const XPlanet& planet,
+                                          int            nstep,     // Step number
+                                          double         time_step, // Time-step [s]
+                                          double         mu,        // Atomic mass unit [kg]
+                                          double         kb) {
+
+    return true;
+}
+
+bool phy_modules_dyn_core_loop_end(const ESP& esp) {
+
+    return true;
+}
+
+
+bool phy_modules_phy_loop(ESP&           esp,
+                          const XPlanet& planet,
+                          int            nstep,
+                          double         time_step,
+                          double         mu,
+                          double         kb
+
+
 ) {
     // run all the modules main loop
     bool out = true;
 
-    rt.loop(esp,
-            nstep,
-            core_benchmark,
-            time_step,
-            Omega,
-            Cp,
-            Rd,
-            mu,
-            kb,
-            P_Ref,
-            Gravit,
-            A);
+    rt.phy_loop(esp, planet, nstep, time_step, mu, kb);
 
     return out;
 }
 
 bool phy_modules_store_init(storage& s) {
     rt.store_init(s);
+
     return true;
 }
 
 bool phy_modules_store(const ESP& esp, storage& s) {
+
     rt.store(esp, s);
+
     return true;
 }
 

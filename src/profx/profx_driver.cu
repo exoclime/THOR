@@ -44,7 +44,6 @@
 
 #include "esp.h"
 #include "phy/profx_sponge.h"
-#include "phy/chemistry_device.h" // Simple chemistry.
 #include "phy/dry_conv_adj.h"
 #include "phy/profx_auxiliary.h"
 #include "phy/profx_deepHJ_hs.h"
@@ -60,16 +59,15 @@
 
 #include "reduction_add.h"
 
-__host__ void ESP::ProfX(int    chemistry, // Use chemistry
-                         int    conv,      //
-                         double Omega,     // Rotation rate [1/s]
-                         double Cp,        // Specific heat capacity [J/kg/K]
-                         double Rd,        // Gas constant [J/kg/K]
-                         double mu,        // Atomic mass unit [kg]
-                         double kb,        // Boltzmann constant [J/K]
-                         double P_Ref,     // Reference pressure [Pa]
-                         double Gravit,    // Gravity [m/s^2]
-                         double A,         // Planet radius [m]
+__host__ void ESP::ProfX(int    conv,   //
+                         double Omega,  // Rotation rate [1/s]
+                         double Cp,     // Specific heat capacity [J/kg/K]
+                         double Rd,     // Gas constant [J/kg/K]
+                         double mu,     // Atomic mass unit [kg]
+                         double kb,     // Boltzmann constant [J/K]
+                         double P_Ref,  // Reference pressure [Pa]
+                         double Gravit, // Gravity [m/s^2]
+                         double A,      // Planet radius [m]
                          bool   DeepModel,
                          int    n_out,         // output step (triggers conservation calc)
                          bool   sponge,        // Use sponge layer?
@@ -228,68 +226,16 @@ __host__ void ESP::ProfX(int    chemistry, // Use chemistry
                             point_num);
     }
 
-    //
-    ////////////////////////
-    // Simple chemistry
-    if (chemistry == 1) {
-        cudaDeviceSynchronize();
-        Tracers_relax_chemistry_co2<<<NBTR, NTH>>>(tracer_d,
-                                                   tauch4_d,
-                                                   tauco_d,
-                                                   tauh2o_d,
-                                                   tauco2_d,
-                                                   taunh3_d,
-                                                   ch4eq_d,
-                                                   coeq_d,
-                                                   h2oeq_d,
-                                                   co2eq_d,
-                                                   nh3eq_d,
-                                                   P_che_d,
-                                                   T_che_d,
-                                                   temperature_d,
-                                                   pressure_d,
-                                                   Rho_d,
-                                                   timestep,
-                                                   ntr,
-                                                   point_num);
-        cudaDeviceSynchronize();
-        Tracers_relax_chemistry<<<NBTR, NTH>>>(tracer_d,
-                                               tauch4_d,
-                                               tauco_d,
-                                               tauh2o_d,
-                                               tauco2_d,
-                                               taunh3_d,
-                                               ch4eq_d,
-                                               coeq_d,
-                                               h2oeq_d,
-                                               co2eq_d,
-                                               nh3eq_d,
-                                               P_che_d,
-                                               T_che_d,
-                                               temperature_d,
-                                               pressure_d,
-                                               Rho_d,
-                                               timestep,
-                                               ntr,
-                                               point_num);
-    }
 
 
     if (core_benchmark == NO_BENCHMARK) {
         cudaDeviceSynchronize();
-        phy_modules_mainloop(*this,
-                             current_step,   // Step number
-                             core_benchmark, // Held-Suarez test option
-                             timestep,       // Time-step [s]
-                             Omega,          // Rotation rate [1/s]
-                             Cp,             // Specific heat capacity [J/kg/K]
-                             Rd,             // Gas constant [J/kg/K]
-                             mu,             // Atomic mass unit [kg]
-                             kb,             // Boltzmann constant [J/K]
-                             P_Ref,          // Reference pressure [Pa]
-                             Gravit,         // Gravity [m/s^2]
-                             A               // Planet radius [m]
-        );
+        phy_modules_phy_loop(*this,
+                             planet,
+                             current_step, // Step number
+                             timestep,     // Time-step [s]
+                             mu,           // Atomic mass unit [kg]
+                             kb);          // Boltzmann constant [J/K]
     }
 
     BENCH_POINT_I(current_step, "phy_core_benchmark ", vector<string>({}), vector<string>({"Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"}))
@@ -329,15 +275,14 @@ __host__ void ESP::ProfX(int    chemistry, // Use chemistry
 }
 
 // TODO: get constants out of arguments
-void ESP::conservation(int    chemistry, //
-                       double Omega,     // Rotation rate [1/s]
-                       double Cp,        // Specific heat capacity [J/kg/K]
-                       double Rd,        // Gas constant [J/kg/K]
-                       double mu,        // Atomic mass unit [kg]
-                       double kb,        // Boltzmann constant [J/K]
-                       double P_Ref,     // Reference pressure [Pa]
-                       double Gravit,    // Gravity [m/s^2]
-                       double A,         // Planet radius [m]
+void ESP::conservation(double Omega,  // Rotation rate [1/s]
+                       double Cp,     // Specific heat capacity [J/kg/K]
+                       double Rd,     // Gas constant [J/kg/K]
+                       double mu,     // Atomic mass unit [kg]
+                       double kb,     // Boltzmann constant [J/K]
+                       double P_Ref,  // Reference pressure [Pa]
+                       double Gravit, // Gravity [m/s^2]
+                       double A,      // Planet radius [m]
                        bool   DeepModel) {
     //
     //  Number of threads per block.
