@@ -45,9 +45,9 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
+#include "../headers/phy/chemistry_host.h"
 #include "../headers/phy/valkyrie_conservation.h"
 #include "../headers/phy/valkyrie_jet_steadystate.h"
-#include "../headers/phy/chemistry_host.h"
 #include "directories.h"
 #include "esp.h"
 #include "hdf5.h"
@@ -58,35 +58,36 @@
 // physical modules
 #include "phy_modules.h"
 
-__host__ ESP::ESP(int *       point_local_,
-                  int *       maps_,
-                  double *    lonlat_,
-                  double *    Altitude_,
-                  double *    Altitudeh_,
-                  double *    nvecoa_,
-                  double *    nvecti_,
-                  double *    nvecte_,
-                  double *    areasT_,
-                  double *    areasTr_,
-                  double *    div_,
-                  double *    grad_,
-                  double *    func_r_,
-                  int         nl_region_,
-                  int         nr_,
-                  int         nv_,
-                  int         nvi_,
-                  int         glevel_,
-                  bool        spring_dynamics_,
-                  double      spring_beta_,
-                  int         nlat_,
-                  int         ntr_,
-                  int *       zonal_mean_tab,
-                  double      Rv_sponge_,
-                  double      ns_sponge_,
-                  double      t_shrink_,
-                  int         point_num_,
-                  bool        conservation,
-                  log_writer &logwriter_):
+__host__ ESP::ESP(int *           point_local_,
+                  int *           maps_,
+                  double *        lonlat_,
+                  double *        Altitude_,
+                  double *        Altitudeh_,
+                  double *        nvecoa_,
+                  double *        nvecti_,
+                  double *        nvecte_,
+                  double *        areasT_,
+                  double *        areasTr_,
+                  double *        div_,
+                  double *        grad_,
+                  double *        func_r_,
+                  int             nl_region_,
+                  int             nr_,
+                  int             nv_,
+                  int             nvi_,
+                  int             glevel_,
+                  bool            spring_dynamics_,
+                  double          spring_beta_,
+                  int             nlat_,
+                  int             ntr_,
+                  int *           zonal_mean_tab,
+                  double          Rv_sponge_,
+                  double          ns_sponge_,
+                  double          t_shrink_,
+                  int             point_num_,
+                  bool            conservation,
+                  benchmark_types core_benchmark_,
+                  log_writer &    logwriter_) :
     nl_region(nl_region_),
     nr(nr_),
     point_num(point_num_),
@@ -97,7 +98,8 @@ __host__ ESP::ESP(int *       point_local_,
     glevel(glevel_),
     spring_dynamics(spring_dynamics_),
     spring_beta(spring_beta_),
-    logwriter(logwriter_) {
+    logwriter(logwriter_),
+    core_benchmark(core_benchmark_) {
 
     point_local_h = point_local_;
     maps_h        = maps_;
@@ -123,9 +125,11 @@ __host__ ESP::ESP(int *       point_local_,
     Rv_sponge = Rv_sponge_;
     ns_sponge = ns_sponge_;
     t_shrink  = t_shrink_;
+
     //
     //  Allocate Data
-    alloc_data(conservation);
+    if (core_benchmark == NO_BENCHMARK)
+        alloc_data(conservation);
 }
 
 __host__ void ESP::alloc_data(bool conservation) {
@@ -297,20 +301,20 @@ __host__ void ESP::alloc_data(bool conservation) {
         cudaMalloc((void **)&GlobalAMz_d, 1 * sizeof(double));
     }
     // PHY modules
-    phy_modules_init_mem(*this);
+    if (core_benchmark == NO_BENCHMARK)
+        phy_modules_init_mem(*this);
 }
 
 __host__ bool ESP::initial_values(bool               rest,
                                   const std::string &initial_conditions_filename,
                                   const bool &       continue_sim,
                                   double             timestep_dyn,
-                                  XPlanet & xplanet,
+                                  XPlanet &          xplanet,
                                   double             kb,
                                   double             mu,
                                   bool               sponge,
                                   bool               DeepModel,
                                   int                TPprof,
-                                  int                core_benchmark,
                                   int                chemistry,
                                   int &              nstep,
                                   double &           simulation_start_time,
@@ -320,8 +324,9 @@ __host__ bool ESP::initial_values(bool               rest,
     output_file_idx = 0;
     nstep           = 0;
 
+    // Store some general configs
     planet = xplanet;
-    
+
     //  Set initial conditions.
     //
     //
@@ -344,7 +349,7 @@ __host__ bool ESP::initial_values(bool               rest,
                     double f                    = 0.25;
                     temperature_h[i * nv + lev] = pow(3 * planet.Tmean * planet.Tmean * planet.Tmean * planet.Tmean * f * (2 / 3 + 1 / (gamma * sqrt(3)) + (gamma / sqrt(3) - 1 / (gamma * sqrt(3))) * exp(-gamma * tau * sqrt(3))), 0.25);
                 }
-                if (core_benchmark == 4) {
+                if (core_benchmark == HS_DEEP_HOT_JUPITER) {
                     double Ptil = 0.0;
                     if (pressure_h[i * nv + lev] >= 1e5) {
                         Ptil = log10(pressure_h[i * nv + lev] / 100000);
@@ -375,7 +380,7 @@ __host__ bool ESP::initial_values(bool               rest,
             }
             Wh_h[i * (nv + 1) + nv] = 0.0;
         }
-        if (core_benchmark == 5) {
+        if (core_benchmark == JET_STEADY) {
             //  Number of threads per block.
             const int NTH = 256;
 
@@ -496,7 +501,6 @@ __host__ bool ESP::initial_values(bool               rest,
 
         //      Restart from an existing simulation.
         {
-
             // Load atmospheric data
             hid_t file_id;
             file_id = H5Fopen(initial_conditions_filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
@@ -891,7 +895,8 @@ __host__ ESP::~ESP() {
     cudaFree(GlobalAMy_d);
     cudaFree(GlobalAMz_d);
 
-    phy_modules_free_mem();
+    if (core_benchmark == NO_BENCHMARK)
+        phy_modules_free_mem();
 
 
     printf("\n\n Free memory!\n\n");

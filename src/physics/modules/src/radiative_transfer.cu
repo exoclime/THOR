@@ -65,18 +65,18 @@ bool radiative_transfer::initial_conditions(const ESP &    esp,
     return true;
 }
 
-bool radiative_transfer::loop(ESP &  esp,
-                              int    nstep,          // Step number
-                              int    core_benchmark, // Held-Suarez test option
-                              double time_step,      // Time-step [s]
-                              double Omega,          // Rotation rate [1/s]
-                              double Cp,             // Specific heat capacity [J/kg/K]
-                              double Rd,             // Gas constant [J/kg/K]
-                              double mu,             // Atomic mass unit [kg]
-                              double kb,             // Boltzmann constant [J/K]
-                              double P_Ref,          // Reference pressure [Pa]
-                              double Gravit,         // Gravity [m/s^2]
-                              double A               // Planet radius [m]);
+bool radiative_transfer::loop(ESP &           esp,
+                              int             nstep,          // Step number
+                              benchmark_types core_benchmark, // Held-Suarez test option
+                              double          time_step,      // Time-step [s]
+                              double          Omega,          // Rotation rate [1/s]
+                              double          Cp,             // Specific heat capacity [J/kg/K]
+                              double          Rd,             // Gas constant [J/kg/K]
+                              double          mu,             // Atomic mass unit [kg]
+                              double          kb,             // Boltzmann constant [J/K]
+                              double          P_Ref,          // Reference pressure [Pa]
+                              double          Gravit,         // Gravity [m/s^2]
+                              double          A               // Planet radius [m]);
 ) {
 
     //  update global insolation properties if necessary

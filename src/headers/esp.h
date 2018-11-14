@@ -53,9 +53,9 @@
 #include <fstream>
 #include <iostream>
 
+#include "define.h"
 #include "log_writer.h"
 #include "planet.h"
-
 
 class ESP
 {
@@ -255,35 +255,36 @@ public:
 
     //  Functions
     // Constructor, receives all grid parameters
-    ESP(int *       point_local_,
-        int *       maps_,
-        double *    lonlat_,
-        double *    Altitude_,
-        double *    Altitudeh_,
-        double *    nvecoa_,
-        double *    nvecti_,
-        double *    nvecte_,
-        double *    areasT_,
-        double *    areasTr_,
-        double *    div_,
-        double *    grad_,
-        double *    func_r_,
-        int         nl_region_,
-        int         nr_,
-        int         nv_,
-        int         nvi_,
-        int         glevel_,
-        bool        spring_dynamics_,
-        double      spring_beta_,
-        int         nlat_,
-        int         ntr_,
-        int *       zonal_mean_tab,
-        double      Rv_sponge_,
-        double      ns_sponge_,
-        double      t_shrink_,
-        int         point_num_,
-        bool        conservation,
-        log_writer &logwriter_);
+    ESP(int *           point_local_,
+        int *           maps_,
+        double *        lonlat_,
+        double *        Altitude_,
+        double *        Altitudeh_,
+        double *        nvecoa_,
+        double *        nvecti_,
+        double *        nvecte_,
+        double *        areasT_,
+        double *        areasTr_,
+        double *        div_,
+        double *        grad_,
+        double *        func_r_,
+        int             nl_region_,
+        int             nr_,
+        int             nv_,
+        int             nvi_,
+        int             glevel_,
+        bool            spring_dynamics_,
+        double          spring_beta_,
+        int             nlat_,
+        int             ntr_,
+        int *           zonal_mean_tab,
+        double          Rv_sponge_,
+        double          ns_sponge_,
+        double          t_shrink_,
+        int             point_num_,
+        bool            conservation,
+        benchmark_types core_benchmark_,
+        log_writer &    logwriter_);
 
     ~ESP();
 
@@ -299,7 +300,6 @@ public:
                         bool               sponge,
                         bool               DeepModel,
                         int                TPprof,
-                        int                core_benchmark,
                         int                chemistry,
                         int &              nsteps,
                         double &           simulation_start_time,
@@ -331,7 +331,6 @@ public:
 
     void ProfX(int,
                int,
-               int,
                double,
                double,
                double,
@@ -355,23 +354,21 @@ public:
                 double,
                 double,
                 bool,
-                int,
                 bool,
                 int);
 
     void set_output_param(const std::string &sim_id_,
                           const std::string &output_dir_);
 
-    void conservation(int    core_benchmark, // Held-Suarez test option
-                      int    chemistry,      //
-                      double Omega,          // Rotation rate [1/s]
-                      double Cp,             // Specific heat capacity [J/kg/K]
-                      double Rd,             // Gas constant [J/kg/K]
-                      double mu,             // Atomic mass unit [kg]
-                      double kb,             // Boltzmann constant [J/K]
-                      double P_Ref,          // Reference pressure [Pa]
-                      double Gravit,         // Gravity [m/s^2]
-                      double A,              // Planet radius [m]
+    void conservation(int    chemistry, //
+                      double Omega,     // Rotation rate [1/s]
+                      double Cp,        // Specific heat capacity [J/kg/K]
+                      double Rd,        // Gas constant [J/kg/K]
+                      double mu,        // Atomic mass unit [kg]
+                      double kb,        // Boltzmann constant [J/K]
+                      double P_Ref,     // Reference pressure [Pa]
+                      double Gravit,    // Gravity [m/s^2]
+                      double A,         // Planet radius [m]
                       bool   DeepModel);
 
     void copy_to_host();
@@ -379,6 +376,9 @@ public:
     void copy_global_to_host();
 
 private:
+    // store if we run benchmarks
+    benchmark_types core_benchmark;
+
     // step counter for logging
     int    current_step;
     double simulation_time;
