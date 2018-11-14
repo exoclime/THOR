@@ -268,18 +268,18 @@ $(OBJDIR)/${OUTPUTDIR}/%.d: %.cpp | $(OBJDIR)/$(OUTPUTDIR) $(OBJDIR)
 $(OBJDIR)/${OUTPUTDIR}/%.o: %.cu $(OBJDIR)/$(OUTPUTDIR)/%.d| $(OBJDIR)/$(OUTPUTDIR) $(OBJDIR)
 	@echo $(YELLOW)creating $@ $(END)
 	if test $$CDB = "-MJ" ; then \
-		$(CC) -c $(arch)  $(cuda_flags) $(h5include) -I$(includedir) $(CDB) $@.json -o $@ $<; \
+		$(CC) -dc $(arch)  $(cuda_flags) $(h5include) -I$(includedir) $(CDB) $@.json -o $@ $<; \
 	else \
-		$(CC) -c $(arch)  $(cuda_flags) $(h5include) -I$(includedir) -o $@ $<; \
+		$(CC) -dc $(arch)  $(cuda_flags) $(h5include) -I$(includedir) -o $@ $<; \
 	fi
 
 # C++ files
 $(OBJDIR)/${OUTPUTDIR}/%.o: %.cpp $(OBJDIR)/$(OUTPUTDIR)/%.d| $(OBJDIR)/$(OUTPUTDIR) $(OBJDIR)
 	@echo $(YELLOW)creating $@ $(END)
 	if test $$CDB = "-MJ" ; then \
-		$(CC) -c $(arch) $(cpp_flags) $(h5include) -I$(includedir) $(CDB) $@.json -o $@ $<; \
+		$(CC) -dc $(arch) $(cpp_flags) $(h5include) -I$(includedir) $(CDB) $@.json -o $@ $<; \
 	else \
-		$(CC) -c $(arch) $(cpp_flags) $(h5include) -I$(includedir) -o $@ $<; \
+		$(CC) -dc $(arch) $(cpp_flags) $(h5include) -I$(includedir) -o $@ $<; \
 	fi
 
 

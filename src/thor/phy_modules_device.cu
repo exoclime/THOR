@@ -2,11 +2,8 @@
 
 #include <cstdio>
 
-const int NUM_PHY_MODULES_DYN_CORE_ARRAYS = 10;
-
-
 __constant__ device_RK_array dynamical_core_phy_modules_arrays[NUM_PHY_MODULES_DYN_CORE_ARRAYS];
-__constant__ int             num_dynamical_arrays;
+__constant__ int             num_dynamical_arrays[1];
 
 device_RK_array_manager::device_RK_array_manager() {
 }
@@ -30,14 +27,40 @@ void device_RK_array_manager::allocate_device_array() {
     cudaMemcpyToSymbol(dynamical_core_phy_modules_arrays,
                        data.data(),
                        data.size() * sizeof(device_RK_array));
-
+    {
+        cudaError_t err = cudaGetLastError();
+        
+        // Check device query
+        if (err != cudaSuccess) {
+            printf("phy: array cuda error: %s\n", cudaGetErrorString(err));
+        }
+    }
+    
     int datasize = data.size();
+    printf("Num data: %d\n", datasize);
+    
+    for (auto & d : data)
+        printf("%d %p %p %p\n",
+               d.dimensions,
+               (void*)d.array_d,
+               (void*)d.arrayk_d,
+               (void*)d.arrayi_d);
+
+
 
     // maybe this needs a pointer ?
     cudaMemcpyToSymbol(num_dynamical_arrays,
                        &datasize,
-                       sizeof(size_t));
-
+                       sizeof(int));
+    {
+        cudaError_t err = cudaGetLastError();
+        
+        // Check device query
+        if (err != cudaSuccess) {
+            printf("'phy: num' cuda error: %s\n",  cudaGetErrorString(err));
+        }
+    }
+    
     // wait for copy to finish before deallocating local memory
     cudaDeviceSynchronize();
 }

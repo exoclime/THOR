@@ -779,6 +779,8 @@ __host__ bool ESP::initial_values(bool               rest,
         }
 
         phy_modules_core_arrays.register_array(tracers_d, tracerk_d, tracer_d, ntr);
+        phy_modules_core_arrays.allocate_device_array();
+        
     }
 
     

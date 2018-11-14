@@ -122,6 +122,7 @@ __host__ void ESP::ProfX(int    chemistry, // Use chemistry
                                   point_num,
                                   nv);
     }
+    BENCH_POINT_I(current_step, "phy_Sponge", vector<string>({}), vector<string>({"Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"}))
 
     //  Computes the initial temperature.
     Compute_temperature<<<NB, NTH>>>(temperature_d,

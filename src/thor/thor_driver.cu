@@ -555,6 +555,10 @@ __host__ void ESP::Thor(bool   HyDiff,   // Turn on/off hyper-diffusion.
         //      Updates or initializes deviations.
         if (rk > 0) {
             cudaDeviceSynchronize();
+
+            BENCH_POINT_I_S(current_step, rk, "bRK", vector<string>({}), vector<string>({"Rhos_d", "Rhok_d", "Mhs_d", "Mhk_d", "Whs_d", "Whk_d", "pressures_d", "pressurek_d","pressure_d",
+                            "tracer_d", "tracers_d", "tracerk_d"}))
+
             // Updates: Mhs_d, Whs_d, Ws_d, Rhos_d, pressures_d
             UpdateRK<<<(point_num / NTH) + 1, NTH>>>(Mhs_d,
                                                      Mhk_d,
@@ -580,8 +584,8 @@ __host__ void ESP::Thor(bool   HyDiff,   // Turn on/off hyper-diffusion.
                                                      point_num,
                                                      nv);
 
-
-            BENCH_POINT_I_S(current_step, rk, "Compute_Slow_Modes_Poles", vector<string>({}), vector<string>({"Mhs_d", "Whs_d", "Ws_d", "Rhos_d", "pressures_d"}))
+            BENCH_POINT_I_S(current_step, rk, "RK", vector<string>({}), vector<string>({"Rhos_d", "Rhok_d", "Mhs_d", "Mhk_d", "Whs_d", "Whk_d", "pressures_d", "pressurek_d","pressure_d",
+                            "tracer_d", "tracers_d", "tracerk_d"}))
         }
 
         //
@@ -881,7 +885,8 @@ __host__ void ESP::Thor(bool   HyDiff,   // Turn on/off hyper-diffusion.
 
             BENCH_POINT_I_SS(current_step, rk, ns, "Density_Pressure_Eqs", vector<string>({}), vector<string>({"pressures_d", "Rhos_d"}))
         }
-
+        BENCH_POINT_I_S(current_step, rk, "bRK2", vector<string>({}), vector<string>({"Rhos_d", "Rhok_d", "Mhs_d", "Mhk_d", "Whs_d", "Whk_d", "pressures_d", "pressurek_d",
+                        "tracer_d", "tracers_d", "tracerk_d"}))
         //      Update quantities for the long loop.
         cudaDeviceSynchronize();
         // Updates: Mhk_d, Whk_d, Wk_d, Rhok_d, pressurek_d
@@ -904,7 +909,8 @@ __host__ void ESP::Thor(bool   HyDiff,   // Turn on/off hyper-diffusion.
                                                   point_num,
                                                   nv);
 
-        BENCH_POINT_I_S(current_step, rk, "RK2", vector<string>({}), vector<string>({"Rhos_d", "Rhok_d", "Mhs_d", "Mhk_d", "Whs_d", "Whk_d", "pressures_d", "pressurek_d"}))
+        BENCH_POINT_I_S(current_step, rk, "RK2", vector<string>({}), vector<string>({"Rhos_d", "Rhok_d", "Mhs_d", "Mhk_d", "Whs_d", "Whk_d", "pressures_d", "pressurek_d",
+                        "tracer_d", "tracers_d", "tracerk_d"}))
     }
     //  Update diagnostic variables.
     cudaDeviceSynchronize();

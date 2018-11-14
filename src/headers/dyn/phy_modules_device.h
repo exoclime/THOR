@@ -4,6 +4,8 @@
 #pragma once
 #include <vector>
 
+#define NUM_PHY_MODULES_DYN_CORE_ARRAYS 10
+
 struct device_RK_array {
     double* array_d;
     double* arrayk_d;
@@ -33,3 +35,5 @@ public:
 private:
     std::vector<device_RK_array> data;
 };
+
+
