@@ -16,8 +16,6 @@ If you use this code please cite: [Mendonca, J.M., Grimm, S.L., Grosheintz, L., 
 
 * Inclusion of top-of-atmosphere __Rayleigh drag__ ("sponge layer") (see [Mendonca, J.M., Tsai, S.-M., Malik, M., Grimm, S.L., & Heng, K.](http://adsabs.harvard.edu/abs/2018arXiv180800501M))
 
-* Inclusion of __tracer particles__ and __chemical relaxation__ scheme (see [Mendonca, J.M., Tsai, S.-M., Malik, M., Grimm, S.L., & Heng, K.](http://adsabs.harvard.edu/abs/2018arXiv180800501M))
-
 * Addition of __"conservation"__ routines, which calculate energy, entropy, mass, and angular momentum
 
 * Inclusion of __dry convective adjustment__ scheme for sub-grid scale convection (used, though not detailed, in [Mendonca, J.M., Malik, M., Demory, B.-O., & Heng, K., AJ, 155, 150, 2018](http://iopscience.iop.org/article/10.3847/1538-3881/aaaebc/meta))
@@ -30,7 +28,7 @@ If you use this code please cite: [Mendonca, J.M., Grimm, S.L., Grosheintz, L., 
 
 * Command line options have been added to allow more flexibility when running the model, particularly for restarting canceled/finished simulations
 
-* Modular structure for additional physics has been put in place and is used for the grey radiative transfer scheme (and hopefully chemistry???)
+* Modular structure for additional physics has been put in place and is used for the grey radiative transfer scheme 
 
 * Numerous performance and debugging modes have been implemented in the code
 
