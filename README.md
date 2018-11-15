@@ -81,7 +81,7 @@ This depends on the GPU you are using. SM stands for Streaming Multiprocessor an
 
 Depending on how you installed the CUDA-toolkit, you may also have to install some additional utilities to use `nvidia-smi`:
 ```sh
-   $ sudo apt install nvidia-util-390
+   $ sudo apt-get install nvidia-util-390
 ```
 
 #### Using makefile
