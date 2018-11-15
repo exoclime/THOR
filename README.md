@@ -281,9 +281,9 @@ The benchmark tests will disable the aditional physics and enable forcing on the
 Set the `core_benchmark` key in the config file
 Available values are:
 1) HeldSuarez: Held-Suarez test for earth
-2) HSShallowHotJupiter: Benchmark test for shallow hot Jupiter 
-3) HSDeepHotJupiter: Benchmark test for deep hot Jupiter 
-4) HSTidallyLockedEarth: Benchmark test for tidally locked Earth
+2) ShallowHotJupiter: Benchmark test for shallow hot Jupiter 
+3) DeepHotJupiter: Benchmark test for deep hot Jupiter 
+4) TidallyLockedEarth: Benchmark test for tidally locked Earth
 5) NoBenchmark: No benchmark test - enables external physics module
 
 
