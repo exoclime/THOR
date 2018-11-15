@@ -95,7 +95,7 @@ int main(int argc, char* argv[]){
 ```
 
 ### Automatic formatting
-    The code can be formatted with [clang-format-6](https://clang.llvm.org/docs/ClangFormat.html). There is a clang-format-6 config file `.clang-format` in the root directory of the project that should apply. The tool can be integrated in vim, emacs and [Atom clang-format](https://atom.io/packages/clang-format).
+The code can be formatted with [clang-format-6](https://clang.llvm.org/docs/ClangFormat.html). There is a clang-format-6 config file `.clang-format` in the root directory of the project that should apply. The tool can be integrated in vim, emacs and [Atom clang-format](https://atom.io/packages/clang-format).
 
 You can run it from the command line running 
 

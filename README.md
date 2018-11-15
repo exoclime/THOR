@@ -71,12 +71,8 @@ Tested on
 
 0- Clone the repository
 ```sh 
-   /<myfolder>/ $ git clone git@github.com:exoclime/THOR.git
+   /<myfolder>/ $ git clone https://github.com/exoclime/THOR.git
 ```
-1- Install cuda.
-
-
-
 
 1- First, ensure that you have `git`, `make`, `gcc`, and `g++` installed. If you would like to use `cmake` to build THOR instead of `make`, ensure that that is installed as well. On Ubuntu, these can be installed like so
 ```sh
