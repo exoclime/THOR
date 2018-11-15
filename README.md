@@ -50,6 +50,7 @@ Tested on *UBUNTU* *17.04* *Debian unstable*
 ```sh
    $ sudo apt install git make
    $ sudo apt-get install gcc g++
+   $ sudo apt install cmake
 ```
 
 2- Install CUDA. In Ubuntu, this can be done from the command line:
