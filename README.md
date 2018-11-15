@@ -82,6 +82,13 @@ This depends on the GPU you are using. SM stands for Streaming Multiprocessor an
    $ nvidia-smi
 ```
 
+You can search online to find the "compute capability" of your device (`nvidia-smi` does not return this information). An easier way is to go to the `tools` directory of the repository and use the `check_cuda.cu` code:
+```sh
+   $ nvcc check_cuda.cu -o check_cuda
+   $ ./check_cuda
+```
+which will print the SM value of your device.
+
 (cmake will try to guess that for you, if you compile with Makefile, you need to set this).
 
 Depending on how you installed the CUDA-toolkit, you may also have to install some additional utilities to use `nvidia-smi`:
