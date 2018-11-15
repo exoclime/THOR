@@ -46,16 +46,18 @@ Current code owners: Joao Mendonca: joao.mendonca@space.dtu.dk, Russell Deitrick
 
 Tested on *UBUNTU* *17.04* *Debian unstable*
 
-1- Install cuda.
+1- First, ensure that you have `git`, `make`, `gcc`, and `g++` installed. If you would like to use `cmake` to build THOR instead of `make`, ensure that that is installed as well. On Ubuntu, these can be installed like so
+```sh
+   $ sudo apt install git make
+   $ sudo apt-get install gcc g++
+```
+
+2- Install cuda.
 
 ```sh
    $ sudo apt-get install nvidia-cuda-toolkit
 ```
-2- Downgrade g++ because cuda 8/9 conflicts with the latest g++ and asks for g++-5
 
-```sh
-   $ sudo apt-get install g++-5
-```
 3- Install HDF5, from your package manager if possible or by hand (see below)
 ```sh
    $ sudo apt-get install libhdf5-dev libhdf5-100  libhdf5-serial-dev libhdf5-cpp-100 python-h5py
