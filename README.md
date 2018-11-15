@@ -6,6 +6,8 @@
 
 If you use this code please cite: [Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016](http://iopscience.iop.org/article/10.3847/0004-637X/829/2/115/meta)
 
+Current code owners: Joao Mendonca: joao.mendonca@space.dtu.dk, Russell Deitrick: russell.deitrick@csh.unibe.ch, Urs Schroffenegger: urs.schroffenegger@csh.unibe.ch
+
 ###### Copyright (C) 2017-2018 Exoclimes Simulation Platform ######
 
 ### Changes since version 1
@@ -15,8 +17,6 @@ If you use this code please cite: [Mendonca, J.M., Grimm, S.L., Grosheintz, L., 
 * Inclusion of __grey radiative transfer__ (see [Mendonca, J.M., Malik, M., Demory, B.-O., & Heng, K., AJ, 155, 150, 2018](http://iopscience.iop.org/article/10.3847/1538-3881/aaaebc/meta))
 
 * Inclusion of top-of-atmosphere __Rayleigh drag__ ("sponge layer") (see [Mendonca, J.M., Tsai, S.-M., Malik, M., Grimm, S.L., & Heng, K.](http://adsabs.harvard.edu/abs/2018arXiv180800501M))
-
-* Inclusion of __tracer particles__ and __chemical relaxation__ scheme (see [Mendonca, J.M., Tsai, S.-M., Malik, M., Grimm, S.L., & Heng, K.](http://adsabs.harvard.edu/abs/2018arXiv180800501M))
 
 * Addition of __"conservation"__ routines, which calculate energy, entropy, mass, and angular momentum
 
@@ -30,7 +30,7 @@ If you use this code please cite: [Mendonca, J.M., Grimm, S.L., Grosheintz, L., 
 
 * Command line options have been added to allow more flexibility when running the model, particularly for restarting canceled/finished simulations
 
-* Modular structure for additional physics has been put in place and is used for the grey radiative transfer scheme (and hopefully chemistry???)
+* Modular structure for additional physics has been put in place and is used for the grey radiative transfer scheme 
 
 * Numerous performance and debugging modes have been implemented in the code
 
@@ -38,31 +38,62 @@ If you use this code please cite: [Mendonca, J.M., Grimm, S.L., Grosheintz, L., 
 
 * Output files now contain additional information about model settings and quantities related to the additions described above
 
-### BUILD & RUN THOR
+### BUILD & RUN THOR (TL;DR instructions)
+
+```sh
+   $ sudo apt-get install git make gcc g++ cmake nvidia-cuda-toolkit nvidia-utils-390 libhdf5-dev libhdf5-100  libhdf5-serial-dev libhdf5-cpp-100
+   $ git clone https://github.com/exoclime/THOR.git
+   $ cd THOR
+   $ cp Makefile.conf.template Makefile.conf
+```
+Find the `SM` value of your Nvidia GPU. Then open `Makefile.conf` in a text editor and edit like so:
+```
+MODULES_SRC := src/physics/managers/multi/
+SM:=<SM value of your card> 
+```
+Then head back to the command line and
+```sh
+   $ make -j8 release
+```
+Finally, run 
+```sh
+   $ bin/esp ifile/<config file for your planet>
+```
+
+### BUILD & RUN THOR (detailed instructions)
 
 Main instructions to compile and run *THOR*. This version uses only a __single__ __GPU__.
-
-Current code owners: Joao Mendonca: joao.mendonca@space.dtu.dk, Russell Deitrick: russell.deitrick@csh.unibe.ch, Urs Schroffenegger: urs.schroffenegger@csh.unibe.ch
 
 ### INSTALL
 
 Tested on *UBUNTU* *17.04* *Debian unstable*
 
-1- Install cuda.
+1- First, ensure that you have `git`, `make`, `gcc`, and `g++` installed. If you would like to use `cmake` to build THOR instead of `make`, ensure that that is installed as well. On Ubuntu, these can be installed like so
+```sh
+   $ sudo apt-get install git make
+   $ sudo apt-get install gcc g++
+   $ sudo apt-get install cmake
+```
+
+2- Install CUDA. In Ubuntu, this can be done from the command line:
 
 ```sh
    $ sudo apt-get install nvidia-cuda-toolkit
 ```
-2- Downgrade g++ because cuda 8/9 conflicts with the latest g++ and asks for g++-5
+Alternatively, you can find and download from the web: https://developer.nvidia.com/cuda-downloads
 
-```sh
-   $ sudo apt-get install g++-5
-```
+Note that you may have to manually add the paths to the nvidia compiler and libraries to your environment file. See "Chapter 7: Post-Installation Actions" in the installation guide here: https://developer.download.nvidia.com/compute/cuda/10.0/Prod/docs/sidebar/CUDA_Installation_Guide_Linux.pdf
+
 3- Install HDF5, from your package manager if possible or by hand (see below)
 ```sh
-   $ sudo apt-get install libhdf5-dev libhdf5-100  libhdf5-serial-dev libhdf5-cpp-100 python-h5py
+   $ sudo apt-get install libhdf5-dev libhdf5-100  libhdf5-serial-dev libhdf5-cpp-100
 ```
-The python package is for analysis scripts.
+For the python plotting scripts, you will need h5py. You can install it with your OS package manager or pip:
+```sh
+   $ pip3 install h5py
+```
+
+4- Use git to clone this repository to a location you can find 6 months from now.
 
 ### COMPILE THOR
 #### Find your SM number
@@ -74,12 +105,26 @@ This depends on the GPU you are using. SM stands for Streaming Multiprocessor an
    $ nvidia-smi
 ```
 
+You can search online to find the "compute capability" of your device (`nvidia-smi` does not return this information). An easier way is to go to the `tools` directory of the repository and use the `check_cuda.cu` code:
+```sh
+   $ nvcc check_cuda.cu -o check_cuda
+   $ ./check_cuda
+```
+which will print the SM value of your device.
+
 (cmake will try to guess that for you, if you compile with Makefile, you need to set this).
+
+Depending on how you installed the CUDA-toolkit, you may also have to install some additional utilities to use `nvidia-smi`:
+```sh
+   $ sudo apt-get install nvidia-utils-390
+```
 
 #### Using makefile
 
+##### Define a local configuration Makefile.
+Copy `Makefile.conf.template` to `Makefile.conf`. This defines a local makefile configuration that wont be added to git. You can define the `SM` number in there, so that you don't need to modify the main makefile (that can be overwritten when pulling from git) or add it to the command line each time.
 
-Set your SM number in the makefile.
+Set your SM number in `Makefile.conf`
 ```
 SM:=30 # Streaming Multiprocessor version
 ```
@@ -113,10 +158,9 @@ To show commands echoed
    $ make VERBOSE=1
 ```
 
-If if fails, check the makefile variables output at the beginning of the compilation, it shows the variables and the path detected for h5, which is a common cause of issue during compilation.
+If it fails, check the makefile variables output at the beginning of the compilation, it shows the variables and the path detected for h5, which is a common cause of issue during compilation.
 
-##### Define a local configuration Makefile.
-Copy `Makefile.conf.template` to `Makefile.conf`. This defines a local makefile configuration that wont be added to git. You can define the `SM` number in there, so that you don't need to modify the main makefile that can be overwritten when pulling from git or add it to the command line each time.
+
 
 #### Physics modules
 You can use your own physics modules by setting the path to the physics module in the local makefile configuration file `Makefile.conf`, see [How to add your own physics modules](physics_modules.org).
@@ -260,9 +304,9 @@ The benchmark tests will disable the aditional physics and enable forcing on the
 Set the `core_benchmark` key in the config file
 Available values are:
 1) HeldSuarez: Held-Suarez test for earth
-2) HSShallowHotJupiter: Benchmark test for shallow hot Jupiter 
-3) HSDeepHotJupiter: Benchmark test for deep hot Jupiter 
-4) HSTidallyLockedEarth: Benchmark test for tidally locked Earth
+2) ShallowHotJupiter: Benchmark test for shallow hot Jupiter 
+3) DeepHotJupiter: Benchmark test for deep hot Jupiter 
+4) TidallyLockedEarth: Benchmark test for tidally locked Earth
 5) NoBenchmark: No benchmark test - enables external physics module
 
 

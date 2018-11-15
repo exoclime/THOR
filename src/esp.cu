@@ -268,7 +268,8 @@ int main(int argc, char** argv) {
     int chemistry = 0;
     config_reader.append_config_var("chemistry", chemistry, chemistry_default);
 
-    int conv = 1;
+    int conv_adj = 1;
+    config_reader.append_config_var("conv_adj", conv_adj, conv_adj_default);
 
     int GPU_ID_N = 0;
     config_reader.append_config_var("GPU_ID_N", GPU_ID_N, GPU_ID_N_default);
@@ -413,16 +414,16 @@ int main(int argc, char** argv) {
         core_benchmark = HELD_SUAREZ;
         config_OK &= true;
     }
-    else if (core_benchmark_str == "HSShallowHotJupiter") {
-        core_benchmark = HS_SHALLOW_HOT_JUPITER;
+    else if (core_benchmark_str == "ShallowHotJupiter") {
+        core_benchmark = SHALLOW_HOT_JUPITER;
         config_OK &= true;
     }
-    else if (core_benchmark_str == "HSDeepHotJupiter") {
-        core_benchmark = HS_DEEP_HOT_JUPITER;
+    else if (core_benchmark_str == "DeepHotJupiter") {
+        core_benchmark = DEEP_HOT_JUPITER;
         config_OK &= true;
     }
-    else if (core_benchmark_str == "HSTidallyLockedEarth") {
-        core_benchmark = HS_TIDALLY_LOCKED_EARTH;
+    else if (core_benchmark_str == "TidallyLockedEarth") {
+        core_benchmark = TIDALLY_LOCKED_EARTH;
         config_OK &= true;
     }
     else if (core_benchmark_str == "JetSteady") {
@@ -869,7 +870,7 @@ int main(int argc, char** argv) {
         //
         //     Physical Core Integration (ProfX)
         X.ProfX(chemistry, //
-                conv,
+                conv_adj,
                 Planet.Omega,  // Rotation rate [1/s]
                 Planet.Cp,     // Specific heat capacity [J/kg/K]
                 Planet.Rd,     // Gas constant [J/kg/K]
@@ -889,15 +890,15 @@ int main(int argc, char** argv) {
         bool file_output = false;
 
         if (conservation == true) {
-            X.conservation(chemistry,      //
-                           Planet.Omega,   // Rotation rate [1/s]
-                           Planet.Cp,      // Specific heat capacity [J/kg/K]
-                           Planet.Rd,      // Gas constant [J/kg/K]
-                           mu_constant,    // Atomic mass unit [kg]
-                           kb_constant,    // Boltzmann constant [J/K]
-                           Planet.P_Ref,   // Reference pressure [Pa]
-                           Planet.Gravit,  // Gravity [m/s^2]
-                           Planet.A,       // Planet radius [m]
+            X.conservation(chemistry,     //
+                           Planet.Omega,  // Rotation rate [1/s]
+                           Planet.Cp,     // Specific heat capacity [J/kg/K]
+                           Planet.Rd,     // Gas constant [J/kg/K]
+                           mu_constant,   // Atomic mass unit [kg]
+                           kb_constant,   // Boltzmann constant [J/K]
+                           Planet.P_Ref,  // Reference pressure [Pa]
+                           Planet.Gravit, // Gravity [m/s^2]
+                           Planet.A,      // Planet radius [m]
                            DeepModel);
             logwriter.output_conservation(nstep,
                                           simulation_time,

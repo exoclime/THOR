@@ -237,7 +237,7 @@ public:
 
     double *vbar_d;
     int *   zonal_mean_tab_d;
-
+    double *pressureh_d; // midpoint pressure used in dry conv adj
 
     //  energy, ang momentum and mass conservation
     double *Etotal_d;     //total energy (internal+kinetic+gravit) in control volume

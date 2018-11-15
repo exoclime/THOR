@@ -53,7 +53,9 @@ class input:
                 self.albedo = openh5['albedo'][...]
                 self.tausw = openh5['tausw'][...]
                 self.taulw = openh5['taulw'][...]
-        if 'vulcan' or 'chemistry' in openh5.keys():
+        if 'vulcan' in openh5.keys():
+            self.chemistry = openh5['vulcan'][...]
+        if 'chemistry' in openh5.keys():
             self.chemistry = openh5['chemistry'][...]
 
         openh5.close()
@@ -87,6 +89,7 @@ class output:
         self.ntsi = ntsi
         self.nts = nts
         self.time = np.zeros(nts-ntsi+1)
+        self.nstep = np.zeros(nts-ntsi+1)
         self.Etotal = np.zeros((grid.point_num,grid.nv,nts-ntsi+1))
         self.Mass = np.zeros((grid.point_num,grid.nv,nts-ntsi+1))
         self.AngMomx = np.zeros((grid.point_num,grid.nv,nts-ntsi+1))
@@ -124,6 +127,7 @@ class output:
             Mhi = openh5['Mh'][...]
             Whi = openh5['Wh'][...]
             time = openh5['simulation_time'][0]/86400
+            nstep = openh5['nstep'][0]
             if 'Etotal' in openh5.keys():
                 Etotali = openh5['Etotal'][...]
                 Massi = openh5['Mass'][...]
@@ -156,6 +160,7 @@ class output:
             self.Mh[2,:,:,t-ntsi+1] = np.reshape(Mhi[2::3],(grid.point_num,grid.nv))
             self.Wh[:,:,t-ntsi+1] = np.reshape(Whi,(grid.point_num,grid.nvi))
             self.time[t-ntsi+1] = time
+            self.nstep[t-ntsi+1] = nstep
             if 'Etotali' in locals():
                 self.Etotal[:,:,t-ntsi+1] = np.reshape(Etotali,(grid.point_num,grid.nv))
                 self.Mass[:,:,t-ntsi+1] = np.reshape(Massi,(grid.point_num,grid.nv))
@@ -1477,6 +1482,40 @@ def TPprof(input,grid,output,sigmaref,column):
     if not os.path.exists(input.resultsf+'/figures'):
         os.mkdir(input.resultsf+'/figures')
     plt.savefig(input.resultsf+'/figures/TPprofile_i%d_l%d.pdf'%(output.ntsi,output.nts))
+    plt.close()
+
+def PTPprof(input,grid,output,sigmaref,column):
+    Pref = input.P_Ref*sigmaref
+    d_sig = np.size(sigmaref)
+    kappa_ad = input.Rd/input.Cp  # adiabatic coefficient
+
+    tsp = output.nts-output.ntsi+1
+
+    for column in np.arange(0,grid.point_num,50):
+        if tsp > 1:
+            P = np.mean(output.Pressure[column,:,:],axis=2)
+            PT = np.mean(output.Pressure[column,:,:]/(input.Rd*output.Rho[column,:,:]) * \
+                                    (output.Pressure[column,:,:]/input.P_Ref)**(-kappa_ad),axis=2)
+        else:
+            P = output.Pressure[column,:,0]
+            PT = output.Pressure[column,:,0]/(input.Rd*output.Rho[column,:,0]) * \
+                                    (output.Pressure[column,:,0]/input.P_Ref)**(-kappa_ad)
+
+        plt.semilogy(PT,P/1e5,'k-',alpha= 0.5,lw=1)
+        plt.plot(PT[np.int(np.floor(grid.nv/2))],P[np.int(np.floor(grid.nv/2))]/100000,'r+',ms =5,alpha=0.5)
+        plt.plot(PT[np.int(np.floor(grid.nv*0.75))],P[np.int(np.floor(grid.nv*0.75))]/100000,'g+',ms =5,alpha=0.5)
+
+
+    # Tad = T[15]*(P/P[15])**kappa
+
+    # plt.plot(Tad,P/100,'r--')
+    plt.gca().invert_yaxis()
+    plt.ylabel('Pressure (bar)')
+    plt.xlabel('Potential Temperature [K]')
+    plt.title('Time = %#.3f - %#.3f days'%(output.time[0],output.time[-1]))
+    if not os.path.exists(input.resultsf+'/figures'):
+        os.mkdir(input.resultsf+'/figures')
+    plt.savefig(input.resultsf+'/figures/PTPprofile_i%d_l%d.pdf'%(output.ntsi,output.nts))
     plt.close()
 
 def streamf(input,grid,output,sigmaref):

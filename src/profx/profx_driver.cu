@@ -43,15 +43,15 @@
 ////////////////////////////////////////////////////////////////////////
 
 #include "../headers/esp.h"
-#include "../headers/phy/apocalypse_sponge.h"
 #include "../headers/phy/chemistry_device.h" // Simple chemistry.
 #include "../headers/phy/dry_conv_adj.h"
 #include "../headers/phy/profx_auxiliary.h"
-#include "../headers/phy/profx_deepHJ_hs.h"
+#include "../headers/phy/profx_conservation.h"
+#include "../headers/phy/profx_deepHJ.h"
 #include "../headers/phy/profx_held_suarez.h"
-#include "../headers/phy/profx_shallowHJ_hs.h"
-#include "../headers/phy/profx_tidalearth_hs.h"
-#include "../headers/phy/valkyrie_conservation.h"
+#include "../headers/phy/profx_shallowHJ.h"
+#include "../headers/phy/profx_sponge.h"
+#include "../headers/phy/profx_tidalearth.h"
 
 #include "binary_test.h"
 #include "debug_helpers.h"
@@ -81,9 +81,9 @@ __host__ void ESP::ProfX(int    chemistry, // Use chemistry
     const int NTH = 256;
 
     //  Specify the block sizes.
-    dim3 NB((point_num / NTH) + 1, nv, 1);
-    dim3 NBRT((point_num / NTH) + 1, 1, 1);
-    dim3 NBTR((point_num / NTH) + 1, nv, ntr);
+    dim3      NB((point_num / NTH) + 1, nv, 1);
+    dim3      NBRT((point_num / NTH) + 1, 1, 1);
+    dim3      NBTR((point_num / NTH) + 1, nv, ntr);
 
     if (sponge == true) {
         dim3 NBT((point_num / NTH) + 1, nv, 1);
@@ -143,6 +143,25 @@ __host__ void ESP::ProfX(int    chemistry, // Use chemistry
     }
 #endif
 
+    if (conv) {
+        cudaDeviceSynchronize();
+        dry_conv_adj<<<NB, NTH>>>(pressure_d,    // Pressure [Pa]
+                                  pressureh_d,   // mid-point pressure [Pa]
+                                  temperature_d, // Temperature [K]
+                                  pt_d,          // Pot temperature [K]
+                                  Rho_d,         // Density [m^3/kg]
+                                  Cp,            // Specific heat capacity [J/kg/K]
+                                  Rd,            // Gas constant [J/kg/K]
+                                  Gravit,        // Gravity [m/s^2]
+                                  Altitude_d,    // Altitudes of the layers
+                                  Altitudeh_d,   // Altitudes of the interfaces
+                                  point_num,     // Number of columns
+                                  nv);           // number of vertical layers
+    }
+
+    BENCH_POINT_I(current_step, "dry_conv_adj ", vector<string>({}), vector<string>({"Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"}))
+
+
     ///////////////////////
     // HELD SUAREZ TEST  //
     ///////////////////////
@@ -162,39 +181,24 @@ __host__ void ESP::ProfX(int    chemistry, // Use chemistry
                                  timestep,
                                  point_num);
     }
-    else if (core_benchmark == HS_TIDALLY_LOCKED_EARTH) {
+    else if (core_benchmark == TIDALLY_LOCKED_EARTH) {
         cudaDeviceSynchronize();
-        tidalearth_hs<<<NB, NTH>>>(Mh_d,
-                                   pressure_d,
-                                   Rho_d,
-                                   temperature_d,
-                                   Gravit,
-                                   Cp,
-                                   Rd,
-                                   Altitude_d,
-                                   Altitudeh_d,
-                                   lonlat_d,
-                                   timestep,
-                                   point_num);
+        tidalearth<<<NB, NTH>>>(Mh_d,
+                                pressure_d,
+                                Rho_d,
+                                temperature_d,
+                                Gravit,
+                                Cp,
+                                Rd,
+                                Altitude_d,
+                                Altitudeh_d,
+                                lonlat_d,
+                                timestep,
+                                point_num);
     }
-    else if (core_benchmark == HS_SHALLOW_HOT_JUPITER) {
+    else if (core_benchmark == SHALLOW_HOT_JUPITER) {
         cudaDeviceSynchronize();
-        shallowHJ_hs<<<NB, NTH>>>(Mh_d,
-                                  pressure_d,
-                                  Rho_d,
-                                  temperature_d,
-                                  Gravit,
-                                  Cp,
-                                  Rd,
-                                  Altitude_d,
-                                  Altitudeh_d,
-                                  lonlat_d,
-                                  timestep,
-                                  point_num);
-    }
-    else if (core_benchmark == HS_DEEP_HOT_JUPITER) {
-        cudaDeviceSynchronize();
-        deepHJ_hs<<<NB, NTH>>>(Mh_d,
+        shallowHJ<<<NB, NTH>>>(Mh_d,
                                pressure_d,
                                Rho_d,
                                temperature_d,
@@ -206,6 +210,21 @@ __host__ void ESP::ProfX(int    chemistry, // Use chemistry
                                lonlat_d,
                                timestep,
                                point_num);
+    }
+    else if (core_benchmark == DEEP_HOT_JUPITER) {
+        cudaDeviceSynchronize();
+        deepHJ<<<NB, NTH>>>(Mh_d,
+                            pressure_d,
+                            Rho_d,
+                            temperature_d,
+                            Gravit,
+                            Cp,
+                            Rd,
+                            Altitude_d,
+                            Altitudeh_d,
+                            lonlat_d,
+                            timestep,
+                            point_num);
     }
 
     //
@@ -254,19 +273,6 @@ __host__ void ESP::ProfX(int    chemistry, // Use chemistry
                                                point_num);
     }
 
-    if (conv) {
-        /*       cudaDeviceSynchronize();
-        dry_conv_adj<50><<< NB, NTH >>>(Pressure_d   , // Pressure [Pa]
-                                        Temperature_d, // Temperature [K]
-                                        Rho_d        , // Density [m^3/kg]
-                                        Cp           , // Specific heat capacity [J/kg/K]
-                                        Rd           , // Gas constant [J/kg/K]
-                                        Gravit       , // Gravity [m/s^2]
-                                        Altitude_d   , // Altitudes of the layers
-                                        Altitudeh_d  , // Altitudes of the interfaces
-                                        num          ); // Number of columns
- */
-    }
 
     if (core_benchmark == NO_BENCHMARK) {
         cudaDeviceSynchronize();
@@ -284,16 +290,6 @@ __host__ void ESP::ProfX(int    chemistry, // Use chemistry
                              A               // Planet radius [m]
         );
     }
-#ifdef BENCH_NAN_CHECK
-    check_h = false;
-    cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
-    isnan_check<<<16, NTH>>>(temperature_d, nv, point_num, check_d);
-    cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
-    if (check_h) {
-        printf("\n\n Error in NAN check after PROFX:RT!\n");
-        exit(EXIT_FAILURE);
-    }
-#endif
 
     BENCH_POINT_I(current_step, "phy_core_benchmark ", vector<string>({}), vector<string>({"Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"}))
     //  Computes the new pressures.

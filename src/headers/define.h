@@ -95,14 +95,13 @@
 #define conservation_default false //output energy, mass, angular momentum, etc
 
 #define chemistry_default 0 //use chemical kinetics scheme
+#define conv_adj_default 0  // use convective adjustment scheme
 
 enum benchmark_types {
-    NO_BENCHMARK = 0,
-    HELD_SUAREZ = 1,
-    HS_TIDALLY_LOCKED_EARTH = 2,
-    HS_SHALLOW_HOT_JUPITER = 3,
-    HS_DEEP_HOT_JUPITER = 4,
-    JET_STEADY = 5
+    NO_BENCHMARK         = 0,
+    HELD_SUAREZ          = 1,
+    TIDALLY_LOCKED_EARTH = 2,
+    SHALLOW_HOT_JUPITER  = 3,
+    DEEP_HOT_JUPITER     = 4,
+    JET_STEADY           = 5
 };
-
-    

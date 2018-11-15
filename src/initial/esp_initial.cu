@@ -46,7 +46,7 @@
 ////////////////////////////////////////////////////////////////////////
 
 #include "../headers/phy/chemistry_host.h"
-#include "../headers/phy/valkyrie_conservation.h"
+#include "../headers/phy/profx_conservation.h"
 #include "../headers/phy/valkyrie_jet_steadystate.h"
 #include "directories.h"
 #include "esp.h"
@@ -202,6 +202,7 @@ __host__ void ESP::alloc_data(bool conservation) {
     cudaMalloc((void **)&Wh_d, nvi * point_num * sizeof(double));
     cudaMalloc((void **)&Rho_d, nv * point_num * sizeof(double));
     cudaMalloc((void **)&pressure_d, nv * point_num * sizeof(double));
+    cudaMalloc((void **)&pressureh_d, (nv + 1) * point_num * sizeof(double));
 
     cudaMalloc((void **)&tracer_d, nv * point_num * ntr * sizeof(double));
     cudaMalloc((void **)&tracers_d, nv * point_num * ntr * sizeof(double));
@@ -349,7 +350,7 @@ __host__ bool ESP::initial_values(bool               rest,
                     double f                    = 0.25;
                     temperature_h[i * nv + lev] = pow(3 * planet.Tmean * planet.Tmean * planet.Tmean * planet.Tmean * f * (2 / 3 + 1 / (gamma * sqrt(3)) + (gamma / sqrt(3) - 1 / (gamma * sqrt(3))) * exp(-gamma * tau * sqrt(3))), 0.25);
                 }
-                if (core_benchmark == HS_DEEP_HOT_JUPITER) {
+                if (core_benchmark == DEEP_HOT_JUPITER) {
                     double Ptil = 0.0;
                     if (pressure_h[i * nv + lev] >= 1e5) {
                         Ptil = log10(pressure_h[i * nv + lev] / 100000);

@@ -43,14 +43,14 @@ parser.add_argument('pview',metavar='nview',nargs='*',help='Type of plot to make
 parser.add_argument("-f","--file",nargs=1,default=['results'],help='Results folder to use for plotting')
 parser.add_argument("-s","--simulation_ID",nargs=1,default=['auto'],help='Name of simulation (e.g., planet name)')
 parser.add_argument("-i","--initial_file",nargs=1,default=[10],type=int,help='Initial file id number (integer)')
-parser.add_argument("-l","--last_file",nargs=1,default=[10],type=int,help='Last file id number (integer)')
+parser.add_argument("-l","--last_file",nargs=1,default=['init'],type=int,help='Last file id number (integer)')
 parser.add_argument("-p","--pressure_lev",nargs=1,default=[2.5e2],help='Pressure level to plot in temperature/velocity/vorticity field (mbar)')
 parser.add_argument("-pmin","--pressure_min",nargs=1,default=['default'],help='Lowest pressure value to plot in vertical plots')
 parser.add_argument("-slay","--split_layer",nargs=1,default=['no_split'],help='Split conserved quantities into weather and deep layers at this pressure')
 args = parser.parse_args()
 pview = args.pview
 
-valid = ['uver','wver','wprof','Tver','Tulev','PTver','ulev','PVver','PVlev','TP','RVlev','cons','stream','pause','tracer']
+valid = ['uver','wver','wprof','Tver','Tulev','PTver','ulev','PVver','PVlev','TP','RVlev','cons','stream','pause','tracer','PTP']
 if 'all' in pview:
     pview = valid
 else:
@@ -59,7 +59,11 @@ else:
             raise ValueError('%s not a valid plot option. Valid options are '%p+', '.join(valid))
 
 ntsi     = args.initial_file[0]  # initial file id number
-nts      = args.last_file[0]     # last file id number
+
+if args.last_file[0] == 'init':
+    nts = ntsi
+else:
+    nts      = args.last_file[0]     # last file id number
 
 if ntsi > nts:
     nts = ntsi
@@ -145,6 +149,10 @@ if 'RVlev' in pview:
 #     ham.vring(input,grid,output,sigmaref)
 if 'TP' in pview:
     ham.TPprof(input,grid,output,sigmaref,1902)
+
+if 'PTP' in pview:
+    ham.PTPprof(input,grid,output,sigmaref,1902)
+
 
 if 'cons' in pview:
     if args.split_layer[0] == 'no_split':

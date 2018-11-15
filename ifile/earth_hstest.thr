@@ -2,7 +2,7 @@
 # config format version
 config_version = 1
 
-# earth held-suarez model
+# earth held-suarez model (Held & Suarez 1994)
 
 
 #-- Time stepping and output options -----------------------------------------#
@@ -50,16 +50,16 @@ Tmean = 300.0
 # Reference surface pressure [Pa] (pressure at bottom of model)
 P_ref = 100000.0
 
-# Altitude of the top of the model domain [m]
-Top_altitude = 36000.0
-
 # Initialize atmosphere with Guillot TP profile (0 = isothermal)?
 TPprof = 0
 
 
 #-- Grid options -------------------------------------------------------------#
+# Altitude of the top of the model domain [m]
+Top_altitude = 36000.0
+
 # Horizontal resolution level.
-glevel = 4
+glevel = 5
 
 # Number of vertical layers
 vlevel = 32
@@ -99,16 +99,19 @@ initial = earth_hs/esp_output_Earth_3.h5
 
 # Core benchmark tests
 # Held-Suarez test for Earth == HeldSuarez
-# Benchmark test for shallow hot Jupiter == HSShallowHotJupiter
-# Benchmark test for deep hot Jupiter == HSDeepHotJupiter
-# Benchmark test for tidally locked Earth == HSTidallyLockedEarth
-# No HS test == NoBenchmark (model is then forced with grey RT by default)
+# Benchmark test for shallow hot Jupiter == ShallowHotJupiter
+# Benchmark test for deep hot Jupiter == DeepHotJupiter
+# Benchmark test for tidally locked Earth == TidallyLockedEarth
+# No benchmark test == NoBenchmark (model is then forced with grey RT by default)
 core_benchmark = HeldSuarez
 
 
 # Switch off dynamical core (gcm)
 # This is useful for testing/debugging physics modules
 gcm_off = false
+
+# enable convective adjustment scheme
+conv_adj = 0
 
 
 #-- Sponge layer (Rayleigh drag) ---------------------------------------------#
@@ -153,6 +156,9 @@ tausw = 1.67
 
 # temperature of internal heat flux (bottom boundary) (K)
 Tlow = 50
+
+# diffusivity factor
+diff_fac = 0.5
 #########################################################
 
 ## insolation (orbit + spin-state) parameters ###########

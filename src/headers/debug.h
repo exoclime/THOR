@@ -44,7 +44,7 @@
 
 // benchmarking
 // if defined run benchmark functions?
-//#define BENCHMARKING
+// #define BENCHMARKING
 
 // ***************************************
 // * binary comparison
@@ -56,7 +56,7 @@
 //#define BENCH_PRINT_DEBUG
 // ***************************************
 // * check for NaNs
-//#define BENCH_NAN_CHECK
+// #define BENCH_NAN_CHECK
 //#define BENCH_CHECK_LAST_CUDA_ERROR
 
 // path to benchmark result directory
