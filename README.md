@@ -16,8 +16,6 @@ If you use this code please cite: [Mendonca, J.M., Grimm, S.L., Grosheintz, L., 
 
 * Inclusion of top-of-atmosphere __Rayleigh drag__ ("sponge layer") (see [Mendonca, J.M., Tsai, S.-M., Malik, M., Grimm, S.L., & Heng, K.](http://adsabs.harvard.edu/abs/2018arXiv180800501M))
 
-* Inclusion of __tracer particles__ and __chemical relaxation__ scheme (see [Mendonca, J.M., Tsai, S.-M., Malik, M., Grimm, S.L., & Heng, K.](http://adsabs.harvard.edu/abs/2018arXiv180800501M))
-
 * Addition of __"conservation"__ routines, which calculate energy, entropy, mass, and angular momentum
 
 * Inclusion of __dry convective adjustment__ scheme for sub-grid scale convection (used, though not detailed, in [Mendonca, J.M., Malik, M., Demory, B.-O., & Heng, K., AJ, 155, 150, 2018](http://iopscience.iop.org/article/10.3847/1538-3881/aaaebc/meta))
@@ -30,7 +28,7 @@ If you use this code please cite: [Mendonca, J.M., Grimm, S.L., Grosheintz, L., 
 
 * Command line options have been added to allow more flexibility when running the model, particularly for restarting canceled/finished simulations
 
-* Modular structure for additional physics has been put in place and is used for the grey radiative transfer scheme (and hopefully chemistry???)
+* Modular structure for additional physics has been put in place and is used for the grey radiative transfer scheme 
 
 * Numerous performance and debugging modes have been implemented in the code
 
@@ -48,21 +46,31 @@ Current code owners: Joao Mendonca: joao.mendonca@space.dtu.dk, Russell Deitrick
 
 Tested on *UBUNTU* *17.04* *Debian unstable*
 
-1- Install cuda.
+1- First, ensure that you have `git`, `make`, `gcc`, and `g++` installed. If you would like to use `cmake` to build THOR instead of `make`, ensure that that is installed as well. On Ubuntu, these can be installed like so
+```sh
+   $ sudo apt install git make
+   $ sudo apt-get install gcc g++
+```
+
+2- Install CUDA. In Ubuntu, this can be done from the command line:
 
 ```sh
    $ sudo apt-get install nvidia-cuda-toolkit
 ```
-2- Downgrade g++ because cuda 8/9 conflicts with the latest g++ and asks for g++-5
+Alternatively, you can find and download from the web: https://developer.nvidia.com/cuda-downloads
 
-```sh
-   $ sudo apt-get install g++-5
-```
+Note that you may have to manually add the paths to the nvidia compiler and libraries to your environment file. See "Chapter 7: Post-Installation Actions" in the installation guide here: https://developer.download.nvidia.com/compute/cuda/10.0/Prod/docs/sidebar/CUDA_Installation_Guide_Linux.pdf
+
 3- Install HDF5, from your package manager if possible or by hand (see below)
 ```sh
-   $ sudo apt-get install libhdf5-dev libhdf5-100  libhdf5-serial-dev libhdf5-cpp-100 python-h5py
+   $ sudo apt-get install libhdf5-dev libhdf5-100  libhdf5-serial-dev libhdf5-cpp-100
 ```
-The python package is for analysis scripts.
+For the python plotting scripts, you will need h5py. You can install it with your OS package manager or pip:
+```sh
+   $ pip3 install h5py
+```
+
+4- Use git to clone this repository to a location you can find 6 months from now.
 
 ### COMPILE THOR
 #### Find your SM number
@@ -75,6 +83,11 @@ This depends on the GPU you are using. SM stands for Streaming Multiprocessor an
 ```
 
 (cmake will try to guess that for you, if you compile with Makefile, you need to set this).
+
+Depending on how you installed the CUDA-toolkit, you may also have to install some additional utilities to use `nvidia-smi`:
+```sh
+   $ sudo apt-get install nvidia-utils-390
+```
 
 #### Using makefile
 
