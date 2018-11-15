@@ -63,9 +63,12 @@ Note that you may have to manually add the paths to the nvidia compiler and libr
 
 3- Install HDF5, from your package manager if possible or by hand (see below)
 ```sh
-   $ sudo apt-get install libhdf5-dev libhdf5-100  libhdf5-serial-dev libhdf5-cpp-100 python-h5py
+   $ sudo apt-get install libhdf5-dev libhdf5-100  libhdf5-serial-dev libhdf5-cpp-100
 ```
-The python package is for analysis scripts.
+For the python plotting scripts, you will need h5py. You can install it with your OS package manager or pip:
+```sh
+   $ pip3 install h5py
+```
 
 4- Use git to clone this repository to a location you can find 6 months from now.
 
