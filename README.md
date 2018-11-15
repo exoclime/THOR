@@ -42,17 +42,15 @@ Current code owners: Joao Mendonca: joao.mendonca@space.dtu.dk, Russell Deitrick
 
 ```sh
    $ sudo apt-get install git make gcc g++ cmake nvidia-cuda-toolkit nvidia-utils-390 libhdf5-dev libhdf5-100  libhdf5-serial-dev libhdf5-cpp-100
-   $ git clone https://github.com/exoclime/THOR
+   $ git clone https://github.com/exoclime/THOR.git
    $ cd THOR
    $ cp Makefile.conf.template Makefile.conf
 ```
-
 Find the `SM` value of your Nvidia GPU. Then open `Makefile.conf` in a text editor and edit like so:
 ```
 MODULES_SRC := src/physics/managers/multi/
 SM:=<SM value of your card> 
 ```
-
 Then head back to the command line and
 ```sh
    $ make -j8 release
@@ -63,8 +61,7 @@ or
    $ cd build
    $ cmake ../
 ```
-
-Run 
+Finally, run 
 ```sh
    $ bin/esp ifile/<config file for your planet>
 ```
