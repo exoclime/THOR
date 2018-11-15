@@ -55,12 +55,6 @@ Then head back to the command line and
 ```sh
    $ make -j8 release
 ```
-or
-```sh
-   $ mkdir build
-   $ cd build
-   $ cmake ../
-```
 Finally, run 
 ```sh
    $ bin/esp ifile/<config file for your planet>
