@@ -6,6 +6,8 @@
 
 If you use this code please cite: [Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016](http://iopscience.iop.org/article/10.3847/0004-637X/829/2/115/meta)
 
+Current code owners: Joao Mendonca: joao.mendonca@space.dtu.dk, Russell Deitrick: russell.deitrick@csh.unibe.ch, Urs Schroffenegger: urs.schroffenegger@csh.unibe.ch
+
 ###### Copyright (C) 2017-2018 Exoclimes Simulation Platform ######
 
 ### Changes since version 1
@@ -36,11 +38,40 @@ If you use this code please cite: [Mendonca, J.M., Grimm, S.L., Grosheintz, L., 
 
 * Output files now contain additional information about model settings and quantities related to the additions described above
 
-### BUILD & RUN THOR
+### BUILD & RUN THOR (TL;DR instructions)
+
+```sh
+   $ sudo apt-get install git make gcc g++ cmake nvidia-cuda-toolkit nvidia-utils-390 libhdf5-dev libhdf5-100  libhdf5-serial-dev libhdf5-cpp-100
+   $ git clone https://github.com/exoclime/THOR
+   $ cd THOR
+   $ cp Makefile.conf.template Makefile.conf
+```
+
+Find the `SM` value of your Nvidia GPU. Then open `Makefile.conf` in a text editor and edit like so:
+```
+MODULES_SRC := src/physics/managers/multi/
+SM:=<SM value of your card> 
+```
+
+Then head back to the command line and
+```sh
+   $ make -j8 release
+```
+or
+```sh
+   $ mkdir build
+   $ cd build
+   $ cmake ../
+```
+
+Run 
+```sh
+   $ bin/esp ifile/<config file for your planet>
+```
+
+### BUILD & RUN THOR (detailed instructions)
 
 Main instructions to compile and run *THOR*. This version uses only a __single__ __GPU__.
-
-Current code owners: Joao Mendonca: joao.mendonca@space.dtu.dk, Russell Deitrick: russell.deitrick@csh.unibe.ch, Urs Schroffenegger: urs.schroffenegger@csh.unibe.ch
 
 ### INSTALL
 
@@ -136,7 +167,7 @@ To show commands echoed
    $ make VERBOSE=1
 ```
 
-If if fails, check the makefile variables output at the beginning of the compilation, it shows the variables and the path detected for h5, which is a common cause of issue during compilation.
+If it fails, check the makefile variables output at the beginning of the compilation, it shows the variables and the path detected for h5, which is a common cause of issue during compilation.
 
 
 
