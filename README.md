@@ -67,6 +67,8 @@ Note that you may have to manually add the paths to the nvidia compiler and libr
 ```
 The python package is for analysis scripts.
 
+4- Use git to clone this repository to a location you can find 6 months from now.
+
 ### COMPILE THOR
 #### Find your SM number
 
