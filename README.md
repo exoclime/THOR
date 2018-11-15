@@ -58,6 +58,7 @@ Tested on *UBUNTU* *17.04* *Debian unstable*
    $ sudo apt-get install nvidia-cuda-toolkit
 ```
 Alternatively, you can find and download from the web: https://developer.nvidia.com/cuda-downloads
+
 Note that you may have to manually add the paths to the nvidia compiler and libraries to your environment file. See "Chapter 7: Post-Installation Actions" in the installation guide here: https://developer.download.nvidia.com/compute/cuda/10.0/Prod/docs/sidebar/CUDA_Installation_Guide_Linux.pdf
 
 3- Install HDF5, from your package manager if possible or by hand (see below)
