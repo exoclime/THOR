@@ -48,9 +48,9 @@ Tested on *UBUNTU* *17.04* *Debian unstable*
 
 1- First, ensure that you have `git`, `make`, `gcc`, and `g++` installed. If you would like to use `cmake` to build THOR instead of `make`, ensure that that is installed as well. On Ubuntu, these can be installed like so
 ```sh
-   $ sudo apt install git make
+   $ sudo apt-get install git make
    $ sudo apt-get install gcc g++
-   $ sudo apt install cmake
+   $ sudo apt-get install cmake
 ```
 
 2- Install CUDA. In Ubuntu, this can be done from the command line:
