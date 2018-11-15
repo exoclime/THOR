@@ -1,11 +1,10 @@
-
 # THOR programming guide
 
 ## structure
 ### logic
 The code uses a main loop, updating the state variables, going through these steps.
 * dynamical core (THOR), updating all the atmospheric dynamics of the simulation
-* physics (ProfX), 
+* physics (ProfX)
 * conservation computation
 * output
 
@@ -198,7 +197,42 @@ You can add more checks by adding flags in `src/headers/debug.h` and the code in
 
 
 ## physical modules
-New physical modules can be plugged into the dynamical core. 
+New physical behaviour can be implemented outside of the main dynamical core and plugged in as modules.
+
+Two examples are available:
+* `src/physics/managers/empty/` is an empty code structure to implement user modules
+* `src/physics/managers/multi/` is an example of a physics modules using multiple physics behaviour, implemented in subclasses, that provide radiative transfer and chemical dynamics, with the implementation of the physics in itself  in `src/physics/modules`.
+
+### Interface
+The physics modules themselves must provide the function signatures as defined in `src/headers/phy_modules.h`. 
+
+They should mange their own state variables and functions, and fill in the hooks to be executed from the main loop.
+
+- `phy_modules_get_name`: called at initialisation to store name of module used in output file, for reference.
+- `phy_modules_print_config`: called at initialisation for CLI reporting of configuration.
+- `phy_modules_generate_config`: called with `config_reader` to add configurations keys that should be read from input file.
+- `phy_modules_init_mem`: called at initialisation for module to allocate it's memory and cuda memory, receivees a `device_RK_array_manager` to register the arrays that should be updated by the RK kernels during the dynamical core Runge-Kutta step.
+- `phy_modules_free_mem`: called at the end of the application to free memory.
+- `phy_modules_init_data`: called at initialisation to initialise the state variables. Receives main state variables and a pointer to astorage helper object. If storage object is null, starting from rest, initialise the module with default. If storage pointer is non null, wraps the start up file used to run thor, it can read it's own state in that file if it has been save to and restart from there.
+- `phy_modules_dyn_core_loop_init`: called before the dynamical core step. Usually used to initialise data for the step or swap data from step initial state and step final state arrays.
+- `phy_modules_dyn_core_loop_slow_modes`: called during slow step of dynamical core integration. 
+- `phy_modules_dyn_core_loop_fast_modes`: called during fast step of dynamics core integrations.
+- The arrays registered in `phy_modules_init_mem` are advanced in `UpdateRK` and `UpdateRK2` through aRunge-Kutta scheme.
+- `phy_modules_dyn_core_loop_end`: end of dynamical core loop. Used to swap initial/final state arrays before physical modules step.
+
+- `phy_modules_phy_loop`: physics integration scheme.
+- `phy modules_store`: called at end of N step to store data from integration.
+- `phy_modules_store_init`: called at initalisation to save parameters of physics module.
+
+### Compilation of module 
+The main makefile calls the makefile in the physics module directory. It passes it its own variables to help for compilation. 
+
+The physics module should create a static library called `libphy_modules.a` in its root directory that will be used to link to in the main program. 
+
+### Integration of module in THOR.
+To integrate your physical module to THOR, configure it's relative path in `Makefile.conf`, by setting the `MODULES_SRC` variable.
+
+The main makefile will then run the makefile in that directory and statically link to the `libphy_modules.a` library found at that path.
 
 ## config file
 ### structure
