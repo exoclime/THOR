@@ -101,4 +101,4 @@ gcm_off = false
 
 TPprof = 0
 
-chemistry = 1
+chemistry = true
