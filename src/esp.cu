@@ -669,10 +669,6 @@ int main(int argc, char** argv) {
                                                                 // if nothing read
                                          conservation);
     
-    if (core_benchmark == NO_BENCHMARK) {
-        phy_modules_init_data(X, Planet);
-    }
-
     if (!load_initial) {
         printf("error loading initial conditions from %s.\n", initial_conditions.c_str());
         return -1;
