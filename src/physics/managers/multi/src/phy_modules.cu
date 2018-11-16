@@ -104,6 +104,8 @@ bool phy_modules_phy_loop(ESP&           esp,
     // run all the modules main loop
     bool out = true;
 
+    chem.phy_loop(esp, planet, nstep, time_step, mu, kb);
+
     rt.phy_loop(esp, planet, nstep, time_step, mu, kb);
 
     return out;

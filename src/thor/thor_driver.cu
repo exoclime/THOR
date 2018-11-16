@@ -113,7 +113,7 @@ __host__ void ESP::Thor(bool   HyDiff,     // Turn on/off hyper-diffusion.
     phy_modules_dyn_core_loop_init(*this);
 
     USE_BENCHMARK();
-    BENCH_POINT_I(current_step, "thor_init", vector<string>({}), vector<string>({"Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"}));
+    BENCH_POINT_I(current_step, "thor_init", vector<string>({}), vector<string>({"Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d", "tracer_d", "tracers_d", "tracerk_d"}));
 
 
     //  Loop for large time integration.
@@ -804,7 +804,7 @@ __host__ void ESP::Thor(bool   HyDiff,     // Turn on/off hyper-diffusion.
     //  Update diagnostic variables.
     cudaDeviceSynchronize();
 
-    BENCH_POINT_I(current_step, "END", vector<string>({}), vector<string>({"Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"}))
+    BENCH_POINT_I(current_step, "END", vector<string>({}), vector<string>({"Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d", "tracer_d", "tracers_d", "tracerk_d"}))
 
     cudaMemcpy(Mh_d, Mhk_d, point_num * nv * 3 * sizeof(double), cudaMemcpyDeviceToDevice);
     cudaMemcpy(Wh_d, Whk_d, point_num * nvi * sizeof(double), cudaMemcpyDeviceToDevice);
