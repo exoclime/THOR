@@ -73,7 +73,7 @@ __host__ void ESP::Thor(bool   HyDiff,     // Turn on/off hyper-diffusion.
                                            //
                                            //  Number of threads per block.
 
-    bool DeepModel = DeepModel_;
+    DeepModel = DeepModel_;
 
     const int NTH = 256;
 
@@ -316,8 +316,8 @@ __host__ void ESP::Thor(bool   HyDiff,     // Turn on/off hyper-diffusion.
                                                1,
                                                DeepModel);
 
-            BENCH_POINT_I_S(current_step, rk, "Diffusion_Op_Poles", vector<string>({}), vector<string>({"diffmh_d", "diffw_d", "diffrh_d", "diffpr_d", "diff_d", "difftr_d"}));
-        }
+	    BENCH_POINT_I_S(current_step, rk, "Diffusion_Op_Poles", vector<string>({}), vector<string>({"diffmh_d", "diffw_d", "diffrh_d", "diffpr_d", "diff_d", "difftr_d","tracer_d", "tracers_d", "tracerk_d"}))
+	    }
 
         // TODO check where and arguments
         phy_modules_dyn_core_loop_slow_modes(*this,
@@ -328,6 +328,8 @@ __host__ void ESP::Thor(bool   HyDiff,     // Turn on/off hyper-diffusion.
                                              kb,
                                              HyDiff);
 
+	BENCH_POINT_I_S(current_step, rk, "DivDamp", vector<string>({}), vector<string>({"Rhos_d", "Rhok_d", "Mhs_d", "Mhk_d", "Whs_d", "Whk_d", "pressures_d", "pressurek_d","pressure_d",
+                             "tracer_d", "tracers_d", "tracerk_d"}))
         //
         //      Divergence damping
         cudaMemset(DivM_d, 0, sizeof(double) * point_num * 3 * nv);
@@ -711,7 +713,7 @@ __host__ void ESP::Thor(bool   HyDiff,     // Turn on/off hyper-diffusion.
 
             //          Pressure and density equations.
             cudaDeviceSynchronize();
-            BENCH_POINT_I_SS(current_step, rk, ns, "Vertical_Eq", vector<string>({}), vector<string>({"Whs_d", "Ws_d", "pressures_d", "h_d", "hh_d", "Rhos_d"}));
+            BENCH_POINT_I_SS(current_step, rk, ns, "Vertical_Eq", vector<string>({}), vector<string>({"Whs_d", "Ws_d", "pressures_d", "h_d", "hh_d", "Rhos_d", "tracer_d", "tracers_d", "tracerk_d"}));
 
             // update the physics modules in fast mode
             phy_modules_dyn_core_loop_fast_modes(*this,
@@ -721,6 +723,8 @@ __host__ void ESP::Thor(bool   HyDiff,     // Turn on/off hyper-diffusion.
                                                  mu,
                                                  kb);
 
+
+	    BENCH_POINT_I_SS(current_step, rk, ns, "Phy_mod_fast_mode", vector<string>({}), vector<string>({"Whs_d", "Ws_d", "pressures_d", "h_d", "hh_d", "Rhos_d", "tracer_d", "tracers_d", "tracerk_d"}))
 
             // Updates: pressures_d, Rhos_d
             Density_Pressure_Eqs<LN, LN><<<NB, NT>>>(pressures_d,
