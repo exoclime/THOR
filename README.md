@@ -64,9 +64,15 @@ Finally, run
 
 Main instructions to compile and run *THOR*. This version uses only a __single__ __GPU__.
 
-### INSTALL
+### Install
+Tested on 
+- *UBUNTU* *17.04* 
+- *Debian unstable* and *Debian strech*
 
-Tested on *UBUNTU* *17.04* *Debian unstable*
+0- Clone the repository
+```sh 
+   /<myfolder>/ $ git clone https://github.com/exoclime/THOR.git
+```
 
 1- First, ensure that you have `git`, `make`, `gcc`, and `g++` installed. If you would like to use `cmake` to build THOR instead of `make`, ensure that that is installed as well. On Ubuntu, these can be installed like so
 ```sh
@@ -76,19 +82,28 @@ Tested on *UBUNTU* *17.04* *Debian unstable*
 ```
 
 2- Install CUDA. In Ubuntu, this can be done from the command line:
-
 ```sh
    $ sudo apt-get install nvidia-cuda-toolkit
 ```
 Alternatively, you can find and download from the web: https://developer.nvidia.com/cuda-downloads
 
+Your system's CUDA Toolkit and compiler must be able to work together.
+For nvidia-cuda-toolkit (version 9.x or 8.x):
+* cuda 9.x use gcc > 5
+* cuda 8.x use gcc = 5
+
+
+* Debian unstable: Install `nvidia-cuda-toolkit` with the package manager.
+* Debian stretch: NVidia toolkit on stretch and gcc versions are not compatible. Install NVidia Toolkit from [NVidia](https://developer.nvidia.com/cuda-downloads).
+
 Note that you may have to manually add the paths to the nvidia compiler and libraries to your environment file. See "Chapter 7: Post-Installation Actions" in the installation guide here: https://developer.download.nvidia.com/compute/cuda/10.0/Prod/docs/sidebar/CUDA_Installation_Guide_Linux.pdf
 
-3- Install HDF5, from your package manager if possible or by hand (see below)
+3- Install HDF5, from your package manager if possible or by hand ([see below](#hdf5fromsource))
 ```sh
    $ sudo apt-get install libhdf5-dev libhdf5-100  libhdf5-serial-dev libhdf5-cpp-100
 ```
 For the python plotting scripts, you will need h5py. You can install it with your OS package manager or pip:
+
 ```sh
    $ pip3 install h5py
 ```
@@ -197,7 +212,7 @@ For more verbosity to debug makefile by showing commands:
    $ make VERBOSE=1
 ```
 
-### INSTALL HDF5 from source
+### INSTALL HDF5 from source<a id="hdf5fromsource"/>
 
 1- Install hdf5 (https://support.hdfgroup.org/HDF5/release/obtainsrc.html).
    Download the source code.
@@ -233,8 +248,6 @@ For more verbosity to debug makefile by showing commands:
 ```
 
 ### RUN
-
-*UBUNTU* *17.04*
 
 1- Configure the initial conditions. Template of configuration is in "ifile/earth.thr".
 Copy that file where you'd like as an initial condition file. e.g.: "init/myplanet.thr"
