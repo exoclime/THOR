@@ -39,9 +39,9 @@ if(${CMAKE_VERSION} VERSION_LESS 3.8)
 
 
   
-  # looks like CUDA wants gcc/g++ 5
-  SET(CMAKE_CXX_COMPILER g++-5)
-  SET(CMAKE_C_COMPILER gcc-5)
+  # if CUDA wants gcc/g++ 5
+  #SET(CMAKE_CXX_COMPILER g++-5)
+  #SET(CMAKE_C_COMPILER gcc-5)
 
   project (THOR CXX)
   # some C++ flags
@@ -59,7 +59,7 @@ if(${CMAKE_VERSION} VERSION_LESS 3.8)
   if (CUDA_FOUND AND SM MATCHES "0")
     #Get CUDA compute capability
     set(OUTPUTFILE ${CMAKE_CURRENT_SOURCE_DIR}/build/cuda_script) # No suffix required
-    set(CUDAFILE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/check_cuda.cu)
+    set(CUDAFILE ${CMAKE_CURRENT_SOURCE_DIR}/tools/check_cuda.cu)
     execute_process(COMMAND nvcc -lcuda ${CUDAFILE} -o ${OUTPUTFILE})
     execute_process(COMMAND ${OUTPUTFILE}
                             RESULT_VARIABLE CUDA_RETURN_CODE
@@ -93,9 +93,9 @@ else()
   message(STATUS "detected CMake version ${CMAKE_VERSION} above 3.8")
     
  
-  # looks like CUDA wants gcc/g++ 5
-  SET(CMAKE_CXX_COMPILER g++-5)
-  SET(CMAKE_C_COMPILER gcc-5)
+  # if CUDA wants gcc/g++ 5
+  #SET(CMAKE_CXX_COMPILER g++-5)
+  #SET(CMAKE_C_COMPILER gcc-5)
 
   project (THOR C CXX CUDA)
 

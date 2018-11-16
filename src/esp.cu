@@ -517,6 +517,70 @@ int main(int argc, char** argv) {
     printf(" Using GPU #%d\n", GPU_ID_N);
     cudaSetDevice(GPU_ID_N);
 
+        //
+    //  PRINTS
+    //  Device Information
+    int         ndevices;
+    cudaError_t err = cudaGetDeviceCount(&ndevices);
+
+    // Check device query
+    if (err != cudaSuccess) {
+        printf("Error getting device count.\n");
+        printf("%s\n", cudaGetErrorString(err));
+        exit(-1);
+    }
+
+    int device_major_minor_number = 0;
+    for (int i = 0; i < ndevices; ++i) {
+        // Get device properties
+        printf("\n CUDA Device #%d\n", i);
+        cudaDeviceProp devPp;
+        cudaGetDeviceProperties(&devPp, i);
+
+        if (i == GPU_ID_N)
+            device_major_minor_number = devPp.major * 10 + devPp.minor;
+
+        printf(" Name: %s\n", devPp.name);
+        printf(" Compute Capabilities: %d.%d\n", devPp.major, devPp.minor);
+        printf("   Total global memory:           %lu\n", devPp.totalGlobalMem);
+        printf("   Total shared memory per block: %lu\n", devPp.sharedMemPerBlock);
+        printf("   Total registers per block:     %d\n", devPp.regsPerBlock);
+        printf("   Warp size:                     %d\n", devPp.warpSize);
+        printf("   Maximum memory pitch:          %lu\n", devPp.memPitch);
+        printf("   Maximum threads per block:     %d\n", devPp.maxThreadsPerBlock);
+        printf("   Clock rate:                    %d\n", devPp.clockRate);
+        printf("   Total constant memory:         %lu\n", devPp.totalConstMem);
+        printf("   Number of multiprocessors:     %d\n", devPp.multiProcessorCount);
+    }
+
+    // do we have a device?
+    if (ndevices < 1 || err != cudaSuccess) {
+        printf("No device found (compiled SM:%d).\n", DEVICE_SM);
+        printf("Aborting.\n");
+        exit(-1);
+    }
+
+    // can we match the device ID asked?
+    if (GPU_ID_N >= ndevices) {
+        printf("Asked for device #%d but only found %d devices.\n", GPU_ID_N, ndevices);
+        exit(-1);
+    }
+
+    // do we have the compute capabilities set at compile time
+
+    if (device_major_minor_number < DEVICE_SM) {
+        printf("Found device with id %d does not have sufficent compute capabilities.\n", GPU_ID_N);
+        printf("Capabilities: %d (compiled with SM=%d).\n", device_major_minor_number, DEVICE_SM);
+        printf("Aborting.\n");
+        exit(-1);
+    }
+    else if (device_major_minor_number > DEVICE_SM) {
+        printf("Device has higher compute capability than used at compile time.\n");
+        printf("Capabilities: %d (compiled with SM=%d).\n", device_major_minor_number, DEVICE_SM);
+    }
+
+    
+
 
     //
     //  Make the icosahedral grid
@@ -529,6 +593,7 @@ int main(int argc, char** argv) {
                  Planet.Top_altitude, // Top of the model's domain
                  SpongeLayer);        // Use sponge layer?
                                       //
+
                                       //  Define object X.
     ESP X(Grid.point_local,           // First neighbours
           Grid.maps,                  // Grid domains
@@ -567,7 +632,6 @@ int main(int argc, char** argv) {
 
     BENCH_POINT("0", "Grid", std::vector<string>({}), std::vector<string>({"func_r", "areas", "areasTr", "areasT", "nvec", "nvecoa", "nvecti", "nvecte", "Altitude", "Altitudeh", "lonlat", "div", "grad"}))
 
-
     // esp output setup
     X.set_output_param(Planet.simulation_ID, output_path);
 
@@ -578,7 +642,6 @@ int main(int argc, char** argv) {
     // Initial conditions
     int output_file_idx = 0;
     int step_idx        = 0;
-
     bool load_initial = X.initial_values(rest,                  // Option to
                                                                 // start the
                                                                 // atmosphere
@@ -607,11 +670,9 @@ int main(int argc, char** argv) {
                                                                 // read + 1, 0
                                                                 // if nothing read
                                          conservation);
-
     if (core_benchmark == NO_BENCHMARK) {
         phy_modules_init_data(X, Planet);
     }
-
 
     if (!load_initial) {
         printf("error loading initial conditions from %s.\n", initial_conditions.c_str());
@@ -660,66 +721,6 @@ int main(int argc, char** argv) {
 
     long startTime = clock();
 
-    //
-    //  PRINTS
-    //  Device Information
-    int         ndevices;
-    cudaError_t err = cudaGetDeviceCount(&ndevices);
-
-    int device_major_minor_number = 0;
-    for (int i = 0; i < ndevices; ++i) {
-        // Get device properties
-        printf("\n CUDA Device #%d\n", i);
-        cudaDeviceProp devPp;
-        cudaGetDeviceProperties(&devPp, i);
-
-        if (i == GPU_ID_N)
-            device_major_minor_number = devPp.major * 10 + devPp.minor;
-
-        printf(" Name: %s\n", devPp.name);
-        printf(" Compute Capabilities: %d.%d\n", devPp.major, devPp.minor);
-        printf("   Total global memory:           %lu\n", devPp.totalGlobalMem);
-        printf("   Total shared memory per block: %lu\n", devPp.sharedMemPerBlock);
-        printf("   Total registers per block:     %d\n", devPp.regsPerBlock);
-        printf("   Warp size:                     %d\n", devPp.warpSize);
-        printf("   Maximum memory pitch:          %lu\n", devPp.memPitch);
-        printf("   Maximum threads per block:     %d\n", devPp.maxThreadsPerBlock);
-        printf("   Clock rate:                    %d\n", devPp.clockRate);
-        printf("   Total constant memory:         %lu\n", devPp.totalConstMem);
-        printf("   Number of multiprocessors:     %d\n", devPp.multiProcessorCount);
-    }
-
-    // Check device query
-    if (err != cudaSuccess) {
-        printf("Error getting device count.\n");
-        printf("%s\n", cudaGetErrorString(err));
-    }
-
-    // do we have a device?
-    if (ndevices < 1 || err != cudaSuccess) {
-        printf("No device found (compiled SM:%d).\n", DEVICE_SM);
-        printf("Aborting.\n");
-        exit(-1);
-    }
-
-    // can we match the device ID asked?
-    if (GPU_ID_N >= ndevices) {
-        printf("Asked for device #%d but only found %d devices.\n", GPU_ID_N, ndevices);
-        exit(-1);
-    }
-
-    // do we have the compute capabilities set at compile time
-
-    if (device_major_minor_number < DEVICE_SM) {
-        printf("Found device with id %d does not have sufficent compute capabilities.\n", GPU_ID_N);
-        printf("Capabilities: %d (compiled with SM=%d).\n", device_major_minor_number, DEVICE_SM);
-        printf("Aborting.\n");
-        exit(-1);
-    }
-    else if (device_major_minor_number > DEVICE_SM) {
-        printf("Device has higher compute capability than used at compile time.\n");
-        printf("Capabilities: %d (compiled with SM=%d).\n", device_major_minor_number, DEVICE_SM);
-    }
 
     //
     //  Planet conditions
