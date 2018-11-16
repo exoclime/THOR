@@ -105,7 +105,6 @@ initial = earth_hs/esp_output_Earth_3.h5
 # No benchmark test == NoBenchmark (model is then forced with grey RT by default)
 core_benchmark = HeldSuarez
 
-
 # Switch off dynamical core (gcm)
 # This is useful for testing/debugging physics modules
 gcm_off = false

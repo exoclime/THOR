@@ -159,7 +159,7 @@ __host__ void ESP::ProfX(int    chemistry, // Use chemistry
                                   nv);           // number of vertical layers
     }
 
-    BENCH_POINT_I(current_step, "dry_conv_adj ", vector<string>({}), vector<string>({"Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"}))
+    BENCH_POINT_I(current_step, "dry_conv_adj", vector<string>({}), vector<string>({"Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"}))
 
 
     ///////////////////////

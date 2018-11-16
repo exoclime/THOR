@@ -57,7 +57,8 @@
 // ***************************************
 // * check for NaNs
 // #define BENCH_NAN_CHECK
-//#define BENCH_CHECK_LAST_CUDA_ERROR
+// * below adds checks on device functions (useful for device memory bugs)
+// #define BENCH_CHECK_LAST_CUDA_ERROR
 
 // path to benchmark result directory
 #define BENCHMARK_DUMP_REF_PATH "results/ref/"
