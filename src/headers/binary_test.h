@@ -61,7 +61,8 @@
 #ifdef BENCHMARKING
 
 #    define USE_BENCHMARK() binary_test& btester = binary_test::get_instance();
-#    define INIT_BENCHMARK(esp, grid) binary_test::get_instance().append_definitions(build_definitions(esp, grid));
+#    define SET_BENCHMARK_PATH(path) binary_test& btester = binary_test::get_instance().set_output("bindata_", path);
+#    define INIT_BENCHMARK(esp, grid, path) binary_test::get_instance().append_definitions(build_definitions(esp, grid)); binary_test::get_instance().set_output("bindata_", path);
 #    define BENCH_POINT(iteration, name, in, out) btester.check_data(iteration, name, in, out);
 #    define BENCH_POINT_I(iteration, name, in, out) btester.check_data(std::to_string(iteration), name, in, out);
 #    define BENCH_POINT_I_S(iteration, subiteration, name, in, out) btester.check_data(std::to_string(iteration)           \
@@ -81,7 +82,8 @@
 
 #else // do nothing
 #    define USE_BENCHMARK()
-#    define INIT_BENCHMARK(esp, grid)
+#    define SET_BENCHMARK_PATH(path)
+#    define INIT_BENCHMARK(esp, grid, path)
 #    define BENCH_POINT(iteration, name, in, out)
 #    define BENCH_POINT_I(iteration, name, in, out)
 #    define BENCH_POINT_I_S(iteration, subiteration, name, in, out)
@@ -150,7 +152,6 @@ public:
 
     // make constructor private, can only be instantiated through get_instance
     ~binary_test();
-
 
 private:
     vector<string> current_input_vars;

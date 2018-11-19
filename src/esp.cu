@@ -441,6 +441,17 @@ int main(int argc, char** argv) {
         exit(-1);
     }
     //*****************************************************************
+#ifdef BENCHMARKING
+    string output_path_ref = (path(output_path) / string("ref")).to_string();
+#ifdef BENCH_POINT_COMPARE
+    output_path = (path(output_path) / string("compare")).to_string();
+#endif // BENCH_POINT_COMPARE
+#ifdef BENCH_POINT_WRITE
+    output_path = (path(output_path) / string("write")).to_string();
+#endif // BENCH_POINT_WRITE
+#endif // BENCHMARKING
+    
+    
     // check output config directory
     if (!create_output_dir(output_path)) {
         printf("Error creating output result directory: %s\n",
@@ -627,7 +638,8 @@ int main(int argc, char** argv) {
           logwriter);                 // Log writer
 
     USE_BENCHMARK();
-    INIT_BENCHMARK(X, Grid);
+    
+    INIT_BENCHMARK(X, Grid, output_path_ref);
 
     BENCH_POINT("0", "Grid", std::vector<string>({}), std::vector<string>({"func_r", "areas", "areasTr", "areasT", "nvec", "nvecoa", "nvecti", "nvecte", "Altitude", "Altitudeh", "lonlat", "div", "grad"}))
 

@@ -221,9 +221,13 @@ void binary_test::output_reference(const string&             iteration,
                                    const string&             ref_name,
                                    const vector<output_def>& data_output) {
     // open file
-    string output_name = output_dir + output_base_name
+    string output_name = output_dir + "/" + output_base_name
                          + ref_name + "_" + iteration + ".h5";
 
+    if (!path_exists(output_dir))
+        create_output_dir(output_dir);
+    
+            
     storage s(output_name);
 
     for (auto& def : data_output) {
@@ -263,7 +267,7 @@ bool binary_test::compare_to_reference(const string&             iteration,
                                        const string&             ref_name,
                                        const vector<output_def>& data_output) {
 
-    string output_name = output_dir + output_base_name
+    string output_name = output_dir + "/" + output_base_name
                          + ref_name + "_" + iteration + ".h5";
 
     if (!path_exists(output_name)) {
