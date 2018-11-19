@@ -16,7 +16,7 @@ $(info h5includes: $(h5include))
 $(info cpp_flags: $(cpp_flags))
 $(info cuda_flags: $(cuda_flags))
 $(info arch: $(arch))
-
+$(info CC compile flag: $(CC_comp_flag))
 $(info Sub Makefile variables)
 
 ######################################################################
@@ -67,9 +67,9 @@ $(BUILDDIR)/phy_modules.o: phy_modules.cu phy_modules.h phy_module_base.h | $(BU
 	@echo $(YELLOW)creating $@ $(END)
 	# test if we build with compilation database (clang) or not (nvcc)	
 	if test $$CDB = "-MJ" ; then \
-		$(CC) -c $(arch)  $(cuda_flags) $(h5include) $(INCLUDE_DIRS) $(CDB) $@.json -o $@ $<; \
+		$(CC) $(CC_comp_flag) $(arch)  $(cuda_flags) $(h5include) $(INCLUDE_DIRS) $(CDB) $@.json -o $@ $<; \
 	else \
-		$(CC) -c $(arch)  $(cuda_flags) $(h5include) $(INCLUDE_DIRS) -o $@ $<; \
+		$(CC) $(CC_comp_flag) $(arch)  $(cuda_flags) $(h5include) $(INCLUDE_DIRS) -o $@ $<; \
 	fi
 
 

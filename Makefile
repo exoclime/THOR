@@ -74,6 +74,7 @@ CUDA_LIBS := /usr/lib/x86-64-linux-gnu/
 ifeq ($(COMP), nvcc)
 	# define specific compiler for nvcc. if if fails on newer installations, get it to use g++-5
 	CC = nvcc
+	CC_comp_flag = -dc
 	ccbin :=
 	# ccbin := -ccbin g++-5
 	CDB = none
@@ -90,6 +91,7 @@ ifeq ($(COMP), nvcc)
 else
 	# need to compile with clang for compilation database
 	CC := $(COMP)
+	CC_comp_flag = -c
 	CDB = -MJ
 	arch := --cuda-gpu-arch=sm_$(SM)
 	dependencies_flags := -MM
@@ -218,6 +220,7 @@ $(info cpp_flags: $(cpp_flags) )
 $(info link_flags: $(link_flags) )
 $(info arch: $(arch) )
 $(info MODULES_SRC: $(MODULES_SRC))
+$(info CC compile flag: $(CC_comp_flag))
 
 ifndef VERBOSE
 .SILENT:
@@ -268,18 +271,18 @@ $(OBJDIR)/${OUTPUTDIR}/%.d: %.cpp | $(OBJDIR)/$(OUTPUTDIR) $(OBJDIR)
 $(OBJDIR)/${OUTPUTDIR}/%.o: %.cu $(OBJDIR)/$(OUTPUTDIR)/%.d| $(OBJDIR)/$(OUTPUTDIR) $(OBJDIR)
 	@echo $(YELLOW)creating $@ $(END)
 	if test $$CDB = "-MJ" ; then \
-		$(CC) -dc $(arch)  $(cuda_flags) $(h5include) -I$(includedir) $(CDB) $@.json -o $@ $<; \
+		$(CC) $(CC_comp_flag) $(arch)  $(cuda_flags) $(h5include) -I$(includedir) $(CDB) $@.json -o $@ $<; \
 	else \
-		$(CC) -dc $(arch)  $(cuda_flags) $(h5include) -I$(includedir) -o $@ $<; \
+		$(CC) $(CC_comp_flag) $(arch)  $(cuda_flags) $(h5include) -I$(includedir) -o $@ $<; \
 	fi
 
 # C++ files
 $(OBJDIR)/${OUTPUTDIR}/%.o: %.cpp $(OBJDIR)/$(OUTPUTDIR)/%.d| $(OBJDIR)/$(OUTPUTDIR) $(OBJDIR)
 	@echo $(YELLOW)creating $@ $(END)
 	if test $$CDB = "-MJ" ; then \
-		$(CC) -dc $(arch) $(cpp_flags) $(h5include) -I$(includedir) $(CDB) $@.json -o $@ $<; \
+		$(CC) $(CC_comp_flag) $(arch) $(cpp_flags) $(h5include) -I$(includedir) $(CDB) $@.json -o $@ $<; \
 	else \
-		$(CC) -dc $(arch) $(cpp_flags) $(h5include) -I$(includedir) -o $@ $<; \
+		$(CC) $(CC_comp_flag) $(arch) $(cpp_flags) $(h5include) -I$(includedir) -o $@ $<; \
 	fi
 
 

@@ -133,7 +133,7 @@ int main() {
 
         binary_test& btester = binary_test::get_instance();
         btester.set_output("grid_test_" + std::to_string(l), "./results/grid_test/");
-        btester.set_definitions(output_definitions);
+        btester.append_definitions(output_definitions);
 
         if (output)
             btester.output_reference(std::to_string(l),
