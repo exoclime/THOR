@@ -43,14 +43,14 @@
 ////////////////////////////////////////////////////////////////////////
 
 #include "esp.h"
-#include "phy/profx_sponge.h"
 #include "phy/dry_conv_adj.h"
 #include "phy/profx_auxiliary.h"
+#include "phy/profx_conservation.h"
 #include "phy/profx_deepHJ.h"
 #include "phy/profx_held_suarez.h"
 #include "phy/profx_shallowHJ.h"
+#include "phy/profx_sponge.h"
 #include "phy/profx_tidalearth.h"
-#include "phy/profx_conservation.h"
 
 #include "binary_test.h"
 #include "debug_helpers.h"
@@ -79,8 +79,8 @@ __host__ void ESP::ProfX(int    conv,   //
     const int NTH = 256;
 
     //  Specify the block sizes.
-    dim3      NB((point_num / NTH) + 1, nv, 1);
-    dim3      NBRT((point_num / NTH) + 1, 1, 1);
+    dim3 NB((point_num / NTH) + 1, nv, 1);
+    dim3 NBRT((point_num / NTH) + 1, 1, 1);
 
     if (sponge == true) {
         dim3 NBT((point_num / NTH) + 1, nv, 1);
@@ -226,8 +226,7 @@ __host__ void ESP::ProfX(int    conv,   //
     }
 
 
-
-    if (core_benchmark == NO_BENCHMARK) {
+    if (phy_modules_execute) {
         cudaDeviceSynchronize();
         phy_modules_phy_loop(*this,
                              planet,

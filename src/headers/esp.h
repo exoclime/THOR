@@ -341,6 +341,10 @@ private:
     // store if we run benchmarks
     benchmark_types core_benchmark;
 
+    // run physics modules
+    bool phy_modules_execute;
+    
+
     // step counter for logging
     int    current_step;
     double simulation_time;

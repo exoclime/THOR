@@ -110,10 +110,11 @@ __host__ void ESP::Thor(bool   HyDiff,     // Turn on/off hyper-diffusion.
     cudaMemset(Ws_d, 0, sizeof(double) * point_num * nv);
     cudaMemset(pressures_d, 0, sizeof(double) * point_num * nv);
 
-    phy_modules_dyn_core_loop_init(*this);
+    if (phy_modules_execute)
+        phy_modules_dyn_core_loop_init(*this);
 
     USE_BENCHMARK();
-    BENCH_POINT_I(current_step, "thor_init", vector<string>({}), vector<string>({"Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d", "tracer_d", "tracers_d", "tracerk_d"}));
+    BENCH_POINT_I(current_step, "thor_init", vector<string>({}), vector<string>({"Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d" /*, "tracer_d", "tracers_d", "tracerk_d"*/}));
 
 
     //  Loop for large time integration.
@@ -316,20 +317,19 @@ __host__ void ESP::Thor(bool   HyDiff,     // Turn on/off hyper-diffusion.
                                                1,
                                                DeepModel);
 
-	    BENCH_POINT_I_S(current_step, rk, "Diffusion_Op_Poles", vector<string>({}), vector<string>({"diffmh_d", "diffw_d", "diffrh_d", "diffpr_d", "diff_d", "difftr_d","tracer_d", "tracers_d", "tracerk_d"}))
-	    }
+            BENCH_POINT_I_S(current_step, rk, "Diffusion_Op_Poles", vector<string>({}), vector<string>({"diffmh_d", "diffw_d", "diffrh_d", "diffpr_d", "diff_d", "difftr_d" /*, "tracer_d", "tracers_d", "tracerk_d"*/}))
+        }
 
-        // TODO check where and arguments
-        phy_modules_dyn_core_loop_slow_modes(*this,
-                                             planet,
-                                             current_step,
-                                             times,
-                                             mu,
-                                             kb,
-                                             HyDiff);
+        if (phy_modules_execute)
+            phy_modules_dyn_core_loop_slow_modes(*this,
+                                                 planet,
+                                                 current_step,
+                                                 times,
+                                                 mu,
+                                                 kb,
+                                                 HyDiff);
 
-	BENCH_POINT_I_S(current_step, rk, "DivDamp", vector<string>({}), vector<string>({"Rhos_d", "Rhok_d", "Mhs_d", "Mhk_d", "Whs_d", "Whk_d", "pressures_d", "pressurek_d","pressure_d",
-                             "tracer_d", "tracers_d", "tracerk_d"}))
+        BENCH_POINT_I_S(current_step, rk, "DivDamp", vector<string>({}), vector<string>({"Rhos_d", "Rhok_d", "Mhs_d", "Mhk_d", "Whs_d", "Whk_d", "pressures_d", "pressurek_d", "pressure_d" /*, "tracer_d", "tracers_d", "tracerk_d"*/}))
         //
         //      Divergence damping
         cudaMemset(DivM_d, 0, sizeof(double) * point_num * 3 * nv);
@@ -491,7 +491,7 @@ __host__ void ESP::Thor(bool   HyDiff,     // Turn on/off hyper-diffusion.
         if (rk > 0) {
             cudaDeviceSynchronize();
 
-            BENCH_POINT_I_S(current_step, rk, "bRK", vector<string>({}), vector<string>({"Rhos_d", "Rhok_d", "Mhs_d", "Mhk_d", "Whs_d", "Whk_d", "pressures_d", "pressurek_d", "pressure_d", "tracer_d", "tracers_d", "tracerk_d"}))
+            BENCH_POINT_I_S(current_step, rk, "bRK", vector<string>({}), vector<string>({"Rhos_d", "Rhok_d", "Mhs_d", "Mhk_d", "Whs_d", "Whk_d", "pressures_d", "pressurek_d", "pressure_d" /*, "tracer_d", "tracers_d", "tracerk_d"*/}))
 
             // Updates: Mhs_d, Whs_d, Ws_d, Rhos_d, pressures_d
             UpdateRK<<<(point_num / NTH) + 1, NTH>>>(Mhs_d,
@@ -513,7 +513,7 @@ __host__ void ESP::Thor(bool   HyDiff,     // Turn on/off hyper-diffusion.
                                                      point_num,
                                                      nv);
 
-            BENCH_POINT_I_S(current_step, rk, "RK", vector<string>({}), vector<string>({"Rhos_d", "Rhok_d", "Mhs_d", "Mhk_d", "Whs_d", "Whk_d", "pressures_d", "pressurek_d", "pressure_d", "tracer_d", "tracers_d", "tracerk_d"}))
+            BENCH_POINT_I_S(current_step, rk, "RK", vector<string>({}), vector<string>({"Rhos_d", "Rhok_d", "Mhs_d", "Mhk_d", "Whs_d", "Whk_d", "pressures_d", "pressurek_d", "pressure_d" /*, "tracer_d", "tracers_d", "tracerk_d"*/}))
         }
 
         //
@@ -708,23 +708,24 @@ __host__ void ESP::Thor(bool   HyDiff,     // Turn on/off hyper-diffusion.
 
             // Check device query
             if (err != cudaSuccess) {
-                printf("THORdriver CUDA error check reports error: %s\n", cudaGetErrorString(err));
+                printf("thor_driver.cu: CUDA error check reports error: %s\n", cudaGetErrorString(err));
             }
 
             //          Pressure and density equations.
             cudaDeviceSynchronize();
-            BENCH_POINT_I_SS(current_step, rk, ns, "Vertical_Eq", vector<string>({}), vector<string>({"Whs_d", "Ws_d", "pressures_d", "h_d", "hh_d", "Rhos_d", "tracer_d", "tracers_d", "tracerk_d"}));
+            BENCH_POINT_I_SS(current_step, rk, ns, "Vertical_Eq", vector<string>({}), vector<string>({"Whs_d", "Ws_d", "pressures_d", "h_d", "hh_d", "Rhos_d" /*, "tracer_d", "tracers_d", "tracerk_d"*/}));
 
             // update the physics modules in fast mode
-            phy_modules_dyn_core_loop_fast_modes(*this,
-                                                 planet,
-                                                 current_step,
-                                                 times,
-                                                 mu,
-                                                 kb);
+            if (phy_modules_execute)
+                phy_modules_dyn_core_loop_fast_modes(*this,
+                                                     planet,
+                                                     current_step,
+                                                     times,
+                                                     mu,
+                                                     kb);
 
 
-	    BENCH_POINT_I_SS(current_step, rk, ns, "Phy_mod_fast_mode", vector<string>({}), vector<string>({"Whs_d", "Ws_d", "pressures_d", "h_d", "hh_d", "Rhos_d", "tracer_d", "tracers_d", "tracerk_d"}))
+            BENCH_POINT_I_SS(current_step, rk, ns, "Phy_mod_fast_mode", vector<string>({}), vector<string>({"Whs_d", "Ws_d", "pressures_d", "h_d", "hh_d", "Rhos_d" /*,"tracer_d", "tracers_d", "tracerk_d" */}))
 
             // Updates: pressures_d, Rhos_d
             Density_Pressure_Eqs<LN, LN><<<NB, NT>>>(pressures_d,
@@ -780,7 +781,7 @@ __host__ void ESP::Thor(bool   HyDiff,     // Turn on/off hyper-diffusion.
 
             BENCH_POINT_I_SS(current_step, rk, ns, "Density_Pressure_Eqs", vector<string>({}), vector<string>({"pressures_d", "Rhos_d"}))
         }
-        BENCH_POINT_I_S(current_step, rk, "bRK2", vector<string>({}), vector<string>({"Rhos_d", "Rhok_d", "Mhs_d", "Mhk_d", "Whs_d", "Whk_d", "pressures_d", "pressurek_d", "tracer_d", "tracers_d", "tracerk_d"}))
+        BENCH_POINT_I_S(current_step, rk, "bRK2", vector<string>({}), vector<string>({"Rhos_d", "Rhok_d", "Mhs_d", "Mhk_d", "Whs_d", "Whk_d", "pressures_d", "pressurek_d" /*, "tracer_d", "tracers_d", "tracerk_d"*/}))
         //      Update quantities for the long loop.
         cudaDeviceSynchronize();
         // Updates: Mhk_d, Whk_d, Wk_d, Rhok_d, pressurek_d
@@ -799,7 +800,7 @@ __host__ void ESP::Thor(bool   HyDiff,     // Turn on/off hyper-diffusion.
                                                   point_num,
                                                   nv);
 
-        BENCH_POINT_I_S(current_step, rk, "RK2", vector<string>({}), vector<string>({"Rhos_d", "Rhok_d", "Mhs_d", "Mhk_d", "Whs_d", "Whk_d", "pressures_d", "pressurek_d", "tracer_d", "tracers_d", "tracerk_d"}))
+        BENCH_POINT_I_S(current_step, rk, "RK2", vector<string>({}), vector<string>({"Rhos_d", "Rhok_d", "Mhs_d", "Mhk_d", "Whs_d", "Whk_d", "pressures_d", "pressurek_d" /*, "tracer_d", "tracers_d", "tracerk_d"*/}))
     }
     //  Update diagnostic variables.
     cudaDeviceSynchronize();
@@ -812,6 +813,7 @@ __host__ void ESP::Thor(bool   HyDiff,     // Turn on/off hyper-diffusion.
     cudaMemcpy(Rho_d, Rhok_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToDevice);
     cudaMemcpy(pressure_d, pressurek_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToDevice);
 
-    phy_modules_dyn_core_loop_end(*this);
+    if (phy_modules_execute)
+        phy_modules_dyn_core_loop_end(*this);
 }
 //END OF THOR!

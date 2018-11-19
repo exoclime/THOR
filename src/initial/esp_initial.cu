@@ -125,8 +125,12 @@ __host__ ESP::ESP(int *           point_local_,
 
     //
     //  Allocate Data
-    if (core_benchmark == NO_BENCHMARK)
+    if (core_benchmark == NO_BENCHMARK) {
+        phy_modules_execute = true;
         alloc_data(conservation);
+    }
+    else
+        phy_modules_execute = false;
 }
 
 __host__ void ESP::alloc_data(bool conservation) {
@@ -263,22 +267,17 @@ __host__ void ESP::alloc_data(bool conservation) {
     }
     // PHY modules
     printf("  Dynamical core memory initialised.\n");
-    
-    if (core_benchmark == NO_BENCHMARK) {
+
+    if (phy_modules_execute) {
 
         bool init_modules = phy_modules_init_mem(*this, phy_modules_core_arrays);
         phy_modules_core_arrays.allocate_device_array();
         if (init_modules)
             printf("  Module memory initialised.\n");
-        else
-        {
+        else {
             printf("  Error initialising module memory.\n");
             exit(-1);
-            
         }
-        
-                
-
     }
 }
 
@@ -603,7 +602,7 @@ __host__ bool ESP::initial_values(bool               rest,
     delete[] Kdhz_h;
 
 
-    if (core_benchmark == NO_BENCHMARK) {
+    if (phy_modules_execute) {
         if (rest)
             phy_modules_init_data(*this, planet, nullptr);
         else {
@@ -709,7 +708,7 @@ __host__ ESP::~ESP() {
     cudaFree(GlobalAMy_d);
     cudaFree(GlobalAMz_d);
 
-    if (core_benchmark == NO_BENCHMARK)
+    if (phy_modules_execute)
         phy_modules_free_mem();
 
 
