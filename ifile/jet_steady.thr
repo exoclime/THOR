@@ -67,6 +67,7 @@ rest = true
 # No HS test == NoBenchmark (model is then forced with grey RT by default)
 core_benchmark = JetSteady
 
+radiative_transfer = true
 #Tstar = 4875
 #planet_star_dist = 0.03099
 #radius_star = 0.805
@@ -83,3 +84,5 @@ n_out = 1000
 GPU_ID_N = 0
 
 TPprof = 0
+
+
