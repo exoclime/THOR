@@ -33,7 +33,6 @@ bool phy_modules_init_mem(const ESP&               esp,
 
     rt.initialise_memory(esp, phy_modules_core_arrays);
 
-
     return out;
 }
 
@@ -49,6 +48,7 @@ bool phy_modules_init_data(const ESP&     esp,
 
 
     out &= rt.initial_conditions(esp, planet);
+
     return out;
 }
 
@@ -103,9 +103,7 @@ bool phy_modules_phy_loop(ESP&           esp,
 ) {
     // run all the modules main loop
     bool out = true;
-
-    chem.phy_loop(esp, planet, nstep, time_step, mu, kb);
-
+    
     rt.phy_loop(esp, planet, nstep, time_step, mu, kb);
 
     return out;
