@@ -282,6 +282,8 @@ bool binary_test::compare_to_reference(const string&             iteration,
     oss << std::left << std::setw(50) << output_name;
     oss << std::setw(8) << iteration << " ref: " << std::setw(30) << ref_name;
 
+    std::map<std::string, compare_statistics> stats_table;
+    
     for (auto& def : data_output) {
         bool comp = false;
 
@@ -295,21 +297,46 @@ bool binary_test::compare_to_reference(const string&             iteration,
             continue;
         }
 
+        compare_statistics stats;
+        
         if (def.device_ptr) {
             getDeviceData(def.data, mem_buf.get(), def.size * sizeof(double));
-            comp = compare_to_saved_data(s, def.short_name, mem_buf.get(), def.size);
+            comp = compare_to_saved_data(s, def.short_name, mem_buf.get(), def.size, stats);
         }
         else {
-            comp = compare_to_saved_data(s, def.short_name, def.data, def.size);
+            comp = compare_to_saved_data(s, def.short_name, def.data, def.size, stats);
         }
+#ifdef BENCH_COMPARE_PRINT_STATISTICS
+        if (comp == false)
+        {
+            stats_table[def.short_name] = stats;
+        }
+#endif // BENCH_COMPARE_PRINT_STATISTICS        
 
         oss << " " << def.short_name << ": " << comp;
         out &= comp;
     }
+    
 #    ifndef BENCH_PRINT_DEBUG // if unset, print only failures
     if (!out)
 #    endif
         cout << oss.str() << endl;
+
+#ifdef BENCH_COMPARE_PRINT_STATISTICS
+    for(auto const &v : stats_table) {
+        auto const &key = v.first;
+        auto const &value = v.second;
+        printf("  %5s - num (fail/tot): %d/%d delta abs(mx:%g,mn:%g) - rel(mx:%g,mn:%g)\n",
+               key.c_str(),
+               value.num_failures,
+               value.num_values,
+               value.max_abs_delta,
+               value.mean_abs_delta,
+               value.max_rel_delta,
+               value.mean_rel_delta);
+    }
+    
+#endif // BENCH_COMPARE_PRINT_STATISTICS
 
     return out;
 }
