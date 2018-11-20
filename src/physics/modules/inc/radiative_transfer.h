@@ -58,12 +58,10 @@ public:
                             const XPlanet &planet);
 
     // TBD, how does it get data? friend of ESP ? grid ?
-     bool phy_loop(ESP &          esp,
+    bool phy_loop(ESP &          esp,
                   const XPlanet &planet,
-                  int            nstep,     // Step number
-                  double         time_step, // Time-step [s]
-                  double         mu,        // Atomic mass unit [kg]
-                  double         kb);
+                  int            nstep, // Step number
+                  double         time_step);    // Time-step [s]
 
     bool store(const ESP &esp,
                storage &  s);

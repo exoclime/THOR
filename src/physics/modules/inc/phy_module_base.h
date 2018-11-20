@@ -25,24 +25,20 @@ public:
                                           const XPlanet& planet,
                                           int            nstep, // Step number
                                           double         times, // Time-step [s]
-                                          double         mu,    // Atomic mass unit [kg]
-                                          double         kb,    // Boltzmann constant [J/K]
                                           bool           HyDiff) { return true; };
     virtual bool dyn_core_loop_fast_modes(const ESP&     esp,
                                           const XPlanet& planet,
-                                          int            nstep,     // Step number
-                                          double         time_step, // Time-step [s]
-                                          double         mu,        // Atomic mass unit [kg]
-                                          double         kb) { return true; };
+                                          int            nstep, // Step number
+                                          double         time_step)     // Time-step [s]
+    { return true; };
     virtual bool dyn_core_loop_end(const ESP& esp) { return true; };
 
     // TBD, how does it get data? friend of ESP ? grid ?
     virtual bool phy_loop(ESP&           esp,
                           const XPlanet& planet,
-                          int            nstep,     // Step number
-                          double         time_step, // Time-step [s]
-                          double         mu,        // Atomic mass unit [kg]
-                          double         kb) = 0;
+                          int            nstep,    // Step number
+                          double         time_step // Time-step [s]
+                          ) = 0;
 
 
     virtual bool store(const ESP& esp, storage& s) = 0;

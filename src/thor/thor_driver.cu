@@ -58,20 +58,13 @@
 
 #include "phy_modules.h"
 
-__host__ void ESP::Thor(bool   HyDiff,     // Turn on/off hyper-diffusion.
-                        bool   DivDampP,   // Turn on/off divergence damping.
-                        double Omega,      // Rotation rate.
-                        double Cp,         // Heat capaciry.
-                        double Rd,         // Gas constant (atmosphere).
-                        double mu,         // Mass unit.
-                        double kb,         // Boltzmann constant.
-                        double P_Ref,      // Averaged pressure surface.
-                        double Gravit,     // Gravity.
-                        double A,          // Planet radius.
-                        bool   NonHydro,   // Turn on/off non-hydrostatic.
-                        bool   DeepModel_) { // Turn on/off deep atmosphere.
-                                           //
-                                           //  Number of threads per block.
+__host__ void ESP::Thor(const XPlanet& Planet,   // planet parameters
+                        bool           HyDiff,   // Turn on/off hyper-diffusion.
+                        bool           DivDampP, // Turn on/off divergence damping.
+                        bool           NonHydro, // Turn on/off non-hydrostatic.
+                        bool           DeepModel_) {       // Turn on/off deep atmosphere.
+                                                 //
+                                                 //  Number of threads per block.
 
     DeepModel = DeepModel_;
 
@@ -146,7 +139,7 @@ __host__ void ESP::Thor(bool   HyDiff,     // Turn on/off hyper-diffusion.
                                                 Wk_d,
                                                 Rhok_d,
                                                 Altitude_d,
-                                                A,
+                                                Planet.A,
                                                 (double3*)func_r_d,
                                                 maps_d,
                                                 nl_region,
@@ -159,7 +152,7 @@ __host__ void ESP::Thor(bool   HyDiff,     // Turn on/off hyper-diffusion.
                                               Wk_d,
                                               Rhok_d,
                                               Altitude_d,
-                                              A,
+                                              Planet.A,
                                               func_r_d,
                                               point_local_d,
                                               point_num,
@@ -174,8 +167,8 @@ __host__ void ESP::Thor(bool   HyDiff,     // Turn on/off hyper-diffusion.
                                                             Rhok_d,
                                                             Altitude_d,
                                                             Altitudeh_d,
-                                                            Omega,
-                                                            A,
+                                                            Planet.Omega,
+                                                            Planet.A,
                                                             nv,
                                                             point_num,
                                                             DeepModel);
@@ -197,10 +190,10 @@ __host__ void ESP::Thor(bool   HyDiff,     // Turn on/off hyper-diffusion.
                                                                       gtil_d,
                                                                       gtilh_d,
                                                                       Whk_d,
-                                                                      P_Ref,
-                                                                      Gravit,
-                                                                      Cp,
-                                                                      Rd,
+                                                                      Planet.P_Ref,
+                                                                      Planet.Gravit,
+                                                                      Planet.Cp,
+                                                                      Planet.Rd,
                                                                       Altitude_d,
                                                                       Altitudeh_d,
                                                                       point_num,
@@ -238,8 +231,8 @@ __host__ void ESP::Thor(bool   HyDiff,     // Turn on/off hyper-diffusion.
                                               func_r_d,
                                               Kdh4_d,
                                               Altitude_d,
-                                              A,
-                                              Rd,
+                                              Planet.A,
+                                              Planet.Rd,
                                               maps_d,
                                               nl_region,
                                               0,
@@ -262,8 +255,8 @@ __host__ void ESP::Thor(bool   HyDiff,     // Turn on/off hyper-diffusion.
                                                Kdh4_d,
                                                Altitude_d,
                                                Altitudeh_d,
-                                               A,
-                                               Rd,
+                                               Planet.A,
+                                               Planet.Rd,
                                                point_local_d,
                                                point_num,
                                                0,
@@ -286,8 +279,8 @@ __host__ void ESP::Thor(bool   HyDiff,     // Turn on/off hyper-diffusion.
                                               func_r_d,
                                               Kdh4_d,
                                               Altitude_d,
-                                              A,
-                                              Rd,
+                                              Planet.A,
+                                              Planet.Rd,
                                               maps_d,
                                               nl_region,
                                               1,
@@ -310,8 +303,8 @@ __host__ void ESP::Thor(bool   HyDiff,     // Turn on/off hyper-diffusion.
                                                Kdh4_d,
                                                Altitude_d,
                                                Altitudeh_d,
-                                               A,
-                                               Rd,
+                                               Planet.A,
+                                               Planet.Rd,
                                                point_local_d,
                                                point_num,
                                                1,
@@ -322,11 +315,9 @@ __host__ void ESP::Thor(bool   HyDiff,     // Turn on/off hyper-diffusion.
 
         if (phy_modules_execute)
             phy_modules_dyn_core_loop_slow_modes(*this,
-                                                 planet,
+                                                 Planet,
                                                  current_step,
                                                  times,
-                                                 mu,
-                                                 kb,
                                                  HyDiff);
 
         BENCH_POINT_I_S(current_step, rk, "DivDamp", vector<string>({}), vector<string>({"Rhos_d", "Rhok_d", "Mhs_d", "Mhk_d", "Whs_d", "Whk_d", "pressures_d", "pressurek_d", "pressure_d" /*, "tracer_d", "tracers_d", "tracerk_d"*/}))
@@ -349,7 +340,7 @@ __host__ void ESP::Thor(bool   HyDiff,     // Turn on/off hyper-diffusion.
                                         func_r_d,
                                         Altitudeh_d,
                                         Altitude_d,
-                                        A,
+                                        Planet.A,
                                         maps_d,
                                         nl_region,
                                         0,
@@ -367,7 +358,7 @@ __host__ void ESP::Thor(bool   HyDiff,     // Turn on/off hyper-diffusion.
                                          func_r_d,
                                          Altitudeh_d,
                                          Altitude_d,
-                                         A,
+                                         Planet.A,
                                          point_local_d,
                                          point_num,
                                          0,
@@ -387,7 +378,7 @@ __host__ void ESP::Thor(bool   HyDiff,     // Turn on/off hyper-diffusion.
                                         func_r_d,
                                         Altitudeh_d,
                                         Altitude_d,
-                                        A,
+                                        Planet.A,
                                         maps_d,
                                         nl_region,
                                         1,
@@ -405,7 +396,7 @@ __host__ void ESP::Thor(bool   HyDiff,     // Turn on/off hyper-diffusion.
                                          func_r_d,
                                          Altitudeh_d,
                                          Altitude_d,
-                                         A,
+                                         Planet.A,
                                          point_local_d,
                                          point_num,
                                          1,
@@ -441,10 +432,10 @@ __host__ void ESP::Thor(bool   HyDiff,     // Turn on/off hyper-diffusion.
                                                div_d,
                                                Altitude_d,
                                                Altitudeh_d,
-                                               A,
-                                               Gravit,
-                                               Cp,
-                                               Rd,
+                                               Planet.A,
+                                               Planet.Gravit,
+                                               Planet.Cp,
+                                               Planet.Rd,
                                                func_r_d,
                                                maps_d,
                                                nl_region,
@@ -473,10 +464,10 @@ __host__ void ESP::Thor(bool   HyDiff,     // Turn on/off hyper-diffusion.
                                               div_d,
                                               Altitude_d,
                                               Altitudeh_d,
-                                              A,
-                                              Gravit,
-                                              Cp,
-                                              Rd,
+                                              Planet.A,
+                                              Planet.Gravit,
+                                              Planet.Cp,
+                                              Planet.Rd,
                                               func_r_d,
                                               point_local_d,
                                               nv,
@@ -538,7 +529,7 @@ __host__ void ESP::Thor(bool   HyDiff,     // Turn on/off hyper-diffusion.
                                             func_r_d,
                                             Altitudeh_d,
                                             Altitude_d,
-                                            A,
+                                            Planet.A,
                                             maps_d,
                                             nl_region,
                                             0,
@@ -556,7 +547,7 @@ __host__ void ESP::Thor(bool   HyDiff,     // Turn on/off hyper-diffusion.
                                              func_r_d,
                                              Altitudeh_d,
                                              Altitude_d,
-                                             A,
+                                             Planet.A,
                                              point_local_d,
                                              point_num,
                                              0,
@@ -576,7 +567,7 @@ __host__ void ESP::Thor(bool   HyDiff,     // Turn on/off hyper-diffusion.
                                             func_r_d,
                                             Altitudeh_d,
                                             Altitude_d,
-                                            A,
+                                            Planet.A,
                                             maps_d,
                                             nl_region,
                                             1,
@@ -594,7 +585,7 @@ __host__ void ESP::Thor(bool   HyDiff,     // Turn on/off hyper-diffusion.
                                              func_r_d,
                                              Altitudeh_d,
                                              Altitude_d,
-                                             A,
+                                             Planet.A,
                                              point_local_d,
                                              point_num,
                                              1,
@@ -612,7 +603,7 @@ __host__ void ESP::Thor(bool   HyDiff,     // Turn on/off hyper-diffusion.
                                             grad_d,
                                             Altitude_d,
                                             diffmh_d,
-                                            A,
+                                            Planet.A,
                                             func_r_d,
                                             times,
                                             maps_d,
@@ -625,7 +616,7 @@ __host__ void ESP::Thor(bool   HyDiff,     // Turn on/off hyper-diffusion.
                                            grad_d,
                                            Altitude_d,
                                            DivM_d,
-                                           A,
+                                           Planet.A,
                                            func_r_d,
                                            times,
                                            point_local_d,
@@ -646,9 +637,9 @@ __host__ void ESP::Thor(bool   HyDiff,     // Turn on/off hyper-diffusion.
                                                           Sp_d,
                                                           Sd_d,
                                                           Altitude_d,
-                                                          Cp,
-                                                          Rd,
-                                                          A,
+                                                          Planet.Cp,
+                                                          Planet.Rd,
+                                                          Planet.A,
                                                           maps_d,
                                                           nl_region,
                                                           DeepModel);
@@ -664,9 +655,9 @@ __host__ void ESP::Thor(bool   HyDiff,     // Turn on/off hyper-diffusion.
                                                          Sp_d,
                                                          Sd_d,
                                                          Altitude_d,
-                                                         Cp,
-                                                         Rd,
-                                                         A,
+                                                         Planet.Cp,
+                                                         Planet.Rd,
+                                                         Planet.A,
                                                          point_local_d,
                                                          point_num,
                                                          nv,
@@ -690,13 +681,13 @@ __host__ void ESP::Thor(bool   HyDiff,     // Turn on/off hyper-diffusion.
                                                                            Sp_d,
                                                                            Sd_d,
                                                                            SlowWh_d,
-                                                                           Cp,
-                                                                           Rd,
+                                                                           Planet.Cp,
+                                                                           Planet.Rd,
                                                                            times,
-                                                                           Gravit,
+                                                                           Planet.Gravit,
                                                                            Altitude_d,
                                                                            Altitudeh_d,
-                                                                           A,
+                                                                           Planet.A,
                                                                            NonHydro,
                                                                            point_num,
                                                                            nv,
@@ -720,9 +711,7 @@ __host__ void ESP::Thor(bool   HyDiff,     // Turn on/off hyper-diffusion.
                 phy_modules_dyn_core_loop_fast_modes(*this,
                                                      planet,
                                                      current_step,
-                                                     times,
-                                                     mu,
-                                                     kb);
+                                                     times);
 
 
             BENCH_POINT_I_SS(current_step, rk, ns, "Phy_mod_fast_mode", vector<string>({}), vector<string>({"Whs_d", "Ws_d", "pressures_d", "h_d", "hh_d", "Rhos_d" /*,"tracer_d", "tracers_d", "tracerk_d" */}))
@@ -743,10 +732,10 @@ __host__ void ESP::Thor(bool   HyDiff,     // Turn on/off hyper-diffusion.
                                                      div_d,
                                                      Altitude_d,
                                                      Altitudeh_d,
-                                                     Cp,
-                                                     Rd,
-                                                     A,
-                                                     P_Ref,
+                                                     Planet.Cp,
+                                                     Planet.Rd,
+                                                     Planet.A,
+                                                     Planet.P_Ref,
                                                      times,
                                                      maps_d,
                                                      nl_region,
@@ -769,10 +758,10 @@ __host__ void ESP::Thor(bool   HyDiff,     // Turn on/off hyper-diffusion.
                                                     div_d,
                                                     Altitude_d,
                                                     Altitudeh_d,
-                                                    Cp,
-                                                    Rd,
-                                                    A,
-                                                    P_Ref,
+                                                    Planet.Cp,
+                                                    Planet.Rd,
+                                                    Planet.A,
+                                                    Planet.P_Ref,
                                                     times,
                                                     point_local_d,
                                                     point_num,

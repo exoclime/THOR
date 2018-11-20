@@ -258,8 +258,6 @@ public:
                         const bool &       continue_sim,
                         double             timestep_dyn,
                         XPlanet &          xplanet,
-                        double             kb,
-                        double             mu,
                         bool               sponge,
                         bool               DeepModel,
                         int                TPprof,
@@ -277,45 +275,25 @@ public:
     };
 
 
-    void Thor(bool   HyDiff,   // Turn on/off hyper-diffusion.
-              bool   DivDampP, // Turn on/off divergence damping.
-              double Omega,    // Rotation rate.
-              double Cp,       // Heat capaciry.
-              double Rd,       // Gas constant (atmosphere).
-              double mu,       // Mass unit.
-              double kb,       // Boltzmann constant.
-              double P_Ref,    // Averaged pressure surface.
-              double Gravit,   // Gravity.
-              double A,        // Planet radius.
-              bool   NonHydro, // Turn on/off non-hydrostatic.
-              bool   DeepModel); // Turn on/off deep atmosphere.
+    void Thor(const XPlanet &Planet,   // planet parameters
+              bool           HyDiff,   // Turn on/off hyper-diffusion.
+              bool           DivDampP, // Turn on/off divergence damping.
+              bool           NonHydro, // Turn on/off non-hydrostatic.
+              bool           DeepModel);         // Turn on/off deep atmosphere.
 
-    void ProfX(int    conv,          //
-               double Omega,         // Rotation rate [1/s]
-               double Cp,            // Specific heat capacity [J/kg/K]
-               double Rd,            // Gas constant [J/kg/K]
-               double mu,            // Atomic mass unit [kg]
-               double kb,            // Boltzmann constant [J/K]
-               double P_Ref,         // Reference pressure [Pa]
-               double Gravit,        // Gravity [m/s^2]
-               double A,             // Planet radius [m]
-               bool   DeepModel,     // use deep model
-               int    n_out,         // output step (triggers conservation calc)
-               bool   sponge,        // Use sponge layer?
-               bool   shrink_sponge, // Shrink sponge after some time
-               bool   conservation);   // calc/output conservation quantities
+    void ProfX(const XPlanet &Planet,
+               int            conv,          //
+               bool           DeepModel,     // use deep model
+               int            n_out,         // output step (triggers conservation calc)
+               bool           sponge,        // Use sponge layer?
+               bool           shrink_sponge, // Shrink sponge after some time
+               bool           conservation);           // calc/output conservation quantities
 
 
-    void output(int    fidx,         // Index of output file
-                double Cp,           // Specific heat capacities [J/(Kg K)]
-                double Rd,           // Gas constant [J/(Kg K)]
-                double Omega,        // Rotation rate [s-1]
-                double Gravit,       // Gravitational acceleration [m/s2]
-                double P_Ref,        // Reference surface pressure [Pa]
-                double Top_altitude, // Top of the model's domain [m]
-                double A,
-                bool   conservation,
-                bool   SpongeLayer);
+    void output(int            fidx,         // Index of output file
+                const XPlanet &Planet,       // planet parameters
+                bool           conservation,
+                bool           SpongeLayer);
 
 
     void set_output_param(const std::string &sim_id_,

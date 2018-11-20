@@ -87,13 +87,7 @@ __host__ void ESP::copy_to_host() {
 }
 
 __host__ void ESP::output(int    fidx,         // Index of output file
-                          double Cp,           // Specific heat capacities [J/(Kg K)]
-                          double Rd,           // Gas constant [J/(Kg K)]
-                          double Omega,        // Rotation rate [s-1]
-                          double Gravit,       // Gravitational acceleration [m/s2]
-                          double P_Ref,        // Reference surface pressure [Pa]
-                          double Top_altitude, // Top of the model's domain [m]
-                          double A,
+                          const XPlanet & Planet,
                           bool   conservation,
                           bool   SpongeLayer) {
 
@@ -168,19 +162,19 @@ __host__ void ESP::output(int    fidx,         // Index of output file
         // spring beta
         s.append_value(spring_beta, "/spring_beta", "-", "Spring Beta");
         //      A
-        s.append_value(A, "/A", "m", "Planet radius");
+        s.append_value(Planet.A, "/A", "m", "Planet radius");
         //      Rd
-        s.append_value(Rd, "/Rd", "J/(Kg K)", "Gas constant");
+        s.append_value(Planet.Rd, "/Rd", "J/(Kg K)", "Gas constant");
         //      Omega
-        s.append_value(Omega, "/Omega", "1/s", "Rotation rate");
+        s.append_value(Planet.Omega, "/Omega", "1/s", "Rotation rate");
         //      Gravit
-        s.append_value(Gravit, "/Gravit", "m/s^2", "Surface gravity");
+        s.append_value(Planet.Gravit, "/Gravit", "m/s^2", "Surface gravity");
         //      P_Ref
-        s.append_value(P_Ref, "/P_Ref", "Pa", "Reference pressure");
+        s.append_value(Planet.P_Ref, "/P_Ref", "Pa", "Reference pressure");
         //      Top_altitude
-        s.append_value(Top_altitude, "/Top_altitude", "m", "Top of the model's domain");
+        s.append_value(Planet.Top_altitude, "/Top_altitude", "m", "Top of the model's domain");
         //      CP
-        s.append_value(Cp, "/Cp", "J/(Kg K)", "Specific heat capacity");
+        s.append_value(Planet.Cp, "/Cp", "J/(Kg K)", "Specific heat capacity");
         //      SpongeLayer option
         s.append_value(SpongeLayer ? 1.0 : 0.0, "/SpongeLayer", "-", "Using SpongeLayer?");
         //      core_benchmark  option

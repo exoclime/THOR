@@ -60,8 +60,6 @@ bool phy_modules_dyn_core_loop_slow_modes(const ESP&     esp,
                                           const XPlanet& planet,
                                           int            nstep, // Step number
                                           double         times, // Time-step [s]
-                                          double         mu,    // Atomic mass unit [kg]
-                                          double         kb,    // Boltzmann constant [J/K]
                                           bool           HyDiff) {
 
     return true;
@@ -71,9 +69,7 @@ bool phy_modules_dyn_core_loop_slow_modes(const ESP&     esp,
 bool phy_modules_dyn_core_loop_fast_modes(const ESP&     esp,
                                           const XPlanet& planet,
                                           int            nstep,     // Step number
-                                          double         time_step, // Time-step [s]
-                                          double         mu,        // Atomic mass unit [kg]
-                                          double         kb) {
+                                          double         time_step) { // Time-step [s]
 
     return true;
 }
@@ -89,9 +85,7 @@ bool phy_modules_dyn_core_loop_end(const ESP& esp) {
 bool phy_modules_phy_loop(ESP&           esp,
                           const XPlanet& planet,
                           int            nstep,
-                          double         time_step,
-                          double         mu,
-                          double         kb) {
+                          double         time_step) {
 
 
     return true;

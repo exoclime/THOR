@@ -59,20 +59,13 @@
 
 #include "reduction_add.h"
 
-__host__ void ESP::ProfX(int    conv,   //
-                         double Omega,  // Rotation rate [1/s]
-                         double Cp,     // Specific heat capacity [J/kg/K]
-                         double Rd,     // Gas constant [J/kg/K]
-                         double mu,     // Atomic mass unit [kg]
-                         double kb,     // Boltzmann constant [J/K]
-                         double P_Ref,  // Reference pressure [Pa]
-                         double Gravit, // Gravity [m/s^2]
-                         double A,      // Planet radius [m]
-                         bool   DeepModel,
-                         int    n_out,         // output step (triggers conservation calc)
-                         bool   sponge,        // Use sponge layer?
-                         bool   shrink_sponge, // Shrink sponge after some time (Bonjour Urs!)
-                         bool   conservation) {  // calc/output conservation quantities
+__host__ void ESP::ProfX(const XPlanet& Planet,
+                         int            conv, //
+                         bool           DeepModel,
+                         int            n_out,         // output step (triggers conservation calc)
+                         bool           sponge,        // Use sponge layer?
+                         bool           shrink_sponge, // Shrink sponge after some time (Bonjour Urs!)
+                         bool           conservation) {          // calc/output conservation quantities
     USE_BENCHMARK()
     //
     //  Number of threads per block.
@@ -126,9 +119,9 @@ __host__ void ESP::ProfX(int    conv,   //
                                      pt_d,
                                      pressure_d,
                                      Rho_d,
-                                     P_Ref,
-                                     Rd,
-                                     Cp,
+                                     Planet.P_Ref,
+                                     Planet.Rd,
+                                     Planet.Cp,
                                      point_num);
 
     BENCH_POINT_I(current_step, "phy_T", vector<string>({}), vector<string>({"Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"}))
@@ -148,9 +141,9 @@ __host__ void ESP::ProfX(int    conv,   //
                                   temperature_d, // Temperature [K]
                                   pt_d,          // Pot temperature [K]
                                   Rho_d,         // Density [m^3/kg]
-                                  Cp,            // Specific heat capacity [J/kg/K]
-                                  Rd,            // Gas constant [J/kg/K]
-                                  Gravit,        // Gravity [m/s^2]
+                                  Planet.Cp,     // Specific heat capacity [J/kg/K]
+                                  Planet.Rd,     // Gas constant [J/kg/K]
+                                  Planet.Gravit, // Gravity [m/s^2]
                                   Altitude_d,    // Altitudes of the layers
                                   Altitudeh_d,   // Altitudes of the interfaces
                                   point_num,     // Number of columns
@@ -170,9 +163,9 @@ __host__ void ESP::ProfX(int    conv,   //
                                  pressure_d,
                                  Rho_d,
                                  temperature_d,
-                                 Gravit,
-                                 Cp,
-                                 Rd,
+                                 Planet.Gravit,
+                                 Planet.Cp,
+                                 Planet.Rd,
                                  Altitude_d,
                                  Altitudeh_d,
                                  lonlat_d,
@@ -185,9 +178,9 @@ __host__ void ESP::ProfX(int    conv,   //
                                 pressure_d,
                                 Rho_d,
                                 temperature_d,
-                                Gravit,
-                                Cp,
-                                Rd,
+                                Planet.Gravit,
+                                Planet.Cp,
+                                Planet.Rd,
                                 Altitude_d,
                                 Altitudeh_d,
                                 lonlat_d,
@@ -200,9 +193,9 @@ __host__ void ESP::ProfX(int    conv,   //
                                pressure_d,
                                Rho_d,
                                temperature_d,
-                               Gravit,
-                               Cp,
-                               Rd,
+                               Planet.Gravit,
+                               Planet.Cp,
+                               Planet.Rd,
                                Altitude_d,
                                Altitudeh_d,
                                lonlat_d,
@@ -215,9 +208,9 @@ __host__ void ESP::ProfX(int    conv,   //
                             pressure_d,
                             Rho_d,
                             temperature_d,
-                            Gravit,
-                            Cp,
-                            Rd,
+                            Planet.Gravit,
+                            Planet.Cp,
+                            Planet.Rd,
                             Altitude_d,
                             Altitudeh_d,
                             lonlat_d,
@@ -229,11 +222,9 @@ __host__ void ESP::ProfX(int    conv,   //
     if (phy_modules_execute) {
         cudaDeviceSynchronize();
         phy_modules_phy_loop(*this,
-                             planet,
+                             Planet,
                              current_step, // Step number
-                             timestep,     // Time-step [s]
-                             mu,           // Atomic mass unit [kg]
-                             kb);          // Boltzmann constant [J/K]
+                             timestep);    // Time-step [s]
     }
 
     BENCH_POINT_I(current_step, "phy_core_benchmark ", vector<string>({}), vector<string>({"Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"}))
@@ -242,7 +233,7 @@ __host__ void ESP::ProfX(int    conv,   //
     Compute_pressure<<<NB, NTH>>>(pressure_d,
                                   temperature_d,
                                   Rho_d,
-                                  Rd,
+                                  Planet.Rd,
                                   point_num);
 
     //always do this nan check so the code doesn't keep computing garbage
@@ -260,7 +251,7 @@ __host__ void ESP::ProfX(int    conv,   //
     Compute_temperature_only<<<NB, NTH>>>(temperature_d,
                                           pressure_d,
                                           Rho_d,
-                                          Rd,
+                                          Planet.Rd,
                                           point_num);
 #endif // BENCHMARKING
 
@@ -273,7 +264,7 @@ __host__ void ESP::ProfX(int    conv,   //
 }
 
 // TODO: get constants out of arguments
-void ESP::conservation(const XPlanet& planet, // planet
+void ESP::conservation(const XPlanet& Planet, // planet
                        bool           DeepModel) {
     //
     //  Number of threads per block.
@@ -305,10 +296,10 @@ void ESP::conservation(const XPlanet& planet, // planet
                                W_d,
                                Rho_d,
                                temperature_d,
-                               planet.Gravit,
-                               planet.Cp,
-                               planet.Rd,
-                               planet.A,
+                               Planet.Gravit,
+                               Planet.Cp,
+                               Planet.Rd,
+                               Planet.A,
                                Altitude_d,
                                Altitudeh_d,
                                lonlat_d,
@@ -325,8 +316,8 @@ void ESP::conservation(const XPlanet& planet, // planet
                             GlobalAMz_d,
                             Mh_d,
                             Rho_d,
-                            planet.A,
-                            planet.Omega,
+                            Planet.A,
+                            Planet.Omega,
                             Altitude_d,
                             Altitudeh_d,
                             lonlat_d,

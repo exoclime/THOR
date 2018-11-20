@@ -135,12 +135,10 @@ bool radiative_transfer::initial_conditions(const ESP &    esp,
     return true;
 }
 
-bool radiative_transfer::phy_loop(ESP &           esp,
+bool radiative_transfer::phy_loop(ESP &          esp,
                                   const XPlanet &planet,
-                                  int            nstep,     // Step number
-                                  double         time_step, // Time-step [s]
-                                  double         mu,        // Atomic mass unit [kg]
-                                  double         kb) {
+                                  int            nstep, // Step number
+                                  double         time_step) {   // Time-step [s]
 
     //  update global insolation properties if necessary
     if (sync_rot) {
