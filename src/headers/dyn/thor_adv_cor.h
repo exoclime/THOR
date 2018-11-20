@@ -40,6 +40,10 @@
 // 1.0     16/08/2017 Released version  (JM)
 //
 ////////////////////////////////////////////////////////////////////////
+
+#include "kernel_halo_helpers.h"
+
+
 // Computes the 3D advection terms and the velocities in cartesians.
 // (no poles)
 template<int NX, int NY>
@@ -58,7 +62,7 @@ __global__ void Compute_Advec_Cori1(double3* Adv_d,      // Advection term.
 
     int x   = threadIdx.x;
     int y   = threadIdx.y;
-    int ib  = blockIdx.x;
+    //int ib  = blockIdx.x;
     int nv  = gridDim.y;
     int lev = blockIdx.y;
 
@@ -73,8 +77,6 @@ __global__ void Compute_Advec_Cori1(double3* Adv_d,      // Advection term.
 
     double w;
 
-    int ir = (y + 1) * nhl + x + 1; // Region index
-    int iri, ir2, id;
 
     /////////////////////////////////////////
     __shared__ double3 v_s[(NX + 2) * (NY + 2)];
@@ -82,15 +84,23 @@ __global__ void Compute_Advec_Cori1(double3* Adv_d,      // Advection term.
     __shared__ double3 nflx_s[NX * NY];
     /////////////////////////////////////////
 
-    bool pent_ind = 0; //
-    int  ig;
+    int ir = 0; // index in region
+    int iri, ir2, id;
 
+    
+    bool pent_ind = false; //
+    int  ig; // index in global mem
+
+    int igh = 0; // global index in halo
+        
     // Load shared memory
-    ig = maps_d[ib * nhl2 + ir];
-    id = ig;
-    if (x == 0 && y == 0)
-        if (maps_d[ib * nhl2] == -1) pent_ind = 1;
+    
 
+    
+    bool load_halo = compute_mem_idx(maps_d, nhl, nhl2, ig, igh,  ir, ir2, pent_ind);
+    id = ig;
+    
+    
     M_s[ir]        = Mh_d[ig * nv + lev];
     rho            = Rho_d[ig * nv + lev];
     w              = W_d[ig * nv + lev];
@@ -103,63 +113,13 @@ __global__ void Compute_Advec_Cori1(double3* Adv_d,      // Advection term.
     ///////////////////////////////
     //////////// Halo /////////////
     ///////////////////////////////
-    bool load_halo = false;
-
-    // x: 0 halo
-    //    if (x == 0) {
-    //        ir2 = (y + 1) * nhl + x;
-    if (y == 0) {
-        ir2       = (x + 1) * nhl;
-        load_halo = true;
-    }
-    // x: nhl halo
-    //if (x == nhl - 3){
-    //        ir2 = (y + 1) * nhl + x + 2;
-    else if (y == 3) {
-        ir2       = (x + 1) * nhl + nhl - 3 + 2;
-        load_halo = true;
-    }
-    // y: 0 halo
-    //if (y == 0){
-    //    ir2 = y * nhl + (x + 1);
-    else if (y == 7) {
-        ir2       = x + 1;
-        load_halo = true;
-    }
-
-
-    // x: 0, y: 0 corner point
-    //    if (y == 0 && x == 0) {
-    //        ir2 = y * nhl + x;
-    else if (x == 4 && y == 4) {
-        ir2       = 0;
-        load_halo = true;
-    }
-
-    // y: nhl halo
-    //    if (y == nhl - 3) {
-    //        ir2 = (y + 2) * nhl + (x + 1);
-    else if (y == 11) {
-
-        ir2       = (nhl - 3 + 2) * nhl + (x + 1);
-        load_halo = true;
-    }
-    // x: nhl, y: nhl corner point
-    // if (y == nhl - 3 && x == nhl - 3) {
-    // ir2 = (y + 2) * nhl + (x + 2);
-    else if (y == 4 && x == 5) {
-
-        ir2       = (nhl - 3 + 2) * nhl + (nhl - 3 + 2);
-        load_halo = true;
-    }
 
     if (load_halo) {
-        ig = maps_d[ib * nhl2 + ir2];
-        if (ig >= 0) {
-            M_s[ir2]       = Mh_d[ig * nv + lev];
-            rho            = Rho_d[ig * nv + lev];
-            w              = W_d[ig * nv + lev];
-            double3 func_r = func_r_d[ig];
+        if (igh >= 0) {
+            M_s[ir2]       = Mh_d[igh * nv + lev];
+            rho            = Rho_d[igh * nv + lev];
+            w              = W_d[igh * nv + lev];
+            double3 func_r = func_r_d[igh];
 
             v_s[ir2].x = M_s[ir2].x / rho + (w / rho) * func_r.x;
             v_s[ir2].y = M_s[ir2].y / rho + (w / rho) * func_r.y;
