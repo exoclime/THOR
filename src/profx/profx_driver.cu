@@ -273,15 +273,8 @@ __host__ void ESP::ProfX(int    conv,   //
 }
 
 // TODO: get constants out of arguments
-void ESP::conservation(double Omega,  // Rotation rate [1/s]
-                       double Cp,     // Specific heat capacity [J/kg/K]
-                       double Rd,     // Gas constant [J/kg/K]
-                       double mu,     // Atomic mass unit [kg]
-                       double kb,     // Boltzmann constant [J/K]
-                       double P_Ref,  // Reference pressure [Pa]
-                       double Gravit, // Gravity [m/s^2]
-                       double A,      // Planet radius [m]
-                       bool   DeepModel) {
+void ESP::conservation(const XPlanet& planet, // planet
+                       bool           DeepModel) {
     //
     //  Number of threads per block.
     const int NTH = 256;
@@ -299,7 +292,7 @@ void ESP::conservation(double Omega,  // Rotation rate [1/s]
     CalcMass<<<NB, NTH>>>(Mass_d,
                           GlobalMass_d,
                           Rho_d,
-                          A,
+                          planet.A,
                           Altitudeh_d,
                           lonlat_d,
                           areasT_d,
@@ -312,10 +305,10 @@ void ESP::conservation(double Omega,  // Rotation rate [1/s]
                                W_d,
                                Rho_d,
                                temperature_d,
-                               Gravit,
-                               Cp,
-                               Rd,
-                               A,
+                               planet.Gravit,
+                               planet.Cp,
+                               planet.Rd,
+                               planet.A,
                                Altitude_d,
                                Altitudeh_d,
                                lonlat_d,
@@ -332,8 +325,8 @@ void ESP::conservation(double Omega,  // Rotation rate [1/s]
                             GlobalAMz_d,
                             Mh_d,
                             Rho_d,
-                            A,
-                            Omega,
+                            planet.A,
+                            planet.Omega,
                             Altitude_d,
                             Altitudeh_d,
                             lonlat_d,

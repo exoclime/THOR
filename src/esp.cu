@@ -817,14 +817,7 @@ int main(int argc, char** argv) {
         X.init_timestep(0, simulation_time, timestep);
 
         if (conservation == true) {
-            X.conservation(Planet.Omega,  // Rotation rate [1/s]
-                           Planet.Cp,     // Specific heat capacity [J/kg/K]
-                           Planet.Rd,     // Gas constant [J/kg/K]
-                           mu_constant,   // Atomic mass unit [kg]
-                           kb_constant,   // Boltzmann constant [J/K]
-                           Planet.P_Ref,  // Reference pressure [Pa]
-                           Planet.Gravit, // Gravity [m/s^2]
-                           Planet.A,      // Planet radius [m]
+            X.conservation(Planet,
                            DeepModel);
 
             logwriter.output_conservation(0,
@@ -911,14 +904,7 @@ int main(int argc, char** argv) {
         bool file_output = false;
 
         if (conservation == true) {
-            X.conservation(Planet.Omega,  // Rotation rate [1/s]
-                           Planet.Cp,     // Specific heat capacity [J/kg/K]
-                           Planet.Rd,     // Gas constant [J/kg/K]
-                           mu_constant,   // Atomic mass unit [kg]
-                           kb_constant,   // Boltzmann constant [J/K]
-                           Planet.P_Ref,  // Reference pressure [Pa]
-                           Planet.Gravit, // Gravity [m/s^2]
-                           Planet.A,      // Planet radius [m]
+            X.conservation(Planet,
                            DeepModel);
             logwriter.output_conservation(nstep,
                                           simulation_time,
