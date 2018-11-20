@@ -123,14 +123,15 @@ __host__ ESP::ESP(int *           point_local_,
     ns_sponge = ns_sponge_;
     t_shrink  = t_shrink_;
 
-    //
-    //  Allocate Data
     if (core_benchmark == NO_BENCHMARK) {
         phy_modules_execute = true;
-        alloc_data(conservation);
     }
     else
         phy_modules_execute = false;
+    
+    //
+    //  Allocate Data
+    alloc_data(conservation);
 }
 
 __host__ void ESP::alloc_data(bool conservation) {
