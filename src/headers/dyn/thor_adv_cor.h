@@ -60,8 +60,8 @@ __global__ void Compute_Advec_Cori1(double3* Adv_d,      // Advection term.
                                     int      nl_region,  // Length of the side of each rhombi (from the sphere decomposition).
                                     bool     DeepModel) {    // Switches on and off the deep atmosphere solution (see headers/define.h).
 
-    int x   = threadIdx.x;
-    int y   = threadIdx.y;
+    int x = threadIdx.x;
+    int y = threadIdx.y;
     //int ib  = blockIdx.x;
     int nv  = gridDim.y;
     int lev = blockIdx.y;
@@ -87,20 +87,19 @@ __global__ void Compute_Advec_Cori1(double3* Adv_d,      // Advection term.
     int ir = 0; // index in region
     int iri, ir2, id;
 
-    
+
     bool pent_ind = false; //
-    int  ig; // index in global mem
+    int  ig;               // index in global mem
 
     int igh = 0; // global index in halo
-        
-    // Load shared memory
-    
 
-    
-    bool load_halo = compute_mem_idx(maps_d, nhl, nhl2, ig, igh,  ir, ir2, pent_ind);
-    id = ig;
-    
-    
+    // Load shared memory
+
+
+    bool load_halo = compute_mem_idx(maps_d, nhl, nhl2, ig, igh, ir, ir2, pent_ind);
+    id             = ig;
+
+
     M_s[ir]        = Mh_d[ig * nv + lev];
     rho            = Rho_d[ig * nv + lev];
     w              = W_d[ig * nv + lev];

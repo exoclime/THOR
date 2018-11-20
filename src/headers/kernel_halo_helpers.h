@@ -40,20 +40,21 @@
 // 1.0     16/08/2017 Released version  (JM)
 //
 ////////////////////////////////////////////////////////////////////////
+#pragma once
 
-__device__ bool compute_mem_idx(int*       maps_d,
-                                const int& nhl,
-                                const int& nhl2,
-                                int&       ig,
-                                int&       igh,
-                                int&       ir,
-                                int&       ir2,
-                                bool&      pent_ind) {
-    int x   = threadIdx.x;
-    int y   = threadIdx.y;
-    int ib  = blockIdx.x;
-//    int nv  = gridDim.y;
-//    int lev = blockIdx.y;
+__device__ __forceinline__ bool compute_mem_idx(int*       maps_d,
+                                                const int& nhl,
+                                                const int& nhl2,
+                                                int&       ig,
+                                                int&       igh,
+                                                int&       ir,
+                                                int&       ir2,
+                                                bool&      pent_ind) {
+    int x  = threadIdx.x;
+    int y  = threadIdx.y;
+    int ib = blockIdx.x;
+    //    int nv  = gridDim.y;
+    //    int lev = blockIdx.y;
 
     bool load_halo = false;
 
