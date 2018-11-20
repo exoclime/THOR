@@ -680,7 +680,7 @@ int main(int argc, char** argv) {
 
     if (!load_initial) {
         printf("error loading initial conditions from %s.\n", initial_conditions.c_str());
-        exit(-1);
+        exit(EXIT_FAILURE);
     }
 
     // Check presence of output files
@@ -717,7 +717,7 @@ int main(int argc, char** argv) {
 
             printf(" Aborting. \n"
                    "use --overwrite to overwrite existing files.\n");
-            return -1;
+            exit(EXIT_FAILURE);
         }
     }
 
