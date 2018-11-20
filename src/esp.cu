@@ -295,7 +295,8 @@ int main(int argc, char** argv) {
 
     //*****************************************************************
     // Read config file
-
+    printf("\n");
+    
     if (config_reader.parse_file(config_filename))
         printf(" Config file %s read\n", config_filename.c_str());
     else {
@@ -763,8 +764,10 @@ int main(int argc, char** argv) {
 
     printf("    \n");
 
+    printf("\n");
     printf(" Physics module: %s   \n", phy_modules_get_name().c_str());
-
+    printf("   ********** \n");
+    
     if (core_benchmark == NO_BENCHMARK) {
 
         printf("    \n");
@@ -772,6 +775,8 @@ int main(int argc, char** argv) {
         printf("    \n");
     }
 
+    printf("   ********** \n");
+    printf("\n");
     printf("    \n");
     printf(" Simulation\n");
 
