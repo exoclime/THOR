@@ -107,7 +107,7 @@ __host__ void ESP::Thor(const XPlanet& Planet,   // planet parameters
         phy_modules_dyn_core_loop_init(*this);
 
     USE_BENCHMARK();
-    BENCH_POINT_I(current_step, "thor_init", vector<string>({}), vector<string>({"Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d" /*, "tracer_d", "tracers_d", "tracerk_d"*/}));
+    BENCH_POINT_I(current_step, "thor_init", (), ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d" /*, "tracer_d", "tracers_d", "tracerk_d"*/));
 
 
     //  Loop for large time integration.
@@ -177,7 +177,7 @@ __host__ void ESP::Thor(const XPlanet& Planet,   // planet parameters
         //      Computes temperature, internal energy, potential temperature and effective gravity.
         cudaDeviceSynchronize();
 
-        BENCH_POINT_I_S(current_step, rk, "Compute_Advec_Cori", vector<string>({}), vector<string>({"Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d", "Adv_d", "v_d"}))
+        BENCH_POINT_I_S(current_step, rk, "Compute_Advec_Cori", (), ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d", "Adv_d", "v_d"))
 
         // Updates: temperature_d, h_d, hh_d, pt_d, pth_d, gtil_d, gtilh_d
         Compute_Temperature_H_Pt_Geff<<<(point_num / NTH) + 1, NTH>>>(temperature_d,
@@ -203,7 +203,7 @@ __host__ void ESP::Thor(const XPlanet& Planet,   // planet parameters
         //      Initializes slow terms.
         cudaDeviceSynchronize();
 
-        BENCH_POINT_I_S(current_step, rk, "Compute_Temperature_H_Pt_Geff", vector<string>({}), vector<string>({"temperature_d", "h_d", "hh_d", "pt_d", "pth_d", "gtil_d", "gtilh_d"}))
+        BENCH_POINT_I_S(current_step, rk, "Compute_Temperature_H_Pt_Geff", (), ("temperature_d", "h_d", "hh_d", "pt_d", "pth_d", "gtil_d", "gtilh_d"))
 
         cudaMemset(SlowMh_d, 0, sizeof(double) * 3 * point_num * nv);
         cudaMemset(SlowWh_d, 0, sizeof(double) * point_num * nvi);
@@ -310,7 +310,7 @@ __host__ void ESP::Thor(const XPlanet& Planet,   // planet parameters
                                                1,
                                                DeepModel);
 
-            BENCH_POINT_I_S(current_step, rk, "Diffusion_Op_Poles", vector<string>({}), vector<string>({"diffmh_d", "diffw_d", "diffrh_d", "diffpr_d", "diff_d", "difftr_d" /*, "tracer_d", "tracers_d", "tracerk_d"*/}))
+            BENCH_POINT_I_S(current_step, rk, "Diffusion_Op_Poles", (), ("diffmh_d", "diffw_d", "diffrh_d", "diffpr_d", "diff_d", "difftr_d" /*, "tracer_d", "tracers_d", "tracerk_d"*/))
         }
 
         if (phy_modules_execute)
@@ -320,7 +320,7 @@ __host__ void ESP::Thor(const XPlanet& Planet,   // planet parameters
                                                  times,
                                                  HyDiff);
 
-        BENCH_POINT_I_S(current_step, rk, "DivDamp", vector<string>({}), vector<string>({"Rhos_d", "Rhok_d", "Mhs_d", "Mhk_d", "Whs_d", "Whk_d", "pressures_d", "pressurek_d", "pressure_d" /*, "tracer_d", "tracers_d", "tracerk_d"*/}))
+        BENCH_POINT_I_S(current_step, rk, "DivDamp", (), ("Rhos_d", "Rhok_d", "Mhs_d", "Mhk_d", "Whs_d", "Whk_d", "pressures_d", "pressurek_d", "pressure_d" /*, "tracer_d", "tracers_d", "tracerk_d"*/))
         //
         //      Divergence damping
         cudaMemset(DivM_d, 0, sizeof(double) * point_num * 3 * nv);
@@ -403,7 +403,7 @@ __host__ void ESP::Thor(const XPlanet& Planet,   // planet parameters
                                          DeepModel);
         }
 
-        BENCH_POINT_I_S(current_step, rk, "DivM_Op_Poles", vector<string>({}), vector<string>({"DivM_d", "divg_Mh_d"}))
+        BENCH_POINT_I_S(current_step, rk, "DivM_Op_Poles", (), ("DivM_d", "divg_Mh_d"))
 
         //
         //      Slow Modes
@@ -476,13 +476,13 @@ __host__ void ESP::Thor(const XPlanet& Planet,   // planet parameters
                                               NonHydro);
 
 
-        BENCH_POINT_I_S(current_step, rk, "Compute_Slow_Modes_Poles", vector<string>({}), vector<string>({"SlowMh_d", "SlowWh_d", "SlowRho_d", "Slowpressure_d"}))
+        BENCH_POINT_I_S(current_step, rk, "Compute_Slow_Modes_Poles", (), ("SlowMh_d", "SlowWh_d", "SlowRho_d", "Slowpressure_d"))
 
         //      Updates or initializes deviations.
         if (rk > 0) {
             cudaDeviceSynchronize();
 
-            BENCH_POINT_I_S(current_step, rk, "bRK", vector<string>({}), vector<string>({"Rhos_d", "Rhok_d", "Mhs_d", "Mhk_d", "Whs_d", "Whk_d", "pressures_d", "pressurek_d", "pressure_d" /*, "tracer_d", "tracers_d", "tracerk_d"*/}))
+            BENCH_POINT_I_S(current_step, rk, "bRK", (), ("Rhos_d", "Rhok_d", "Mhs_d", "Mhk_d", "Whs_d", "Whk_d", "pressures_d", "pressurek_d", "pressure_d" /*, "tracer_d", "tracers_d", "tracerk_d"*/))
 
             // Updates: Mhs_d, Whs_d, Ws_d, Rhos_d, pressures_d
             UpdateRK<<<(point_num / NTH) + 1, NTH>>>(Mhs_d,
@@ -504,7 +504,7 @@ __host__ void ESP::Thor(const XPlanet& Planet,   // planet parameters
                                                      point_num,
                                                      nv);
 
-            BENCH_POINT_I_S(current_step, rk, "RK", vector<string>({}), vector<string>({"Rhos_d", "Rhok_d", "Mhs_d", "Mhk_d", "Whs_d", "Whk_d", "pressures_d", "pressurek_d", "pressure_d" /*, "tracer_d", "tracers_d", "tracerk_d"*/}))
+            BENCH_POINT_I_S(current_step, rk, "RK", (), ("Rhos_d", "Rhok_d", "Mhs_d", "Mhk_d", "Whs_d", "Whk_d", "pressures_d", "pressurek_d", "pressure_d" /*, "tracer_d", "tracers_d", "tracerk_d"*/))
         }
 
         //
@@ -591,7 +591,7 @@ __host__ void ESP::Thor(const XPlanet& Planet,   // planet parameters
                                              1,
                                              DeepModel);
 
-                BENCH_POINT_I_SS(current_step, rk, ns, "DivM_Op_Poles", vector<string>({}), vector<string>({"DivM_d", "divg_Mh_d"}))
+                BENCH_POINT_I_SS(current_step, rk, ns, "DivM_Op_Poles", (), ("DivM_d", "divg_Mh_d"))
             }
 
             //          Momentum equation.
@@ -627,7 +627,7 @@ __host__ void ESP::Thor(const XPlanet& Planet,   // planet parameters
             //          Vertical Momentum
             cudaDeviceSynchronize();
 
-            BENCH_POINT_I_SS(current_step, rk, ns, "Momentum_Eq", vector<string>({}), vector<string>({"Rho_d", "pressures_d", "Mhs_d", "Wh_d", "temperature_d", "W_d"}))
+            BENCH_POINT_I_SS(current_step, rk, ns, "Momentum_Eq", (), ("Rho_d", "pressures_d", "Mhs_d", "Wh_d", "temperature_d", "W_d"))
             // Updates: Sp_d, Sd_d
             Prepare_Implicit_Vertical<LN, LN><<<NB, NT>>>(Mhs_d,
                                                           h_d,
@@ -663,7 +663,7 @@ __host__ void ESP::Thor(const XPlanet& Planet,   // planet parameters
                                                          nv,
                                                          DeepModel);
 
-            BENCH_POINT_I_SS(current_step, rk, ns, "Prepare_Implicit_Vertical", vector<string>({}), vector<string>({"Sp_d", "Sd_d"}))
+            BENCH_POINT_I_SS(current_step, rk, ns, "Prepare_Implicit_Vertical", (), ("Sp_d", "Sd_d"))
 
             cudaDeviceSynchronize();
 
@@ -704,7 +704,7 @@ __host__ void ESP::Thor(const XPlanet& Planet,   // planet parameters
 
             //          Pressure and density equations.
             cudaDeviceSynchronize();
-            BENCH_POINT_I_SS(current_step, rk, ns, "Vertical_Eq", vector<string>({}), vector<string>({"Whs_d", "Ws_d", "pressures_d", "h_d", "hh_d", "Rhos_d" /*, "tracer_d", "tracers_d", "tracerk_d"*/}));
+            BENCH_POINT_I_SS(current_step, rk, ns, "Vertical_Eq", (), ("Whs_d", "Ws_d", "pressures_d", "h_d", "hh_d", "Rhos_d" /*, "tracer_d", "tracers_d", "tracerk_d"*/));
 
             // update the physics modules in fast mode
             if (phy_modules_execute)
@@ -714,7 +714,7 @@ __host__ void ESP::Thor(const XPlanet& Planet,   // planet parameters
                                                      times);
 
 
-            BENCH_POINT_I_SS(current_step, rk, ns, "Phy_mod_fast_mode", vector<string>({}), vector<string>({"Whs_d", "Ws_d", "pressures_d", "h_d", "hh_d", "Rhos_d" /*,"tracer_d", "tracers_d", "tracerk_d" */}))
+            BENCH_POINT_I_SS(current_step, rk, ns, "Phy_mod_fast_mode", (), ("Whs_d", "Ws_d", "pressures_d", "h_d", "hh_d", "Rhos_d" /*,"tracer_d", "tracers_d", "tracerk_d" */))
 
             // Updates: pressures_d, Rhos_d
             Density_Pressure_Eqs<LN, LN><<<NB, NT>>>(pressures_d,
@@ -768,9 +768,9 @@ __host__ void ESP::Thor(const XPlanet& Planet,   // planet parameters
                                                     nv,
                                                     DeepModel);
 
-            BENCH_POINT_I_SS(current_step, rk, ns, "Density_Pressure_Eqs", vector<string>({}), vector<string>({"pressures_d", "Rhos_d"}))
+            BENCH_POINT_I_SS(current_step, rk, ns, "Density_Pressure_Eqs", (), ("pressures_d", "Rhos_d"))
         }
-        BENCH_POINT_I_S(current_step, rk, "bRK2", vector<string>({}), vector<string>({"Rhos_d", "Rhok_d", "Mhs_d", "Mhk_d", "Whs_d", "Whk_d", "pressures_d", "pressurek_d" /*, "tracer_d", "tracers_d", "tracerk_d"*/}))
+        BENCH_POINT_I_S(current_step, rk, "bRK2", (), ("Rhos_d", "Rhok_d", "Mhs_d", "Mhk_d", "Whs_d", "Whk_d", "pressures_d", "pressurek_d" /*, "tracer_d", "tracers_d", "tracerk_d"*/))
         //      Update quantities for the long loop.
         cudaDeviceSynchronize();
         // Updates: Mhk_d, Whk_d, Wk_d, Rhok_d, pressurek_d
@@ -789,12 +789,12 @@ __host__ void ESP::Thor(const XPlanet& Planet,   // planet parameters
                                                   point_num,
                                                   nv);
 
-        BENCH_POINT_I_S(current_step, rk, "RK2", vector<string>({}), vector<string>({"Rhos_d", "Rhok_d", "Mhs_d", "Mhk_d", "Whs_d", "Whk_d", "pressures_d", "pressurek_d" /*, "tracer_d", "tracers_d", "tracerk_d"*/}))
+        BENCH_POINT_I_S(current_step, rk, "RK2", (), ("Rhos_d", "Rhok_d", "Mhs_d", "Mhk_d", "Whs_d", "Whk_d", "pressures_d", "pressurek_d" /*, "tracer_d", "tracers_d", "tracerk_d"*/))
     }
     //  Update diagnostic variables.
     cudaDeviceSynchronize();
 
-    BENCH_POINT_I(current_step, "END", vector<string>({}), vector<string>({"Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d", "tracer_d", "tracers_d", "tracerk_d"}))
+    BENCH_POINT_I(current_step, "END", (), ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d", "tracer_d", "tracers_d", "tracerk_d"))
 
     cudaMemcpy(Mh_d, Mhk_d, point_num * nv * 3 * sizeof(double), cudaMemcpyDeviceToDevice);
     cudaMemcpy(Wh_d, Whk_d, point_num * nvi * sizeof(double), cudaMemcpyDeviceToDevice);

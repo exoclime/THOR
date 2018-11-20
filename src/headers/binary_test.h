@@ -58,29 +58,35 @@
 // functions are empty and ignored by the compiler.
 // BENCH_POINT_WRITE enables writing data out to reference files
 // BENCH_POINT_COMPARE enables comparing current value with reference files
-#ifdef BENCHMARKING
 
+#ifdef BENCHMARKING
+#    define BRACED_INIT_LIST(...) \
+        { __VA_ARGS__ }
 #    define USE_BENCHMARK() binary_test& btester = binary_test::get_instance();
 #    define SET_BENCHMARK_PATH(path) binary_test& btester = binary_test::get_instance().set_output("bindata_", path);
 #    define INIT_BENCHMARK(esp, grid, path)                                           \
         binary_test::get_instance().append_definitions(build_definitions(esp, grid)); \
         binary_test::get_instance().set_output("bindata_", path);
-#    define BENCH_POINT(iteration, name, in, out) btester.check_data(iteration, name, in, out);
-#    define BENCH_POINT_I(iteration, name, in, out) btester.check_data(std::to_string(iteration), name, in, out);
-#    define BENCH_POINT_I_S(iteration, subiteration, name, in, out) btester.check_data(std::to_string(iteration)           \
-                                                                                           + "-"                           \
-                                                                                           + std::to_string(subiteration), \
-                                                                                       name,                               \
-                                                                                       in,                                 \
-                                                                                       out);
-#    define BENCH_POINT_I_SS(iteration, subiteration, subsubiteration, name, in, out) btester.check_data(std::to_string(iteration)              \
-                                                                                                             + "-"                              \
-                                                                                                             + std::to_string(subiteration)     \
-                                                                                                             + "-"                              \
-                                                                                                             + std::to_string(subsubiteration), \
-                                                                                                         name,                                  \
-                                                                                                         in,                                    \
-                                                                                                         out);
+#    define BENCH_POINT(iteration, name, in, out) \
+        btester.check_data(iteration, name, std::vector<std::string>(BRACED_INIT_LIST in), std::vector<std::string>(BRACED_INIT_LIST out));
+#    define BENCH_POINT_I(iteration, name, in, out) \
+        btester.check_data(std::to_string(iteration), name, std::vector<std::string>(BRACED_INIT_LIST in), std::vector<std::string>(BRACED_INIT_LIST out));
+#    define BENCH_POINT_I_S(iteration, subiteration, name, in, out)       \
+        btester.check_data(std::to_string(iteration)                      \
+                               + "-"                                      \
+                               + std::to_string(subiteration),            \
+                           name,                                          \
+                           std::vector<std::string>(BRACED_INIT_LIST in), \
+                           std::vector<std::string>(BRACED_INIT_LIST out));
+#    define BENCH_POINT_I_SS(iteration, subiteration, subsubiteration, name, in, out) \
+        btester.check_data(std::to_string(iteration)                                  \
+                               + "-"                                                  \
+                               + std::to_string(subiteration)                         \
+                               + "-"                                                  \
+                               + std::to_string(subsubiteration),                     \
+                           name,                                                      \
+                           std::vector<std::string>(BRACED_INIT_LIST in),             \
+                           std::vector<std::string>(BRACED_INIT_LIST out));
 
 #else // do nothing
 #    define USE_BENCHMARK()
@@ -249,10 +255,10 @@ bool binary_test::compare_arrays(int                 s1,
     stats.mean_abs_delta = 0.0;
     stats.max_rel_delta  = 0.0;
     stats.mean_rel_delta = 0.0;
-    stats.mean_val = 0.0;
-    stats.max_val = 0.0;
-    stats.mean_ref = 0.0;
-    stats.max_ref = 0.0;
+    stats.mean_val       = 0.0;
+    stats.max_val        = 0.0;
+    stats.mean_ref       = 0.0;
+    stats.max_ref        = 0.0;
 #    endif // BENCH_COMPARE_PRINT_STATISTICS
 
     if (s1 != s2) {
@@ -292,7 +298,7 @@ bool binary_test::compare_arrays(int                 s1,
 
             stats.mean_ref += std::abs(d1[i]);
             stats.max_ref = std::max(d1[i], stats.max_ref);
-            
+
             stats.mean_abs_delta += delta;
             stats.mean_rel_delta += delta_rel;
             stats.max_abs_delta = std::max(delta, stats.max_abs_delta);

@@ -640,7 +640,7 @@ int main(int argc, char** argv) {
 
     INIT_BENCHMARK(X, Grid, output_path_ref);
 
-    BENCH_POINT("0", "Grid", std::vector<string>({}), std::vector<string>({"func_r", "areas", "areasTr", "areasT", "nvec", "nvecoa", "nvecti", "nvecte", "Altitude", "Altitudeh", "lonlat", "div", "grad"}))
+    BENCH_POINT("0", "Grid", (), ("func_r", "areas", "areasTr", "areasT", "nvec", "nvecoa", "nvecti", "nvecte", "Altitude", "Altitudeh", "lonlat", "div", "grad"))
 
     // esp output setup
     X.set_output_param(Planet.simulation_ID, output_path);

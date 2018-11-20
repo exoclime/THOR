@@ -112,7 +112,7 @@ __host__ void ESP::ProfX(const XPlanet& Planet,
                                   point_num,
                                   nv);
     }
-    BENCH_POINT_I(current_step, "phy_Sponge", vector<string>({}), vector<string>({"Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"}))
+    BENCH_POINT_I(current_step, "phy_Sponge", (), ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"))
 
     //  Computes the initial temperature.
     Compute_temperature<<<NB, NTH>>>(temperature_d,
@@ -124,7 +124,7 @@ __host__ void ESP::ProfX(const XPlanet& Planet,
                                      Planet.Cp,
                                      point_num);
 
-    BENCH_POINT_I(current_step, "phy_T", vector<string>({}), vector<string>({"Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"}))
+    BENCH_POINT_I(current_step, "phy_T", (), ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"))
 
 #ifdef BENCH_NAN_CHECK
     check_h = check_array_for_nan(temperature_d, nv * point_num, 1, check_d);
@@ -150,7 +150,7 @@ __host__ void ESP::ProfX(const XPlanet& Planet,
                                   nv);           // number of vertical layers
     }
 
-    BENCH_POINT_I(current_step, "dry_conv_adj ", vector<string>({}), vector<string>({"Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"}))
+    BENCH_POINT_I(current_step, "dry_conv_adj ", (), ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"))
 
 
     ///////////////////////
@@ -227,7 +227,7 @@ __host__ void ESP::ProfX(const XPlanet& Planet,
                              timestep);    // Time-step [s]
     }
 
-    BENCH_POINT_I(current_step, "phy_core_benchmark ", vector<string>({}), vector<string>({"Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"}))
+    BENCH_POINT_I(current_step, "phy_core_benchmark ", (), ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"))
     //  Computes the new pressures.
     cudaDeviceSynchronize();
     Compute_pressure<<<NB, NTH>>>(pressure_d,
@@ -255,9 +255,8 @@ __host__ void ESP::ProfX(const XPlanet& Planet,
                                           point_num);
 #endif // BENCHMARKING
 
-    BENCH_POINT_I(current_step, "phy_END", vector<string>({}), vector<string>({"Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"}));
-
-
+    BENCH_POINT_I(current_step, "phy_END", (), ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"));
+    
     //
     //END OF INTEGRATION
     //
