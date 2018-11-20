@@ -680,9 +680,8 @@ int main(int argc, char** argv) {
 
     if (!load_initial) {
         printf("error loading initial conditions from %s.\n", initial_conditions.c_str());
-        return -1;
+        exit(-1);
     }
-
 
     // Check presence of output files
     path results(output_path);

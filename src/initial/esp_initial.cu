@@ -49,7 +49,6 @@
 #include "../headers/phy/valkyrie_jet_steadystate.h"
 #include "directories.h"
 #include "esp.h"
-#include "hdf5.h"
 #include "storage.h"
 #include <map>
 #include <stdio.h>
@@ -128,7 +127,7 @@ __host__ ESP::ESP(int *           point_local_,
     }
     else
         phy_modules_execute = false;
-    
+
     //
     //  Allocate Data
     alloc_data(conservation);
@@ -438,21 +437,22 @@ __host__ bool ESP::initial_values(bool               rest,
         // Check planet data
         {
             // values to check agains variable
-            map<string, double> mapValues;
+            map<string, double> mapValuesDouble;
+            map<string, int> mapValuesInt;
 
-            mapValues["/A"]            = planet.A;
-            mapValues["/Top_altitude"] = planet.Top_altitude;
-            mapValues["/glevel"]       = glevel;
-            mapValues["/vlevel"]       = nv;
-
-            hid_t file_id;
-            file_id = H5Fopen(planet_filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
-
+            mapValuesDouble["/A"]            = planet.A;
+            mapValuesDouble["/Top_altitude"] = planet.Top_altitude;
+            mapValuesInt["/glevel"]       = glevel;
+            mapValuesInt["/vlevel"]       = nv;
+            
+            storage s(planet_filename, true);
+            
             bool values_match = true;
-
-            for (const std::pair<std::string, double> &element : mapValues) {
+            
+            for (const std::pair<std::string, double> &element : mapValuesDouble) {
                 double value = 0.0;
-                load_OK &= load_double_value_from_h5file(file_id, element.first, value);
+                load_OK      = s.read_value(element.first, value);
+
 
                 if (value != element.second) {
                     printf("mismatch for %s value between config value: %f and initial condition value %f.\n",
@@ -463,7 +463,20 @@ __host__ bool ESP::initial_values(bool               rest,
                 }
             }
 
-            H5Fclose(file_id);
+            for (const std::pair<std::string, int> &element : mapValuesInt) {
+                int value = 0.0;
+                load_OK      = s.read_value(element.first, value);
+
+
+                if (value != element.second) {
+                    printf("mismatch for %s value between config value: %d and initial condition value %d.\n",
+                           element.first.c_str(),
+                           element.second,
+                           value);
+                    values_match = false;
+                }
+            }
+
 
             if (load_OK == false || values_match == false) {
                 printf("Could not reload full configuration.\n");
@@ -476,29 +489,37 @@ __host__ bool ESP::initial_values(bool               rest,
         //      Restart from an existing simulation.
         {
             // Load atmospheric data
-            hid_t file_id;
-            file_id = H5Fopen(initial_conditions_filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
+            storage s(initial_conditions_filename, true);
             // Step number
-            load_OK &= load_int_value_from_h5file(file_id, "/nstep", nstep);
+            load_OK &= s.read_value("/nstep", nstep);
+            printf("Reloaded %s: %d.\n", "/nstep", load_OK?1:0);
+            
             //      Density
-            load_OK &= load_double_table_from_h5file(file_id, "/Rho", Rho_h, point_num * nv);
-
+            load_OK &= s.read_table_to_ptr("/Rho", Rho_h, point_num * nv);
+            printf("Reloaded %s: %d.\n", "/Rho", load_OK?1:0);
             //      Pressure
-            load_OK &= load_double_table_from_h5file(file_id, "/Pressure", pressure_h, point_num * nv);
-
+            load_OK &= s.read_table_to_ptr("/Pressure", pressure_h, point_num * nv);
+            printf("Reloaded %s: %d.\n", "/Pressure", load_OK?1:0);
             //      Horizontal momentum
-            load_OK &= load_double_table_from_h5file(file_id, "/Mh", Mh_h, point_num * nv * 3);
+            load_OK &= s.read_table_to_ptr("/Mh", Mh_h, point_num * nv * 3);
+            printf("Reloaded %s: %d.\n", "/Mh", load_OK?1:0);
             //      Vertical momentum
-            load_OK &= load_double_table_from_h5file(file_id, "/Wh", Wh_h, point_num * nvi);
+            load_OK &= s.read_table_to_ptr("/Wh", Wh_h, point_num * nvi);
+            printf("Reloaded %s: %d.\n", "/Wh", load_OK?1:0);
 
             //      Simulation start time
-            load_OK &= load_double_value_from_h5file(file_id, "/simulation_time", simulation_start_time);
-            H5Fclose(file_id);
+            load_OK &= s.read_value("/simulation_time", simulation_start_time);
+            printf("Reloaded %s: %d.\n", "/simulation_time", load_OK?1:0);
         }
 
 
         if (!load_OK)
+        {
+            printf("Error reloading simulation state\n");
+            
             return false;
+        }
+        
 
         for (int i = 0; i < point_num; i++)
             for (int lev = 0; lev < nv; lev++)
@@ -605,7 +626,7 @@ __host__ bool ESP::initial_values(bool               rest,
         if (rest)
             phy_modules_init_data(*this, planet, nullptr);
         else {
-            storage s(initial_conditions_filename);
+            storage s(initial_conditions_filename, true);
 
             phy_modules_init_data(*this, planet, &s);
         }
