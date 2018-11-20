@@ -120,6 +120,10 @@ struct compare_statistics {
     double mean_abs_delta;
     double max_rel_delta;
     double mean_rel_delta;
+    double mean_val;
+    double max_val;
+    double mean_ref;
+    double max_ref;
 };
 
 
@@ -245,6 +249,10 @@ bool binary_test::compare_arrays(int                 s1,
     stats.mean_abs_delta = 0.0;
     stats.max_rel_delta  = 0.0;
     stats.mean_rel_delta = 0.0;
+    stats.mean_val = 0.0;
+    stats.max_val = 0.0;
+    stats.mean_ref = 0.0;
+    stats.max_ref = 0.0;
 #    endif // BENCH_COMPARE_PRINT_STATISTICS
 
     if (s1 != s2) {
@@ -279,6 +287,12 @@ bool binary_test::compare_arrays(int                 s1,
             T      delta     = std::abs(d1[i] - d2[i]);
             double delta_rel = delta / std::abs(d1[i]);
 
+            stats.mean_val += std::abs(d2[i]);
+            stats.max_val = std::max(d2[i], stats.max_val);
+
+            stats.mean_ref += std::abs(d1[i]);
+            stats.max_ref = std::max(d1[i], stats.max_ref);
+            
             stats.mean_abs_delta += delta;
             stats.mean_rel_delta += delta_rel;
             stats.max_abs_delta = std::max(delta, stats.max_abs_delta);
@@ -297,6 +311,8 @@ bool binary_test::compare_arrays(int                 s1,
     if (stats.num_failures > 0) {
         stats.mean_abs_delta /= stats.num_failures;
         stats.mean_rel_delta /= stats.num_failures;
+        stats.mean_val /= stats.num_failures;
+        stats.mean_ref /= stats.num_failures;
     }
 #    endif // BENCH_COMPARE_PRINT_STATISTICS
 

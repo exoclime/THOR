@@ -326,14 +326,18 @@ bool binary_test::compare_to_reference(const string&             iteration,
     for(auto const &v : stats_table) {
         auto const &key = v.first;
         auto const &value = v.second;
-        printf("  %5s - num (fail/tot): %d/%d delta abs(mx:%g,mn:%g) - rel(mx:%g,mn:%g)\n",
+        printf("  %5s - num (fail/tot): %8d/%8d Δabs(mx:%11g,mn:%11g) - Δrel(mx:%11g,mn:%11g) -ref(mx:%11g,mn:%11g) -val(mx:%11g,mn:%11g)\n",
                key.c_str(),
                value.num_failures,
                value.num_values,
                value.max_abs_delta,
                value.mean_abs_delta,
                value.max_rel_delta,
-               value.mean_rel_delta);
+               value.mean_rel_delta,
+               value.max_ref,
+               value.mean_ref,
+               value.max_val,
+               value.mean_val);
     }
     
 #endif // BENCH_COMPARE_PRINT_STATISTICS
