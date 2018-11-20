@@ -68,16 +68,18 @@
         binary_test::get_instance().append_definitions(build_definitions(esp, grid)); \
         binary_test::get_instance().set_output("bindata_", path);
 #    define BENCH_POINT(iteration, name, in, out) \
-        btester.check_data(iteration, name, std::vector<std::string>(BRACED_INIT_LIST in), std::vector<std::string>(BRACED_INIT_LIST out));
+        btester.check_data(iteration, name, std::vector<std::string>(BRACED_INIT_LIST in), std::vector<std::string>(BRACED_INIT_LIST out), false);
 #    define BENCH_POINT_I(iteration, name, in, out) \
-        btester.check_data(std::to_string(iteration), name, std::vector<std::string>(BRACED_INIT_LIST in), std::vector<std::string>(BRACED_INIT_LIST out));
-#    define BENCH_POINT_I_S(iteration, subiteration, name, in, out)       \
-        btester.check_data(std::to_string(iteration)                      \
-                               + "-"                                      \
-                               + std::to_string(subiteration),            \
-                           name,                                          \
-                           std::vector<std::string>(BRACED_INIT_LIST in), \
-                           std::vector<std::string>(BRACED_INIT_LIST out));
+        btester.check_data(std::to_string(iteration), name, std::vector<std::string>(BRACED_INIT_LIST in), std::vector<std::string>(BRACED_INIT_LIST out), false);
+#    define BENCH_POINT_I_S(iteration, subiteration, name, in, out)        \
+        btester.check_data(std::to_string(iteration)                       \
+                               + "-"                                       \
+                               + std::to_string(subiteration),             \
+                           name,                                           \
+                           std::vector<std::string>(BRACED_INIT_LIST in),  \
+                           std::vector<std::string>(BRACED_INIT_LIST out), \
+                           false);
+
 #    define BENCH_POINT_I_SS(iteration, subiteration, subsubiteration, name, in, out) \
         btester.check_data(std::to_string(iteration)                                  \
                                + "-"                                                  \
@@ -86,7 +88,32 @@
                                + std::to_string(subsubiteration),                     \
                            name,                                                      \
                            std::vector<std::string>(BRACED_INIT_LIST in),             \
-                           std::vector<std::string>(BRACED_INIT_LIST out));
+                           std::vector<std::string>(BRACED_INIT_LIST out),            \
+                           false);
+
+#    define BENCH_POINT_PHY(iteration, name, in, out) \
+        btester.check_data(iteration, name, std::vector<std::string>(BRACED_INIT_LIST in), std::vector<std::string>(BRACED_INIT_LIST out), true);
+#    define BENCH_POINT_I_PHY(iteration, name, in, out) \
+        btester.check_data(std::to_string(iteration), name, std::vector<std::string>(BRACED_INIT_LIST in), std::vector<std::string>(BRACED_INIT_LIST out), true);
+#    define BENCH_POINT_I_S_PHY(iteration, subiteration, name, in, out)    \
+        btester.check_data(std::to_string(iteration)                       \
+                               + "-"                                       \
+                               + std::to_string(subiteration),             \
+                           name,                                           \
+                           std::vector<std::string>(BRACED_INIT_LIST in),  \
+                           std::vector<std::string>(BRACED_INIT_LIST out), \
+                           true);
+#    define BENCH_POINT_I_SS_PHY(iteration, subiteration, subsubiteration, name, in, out) \
+        btester.check_data(std::to_string(iteration)                                      \
+                               + "-"                                                      \
+                               + std::to_string(subiteration)                             \
+                               + "-"                                                      \
+                               + std::to_string(subsubiteration),                         \
+                           name,                                                          \
+                           std::vector<std::string>(BRACED_INIT_LIST in),                 \
+                           std::vector<std::string>(BRACED_INIT_LIST out),                \
+                           true);
+
 
 #else // do nothing
 #    define USE_BENCHMARK()
@@ -96,6 +123,11 @@
 #    define BENCH_POINT_I(iteration, name, in, out)
 #    define BENCH_POINT_I_S(iteration, subiteration, name, in, out)
 #    define BENCH_POINT_I_SS(iteration, subiteration, subsubiteration, name, in, out)
+// also trace data from physics module
+#    define BENCH_POINT_PHY(iteration, name, in, out)
+#    define BENCH_POINT_I_PHY(iteration, name, in, out)
+#    define BENCH_POINT_I_S_PHY(iteration, subiteration, name, in, out)
+#    define BENCH_POINT_I_SS_PHY(iteration, subiteration, subsubiteration, name, in, out)
 #endif // BENCHMARKING
 
 #ifdef BENCHMARKING
@@ -161,8 +193,8 @@ public:
     void check_data(const string&         iteration,
                     const string&         ref_name,
                     const vector<string>& input_vars,
-                    const vector<string>& output_vars);
-
+                    const vector<string>& output_vars,
+                    const bool&           trace_phy_module);
 
     void set_output(string base_name, string dir) {
         output_dir       = dir;
@@ -175,7 +207,14 @@ public:
     // make constructor private, can only be instantiated through get_instance
     ~binary_test();
 
+    void register_phy_modules_variables(const std::map<string, output_def>& defs,
+                                        const vector<string>&               phy_modules_data_in,
+                                        const vector<string>&               phy_modules_data_out);
+
 private:
+    vector<string> phy_modules_data_in;
+    vector<string> phy_modules_data_out;
+
     vector<string> current_input_vars;
 
 

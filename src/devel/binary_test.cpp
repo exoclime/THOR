@@ -154,7 +154,8 @@ binary_test::~binary_test() {
 void binary_test::check_data(const string&         iteration,
                              const string&         ref_name,
                              const vector<string>& input_vars,
-                             const vector<string>& output_vars) {
+                             const vector<string>& output_vars,
+                             const bool & trace_phy_modules) {
 #    ifdef BENCH_CHECK_LAST_CUDA_ERROR
     check_last_cuda_error(ref_name);
 #    endif // BENCH_CHECK_LAST_CUDA_ERROR
@@ -166,7 +167,18 @@ void binary_test::check_data(const string&         iteration,
         if (it != output_definitions.end()) {
             data_output.push_back(it->second);
         }
+   }
+
+    if (trace_phy_modules)
+    {        
+        for (auto& name : phy_modules_data_out) {
+            auto&& it = output_definitions.find(name);
+            if (it != output_definitions.end()) {
+                data_output.push_back(it->second);
+            }
+        }
     }
+
 
 
 // Specific debugging functions
@@ -356,6 +368,20 @@ void binary_test::append_definitions(const map<string, output_def>& defs) {
     mem_buf = std::unique_ptr<double[]>(new double[memsize], std::default_delete<double[]>());
 }
 
+void binary_test::register_phy_modules_variables(const std::map<string, output_def> &defs,
+                                                 const vector<string> &phy_modules_data_in_,
+                                                 const vector<string> &phy_modules_data_out_)
+{
+    append_definitions(defs);
+    phy_modules_data_in.insert(phy_modules_data_in.end(),
+                               phy_modules_data_in_.begin(),
+                               phy_modules_data_in_.end());
+    phy_modules_data_out.insert(phy_modules_data_out.end(),
+                                phy_modules_data_out_.begin(),
+                                phy_modules_data_out_.end());
+}
+
+    
 
 
 #endif // BENCHMARKING
