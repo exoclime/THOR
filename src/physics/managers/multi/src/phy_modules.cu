@@ -13,7 +13,12 @@
 #include <vector>
 
 // define all the modules we want to use
+
+bool       radiative_transfer_enabled         = false;
+const bool radiative_transfer_enabled_default = false;
+
 radiative_transfer rt;
+
 
 std::string phy_modules_get_name() {
     return std::string("multi");
@@ -21,6 +26,8 @@ std::string phy_modules_get_name() {
 
 void phy_modules_print_config() {
     printf("  multi physics module, with radiative transfer and chemistry\n");
+    printf("   Radiative Transfer module: %s\n.", radiative_transfer_enabled ? "true" : "false");
+
     rt.print_config();
 }
 
@@ -31,7 +38,8 @@ bool phy_modules_init_mem(const ESP&               esp,
 
     bool out = true;
 
-    rt.initialise_memory(esp, phy_modules_core_arrays);
+    if (radiative_transfer_enabled)
+        rt.initialise_memory(esp, phy_modules_core_arrays);
 
     return out;
 }
@@ -46,14 +54,16 @@ bool phy_modules_init_data(const ESP&     esp,
         // load initialisation data from storage s
     }
 
-
-    out &= rt.initial_conditions(esp, planet);
+    if (radiative_transfer_enabled)
+        out &= rt.initial_conditions(esp, planet);
 
     return out;
 }
 
 bool phy_modules_generate_config(config_file& config_reader) {
     bool out = true;
+
+    config_reader.append_config_var("radiative_transfer", radiative_transfer_enabled, radiative_transfer_enabled_default);
 
     rt.configure(config_reader);
 
@@ -103,13 +113,17 @@ bool phy_modules_phy_loop(ESP&           esp,
 ) {
     // run all the modules main loop
     bool out = true;
-    
-    rt.phy_loop(esp, planet, nstep, time_step, mu, kb);
+
+    if (radiative_transfer_enabled)
+        rt.phy_loop(esp, planet, nstep, time_step, mu, kb);
 
     return out;
 }
 
 bool phy_modules_store_init(storage& s) {
+    // radiative transfer option
+    s.append_value(radiative_transfer_enabled ? 1.0 : 0.0, "/radiativetransfer", "-", "Using radiative transfer");
+
     rt.store_init(s);
 
     return true;
@@ -117,7 +131,8 @@ bool phy_modules_store_init(storage& s) {
 
 bool phy_modules_store(const ESP& esp, storage& s) {
 
-    rt.store(esp, s);
+    if (radiative_transfer_enabled)
+        rt.store(esp, s);
 
     return true;
 }
@@ -127,7 +142,8 @@ bool phy_modules_free_mem() {
     // generate all the modules config
     bool out = true;
 
-    rt.free_memory();
+    if (radiative_transfer_enabled)
+        rt.free_memory();
 
     return out;
 }
