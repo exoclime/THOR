@@ -1,3 +1,46 @@
+// ==============================================================================
+// This file is part of THOR.
+//
+//     THOR is free software : you can redistribute it and / or modify
+//     it under the terms of the GNU General Public License as published by
+//     the Free Software Foundation, either version 3 of the License, or
+//     (at your option) any later version.
+//
+//     THOR is distributed in the hope that it will be useful,
+//     but WITHOUT ANY WARRANTY; without even the implied warranty of
+//     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
+//     GNU General Public License for more details.
+//
+//     You find a copy of the GNU General Public License in the main
+//     THOR directory under <license.txt>.If not, see
+//     <http://www.gnu.org/licenses/>.
+// ==============================================================================
+//
+// ESP -  Exoclimes Simulation Platform. (version 1.0)
+//
+//
+//
+// Method: Radiative transfer physics module
+//
+//
+// Known limitations: - Runs in a single GPU.
+//
+// Known issues: None
+//
+//
+// If you use this code please cite the following reference:
+//
+//       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016
+//
+// Current Code Owner: Joao Mendonca, EEG. joao.mendonca@csh.unibe.ch
+//
+// History:
+// Version Date       Comment
+// ======= ====       =======
+//
+// 1.0     16/08/2017 Released version  (JM)
+//
+////////////////////////////////////////////////////////////////////////
 #include "radiative_transfer.h"
 
 #include "profx_RT.h"
@@ -8,7 +51,32 @@ radiative_transfer::radiative_transfer() {
 radiative_transfer::~radiative_transfer() {
 }
 
-bool radiative_transfer::initialise_memory(const ESP &esp) {
+void radiative_transfer::print_config() {
+    printf("  Radiative transfer module\n");
+
+    // basic star-planet properties
+    printf("    Tstar                       = %f K.\n", Tstar);
+    printf("    Orbital distance            = %f au.\n", planet_star_dist);
+    printf("    Radius of host star         = %f R_sun.\n", radius_star);
+    printf("    Diffusivity factor          = %f.\n", diff_fac);
+    printf("    Lower boundary temperature  = %f K.\n", Tlow);
+    printf("    Bond albedo                 = %f.\n", albedo);
+    printf("    Shortwave Absorption coef   = %f.\n", tausw);
+    printf("    Longwave Absorption coef    = %f.\n", taulw);
+    printf("\n");
+
+    // orbit/insolation properties
+    printf("    Synchronous rotation        = %s.\n", sync_rot ? "true" : "false");
+    printf("    Orbital mean motion         = %f rad/s.\n", mean_motion);
+    printf("    Host star initial right asc = %f deg.\n", alpha_i);
+    printf("    Planet true initial long    = %f.\n", true_long_i);
+    printf("    Orbital eccentricity        = %f.\n", ecc);
+    printf("    Obliquity                   = %f deg.\n", obliquity);
+    printf("    Longitude of periastron     = %f deg.\n", longp);
+}
+
+bool radiative_transfer::initialise_memory(const ESP &              esp,
+                                           device_RK_array_manager &phy_modules_core_arrays) {
     //  Rad Transfer
     cudaMalloc((void **)&fnet_up_d, esp.nvi * esp.point_num * sizeof(double));
     cudaMalloc((void **)&fnet_dn_d, esp.nvi * esp.point_num * sizeof(double));
@@ -67,28 +135,19 @@ bool radiative_transfer::initial_conditions(const ESP &    esp,
     return true;
 }
 
-bool radiative_transfer::loop(ESP &           esp,
-                              int             nstep,          // Step number
-                              benchmark_types core_benchmark, // Held-Suarez test option
-                              double          time_step,      // Time-step [s]
-                              double          Omega,          // Rotation rate [1/s]
-                              double          Cp,             // Specific heat capacity [J/kg/K]
-                              double          Rd,             // Gas constant [J/kg/K]
-                              double          mu,             // Atomic mass unit [kg]
-                              double          kb,             // Boltzmann constant [J/K]
-                              double          P_Ref,          // Reference pressure [Pa]
-                              double          Gravit,         // Gravity [m/s^2]
-                              double          A               // Planet radius [m]);
-) {
+bool radiative_transfer::phy_loop(ESP &          esp,
+                                  const XPlanet &planet,
+                                  int            nstep, // Step number
+                                  double         time_step) {   // Time-step [s]
 
     //  update global insolation properties if necessary
     if (sync_rot) {
         if (ecc > 1e-10) {
-            update_spin_orbit(nstep * time_step, Omega);
+            update_spin_orbit(nstep * time_step, planet.Omega);
         }
     }
     else {
-        update_spin_orbit(nstep * time_step, Omega);
+        update_spin_orbit(nstep * time_step, planet.Omega);
     }
 
     //
@@ -106,8 +165,8 @@ bool radiative_transfer::loop(ESP &           esp,
                                  fnet_up_d,
                                  fnet_dn_d,
                                  tau_d,
-                                 Gravit,
-                                 Cp,
+                                 planet.Gravit,
+                                 planet.Cp,
                                  esp.lonlat_d,
                                  esp.Altitude_d,
                                  esp.Altitudeh_d,
@@ -125,11 +184,11 @@ bool radiative_transfer::loop(ESP &           esp,
                                  tausw,
                                  taulw,
                                  incflx,
-                                 P_Ref,
+                                 planet.P_Ref,
                                  esp.point_num,
                                  esp.nv,
                                  esp.nvi,
-                                 A,
+                                 planet.A,
                                  r_orb,
                                  alpha, //current RA of star (relative to zero long on planet)
                                  alpha_i,

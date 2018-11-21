@@ -84,3 +84,6 @@ results_path = tidalearth_results
 
 # GPU ID number
 GPU_ID_N = 0
+
+radiative_transfer = true
+

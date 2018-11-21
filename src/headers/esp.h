@@ -57,6 +57,8 @@
 #include "log_writer.h"
 #include "planet.h"
 
+#include "dyn/phy_modules_device.h"
+
 class ESP
 {
 
@@ -69,7 +71,6 @@ public:
     const int    nl_region;
     const int    nr;
     const int    nlat;
-    const int    ntr;
     const int    glevel;
     const bool   spring_dynamics;
     const double spring_beta;
@@ -104,23 +105,6 @@ public:
 
     double *Kdhz_h;
     double *Kdh4_h;
-
-    double *tauch4_h;
-    double *tauco_h;
-    double *tauh2o_h;
-    double *tauco2_h;
-    double *taunh3_h;
-
-    double *ch4eq_h;
-    double *coeq_h;
-    double *h2oeq_h;
-    double *co2eq_h;
-    double *nh3eq_h;
-
-    double *P_che_h;
-    double *T_che_h;
-
-    double *tracer_h;
 
     bool check_h;
 
@@ -205,31 +189,11 @@ public:
     double *Kdhz_d;
     double *Kdh4_d;
 
-    double *tauch4_d;
-    double *tauco_d;
-    double *tauh2o_d;
-    double *tauco2_d;
-    double *taunh3_d;
-
-    double *ch4eq_d;
-    double *coeq_d;
-    double *h2oeq_d;
-    double *co2eq_d;
-    double *nh3eq_d;
-
-    double *tracer_d;
-    double *tracers_d;
-    double *tracerk_d;
-
-    double *P_che_d;
-    double *T_che_d;
-
     double *DivM_d;
     double *diffpr_d;
     double *diffmh_d;
     double *diffw_d;
     double *diffrh_d;
-    double *difftr_d;
 
     double *diff_d;
     double *divg_Mh_d;
@@ -276,7 +240,6 @@ public:
         bool            spring_dynamics_,
         double          spring_beta_,
         int             nlat_,
-        int             ntr_,
         int *           zonal_mean_tab,
         double          Rv_sponge_,
         double          ns_sponge_,
@@ -295,12 +258,9 @@ public:
                         const bool &       continue_sim,
                         double             timestep_dyn,
                         XPlanet &          xplanet,
-                        double             kb,
-                        double             mu,
                         bool               sponge,
                         bool               DeepModel,
                         int                TPprof,
-                        int                chemistry,
                         int &              nsteps,
                         double &           simulation_start_time,
                         int &              output_file_idx,
@@ -315,69 +275,46 @@ public:
     };
 
 
-    void Thor(bool,
-              bool,
-              double,
-              double,
-              double,
-              double,
-              double,
-              double,
-              double,
-              double,
-              int,
-              bool,
-              bool);
+    void Thor(const XPlanet &Planet,   // planet parameters
+              bool           HyDiff,   // Turn on/off hyper-diffusion.
+              bool           DivDampP, // Turn on/off divergence damping.
+              bool           NonHydro, // Turn on/off non-hydrostatic.
+              bool           DeepModel);         // Turn on/off deep atmosphere.
 
-    void ProfX(int,
-               int,
-               double,
-               double,
-               double,
-               double,
-               double,
-               double,
-               double,
-               double,
-               bool,
-               int,
-               bool,
-               bool,
-               bool);
+    void ProfX(const XPlanet &Planet,
+               int            conv,          //
+               bool           DeepModel,     // use deep model
+               int            n_out,         // output step (triggers conservation calc)
+               bool           sponge,        // Use sponge layer?
+               bool           shrink_sponge, // Shrink sponge after some time
+               bool           conservation);           // calc/output conservation quantities
 
-    void output(int,
-                double,
-                double,
-                double,
-                double,
-                double,
-                double,
-                double,
-                bool,
-                bool,
-                int);
+
+    void output(int            fidx,         // Index of output file
+                const XPlanet &Planet,       // planet parameters
+                bool           conservation,
+                bool           SpongeLayer);
+
 
     void set_output_param(const std::string &sim_id_,
                           const std::string &output_dir_);
 
-    void conservation(int    chemistry, //
-                      double Omega,     // Rotation rate [1/s]
-                      double Cp,        // Specific heat capacity [J/kg/K]
-                      double Rd,        // Gas constant [J/kg/K]
-                      double mu,        // Atomic mass unit [kg]
-                      double kb,        // Boltzmann constant [J/K]
-                      double P_Ref,     // Reference pressure [Pa]
-                      double Gravit,    // Gravity [m/s^2]
-                      double A,         // Planet radius [m]
-                      bool   DeepModel);
+    void conservation(const XPlanet &planet,
+                      bool           DeepModel);
 
     void copy_to_host();
     void copy_conservation_to_host();
     void copy_global_to_host();
 
+    bool DeepModel;
+
 private:
     // store if we run benchmarks
     benchmark_types core_benchmark;
+
+    // run physics modules
+    bool phy_modules_execute;
+
 
     // step counter for logging
     int    current_step;
@@ -392,4 +329,6 @@ private:
 
 
     log_writer &logwriter;
+
+    device_RK_array_manager phy_modules_core_arrays;
 };

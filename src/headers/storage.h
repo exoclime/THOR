@@ -56,55 +56,6 @@ using std::endl;
 using std::string;
 using namespace H5;
 
-
-bool write_double_value_to_h5file(hid_t         file_id,
-                                  const string& tablename,
-                                  const double& out_value,
-                                  const string& name,
-                                  const string& unit);
-
-
-bool write_double_table_to_h5file(hid_t         file_id,
-                                  const string& tablename,
-                                  double*       double_table,
-                                  int           size,
-                                  const string& name,
-                                  const string& unit);
-
-
-bool load_double_table_from_h5file(hid_t         file_id,
-                                   const string& tablename,
-                                   double*       double_table,
-                                   int           expected_size);
-
-bool load_double_value_from_h5file(hid_t         file_id,
-                                   const string& tablename,
-                                   double&       out_value);
-
-bool write_int_value_to_h5file(hid_t         file_id,
-                               const string& tablename,
-                               const int&    out_value,
-                               const string& name,
-                               const string& unit);
-
-
-bool write_int_table_to_h5file(hid_t         file_id,
-                               const string& tablename,
-                               int*          double_table,
-                               int           size,
-                               const string& name,
-                               const string& unit);
-
-
-bool load_int_table_from_h5file(hid_t         file_id,
-                                const string& tablename,
-                                int*          double_table,
-                                int           expected_size);
-
-bool load_int_value_from_h5file(hid_t         file_id,
-                                const string& tablename,
-                                int&          out_value);
-
 class storage
 {
 public:
@@ -139,6 +90,12 @@ public:
                     std::unique_ptr<T[]>& data,
                     int&                  size);
 
+    template<typename T>
+    bool read_table_to_ptr(const string& name,
+                           T*            data,
+                           int           size);
+
+
     // write a scalar value to output
     template<typename T>
     void append_value(T      value,
@@ -150,11 +107,19 @@ public:
 
     // read a scalar value from input
     template<typename T>
-    void read_value(const string& name,
+    bool read_value(const string& name,
                     T&            data) {
-        std::unique_ptr<T[]> buf = &data;
-
-        read_table(name, buf, 1);
+        std::unique_ptr<T[]> buf = nullptr;
+        int size = 0;
+        
+        bool out = read_table(name, buf, size);
+        
+        if (out && size == 1)
+            data = buf[0];
+        if (size  != 1)
+            return false;
+        
+        return out;
     }
 
 
@@ -344,6 +309,94 @@ bool storage::read_table(const string&         name,
     else {
         data = nullptr;
         size = 0;
+
+        return false;
+    }
+
+    return true;
+}
+
+template<typename T>
+bool storage::read_table_to_ptr(const string& name,
+                                T*            data,
+                                int           size) {
+
+    if (file != nullptr) {
+        DataType dt = get_datatype(data[0]);
+
+        try {
+
+            DataSet dataset = file->openDataSet(name);
+
+            // get type in dataset
+            DataType type = dataset.getDataType();
+
+
+            if (type == dt) {
+                // cout << "Data set has correct type" << endl;
+            }
+            else {
+                return false;
+            }
+
+            // get dataspace
+            DataSpace dataspace = dataset.getSpace();
+            // get dimensions and rank
+            int     rank        = dataspace.getSimpleExtentNdims();
+            hsize_t dims_out[1] = {0};
+            if (rank == 1) {
+
+
+                dataspace.getSimpleExtentDims(dims_out, NULL);
+                // cout << "rank " << rank << ", dimensions " <<
+                //    (unsigned long)(dims_out[0]) << " x " << endl;
+            }
+            else {
+                return false;
+            }
+            
+            if (size == int(dims_out[0]))
+            {
+                
+            
+                // build output array
+
+
+
+                dataset.read(data, dt);
+            }
+            else
+                return false;            
+            
+        }
+
+        // end of try block
+        // catch failure caused by the H5File operations
+        catch (FileIException error) {
+            error.printError();
+
+            return false;
+        }
+        // catch failure caused by the DataSet operations
+        catch (DataSetIException error) {
+            error.printError();
+
+            return false;
+        }
+        // catch failure caused by the DataSpace operations
+        catch (DataSpaceIException error) {
+            error.printError();
+
+            return false;
+        }
+        // catch failure caused by the DataSpace operations
+        catch (DataTypeIException error) {
+            error.printError();
+
+            return false;
+        }
+    }
+    else {
 
         return false;
     }

@@ -25,8 +25,12 @@ set(SM "0" CACHE STRING "GPU SM value")
 set(MODULES_SRC "0" CACHE STRING "Physics module subdirectory")
 
 if (MODULES_SRC MATCHES "0")
-  set(MODULES_SRC "src/physics/managers/empty")
+  set(MODULES_SRC "src/physics/managers/multi")
 endif()
+
+# if CUDA wants gcc/g++ 5
+SET(CMAKE_CXX_COMPILER g++-6)
+SET(CMAKE_C_COMPILER gcc-6)
 
   
 # check what CMAKE version we use, above 3.8, CUDA is recognised as a
@@ -35,13 +39,6 @@ endif()
 # set project and cuda variables
 if(${CMAKE_VERSION} VERSION_LESS 3.8)
   message(STATUS "detected CMake version ${CMAKE_VERSION} below 3.8")
-
-
-
-  
-  # if CUDA wants gcc/g++ 5
-  #SET(CMAKE_CXX_COMPILER g++-5)
-  #SET(CMAKE_C_COMPILER gcc-5)
 
   project (THOR CXX)
   # some C++ flags
@@ -91,12 +88,7 @@ if(${CMAKE_VERSION} VERSION_LESS 3.8)
 else()
   # versions of CMAKE above 3.8
   message(STATUS "detected CMake version ${CMAKE_VERSION} above 3.8")
-    
- 
-  # if CUDA wants gcc/g++ 5
-  #SET(CMAKE_CXX_COMPILER g++-5)
-  #SET(CMAKE_C_COMPILER gcc-5)
-
+  
   project (THOR C CXX CUDA)
 
   # some C++ flags
@@ -152,8 +144,9 @@ set(SRC
   src/files/directories.cpp
   src/files/log_writer.cpp
   src/utils/iteration_timer.cpp
-  src/profx/valkyrie_conservation.cu
-  src/thor/reduction_add.cu)
+  src/profx/profx_conservation.cu
+  src/thor/reduction_add.cu
+  src/thor/phy_modules_device.cu)
 
 # source for test program for storage class
 set(SRC_STORAGE

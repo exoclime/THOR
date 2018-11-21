@@ -78,6 +78,12 @@ map<string, output_def> build_definitions(ESP& esp, Icogrid& grid) {
             {"h_d", {esp.h_d, esp.nv * esp.point_num, "Entalphy h", "h", true}},
             {"hh_d", {esp.hh_d, esp.nvi * esp.point_num, "Entalphy hh", "hh", true}},
             // RK variables
+            {"pressure_d", {esp.pressure_d, esp.nv * esp.point_num, "RK pressure", "pp", true}},
+	    /*
+            {"tracer_d", {esp.tracer_d, esp.nv * esp.point_num * esp.ntr, "RK tracer", "ti", true}},
+            {"tracers_d", {esp.tracers_d, esp.nv * esp.point_num * esp.ntr, "RK tracers", "ts", true}},
+            {"tracerk_d", {esp.tracerk_d, esp.nv * esp.point_num * esp.ntr, "RK tracerk", "tk", true}},
+*/
             {"pressures_d", {esp.pressures_d, esp.nv * esp.point_num, "RK pressures", "ps", true}},
             {"Rhos_d", {esp.Rhos_d, esp.nv * esp.point_num, "RK Rhos", "rhos", true}},
             {"Mhs_d", {esp.Mhs_d, esp.nv * esp.point_num * 3, "RK Mhs", "Mhs", true}},
@@ -122,6 +128,9 @@ map<string, output_def> build_definitions(ESP& esp, Icogrid& grid) {
             {"Altitudeh", {grid.Altitudeh, grid.nvi, "Altitudeh", "Alth", false}},
             {"lonlat", {grid.lonlat, 2 * grid.point_num, "lonlat", "ll", false}},
 
+	    //	    {"Sp_d", {esp.Sp_d, esp.nv * esp.point_num, "Sp_d", "Sp", true}},
+	    //	    {"Sd_d", {esp.Sd_d, esp.nv * esp.point_num, "Sd_d", "Sd", true}},
+	    
             {"div", {grid.div, 7 * 3 * grid.point_num, "div", "d", false}},
             {"grad", {grid.grad, 7 * 3 * grid.point_num, "grad", "g", false}},
         };
@@ -145,7 +154,8 @@ binary_test::~binary_test() {
 void binary_test::check_data(const string&         iteration,
                              const string&         ref_name,
                              const vector<string>& input_vars,
-                             const vector<string>& output_vars) {
+                             const vector<string>& output_vars,
+                             const bool & trace_phy_modules) {
 #    ifdef BENCH_CHECK_LAST_CUDA_ERROR
     check_last_cuda_error(ref_name);
 #    endif // BENCH_CHECK_LAST_CUDA_ERROR
@@ -157,7 +167,18 @@ void binary_test::check_data(const string&         iteration,
         if (it != output_definitions.end()) {
             data_output.push_back(it->second);
         }
+   }
+
+    if (trace_phy_modules)
+    {        
+        for (auto& name : phy_modules_data_out) {
+            auto&& it = output_definitions.find(name);
+            if (it != output_definitions.end()) {
+                data_output.push_back(it->second);
+            }
+        }
     }
+
 
 
 // Specific debugging functions
@@ -212,9 +233,13 @@ void binary_test::output_reference(const string&             iteration,
                                    const string&             ref_name,
                                    const vector<output_def>& data_output) {
     // open file
-    string output_name = output_dir + output_base_name
+    string output_name = output_dir + "/" + output_base_name
                          + ref_name + "_" + iteration + ".h5";
 
+    if (!path_exists(output_dir))
+        create_output_dir(output_dir);
+    
+            
     storage s(output_name);
 
     for (auto& def : data_output) {
@@ -254,7 +279,7 @@ bool binary_test::compare_to_reference(const string&             iteration,
                                        const string&             ref_name,
                                        const vector<output_def>& data_output) {
 
-    string output_name = output_dir + output_base_name
+    string output_name = output_dir + "/" + output_base_name
                          + ref_name + "_" + iteration + ".h5";
 
     if (!path_exists(output_name)) {
@@ -269,6 +294,8 @@ bool binary_test::compare_to_reference(const string&             iteration,
     oss << std::left << std::setw(50) << output_name;
     oss << std::setw(8) << iteration << " ref: " << std::setw(30) << ref_name;
 
+    std::map<std::string, compare_statistics> stats_table;
+    
     for (auto& def : data_output) {
         bool comp = false;
 
@@ -282,35 +309,79 @@ bool binary_test::compare_to_reference(const string&             iteration,
             continue;
         }
 
+        compare_statistics stats;
+        
         if (def.device_ptr) {
             getDeviceData(def.data, mem_buf.get(), def.size * sizeof(double));
-            comp = compare_to_saved_data(s, def.short_name, mem_buf.get(), def.size);
+            comp = compare_to_saved_data(s, def.short_name, mem_buf.get(), def.size, stats);
         }
         else {
-            comp = compare_to_saved_data(s, def.short_name, def.data, def.size);
+            comp = compare_to_saved_data(s, def.short_name, def.data, def.size, stats);
         }
+#ifdef BENCH_COMPARE_PRINT_STATISTICS
+        if (comp == false)
+        {
+            stats_table[def.short_name] = stats;
+        }
+#endif // BENCH_COMPARE_PRINT_STATISTICS        
 
         oss << " " << def.short_name << ": " << comp;
         out &= comp;
     }
+    
 #    ifndef BENCH_PRINT_DEBUG // if unset, print only failures
     if (!out)
 #    endif
         cout << oss.str() << endl;
 
+#ifdef BENCH_COMPARE_PRINT_STATISTICS
+    for(auto const &v : stats_table) {
+        auto const &key = v.first;
+        auto const &value = v.second;
+        printf("  %5s - num (fail/tot): %8d/%8d Δabs(mx:%11g,mn:%11g) - Δrel(mx:%11g,mn:%11g) -ref(mx:%11g,mn:%11g) -val(mx:%11g,mn:%11g)\n",
+               key.c_str(),
+               value.num_failures,
+               value.num_values,
+               value.max_abs_delta,
+               value.mean_abs_delta,
+               value.max_rel_delta,
+               value.mean_rel_delta,
+               value.max_ref,
+               value.mean_ref,
+               value.max_val,
+               value.mean_val);
+    }
+    
+#endif // BENCH_COMPARE_PRINT_STATISTICS
+
     return out;
 }
 
-void binary_test::set_definitions(const map<string, output_def>& defs) {
-    output_definitions = defs;
+void binary_test::append_definitions(const map<string, output_def>& defs) {
+    output_definitions.insert(defs.begin(), defs.end());
     int memsize        = 0;
-    for (auto& d : defs) {
+    for (auto& d : output_definitions) {
         if (d.second.size > memsize)
             memsize = d.second.size;
     }
 
     mem_buf = std::unique_ptr<double[]>(new double[memsize], std::default_delete<double[]>());
 }
+
+void binary_test::register_phy_modules_variables(const std::map<string, output_def> &defs,
+                                                 const vector<string> &phy_modules_data_in_,
+                                                 const vector<string> &phy_modules_data_out_)
+{
+    append_definitions(defs);
+    phy_modules_data_in.insert(phy_modules_data_in.end(),
+                               phy_modules_data_in_.begin(),
+                               phy_modules_data_in_.end());
+    phy_modules_data_out.insert(phy_modules_data_out.end(),
+                                phy_modules_data_out_.begin(),
+                                phy_modules_data_out_.end());
+}
+
+    
 
 
 #endif // BENCHMARKING

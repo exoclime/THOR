@@ -102,17 +102,18 @@ bool config_file::parse_config(std::basic_istream<char>& config) {
             if (it != config_vars.end()) {
                 bool parsed = it->second->parse(value);
                 if (!parsed) {
-                    cout << "parsing of value [" << value << "] failed for key [" << key << "] " << endl;
+                    cout << "ERROR: parsing of value [" << value << "] failed for key [" << key << "] " << endl;
                     parse_success &= false;
                 }
             }
             else {
-                cout << "config file key [" << key << "] does not exist" << endl;
-                parse_success &= false;
+                cout << "WARNING: config file key [" << key << "] does not exist, skipping" << endl;
+                // Do not fail if key does not exist
+                //parse_success &= false;
             }
         }
         else {
-            cout << "error in config file at line " << cnt << " :\t [" << line << "]" << endl;
+            cout << "ERROR in config file at line " << cnt << " :\t [" << line << "]" << endl;
             parse_success &= false;
         }
         cnt++;

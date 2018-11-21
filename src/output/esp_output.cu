@@ -84,20 +84,12 @@ __host__ void ESP::copy_to_host() {
     cudaMemcpy(Wh_h, Wh_d, point_num * nvi * sizeof(double), cudaMemcpyDeviceToHost);
     cudaMemcpy(pressure_h, pressure_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
     cudaMemcpy(Mh_h, Mh_d, 3 * point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
-    cudaMemcpy(tracer_h, tracer_d, point_num * nv * ntr * sizeof(double), cudaMemcpyDeviceToHost);
 }
 
-__host__ void ESP::output(int             fidx,         // Index of output file
-                          double          Cp,           // Specific heat capacities [J/(Kg K)]
-                          double          Rd,           // Gas constant [J/(Kg K)]
-                          double          Omega,        // Rotation rate [s-1]
-                          double          Gravit,       // Gravitational acceleration [m/s2]
-                          double          P_Ref,        // Reference surface pressure [Pa]
-                          double          Top_altitude, // Top of the model's domain [m]
-                          double          A,
-                          bool            conservation,
-                          bool            SpongeLayer,
-                          int             chemistry) {
+__host__ void ESP::output(int    fidx,         // Index of output file
+                          const XPlanet & Planet,
+                          bool   conservation,
+                          bool   SpongeLayer) {
 
     //
     //  Description: Model output.
@@ -170,36 +162,38 @@ __host__ void ESP::output(int             fidx,         // Index of output file
         // spring beta
         s.append_value(spring_beta, "/spring_beta", "-", "Spring Beta");
         //      A
-        s.append_value(A, "/A", "m", "Planet radius");
+        s.append_value(Planet.A, "/A", "m", "Planet radius");
         //      Rd
-        s.append_value(Rd, "/Rd", "J/(Kg K)", "Gas constant");
+        s.append_value(Planet.Rd, "/Rd", "J/(Kg K)", "Gas constant");
         //      Omega
-        s.append_value(Omega, "/Omega", "1/s", "Rotation rate");
+        s.append_value(Planet.Omega, "/Omega", "1/s", "Rotation rate");
         //      Gravit
-        s.append_value(Gravit, "/Gravit", "m/s^2", "Surface gravity");
+        s.append_value(Planet.Gravit, "/Gravit", "m/s^2", "Surface gravity");
         //      P_Ref
-        s.append_value(P_Ref, "/P_Ref", "Pa", "Reference pressure");
+        s.append_value(Planet.P_Ref, "/P_Ref", "Pa", "Reference pressure");
         //      Top_altitude
-        s.append_value(Top_altitude, "/Top_altitude", "m", "Top of the model's domain");
+        s.append_value(Planet.Top_altitude, "/Top_altitude", "m", "Top of the model's domain");
         //      CP
-        s.append_value(Cp, "/Cp", "J/(Kg K)", "Specific heat capacity");
+        s.append_value(Planet.Cp, "/Cp", "J/(Kg K)", "Specific heat capacity");
         //      SpongeLayer option
         s.append_value(SpongeLayer ? 1.0 : 0.0, "/SpongeLayer", "-", "Using SpongeLayer?");
         //      core_benchmark  option
         s.append_value(int(core_benchmark), "/core_benchmark", "-", "Using benchmark forcing or RT");
-        //      chemistry option
-        s.append_value(chemistry, "/chemistry", "-", "Using relaxation chemistry");
         if (SpongeLayer) {
             //      nlat
             s.append_value(nlat, "/nlat", "-", "number of lat rings for sponge layer");
             //      ns
             s.append_value(ns_sponge, "/ns_sponge", "-", "Bottom of sponge layer");
             //      Rv
-            s.append_value(Rv_sponge, "/Rv_sponge", "1/s", "Stength of sponge layer");
+            s.append_value(Rv_sponge, "/Rv_sponge", "1/s", "Strength of sponge layer");
         }
 
-        if (core_benchmark == NO_BENCHMARK)
+        // store module name in the description
+        s.append_value(0.0, "/phy_module", "-", phy_modules_get_name());
+
+        if (phy_modules_execute) {
             phy_modules_store_init(s);
+        }
     }
 
     //  ESP OUTPUT
@@ -246,14 +240,6 @@ __host__ void ESP::output(int             fidx,         // Index of output file
                    "/Wh",
                    "kg m/s",
                    "Vertical Momentum");
-
-    if (chemistry == true) {
-        s.append_table(tracer_h,
-                       nv * point_num * ntr,
-                       "/tracer",
-                       " ",
-                       "Volume mixing ratio");
-    }
 
     if (conservation == true) {
         //  Etotal at each point
@@ -322,7 +308,7 @@ __host__ void ESP::output(int             fidx,         // Index of output file
                        "Global AngMomZ");
     }
 
-    if (core_benchmark == NO_BENCHMARK)
+    if (phy_modules_execute)
         phy_modules_store(*this, s);
 
     char buf[256];

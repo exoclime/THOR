@@ -89,6 +89,7 @@ n_out = 13824
 # defaults to 'results'
 results_path = gj436b_t3
 
+radiative_transfer = true
 Tstar = 3350
 planet_star_dist = 0.02872
 radius_star = 0.464
@@ -101,3 +102,5 @@ GPU_ID_N = 0
 gcm_off = false
 
 TPprof = 0
+
+

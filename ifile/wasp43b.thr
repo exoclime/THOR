@@ -89,6 +89,7 @@ n_out = 1
 # defaults to 'results'
 results_path = wasp43b_test
 
+radiative_transfer = true
 Tstar = 4300
 planet_star_dist = 0.015
 radius_star = 0.667
@@ -102,3 +103,5 @@ GPU_ID_N = 0
 gcm_off = false
 
 TPprof = 0
+
+

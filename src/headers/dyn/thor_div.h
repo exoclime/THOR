@@ -41,6 +41,9 @@
 // 1.0     16/08/2017 Released version  (JM)
 //
 ////////////////////////////////////////////////////////////////////////
+#include "kernel_halo_helpers.h"
+
+
 template<int NX, int NY>
 __global__ void DivM_Op(double* DivM_d,
                         double* divg_Mh_d,
@@ -60,9 +63,9 @@ __global__ void DivM_Op(double* DivM_d,
                         bool    laststep,
                         bool    DeepModel) {
 
-    int x   = threadIdx.x;
-    int y   = threadIdx.y;
-    int ib  = blockIdx.x;
+    int x = threadIdx.x;
+    int y = threadIdx.y;
+    //int ib  = blockIdx.x;
     int nv  = gridDim.y;
     int lev = blockIdx.y;
 
@@ -86,23 +89,23 @@ __global__ void DivM_Op(double* DivM_d,
     double funcx, funcy, funcz;
     int    jp1, jp2;
 
-    int ir = (y + 1) * nhl + x + 1; // Region index
-    int ir2, id, twot;
-
     /////////////////////////////////////////
     __shared__ double a_s[3 * (NX + 2) * (NY + 2)];
     __shared__ double wl_s[(NX + 2) * (NY + 2)];
     __shared__ double wt_s[(NX + 2) * (NY + 2)];
     /////////////////////////////////////////
 
-    bool pent_ind;
-    int  ig;
+    int ir = 0;
+    int ir2, id;
 
-    ig       = maps_d[ib * nhl2 + ir];
-    id       = ig;
-    pent_ind = 0;
-    if (x == 0 && y == 0)
-        if (maps_d[ib * nhl2] == -1) pent_ind = 1;
+    bool pent_ind = false; //
+    int  ig;               // index in global mem
+
+    int igh = 0; // global index in halo
+
+
+    bool load_halo = compute_mem_idx(maps_d, nhl, nhl2, ig, igh, ir, ir2, pent_ind);
+    id             = ig;
 
     if (laststep)
         for (int k = 0; k < 3; k++) a_s[ir * 3 + k] = divg_Mh_d[ig * nv * 3 + lev * 3 + k];
@@ -115,71 +118,27 @@ __global__ void DivM_Op(double* DivM_d,
     ///////////////////////////////
     //////////// Halo /////////////
     ///////////////////////////////
-    if (x == 0) {
-        ir2 = (y + 1) * nhl + x;
-        ig  = maps_d[ib * nhl2 + ir2];
-        if (laststep)
-            for (int k = 0; k < 3; k++) a_s[ir2 * 3 + k] = divg_Mh_d[ig * nv * 3 + lev * 3 + k];
-        else {
-            for (int k = 0; k < 3; k++) a_s[ir2 * 3 + k] = Mh_d[ig * 3 * nv + lev * 3 + k];
-            wl_s[ir2] = Wh_d[ig * (nv + 1) + lev];
-            wt_s[ir2] = Wh_d[ig * (nv + 1) + lev + 1];
-        }
-    }
-    if (x == nhl - 3) {
-        ir2 = (y + 1) * nhl + x + 2;
-        ig  = maps_d[ib * nhl2 + ir2];
-        if (laststep)
-            for (int k = 0; k < 3; k++) a_s[ir2 * 3 + k] = divg_Mh_d[ig * nv * 3 + lev * 3 + k];
-        else {
-            for (int k = 0; k < 3; k++) a_s[ir2 * 3 + k] = Mh_d[ig * 3 * nv + lev * 3 + k];
-            wl_s[ir2] = Wh_d[ig * (nv + 1) + lev];
-            wt_s[ir2] = Wh_d[ig * (nv + 1) + lev + 1];
-        }
-    }
-    if (y == 0) {
-        twot = 1;
-        ir2  = y * nhl + (x + 1);
-        if (x == 0) twot = 2;
-        for (int k = 0; k < twot; k++) {
-            if (k == 1) ir2 = y * nhl + x;
-            ig = maps_d[ib * nhl2 + ir2];
-            if (ig >= 0) {
-                if (laststep)
-                    for (int k = 0; k < 3; k++) a_s[ir2 * 3 + k] = divg_Mh_d[ig * nv * 3 + lev * 3 + k];
-                else {
-                    for (int k = 0; k < 3; k++) a_s[ir2 * 3 + k] = Mh_d[ig * 3 * nv + lev * 3 + k];
-                    wl_s[ir2] = Wh_d[ig * (nv + 1) + lev];
-                    wt_s[ir2] = Wh_d[ig * (nv + 1) + lev + 1];
-                }
-            }
-            else {
-                if (laststep)
-                    for (int k = 0; k < 3; k++) a_s[ir2 * 3 + k] = 0.0;
-                else {
-                    for (int k = 0; k < 3; k++) a_s[ir2 * 3 + k] = 0.0;
-                    wl_s[ir2] = 0.0;
-                    wt_s[ir2] = 0.0;
-                }
-            }
-        }
-    }
-    if (y == nhl - 3) {
-        twot = 1;
-        ir2  = (y + 2) * nhl + (x + 1);
-        if (x == nhl - 3) twot = 2;
-        for (int k = 0; k < twot; k++) {
-            if (k == 1) ir2 = (y + 2) * nhl + (x + 2);
-            ig = maps_d[ib * nhl2 + ir2];
+    if (load_halo) {
+        if (igh >= 0) {
             if (laststep)
-                for (int k = 0; k < 3; k++) a_s[ir2 * 3 + k] = divg_Mh_d[ig * nv * 3 + lev * 3 + k];
+                for (int k = 0; k < 3; k++) a_s[ir2 * 3 + k] = divg_Mh_d[igh * nv * 3 + lev * 3 + k];
             else {
-                for (int k = 0; k < 3; k++) a_s[ir2 * 3 + k] = Mh_d[ig * 3 * nv + lev * 3 + k];
-                wl_s[ir2] = Wh_d[ig * (nv + 1) + lev];
-                wt_s[ir2] = Wh_d[ig * (nv + 1) + lev + 1];
+                for (int k = 0; k < 3; k++) a_s[ir2 * 3 + k] = Mh_d[igh * 3 * nv + lev * 3 + k];
+                wl_s[ir2] = Wh_d[igh * (nv + 1) + lev];
+                wt_s[ir2] = Wh_d[igh * (nv + 1) + lev + 1];
+            }
+        }
+        else {
+            if (laststep)
+                for (int k = 0; k < 3; k++) a_s[ir2 * 3 + k] = 0.0;
+            else {
+                for (int k = 0; k < 3; k++) a_s[ir2 * 3 + k] = 0.0;
+                wl_s[ir2] = 0.0;
+                wt_s[ir2] = 0.0;
             }
         }
     }
+
     __syncthreads();
     //////////////////////////////////////////////
 

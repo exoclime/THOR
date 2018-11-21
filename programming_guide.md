@@ -105,16 +105,14 @@ $ clang-format-6 -i <files>
 
 This formats all the files passed as argument in place (with the `-i` option).
 
-
-you can get information on compilation error by compiling with `clang`
-* error checking
+### Error checking and code analysis
+you can get more information on the code by compiling with `clang`. `clang` is another compiler used on linux that now supports part of CUDA syntax, and is known for it's display of compilation messages. No performance benchmarks have been performed on it, it's only experimental to get more error checking on the code. Note that the clang output can be very verbose and very strict to conformance to standard.
+* compiling with clang.
 ```
 $ make release -j8 COMP=clang++-6
 ```
 
-This uses another compiler which repots a lot of issues. It also dumps a compilation database 
-(in `compilation_commands.json`) usable by the clang tools (like clang-tidy) to check for errors 
-and run sanitizers on the code. It can also be used by some editors to know how the files are compiled and help for navigation through code and code completion (ycmd for vim, irony-mode and rtags for emacs, ide-clangd for Atom).
+It also dumps a compilation database (in `compilation_commands.json`), which is usable by the clang tools (like clang-tidy) to do syntax analysis, modernising and run sanitizers on the code. It can also be used by some editors to know how the files are compiled and help for navigation through code and code completion (ycmd for vim, irony-mode and rtags for emacs, ide-clangd for Atom).
 
 ### debugging tools
 #### Overview
@@ -126,7 +124,7 @@ The check points are in the main loop, in the Thor and ProfX functions, checking
 Check points look like this:
 
 ```
-BENCH_POINT_I_S(current_step, rk, "Compute_Temperature_H_Pt_Geff", vector<string>({}), vector<string>({"temperature_d", "h_d", "hh_d", "pt_d", "pth_d", "gtil_d", "gtilh_d"}))
+BENCH_POINT_I_S(current_step, rk, "Compute_Temperature_H_Pt_Geff", (), ("temperature_d", "h_d", "hh_d", "pt_d", "pth_d", "gtil_d", "gtilh_d"))
 ```
 
 The arguments are:
@@ -148,7 +146,8 @@ The debug tools can dump the intermediate state of arrays from the simulation fo
 Dump the reference files:
 * enable debug tools, in `src/headers/debug.h`, uncomment `#define BENCHMARKING` 
 * enable writing of intermediate states. Uncomment `#define BENCHMARK_POINT_WRITE`
-* The intermediate states go to `#define BENCHMARK_DUMP_REF_PATH` subdirectory
+* the intermediate states go to the output directory, in the `ref` subdirectory.
+* the output files go now to the output directory, in the `write` subdirectory.
 * compile
 * run 
 this saves reference files to the reference path. 
@@ -156,12 +155,13 @@ this saves reference files to the reference path.
 Then, apply the code changes you want to test, and enable dump comparison:
 * enable debug tools, in `src/headers/debug.h`, uncomment `#define BENCHMARKING` 
 * enable comparison of intermediate states. Uncomment `#define BENCHMARK_POINT_COMPARE`
-* The intermediate states compare to the value of `#define BENCHMARK_DUMP_REF_PATH` subdirectory
+* the intermediate states go to the output directory, in the `ref` subdirectory.
+* the output files go now to the output directory, in the `compare` subdirectory.
 * compile
 * run 
 
 This will print out data when the stored value isn't exactly equal to the computed value. 
-It prints the bench-point name, the iteration numbers, the short name of arrays and 1 if the array matched, 0 if they didn't match, NA if it didn't find the array in the input file.
+It prints the bench-point name, the iteration numbers, the short name of arrays and `1` if the array matched, `0` if they didn't match, `NA` if it didn't find the array in the input file.
 
 
 You can add more arrays from the dynamical core to check by putting it in the list defined in `src/devel/binary_test.cpp::build_definitions( ESP & esp, Icogrid & grid)`:
@@ -177,12 +177,20 @@ You can add more arrays from the dynamical core to check by putting it in the li
 - on device: boolean telling if the pointer points to data on device or on host. If the data is on the device, it will copy the data to host or work on it on the device if needed.
 
 
-
+##### Additional debug output
 To have more verbose output, define `BENCH_PRINT_DEBUG`. This prints out all the comparisons, and not only when the comparison fail.
 
-TODO: explain path thingy after implementation
-TODO: explain statistics
+You can also print out statistics on errors by defining the `BENCH_COMPARE_PRINT_STATISTICS`. This will print statistics on tables with errors, (covering the failed values, when we talk about max and mean)
+* absolute deviation: max and mean
+* relative deviation: max and mean
+* reference value: max and mean
+* absolute value: max and mean
 
+
+##### Fuzzy compare
+By defining `BENCH_COMPARE_USE_EPSILON` and an epsilon value for `BENCH_COMPARE_EPSILON_VALUE`, it will try to compare the relative difference `abs(val - ref)/abs(ref)` to the epsilon value instead of an exact comparison.
+
+Exact comparison is useful for bitwise comparison, but if algorithms are changed, the exact value will change but can stay close to the reference. For these tests, the fuzzy compare can be useful.
 
 
 
@@ -195,6 +203,36 @@ The debug tools can help for debugging and tracing, by running checks and printi
 You can add more checks by adding flags in `src/headers/debug.h` and the code in `src/devel/binary_test.cpp` in the function `binary_test::check_data()` with an appropriate `#ifdef` clause. 
    The function gets some text for the iteration count and the name of the steps, and a vector of tables to work on. It computes the definitions of tables (with pointers and sizes) to work on at the top.
 
+## Programming tools
+### Reduction Add
+Some operations need to perform an addition over all elements of an array on the device. To execute this, instead of running some AtomicAdd that is suboptimal and not binary reproducible, you can run a kernel that parallelises the operation.
+
+Use the reduction add operation defined in `src/headers/reduction_add.h`. To run a sum on an array on the device, use:
+
+```
+double gpu_sum_on_device<BLOCKSIZE>(double *data_d, long length);
+```
+
+Arguments:
+* `BLOCKSIZE`: template argument for size of blocks to work on. Must be a power of two, 1024 is a good value. It will sum over sub-arrays of this size on the device and then sum up the results on the host, so bigger is better.
+* `data_d`: pointer to memory on the device to operate on. This memory has to be aligned to memory boundaries. Some buffers needed padding to get to the correct alignement.
+* `length`: size of the array to operate on. Doesn't need to be a power of 2, the function will do the padding. Can be smaller than `BLOCKSIZE`.
+
+
+### 3D Vector operations 
+
+To work on vector values, CUDA provides some basic N-dimensional data types. THOR can use `double3` for 3D vectors. It defines operators in `src/headers/vector_operations.h` so that this datatype can be used in amore convenient way. 
+
+* standard math operators `+`,`-`, adding two vectors or a scalar to all elements of a vector. (also as inplace operators, `+=`, `-=`). 
+* multiplication by a scalar `*` and division `/` by a scalar. (in place as `*=` and `/=`)
+* dot product `dot(v1,v2)`
+* length `length(v)`
+* normalisation `normalize(v)`
+* cross product `cross(v1, v2)`
+
+Usage examples in `src/grid/grid.cu`.
+
+Some versions of CUDA provide their own version of these operators, but not available on all platforms tested.
 
 ## physical modules
 New physical behaviour can be implemented outside of the main dynamical core and plugged in as modules.
@@ -203,7 +241,7 @@ Two examples are available:
 * `src/physics/managers/empty/` is an empty code structure to implement user modules
 * `src/physics/managers/multi/` is an example of a physics modules using multiple physics behaviour, implemented in subclasses, that provide radiative transfer and chemical dynamics, with the implementation of the physics in itself  in `src/physics/modules`.
 
-### Interface
+#### Interface
 The physics modules themselves must provide the function signatures as defined in `src/headers/phy_modules.h`. 
 
 They should mange their own state variables and functions, and fill in the hooks to be executed from the main loop.
@@ -224,15 +262,24 @@ They should mange their own state variables and functions, and fill in the hooks
 - `phy modules_store`: called at end of N step to store data from integration.
 - `phy_modules_store_init`: called at initalisation to save parameters of physics module.
 
-### Compilation of module 
+#### Compilation of module 
 The main makefile calls the makefile in the physics module directory. It passes it its own variables to help for compilation. 
 
 The physics module should create a static library called `libphy_modules.a` in its root directory that will be used to link to in the main program. 
 
-### Integration of module in THOR.
+#### Integration of module in THOR.
 To integrate your physical module to THOR, configure it's relative path in `Makefile.conf`, by setting the `MODULES_SRC` variable.
 
 The main makefile will then run the makefile in that directory and statically link to the `libphy_modules.a` library found at that path.
+
+## Mesh structure and indexing
+
+## compute tools
+### vector arrays operation
+For cleaner code for operations on 3D vectors and parallelised data access, CUDA provides 
+
+### reduction add
+
 
 ## config file
 ### structure

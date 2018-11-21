@@ -1,3 +1,47 @@
+// ==============================================================================
+// This file is part of THOR.
+//
+//     THOR is free software : you can redistribute it and / or modify
+//     it under the terms of the GNU General Public License as published by
+//     the Free Software Foundation, either version 3 of the License, or
+//     (at your option) any later version.
+//
+//     THOR is distributed in the hope that it will be useful,
+//     but WITHOUT ANY WARRANTY; without even the implied warranty of
+//     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
+//     GNU General Public License for more details.
+//
+//     You find a copy of the GNU General Public License in the main
+//     THOR directory under <license.txt>.If not, see
+//     <http://www.gnu.org/licenses/>.
+// ==============================================================================
+//
+// ESP -  Exoclimes Simulation Platform. (version 1.0)
+//
+//
+//
+// Method: Radiative transfer physics module
+//
+//
+// Known limitations: - Runs in a single GPU.
+//
+// Known issues: None
+//
+//
+// If you use this code please cite the following reference:
+//
+//       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016
+//
+// Current Code Owner: Joao Mendonca, EEG. joao.mendonca@csh.unibe.ch
+//
+// History:
+// Version Date       Comment
+// ======= ====       =======
+//
+// 1.0     16/08/2017 Released version  (JM)
+//
+////////////////////////////////////////////////////////////////////////
+
 #pragma once
 
 #include "phy_module_base.h"
@@ -8,24 +52,16 @@ public:
     radiative_transfer();
     ~radiative_transfer();
 
-    bool initialise_memory(const ESP &esp);
+    bool initialise_memory(const ESP &              esp,
+                           device_RK_array_manager &phy_modules_core_arrays);
     bool initial_conditions(const ESP &    esp,
                             const XPlanet &planet);
 
     // TBD, how does it get data? friend of ESP ? grid ?
-    bool loop(ESP &           esp,
-              int             nstep,          // Step number
-              benchmark_types core_benchmark, // Held-Suarez test option
-              double          time_step,      // Time-step [s]
-              double          Omega,          // Rotation rate [1/s]
-              double          Cp,             // Specific heat capacity [J/kg/K]
-              double          Rd,             // Gas constant [J/kg/K]
-              double          mu,             // Atomic mass unit [kg]
-              double          kb,             // Boltzmann constant [J/K]
-              double          P_Ref,          // Reference pressure [Pa]
-              double          Gravit,         // Gravity [m/s^2]
-              double          A               // Planet radius [m]);
-    );
+    bool phy_loop(ESP &          esp,
+                  const XPlanet &planet,
+                  int            nstep, // Step number
+                  double         time_step);    // Time-step [s]
 
     bool store(const ESP &esp,
                storage &  s);
@@ -35,6 +71,8 @@ public:
     bool configure(config_file &config_reader);
 
     virtual bool free_memory();
+
+    void print_config();
 
 private:
     // Rad Trans options

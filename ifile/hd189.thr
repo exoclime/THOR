@@ -74,7 +74,7 @@ Rv_sponge = 1e-5
 # No HS test == NoBenchmark (model is then forced with grey RT by default)
 core_benchmark = NoBenchmark 
 
-
+radiative_transfer = true
 Tstar = 4875
 planet_star_dist = 0.03099
 radius_star = 0.805
@@ -91,3 +91,4 @@ conv_adj = 0
 GPU_ID_N = 0
 
 TPprof = 0
+

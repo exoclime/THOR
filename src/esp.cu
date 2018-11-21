@@ -69,6 +69,10 @@
 
 #include "phy_modules.h"
 
+#include "debug.h"
+#ifdef BENCHMARKING
+#    warning "Compiling with benchmarktest enabled"
+#endif
 
 #include <csignal>
 
@@ -236,7 +240,6 @@ int main(int argc, char** argv) {
     bool   DeepModel     = true;
     bool   SpongeLayer   = false;
     int    nlat          = 20;
-    int    ntr           = 5;
     double Rv_sponge     = 1e-4;
     double ns_sponge     = 0.75;
     bool   shrink_sponge = false;
@@ -265,9 +268,6 @@ int main(int argc, char** argv) {
     string core_benchmark_str("HeldSuarez");
     config_reader.append_config_var("core_benchmark", core_benchmark_str, string(core_benchmark_default));
 
-    int chemistry = 0;
-    config_reader.append_config_var("chemistry", chemistry, chemistry_default);
-
     int conv_adj = 1;
     config_reader.append_config_var("conv_adj", conv_adj, conv_adj_default);
 
@@ -295,6 +295,7 @@ int main(int argc, char** argv) {
 
     //*****************************************************************
     // Read config file
+    printf("\n");
 
     if (config_reader.parse_file(config_filename))
         printf(" Config file %s read\n", config_filename.c_str());
@@ -441,6 +442,17 @@ int main(int argc, char** argv) {
         exit(-1);
     }
     //*****************************************************************
+#ifdef BENCHMARKING
+    string output_path_ref = (path(output_path) / string("ref")).to_string();
+#    ifdef BENCH_POINT_COMPARE
+    output_path = (path(output_path) / string("compare")).to_string();
+#    endif // BENCH_POINT_COMPARE
+#    ifdef BENCH_POINT_WRITE
+    output_path = (path(output_path) / string("write")).to_string();
+#    endif // BENCH_POINT_WRITE
+#endif     // BENCHMARKING
+
+
     // check output config directory
     if (!create_output_dir(output_path)) {
         printf("Error creating output result directory: %s\n",
@@ -517,7 +529,7 @@ int main(int argc, char** argv) {
     printf(" Using GPU #%d\n", GPU_ID_N);
     cudaSetDevice(GPU_ID_N);
 
-        //
+    //
     //  PRINTS
     //  Device Information
     int         ndevices;
@@ -579,8 +591,6 @@ int main(int argc, char** argv) {
         printf("Capabilities: %d (compiled with SM=%d).\n", device_major_minor_number, DEVICE_SM);
     }
 
-    
-
 
     //
     //  Make the icosahedral grid
@@ -594,43 +604,43 @@ int main(int argc, char** argv) {
                  SpongeLayer);        // Use sponge layer?
                                       //
 
-                                      //  Define object X.
-    ESP X(Grid.point_local,           // First neighbours
-          Grid.maps,                  // Grid domains
-          Grid.lonlat,                // Longitude and latitude of the grid points
-          Grid.Altitude,              // Altitudes
-          Grid.Altitudeh,             // Altitude at the interfaces between layers
-          Grid.nvecoa,                // Normal vectors for diffusion 1
-          Grid.nvecti,                // Normal vectors for diffusion 2
-          Grid.nvecte,                // Normal vectors for diffusion 3
-          Grid.areasT,                // Areas of the main cells
-          Grid.areasTr,               // Areas of the triangles
-          Grid.div,                   // Divergence operator
-          Grid.grad,                  // Gradient operator
-          Grid.func_r,                // Normalised vector
-          Grid.nl_region,             // Number of points in one side of a rhombus
-          Grid.nr,                    // Number of rhombi
-          Grid.nv,                    // Number of vertical layers
-          Grid.nvi,                   // Number of interfaces between layer
-          glevel,                     // Horizontal resolution level
-          spring_dynamics,            // Spring dynamics option
-          spring_beta,                // Parameter beta for spring dynamics
-          nlat,                       // Number of latitude rings for zonal
-                                      // mean wind
-          ntr,                        //
-          Grid.zonal_mean_tab,        // table of zonal means for sponge layer
-          Rv_sponge,                  // Maximum damping of sponge layer
-          ns_sponge,                  // lowest level of sponge layer (fraction of model)
-          t_shrink,                   // time to shrink sponge layer
-          Grid.point_num,             // Number of grid points
-          conservation,               // compute conservation values
-          core_benchmark,             // benchmark test type
-          logwriter);                 // Log writer
+    //  Define object X.
+    ESP X(Grid.point_local,    // First neighbours
+          Grid.maps,           // Grid domains
+          Grid.lonlat,         // Longitude and latitude of the grid points
+          Grid.Altitude,       // Altitudes
+          Grid.Altitudeh,      // Altitude at the interfaces between layers
+          Grid.nvecoa,         // Normal vectors for diffusion 1
+          Grid.nvecti,         // Normal vectors for diffusion 2
+          Grid.nvecte,         // Normal vectors for diffusion 3
+          Grid.areasT,         // Areas of the main cells
+          Grid.areasTr,        // Areas of the triangles
+          Grid.div,            // Divergence operator
+          Grid.grad,           // Gradient operator
+          Grid.func_r,         // Normalised vector
+          Grid.nl_region,      // Number of points in one side of a rhombus
+          Grid.nr,             // Number of rhombi
+          Grid.nv,             // Number of vertical layers
+          Grid.nvi,            // Number of interfaces between layer
+          glevel,              // Horizontal resolution level
+          spring_dynamics,     // Spring dynamics option
+          spring_beta,         // Parameter beta for spring dynamics
+          nlat,                // Number of latitude rings for zonal
+                               // mean wind
+          Grid.zonal_mean_tab, // table of zonal means for sponge layer
+          Rv_sponge,           // Maximum damping of sponge layer
+          ns_sponge,           // lowest level of sponge layer (fraction of model)
+          t_shrink,            // time to shrink sponge layer
+          Grid.point_num,      // Number of grid points
+          conservation,        // compute conservation values
+          core_benchmark,      // benchmark test type
+          logwriter);          // Log writer
 
     USE_BENCHMARK();
-    INIT_BENCHMARK(X, Grid);
 
-    BENCH_POINT("0", "Grid", std::vector<string>({}), std::vector<string>({"func_r", "areas", "areasTr", "areasT", "nvec", "nvecoa", "nvecti", "nvecte", "Altitude", "Altitudeh", "lonlat", "div", "grad"}))
+    INIT_BENCHMARK(X, Grid, output_path_ref);
+
+    BENCH_POINT("0", "Grid", (), ("func_r", "areas", "areasTr", "areasT", "nvec", "nvecoa", "nvecti", "nvecte", "Altitude", "Altitudeh", "lonlat", "div", "grad"))
 
     // esp output setup
     X.set_output_param(Planet.simulation_ID, output_path);
@@ -640,9 +650,9 @@ int main(int argc, char** argv) {
     double simulation_start_time = 0.0;
 
     // Initial conditions
-    int output_file_idx = 0;
-    int step_idx        = 0;
-    bool load_initial = X.initial_values(rest,                  // Option to
+    int  output_file_idx = 0;
+    int  step_idx        = 0;
+    bool load_initial    = X.initial_values(rest,                  // Option to
                                                                 // start the
                                                                 // atmosphere
                                                                 // from rest
@@ -657,12 +667,9 @@ int main(int argc, char** argv) {
                                                                 // start at 0?
                                          timestep,              // Time-step [s]
                                          Planet,                // Planet
-                                         kb_constant,           // Boltzmann constant [J/kg]
-                                         mu_constant,           // Atomic mass unit [kg]
                                          SpongeLayer,           // Enable sponge layer
                                          DeepModel,             // Use deep model corrections
                                          TPprof,                // isothermal = 0, guillot = 1
-                                         chemistry,             //
                                          step_idx,              // current step index
                                          simulation_start_time, // output:
                                                                 // simulation start time
@@ -670,15 +677,11 @@ int main(int argc, char** argv) {
                                                                 // read + 1, 0
                                                                 // if nothing read
                                          conservation);
-    if (core_benchmark == NO_BENCHMARK) {
-        phy_modules_init_data(X, Planet);
-    }
 
     if (!load_initial) {
         printf("error loading initial conditions from %s.\n", initial_conditions.c_str());
-        return -1;
+        exit(EXIT_FAILURE);
     }
-
 
     // Check presence of output files
     path results(output_path);
@@ -714,7 +717,7 @@ int main(int argc, char** argv) {
 
             printf(" Aborting. \n"
                    "use --overwrite to overwrite existing files.\n");
-            return -1;
+            exit(EXIT_FAILURE);
         }
     }
 
@@ -756,6 +759,22 @@ int main(int argc, char** argv) {
 
     printf("    \n");
 
+    printf("\n");
+    printf(" Physics module: %s   \n", phy_modules_get_name().c_str());
+    printf("   ********** \n");
+
+    if (core_benchmark == NO_BENCHMARK) {
+
+        printf("    \n");
+        phy_modules_print_config();
+        printf("    \n");
+    }
+
+    printf("   ********** \n");
+    printf("\n");
+    printf("    \n");
+    printf(" Simulation\n");
+
     printf("   Start from rest = %s \n", rest ? "true" : "false");
     if (!rest)
         printf("   Loading initial conditions from = %s \n", initial_conditions.c_str());
@@ -793,15 +812,7 @@ int main(int argc, char** argv) {
         X.init_timestep(0, simulation_time, timestep);
 
         if (conservation == true) {
-            X.conservation(chemistry,     //
-                           Planet.Omega,  // Rotation rate [1/s]
-                           Planet.Cp,     // Specific heat capacity [J/kg/K]
-                           Planet.Rd,     // Gas constant [J/kg/K]
-                           mu_constant,   // Atomic mass unit [kg]
-                           kb_constant,   // Boltzmann constant [J/K]
-                           Planet.P_Ref,  // Reference pressure [Pa]
-                           Planet.Gravit, // Gravity [m/s^2]
-                           Planet.A,      // Planet radius [m]
+            X.conservation(Planet,
                            DeepModel);
 
             logwriter.output_conservation(0,
@@ -813,17 +824,10 @@ int main(int argc, char** argv) {
                                           X.GlobalAMz_h);
         }
 
-        X.output(0,                   // file index
-                 Planet.Cp,           // Specific heat capacity [J/(Kg K)]
-                 Planet.Rd,           // Gas constant [J/(Kg K)]
-                 Planet.Omega,        // Rotation rate [s-1]
-                 Planet.Gravit,       // Gravitational acceleration [m/s2]
-                 Planet.P_Ref,        // Reference surface pressure [Pa]
-                 Planet.Top_altitude, // Top of the model's domain [m]
-                 Planet.A,            // Planet Radius [m]
+        X.output(0, // file index
+                 Planet,
                  conservation,
-                 SpongeLayer,
-                 chemistry);
+                 SpongeLayer);
         output_file_idx = 1;
         step_idx        = 1;
     }
@@ -854,32 +858,16 @@ int main(int argc, char** argv) {
         if (!gcm_off) {
             //
             //        Dynamical Core Integration (THOR)
-            X.Thor(HyDiff,        // Hyperdiffusion option
-                   DivDampP,      // Divergence-damping option
-                   Planet.Omega,  // Rotation rate [1/s]
-                   Planet.Cp,     // Specific heat capacity [J/kg/K]
-                   Planet.Rd,     // Gas constant [J/kg/K]
-                   mu_constant,   // Atomic mass unit [kg]
-                   kb_constant,   // Boltzmann constant [J/K]
-                   Planet.P_Ref,  // Reference pressure [Pa]
-                   Planet.Gravit, // Gravity [m/s^2]
-                   Planet.A,      // Planet radius [m]
-                   chemistry,     //
-                   NonHydro,      // Non-hydrostatic option
-                   DeepModel);    // Deep model option
+            X.Thor(Planet,     // planet parameters
+                   HyDiff,     // Hyperdiffusion option
+                   DivDampP,   // Divergence-damping option
+                   NonHydro,   // Non-hydrostatic option
+                   DeepModel); // Deep model option
         }
         //
         //     Physical Core Integration (ProfX)
-        X.ProfX(chemistry, //
+        X.ProfX(Planet,
                 conv_adj,
-                Planet.Omega,  // Rotation rate [1/s]
-                Planet.Cp,     // Specific heat capacity [J/kg/K]
-                Planet.Rd,     // Gas constant [J/kg/K]
-                mu_constant,   // Atomic mass unit [kg]
-                kb_constant,   // Boltzmann constant [J/K]
-                Planet.P_Ref,  // Reference pressure [Pa]
-                Planet.Gravit, // Gravity [m/s^2]
-                Planet.A,      // Planet radius [m]
                 DeepModel,
                 n_out,
                 SpongeLayer,
@@ -891,15 +879,7 @@ int main(int argc, char** argv) {
         bool file_output = false;
 
         if (conservation == true) {
-            X.conservation(chemistry,     //
-                           Planet.Omega,  // Rotation rate [1/s]
-                           Planet.Cp,     // Specific heat capacity [J/kg/K]
-                           Planet.Rd,     // Gas constant [J/kg/K]
-                           mu_constant,   // Atomic mass unit [kg]
-                           kb_constant,   // Boltzmann constant [J/K]
-                           Planet.P_Ref,  // Reference pressure [Pa]
-                           Planet.Gravit, // Gravity [m/s^2]
-                           Planet.A,      // Planet radius [m]
+            X.conservation(Planet,
                            DeepModel);
             logwriter.output_conservation(nstep,
                                           simulation_time,
@@ -916,16 +896,9 @@ int main(int argc, char** argv) {
             || caught_signal != ESIG_NOSIG) {
             X.copy_to_host();
             X.output(output_file_idx,
-                     Planet.Cp,           // Specific heat capacity [J/(Kg K)]
-                     Planet.Rd,           // Gas constant [J/(Kg K)]
-                     Planet.Omega,        // Rotation rate [s-1]
-                     Planet.Gravit,       // Gravitational acceleration [m/s2]
-                     Planet.P_Ref,        // Reference surface pressure [Pa]
-                     Planet.Top_altitude, // Top of the model's domain [m]
-                     Planet.A,            // Planet radius [m]
+                     Planet,
                      conservation,
-                     SpongeLayer,
-                     chemistry);
+                     SpongeLayer);
             // increment output file index
             output_file_idx++;
 

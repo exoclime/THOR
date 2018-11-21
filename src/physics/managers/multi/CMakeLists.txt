@@ -4,6 +4,7 @@ project (phy_modules)
 set(MODULES_SRCS
   src/phy_modules.cu
   ${SHARED_PHY_MODULES_SRC_DIR}/radiative_transfer.cu
+  ${SHARED_PHY_MODULES_SRC_DIR}/chemistry.cu
   )
 
 
