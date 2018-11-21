@@ -511,8 +511,8 @@ def w_ver(input,grid,output,sigmaref):
     C = plt.contourf(latp*180/np.pi,Pref/1e5,VertMlt.T,40,cmap='viridis')
 
     levp = np.arange(np.ceil(np.min(VertMlt)/csp)*csp,np.floor(np.max(VertMlt)/csp)*csp,csp)
-    c2 = plt.contour(latp*180/np.pi,Pref/1e5,VertMlt.T,levels=levp,colors='w',linewidths=1)
-    plt.clabel(c2,inline=1,fontsize=10)
+    c2 = plt.contour(latp*180/np.pi,Pref/1e5,VertMlt.T,[0],colors='w',linewidths=1)
+    # plt.clabel(c2,inline=1,fontsize=10)
     for cc in C.collections:
         cc.set_edgecolor("face") #fixes a stupid bug in matplotlib 2.0
     plt.gca().invert_yaxis()
@@ -535,8 +535,8 @@ def w_ver(input,grid,output,sigmaref):
     C = plt.contourf(lonp*180/np.pi,Pref/1e5,VertMeqt.T,40,cmap='viridis')
 
     levp = np.arange(np.ceil(np.min(VertMeqt)/csp)*csp,np.floor(np.max(VertMeqt)/csp)*csp,csp)
-    c2 = plt.contour(lonp*180/np.pi,Pref/1e5,VertMeqt.T,levels=levp,colors='w',linewidths=1)
-    plt.clabel(c2,inline=1,fontsize=10)
+    c2 = plt.contour(lonp*180/np.pi,Pref/1e5,VertMeqt.T,[0],colors='w',linewidths=1)
+    # plt.clabel(c2,inline=1,fontsize=10)
     for cc in C.collections:
         cc.set_edgecolor("face") #fixes a stupid bug in matplotlib 2.0
     plt.gca().invert_yaxis()
@@ -1591,6 +1591,9 @@ def streamf(input,grid,output,sigmaref):
     C = plt.contourf(latp*180/np.pi,Pref/100000,Streamlt.T,40,cmap='viridis')
     for cc in C.collections:
         cc.set_edgecolor("face") #fixes a stupid bug in matplotlib 2.0
+
+    c2 = plt.contour(latp*180/np.pi,Pref/1e5,Streamlt.T,[0],colors='w',linewidths=1)
+
     plt.gca().invert_yaxis()
     if np.max(Pref)/np.min(Pref) > 100:
         plt.gca().set_yscale("log")

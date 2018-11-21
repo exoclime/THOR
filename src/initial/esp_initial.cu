@@ -87,7 +87,8 @@ __host__ ESP::ESP(int *           point_local_,
                   int             point_num_,
                   bool            conservation,
                   benchmark_types core_benchmark_,
-                  log_writer &    logwriter_) :
+                  log_writer &    logwriter_,
+                  int             max_count_) :
     nl_region(nl_region_),
     nr(nr_),
     point_num(point_num_),
@@ -125,6 +126,7 @@ __host__ ESP::ESP(int *           point_local_,
     Rv_sponge = Rv_sponge_;
     ns_sponge = ns_sponge_;
     t_shrink  = t_shrink_;
+    max_count = max_count_;
 
     //
     //  Allocate Data
@@ -285,8 +287,13 @@ __host__ void ESP::alloc_data(bool conservation) {
     //  Extras-nan
     cudaMalloc((void **)&check_d, sizeof(bool));
 
-    cudaMalloc((void **)&vbar_d, 3 * nv * point_num * sizeof(double));
-    cudaMalloc((void **)&zonal_mean_tab_d, 2 * point_num * sizeof(int));
+    cudaMalloc((void **)&vbar_d, 3 * nv * nlat * sizeof(double));
+    cudaMalloc((void **)&zonal_mean_tab_d, 3 * point_num * sizeof(int));
+    vbar_h = (double *)malloc(3 * nv * nlat * sizeof(double));
+    cudaMalloc((void **)&utmp, nv * nlat * max_count * sizeof(double));
+    cudaMalloc((void **)&vtmp, nv * nlat * max_count * sizeof(double));
+    cudaMalloc((void **)&wtmp, nv * nlat * max_count * sizeof(double));
+    utmp_h = (double *)malloc(nv * nlat * max_count * sizeof(double));
 
     if (conservation == true) {
         //  Conservation quantities
@@ -707,7 +714,7 @@ __host__ bool ESP::initial_values(bool               rest,
     cudaMemcpy(Kdh4_d, Kdh4_h, nv * sizeof(double), cudaMemcpyHostToDevice);
 
     if (sponge == true)
-        cudaMemcpy(zonal_mean_tab_d, zonal_mean_tab_h, 2 * point_num * sizeof(int), cudaMemcpyHostToDevice);
+        cudaMemcpy(zonal_mean_tab_d, zonal_mean_tab_h, 3 * point_num * sizeof(int), cudaMemcpyHostToDevice);
 
     if (chemistry == 1) {
         cudaMemcpy(coeq_d, coeq_h, 7425 * sizeof(double), cudaMemcpyHostToDevice);

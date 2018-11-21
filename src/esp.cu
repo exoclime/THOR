@@ -517,7 +517,7 @@ int main(int argc, char** argv) {
     printf(" Using GPU #%d\n", GPU_ID_N);
     cudaSetDevice(GPU_ID_N);
 
-        //
+    //
     //  PRINTS
     //  Device Information
     int         ndevices;
@@ -579,9 +579,8 @@ int main(int argc, char** argv) {
         printf("Capabilities: %d (compiled with SM=%d).\n", device_major_minor_number, DEVICE_SM);
     }
 
-    
 
-
+    int max_count = 0;
     //
     //  Make the icosahedral grid
     Icogrid Grid(spring_dynamics,     // Spring dynamics option
@@ -591,41 +590,42 @@ int main(int argc, char** argv) {
                  nlat,                // Number of lat rings for sponge layer
                  Planet.A,            // Planet radius
                  Planet.Top_altitude, // Top of the model's domain
-                 SpongeLayer);        // Use sponge layer?
-                                      //
+                 SpongeLayer,         // Use sponge layer?
+                 &max_count);
 
-                                      //  Define object X.
-    ESP X(Grid.point_local,           // First neighbours
-          Grid.maps,                  // Grid domains
-          Grid.lonlat,                // Longitude and latitude of the grid points
-          Grid.Altitude,              // Altitudes
-          Grid.Altitudeh,             // Altitude at the interfaces between layers
-          Grid.nvecoa,                // Normal vectors for diffusion 1
-          Grid.nvecti,                // Normal vectors for diffusion 2
-          Grid.nvecte,                // Normal vectors for diffusion 3
-          Grid.areasT,                // Areas of the main cells
-          Grid.areasTr,               // Areas of the triangles
-          Grid.div,                   // Divergence operator
-          Grid.grad,                  // Gradient operator
-          Grid.func_r,                // Normalised vector
-          Grid.nl_region,             // Number of points in one side of a rhombus
-          Grid.nr,                    // Number of rhombi
-          Grid.nv,                    // Number of vertical layers
-          Grid.nvi,                   // Number of interfaces between layer
-          glevel,                     // Horizontal resolution level
-          spring_dynamics,            // Spring dynamics option
-          spring_beta,                // Parameter beta for spring dynamics
-          nlat,                       // Number of latitude rings for zonal
-                                      // mean wind
-          ntr,                        //
-          Grid.zonal_mean_tab,        // table of zonal means for sponge layer
-          Rv_sponge,                  // Maximum damping of sponge layer
-          ns_sponge,                  // lowest level of sponge layer (fraction of model)
-          t_shrink,                   // time to shrink sponge layer
-          Grid.point_num,             // Number of grid points
-          conservation,               // compute conservation values
-          core_benchmark,             // benchmark test type
-          logwriter);                 // Log writer
+    //  Define object X.
+    ESP X(Grid.point_local,    // First neighbours
+          Grid.maps,           // Grid domains
+          Grid.lonlat,         // Longitude and latitude of the grid points
+          Grid.Altitude,       // Altitudes
+          Grid.Altitudeh,      // Altitude at the interfaces between layers
+          Grid.nvecoa,         // Normal vectors for diffusion 1
+          Grid.nvecti,         // Normal vectors for diffusion 2
+          Grid.nvecte,         // Normal vectors for diffusion 3
+          Grid.areasT,         // Areas of the main cells
+          Grid.areasTr,        // Areas of the triangles
+          Grid.div,            // Divergence operator
+          Grid.grad,           // Gradient operator
+          Grid.func_r,         // Normalised vector
+          Grid.nl_region,      // Number of points in one side of a rhombus
+          Grid.nr,             // Number of rhombi
+          Grid.nv,             // Number of vertical layers
+          Grid.nvi,            // Number of interfaces between layer
+          glevel,              // Horizontal resolution level
+          spring_dynamics,     // Spring dynamics option
+          spring_beta,         // Parameter beta for spring dynamics
+          nlat,                // Number of latitude rings for zonal
+                               // mean wind
+          ntr,                 //
+          Grid.zonal_mean_tab, // table of zonal means for sponge layer
+          Rv_sponge,           // Maximum damping of sponge layer
+          ns_sponge,           // lowest level of sponge layer (fraction of model)
+          t_shrink,            // time to shrink sponge layer
+          Grid.point_num,      // Number of grid points
+          conservation,        // compute conservation values
+          core_benchmark,      // benchmark test type
+          logwriter,           // Log writer
+          max_count);
 
     USE_BENCHMARK();
     INIT_BENCHMARK(X, Grid);
@@ -640,9 +640,9 @@ int main(int argc, char** argv) {
     double simulation_start_time = 0.0;
 
     // Initial conditions
-    int output_file_idx = 0;
-    int step_idx        = 0;
-    bool load_initial = X.initial_values(rest,                  // Option to
+    int  output_file_idx = 0;
+    int  step_idx        = 0;
+    bool load_initial    = X.initial_values(rest,                  // Option to
                                                                 // start the
                                                                 // atmosphere
                                                                 // from rest

@@ -99,7 +99,7 @@ public:
 
     int *zonal_mean_tab; //something something
 
-    Icogrid(bool, double, int, int, int, double, double, bool);
+    Icogrid(bool, double, int, int, int, double, double, bool, int *);
 
 private:
     // Functions to build the grid
@@ -122,5 +122,5 @@ private:
     void compute_func(double *, double *, int);
     void div_operator(double *, double *, double *, double *, int *, int);
     void gra_operator(double *, double *, double *, double *, int *, int);
-    void zonal_mean_tab_f(int *, double *, int, int);
+    void zonal_mean_tab_f(int *, double *, int, int, int *);
 };

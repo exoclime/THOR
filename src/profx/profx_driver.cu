@@ -89,15 +89,37 @@ __host__ void ESP::ProfX(int    chemistry, // Use chemistry
         dim3 NBT((point_num / NTH) + 1, nv, 1);
 
         cudaMemset(vbar_d, 0, sizeof(double) * 3 * nlat * nv);
+        cudaMemset(utmp, 0, sizeof(double) * nlat * nv * max_count);
+        cudaMemset(vtmp, 0, sizeof(double) * nlat * nv * max_count);
+        cudaMemset(wtmp, 0, sizeof(double) * nlat * nv * max_count);
+
         zonal_v<<<NBT, NTH>>>(Mh_d,
                               W_d,
                               Rho_d,
                               vbar_d,
                               zonal_mean_tab_d,
                               lonlat_d,
-                              point_num);
+                              point_num,
+                              utmp,
+                              vtmp,
+                              wtmp,
+                              max_count);
 
         cudaDeviceSynchronize();
+
+#ifdef GLOBAL_CONSERVATION_REDUCTIONADD
+        int    ilat, lev;
+        for (ilat = 0; ilat < nlat; ilat++) {
+          for (lev =0; lev < nv; lev++) {
+            vbar_h[ilat*nv*3 + lev*3+0] = gpu_sum_on_device<1024>(&(utmp[ilat * nv * max_count + lev * max_count]), max_count);
+            vbar_h[ilat*nv*3 + lev*3+1] = gpu_sum_on_device<1024>(&(vtmp[ilat * nv * max_count + lev * max_count]), max_count);
+            vbar_h[ilat*nv*3 + lev*3+2] = gpu_sum_on_device<1024>(&(wtmp[ilat * nv * max_count + lev * max_count]), max_count);
+          }
+        }
+        cudaMemcpy(vbar_d, vbar_h, 3 * nlat * nv * sizeof(double), cudaMemcpyHostToDevice);
+#endif
+
+        // print_vbar(vbar_h, nlat, nv);
 
         if (shrink_sponge == true) {
             if (current_step * timestep >= t_shrink * 86400) {

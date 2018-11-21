@@ -101,7 +101,6 @@ __host__ double gpu_sum_on_device(double *in_d, long length) {
 
     double *out_h = new double[num_blocks];
     double *out_d;
-
     // create device temp array
     cudaMalloc((void **)&out_d, num_blocks * sizeof(double));
     cudaError_t err = cudaGetLastError();

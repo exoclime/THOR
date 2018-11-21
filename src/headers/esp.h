@@ -236,7 +236,13 @@ public:
     bool *  check_d;
 
     double *vbar_d;
+    double *vbar_h;
+    double *utmp;
+    double *utmp_h;
+    double *vtmp;
+    double *wtmp;
     int *   zonal_mean_tab_d;
+    int     max_count;   // max number of points in latitude rings
     double *pressureh_d; // midpoint pressure used in dry conv adj
 
     //  energy, ang momentum and mass conservation
@@ -284,7 +290,8 @@ public:
         int             point_num_,
         bool            conservation,
         benchmark_types core_benchmark_,
-        log_writer &    logwriter_);
+        log_writer &    logwriter_,
+        int             max_count_);
 
     ~ESP();
 
