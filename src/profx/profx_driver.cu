@@ -42,16 +42,15 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
-#include "../headers/esp.h"
-#include "../headers/phy/chemistry_device.h" // Simple chemistry.
-#include "../headers/phy/dry_conv_adj.h"
-#include "../headers/phy/profx_auxiliary.h"
-#include "../headers/phy/profx_conservation.h"
-#include "../headers/phy/profx_deepHJ.h"
-#include "../headers/phy/profx_held_suarez.h"
-#include "../headers/phy/profx_shallowHJ.h"
-#include "../headers/phy/profx_sponge.h"
-#include "../headers/phy/profx_tidalearth.h"
+#include "esp.h"
+#include "phy/dry_conv_adj.h"
+#include "phy/profx_auxiliary.h"
+#include "phy/profx_conservation.h"
+#include "phy/profx_deepHJ.h"
+#include "phy/profx_held_suarez.h"
+#include "phy/profx_shallowHJ.h"
+#include "phy/profx_sponge.h"
+#include "phy/profx_tidalearth.h"
 
 #include "binary_test.h"
 #include "debug_helpers.h"
@@ -60,30 +59,21 @@
 
 #include "reduction_add.h"
 
-__host__ void ESP::ProfX(int    chemistry, // Use chemistry
-                         int    conv,      //
-                         double Omega,     // Rotation rate [1/s]
-                         double Cp,        // Specific heat capacity [J/kg/K]
-                         double Rd,        // Gas constant [J/kg/K]
-                         double mu,        // Atomic mass unit [kg]
-                         double kb,        // Boltzmann constant [J/K]
-                         double P_Ref,     // Reference pressure [Pa]
-                         double Gravit,    // Gravity [m/s^2]
-                         double A,         // Planet radius [m]
-                         bool   DeepModel,
-                         int    n_out,         // output step (triggers conservation calc)
-                         bool   sponge,        // Use sponge layer?
-                         bool   shrink_sponge, // Shrink sponge after some time (Bonjour Urs!)
-                         bool   conservation) {  // calc/output conservation quantities
+__host__ void ESP::ProfX(const XPlanet& Planet,
+                         int            conv, //
+                         bool           DeepModel,
+                         int            n_out,         // output step (triggers conservation calc)
+                         bool           sponge,        // Use sponge layer?
+                         bool           shrink_sponge, // Shrink sponge after some time (Bonjour Urs!)
+                         bool           conservation) {          // calc/output conservation quantities
     USE_BENCHMARK()
     //
     //  Number of threads per block.
     const int NTH = 256;
 
     //  Specify the block sizes.
-    dim3      NB((point_num / NTH) + 1, nv, 1);
-    dim3      NBRT((point_num / NTH) + 1, 1, 1);
-    dim3      NBTR((point_num / NTH) + 1, nv, ntr);
+    dim3 NB((point_num / NTH) + 1, nv, 1);
+    dim3 NBRT((point_num / NTH) + 1, 1, 1);
 
     if (sponge == true) {
         dim3 NBT((point_num / NTH) + 1, nv, 1);
@@ -144,18 +134,19 @@ __host__ void ESP::ProfX(int    chemistry, // Use chemistry
                                   point_num,
                                   nv);
     }
+    BENCH_POINT_I(current_step, "phy_Sponge", (), ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"))
 
     //  Computes the initial temperature.
     Compute_temperature<<<NB, NTH>>>(temperature_d,
                                      pt_d,
                                      pressure_d,
                                      Rho_d,
-                                     P_Ref,
-                                     Rd,
-                                     Cp,
+                                     Planet.P_Ref,
+                                     Planet.Rd,
+                                     Planet.Cp,
                                      point_num);
 
-    BENCH_POINT_I(current_step, "phy_T", vector<string>({}), vector<string>({"Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"}))
+    BENCH_POINT_I(current_step, "phy_T", (), ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"))
 
 #ifdef BENCH_NAN_CHECK
     check_h = check_array_for_nan(temperature_d, nv * point_num, 1, check_d);
@@ -172,16 +163,16 @@ __host__ void ESP::ProfX(int    chemistry, // Use chemistry
                                   temperature_d, // Temperature [K]
                                   pt_d,          // Pot temperature [K]
                                   Rho_d,         // Density [m^3/kg]
-                                  Cp,            // Specific heat capacity [J/kg/K]
-                                  Rd,            // Gas constant [J/kg/K]
-                                  Gravit,        // Gravity [m/s^2]
+                                  Planet.Cp,     // Specific heat capacity [J/kg/K]
+                                  Planet.Rd,     // Gas constant [J/kg/K]
+                                  Planet.Gravit, // Gravity [m/s^2]
                                   Altitude_d,    // Altitudes of the layers
                                   Altitudeh_d,   // Altitudes of the interfaces
                                   point_num,     // Number of columns
                                   nv);           // number of vertical layers
     }
 
-    BENCH_POINT_I(current_step, "dry_conv_adj", vector<string>({}), vector<string>({"Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"}))
+    BENCH_POINT_I(current_step, "dry_conv_adj ", (), ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"))
 
 
     ///////////////////////
@@ -194,9 +185,9 @@ __host__ void ESP::ProfX(int    chemistry, // Use chemistry
                                  pressure_d,
                                  Rho_d,
                                  temperature_d,
-                                 Gravit,
-                                 Cp,
-                                 Rd,
+                                 Planet.Gravit,
+                                 Planet.Cp,
+                                 Planet.Rd,
                                  Altitude_d,
                                  Altitudeh_d,
                                  lonlat_d,
@@ -209,9 +200,9 @@ __host__ void ESP::ProfX(int    chemistry, // Use chemistry
                                 pressure_d,
                                 Rho_d,
                                 temperature_d,
-                                Gravit,
-                                Cp,
-                                Rd,
+                                Planet.Gravit,
+                                Planet.Cp,
+                                Planet.Rd,
                                 Altitude_d,
                                 Altitudeh_d,
                                 lonlat_d,
@@ -224,9 +215,9 @@ __host__ void ESP::ProfX(int    chemistry, // Use chemistry
                                pressure_d,
                                Rho_d,
                                temperature_d,
-                               Gravit,
-                               Cp,
-                               Rd,
+                               Planet.Gravit,
+                               Planet.Cp,
+                               Planet.Rd,
                                Altitude_d,
                                Altitudeh_d,
                                lonlat_d,
@@ -239,9 +230,9 @@ __host__ void ESP::ProfX(int    chemistry, // Use chemistry
                             pressure_d,
                             Rho_d,
                             temperature_d,
-                            Gravit,
-                            Cp,
-                            Rd,
+                            Planet.Gravit,
+                            Planet.Cp,
+                            Planet.Rd,
                             Altitude_d,
                             Altitudeh_d,
                             lonlat_d,
@@ -249,77 +240,23 @@ __host__ void ESP::ProfX(int    chemistry, // Use chemistry
                             point_num);
     }
 
-    //
-    ////////////////////////
-    // Simple chemistry
-    if (chemistry == 1) {
+    BENCH_POINT_I_PHY(current_step, "phy_core_benchmark", (), ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"))
+
+    if (phy_modules_execute) {
         cudaDeviceSynchronize();
-        Tracers_relax_chemistry_co2<<<NBTR, NTH>>>(tracer_d,
-                                                   tauch4_d,
-                                                   tauco_d,
-                                                   tauh2o_d,
-                                                   tauco2_d,
-                                                   taunh3_d,
-                                                   ch4eq_d,
-                                                   coeq_d,
-                                                   h2oeq_d,
-                                                   co2eq_d,
-                                                   nh3eq_d,
-                                                   P_che_d,
-                                                   T_che_d,
-                                                   temperature_d,
-                                                   pressure_d,
-                                                   Rho_d,
-                                                   timestep,
-                                                   ntr,
-                                                   point_num);
-        cudaDeviceSynchronize();
-        Tracers_relax_chemistry<<<NBTR, NTH>>>(tracer_d,
-                                               tauch4_d,
-                                               tauco_d,
-                                               tauh2o_d,
-                                               tauco2_d,
-                                               taunh3_d,
-                                               ch4eq_d,
-                                               coeq_d,
-                                               h2oeq_d,
-                                               co2eq_d,
-                                               nh3eq_d,
-                                               P_che_d,
-                                               T_che_d,
-                                               temperature_d,
-                                               pressure_d,
-                                               Rho_d,
-                                               timestep,
-                                               ntr,
-                                               point_num);
+        phy_modules_phy_loop(*this,
+                             Planet,
+                             current_step, // Step number
+                             timestep);    // Time-step [s]
     }
 
-
-    if (core_benchmark == NO_BENCHMARK) {
-        cudaDeviceSynchronize();
-        phy_modules_mainloop(*this,
-                             current_step,   // Step number
-                             core_benchmark, // Held-Suarez test option
-                             timestep,       // Time-step [s]
-                             Omega,          // Rotation rate [1/s]
-                             Cp,             // Specific heat capacity [J/kg/K]
-                             Rd,             // Gas constant [J/kg/K]
-                             mu,             // Atomic mass unit [kg]
-                             kb,             // Boltzmann constant [J/K]
-                             P_Ref,          // Reference pressure [Pa]
-                             Gravit,         // Gravity [m/s^2]
-                             A               // Planet radius [m]
-        );
-    }
-
-    BENCH_POINT_I(current_step, "phy_core_benchmark ", vector<string>({}), vector<string>({"Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"}))
+    BENCH_POINT_I_PHY(current_step, "phy_module", (), ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"))
     //  Computes the new pressures.
     cudaDeviceSynchronize();
     Compute_pressure<<<NB, NTH>>>(pressure_d,
                                   temperature_d,
                                   Rho_d,
-                                  Rd,
+                                  Planet.Rd,
                                   point_num);
 
     //always do this nan check so the code doesn't keep computing garbage
@@ -337,29 +274,20 @@ __host__ void ESP::ProfX(int    chemistry, // Use chemistry
     Compute_temperature_only<<<NB, NTH>>>(temperature_d,
                                           pressure_d,
                                           Rho_d,
-                                          Rd,
+                                          Planet.Rd,
                                           point_num);
 #endif // BENCHMARKING
 
-    BENCH_POINT_I(current_step, "phy_END", vector<string>({}), vector<string>({"Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"}));
-
-
+    BENCH_POINT_I(current_step, "phy_END", (), ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"));
+    
     //
     //END OF INTEGRATION
     //
 }
 
 // TODO: get constants out of arguments
-void ESP::conservation(int    chemistry, //
-                       double Omega,     // Rotation rate [1/s]
-                       double Cp,        // Specific heat capacity [J/kg/K]
-                       double Rd,        // Gas constant [J/kg/K]
-                       double mu,        // Atomic mass unit [kg]
-                       double kb,        // Boltzmann constant [J/K]
-                       double P_Ref,     // Reference pressure [Pa]
-                       double Gravit,    // Gravity [m/s^2]
-                       double A,         // Planet radius [m]
-                       bool   DeepModel) {
+void ESP::conservation(const XPlanet& Planet, // planet
+                       bool           DeepModel) {
     //
     //  Number of threads per block.
     const int NTH = 256;
@@ -377,7 +305,7 @@ void ESP::conservation(int    chemistry, //
     CalcMass<<<NB, NTH>>>(Mass_d,
                           GlobalMass_d,
                           Rho_d,
-                          A,
+                          planet.A,
                           Altitudeh_d,
                           lonlat_d,
                           areasT_d,
@@ -390,10 +318,10 @@ void ESP::conservation(int    chemistry, //
                                W_d,
                                Rho_d,
                                temperature_d,
-                               Gravit,
-                               Cp,
-                               Rd,
-                               A,
+                               Planet.Gravit,
+                               Planet.Cp,
+                               Planet.Rd,
+                               Planet.A,
                                Altitude_d,
                                Altitudeh_d,
                                lonlat_d,
@@ -410,8 +338,8 @@ void ESP::conservation(int    chemistry, //
                             GlobalAMz_d,
                             Mh_d,
                             Rho_d,
-                            A,
-                            Omega,
+                            Planet.A,
+                            Planet.Omega,
                             Altitude_d,
                             Altitudeh_d,
                             lonlat_d,

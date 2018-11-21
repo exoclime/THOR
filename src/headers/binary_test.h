@@ -50,43 +50,84 @@
 #include <vector>
 
 #include "debug.h"
+#include <algorithm>
 #include <iomanip>
 #include <memory>
-
 // precompiler macros to enable binary testing of simulation output
 // BENCHMARKING enables the binary testing. if not set, those
 // functions are empty and ignored by the compiler.
 // BENCH_POINT_WRITE enables writing data out to reference files
 // BENCH_POINT_COMPARE enables comparing current value with reference files
-#ifdef BENCHMARKING
-#    warning "Compiling with benchmarktest enabled"
 
+#ifdef BENCHMARKING
+#    define BRACED_INIT_LIST(...) \
+        { __VA_ARGS__ }
 #    define USE_BENCHMARK() binary_test& btester = binary_test::get_instance();
-#    define INIT_BENCHMARK(esp, grid) binary_test::get_instance().set_definitions(build_definitions(esp, grid));
-#    define BENCH_POINT(iteration, name, in, out) btester.check_data(iteration, name, in, out);
-#    define BENCH_POINT_I(iteration, name, in, out) btester.check_data(std::to_string(iteration), name, in, out);
-#    define BENCH_POINT_I_S(iteration, subiteration, name, in, out) btester.check_data(std::to_string(iteration)           \
-                                                                                           + "-"                           \
-                                                                                           + std::to_string(subiteration), \
-                                                                                       name,                               \
-                                                                                       in,                                 \
-                                                                                       out);
-#    define BENCH_POINT_I_SS(iteration, subiteration, subsubiteration, name, in, out) btester.check_data(std::to_string(iteration)              \
-                                                                                                             + "-"                              \
-                                                                                                             + std::to_string(subiteration)     \
-                                                                                                             + "-"                              \
-                                                                                                             + std::to_string(subsubiteration), \
-                                                                                                         name,                                  \
-                                                                                                         in,                                    \
-                                                                                                         out);
+#    define SET_BENCHMARK_PATH(path) binary_test& btester = binary_test::get_instance().set_output("bindata_", path);
+#    define INIT_BENCHMARK(esp, grid, path)                                           \
+        binary_test::get_instance().append_definitions(build_definitions(esp, grid)); \
+        binary_test::get_instance().set_output("bindata_", path);
+#    define BENCH_POINT(iteration, name, in, out) \
+        btester.check_data(iteration, name, std::vector<std::string>(BRACED_INIT_LIST in), std::vector<std::string>(BRACED_INIT_LIST out), false);
+#    define BENCH_POINT_I(iteration, name, in, out) \
+        btester.check_data(std::to_string(iteration), name, std::vector<std::string>(BRACED_INIT_LIST in), std::vector<std::string>(BRACED_INIT_LIST out), false);
+#    define BENCH_POINT_I_S(iteration, subiteration, name, in, out)        \
+        btester.check_data(std::to_string(iteration)                       \
+                               + "-"                                       \
+                               + std::to_string(subiteration),             \
+                           name,                                           \
+                           std::vector<std::string>(BRACED_INIT_LIST in),  \
+                           std::vector<std::string>(BRACED_INIT_LIST out), \
+                           false);
+
+#    define BENCH_POINT_I_SS(iteration, subiteration, subsubiteration, name, in, out) \
+        btester.check_data(std::to_string(iteration)                                  \
+                               + "-"                                                  \
+                               + std::to_string(subiteration)                         \
+                               + "-"                                                  \
+                               + std::to_string(subsubiteration),                     \
+                           name,                                                      \
+                           std::vector<std::string>(BRACED_INIT_LIST in),             \
+                           std::vector<std::string>(BRACED_INIT_LIST out),            \
+                           false);
+
+#    define BENCH_POINT_PHY(iteration, name, in, out) \
+        btester.check_data(iteration, name, std::vector<std::string>(BRACED_INIT_LIST in), std::vector<std::string>(BRACED_INIT_LIST out), true);
+#    define BENCH_POINT_I_PHY(iteration, name, in, out) \
+        btester.check_data(std::to_string(iteration), name, std::vector<std::string>(BRACED_INIT_LIST in), std::vector<std::string>(BRACED_INIT_LIST out), true);
+#    define BENCH_POINT_I_S_PHY(iteration, subiteration, name, in, out)    \
+        btester.check_data(std::to_string(iteration)                       \
+                               + "-"                                       \
+                               + std::to_string(subiteration),             \
+                           name,                                           \
+                           std::vector<std::string>(BRACED_INIT_LIST in),  \
+                           std::vector<std::string>(BRACED_INIT_LIST out), \
+                           true);
+#    define BENCH_POINT_I_SS_PHY(iteration, subiteration, subsubiteration, name, in, out) \
+        btester.check_data(std::to_string(iteration)                                      \
+                               + "-"                                                      \
+                               + std::to_string(subiteration)                             \
+                               + "-"                                                      \
+                               + std::to_string(subsubiteration),                         \
+                           name,                                                          \
+                           std::vector<std::string>(BRACED_INIT_LIST in),                 \
+                           std::vector<std::string>(BRACED_INIT_LIST out),                \
+                           true);
+
 
 #else // do nothing
 #    define USE_BENCHMARK()
-#    define INIT_BENCHMARK(esp, grid)
+#    define SET_BENCHMARK_PATH(path)
+#    define INIT_BENCHMARK(esp, grid, path)
 #    define BENCH_POINT(iteration, name, in, out)
 #    define BENCH_POINT_I(iteration, name, in, out)
 #    define BENCH_POINT_I_S(iteration, subiteration, name, in, out)
 #    define BENCH_POINT_I_SS(iteration, subiteration, subsubiteration, name, in, out)
+// also trace data from physics module
+#    define BENCH_POINT_PHY(iteration, name, in, out)
+#    define BENCH_POINT_I_PHY(iteration, name, in, out)
+#    define BENCH_POINT_I_S_PHY(iteration, subiteration, name, in, out)
+#    define BENCH_POINT_I_SS_PHY(iteration, subiteration, subsubiteration, name, in, out)
 #endif // BENCHMARKING
 
 #ifdef BENCHMARKING
@@ -110,8 +151,22 @@ struct output_def {
     bool     device_ptr;
 };
 
+struct compare_statistics {
+    int    num_values;
+    int    num_failures;
+    double max_abs_delta;
+    double mean_abs_delta;
+    double max_rel_delta;
+    double mean_rel_delta;
+    double mean_val;
+    double max_val;
+    double mean_ref;
+    double max_ref;
+};
 
-map<string, output_def> build_definitions(ESP& esp, Icogrid& grd);
+
+map<string, output_def>
+build_definitions(ESP& esp, Icogrid& grd);
 
 // singleton storing class for debug
 class binary_test
@@ -138,8 +193,8 @@ public:
     void check_data(const string&         iteration,
                     const string&         ref_name,
                     const vector<string>& input_vars,
-                    const vector<string>& output_vars);
-
+                    const vector<string>& output_vars,
+                    const bool&           trace_phy_module);
 
     void set_output(string base_name, string dir) {
         output_dir       = dir;
@@ -147,13 +202,19 @@ public:
     }
 
 
-    void set_definitions(const std::map<string, output_def>& defs);
+    void append_definitions(const std::map<string, output_def>& defs);
 
     // make constructor private, can only be instantiated through get_instance
     ~binary_test();
 
+    void register_phy_modules_variables(const std::map<string, output_def>& defs,
+                                        const vector<string>&               phy_modules_data_in,
+                                        const vector<string>&               phy_modules_data_out);
 
 private:
+    vector<string> phy_modules_data_in;
+    vector<string> phy_modules_data_out;
+
     vector<string> current_input_vars;
 
 
@@ -167,14 +228,21 @@ private:
 
     // helper function to compare two arrays for equality
     template<typename T>
-    bool compare_arrays(int s1, T* d1, int s2, T* d2, string array = string(""), bool print = false);
+    bool compare_arrays(int                 s1,
+                        T*                  d1,
+                        int                 s2,
+                        T*                  d2,
+                        compare_statistics& stats,
+                        string              array = string(""),
+                        bool                print = false);
 
     // helper function to compare application array to saved array
     template<typename T>
-    bool compare_to_saved_data(storage&      s,
-                               const string& name,
-                               T*            local_data,
-                               const int&    data_size);
+    bool compare_to_saved_data(storage&            s,
+                               const string&       name,
+                               T*                  local_data,
+                               const int&          data_size,
+                               compare_statistics& stats);
 
     bool check_nan(const string&             iteration,
                    const string&             ref_name,
@@ -190,10 +258,11 @@ private:
 
 // Compare binary table to saved table in storage output
 template<typename T>
-bool binary_test::compare_to_saved_data(storage&      s,
-                                        const string& name,
-                                        T*            local_data,
-                                        const int&    data_size) {
+bool binary_test::compare_to_saved_data(storage&            s,
+                                        const string&       name,
+                                        T*                  local_data,
+                                        const int&          data_size,
+                                        compare_statistics& stats) {
     std::unique_ptr<T[]> saved_data = nullptr;
     int                  size       = 0;
     // print out piece of the table for visual inspection
@@ -204,14 +273,33 @@ bool binary_test::compare_to_saved_data(storage&      s,
     s.read_table(name, saved_data, size);
 
 
-    bool b = compare_arrays(size, saved_data.get(), data_size, local_data, name, print_details);
+    bool b = compare_arrays(size, saved_data.get(), data_size, local_data, stats, name, print_details);
     //    cout << b << endl;
     return b;
 }
 
 // Binary comparison of two arrays d1 of size s1 and d2 of size s2
 template<typename T>
-bool binary_test::compare_arrays(int s1, T* d1, int s2, T* d2, string array, bool print) {
+bool binary_test::compare_arrays(int                 s1,
+                                 T*                  d1,
+                                 int                 s2,
+                                 T*                  d2,
+                                 compare_statistics& stats,
+                                 string              array,
+                                 bool                print) {
+#    ifdef BENCH_COMPARE_PRINT_STATISTICS
+    stats.num_values     = 0;
+    stats.num_failures   = 0;
+    stats.max_abs_delta  = 0.0;
+    stats.mean_abs_delta = 0.0;
+    stats.max_rel_delta  = 0.0;
+    stats.mean_rel_delta = 0.0;
+    stats.mean_val       = 0.0;
+    stats.max_val        = 0.0;
+    stats.mean_ref       = 0.0;
+    stats.max_ref        = 0.0;
+#    endif // BENCH_COMPARE_PRINT_STATISTICS
+
     if (s1 != s2) {
         if (print)
             std::cout << array << ":\tdifferent sized arrays (" << s1
@@ -225,14 +313,36 @@ bool binary_test::compare_arrays(int s1, T* d1, int s2, T* d2, string array, boo
 
     for (int i = 0; i < s1; i++) {
 
+        stats.num_values += 1;
+
         //>
         //double mx = (abs(d1[i]) > abs(d2[i]))?abs(d1[i]):abs(d2[i]);
-
-        //if (abs((d1[i] - d2[i])) > 1e-10 )
+#    ifdef BENCH_COMPARE_USE_EPSILON
+        if (abs((d1[i] - d2[i])) > std::abs(d1[i]) * BENCH_COMPARE_EPSILON_VALUE) {
+#    else  // compare absolute value
         if (d1[i] != d2[i]) {
+#    endif // BENCH_COMPARE_USE_EPSILON
+
             //            if (print && i < 10)
             if (print)
                 std::cout << std::setprecision(20) << std::scientific << array << "[" << i << "]:\tdifferent value (" << d1[i] << ":" << d2[i] << ")" << std::endl;
+#    ifdef BENCH_COMPARE_PRINT_STATISTICS
+            stats.num_failures += 1;
+
+            T      delta     = std::abs(d1[i] - d2[i]);
+            double delta_rel = delta / std::abs(d1[i]);
+
+            stats.mean_val += std::abs(d2[i]);
+            stats.max_val = std::max(d2[i], stats.max_val);
+
+            stats.mean_ref += std::abs(d1[i]);
+            stats.max_ref = std::max(d1[i], stats.max_ref);
+
+            stats.mean_abs_delta += delta;
+            stats.mean_rel_delta += delta_rel;
+            stats.max_abs_delta = std::max(delta, stats.max_abs_delta);
+            stats.max_rel_delta = std::max(delta_rel, stats.max_rel_delta);
+#    endif // BENCH_COMPARE_PRINT_STATISTICS
 
             same = false;
         }
@@ -242,6 +352,14 @@ bool binary_test::compare_arrays(int s1, T* d1, int s2, T* d2, string array, boo
             // cout << "same value " << endl;
         }
     }
+#    ifdef BENCH_COMPARE_PRINT_STATISTICS
+    if (stats.num_failures > 0) {
+        stats.mean_abs_delta /= stats.num_failures;
+        stats.mean_rel_delta /= stats.num_failures;
+        stats.mean_val /= stats.num_failures;
+        stats.mean_ref /= stats.num_failures;
+    }
+#    endif // BENCH_COMPARE_PRINT_STATISTICS
 
 
     return same;

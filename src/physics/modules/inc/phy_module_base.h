@@ -2,6 +2,7 @@
 
 #include "config_file.h"
 #include "define.h"
+#include "dyn/phy_modules_device.h"
 #include "esp.h"
 #include "planet.h"
 #include "storage.h"
@@ -14,23 +15,30 @@ public:
     ~phy_module_base(){};
 
 
-    virtual bool initialise_memory(const ESP& esp)                         = 0;
-    virtual bool initial_conditions(const ESP& esp, const XPlanet& planet) = 0;
+    virtual bool initialise_memory(const ESP&               esp,
+                                   device_RK_array_manager& phy_modules_core_arrays) = 0;
+    virtual bool initial_conditions(const ESP&     esp,
+                                    const XPlanet& planet)                           = 0;
+
+    virtual bool dyn_core_loop_init(const ESP& esp) { return true; };
+    virtual bool dyn_core_loop_slow_modes(const ESP&     esp,
+                                          const XPlanet& planet,
+                                          int            nstep, // Step number
+                                          double         times, // Time-step [s]
+                                          bool           HyDiff) { return true; };
+    virtual bool dyn_core_loop_fast_modes(const ESP&     esp,
+                                          const XPlanet& planet,
+                                          int            nstep, // Step number
+                                          double         time_step)     // Time-step [s]
+    { return true; };
+    virtual bool dyn_core_loop_end(const ESP& esp) { return true; };
 
     // TBD, how does it get data? friend of ESP ? grid ?
-    virtual bool loop(ESP&            esp,
-                      int             nstep,          // Step number
-                      benchmark_types core_benchmark, // Held-Suarez test option
-                      double          time_step,      // Time-step [s]
-                      double          Omega,          // Rotation rate [1/s]
-                      double          Cp,             // Specific heat capacity [J/kg/K]
-                      double          Rd,             // Gas constant [J/kg/K]
-                      double          mu,             // Atomic mass unit [kg]
-                      double          kb,             // Boltzmann constant [J/K]
-                      double          P_Ref,          // Reference pressure [Pa]
-                      double          Gravit,         // Gravity [m/s^2]
-                      double          A               // Planet radius [m]);
-                      ) = 0;
+    virtual bool phy_loop(ESP&           esp,
+                          const XPlanet& planet,
+                          int            nstep,    // Step number
+                          double         time_step // Time-step [s]
+                          ) = 0;
 
 
     virtual bool store(const ESP& esp, storage& s) = 0;

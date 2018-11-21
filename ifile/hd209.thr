@@ -74,6 +74,7 @@ nlat = 20
 ns_sponge = 0.5
 Rv_sponge = 1e-5
 
+radiative_transfer = true
 Tstar = 6000
 planet_star_dist = 0.045
 radius_star = 1.14

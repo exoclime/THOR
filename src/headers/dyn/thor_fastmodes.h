@@ -42,6 +42,7 @@
 // 1.0     16/08/2017 Released version  (JM)
 //
 ////////////////////////////////////////////////////////////////////////
+#include "kernel_halo_helpers.h"
 
 template<int NX, int NY>
 __global__ void Momentum_Eq(double *M_d,
@@ -57,9 +58,9 @@ __global__ void Momentum_Eq(double *M_d,
                             int     nl_region,
                             bool    DeepModel) {
 
-    int x   = threadIdx.x;
-    int y   = threadIdx.y;
-    int ib  = blockIdx.x;
+    int x = threadIdx.x;
+    int y = threadIdx.y;
+    //int ib  = blockIdx.x;
     int nv  = gridDim.y;
     int lev = blockIdx.y;
 
@@ -67,62 +68,40 @@ __global__ void Momentum_Eq(double *M_d,
     int nhl  = nl_region + 2;
     int nhl2 = nhl * nhl;
 
-    int ir = (y + 1) * nhl + x + 1; // Region index
     int iri;
 
     __shared__ double nflxv_s[3 * NX * NY];
     __shared__ double pressure_s[(NX + 2) * (NY + 2)];
 
-    int    pent_ind = 0;
-    int    ig, ir2, id, twot;
+
+    int ir = 0; // index in region
+
+    int    ir2, id;
     double vr;
     double alt, rscale;
     double Mx, My, Mz;
     double funcx, funcy, funcz;
 
+
+    bool pent_ind = false; //
+    int  ig;               // index in global mem
+
+    int igh = 0; // global index in halo
+
     // Load shared memory
-    ig = maps_d[ib * nhl2 + ir];
-    id = ig;
-    if (x == 0 && y == 0)
-        if (maps_d[ib * nhl2] == -1) pent_ind = 1;
+    bool load_halo = compute_mem_idx(maps_d, nhl, nhl2, ig, igh, ir, ir2, pent_ind);
+    id             = ig;
     pressure_s[ir] = pressure_d[ig * nv + lev];
 
     ///////////////////////////////
     //////////// Halo /////////////
     ///////////////////////////////
-    if (x == 0) {
-        ir2             = (y + 1) * nhl + x;
-        ig              = maps_d[ib * nhl2 + ir2];
-        pressure_s[ir2] = pressure_d[ig * nv + lev];
-    }
-    if (x == nhl - 3) {
-        ir2             = (y + 1) * nhl + x + 2;
-        ig              = maps_d[ib * nhl2 + ir2];
-        pressure_s[ir2] = pressure_d[ig * nv + lev];
-    }
-    if (y == 0) {
-        twot = 1;
-        ir2  = y * nhl + (x + 1);
-        if (x == 0) twot = 2;
-
-        for (int k = 0; k < twot; k++) {
-            if (k == 1) ir2 = y * nhl + x;
-            ig = maps_d[ib * nhl2 + ir2];
-            if (ig >= 0)
-                pressure_s[ir2] = pressure_d[ig * nv + lev];
-            else
-                pressure_s[ir2] = 0.0;
+    if (load_halo) {
+        if (igh >= 0) {
+            pressure_s[ir2] = pressure_d[igh * nv + lev];
         }
-    }
-    if (y == nhl - 3) {
-        twot = 1;
-        ir2  = (y + 2) * nhl + (x + 1);
-        if (x == nhl - 3) twot = 2;
-        for (int k = 0; k < twot; k++) {
-            if (k == 1) ir2 = (y + 2) * nhl + (x + 2);
-            ig              = maps_d[ib * nhl2 + ir2];
-            pressure_s[ir2] = pressure_d[ig * nv + lev];
-        }
+        else
+            pressure_s[ir2] = 0.0;
     }
     __syncthreads();
     //////////////////////////////////////////////
@@ -262,28 +241,22 @@ __global__ void Density_Pressure_Eqs(double *pressure_d,
                                      int     nl_region,
                                      bool    DeepModel) {
 
-    int x   = threadIdx.x;
-    int y   = threadIdx.y;
-    int ib  = blockIdx.x;
+    int x = threadIdx.x;
+    int y = threadIdx.y;
+    //    int ib  = blockIdx.x;
     int nv  = gridDim.y;
     int lev = blockIdx.y;
 
-    int    pt1, pt2, pt3, pt4, pt5, pt6;
-    double div0, div1, div2, div3, div4, div5, div6;
-    int    nhl  = nl_region + 2;
-    int    nhl2 = nhl * nhl;
-
-    int ir = (y + 1) * nhl + x + 1; // Region index
-    int iri, ir2, twot;
-
+    int               pt1, pt2, pt3, pt4, pt5, pt6;
+    double            div0, div1, div2, div3, div4, div5, div6;
+    int               nhl  = nl_region + 2;
+    int               nhl2 = nhl * nhl;
     __shared__ double nflxr_s[NX * NY];
     __shared__ double nflxpt_s[NX * NY];
     __shared__ double v_s[3 * (NX + 2) * (NY + 2)];
     __shared__ double v1_s[3 * (NX + 2) * (NY + 2)];
     __shared__ double pt_s[(NX + 2) * (NY + 2)];
 
-    int pent_ind = 0;
-    int ig, id;
 
     double alt, r2p, r2m, r2l, rscale;
     double wht, whl;
@@ -295,11 +268,23 @@ __global__ void Density_Pressure_Eqs(double *pressure_d,
     double altht, althl;
     double Cv = Cp - Rd;
 
+
+    int ir = 0; // index in region
+    int iri, ir2, id;
+
+
+    bool pent_ind = false; //
+    int  ig;               // index in global mem
+
+    int igh = 0; // global index in halo
+
     // Load shared memory
-    ig = maps_d[ib * nhl2 + ir];
-    id = ig;
-    if (x == 0 && y == 0)
-        if (maps_d[ib * nhl2] == -1) pent_ind = 1;
+
+
+    bool load_halo = compute_mem_idx(maps_d, nhl, nhl2, ig, igh, ir, ir2, pent_ind);
+    id             = ig;
+
+    // Load shared memory
 
     v_s[ir * 3 + 0] = Mh_d[ig * 3 * nv + lev * 3 + 0];
     v_s[ir * 3 + 1] = Mh_d[ig * 3 * nv + lev * 3 + 1];
@@ -314,73 +299,27 @@ __global__ void Density_Pressure_Eqs(double *pressure_d,
     ///////////////////////////////
     //////////// Halo /////////////
     ///////////////////////////////
-    if (x == 0) {
-        ir2               = (y + 1) * nhl + x;
-        ig                = maps_d[ib * nhl2 + ir2];
-        v_s[ir2 * 3 + 0]  = Mh_d[ig * 3 * nv + lev * 3 + 0];
-        v_s[ir2 * 3 + 1]  = Mh_d[ig * 3 * nv + lev * 3 + 1];
-        v_s[ir2 * 3 + 2]  = Mh_d[ig * 3 * nv + lev * 3 + 2];
-        v1_s[ir2 * 3 + 0] = v_s[ir2 * 3 + 0] + Mhk_d[ig * 3 * nv + lev * 3 + 0];
-        v1_s[ir2 * 3 + 1] = v_s[ir2 * 3 + 1] + Mhk_d[ig * 3 * nv + lev * 3 + 1];
-        v1_s[ir2 * 3 + 2] = v_s[ir2 * 3 + 2] + Mhk_d[ig * 3 * nv + lev * 3 + 2];
-        pt_s[ir2]         = pt_d[ig * nv + lev];
-    }
-    if (x == nhl - 3) {
-        ir2               = (y + 1) * nhl + x + 2;
-        ig                = maps_d[ib * nhl2 + ir2];
-        v_s[ir2 * 3 + 0]  = Mh_d[ig * 3 * nv + lev * 3 + 0];
-        v_s[ir2 * 3 + 1]  = Mh_d[ig * 3 * nv + lev * 3 + 1];
-        v_s[ir2 * 3 + 2]  = Mh_d[ig * 3 * nv + lev * 3 + 2];
-        v1_s[ir2 * 3 + 0] = v_s[ir2 * 3 + 0] + Mhk_d[ig * 3 * nv + lev * 3 + 0];
-        v1_s[ir2 * 3 + 1] = v_s[ir2 * 3 + 1] + Mhk_d[ig * 3 * nv + lev * 3 + 1];
-        v1_s[ir2 * 3 + 2] = v_s[ir2 * 3 + 2] + Mhk_d[ig * 3 * nv + lev * 3 + 2];
-        pt_s[ir2]         = pt_d[ig * nv + lev];
-    }
-    if (y == 0) {
-        twot = 1;
-        ir2  = y * nhl + (x + 1);
-        if (x == 0) twot = 2;
-
-        for (int k = 0; k < twot; k++) {
-            if (k == 1) ir2 = y * nhl + x;
-            ig = maps_d[ib * nhl2 + ir2];
-
-            if (ig >= 0) {
-                v_s[ir2 * 3 + 0]  = Mh_d[ig * 3 * nv + lev * 3 + 0];
-                v_s[ir2 * 3 + 1]  = Mh_d[ig * 3 * nv + lev * 3 + 1];
-                v_s[ir2 * 3 + 2]  = Mh_d[ig * 3 * nv + lev * 3 + 2];
-                v1_s[ir2 * 3 + 0] = v_s[ir2 * 3 + 0] + Mhk_d[ig * 3 * nv + lev * 3 + 0];
-                v1_s[ir2 * 3 + 1] = v_s[ir2 * 3 + 1] + Mhk_d[ig * 3 * nv + lev * 3 + 1];
-                v1_s[ir2 * 3 + 2] = v_s[ir2 * 3 + 2] + Mhk_d[ig * 3 * nv + lev * 3 + 2];
-                pt_s[ir2]         = pt_d[ig * nv + lev];
-            }
-            else {
-                v_s[ir2 * 3 + 0]  = 0.0;
-                v_s[ir2 * 3 + 1]  = 0.0;
-                v_s[ir2 * 3 + 2]  = 0.0;
-                v1_s[ir2 * 3 + 0] = 0.0;
-                v1_s[ir2 * 3 + 1] = 0.0;
-                v1_s[ir2 * 3 + 2] = 0.0;
-                pt_s[ir2]         = 0.0;
-            }
+    if (load_halo) {
+        if (igh >= 0) {
+            v_s[ir2 * 3 + 0]  = Mh_d[igh * 3 * nv + lev * 3 + 0];
+            v_s[ir2 * 3 + 1]  = Mh_d[igh * 3 * nv + lev * 3 + 1];
+            v_s[ir2 * 3 + 2]  = Mh_d[igh * 3 * nv + lev * 3 + 2];
+            v1_s[ir2 * 3 + 0] = v_s[ir2 * 3 + 0] + Mhk_d[igh * 3 * nv + lev * 3 + 0];
+            v1_s[ir2 * 3 + 1] = v_s[ir2 * 3 + 1] + Mhk_d[igh * 3 * nv + lev * 3 + 1];
+            v1_s[ir2 * 3 + 2] = v_s[ir2 * 3 + 2] + Mhk_d[igh * 3 * nv + lev * 3 + 2];
+            pt_s[ir2]         = pt_d[igh * nv + lev];
+        }
+        else {
+            v_s[ir2 * 3 + 0]  = 0.0;
+            v_s[ir2 * 3 + 1]  = 0.0;
+            v_s[ir2 * 3 + 2]  = 0.0;
+            v1_s[ir2 * 3 + 0] = 0.0;
+            v1_s[ir2 * 3 + 1] = 0.0;
+            v1_s[ir2 * 3 + 2] = 0.0;
+            pt_s[ir2]         = 0.0;
         }
     }
-    if (y == nhl - 3) {
-        twot = 1;
-        ir2  = (y + 2) * nhl + (x + 1);
-        if (x == nhl - 3) twot = 2;
-        for (int k = 0; k < twot; k++) {
-            if (k == 1) ir2 = (y + 2) * nhl + (x + 2);
-            ig                = maps_d[ib * nhl2 + ir2];
-            v_s[ir2 * 3 + 0]  = Mh_d[ig * 3 * nv + lev * 3 + 0];
-            v_s[ir2 * 3 + 1]  = Mh_d[ig * 3 * nv + lev * 3 + 1];
-            v_s[ir2 * 3 + 2]  = Mh_d[ig * 3 * nv + lev * 3 + 2];
-            v1_s[ir2 * 3 + 0] = v_s[ir2 * 3 + 0] + Mhk_d[ig * 3 * nv + lev * 3 + 0];
-            v1_s[ir2 * 3 + 1] = v_s[ir2 * 3 + 1] + Mhk_d[ig * 3 * nv + lev * 3 + 1];
-            v1_s[ir2 * 3 + 2] = v_s[ir2 * 3 + 2] + Mhk_d[ig * 3 * nv + lev * 3 + 2];
-            pt_s[ir2]         = pt_d[ig * nv + lev];
-        }
-    }
+
     __syncthreads();
     //////////////////////////////////////////////
 

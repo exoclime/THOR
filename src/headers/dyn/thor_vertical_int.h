@@ -366,9 +366,9 @@ __global__ void Prepare_Implicit_Vertical(double *Mh_d,
                                           int     nl_region,
                                           bool    DeepModel) {
 
-    int x   = threadIdx.x;
-    int y   = threadIdx.y;
-    int ib  = blockIdx.x;
+    int x = threadIdx.x;
+    int y = threadIdx.y;
+    //int ib  = blockIdx.x;
     int nv  = gridDim.y;
     int lev = blockIdx.y;
 
@@ -377,24 +377,29 @@ __global__ void Prepare_Implicit_Vertical(double *Mh_d,
     int    nhl  = nl_region + 2;
     int    nhl2 = nhl * nhl;
 
-    int ir = (y + 1) * nhl + x + 1; // Region index
-    int ig, iri, ir2, twot, id;
 
     __shared__ double nflxr_s[NX * NY];
     __shared__ double nflxp_s[NX * NY];
     __shared__ double v_s[3 * (NX + 2) * (NY + 2)];
     __shared__ double h_s[(NX + 2) * (NY + 2)];
 
-    int    pent_ind = 0;
     double alt, rscale;
     double RoC = Rd / (Cp - Rd);
 
-    //
+    int ir = 0; // index in region
+    int iri, ir2, id;
+
+
+    bool pent_ind = false; //
+    int  ig;               // index in global mem
+
+    int igh = 0; // global index in halo
+
     // Load shared memory
-    ig = maps_d[ib * nhl2 + ir];
-    id = ig;
-    if (x == 0 && y == 0)
-        if (maps_d[ib * nhl2] == -1) pent_ind = 1;
+
+
+    bool load_halo = compute_mem_idx(maps_d, nhl, nhl2, ig, igh, ir, ir2, pent_ind);
+    id             = ig;
 
     v_s[ir * 3 + 0] = Mh_d[ig * 3 * nv + lev * 3 + 0];
     v_s[ir * 3 + 1] = Mh_d[ig * 3 * nv + lev * 3 + 1];
@@ -405,54 +410,18 @@ __global__ void Prepare_Implicit_Vertical(double *Mh_d,
     ///////////////////////////////
     //////////// Halo /////////////
     ///////////////////////////////
-    if (x == 0) {
-        ir2              = (y + 1) * nhl + x;
-        ig               = maps_d[ib * nhl2 + ir2];
-        v_s[ir2 * 3 + 0] = Mh_d[ig * 3 * nv + lev * 3 + 0];
-        v_s[ir2 * 3 + 1] = Mh_d[ig * 3 * nv + lev * 3 + 1];
-        v_s[ir2 * 3 + 2] = Mh_d[ig * 3 * nv + lev * 3 + 2];
-        h_s[ir2]         = h_d[ig * nv + lev];
-    }
-    if (x == nhl - 3) {
-        ir2              = (y + 1) * nhl + x + 2;
-        ig               = maps_d[ib * nhl2 + ir2];
-        v_s[ir2 * 3 + 0] = Mh_d[ig * 3 * nv + lev * 3 + 0];
-        v_s[ir2 * 3 + 1] = Mh_d[ig * 3 * nv + lev * 3 + 1];
-        v_s[ir2 * 3 + 2] = Mh_d[ig * 3 * nv + lev * 3 + 2];
-        h_s[ir2]         = h_d[ig * nv + lev];
-    }
-    if (y == 0) {
-        twot = 1;
-        ir2  = y * nhl + (x + 1);
-        if (x == 0) twot = 2;
-        for (int k = 0; k < twot; k++) {
-            if (k == 1) ir2 = y * nhl + x;
-            ig = maps_d[ib * nhl2 + ir2];
-            if (ig >= 0) {
-                v_s[ir2 * 3 + 0] = Mh_d[ig * 3 * nv + lev * 3 + 0];
-                v_s[ir2 * 3 + 1] = Mh_d[ig * 3 * nv + lev * 3 + 1];
-                v_s[ir2 * 3 + 2] = Mh_d[ig * 3 * nv + lev * 3 + 2];
-                h_s[ir2]         = h_d[ig * nv + lev];
-            }
-            else {
-                v_s[ir2 * 3 + 0] = 0.0;
-                v_s[ir2 * 3 + 1] = 0.0;
-                v_s[ir2 * 3 + 2] = 0.0;
-                h_s[ir2]         = 0.0;
-            }
+    if (load_halo) {
+        if (igh >= 0) {
+            v_s[ir2 * 3 + 0] = Mh_d[igh * 3 * nv + lev * 3 + 0];
+            v_s[ir2 * 3 + 1] = Mh_d[igh * 3 * nv + lev * 3 + 1];
+            v_s[ir2 * 3 + 2] = Mh_d[igh * 3 * nv + lev * 3 + 2];
+            h_s[ir2]         = h_d[igh * nv + lev];
         }
-    }
-    if (y == nhl - 3) {
-        twot = 1;
-        ir2  = (y + 2) * nhl + (x + 1);
-        if (x == nhl - 3) twot = 2;
-        for (int k = 0; k < twot; k++) {
-            if (k == 1) ir2 = (y + 2) * nhl + (x + 2);
-            ig               = maps_d[ib * nhl2 + ir2];
-            v_s[ir2 * 3 + 0] = Mh_d[ig * 3 * nv + lev * 3 + 0];
-            v_s[ir2 * 3 + 1] = Mh_d[ig * 3 * nv + lev * 3 + 1];
-            v_s[ir2 * 3 + 2] = Mh_d[ig * 3 * nv + lev * 3 + 2];
-            h_s[ir2]         = h_d[ig * nv + lev];
+        else {
+            v_s[ir2 * 3 + 0] = 0.0;
+            v_s[ir2 * 3 + 1] = 0.0;
+            v_s[ir2 * 3 + 2] = 0.0;
+            h_s[ir2]         = 0.0;
         }
     }
     __syncthreads();
