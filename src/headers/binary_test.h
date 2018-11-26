@@ -316,8 +316,9 @@ bool binary_test::compare_arrays(int                 s1,
 
 
     bool same = true;
-
+#    ifdef BENCH_COMPARE_PRINT_STATISTICS
     bool first_failure = true;
+#    endif // BENCH_COMPARE_PRINT_STATISTICS
 
     for (int i = 0; i < s1; i++) {
 
@@ -337,12 +338,11 @@ bool binary_test::compare_arrays(int                 s1,
 #    ifdef BENCH_COMPARE_PRINT_STATISTICS
             stats.num_failures += 1;
 
-            if (first_failure)
-            {
+            if (first_failure) {
                 stats.first_failure_idx = i;
-                first_failure = false;
+                first_failure           = false;
             }
-            
+
 
             T      delta     = std::abs(d1[i] - d2[i]);
             double delta_rel = delta / std::abs(d1[i]);

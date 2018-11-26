@@ -321,7 +321,6 @@ bool binary_test::compare_to_reference(const string&             iteration,
         // copy data to host if needed
         // and write it to the output file
         if (!s.has_table(def.short_name)) {
-            printf("No table %s\n", def.short_name.c_str());
             
             // no table in input
             oss << " " << def.short_name << ": "
