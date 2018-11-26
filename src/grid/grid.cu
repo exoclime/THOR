@@ -2587,5 +2587,36 @@ void Icogrid::zonal_mean_tab_f(int *   zonal_mean_tab,
     delete[] lat_array;
 }
 
+void Icogrid::free_memory()
+{
+    printf("Freeing Grid memory\n.");
+    
+    // Free memory that's not passed and freed by ESP.
+    
+    free(nvec);
+    free(point_xyz);
+    free(pent_ind);
+    free(halo);
+    free(point_xyzq);
+    free(areas);    
+        
+    // Allocated data passed over to ESP object
+    // Grid serves only for setup, but should live all throughout sim.
+    free(point_local);
+    free(maps);
+    free(lonlat);
+    free(Altitude);
+    free(Altitudeh);
+    free(nvecoa);
+    free(nvecti);
+    free(nvecte);
+    free(areasT);
+
+    free(areasTr);
+    free(div);
+    free(grad);
+    free(func_r);
+}
+
 
 //END OF GRID.CU

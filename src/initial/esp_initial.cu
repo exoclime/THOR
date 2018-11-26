@@ -653,18 +653,7 @@ __host__ ESP::~ESP() {
     //  Description: Frees the memory space.
     //
     //  Host
-    free(point_local_h);
-    free(maps_h);
-    free(lonlat_h);
-    free(Altitude_h);
-    free(Altitudeh_h);
-    free(nvecoa_h);
-    free(nvecti_h);
-    free(nvecte_h);
-    free(areasTr_h);
-    free(div_h);
-    free(grad_h);
-    free(func_r_h);
+    // Simulation state data
     free(Rho_h);
     free(pressure_h);
     free(temperature_h);
@@ -673,50 +662,75 @@ __host__ ESP::~ESP() {
     free(Wh_h);
 
     //  Device
+    // Grid
     cudaFree(point_local_d);
     cudaFree(maps_d);
+
+    //  Altitude (grid)
     cudaFree(Altitude_d);
     cudaFree(Altitudeh_d);
+
+    //  Operators
     cudaFree(nvecoa_d);
     cudaFree(nvecti_d);
     cudaFree(nvecte_d);
     cudaFree(areasT_d);
     cudaFree(areasTr_d);
+
+    //  Longitude-latitude
     cudaFree(lonlat_d);
     cudaFree(div_d);
     cudaFree(grad_d);
     cudaFree(func_r_d);
-    cudaFree(Rho_d);
-    cudaFree(pressure_d);
+
+    //  Temperature
     cudaFree(temperature_d);
+    //  Diagnostics
+    cudaFree(Mh_d);
+
     cudaFree(W_d);
     cudaFree(Wh_d);
+    cudaFree(Rho_d);
+    cudaFree(pressure_d);
+    cudaFree(pressureh_d);
+
+    //  Entalphy
     cudaFree(h_d);
     cudaFree(hh_d);
+
+    //  Advection
     cudaFree(Adv_d);
+    //  Effective gravity
     cudaFree(gtil_d);
     cudaFree(gtilh_d);
+    //  3D vector
     cudaFree(v_d);
+    //  Potential temperature
     cudaFree(pt_d);
     cudaFree(pth_d);
+    //  Slow modes
     cudaFree(SlowMh_d);
     cudaFree(SlowWh_d);
     cudaFree(SlowRho_d);
     cudaFree(Slowpressure_d);
+    //  RK-Method
     cudaFree(Rhok_d);
     cudaFree(pressurek_d);
     cudaFree(Mhk_d);
     cudaFree(Whk_d);
     cudaFree(Wk_d);
+    //  Deviations
     cudaFree(Rhos_d);
     cudaFree(pressures_d);
     cudaFree(Mhs_d);
     cudaFree(Whs_d);
     cudaFree(Ws_d);
 
-
+    //  Vertical integration
     cudaFree(Sd_d);
     cudaFree(Sp_d);
+
+    //  Diffusion
     cudaFree(Kdhz_d);
     cudaFree(Kdh4_d);
     cudaFree(DivM_d);
@@ -738,6 +752,13 @@ __host__ ESP::~ESP() {
     cudaFree(GlobalAMx_d);
     cudaFree(GlobalAMy_d);
     cudaFree(GlobalAMz_d);
+
+    //  Extras-nan
+    cudaFree(check_d);
+    cudaFree(vbar_d);
+
+    cudaFree(zonal_mean_tab_d);
+
 
     if (phy_modules_execute)
         phy_modules_free_mem();
