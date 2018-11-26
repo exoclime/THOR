@@ -293,7 +293,6 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
     //
 }
 
-// TODO: get constants out of arguments
 void ESP::conservation(const SimulationSetup& sim) {
     //
     //  Number of threads per block.

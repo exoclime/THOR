@@ -86,8 +86,6 @@ bool phy_modules_dyn_core_loop_fast_modes(const ESP&             esp,
 bool phy_modules_dyn_core_loop_end(const ESP& esp);
 
 // Physics loop
-// TODO: what do we need here? esp,planet, grid???
-
 bool phy_modules_phy_loop(ESP&                   esp,
                           const SimulationSetup& sim,
                           int                    nstep, // Step number

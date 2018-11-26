@@ -33,8 +33,7 @@ public:
                                           double                 time_step)             // Time-step [s]
     { return true; };
     virtual bool dyn_core_loop_end(const ESP& esp) { return true; };
-
-    // TBD, how does it get data? friend of ESP ? grid ?
+    
     virtual bool phy_loop(ESP&                   esp,
                           const SimulationSetup& sim,
                           int                    nstep,    // Step number
