@@ -66,7 +66,7 @@ rest = true
 initial = wasp43_sponge2/esp_output_Wasp43b_re.h5
 
 # Spongebob
-SpongeLayer = true
+SpongeLayer = false
 # latitude rings
 nlat = 20
 ns_sponge = 0.75
@@ -102,5 +102,7 @@ gcm_off = false
 TPprof = 0
 
 chemistry = true
-chem_times_file = src/phy/modules/ifile/solar_fEQ_THOR.txt
-fEQ_file = src/phy/modules/ifile/solar_chem_time.txt"
+
+chem_time_file = src/physics/modules/ifile/solar_chem_time.txt
+chem_fEQ_file = src/physics/modules/ifile/solar_fEQ_THOR.txt
+
