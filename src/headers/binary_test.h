@@ -158,6 +158,7 @@ struct output_def {
 struct compare_statistics {
     int    num_values;
     int    num_failures;
+    int    first_failure_idx;
     double max_abs_delta;
     double mean_abs_delta;
     double max_rel_delta;
@@ -292,16 +293,17 @@ bool binary_test::compare_arrays(int                 s1,
                                  string              array,
                                  bool                print) {
 #    ifdef BENCH_COMPARE_PRINT_STATISTICS
-    stats.num_values     = 0;
-    stats.num_failures   = 0;
-    stats.max_abs_delta  = 0.0;
-    stats.mean_abs_delta = 0.0;
-    stats.max_rel_delta  = 0.0;
-    stats.mean_rel_delta = 0.0;
-    stats.mean_val       = 0.0;
-    stats.max_val        = 0.0;
-    stats.mean_ref       = 0.0;
-    stats.max_ref        = 0.0;
+    stats.num_values        = 0;
+    stats.num_failures      = 0;
+    stats.first_failure_idx = 0;
+    stats.max_abs_delta     = 0.0;
+    stats.mean_abs_delta    = 0.0;
+    stats.max_rel_delta     = 0.0;
+    stats.mean_rel_delta    = 0.0;
+    stats.mean_val          = 0.0;
+    stats.max_val           = 0.0;
+    stats.mean_ref          = 0.0;
+    stats.max_ref           = 0.0;
 #    endif // BENCH_COMPARE_PRINT_STATISTICS
 
     if (s1 != s2) {
@@ -314,6 +316,8 @@ bool binary_test::compare_arrays(int                 s1,
 
 
     bool same = true;
+
+    bool first_failure = true;
 
     for (int i = 0; i < s1; i++) {
 
@@ -332,6 +336,13 @@ bool binary_test::compare_arrays(int                 s1,
                 std::cout << std::setprecision(20) << std::scientific << array << "[" << i << "]:\tdifferent value (" << d1[i] << ":" << d2[i] << ")" << std::endl;
 #    ifdef BENCH_COMPARE_PRINT_STATISTICS
             stats.num_failures += 1;
+
+            if (first_failure)
+            {
+                stats.first_failure_idx = i;
+                first_failure = false;
+            }
+            
 
             T      delta     = std::abs(d1[i] - d2[i]);
             double delta_rel = delta / std::abs(d1[i]);
