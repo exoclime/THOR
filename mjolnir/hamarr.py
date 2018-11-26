@@ -80,7 +80,7 @@ class grid:
         self.lat = self.lonlat[1::2]
 
 class output:
-    def __init__(self,resultsf,simID,ntsi,nts,grid):
+    def __init__(self,resultsf,simID,ntsi,nts,grid,stride=1):
         # Initialize arrays
         self.Rho = np.zeros((grid.point_num,grid.nv,nts-ntsi+1))
         self.Pressure = np.zeros((grid.point_num,grid.nv,nts-ntsi+1))
@@ -115,7 +115,7 @@ class output:
         self.fnet_dn = np.zeros((grid.point_num,grid.nvi,nts-ntsi+1))
 
         # Read model results
-        for t in np.arange(ntsi-1,nts):
+        for t in np.arange(ntsi-1,nts,stride):
             fileh5 = resultsf+'/esp_output_'+simID+'_'+np.str(t+1)+'.h5'
             if os.path.exists(fileh5):
                 openh5 = h5py.File(fileh5)
@@ -183,10 +183,10 @@ class output:
 
 
 class GetOutput:
-    def __init__(self,resultsf,simID,ntsi,nts):
+    def __init__(self,resultsf,simID,ntsi,nts,stride=1):
         self.input = input(resultsf,simID)
         self.grid = grid(resultsf,simID)
-        self.output = output(resultsf,simID,ntsi,nts,self.grid)
+        self.output = output(resultsf,simID,ntsi,nts,self.grid,stride=stride)
 
 def temperature(input,grid,output,sigmaref):
     # Set the reference pressure
