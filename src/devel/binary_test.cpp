@@ -75,21 +75,42 @@ map<string, output_def> build_definitions(ESP& esp, Icogrid& grid) {
 
             {"W_d", {esp.W_d, esp.nv * esp.point_num, "W vert momentum", "W", true}},
 
+            {"pt_d", {esp.pt_d, esp.nv * esp.point_num, "Potential Temp pt", "pt", true}},
+            {"pth_d", {esp.pth_d, esp.nvi * esp.point_num, "Potential Temp pth", "pth", true}},
+
+
             {"h_d", {esp.h_d, esp.nv * esp.point_num, "Entalphy h", "h", true}},
             {"hh_d", {esp.hh_d, esp.nvi * esp.point_num, "Entalphy hh", "hh", true}},
-            // RK variables
-            {"pressure_d", {esp.pressure_d, esp.nv * esp.point_num, "RK pressure", "pp", true}},
-            /*
-            {"tracer_d", {esp.tracer_d, esp.nv * esp.point_num * esp.ntr, "RK tracer", "ti", true}},
-            {"tracers_d", {esp.tracers_d, esp.nv * esp.point_num * esp.ntr, "RK tracers", "ts", true}},
-            {"tracerk_d", {esp.tracerk_d, esp.nv * esp.point_num * esp.ntr, "RK tracerk", "tk", true}},
-*/
+
             {"pressures_d", {esp.pressures_d, esp.nv * esp.point_num, "RK pressures", "ps", true}},
+            {"pressurek_d", {esp.pressurek_d, esp.nv * esp.point_num, "RK pressurek", "pk", true}},
+
+
+            // slow modes
+            {"SlowRho_d", {esp.SlowRho_d, esp.nv * esp.point_num, "Slow Density", "Srho", true}},
+            {"SlowMh_d", {esp.SlowMh_d, esp.nv * esp.point_num* 3, "Slow Mh", "SMh", true}},
+            {"SlowWh_d", {esp.SlowWh_d, esp.nvi * esp.point_num, "Slow Wh", "SWh", true}},
+            {"Slowpressure_d", {esp.Slowpressure_d, esp.nv * esp.point_num, "Slow Pressure", "SP", true}},
+
+            // Diffusion
+            {"diffrh_d", {esp.diffrh_d, esp.nv * esp.point_num, "Diff Rho", "dfrh", true}},
+            {"diffpr_d", {esp.diffpr_d, esp.nv * esp.point_num, "Diff Press", "dfpr", true}},
+            {"diffmh_d", {esp.diffmh_d, esp.nv * esp.point_num * 3, "Diff Mom", "dfmh", true}},
+            {"diffw_d", {esp.diffw_d, esp.nv * esp.point_num, "Diff VMom", "dfw", true}},
+            
+            {"diff_d", {esp.diff_d, 6 * esp.nv * esp.point_num, "Diff", "dif", true}},
+
+            {"DivM_d", {esp.DivM_d, esp.nv * esp.point_num * 3, "DivM", "dM", true}},
+            {"divg_Mh_d", {esp.divg_Mh_d, esp.nv * esp.point_num * 3, "divg_Mh_d", "dgMh", true}},
+
+            {"gtil_d", {esp.gtil_d, esp.nv * esp.point_num, "gtil_d", "gt", true}},
+            {"gtilh_d", {esp.gtilh_d, esp.nvi * esp.point_num, "gtilh_d", "gth", true}},
+            
             {"Rhos_d", {esp.Rhos_d, esp.nv * esp.point_num, "RK Rhos", "rhos", true}},
             {"Mhs_d", {esp.Mhs_d, esp.nv * esp.point_num * 3, "RK Mhs", "Mhs", true}},
             {"Ws_d", {esp.Ws_d, esp.nv * esp.point_num, "RK Ws", "Ws", true}},
             {"Whs_d", {esp.Whs_d, esp.nvi * esp.point_num, "RK Whs", "Whs", true}},
-            {"pressurek_d", {esp.pressurek_d, esp.nv * esp.point_num, "RK pressurek", "pk", true}},
+
             {"Rhok_d", {esp.Rhok_d, esp.nv * esp.point_num, "RK Rhok", "Rhok", true}},
 
             {"Mhk_d", {esp.Mhk_d, esp.nv * esp.point_num * 3, "RK Mhk", "Mhk", true}},
@@ -128,6 +149,9 @@ map<string, output_def> build_definitions(ESP& esp, Icogrid& grid) {
             {"Altitudeh", {grid.Altitudeh, grid.nvi, "Altitudeh", "Alth", false}},
             {"lonlat", {grid.lonlat, 2 * grid.point_num, "lonlat", "ll", false}},
 
+            {"Sp_d", {esp.Sp_d, esp.nv * esp.point_num, "Sp_d", "Sp", true}},
+            {"Sd_d", {esp.Sd_d, esp.nv * esp.point_num, "Sd_d", "Sd", true}},
+            
             {"div", {grid.div, 7 * 3 * grid.point_num, "div", "d", false}},
             {"grad", {grid.grad, 7 * 3 * grid.point_num, "grad", "g", false}},
         };
@@ -297,6 +321,8 @@ bool binary_test::compare_to_reference(const string&             iteration,
         // copy data to host if needed
         // and write it to the output file
         if (!s.has_table(def.short_name)) {
+            printf("No table %s\n", def.short_name.c_str());
+            
             // no table in input
             oss << " " << def.short_name << ": "
                 << "N/A";

@@ -72,7 +72,10 @@ public:
                 return true;
             } catch (DataSetIException error) {
                 return false;
+            } catch (FileIException error){
+                return false;
             }
+            
         }
         else
             return false;

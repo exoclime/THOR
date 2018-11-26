@@ -303,7 +303,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                                1,
                                                sim.DeepModel);
 
-            BENCH_POINT_I_S_PHY(current_step, rk, "Diffusion_Op_Poles", (), ("diffmh_d", "diffw_d", "diffrh_d", "diffpr_d", "diff_d", "difftr_d"))
+            BENCH_POINT_I_S_PHY(current_step, rk, "Diffusion_Op_Poles", (), ("diffmh_d", "diffw_d", "diffrh_d", "diffpr_d", "diff_d"))
         }
 
         if (phy_modules_execute)
