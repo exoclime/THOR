@@ -35,12 +35,14 @@
 //
 //       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016
 //
-// Current Code Owner: Joao Mendonca, EEG. joao.mendonca@csh.unibe.ch
+// Current Code Owners: Joao Mendonca (joao.mendonca@space.dtu.dk)
+//                      Russell Deitrick (russell.deitrick@csh.unibe.ch)
+//                      Urs Schroffinegger (urs.schroffenegger@csh.unibe.ch)
 //
 // History:
 // Version Date       Comment
 // ======= ====       =======
-//
+// 2.0     30/11/2018 Released version (RD & US)
 // 1.0     16/08/2017 Released version  (JM)
 //
 ////////////////////////////////////////////////////////////////////////
@@ -451,11 +453,11 @@ __host__ bool ESP::initial_values(bool               rest,
             mapValuesDouble["/Top_altitude"] = planet.Top_altitude;
             mapValuesInt["/glevel"]       = glevel;
             mapValuesInt["/vlevel"]       = nv;
-            
+
             storage s(planet_filename, true);
-            
+
             bool values_match = true;
-            
+
             for (const std::pair<std::string, double> &element : mapValuesDouble) {
                 double value = 0.0;
                 load_OK      = s.read_value(element.first, value);
@@ -500,7 +502,7 @@ __host__ bool ESP::initial_values(bool               rest,
             // Step number
             load_OK &= s.read_value("/nstep", nstep);
             printf("Reloaded %s: %d.\n", "/nstep", load_OK?1:0);
-            
+
             //      Density
             load_OK &= s.read_table_to_ptr("/Rho", Rho_h, point_num * nv);
             printf("Reloaded %s: %d.\n", "/Rho", load_OK?1:0);
@@ -523,10 +525,10 @@ __host__ bool ESP::initial_values(bool               rest,
         if (!load_OK)
         {
             printf("Error reloading simulation state\n");
-            
+
             return false;
         }
-        
+
 
         for (int i = 0; i < point_num; i++)
             for (int lev = 0; lev < nv; lev++)

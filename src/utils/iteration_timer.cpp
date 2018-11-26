@@ -16,9 +16,8 @@
 //     <http://www.gnu.org/licenses/>.
 // ==============================================================================
 //
-// Timer helper to measure tome for iterations, elapsed time and time remaining
+// Timer helper to measure time for iterations, elapsed time and time remaining
 //
-
 //
 // Known limitations:
 //
@@ -29,12 +28,14 @@
 //
 //       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016
 //
-// Current Code Owner: Joao Mendonca, EEG. joao.mendonca@csh.unibe.ch
+// Current Code Owners: Joao Mendonca (joao.mendonca@space.dtu.dk)
+//                      Russell Deitrick (russell.deitrick@csh.unibe.ch)
+//                      Urs Schroffinegger (urs.schroffenegger@csh.unibe.ch)
 //
 // History:
 // Version Date       Comment
 // ======= ====       =======
-//
+// 2.0     30/11/2018 Released version (RD & US)
 // 1.0     16/08/2017 Released version  (JM)
 //
 ////////////////////////////////////////////////////////////////////////
