@@ -136,6 +136,7 @@ __global__ void dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
                 while (extend == 1) {
                     double h   = 0.0; //Enthalpy;
                     double sum = 0.0;
+                    extend     = 0;
 
                     for (int lev = bot; lev <= top; lev++) {
                         // calc adiabatic pressure, integrate upward for new pot. temp.
@@ -149,22 +150,24 @@ __global__ void dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
                     }
                     thnew = h / sum;
 
-                    if (bot <= 0 && top >= nv - 1) {
-                        // no need to extend again
-                        extend = 0;
-                    }
+                    // if (bot <= 0 && top >= nv - 1) {
+                    //     // no need to extend again
+                    //     extend = 0;
+                    // }
 
                     if (bot > 0) {
                         // repeat if new pot. temp. is less than lower boundary p.t.
                         if ((thnew - pt_d[id * nv + bot - 1]) < stable) {
-                            bot = bot - 1;
+                            bot    = bot - 1;
+                            extend = 1;
                         }
                     }
 
                     if (top < nv - 1) {
                         // repeat if new pot. temp. is greater p.t. above
                         if ((pt_d[id * nv + top + 1] - thnew) < stable) {
-                            top = top + 1;
+                            top    = top + 1;
+                            extend = 1;
                         }
                     }
                 }
