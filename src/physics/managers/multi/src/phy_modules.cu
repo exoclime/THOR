@@ -44,9 +44,9 @@ bool phy_modules_init_mem(const ESP&               esp,
     return out;
 }
 
-bool phy_modules_init_data(const ESP&     esp,
-                           const XPlanet& planet,
-                           storage*       s) {
+bool phy_modules_init_data(const ESP&             esp,
+                           const SimulationSetup& sim,
+                           storage*               s) {
     bool out = true;
     // initialise all the modules data
 
@@ -55,7 +55,7 @@ bool phy_modules_init_data(const ESP&     esp,
     }
 
     if (radiative_transfer_enabled)
-        out &= rt.initial_conditions(esp, planet);
+        out &= rt.initial_conditions(esp, sim);
 
     return out;
 }
@@ -75,19 +75,18 @@ bool phy_modules_dyn_core_loop_init(const ESP& esp) {
     return true;
 }
 
-bool phy_modules_dyn_core_loop_slow_modes(const ESP&     esp,
-                                          const XPlanet& planet,
-                                          int            nstep, // Step number
-                                          double         times, // Time-step [s]
-                                          bool           HyDiff) {
+bool phy_modules_dyn_core_loop_slow_modes(const ESP&             esp,
+                                          const SimulationSetup& sim,
+                                          int                    nstep, // Step number
+                                          double                 times) {               // Time-step [s]
 
     return true;
 }
 
-bool phy_modules_dyn_core_loop_fast_modes(const ESP&     esp,
-                                          const XPlanet& planet,
-                                          int            nstep,     // Step number
-                                          double         time_step) { // Time-step [s]
+bool phy_modules_dyn_core_loop_fast_modes(const ESP&             esp,
+                                          const SimulationSetup& sim,
+                                          int                    nstep, // Step number
+                                          double                 time_step) {           // Time-step [s]
 
     return true;
 }
@@ -98,15 +97,15 @@ bool phy_modules_dyn_core_loop_end(const ESP& esp) {
 }
 
 
-bool phy_modules_phy_loop(ESP&           esp,
-                          const XPlanet& planet,
-                          int            nstep,
-                          double         time_step) {
+bool phy_modules_phy_loop(ESP&                   esp,
+                          const SimulationSetup& sim,
+                          int                    nstep,
+                          double                 time_step) {
     // run all the modules main loop
     bool out = true;
 
     if (radiative_transfer_enabled)
-        rt.phy_loop(esp, planet, nstep, time_step);
+        rt.phy_loop(esp, sim, nstep, time_step);
 
     return out;
 }

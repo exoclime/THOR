@@ -47,10 +47,10 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
-#include "../headers/phy/profx_conservation.h"
-#include "../headers/phy/valkyrie_jet_steadystate.h"
 #include "directories.h"
 #include "esp.h"
+#include "phy/profx_conservation.h"
+#include "phy/valkyrie_jet_steadystate.h"
 #include "storage.h"
 #include <map>
 #include <stdio.h>
@@ -126,6 +126,8 @@ __host__ ESP::ESP(int *           point_local_,
     t_shrink  = t_shrink_;
     max_count = max_count_;
 
+    // Set the physics module execute state for the rest of the lifetime of ESP object
+    // only execute physics modules when no benchmarks are enabled
     if (core_benchmark == NO_BENCHMARK) {
         phy_modules_execute = true;
     }
@@ -139,14 +141,13 @@ __host__ ESP::ESP(int *           point_local_,
 
 __host__ void ESP::alloc_data(bool conservation) {
 
-
     //
     //  Description:
     //
     //  Allocate data on host and device.
     //
     //  Allocate data in host
-    //  Diagnostics
+    //  Diagnostics an doutput
     Rho_h         = (double *)malloc(nv * point_num * sizeof(double));
     pressure_h    = (double *)malloc(nv * point_num * sizeof(double));
     temperature_h = (double *)malloc(nv * point_num * sizeof(double));
@@ -274,12 +275,15 @@ __host__ void ESP::alloc_data(bool conservation) {
         cudaMalloc((void **)&GlobalAMy_d, 1 * sizeof(double));
         cudaMalloc((void **)&GlobalAMz_d, 1 * sizeof(double));
     }
+
     // PHY modules
     printf("  Dynamical core memory initialised.\n");
 
     if (phy_modules_execute) {
 
+        // physics module need to initialise their own memory
         bool init_modules = phy_modules_init_mem(*this, phy_modules_core_arrays);
+        // Physics module register arrays that need to be updated in dynamical core Runge-Kutta step
         phy_modules_core_arrays.allocate_device_array();
         if (init_modules)
             printf("  Module memory initialised.\n");
@@ -294,42 +298,35 @@ __host__ bool ESP::initial_values(bool               rest,
                                   const std::string &initial_conditions_filename,
                                   const bool &       continue_sim,
                                   double             timestep_dyn,
-                                  XPlanet &          xplanet,
-                                  bool               sponge,
-                                  bool               DeepModel,
+                                  SimulationSetup &  sim,
                                   int                TPprof,
                                   int &              nstep,
                                   double &           simulation_start_time,
-                                  int &              output_file_idx,
-                                  bool               conservation) {
+                                  int &              output_file_idx) {
 
     output_file_idx = 0;
     nstep           = 0;
-
-    // Store some general configs
-    planet = xplanet;
-
     //  Set initial conditions.
     //
     //
     //  Initial atmospheric conditions
     if (rest) {
-        double Ha = planet.Rd * planet.Tmean / planet.Gravit;
+        double Ha = sim.Rd * sim.Tmean / sim.Gravit;
         for (int i = 0; i < point_num; i++) {
             //
             //          Initial conditions for an isothermal Atmosphere
             //
 
             for (int lev = 0; lev < nv; lev++) {
-                pressure_h[i * nv + lev] = planet.P_Ref * exp(-Altitude_h[lev] / Ha);
+                pressure_h[i * nv + lev] = sim.P_Ref * exp(-Altitude_h[lev] / Ha);
                 if (TPprof == 0) {
-                    temperature_h[i * nv + lev] = planet.Tmean;
+                    temperature_h[i * nv + lev] = sim.Tmean;
                 }
                 else if (TPprof == 1) {
                     double tau                  = pressure_h[i * nv + lev] / (1e4); //tau = 1 at 0.1 bar
                     double gamma                = 0.6;                              // ratio of sw to lw opacity
                     double f                    = 0.25;
-                    temperature_h[i * nv + lev] = pow(3 * planet.Tmean * planet.Tmean * planet.Tmean * planet.Tmean * f * (2 / 3 + 1 / (gamma * sqrt(3)) + (gamma / sqrt(3) - 1 / (gamma * sqrt(3))) * exp(-gamma * tau * sqrt(3))), 0.25);
+                    temperature_h[i * nv + lev] = pow(3 * sim.Tmean * sim.Tmean * sim.Tmean * sim.Tmean * f * (2 / 3 + 1 / (gamma * sqrt(3)) + (gamma / sqrt(3) - 1 / (gamma * sqrt(3))) * exp(-gamma * tau * sqrt(3))), 0.25);
                 }
                 if (core_benchmark == DEEP_HOT_JUPITER) {
                     double Ptil = 0.0;
@@ -349,7 +346,7 @@ __host__ bool ESP::initial_values(bool               rest,
 
             for (int lev = 0; lev < nv; lev++) {
                 //              Density [kg/m3]
-                Rho_h[i * nv + lev] = pressure_h[i * nv + lev] / (temperature_h[i * nv + lev] * planet.Rd);
+                Rho_h[i * nv + lev] = pressure_h[i * nv + lev] / (temperature_h[i * nv + lev] * sim.Rd);
 
                 //              Momentum [kg/m3 m/s]
                 Mh_h[i * 3 * nv + 3 * lev + 0] = 0.0;
@@ -380,10 +377,10 @@ __host__ bool ESP::initial_values(bool               rest,
                                    pressure_d,
                                    Rho_d,
                                    temperature_d,
-                                   planet.Cp,
-                                   planet.Rd,
-                                   planet.Omega,
-                                   planet.A,
+                                   sim.Cp,
+                                   sim.Rd,
+                                   sim.Omega,
+                                   sim.A,
                                    Altitude_d,
                                    lonlat_d,
                                    point_num);
@@ -407,6 +404,7 @@ __host__ bool ESP::initial_values(bool               rest,
 
         string parent_path = p.parent();
 
+        // Reload correct file if we are continuing from a specific file
         if (continue_sim) {
             if (!match_output_file_numbering_scheme(initial_conditions_filename,
                                                     basename,
@@ -425,7 +423,7 @@ __host__ bool ESP::initial_values(bool               rest,
             planet_filename = p.parent() + "/esp_output_planet_" + basename + ".h5";
         }
         else {
-            planet_filename = p.parent() + "/" + p.stem() + "_planet.h5";
+            planet_filename = p.parent() + "/" + p.stem() + "_sim.h5";
         }
 
         // check existence of files
@@ -445,18 +443,19 @@ __host__ bool ESP::initial_values(bool               rest,
 
         // Check planet data
         {
-            // values to check agains variable
+            // values from initial conditions to check against variables from config
             map<string, double> mapValuesDouble;
-            map<string, int> mapValuesInt;
+            map<string, int>    mapValuesInt;
 
-            mapValuesDouble["/A"]            = planet.A;
-            mapValuesDouble["/Top_altitude"] = planet.Top_altitude;
-            mapValuesInt["/glevel"]       = glevel;
-            mapValuesInt["/vlevel"]       = nv;
+            mapValuesDouble["/A"]            = sim.A;
+            mapValuesDouble["/Top_altitude"] = sim.Top_altitude;
+            mapValuesInt["/glevel"]          = glevel;
+            mapValuesInt["/vlevel"]          = nv;
 
             storage s(planet_filename, true);
 
             bool values_match = true;
+            // double
 
             for (const std::pair<std::string, double> &element : mapValuesDouble) {
                 double value = 0.0;
@@ -472,9 +471,10 @@ __host__ bool ESP::initial_values(bool               rest,
                 }
             }
 
+            // int var
             for (const std::pair<std::string, int> &element : mapValuesInt) {
                 int value = 0.0;
-                load_OK      = s.read_value(element.first, value);
+                load_OK   = s.read_value(element.first, value);
 
 
                 if (value != element.second) {
@@ -501,29 +501,30 @@ __host__ bool ESP::initial_values(bool               rest,
             storage s(initial_conditions_filename, true);
             // Step number
             load_OK &= s.read_value("/nstep", nstep);
-            printf("Reloaded %s: %d.\n", "/nstep", load_OK?1:0);
+
+            printf("Reloaded %s: %d.\n", "/nstep", load_OK ? 1 : 0);
+
 
             //      Density
             load_OK &= s.read_table_to_ptr("/Rho", Rho_h, point_num * nv);
-            printf("Reloaded %s: %d.\n", "/Rho", load_OK?1:0);
+            printf("Reloaded %s: %d.\n", "/Rho", load_OK ? 1 : 0);
             //      Pressure
             load_OK &= s.read_table_to_ptr("/Pressure", pressure_h, point_num * nv);
-            printf("Reloaded %s: %d.\n", "/Pressure", load_OK?1:0);
+            printf("Reloaded %s: %d.\n", "/Pressure", load_OK ? 1 : 0);
             //      Horizontal momentum
             load_OK &= s.read_table_to_ptr("/Mh", Mh_h, point_num * nv * 3);
-            printf("Reloaded %s: %d.\n", "/Mh", load_OK?1:0);
+            printf("Reloaded %s: %d.\n", "/Mh", load_OK ? 1 : 0);
             //      Vertical momentum
             load_OK &= s.read_table_to_ptr("/Wh", Wh_h, point_num * nvi);
-            printf("Reloaded %s: %d.\n", "/Wh", load_OK?1:0);
+            printf("Reloaded %s: %d.\n", "/Wh", load_OK ? 1 : 0);
 
             //      Simulation start time
             load_OK &= s.read_value("/simulation_time", simulation_start_time);
-            printf("Reloaded %s: %d.\n", "/simulation_time", load_OK?1:0);
+            printf("Reloaded %s: %d.\n", "/simulation_time", load_OK ? 1 : 0);
         }
 
 
-        if (!load_OK)
-        {
+        if (!load_OK) {
             printf("Error reloading simulation state\n");
 
             return false;
@@ -532,7 +533,7 @@ __host__ bool ESP::initial_values(bool               rest,
 
         for (int i = 0; i < point_num; i++)
             for (int lev = 0; lev < nv; lev++)
-                temperature_h[i * nv + lev] = pressure_h[i * nv + lev] / (planet.Rd * Rho_h[i * nv + lev]);
+                temperature_h[i * nv + lev] = pressure_h[i * nv + lev] / (sim.Rd * Rho_h[i * nv + lev]);
 
         for (int i = 0; i < point_num; i++) {
             for (int lev = 0; lev < nv; lev++) {
@@ -551,7 +552,7 @@ __host__ bool ESP::initial_values(bool               rest,
     // recompute temperature from pressure and density, to have correct rounding for binary comparison
     for (int i = 0; i < point_num; i++)
         for (int lev = 0; lev < nv; lev++)
-            temperature_h[i * nv + lev] = pressure_h[i * nv + lev] / (planet.Rd * Rho_h[i * nv + lev]);
+            temperature_h[i * nv + lev] = pressure_h[i * nv + lev] / (sim.Rd * Rho_h[i * nv + lev]);
 #endif // BENCHMARKING
 
     //  Diffusion
@@ -561,9 +562,9 @@ __host__ bool ESP::initial_values(bool               rest,
     Kdh4_h = new double[nv];
     for (int lev = 0; lev < nv; lev++) {
         //      Diffusion constant.
-        double dbar = sqrt(2 * M_PI / 5) * planet.A / (pow(2, glevel));
-        Kdh4_h[lev] = planet.Diffc * pow(dbar, 4.) / timestep_dyn;
-        Kdhz_h[lev] = planet.Diffc * pow(dbar, 4.) / timestep_dyn;
+        double dbar = sqrt(2 * M_PI / 5) * sim.A / (pow(2, glevel));
+        Kdh4_h[lev] = sim.Diffc * pow(dbar, 4.) / timestep_dyn;
+        Kdhz_h[lev] = sim.Diffc * pow(dbar, 4.) / timestep_dyn;
     }
 
 
@@ -589,10 +590,10 @@ __host__ bool ESP::initial_values(bool               rest,
     cudaMemcpy(grad_d, grad_h, 7 * 3 * point_num * sizeof(double), cudaMemcpyHostToDevice);
     cudaMemcpy(Kdhz_d, Kdhz_h, nv * sizeof(double), cudaMemcpyHostToDevice);
     cudaMemcpy(Kdh4_d, Kdh4_h, nv * sizeof(double), cudaMemcpyHostToDevice);
-
-    if (sponge == true)
+    
+    if (sim.SpongeLayer == true)
         cudaMemcpy(zonal_mean_tab_d, zonal_mean_tab_h, 3 * point_num * sizeof(int), cudaMemcpyHostToDevice);
-
+    
     //  Initialize arrays
     cudaMemset(Adv_d, 0, sizeof(double) * 3 * point_num * nv);
     cudaMemset(v_d, 0, sizeof(double) * nv * point_num * 3);
@@ -630,14 +631,15 @@ __host__ bool ESP::initial_values(bool               rest,
     delete[] Kdh4_h;
     delete[] Kdhz_h;
 
-
+    // modules need to set their initial conditions
     if (phy_modules_execute) {
-        if (rest)
-            phy_modules_init_data(*this, planet, nullptr);
+        if (rest) // no initial condition file
+            phy_modules_init_data(*this, sim, nullptr);
         else {
+            // load initial condition file and pass it to modules
             storage s(initial_conditions_filename, true);
 
-            phy_modules_init_data(*this, planet, &s);
+            phy_modules_init_data(*this, sim, &s);
         }
     }
 

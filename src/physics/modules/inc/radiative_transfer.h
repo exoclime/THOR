@@ -54,14 +54,14 @@ public:
 
     bool initialise_memory(const ESP &              esp,
                            device_RK_array_manager &phy_modules_core_arrays);
-    bool initial_conditions(const ESP &    esp,
-                            const XPlanet &planet);
+    bool initial_conditions(const ESP &            esp,
+                            const SimulationSetup &sim);
 
     // TBD, how does it get data? friend of ESP ? grid ?
-    bool phy_loop(ESP &          esp,
-                  const XPlanet &planet,
-                  int            nstep, // Step number
-                  double         time_step);    // Time-step [s]
+    bool phy_loop(ESP &                  esp,
+                  const SimulationSetup &sim,
+                  int                    nstep, // Step number
+                  double                 time_step);            // Time-step [s]
 
     bool store(const ESP &esp,
                storage &  s);

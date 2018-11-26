@@ -57,10 +57,10 @@
 #include <iomanip>
 #include <sstream>
 
+#include "define.h"
 #include "esp.h"
-#include "headers/define.h"
-#include "headers/grid.h"
-#include "headers/planet.h"
+#include "grid.h"
+#include "simulation_setup.h"
 
 #include "cmdargs.h"
 #include "config_file.h"
@@ -204,21 +204,21 @@ int main(int argc, char** argv) {
     config_reader.append_config_var("timestep", timestep, timestep_default);
     config_reader.append_config_var("num_steps", nsmax, nsmax_default);
 
-    // Planet
-    // initialises to default earth
-    XPlanet Planet;
-    string  simulation_ID = "Earth";
+    // initialises to default simulation, default Earth parameters
+    SimulationSetup sim;
 
-    config_reader.append_config_var("simulation_ID", simulation_ID, string(Planet.simulation_ID));
-    config_reader.append_config_var("radius", Planet.A, Planet.A);
-    config_reader.append_config_var("rotation_rate", Planet.Omega, Planet.Omega);
-    config_reader.append_config_var("gravitation", Planet.Gravit, Planet.Gravit);
-    config_reader.append_config_var("Rd", Planet.Rd, Planet.Rd);
-    config_reader.append_config_var("Cp", Planet.Cp, Planet.Cp);
-    config_reader.append_config_var("Tmean", Planet.Tmean, Planet.Tmean);
-    config_reader.append_config_var("P_ref", Planet.P_Ref, Planet.P_Ref);
-    config_reader.append_config_var("Top_altitude", Planet.Top_altitude, Planet.Top_altitude);
-    config_reader.append_config_var("Diffc", Planet.Diffc, Planet.Diffc);
+    string simulation_ID = "Earth";
+
+    config_reader.append_config_var("simulation_ID", simulation_ID, string(sim.simulation_ID));
+    config_reader.append_config_var("radius", sim.A, sim.A);
+    config_reader.append_config_var("rotation_rate", sim.Omega, sim.Omega);
+    config_reader.append_config_var("gravitation", sim.Gravit, sim.Gravit);
+    config_reader.append_config_var("Rd", sim.Rd, sim.Rd);
+    config_reader.append_config_var("Cp", sim.Cp, sim.Cp);
+    config_reader.append_config_var("Tmean", sim.Tmean, sim.Tmean);
+    config_reader.append_config_var("P_ref", sim.P_Ref, sim.P_Ref);
+    config_reader.append_config_var("Top_altitude", sim.Top_altitude, sim.Top_altitude);
+    config_reader.append_config_var("Diffc", sim.Diffc, sim.Diffc);
 
     // grid
     bool   spring_dynamics = true;
@@ -232,24 +232,21 @@ int main(int argc, char** argv) {
     config_reader.append_config_var("vlevel", vlevel, vlevel_default);
 
     // Diffusion
-    bool HyDiff   = true;
-    bool DivDampP = true;
-    config_reader.append_config_var("HyDiff", HyDiff, HyDiff_default);
-    config_reader.append_config_var("DivDampP", DivDampP, DivDampP_default);
+
+    config_reader.append_config_var("HyDiff", sim.HyDiff, HyDiff_default);
+    config_reader.append_config_var("DivDampP", sim.DivDampP, DivDampP_default);
 
     // Model options
-    bool   NonHydro      = true;
-    bool   DeepModel     = true;
-    bool   SpongeLayer   = false;
+
     int    nlat          = 20;
     double Rv_sponge     = 1e-4;
     double ns_sponge     = 0.75;
     bool   shrink_sponge = false;
     double t_shrink      = 500;
 
-    config_reader.append_config_var("NonHydro", NonHydro, NonHydro_default);
-    config_reader.append_config_var("DeepModel", DeepModel, DeepModel_default);
-    config_reader.append_config_var("SpongeLayer", SpongeLayer, SpongeLayer_default);
+    config_reader.append_config_var("NonHydro", sim.NonHydro, NonHydro_default);
+    config_reader.append_config_var("DeepModel", sim.DeepModel, DeepModel_default);
+    config_reader.append_config_var("SpongeLayer", sim.SpongeLayer, SpongeLayer_default);
     config_reader.append_config_var("nlat", nlat, nlat_default);
     config_reader.append_config_var("Rv_sponge", Rv_sponge, Rv_sponge_default);
     config_reader.append_config_var("ns_sponge", ns_sponge, ns_sponge_default);
@@ -270,8 +267,7 @@ int main(int argc, char** argv) {
     string core_benchmark_str("HeldSuarez");
     config_reader.append_config_var("core_benchmark", core_benchmark_str, string(core_benchmark_default));
 
-    int conv_adj = 1;
-    config_reader.append_config_var("conv_adj", conv_adj, conv_adj_default);
+    config_reader.append_config_var("conv_adj", sim.conv_adj, conv_adj_default);
 
     int GPU_ID_N = 0;
     config_reader.append_config_var("GPU_ID_N", GPU_ID_N, GPU_ID_N_default);
@@ -282,14 +278,12 @@ int main(int argc, char** argv) {
     string output_path = "results";
     config_reader.append_config_var("results_path", output_path, string(output_path_default));
 
-    bool gcm_off = false;
-    config_reader.append_config_var("gcm_off", gcm_off, gcm_off_default);
+    config_reader.append_config_var("gcm_off", sim.gcm_off, gcm_off_default);
 
     int TPprof = 0;
     config_reader.append_config_var("TPprof", TPprof, TPprof_default);
 
-    bool conservation = false;
-    config_reader.append_config_var("conservation", conservation, conservation_default);
+    config_reader.append_config_var("conservation", sim.conservation, conservation_default);
     //*****************************************************************
     // read configs for modules
     phy_modules_generate_config(config_reader);
@@ -383,11 +377,11 @@ int main(int argc, char** argv) {
     bool config_OK = true;
     config_OK &= check_greater("timestep", timestep, 0);
     config_OK &= check_greater("nsmax", nsmax, 0);
-    config_OK &= check_greater("gravitation", Planet.Gravit, 0.0);
-    config_OK &= check_greater("Rd", Planet.Rd, 0.0);
-    config_OK &= check_greater("T_mean", Planet.Tmean, 0.0);
-    config_OK &= check_greater("P_Ref", Planet.P_Ref, 0.0);
-    config_OK &= check_greater("Top_altitude", Planet.Top_altitude, 0.0);
+    config_OK &= check_greater("gravitation", sim.Gravit, 0.0);
+    config_OK &= check_greater("Rd", sim.Rd, 0.0);
+    config_OK &= check_greater("T_mean", sim.Tmean, 0.0);
+    config_OK &= check_greater("P_Ref", sim.P_Ref, 0.0);
+    config_OK &= check_greater("Top_altitude", sim.Top_altitude, 0.0);
 
     config_OK &= check_range("glevel", glevel, 3, 8);
     config_OK &= check_greater("vlevel", vlevel, 0);
@@ -398,7 +392,7 @@ int main(int argc, char** argv) {
     config_OK &= check_range("TPprof", TPprof, -1, 2);
 
     if (simulation_ID.length() < 160) {
-        sprintf(Planet.simulation_ID, "%s", simulation_ID.c_str());
+        sprintf(sim.simulation_ID, "%s", simulation_ID.c_str());
     }
     else {
         printf("Bad value for config variable simulation_ID: [%s]\n", simulation_ID.c_str());
@@ -463,7 +457,7 @@ int main(int argc, char** argv) {
     }
 
     //*****************************************************************
-    log_writer logwriter(Planet.simulation_ID, output_path);
+    log_writer logwriter(sim.simulation_ID, output_path);
 
     // Batch mode handling
     if (run_as_batch) {
@@ -597,14 +591,15 @@ int main(int argc, char** argv) {
     int max_count = 0;
     //
     //  Make the icosahedral grid
-    Icogrid Grid(spring_dynamics,     // Spring dynamics option
-                 spring_beta,         // Parameter beta for spring dynamics
-                 glevel,              // Horizontal resolution level
-                 vlevel,              // Number of vertical layers
-                 nlat,                // Number of lat rings for sponge layer
-                 Planet.A,            // Planet radius
-                 Planet.Top_altitude, // Top of the model's domain
-                 SpongeLayer,         // Use sponge layer?
+
+    Icogrid Grid(spring_dynamics,  // Spring dynamics option
+                 spring_beta,      // Parameter beta for spring dynamics
+                 glevel,           // Horizontal resolution level
+                 vlevel,           // Number of vertical layers
+                 nlat,             // Number of lat rings for sponge layer
+                 sim.A,            // Planet radius
+                 sim.Top_altitude, // Top of the model's domain
+                 sim.SpongeLayer // Use sponge layer?
                  &max_count);
 
     //  Define object X.
@@ -635,7 +630,7 @@ int main(int argc, char** argv) {
           ns_sponge,           // lowest level of sponge layer (fraction of model)
           t_shrink,            // time to shrink sponge layer
           Grid.point_num,      // Number of grid points
-          conservation,        // compute conservation values
+          sim.conservation,    // compute conservation values
           core_benchmark,      // benchmark test type
           logwriter);          // Log writer
 
@@ -646,7 +641,7 @@ int main(int argc, char** argv) {
     BENCH_POINT("0", "Grid", (), ("func_r", "areas", "areasTr", "areasT", "nvec", "nvecoa", "nvecti", "nvecte", "Altitude", "Altitudeh", "lonlat", "div", "grad"))
 
     // esp output setup
-    X.set_output_param(Planet.simulation_ID, output_path);
+    X.set_output_param(sim.simulation_ID, output_path);
 
     printf(" Setting the initial conditions.\n\n");
 
@@ -669,17 +664,15 @@ int main(int argc, char** argv) {
                                                                 // continue or
                                                                 // start at 0?
                                          timestep,              // Time-step [s]
-                                         Planet,                // Planet
-                                         SpongeLayer,           // Enable sponge layer
-                                         DeepModel,             // Use deep model corrections
+                                         sim,                   // simulation parameters
                                          TPprof,                // isothermal = 0, guillot = 1
                                          step_idx,              // current step index
                                          simulation_start_time, // output:
                                                                 // simulation start time
-                                         output_file_idx,       // output file
-                                                                // read + 1, 0
-                                                                // if nothing read
-                                         conservation);
+                                         output_file_idx);      // output file
+                                                                   // read + 1, 0
+                                                                   // if nothing read
+
 
     if (!load_initial) {
         printf("error loading initial conditions from %s.\n", initial_conditions.c_str());
@@ -731,13 +724,13 @@ int main(int argc, char** argv) {
     //
     //  Planet conditions
     printf("\n");
-    printf(" Planet: %s\n", Planet.simulation_ID);
-    printf("   Radius = %f m\n", Planet.A);
-    printf("   Omega  = %f s-1\n", Planet.Omega);
-    printf("   Gravit = %f m/s2\n", Planet.Gravit);
-    printf("   Rd     = %f J/(Kg K)\n", Planet.Rd);
-    printf("   Cp     = %f J/(Kg K)\n", Planet.Cp);
-    printf("   Tmean  = %f K\n", Planet.Tmean);
+    printf(" Planet: %s\n", sim.simulation_ID);
+    printf("   Radius = %f m\n", sim.A);
+    printf("   Omega  = %f s-1\n", sim.Omega);
+    printf("   Gravit = %f m/s2\n", sim.Gravit);
+    printf("   Rd     = %f J/(Kg K)\n", sim.Rd);
+    printf("   Cp     = %f J/(Kg K)\n", sim.Cp);
+    printf("   Tmean  = %f K\n", sim.Tmean);
     //
     //  Numerical Methods
     printf("\n");
@@ -814,9 +807,8 @@ int main(int argc, char** argv) {
         X.copy_to_host();
         X.init_timestep(0, simulation_time, timestep);
 
-        if (conservation == true) {
-            X.conservation(Planet,
-                           DeepModel);
+        if (sim.conservation == true) {
+            X.conservation(sim);
 
             logwriter.output_conservation(0,
                                           simulation_time,
@@ -828,9 +820,8 @@ int main(int argc, char** argv) {
         }
 
         X.output(0, // file index
-                 Planet,
-                 conservation,
-                 SpongeLayer);
+                 sim);
+
         output_file_idx = 1;
         step_idx        = 1;
     }
@@ -858,32 +849,23 @@ int main(int argc, char** argv) {
                         simulation_time, // Simulation time [s]
                         timestep);       // Large time step [s]
 
-        if (!gcm_off) {
+        if (!sim.gcm_off) {
             //
             //        Dynamical Core Integration (THOR)
-            X.Thor(Planet,     // planet parameters
-                   HyDiff,     // Hyperdiffusion option
-                   DivDampP,   // Divergence-damping option
-                   NonHydro,   // Non-hydrostatic option
-                   DeepModel); // Deep model option
+            X.Thor(sim); // simulationt parameters
         }
         //
         //     Physical Core Integration (ProfX)
-        X.ProfX(Planet,
-                conv_adj,
-                DeepModel,
+        X.ProfX(sim,
                 n_out,
-                SpongeLayer,
-                shrink_sponge,
-                conservation);
+                shrink_sponge);
 
         // compute simulation time
         simulation_time  = simulation_start_time + (nstep - step_idx + 1) * timestep;
         bool file_output = false;
 
-        if (conservation == true) {
-            X.conservation(Planet,
-                           DeepModel);
+        if (sim.conservation == true) {
+            X.conservation(sim);
             logwriter.output_conservation(nstep,
                                           simulation_time,
                                           X.GlobalE_h,
@@ -899,9 +881,8 @@ int main(int argc, char** argv) {
             || caught_signal != ESIG_NOSIG) {
             X.copy_to_host();
             X.output(output_file_idx,
-                     Planet,
-                     conservation,
-                     SpongeLayer);
+                     sim);
+
             // increment output file index
             output_file_idx++;
 

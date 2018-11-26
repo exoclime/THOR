@@ -4,7 +4,7 @@
 #include "define.h"
 #include "dyn/phy_modules_device.h"
 #include "esp.h"
-#include "planet.h"
+#include "simulation_setup.h"
 #include "storage.h"
 
 class phy_module_base
@@ -17,27 +17,28 @@ public:
 
     virtual bool initialise_memory(const ESP&               esp,
                                    device_RK_array_manager& phy_modules_core_arrays) = 0;
-    virtual bool initial_conditions(const ESP&     esp,
-                                    const XPlanet& planet)                           = 0;
+    virtual bool initial_conditions(const ESP&             esp,
+                                    const SimulationSetup& sim)                      = 0;
 
     virtual bool dyn_core_loop_init(const ESP& esp) { return true; };
-    virtual bool dyn_core_loop_slow_modes(const ESP&     esp,
-                                          const XPlanet& planet,
-                                          int            nstep, // Step number
-                                          double         times, // Time-step [s]
-                                          bool           HyDiff) { return true; };
-    virtual bool dyn_core_loop_fast_modes(const ESP&     esp,
-                                          const XPlanet& planet,
-                                          int            nstep, // Step number
-                                          double         time_step)     // Time-step [s]
+    virtual bool dyn_core_loop_slow_modes(const ESP&             esp,
+                                          const SimulationSetup& sim,
+
+                                          int    nstep, // Step number
+                                          double times) // Time-step [s]
+    { return true; };
+    virtual bool dyn_core_loop_fast_modes(const ESP&             esp,
+                                          const SimulationSetup& sim,
+                                          int                    nstep, // Step number
+                                          double                 time_step)             // Time-step [s]
     { return true; };
     virtual bool dyn_core_loop_end(const ESP& esp) { return true; };
 
     // TBD, how does it get data? friend of ESP ? grid ?
-    virtual bool phy_loop(ESP&           esp,
-                          const XPlanet& planet,
-                          int            nstep,    // Step number
-                          double         time_step // Time-step [s]
+    virtual bool phy_loop(ESP&                   esp,
+                          const SimulationSetup& sim,
+                          int                    nstep,    // Step number
+                          double                 time_step // Time-step [s]
                           ) = 0;
 
 

@@ -113,8 +113,8 @@ bool radiative_transfer::free_memory() {
     return true;
 }
 
-bool radiative_transfer::initial_conditions(const ESP &    esp,
-                                            const XPlanet &planet) {
+bool radiative_transfer::initial_conditions(const ESP &            esp,
+                                            const SimulationSetup &sim) {
     RTSetup(Tstar,
             planet_star_dist,
             radius_star,
@@ -130,24 +130,24 @@ bool radiative_transfer::initial_conditions(const ESP &    esp,
             ecc,
             alpha_i,
             obliquity,
-            planet.Omega,
+            sim.Omega,
             esp.point_num);
     return true;
 }
 
-bool radiative_transfer::phy_loop(ESP &          esp,
-                                  const XPlanet &planet,
-                                  int            nstep, // Step number
-                                  double         time_step) {   // Time-step [s]
+bool radiative_transfer::phy_loop(ESP &                  esp,
+                                  const SimulationSetup &sim,
+                                  int                    nstep, // Step number
+                                  double                 time_step) {           // Time-step [s]
 
     //  update global insolation properties if necessary
     if (sync_rot) {
         if (ecc > 1e-10) {
-            update_spin_orbit(nstep * time_step, planet.Omega);
+            update_spin_orbit(nstep * time_step, sim.Omega);
         }
     }
     else {
-        update_spin_orbit(nstep * time_step, planet.Omega);
+        update_spin_orbit(nstep * time_step, sim.Omega);
     }
 
     //
@@ -165,8 +165,8 @@ bool radiative_transfer::phy_loop(ESP &          esp,
                                  fnet_up_d,
                                  fnet_dn_d,
                                  tau_d,
-                                 planet.Gravit,
-                                 planet.Cp,
+                                 sim.Gravit,
+                                 sim.Cp,
                                  esp.lonlat_d,
                                  esp.Altitude_d,
                                  esp.Altitudeh_d,
@@ -184,11 +184,11 @@ bool radiative_transfer::phy_loop(ESP &          esp,
                                  tausw,
                                  taulw,
                                  incflx,
-                                 planet.P_Ref,
+                                 sim.P_Ref,
                                  esp.point_num,
                                  esp.nv,
                                  esp.nvi,
-                                 planet.A,
+                                 sim.A,
                                  r_orb,
                                  alpha, //current RA of star (relative to zero long on planet)
                                  alpha_i,
