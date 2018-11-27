@@ -755,9 +755,24 @@ __host__ ESP::~ESP() {
 
     //  Extras-nan
     cudaFree(check_d);
-    cudaFree(vbar_d);
 
+    // Sponge Layer
+    cudaFree(vbar_d);
     cudaFree(zonal_mean_tab_d);
+
+
+
+    free(vbar_h);
+    free(utmp_h);
+    free(vtmp_h);
+    free(wtmp_h);
+
+    cudaFree(utmp);
+    cudaFree(vtmp);
+    cudaFree(wtmp);
+
+    
+
 
 
     if (phy_modules_execute)
