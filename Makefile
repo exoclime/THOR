@@ -48,7 +48,7 @@ COMP ?= nvcc
 
 
 # objects
-obj_cuda   := esp.o grid.o esp_initial.o planet.o thor_driver.o profx_driver.o esp_output.o debug_helpers.o profx_conservation.o reduction_add.o phy_modules_device.o
+obj_cuda   := esp.o grid.o esp_initial.o simulation_setup.o thor_driver.o profx_driver.o esp_output.o debug_helpers.o profx_conservation.o reduction_add.o phy_modules_device.o
 
 obj_cpp := storage.o binary_test.o config_file.o cmdargs.o directories.o log_writer.o iteration_timer.o
 obj := $(obj_cpp) $(obj_cuda)
@@ -58,7 +58,7 @@ obj_tests_cmdargs := cmdargs_test.o cmdargs.o
 obj_tests_config := config_test.o config_file.o
 obj_tests_storage := storage_test.o storage.o
 obj_tests_directories := directories_test.o directories.o
-obj_tests_gen_init := gen_init.o storage.o grid.o planet.o
+obj_tests_gen_init := gen_init.o storage.o grid.o simulation_setup.o
 obj_tests_reduction_add := reduction_add_test.o reduction_add.o
 
 

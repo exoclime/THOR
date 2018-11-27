@@ -24,9 +24,9 @@ bool phy_modules_init_mem(const ESP&               esp,
     return true;
 }
 
-bool phy_modules_init_data(const ESP&     esp,
-                           const XPlanet& planet,
-                           storage*       s) {
+bool phy_modules_init_data(const ESP&             esp,
+                           const SimulationSetup& sim,
+                           storage*               s) {
 
     // initialise the initial conditions
 
@@ -56,20 +56,19 @@ bool phy_modules_dyn_core_loop_init(const ESP& esp) {
 }
 
 // Slow modes, called after hyperdiffusion step
-bool phy_modules_dyn_core_loop_slow_modes(const ESP&     esp,
-                                          const XPlanet& planet,
-                                          int            nstep, // Step number
-                                          double         times, // Time-step [s]
-                                          bool           HyDiff) {
+bool phy_modules_dyn_core_loop_slow_modes(const ESP&             esp,
+                                          const SimulationSetup& sim,
+                                          int                    nstep, // Step number
+                                          double                 times) {               // Time-step [s]
 
     return true;
 }
 
 // fast mode
-bool phy_modules_dyn_core_loop_fast_modes(const ESP&     esp,
-                                          const XPlanet& planet,
-                                          int            nstep,     // Step number
-                                          double         time_step) { // Time-step [s]
+bool phy_modules_dyn_core_loop_fast_modes(const ESP&             esp,
+                                          const SimulationSetup& sim,
+                                          int                    nstep, // Step number
+                                          double                 time_step) {           // Time-step [s]
 
     return true;
 }
@@ -82,10 +81,10 @@ bool phy_modules_dyn_core_loop_end(const ESP& esp) {
     return true;
 }
 
-bool phy_modules_phy_loop(ESP&           esp,
-                          const XPlanet& planet,
-                          int            nstep,
-                          double         time_step) {
+bool phy_modules_phy_loop(ESP&                   esp,
+                          const SimulationSetup& sim,
+                          int                    nstep,
+                          double                 time_step) {
 
 
     return true;

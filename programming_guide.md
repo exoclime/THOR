@@ -274,11 +274,6 @@ The main makefile will then run the makefile in that directory and statically li
 
 ## Mesh structure and indexing
 
-## compute tools
-### vector arrays operation
-For cleaner code for operations on 3D vectors and parallelised data access, CUDA provides 
-
-### reduction add
 
 
 ## config file

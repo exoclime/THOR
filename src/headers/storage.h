@@ -72,7 +72,10 @@ public:
                 return true;
             } catch (DataSetIException error) {
                 return false;
+            } catch (FileIException error){
+                return false;
             }
+            
         }
         else
             return false;
@@ -112,14 +115,15 @@ public:
     template<typename T>
     bool read_value(const string& name,
                     T&            data) {
-        std::unique_ptr<T[]> buf = nullptr;
-        int size = 0;
+
+        std::unique_ptr<T[]> buf  = nullptr;
+        int                  size = 0;
 
         bool out = read_table(name, buf, size);
 
         if (out && size == 1)
             data = buf[0];
-        if (size  != 1)
+        if (size != 1)
             return false;
 
         return out;
@@ -358,12 +362,8 @@ bool storage::read_table_to_ptr(const string& name,
                 return false;
             }
 
-            if (size == int(dims_out[0]))
-            {
-
-
+            if (size == int(dims_out[0])) {
                 // build output array
-
 
 
                 dataset.read(data, dt);

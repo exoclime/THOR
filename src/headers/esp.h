@@ -57,7 +57,7 @@
 
 #include "define.h"
 #include "log_writer.h"
-#include "planet.h"
+#include "simulation_setup.h"
 
 #include "dyn/phy_modules_device.h"
 
@@ -268,14 +268,11 @@ public:
                         const std::string &initial_conditions_filename,
                         const bool &       continue_sim,
                         double             timestep_dyn,
-                        XPlanet &          xplanet,
-                        bool               sponge,
-                        bool               DeepModel,
+                        SimulationSetup &  sim,
                         int                TPprof,
                         int &              nsteps,
                         double &           simulation_start_time,
-                        int &              output_file_idx,
-                        bool               conservation);
+                        int &              output_file_idx);
 
     void init_timestep(int    nstep,
                        double simtime,
@@ -286,38 +283,25 @@ public:
     };
 
 
-    void Thor(const XPlanet &Planet,   // planet parameters
-              bool           HyDiff,   // Turn on/off hyper-diffusion.
-              bool           DivDampP, // Turn on/off divergence damping.
-              bool           NonHydro, // Turn on/off non-hydrostatic.
-              bool           DeepModel);         // Turn on/off deep atmosphere.
+    void Thor(const SimulationSetup &sim);
 
-    void ProfX(const XPlanet &Planet,
-               int            conv,          //
-               bool           DeepModel,     // use deep model
-               int            n_out,         // output step (triggers conservation calc)
-               bool           sponge,        // Use sponge layer?
-               bool           shrink_sponge, // Shrink sponge after some time
-               bool           conservation);           // calc/output conservation quantities
+    void ProfX(const SimulationSetup &sim,
+               int                    n_out, // output step (triggers conservation calc)
+               bool                   shrink_sponge);          // Shrink sponge after some time
 
 
-    void output(int            fidx,   // Index of output file
-                const XPlanet &Planet, // planet parameters
-                bool           conservation,
-                bool           SpongeLayer);
+    void output(int                    fidx, // Index of output file
+                const SimulationSetup &sim); // planet parameters)
 
 
     void set_output_param(const std::string &sim_id_,
                           const std::string &output_dir_);
 
-    void conservation(const XPlanet &planet,
-                      bool           DeepModel);
+    void conservation(const SimulationSetup &sim);
 
     void copy_to_host();
     void copy_conservation_to_host();
     void copy_global_to_host();
-
-    bool DeepModel;
 
 private:
     // store if we run benchmarks
@@ -331,8 +315,6 @@ private:
     int    current_step;
     double simulation_time;
     double timestep;
-
-    XPlanet planet;
 
     // output variables
     std::string simulation_ID; // name of output planet

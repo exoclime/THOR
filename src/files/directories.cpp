@@ -31,7 +31,7 @@
 //
 // Current Code Owners: Joao Mendonca (joao.mendonca@space.dtu.dk)
 //                      Russell Deitrick (russell.deitrick@csh.unibe.ch)
-//                      Urs Schroffinegger (urs.schroffenegger@csh.unibe.ch)
+//                      Urs Schroffenegger (urs.schroffenegger@csh.unibe.ch)
 //
 // History:
 // Version Date       Comment

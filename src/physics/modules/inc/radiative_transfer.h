@@ -54,14 +54,13 @@ public:
 
     bool initialise_memory(const ESP &              esp,
                            device_RK_array_manager &phy_modules_core_arrays);
-    bool initial_conditions(const ESP &    esp,
-                            const XPlanet &planet);
-
-    // TBD, how does it get data? friend of ESP ? grid ?
-    bool phy_loop(ESP &          esp,
-                  const XPlanet &planet,
-                  int            nstep, // Step number
-                  double         time_step);    // Time-step [s]
+    bool initial_conditions(const ESP &            esp,
+                            const SimulationSetup &sim);
+    
+    bool phy_loop(ESP &                  esp,
+                  const SimulationSetup &sim,
+                  int                    nstep, // Step number
+                  double                 time_step);            // Time-step [s]
 
     bool store(const ESP &esp,
                storage &  s);
@@ -84,8 +83,7 @@ private:
     double albedo           = 0.18;   // Bond albedo
     double tausw            = 532.0;  // Absorption coefficient for the shortwaves
     double taulw            = 1064.0; // Absorption coefficient for the longwaves
-
-    // double resc_flx       ; TODO: check if this is still used
+    
     double incflx;
     //  Arrays used in RT code
     double *fnet_up_d;

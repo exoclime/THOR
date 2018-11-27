@@ -101,7 +101,9 @@ public:
 
     int *zonal_mean_tab; //something something
 
+
     Icogrid(bool, double, int, int, int, double, double, bool, int *);
+    void free_memory();
 
 private:
     // Functions to build the grid

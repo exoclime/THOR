@@ -34,7 +34,7 @@
 //
 // Current Code Owners: Joao Mendonca (joao.mendonca@space.dtu.dk)
 //                      Russell Deitrick (russell.deitrick@csh.unibe.ch)
-//                      Urs Schroffinegger (urs.schroffenegger@csh.unibe.ch)
+//                      Urs Schroffenegger (urs.schroffenegger@csh.unibe.ch)
 //
 // History:
 // Version Date       Comment
@@ -61,24 +61,20 @@
 
 #include "reduction_add.h"
 
-__host__ void ESP::ProfX(const XPlanet& Planet,
-                         int            conv, //
-                         bool           DeepModel,
-                         int            n_out,         // output step (triggers conservation calc)
-                         bool           sponge,        // Use sponge layer?
-                         bool           shrink_sponge, // Shrink sponge after some time (Bonjour Urs!)
-                         bool           conservation) {          // calc/output conservation quantities
+__host__ void ESP::ProfX(const SimulationSetup& sim,
+                         int                    n_out, // output step (triggers conservation calc)
+                         bool                   shrink_sponge) {         // Shrink sponge after some time
     USE_BENCHMARK()
     //
     //  Number of threads per block.
     const int NTH = 256;
 
     //  Specify the block sizes.
-    dim3      NB((point_num / NTH) + 1, nv, 1);
-    dim3      NBRT((point_num / NTH) + 1, 1, 1);
+    dim3 NB((point_num / NTH) + 1, nv, 1);
+    dim3 NBRT((point_num / NTH) + 1, 1, 1);
 
-    if (sponge == true) {
-        //dim3 NBT((point_num / NTH) + 1, nv, 1);
+    if (sim.SpongeLayer == true) {
+        dim3 NBT((point_num / NTH) + 1, nv, 1);
 
         cudaMemset(vbar_d, 0, sizeof(double) * 3 * nlat * nv);
         cudaMemset(utmp, 0, sizeof(double) * nlat * nv * max_count);
@@ -156,9 +152,9 @@ __host__ void ESP::ProfX(const XPlanet& Planet,
                                      pt_d,
                                      pressure_d,
                                      Rho_d,
-                                     Planet.P_Ref,
-                                     Planet.Rd,
-                                     Planet.Cp,
+                                     sim.P_Ref,
+                                     sim.Rd,
+                                     sim.Cp,
                                      point_num);
 
     BENCH_POINT_I(current_step, "phy_T", (), ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"))
@@ -171,16 +167,17 @@ __host__ void ESP::ProfX(const XPlanet& Planet,
     }
 #endif
 
-    if (conv) {
+    if (sim.conv_adj) {
         cudaDeviceSynchronize();
+
         dry_conv_adj<<<NBRT, NTH>>>(pressure_d,    // Pressure [Pa]
                                     pressureh_d,   // mid-point pressure [Pa]
                                     temperature_d, // Temperature [K]
                                     pt_d,          // Pot temperature [K]
                                     Rho_d,         // Density [m^3/kg]
-                                    Planet.Cp,     // Specific heat capacity [J/kg/K]
-                                    Planet.Rd,     // Gas constant [J/kg/K]
-                                    Planet.Gravit, // Gravity [m/s^2]
+                                    sim.Cp,        // Specific heat capacity [J/kg/K]
+                                    sim.Rd,        // Gas constant [J/kg/K]
+                                    sim.Gravit,    // Gravity [m/s^2]
                                     Altitude_d,    // Altitudes of the layers
                                     Altitudeh_d,   // Altitudes of the interfaces
                                     point_num,     // Number of columns
@@ -200,9 +197,9 @@ __host__ void ESP::ProfX(const XPlanet& Planet,
                                  pressure_d,
                                  Rho_d,
                                  temperature_d,
-                                 Planet.Gravit,
-                                 Planet.Cp,
-                                 Planet.Rd,
+                                 sim.Gravit,
+                                 sim.Cp,
+                                 sim.Rd,
                                  Altitude_d,
                                  Altitudeh_d,
                                  lonlat_d,
@@ -215,9 +212,9 @@ __host__ void ESP::ProfX(const XPlanet& Planet,
                                 pressure_d,
                                 Rho_d,
                                 temperature_d,
-                                Planet.Gravit,
-                                Planet.Cp,
-                                Planet.Rd,
+                                sim.Gravit,
+                                sim.Cp,
+                                sim.Rd,
                                 Altitude_d,
                                 Altitudeh_d,
                                 lonlat_d,
@@ -230,9 +227,9 @@ __host__ void ESP::ProfX(const XPlanet& Planet,
                                pressure_d,
                                Rho_d,
                                temperature_d,
-                               Planet.Gravit,
-                               Planet.Cp,
-                               Planet.Rd,
+                               sim.Gravit,
+                               sim.Cp,
+                               sim.Rd,
                                Altitude_d,
                                Altitudeh_d,
                                lonlat_d,
@@ -245,9 +242,9 @@ __host__ void ESP::ProfX(const XPlanet& Planet,
                             pressure_d,
                             Rho_d,
                             temperature_d,
-                            Planet.Gravit,
-                            Planet.Cp,
-                            Planet.Rd,
+                            sim.Gravit,
+                            sim.Cp,
+                            sim.Rd,
                             Altitude_d,
                             Altitudeh_d,
                             lonlat_d,
@@ -260,7 +257,7 @@ __host__ void ESP::ProfX(const XPlanet& Planet,
     if (phy_modules_execute) {
         cudaDeviceSynchronize();
         phy_modules_phy_loop(*this,
-                             Planet,
+                             sim,
                              current_step, // Step number
                              timestep);    // Time-step [s]
     }
@@ -271,7 +268,7 @@ __host__ void ESP::ProfX(const XPlanet& Planet,
     Compute_pressure<<<NB, NTH>>>(pressure_d,
                                   temperature_d,
                                   Rho_d,
-                                  Planet.Rd,
+                                  sim.Rd,
                                   point_num);
 
     //always do this nan check so the code doesn't keep computing garbage
@@ -289,7 +286,7 @@ __host__ void ESP::ProfX(const XPlanet& Planet,
     Compute_temperature_only<<<NB, NTH>>>(temperature_d,
                                           pressure_d,
                                           Rho_d,
-                                          Planet.Rd,
+                                          sim.Rd,
                                           point_num);
 #endif // BENCHMARKING
 
@@ -300,9 +297,7 @@ __host__ void ESP::ProfX(const XPlanet& Planet,
     //
 }
 
-// TODO: get constants out of arguments
-void ESP::conservation(const XPlanet& Planet, // planet
-                       bool           DeepModel) {
+void ESP::conservation(const SimulationSetup& sim) {
     //
     //  Number of threads per block.
     const int NTH = 256;
@@ -320,12 +315,12 @@ void ESP::conservation(const XPlanet& Planet, // planet
     CalcMass<<<NB, NTH>>>(Mass_d,
                           GlobalMass_d,
                           Rho_d,
-                          planet.A,
+                          sim.A,
                           Altitudeh_d,
                           lonlat_d,
                           areasT_d,
                           point_num,
-                          DeepModel);
+                          sim.DeepModel);
 
     CalcTotEnergy<<<NB, NTH>>>(Etotal_d,
                                GlobalE_d,
@@ -333,17 +328,17 @@ void ESP::conservation(const XPlanet& Planet, // planet
                                W_d,
                                Rho_d,
                                temperature_d,
-                               Planet.Gravit,
-                               Planet.Cp,
-                               Planet.Rd,
-                               Planet.A,
+                               sim.Gravit,
+                               sim.Cp,
+                               sim.Rd,
+                               sim.A,
                                Altitude_d,
                                Altitudeh_d,
                                lonlat_d,
                                areasT_d,
                                func_r_d,
                                point_num,
-                               DeepModel);
+                               sim.DeepModel);
 
     CalcAngMom<<<NB, NTH>>>(AngMomx_d,
                             AngMomy_d,
@@ -353,14 +348,14 @@ void ESP::conservation(const XPlanet& Planet, // planet
                             GlobalAMz_d,
                             Mh_d,
                             Rho_d,
-                            Planet.A,
-                            Planet.Omega,
+                            sim.A,
+                            sim.Omega,
                             Altitude_d,
                             Altitudeh_d,
                             lonlat_d,
                             areasT_d,
                             point_num,
-                            DeepModel);
+                            sim.DeepModel);
 #ifdef GLOBAL_CONSERVATION_ATOMICADD
     // copy global conservation data to host for output
     copy_global_to_host();

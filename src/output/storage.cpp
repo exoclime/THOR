@@ -37,7 +37,7 @@
 //
 // Current Code Owners: Joao Mendonca (joao.mendonca@space.dtu.dk)
 //                      Russell Deitrick (russell.deitrick@csh.unibe.ch)
-//                      Urs Schroffinegger (urs.schroffenegger@csh.unibe.ch)
+//                      Urs Schroffenegger (urs.schroffenegger@csh.unibe.ch)
 //
 // History:
 // Version Date       Comment
@@ -55,10 +55,14 @@
 using namespace std;
 
 
-storage::storage(const string& filename, const bool& read):
+storage::storage(const string& filename, const bool& read) :
     file(nullptr) {
     if (read)
         file = std::unique_ptr<H5File>(new H5File(filename, H5F_ACC_RDONLY));
     else
         file = std::unique_ptr<H5File>(new H5File(filename, H5F_ACC_TRUNC));
+
+    // Avoid H5 to print all its exceptions to the console, as we want to handle them correctly
+    Exception::dontPrint();
+
 }

@@ -37,7 +37,7 @@
 //
 // Current Code Owners: Joao Mendonca (joao.mendonca@space.dtu.dk)
 //                      Russell Deitrick (russell.deitrick@csh.unibe.ch)
-//                      Urs Schroffinegger (urs.schroffenegger@csh.unibe.ch)
+//                      Urs Schroffenegger (urs.schroffenegger@csh.unibe.ch)
 //
 // History:
 // Version Date       Comment
@@ -48,7 +48,7 @@
 ////////////////////////////////////////////////////////////////////////
 
 #include "grid.h"
-#include "planet.h"
+#include "simulation_setup.h"
 #include <iostream>
 #include <string>
 
@@ -136,7 +136,7 @@ void Output(int                ntstep,       // Number of integration steps
             string             simulation_ID,   // Planet ID
             double             simulation_time, // Option for deep atmosphere
             const std::string& output_dir,
-            XPlanet&           planet,
+            SimulationSetup&   sim,
             Icogrid&           Grid,
             double*            Rho_h,
             double*            pressure_h,
@@ -445,7 +445,7 @@ int main() {
             double    lon         = Grid.lonlat[2 * i];
             double    lat         = Grid.lonlat[2 * i + 1];
             basis_sph local_basis = base_sph_vectors(lat, lon);
-            double    Ha          = Planet.Rd * Planet.Tmean / Planet.Gravit;
+            double    Ha          = sim.Rd * sim.Tmean / sim.Gravit;
             printf("e_r: %f %f %f\n", local_basis.e_r.x, local_basis.e_r.y, local_basis.e_r.z);
             printf("e_theta: %f %f %f\n", local_basis.e_theta.x, local_basis.e_theta.y, local_basis.e_theta.z);
             printf("e_phi: %f %f %f\n", local_basis.e_phi.x, local_basis.e_phi.y, local_basis.e_phi.z);
@@ -454,8 +454,8 @@ int main() {
                 pressure_h[i * Grid.nv + lev] = p;
 
 
-                // pressure_h[i*Grid.nv + lev] = Planet.P_Ref*exp(-Grid.Altitude[lev] / Ha);
-                //temperature_h[i*Grid.nv + lev] = Planet.Tmean;
+                // pressure_h[i*Grid.nv + lev] = sim.P_Ref*exp(-Grid.Altitude[lev] / Ha);
+                //temperature_h[i*Grid.nv + lev] = sim.Tmean;
             }
 
             for (int lev = 0; lev < Grid.nv; lev++) {
@@ -488,19 +488,19 @@ int main() {
         double simulation_time = 0.0;
         Output(0,
                0,
-               Planet.Cp,           // Specific heat capacity [J/(Kg K)]
-               Planet.Rd,           // Gas constant [J/(Kg K)]
-               Planet.Omega,        // Rotation rate [s-1]
-               Planet.Gravit,       // Gravitational acceleration [m/s2]
-               Planet.P_Ref,        // Reference surface pressure [Pa]
-               Planet.Top_altitude, // Top of the model's domain [m]
-               Planet.A,            // Planet Radius [m]
+               sim.Cp,           // Specific heat capacity [J/(Kg K)]
+               sim.Rd,           // Gas constant [J/(Kg K)]
+               sim.Omega,        // Rotation rate [s-1]
+               sim.Gravit,       // Gravitational acceleration [m/s2]
+               sim.P_Ref,        // Reference surface pressure [Pa]
+               sim.Top_altitude, // Top of the model's domain [m]
+               sim.A,            // Planet Radius [m]
                spring_dynamics,
                spring_beta,
-               Planet.simulation_ID, // Simulation ID (e.g., "Earth")
+               sim.simulation_ID, // Simulation ID (e.g., "Earth")
                simulation_time,
                output_dir,
-               Planet,
+               sim,
                Grid,
                Rho_h,
                pressure_h,
@@ -513,17 +513,17 @@ int main() {
             double    lon         = Grid.lonlat[2 * i];
             double    lat         = Grid.lonlat[2 * i + 1];
             basis_sph local_basis = base_sph_vectors(lat, lon);
-            double    Ha          = Planet.Rd * Planet.Tmean / Planet.Gravit;
+            double    Ha          = sim.Rd * sim.Tmean / sim.Gravit;
             for (int lev = 0; lev < Grid.nv; lev++) {
                 double p                      = lat / (M_PI / 2.0);
                 pressure_h[i * Grid.nv + lev] = p;
-                // pressure_h[i*Grid.nv + lev] = Planet.P_Ref*exp(-Grid.Altitude[lev] / Ha);
-                // temperature_h[i*Grid.nv + lev] = Planet.Tmean;
+                // pressure_h[i*Grid.nv + lev] = sim.P_Ref*exp(-Grid.Altitude[lev] / Ha);
+                // temperature_h[i*Grid.nv + lev] = sim.Tmean;
             }
 
             for (int lev = 0; lev < Grid.nv; lev++) {
                 //              Density [kg/m3]
-                // Rho_h[i*Grid.nv + lev] = pressure_h[i*Grid.nv + lev] / (temperature_h[i*Grid.nv + lev] * Planet.Rd);
+                // Rho_h[i*Grid.nv + lev] = pressure_h[i*Grid.nv + lev] / (temperature_h[i*Grid.nv + lev] * sim.Rd);
                 Rho_h[i * Grid.nv + lev] = lon / (M_PI);
 
                 //              Momentum [kg/m3 m/s]
@@ -551,19 +551,19 @@ int main() {
         simulation_time = 1.0;
         Output(1,
                1,
-               Planet.Cp,           // Specific heat capacity [J/(Kg K)]
-               Planet.Rd,           // Gas constant [J/(Kg K)]
-               Planet.Omega,        // Rotation rate [s-1]
-               Planet.Gravit,       // Gravitational acceleration [m/s2]
-               Planet.P_Ref,        // Reference surface pressure [Pa]
-               Planet.Top_altitude, // Top of the model's domain [m]
-               Planet.A,            // Planet Radius [m]
+               sim.Cp,           // Specific heat capacity [J/(Kg K)]
+               sim.Rd,           // Gas constant [J/(Kg K)]
+               sim.Omega,        // Rotation rate [s-1]
+               sim.Gravit,       // Gravitational acceleration [m/s2]
+               sim.P_Ref,        // Reference surface pressure [Pa]
+               sim.Top_altitude, // Top of the model's domain [m]
+               sim.A,            // Planet Radius [m]
                spring_dynamics,
                spring_beta,
-               Planet.simulation_ID, // Simulation ID (e.g., "Earth")
+               sim.simulation_ID, // Simulation ID (e.g., "Earth")
                simulation_time,
                output_dir,
-               Planet,
+               sim,
                Grid,
                Rho_h,
                pressure_h,
@@ -574,19 +574,19 @@ int main() {
             double    lon         = Grid.lonlat[2 * i];
             double    lat         = Grid.lonlat[2 * i + 1];
             basis_sph local_basis = base_sph_vectors(lat, lon);
-            double    Ha          = Planet.Rd * Planet.Tmean / Planet.Gravit;
+            double    Ha          = sim.Rd * sim.Tmean / sim.Gravit;
             for (int lev = 0; lev < Grid.nv; lev++) {
                 double p                      = lat / (M_PI / 2.0);
                 pressure_h[i * Grid.nv + lev] = p;
-                // pressure_h[i*Grid.nv + lev] = Planet.P_Ref*exp(-Grid.Altitude[lev] / Ha);
-                // temperature_h[i*Grid.nv + lev] = Planet.Tmean;
+                // pressure_h[i*Grid.nv + lev] = sim.P_Ref*exp(-Grid.Altitude[lev] / Ha);
+                // temperature_h[i*Grid.nv + lev] = sim.Tmean;
             }
 
             for (int lev = 0; lev < Grid.nv; lev++) {
                 //              Density [kg/m3]
                 Rho_h[i * Grid.nv + lev] = lon / (M_PI);
 
-                // Rho_h[i*Grid.nv + lev] = pressure_h[i*Grid.nv + lev] / (temperature_h[i*Grid.nv + lev] * Planet.Rd);
+                // Rho_h[i*Grid.nv + lev] = pressure_h[i*Grid.nv + lev] / (temperature_h[i*Grid.nv + lev] * sim.Rd);
 
                 //              Momentum [kg/m3 m/s]
                 double phase = lev / double(Grid.nv) * 2.0 * M_PI;
@@ -615,19 +615,19 @@ int main() {
         simulation_time = 2.0;
         Output(2,
                2,
-               Planet.Cp,           // Specific heat capacity [J/(Kg K)]
-               Planet.Rd,           // Gas constant [J/(Kg K)]
-               Planet.Omega,        // Rotation rate [s-1]
-               Planet.Gravit,       // Gravitational acceleration [m/s2]
-               Planet.P_Ref,        // Reference surface pressure [Pa]
-               Planet.Top_altitude, // Top of the model's domain [m]
-               Planet.A,            // Planet Radius [m]
+               sim.Cp,           // Specific heat capacity [J/(Kg K)]
+               sim.Rd,           // Gas constant [J/(Kg K)]
+               sim.Omega,        // Rotation rate [s-1]
+               sim.Gravit,       // Gravitational acceleration [m/s2]
+               sim.P_Ref,        // Reference surface pressure [Pa]
+               sim.Top_altitude, // Top of the model's domain [m]
+               sim.A,            // Planet Radius [m]
                spring_dynamics,
                spring_beta,
-               Planet.simulation_ID, // Simulation ID (e.g., "Earth")
+               sim.simulation_ID, // Simulation ID (e.g., "Earth")
                simulation_time,
                output_dir,
-               Planet,
+               sim,
                Grid,
                Rho_h,
                pressure_h,

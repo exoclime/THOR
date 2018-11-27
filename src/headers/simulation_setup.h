@@ -16,10 +16,10 @@
 //     <http://www.gnu.org/licenses/>.
 // ==============================================================================
 //
-// Defines Planet's properties
 //
 //
-// Description: Planet parameters.
+// Description: Defines simulation parameters and switches that are used throughout the sim
+//
 //
 // Method: -
 //
@@ -36,7 +36,7 @@
 //
 // Current Code Owners: Joao Mendonca (joao.mendonca@space.dtu.dk)
 //                      Russell Deitrick (russell.deitrick@csh.unibe.ch)
-//                      Urs Schroffinegger (urs.schroffenegger@csh.unibe.ch)
+//                      Urs Schroffenegger (urs.schroffenegger@csh.unibe.ch)
 //
 // History:
 // Version Date       Comment
@@ -45,32 +45,48 @@
 // 1.0     16/08/2017 Released version  (JM)
 //
 ////////////////////////////////////////////////////////////////////////
+#pragma once
 
-#include <cmath>
-#include <iostream>
-#include <stdio.h>
-#include <stdlib.h>
+// Physical Constants
+#define kb_constant 1.38e-23  // Boltzmann constant [J/K]
+#define mu_constant 1.660e-27 // Atomic mass unit   [kg]
 
-#include "../headers/planet.h"
 
-XPlanet::XPlanet() {
-    //
-    //  Earth
-    // ID
-    sprintf(simulation_ID, "%s", "Earth");
+class SimulationSetup
+{
+
+public:
+    char simulation_ID[160];
+
     //////////////
     // BULK     //
     //////////////
-    A      = 72427000.0; // Radius [m]
-    Omega  = 9.09E-5;    // Rotation rate [s-1]
-    Gravit = 47.0;       // Gravitational acceleration [m/s^2]
+
+    double A;
+    double Omega;
+    double Gravit;
+
     ////////////////
     // ATMOSPHERE //
     ////////////////
-    Rd           = 3714;       // Gas constant [J/(Kg K)]
-    Cp           = 13000;      // Specific heat capacities [J/(Kg K)]
-    Tmean        = 1400;       // Mean atmospheric temperature [K]
-    P_Ref        = 10000000.0; // Reference surface pressure [Pa]
-    Top_altitude = 1235376.0;  // Altitude of the top of the model domain [m]
-    Diffc        = 0.009973;   // Strength of diffusion
-}
+
+    double Rd;
+    double Cp;
+    double Tmean;
+    double P_Ref;
+    double Top_altitude;
+    double Diffc;
+
+    // Sim
+    bool SpongeLayer; // Use sponge layer?
+    bool DeepModel;
+    bool HyDiff;       // Turn on/off hyper-diffusion.
+    bool DivDampP;     // Turn on/off divergence damping.
+    bool NonHydro;     // Turn on/off non-hydrostatic.
+    bool conservation; // calc/output conservation quantities
+
+    int  conv_adj;
+    bool gcm_off;
+
+    SimulationSetup();
+};
