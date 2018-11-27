@@ -97,8 +97,8 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
 
 #ifdef GLOBAL_CONSERVATION_REDUCTIONADD
         cudaMemcpy(utmp_h, utmp, max_count * nlat * nv * sizeof(double), cudaMemcpyDeviceToHost);
-        cudaMemcpy(vtmp_h, utmp, max_count * nlat * nv * sizeof(double), cudaMemcpyDeviceToHost);
-        cudaMemcpy(wtmp_h, utmp, max_count * nlat * nv * sizeof(double), cudaMemcpyDeviceToHost);
+        cudaMemcpy(vtmp_h, vtmp, max_count * nlat * nv * sizeof(double), cudaMemcpyDeviceToHost);
+        cudaMemcpy(wtmp_h, wtmp, max_count * nlat * nv * sizeof(double), cudaMemcpyDeviceToHost);
 
         int ilat, lev, ind;
         for (ilat = 0; ilat < nlat; ilat++) {
