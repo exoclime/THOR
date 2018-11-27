@@ -261,6 +261,9 @@ __host__ void ESP::alloc_data(bool conservation) {
     cudaMalloc((void **)&vtmp, nv * nlat * max_count * sizeof(double));
     cudaMalloc((void **)&wtmp, nv * nlat * max_count * sizeof(double));
     utmp_h = (double *)malloc(nv * nlat * max_count * sizeof(double));
+    vtmp_h = (double *)malloc(nv * nlat * max_count * sizeof(double));
+    wtmp_h = (double *)malloc(nv * nlat * max_count * sizeof(double));
+
 
     if (conservation == true) {
         //  Conservation quantities
@@ -501,7 +504,6 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
             load_OK &= s.read_value("/nstep", nstep);
 
             printf("Reloaded %s: %d.\n", "/nstep", load_OK ? 1 : 0);
-
 
             //      Density
             load_OK &= s.read_table_to_ptr("/Rho", Rho_h, point_num * nv);

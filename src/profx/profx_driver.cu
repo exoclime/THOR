@@ -96,17 +96,12 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
         cudaDeviceSynchronize();
 
 #ifdef GLOBAL_CONSERVATION_REDUCTIONADD
-        int ilat, lev, ind;
-        for (ilat = 0; ilat < nlat; ilat++) {
-            // vbar_h[ilat * nv + 3 + (nv - 1) * 3 + 0] = 0;
-            // vbar_h[ilat * nv + 3 + (nv - 1) * 3 + 1] = 0;
-            // vbar_h[ilat * nv + 3 + (nv - 1) * 3 + 2] = 0;
-            // for (ind = 0; ind < max_count; ind++) {
-            //     vbar_h[ilat * nv + 3 + (nv - 1) * 3 + 0] += utmp[ilat * nv + 3 + (nv - 1) * 3 + ind];
-            //     vbar_h[ilat * nv + 3 + (nv - 1) * 3 + 1] += vtmp[ilat * nv + 3 + (nv - 1) * 3 + ind];
-            //     vbar_h[ilat * nv + 3 + (nv - 1) * 3 + 2] += wtmp[ilat * nv + 3 + (nv - 1) * 3 + ind];
-            // }
+        cudaMemcpy(utmp_h, utmp, max_count * nlat * nv * sizeof(double), cudaMemcpyDeviceToHost);
+        cudaMemcpy(vtmp_h, vtmp, max_count * nlat * nv * sizeof(double), cudaMemcpyDeviceToHost);
+        cudaMemcpy(wtmp_h, wtmp, max_count * nlat * nv * sizeof(double), cudaMemcpyDeviceToHost);
 
+        int ilat, lev;
+        for (ilat = 0; ilat < nlat; ilat++) {
             for (lev = 0; lev < nv; lev++) {
                 vbar_h[ilat * nv * 3 + lev * 3 + 0] = gpu_sum_on_device<1024>(&(utmp[ilat * nv * max_count + lev * max_count]), max_count);
                 vbar_h[ilat * nv * 3 + lev * 3 + 1] = gpu_sum_on_device<1024>(&(vtmp[ilat * nv * max_count + lev * max_count]), max_count);
@@ -125,21 +120,21 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
             }
         }
 
-        sponge_layer<<<NB, NTH>>>(Mh_d,
-                                  Rho_d,
-                                  W_d,
-                                  Wh_d,
-                                  vbar_d,
-                                  zonal_mean_tab_d,
-                                  lonlat_d,
-                                  Altitude_d,
-                                  Altitudeh_d,
-                                  Rv_sponge,
-                                  ns_sponge,
-                                  timestep,
-                                  nlat,
-                                  point_num,
-                                  nv);
+        sponge_layer<<<NBRT, NTH>>>(Mh_d,
+                                    Rho_d,
+                                    W_d,
+                                    Wh_d,
+                                    vbar_d,
+                                    zonal_mean_tab_d,
+                                    lonlat_d,
+                                    Altitude_d,
+                                    Altitudeh_d,
+                                    Rv_sponge,
+                                    ns_sponge,
+                                    timestep,
+                                    nlat,
+                                    point_num,
+                                    nv);
     }
     BENCH_POINT_I(current_step, "phy_Sponge", (), ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"))
 
