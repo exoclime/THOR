@@ -53,8 +53,7 @@
 
 #include "H5Cpp.h"
 
-using std::cout;
-using std::endl;
+#include "log_writer.h"
 
 using std::string;
 using namespace H5;
@@ -72,10 +71,9 @@ public:
                 return true;
             } catch (DataSetIException error) {
                 return false;
-            } catch (FileIException error){
+            } catch (FileIException error) {
                 return false;
             }
-            
         }
         else
             return false;
@@ -133,7 +131,7 @@ public:
     // Template functions for data type detection in append_table function.
     template<typename T>
     DataType get_datatype(T& input) {
-        cout << "data type not supported for storage" << endl;
+        log::printf("data type not supported for storage.\n");
 
         throw std::runtime_error("data type not supported for storage");
 
@@ -194,33 +192,25 @@ void storage::append_table(T*         data,
         } // end of try block
         // catch failure caused by the H5File operations
         catch (FileIException error) {
-            cout << "FileIException: " << name
-                 << "\t" << data
-                 << "\t" << size << endl;
+            log::printf("FileIException: %s\t%d\t%d\n", name.c_str(), data, size);
 
             error.printError();
         }
         // catch failure caused by the DataSet operations
         catch (DataSetIException error) {
-            cout << "DataSetIException: " << name
-                 << "\t" << data
-                 << "\t" << size << endl;
+            log::printf("DataSetIException: %s\t%d\t%d\n", name.c_str(), data, size);
 
             error.printError();
         }
         // catch failure caused by the DataSpace operations
         catch (DataSpaceIException error) {
-            cout << "DataSpaceIException: " << name
-                 << "\t" << data
-                 << "\t" << size << endl;
+            log::printf("DataSpaceIException: %s\t%d\t%d\n", name.c_str(), data, size);
 
             error.printError();
         }
         // catch failure caused by the DataSpace operations
         catch (DataTypeIException error) {
-            cout << "DataTypeIException: " << name
-                 << "\t" << data
-                 << "\t" << size << endl;
+            log::printf("DataTypeIException: %s\t%d\t%d\n", name.c_str(), data, size);
 
             error.printError();
         }
@@ -245,7 +235,7 @@ bool storage::read_table(const string&         name,
 
 
             if (type == dt) {
-                // cout << "Data set has correct type" << endl;
+                // log::printf( "Data set has correct type.\n");
             }
             else {
                 data = nullptr;
@@ -263,8 +253,6 @@ bool storage::read_table(const string&         name,
 
 
                 dataspace.getSimpleExtentDims(dims_out, NULL);
-                // cout << "rank " << rank << ", dimensions " <<
-                //    (unsigned long)(dims_out[0]) << " x " << endl;
             }
             else {
                 data = nullptr;
@@ -340,7 +328,7 @@ bool storage::read_table_to_ptr(const string& name,
 
 
             if (type == dt) {
-                // cout << "Data set has correct type" << endl;
+                // log::printf( "Data set has correct type.\n");
             }
             else {
                 return false;
@@ -352,11 +340,7 @@ bool storage::read_table_to_ptr(const string& name,
             int     rank        = dataspace.getSimpleExtentNdims();
             hsize_t dims_out[1] = {0};
             if (rank == 1) {
-
-
                 dataspace.getSimpleExtentDims(dims_out, NULL);
-                // cout << "rank " << rank << ", dimensions " <<
-                //    (unsigned long)(dims_out[0]) << " x " << endl;
             }
             else {
                 return false;

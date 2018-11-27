@@ -50,6 +50,7 @@
 #include "grid.h"
 #include "simulation_setup.h"
 #include "storage.h"
+#include "log_writer.h"
 
 // return name of module for storage to output files
 std::string phy_modules_get_name();

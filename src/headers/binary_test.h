@@ -308,8 +308,7 @@ bool binary_test::compare_arrays(int                 s1,
 
     if (s1 != s2) {
         if (print)
-            std::cout << array << ":\tdifferent sized arrays (" << s1
-                      << ":" << s2 << std::endl;
+            log::printf( ":\tdifferent sized arrays (%d:%d)\n", array.c_str(),s1, s2);
 
         return false;
     }
@@ -334,7 +333,8 @@ bool binary_test::compare_arrays(int                 s1,
 
             //            if (print && i < 10)
             if (print)
-                std::cout << std::setprecision(20) << std::scientific << array << "[" << i << "]:\tdifferent value (" << d1[i] << ":" << d2[i] << ")" << std::endl;
+                log::printf("%s [ %d ]:\tdifferent value (%.20e:%.20e)\n", array.c_str(), i, d1[i], d2[i]);
+            
 #    ifdef BENCH_COMPARE_PRINT_STATISTICS
             stats.num_failures += 1;
 

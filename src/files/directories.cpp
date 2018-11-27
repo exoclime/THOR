@@ -58,6 +58,7 @@
 
 using namespace std;
 
+#include "log_writer.h"
 
 vector<string> split(const string &s, char delimiter) {
     vector<string> tokens;
@@ -73,13 +74,13 @@ vector<string> split(const string &s, char delimiter) {
 bool path_exists(const string &path) {
     struct stat st;
     if (stat(path.c_str(), &st) == 0) {
-        //printf("found file %s.\n", path.c_str());
+        //log::printf("found file %s.\n", path.c_str());
 
         return true;
     }
 
     else {
-        //printf("not found file %s.\n", path.c_str());
+        //log::printf("not found file %s.\n", path.c_str());
 
         // debug stat error
         /*
@@ -88,7 +89,7 @@ bool path_exists(const string &path) {
 
         if (strerror_r(errsv, buf, 256) == 0)
         {
-            printf("Error reading char: %s.\n", buf);
+            log::printf("Error reading char: %s.\n", buf);
         }
         */
         return false;
@@ -129,7 +130,7 @@ bool create_output_dir(const string &output_dir) {
             }
             else {
                 // creation failed, failed
-                std::cout << "failed creating directory " << path << endl;
+                log::printf("failed creating directory %s.\n", path.c_str());
                 return false;
             }
         }
@@ -249,7 +250,7 @@ vector<string> get_files_in_directory(const string &dir_name) {
         closedir(dir);
     }
     else {
-        printf("Could not open directory %s.", dir_name.c_str());
+        log::printf("Could not open directory %s.\n", dir_name.c_str());
     }
     return files;
 }

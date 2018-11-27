@@ -7,6 +7,7 @@
 #include "phy_modules.h"
 
 #include "radiative_transfer.h"
+#include "log_writer.h"
 
 #include <math.h>
 #include <memory>
@@ -25,8 +26,8 @@ std::string phy_modules_get_name() {
 }
 
 void phy_modules_print_config() {
-    printf("  multi physics module, with radiative transfer and chemistry\n");
-    printf("   Radiative Transfer module: %s.\n", radiative_transfer_enabled ? "true" : "false");
+    log::printf("  multi physics module, with radiative transfer and chemistry\n");
+    log::printf("   Radiative Transfer module: %s.\n", radiative_transfer_enabled ? "true" : "false");
 
     rt.print_config();
 }

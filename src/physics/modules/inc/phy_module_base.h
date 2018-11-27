@@ -4,6 +4,7 @@
 #include "define.h"
 #include "dyn/phy_modules_device.h"
 #include "esp.h"
+#include "log_writer.h"
 #include "simulation_setup.h"
 #include "storage.h"
 
@@ -33,7 +34,7 @@ public:
                                           double                 time_step)             // Time-step [s]
     { return true; };
     virtual bool dyn_core_loop_end(const ESP& esp) { return true; };
-    
+
     virtual bool phy_loop(ESP&                   esp,
                           const SimulationSetup& sim,
                           int                    nstep,    // Step number

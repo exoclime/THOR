@@ -46,6 +46,7 @@
 
 #pragma once
 
+#include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
@@ -95,4 +96,57 @@ private:
     std::fstream fileoutput_output_file;
     std::fstream conservation_output_file;
     std::fstream diagnostics_output_file;
+};
+
+class log
+{
+public:
+    static void init_logger(std::string logfile_path, bool append = false) {
+
+        if (pFILE != nullptr) {
+            fflush(pFILE);
+            fclose(pFILE);
+        }
+
+        if (append)
+            pFILE = fopen(logfile_path.c_str(), "a");
+        else
+            pFILE = fopen(logfile_path.c_str(), "w");
+
+        if (pFILE == nullptr) {
+            std::printf("Error opening log file: %s.\n", logfile_path.c_str());
+            exit(-1);
+        }
+    }
+
+    template <typename ... Args>
+    static void printf(Args... args) {
+        if (pFILE != nullptr)
+            fprintf(pFILE, args...);
+        
+        std::printf(args...);
+    }
+
+    template <typename ... Args>
+    static void printf_logonly(Args... args) {
+        if (pFILE != nullptr)
+            fprintf(pFILE, args...);
+    }
+    
+
+    static void flush() {
+        if (pFILE != nullptr)
+            fflush(pFILE);
+    }
+
+
+private:
+    log();
+
+    ~log() {
+        if (pFILE != nullptr)
+            fclose(pFILE);
+    }
+
+    static FILE* pFILE;
 };

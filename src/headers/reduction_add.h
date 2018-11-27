@@ -49,6 +49,8 @@
 #include <cmath>
 #include <iostream>
 
+#include "log_writer.h"
+
 // CPU reduction sum function
 double cpu_reduction_sum(double *d, long length);
 
@@ -104,18 +106,18 @@ __host__ double gpu_sum_on_device(double *in_d, long length) {
     cudaMalloc((void **)&out_d, num_blocks * sizeof(double));
     cudaError_t err = cudaGetLastError();
     if (err != cudaSuccess)
-        printf("Malloc: %s\n", cudaGetErrorString(err));
+        log::printf("Malloc: %s\n", cudaGetErrorString(err));
 
 
     gpu_reduction_sum<BLOCK_SIZE><<<num_blocks, BLOCK_SIZE>>>(in_d, out_d, length);
     err = cudaGetLastError();
     if (err != cudaSuccess)
-        printf("krnl: %s\n", cudaGetErrorString(err));
+        log::printf("krnl: %s\n", cudaGetErrorString(err));
 
     cudaMemcpy(out_h, out_d, num_blocks * sizeof(double), cudaMemcpyDeviceToHost);
     err = cudaGetLastError();
     if (err != cudaSuccess)
-        printf("cpyD2H: %s\n", cudaGetErrorString(err));
+        log::printf("cpyD2H: %s\n", cudaGetErrorString(err));
 
     double out = 0.0;
     for (int i = 0; i < num_blocks; i++) {
@@ -139,13 +141,13 @@ __host__ double gpu_sum_from_host(double *d, long length) {
     cudaMalloc((void **)&in_d, length * sizeof(double));
     cudaError_t err = cudaGetLastError();
     if (err != cudaSuccess)
-        printf("Malloc: %s\n", cudaGetErrorString(err));
+        log::printf("Malloc: %s\n", cudaGetErrorString(err));
 
 
     cudaMemcpy(in_d, d, length * sizeof(double), cudaMemcpyHostToDevice);
     err = cudaGetLastError();
     if (err != cudaSuccess)
-        printf("cpyH2D: %s\n", cudaGetErrorString(err));
+        log::printf("cpyH2D: %s\n", cudaGetErrorString(err));
 
     double out = gpu_sum_on_device<BLOCK_SIZE>(in_d, length);
 

@@ -56,7 +56,7 @@
 
 #include "binary_test.h"
 #include "debug_helpers.h"
-
+#include "log_writer.h"
 #include "phy_modules.h"
 
 #include "reduction_add.h"
@@ -151,7 +151,7 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
 #ifdef BENCH_NAN_CHECK
     check_h = check_array_for_nan(temperature_d, nv * point_num, 1, check_d);
     if (check_h) {
-        printf("\n\n Error in NAN check after PROFX:compute_temp!\n");
+        log::printf("\n\n Error in NAN check after PROFX:compute_temp!\n");
         exit(EXIT_FAILURE);
     }
 #endif
@@ -266,7 +266,7 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
     isnan_check<<<16, NTH>>>(temperature_d, nv, point_num, check_d);
     cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
     if (check_h) {
-        printf("\n\n Error in NAN check after PROFX:compute_pressure!\n");
+        log::printf("\n\n Error in NAN check after PROFX:compute_pressure!\n");
         exit(EXIT_FAILURE);
     }
 

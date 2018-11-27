@@ -10,7 +10,7 @@ std::string phy_modules_get_name() {
 }
 
 void phy_modules_print_config() {
-    printf("  empty physics module\n");
+    log::printf("  empty physics module\n");
 }
 
 bool phy_modules_init_mem(const ESP&               esp,

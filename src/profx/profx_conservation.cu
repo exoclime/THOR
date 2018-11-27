@@ -99,7 +99,7 @@ __global__ void CalcTotEnergy(double *Etotal_d,
         //total energy in the control volume
         Etotal_d[id * nv + lev] = (Ek + Eint + Eg) * Vol;
 
-        // printf("E = %e\n",Etotal_d[id*nv+lev]);
+        // printfn("E = %e\n",Etotal_d[id*nv+lev]);
     }
 }
 

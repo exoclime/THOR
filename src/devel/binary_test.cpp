@@ -56,7 +56,7 @@
 #    include "grid.h"
 #    include <iomanip>
 #    include <sstream>
-
+#include "log_writer.h"
 using namespace std;
 
 
@@ -242,8 +242,12 @@ bool binary_test::check_nan(const string&             iteration,
 #    ifndef BENCH_PRINT_DEBUG // if unset, print only failures
     if (!out)
 #    endif // BENCH_PRINT_DEBUG
-        cout << oss.str() << endl;
-
+    {
+        oss << "\n";
+        
+        log::printf(oss.str().c_str());
+    }
+    
     return out;
 }
 
@@ -302,7 +306,8 @@ bool binary_test::compare_to_reference(const string&             iteration,
                          + ref_name + "_" + iteration + ".h5";
 
     if (!path_exists(output_name)) {
-        cout << "No compare file: " << output_name << endl;
+        log::printf("No compare file: %s\n.", output_name.c_str());
+        
         return true;
     }
 
@@ -351,13 +356,18 @@ bool binary_test::compare_to_reference(const string&             iteration,
 #    ifndef BENCH_PRINT_DEBUG // if unset, print only failures
     if (!out)
 #    endif
-        cout << oss.str() << endl;
+    {
+        oss << "\n";
+        log::printf(oss.str().c_str());
+    }
+    
+    
 
 #    ifdef BENCH_COMPARE_PRINT_STATISTICS
     for (auto const& v : stats_table) {
         auto const& key   = v.first;
         auto const& value = v.second;
-        printf("  %5s - num (fail/tot/fst idx): %8d/%8d - %5d Δabs(mx:%11g,mn:%11g) - Δrel(mx:%11g,mn:%11g) -ref(mx:%11g,mn:%11g) -val(mx:%11g,mn:%11g)\n",
+        log::printf("  %5s - num (fail/tot/fst idx): %8d/%8d - %5d Δabs(mx:%11g,mn:%11g) - Δrel(mx:%11g,mn:%11g) -ref(mx:%11g,mn:%11g) -val(mx:%11g,mn:%11g)\n",
                key.c_str(),
                value.num_failures,
                value.num_values,

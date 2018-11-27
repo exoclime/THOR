@@ -47,6 +47,8 @@
 
 #include "esp.h" // Global parameters.
 
+#include "binary_test.h"
+#include "debug_helpers.h"
 #include "dyn/thor_adv_cor.h"      // Advection term.
 #include "dyn/thor_auxiliary.h"    // Temperature, interal energy, potential tempareture and effective gravity.
 #include "dyn/thor_diff.h"         // Hyper-diffusion.
@@ -54,9 +56,7 @@
 #include "dyn/thor_fastmodes.h"    // Fast terms.
 #include "dyn/thor_slowmodes.h"    // Slow terms.
 #include "dyn/thor_vertical_int.h" // Vertical momentum.
-
-#include "binary_test.h"
-#include "debug_helpers.h"
+#include "log_writer.h"
 
 #include "phy_modules.h"
 
@@ -691,7 +691,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
 
             // Check device query
             if (err != cudaSuccess) {
-                printf("thor_driver.cu: CUDA error check reports error: %s\n", cudaGetErrorString(err));
+                log::printf("[%s:%d] CUDA error check reports error: %s\n", __FILE__, __LINE__, cudaGetErrorString(err));
             }
 
             //          Pressure and density equations.
