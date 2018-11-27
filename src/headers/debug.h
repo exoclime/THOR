@@ -32,12 +32,14 @@
 //
 //       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016
 //
-// Current Code Owner: Joao Mendonca, EEG. joao.mendonca@csh.unibe.ch
+// Current Code Owners: Joao Mendonca (joao.mendonca@space.dtu.dk)
+//                      Russell Deitrick (russell.deitrick@csh.unibe.ch)
+//                      Urs Schroffenegger (urs.schroffenegger@csh.unibe.ch)
 //
 // History:
 // Version Date       Comment
 // ======= ====       =======
-//
+// 2.0     30/11/2018 Released version (RD & US)
 // 1.0     16/08/2017 Released version  (JM)
 //
 ////////////////////////////////////////////////////////////////////////
@@ -62,6 +64,7 @@
 // ***************************************
 // * check for NaNs
 // #define BENCH_NAN_CHECK
+// * below adds checks on device functions (useful for device memory bugs)
 // #define BENCH_CHECK_LAST_CUDA_ERROR
 
 // path to benchmark result directory

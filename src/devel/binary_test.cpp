@@ -35,12 +35,14 @@
 //
 //       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016
 //
-// Current Code Owner: Joao Mendonca, EEG. joao.mendonca@csh.unibe.ch
+// Current Code Owners: Joao Mendonca (joao.mendonca@space.dtu.dk)
+//                      Russell Deitrick (russell.deitrick@csh.unibe.ch)
+//                      Urs Schroffenegger (urs.schroffenegger@csh.unibe.ch)
 //
 // History:
 // Version Date       Comment
 // ======= ====       =======
-//
+// 2.0     30/11/2018 Released version (RD & US)
 // 1.0     16/08/2017 Released version  (JM)
 //
 ////////////////////////////////////////////////////////////////////////
@@ -108,7 +110,7 @@ map<string, output_def> build_definitions(ESP& esp, Icogrid& grid) {
             /*
               disable int tables for now
               {"pent_ind",      { grid.pent_ind, 12, "pent_ind", "pi", false}},
-            
+
               {"point_local",   { grid.point_local, 6*grid.point_num, "point_local", "pl", false}},
               {"halo",          { grid.halo, grid.nh, "halo", "halo", false}},
               {"maps",          { grid.maps, (grid.nl_region+2)*(grid.nl_region+2)*grid.nr, "maps", "m", false}},
@@ -130,7 +132,7 @@ map<string, output_def> build_definitions(ESP& esp, Icogrid& grid) {
 
 	    //	    {"Sp_d", {esp.Sp_d, esp.nv * esp.point_num, "Sp_d", "Sp", true}},
 	    //	    {"Sd_d", {esp.Sd_d, esp.nv * esp.point_num, "Sd_d", "Sd", true}},
-	    
+
             {"div", {grid.div, 7 * 3 * grid.point_num, "div", "d", false}},
             {"grad", {grid.grad, 7 * 3 * grid.point_num, "grad", "g", false}},
         };
@@ -170,7 +172,7 @@ void binary_test::check_data(const string&         iteration,
    }
 
     if (trace_phy_modules)
-    {        
+    {
         for (auto& name : phy_modules_data_out) {
             auto&& it = output_definitions.find(name);
             if (it != output_definitions.end()) {
@@ -238,8 +240,8 @@ void binary_test::output_reference(const string&             iteration,
 
     if (!path_exists(output_dir))
         create_output_dir(output_dir);
-    
-            
+
+
     storage s(output_name);
 
     for (auto& def : data_output) {
@@ -295,7 +297,7 @@ bool binary_test::compare_to_reference(const string&             iteration,
     oss << std::setw(8) << iteration << " ref: " << std::setw(30) << ref_name;
 
     std::map<std::string, compare_statistics> stats_table;
-    
+
     for (auto& def : data_output) {
         bool comp = false;
 
@@ -310,7 +312,7 @@ bool binary_test::compare_to_reference(const string&             iteration,
         }
 
         compare_statistics stats;
-        
+
         if (def.device_ptr) {
             getDeviceData(def.data, mem_buf.get(), def.size * sizeof(double));
             comp = compare_to_saved_data(s, def.short_name, mem_buf.get(), def.size, stats);
@@ -323,12 +325,12 @@ bool binary_test::compare_to_reference(const string&             iteration,
         {
             stats_table[def.short_name] = stats;
         }
-#endif // BENCH_COMPARE_PRINT_STATISTICS        
+#endif // BENCH_COMPARE_PRINT_STATISTICS
 
         oss << " " << def.short_name << ": " << comp;
         out &= comp;
     }
-    
+
 #    ifndef BENCH_PRINT_DEBUG // if unset, print only failures
     if (!out)
 #    endif
@@ -351,7 +353,7 @@ bool binary_test::compare_to_reference(const string&             iteration,
                value.max_val,
                value.mean_val);
     }
-    
+
 #endif // BENCH_COMPARE_PRINT_STATISTICS
 
     return out;
@@ -381,7 +383,7 @@ void binary_test::register_phy_modules_variables(const std::map<string, output_d
                                 phy_modules_data_out_.end());
 }
 
-    
+
 
 
 #endif // BENCHMARKING

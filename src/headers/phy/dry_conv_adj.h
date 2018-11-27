@@ -19,7 +19,7 @@
 //
 //
 //
-// Description:
+// Description: dry convective adjustment scheme
 //
 //
 //
@@ -32,12 +32,14 @@
 //
 //       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016
 //
-// Current Code Owner: Joao Mendonca, EEG. joao.mendonca@csh.unibe.ch
+// Current Code Owners: Joao Mendonca (joao.mendonca@space.dtu.dk)
+//                      Russell Deitrick (russell.deitrick@csh.unibe.ch)
+//                      Urs Schroffenegger (urs.schroffenegger@csh.unibe.ch)
 //
 // History:
 // Version Date       Comment
 // ======= ====       =======
-//
+// 2.0     30/11/2018 Released version (RD & US)
 // 1.0     16/08/2017 Released version  (JM)
 //
 ////////////////////////////////////////////////////////////////////////
@@ -118,58 +120,66 @@ __global__ void dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
                 }
             }
 
-            if (bot > nv - 2) done_col = true; //no unstable layers
-
             for (int lev = bot; lev < nv - 1; lev++) {
                 // sweep upward from unstable layer, find top
                 if (pt_d[id * nv + lev + 1] - pt_d[id * nv + lev] > stable) {
                     top = lev;
-                    goto stop1;
+                    break;
                 }
                 else {
                     top = nv - 1;
                 }
             }
-        stop1:
+
             if (bot < nv - 1) {
-                double h   = 0.0; //Enthalpy;
-                double sum = 0.0;
+                int    extend = 1;
+                double thnew;
 
-                for (int lev = bot; lev <= top; lev++) {
-                    // calc adiabatic pressure, integrate upward for new pot. temp.
-                    double pu     = Pressureh_d[id * (nv + 1) + lev + 1];
-                    double pl     = Pressureh_d[id * (nv + 1) + lev];
-                    double pi     = pow(Pressure_d[id * nv + lev] / Pressureh_d[id * (nv + 1) + 0], Rd / Cp); // adiabatic pressure wrt bottom of column
-                    double deltap = pl - pu;
+                while (extend == 1) {
+                    double h   = 0.0; //Enthalpy;
+                    double sum = 0.0;
+                    extend     = 0;
 
-                    h   = h + pt_d[id * nv + lev] * pi * deltap;
-                    sum = sum + pi * deltap;
-                }
-                double thnew = h / sum;
+                    for (int lev = bot; lev <= top; lev++) {
+                        // calc adiabatic pressure, integrate upward for new pot. temp.
+                        double pu     = Pressureh_d[id * (nv + 1) + lev + 1];
+                        double pl     = Pressureh_d[id * (nv + 1) + lev];
+                        double pi     = pow(Pressure_d[id * nv + lev] / Pressureh_d[id * (nv + 1) + 0], Rd / Cp); // adiabatic pressure wrt bottom of column
+                        double deltap = pl - pu;
 
-                int extend = 0;
+                        h   = h + pt_d[id * nv + lev] * pi * deltap;
+                        sum = sum + pi * deltap;
+                    }
+                    thnew = h / sum;
 
-                if (bot > 0) {
-                    // repeat if new pot. temp. is less than lower boundary p.t.
-                    if ((thnew - pt_d[id * nv + bot - 1]) < stable) {
-                        bot    = bot - 1;
-                        extend = 1;
+                    // if (bot <= 0 && top >= nv - 1) {
+                    //     // no need to extend again
+                    //     extend = 0;
+                    // }
+
+                    if (bot > 0) {
+                        // repeat if new pot. temp. is less than lower boundary p.t.
+                        if ((thnew - pt_d[id * nv + bot - 1]) < stable) {
+                            bot    = bot - 1;
+                            extend = 1;
+                        }
+                    }
+
+                    if (top < nv - 1) {
+                        // repeat if new pot. temp. is greater p.t. above
+                        if ((pt_d[id * nv + top + 1] - thnew) < stable) {
+                            top    = top + 1;
+                            extend = 1;
+                        }
                     }
                 }
-
-                if (top < nv - 1) {
-                    // repeat if new pot. temp. is greater p.t. above
-                    if ((pt_d[id * nv + top + 1] - thnew) < stable) {
-                        top    = top + 1;
-                        extend = 1.0;
-                    }
-                }
-
-                if (extend != 0) goto stop1; // repeat integration with new limits
 
                 for (int lev = bot; lev <= top; lev++) {
                     pt_d[id * nv + lev] = thnew; // set new potential temperature
                 }
+            }
+            else {
+                done_col = true; //no unstable layers
             }
         }
 

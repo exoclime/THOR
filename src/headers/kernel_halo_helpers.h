@@ -31,12 +31,14 @@
 //
 //       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016
 //
-// Current Code Owner: Joao Mendonca, EEG. joao.mendonca@csh.unibe.ch
+// Current Code Owners: Joao Mendonca (joao.mendonca@space.dtu.dk)
+//                      Russell Deitrick (russell.deitrick@csh.unibe.ch)
+//                      Urs Schroffenegger (urs.schroffenegger@csh.unibe.ch)
 //
 // History:
 // Version Date       Comment
 // ======= ====       =======
-//
+// 2.0     30/11/2018 Released version (RD & US)
 // 1.0     16/08/2017 Released version  (JM)
 //
 ////////////////////////////////////////////////////////////////////////
@@ -117,10 +119,9 @@ __device__ __forceinline__ bool compute_mem_idx(int*       maps_d,
     }
 
     if (load_halo)
-        igh = maps_d[ib * nhl2 + ir2];
+      igh = maps_d[ib * nhl2 + ir2];
     else
         igh = 0;
-    
 
     return load_halo;
 }

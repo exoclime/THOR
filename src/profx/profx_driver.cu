@@ -32,12 +32,14 @@
 //
 //       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016
 //
-// Current Code Owner: Joao Mendonca, EEG. joao.mendonca@csh.unibe.ch
+// Current Code Owners: Joao Mendonca (joao.mendonca@space.dtu.dk)
+//                      Russell Deitrick (russell.deitrick@csh.unibe.ch)
+//                      Urs Schroffinegger (urs.schroffenegger@csh.unibe.ch)
 //
 // History:
 // Version Date       Comment
 // ======= ====       =======
-//
+// 2.0     30/11/2018 Released version (RD & US)
 // 1.0     16/08/2017 Released version  (JM)
 //
 ////////////////////////////////////////////////////////////////////////
@@ -72,22 +74,53 @@ __host__ void ESP::ProfX(const XPlanet& Planet,
     const int NTH = 256;
 
     //  Specify the block sizes.
-    dim3 NB((point_num / NTH) + 1, nv, 1);
-    dim3 NBRT((point_num / NTH) + 1, 1, 1);
+    dim3      NB((point_num / NTH) + 1, nv, 1);
+    dim3      NBRT((point_num / NTH) + 1, 1, 1);
 
     if (sponge == true) {
-        dim3 NBT((point_num / NTH) + 1, nv, 1);
+        //dim3 NBT((point_num / NTH) + 1, nv, 1);
 
         cudaMemset(vbar_d, 0, sizeof(double) * 3 * nlat * nv);
-        zonal_v<<<NBT, NTH>>>(Mh_d,
-                              W_d,
-                              Rho_d,
-                              vbar_d,
-                              zonal_mean_tab_d,
-                              lonlat_d,
-                              point_num);
+        cudaMemset(utmp, 0, sizeof(double) * nlat * nv * max_count);
+        cudaMemset(vtmp, 0, sizeof(double) * nlat * nv * max_count);
+        cudaMemset(wtmp, 0, sizeof(double) * nlat * nv * max_count);
+
+        zonal_v<<<NB, NTH>>>(Mh_d,
+                             W_d,
+                             Rho_d,
+                             vbar_d,
+                             zonal_mean_tab_d,
+                             lonlat_d,
+                             point_num,
+                             utmp,
+                             vtmp,
+                             wtmp,
+                             max_count);
 
         cudaDeviceSynchronize();
+
+#ifdef GLOBAL_CONSERVATION_REDUCTIONADD
+        int ilat, lev, ind;
+        for (ilat = 0; ilat < nlat; ilat++) {
+            // vbar_h[ilat * nv + 3 + (nv - 1) * 3 + 0] = 0;
+            // vbar_h[ilat * nv + 3 + (nv - 1) * 3 + 1] = 0;
+            // vbar_h[ilat * nv + 3 + (nv - 1) * 3 + 2] = 0;
+            // for (ind = 0; ind < max_count; ind++) {
+            //     vbar_h[ilat * nv + 3 + (nv - 1) * 3 + 0] += utmp[ilat * nv + 3 + (nv - 1) * 3 + ind];
+            //     vbar_h[ilat * nv + 3 + (nv - 1) * 3 + 1] += vtmp[ilat * nv + 3 + (nv - 1) * 3 + ind];
+            //     vbar_h[ilat * nv + 3 + (nv - 1) * 3 + 2] += wtmp[ilat * nv + 3 + (nv - 1) * 3 + ind];
+            // }
+
+            for (lev = 0; lev < nv; lev++) {
+                vbar_h[ilat * nv * 3 + lev * 3 + 0] = gpu_sum_on_device<1024>(&(utmp[ilat * nv * max_count + lev * max_count]), max_count);
+                vbar_h[ilat * nv * 3 + lev * 3 + 1] = gpu_sum_on_device<1024>(&(vtmp[ilat * nv * max_count + lev * max_count]), max_count);
+                vbar_h[ilat * nv * 3 + lev * 3 + 2] = gpu_sum_on_device<1024>(&(wtmp[ilat * nv * max_count + lev * max_count]), max_count);
+            }
+        }
+        cudaMemcpy(vbar_d, vbar_h, 3 * nlat * nv * sizeof(double), cudaMemcpyHostToDevice);
+#endif
+
+        // print_vbar(vbar_h, nlat, nv);
 
         if (shrink_sponge == true) {
             if (current_step * timestep >= t_shrink * 86400) {
@@ -136,18 +169,18 @@ __host__ void ESP::ProfX(const XPlanet& Planet,
 
     if (conv) {
         cudaDeviceSynchronize();
-        dry_conv_adj<<<NB, NTH>>>(pressure_d,    // Pressure [Pa]
-                                  pressureh_d,   // mid-point pressure [Pa]
-                                  temperature_d, // Temperature [K]
-                                  pt_d,          // Pot temperature [K]
-                                  Rho_d,         // Density [m^3/kg]
-                                  Planet.Cp,     // Specific heat capacity [J/kg/K]
-                                  Planet.Rd,     // Gas constant [J/kg/K]
-                                  Planet.Gravit, // Gravity [m/s^2]
-                                  Altitude_d,    // Altitudes of the layers
-                                  Altitudeh_d,   // Altitudes of the interfaces
-                                  point_num,     // Number of columns
-                                  nv);           // number of vertical layers
+        dry_conv_adj<<<NBRT, NTH>>>(pressure_d,    // Pressure [Pa]
+                                    pressureh_d,   // mid-point pressure [Pa]
+                                    temperature_d, // Temperature [K]
+                                    pt_d,          // Pot temperature [K]
+                                    Rho_d,         // Density [m^3/kg]
+                                    Planet.Cp,     // Specific heat capacity [J/kg/K]
+                                    Planet.Rd,     // Gas constant [J/kg/K]
+                                    Planet.Gravit, // Gravity [m/s^2]
+                                    Altitude_d,    // Altitudes of the layers
+                                    Altitudeh_d,   // Altitudes of the interfaces
+                                    point_num,     // Number of columns
+                                    nv);           // number of vertical layers
     }
 
     BENCH_POINT_I(current_step, "dry_conv_adj ", (), ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"))

@@ -32,12 +32,14 @@
 //
 //       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016
 //
-// Current Code Owner: Joao Mendonca, EEG. joao.mendonca@csh.unibe.ch
+// Current Code Owners: Joao Mendonca (joao.mendonca@space.dtu.dk)
+//                      Russell Deitrick (russell.deitrick@csh.unibe.ch)
+//                      Urs Schroffenegger (urs.schroffenegger@csh.unibe.ch)
 //
 // History:
 // Version Date       Comment
 // ======= ====       =======
-//
+// 2.0     30/11/2018 Released version (RD & US)
 // 1.0     16/08/2017 Released version  (JM)
 //
 ////////////////////////////////////////////////////////////////////////
@@ -200,7 +202,13 @@ public:
     bool *  check_d;
 
     double *vbar_d;
+    double *vbar_h;
+    double *utmp;
+    double *utmp_h;
+    double *vtmp;
+    double *wtmp;
     int *   zonal_mean_tab_d;
+    int     max_count;   // max number of points in latitude rings
     double *pressureh_d; // midpoint pressure used in dry conv adj
 
     //  energy, ang momentum and mass conservation
@@ -247,7 +255,8 @@ public:
         int             point_num_,
         bool            conservation,
         benchmark_types core_benchmark_,
-        log_writer &    logwriter_);
+        log_writer &    logwriter_,
+        int             max_count_);
 
     ~ESP();
 
