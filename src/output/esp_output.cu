@@ -36,7 +36,7 @@
 //
 // Current Code Owners: Joao Mendonca (joao.mendonca@space.dtu.dk)
 //                      Russell Deitrick (russell.deitrick@csh.unibe.ch)
-//                      Urs Schroffinegger (urs.schroffenegger@csh.unibe.ch)
+//                      Urs Schroffenegger (urs.schroffenegger@csh.unibe.ch)
 //
 // History:
 // Version Date       Comment
@@ -88,10 +88,8 @@ __host__ void ESP::copy_to_host() {
     cudaMemcpy(Mh_h, Mh_d, 3 * point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
 }
 
-__host__ void ESP::output(int    fidx,         // Index of output file
-                          const XPlanet & Planet,
-                          bool   conservation,
-                          bool   SpongeLayer) {
+__host__ void ESP::output(int                    fidx, // Index of output file
+                          const SimulationSetup& sim) {
 
     //
     //  Description: Model output.
@@ -164,24 +162,24 @@ __host__ void ESP::output(int    fidx,         // Index of output file
         // spring beta
         s.append_value(spring_beta, "/spring_beta", "-", "Spring Beta");
         //      A
-        s.append_value(Planet.A, "/A", "m", "Planet radius");
+        s.append_value(sim.A, "/A", "m", "Planet radius");
         //      Rd
-        s.append_value(Planet.Rd, "/Rd", "J/(Kg K)", "Gas constant");
+        s.append_value(sim.Rd, "/Rd", "J/(Kg K)", "Gas constant");
         //      Omega
-        s.append_value(Planet.Omega, "/Omega", "1/s", "Rotation rate");
+        s.append_value(sim.Omega, "/Omega", "1/s", "Rotation rate");
         //      Gravit
-        s.append_value(Planet.Gravit, "/Gravit", "m/s^2", "Surface gravity");
+        s.append_value(sim.Gravit, "/Gravit", "m/s^2", "Surface gravity");
         //      P_Ref
-        s.append_value(Planet.P_Ref, "/P_Ref", "Pa", "Reference pressure");
+        s.append_value(sim.P_Ref, "/P_Ref", "Pa", "Reference pressure");
         //      Top_altitude
-        s.append_value(Planet.Top_altitude, "/Top_altitude", "m", "Top of the model's domain");
+        s.append_value(sim.Top_altitude, "/Top_altitude", "m", "Top of the model's domain");
         //      CP
-        s.append_value(Planet.Cp, "/Cp", "J/(Kg K)", "Specific heat capacity");
+        s.append_value(sim.Cp, "/Cp", "J/(Kg K)", "Specific heat capacity");
         //      SpongeLayer option
-        s.append_value(SpongeLayer ? 1.0 : 0.0, "/SpongeLayer", "-", "Using SpongeLayer?");
+        s.append_value(sim.SpongeLayer ? 1.0 : 0.0, "/SpongeLayer", "-", "Using SpongeLayer?");
         //      core_benchmark  option
         s.append_value(int(core_benchmark), "/core_benchmark", "-", "Using benchmark forcing or RT");
-        if (SpongeLayer) {
+        if (sim.SpongeLayer) {
             //      nlat
             s.append_value(nlat, "/nlat", "-", "number of lat rings for sponge layer");
             //      ns
@@ -243,7 +241,7 @@ __host__ void ESP::output(int    fidx,         // Index of output file
                    "kg m/s",
                    "Vertical Momentum");
 
-    if (conservation == true) {
+    if (sim.conservation == true) {
         //  Etotal at each point
         s.append_table(Etotal_h,
                        nv * point_num,

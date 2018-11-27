@@ -16,10 +16,10 @@
 //     <http://www.gnu.org/licenses/>.
 // ==============================================================================
 //
+// Defines Planet's properties
 //
 //
-// Description: Defines planet parameters.
-//
+// Description: Planet parameters.
 //
 // Method: -
 //
@@ -45,37 +45,43 @@
 // 1.0     16/08/2017 Released version  (JM)
 //
 ////////////////////////////////////////////////////////////////////////
-#pragma once
 
-// Physical Constants
-#define kb_constant 1.38e-23  // Boltzmann constant [J/K]
-#define mu_constant 1.660e-27 // Atomic mass unit   [kg]
+#include <cmath>
+#include <iostream>
+#include <stdio.h>
+#include <stdlib.h>
 
+#include "simulation_setup.h"
 
-class XPlanet
-{
-
-public:
-    char simulation_ID[160];
-
+SimulationSetup::SimulationSetup() {
+    //
+    //  Earth
+    // ID
+    sprintf(simulation_ID, "%s", "Earth");
     //////////////
     // BULK     //
     //////////////
-
-    double A;
-    double Omega;
-    double Gravit;
-
+    A      = 72427000.0; // Radius [m]
+    Omega  = 9.09E-5;    // Rotation rate [s-1]
+    Gravit = 47.0;       // Gravitational acceleration [m/s^2]
     ////////////////
     // ATMOSPHERE //
     ////////////////
+    Rd           = 3714;       // Gas constant [J/(Kg K)]
+    Cp           = 13000;      // Specific heat capacities [J/(Kg K)]
+    Tmean        = 1400;       // Mean atmospheric temperature [K]
+    P_Ref        = 10000000.0; // Reference surface pressure [Pa]
+    Top_altitude = 1235376.0;  // Altitude of the top of the model domain [m]
+    Diffc        = 0.009973;   // Strength of diffusion
 
-    double Rd;
-    double Cp;
-    double Tmean;
-    double P_Ref;
-    double Top_altitude;
-    double Diffc;
+    HyDiff   = true;
+    DivDampP = true;
 
-    XPlanet();
-};
+    NonHydro    = true;
+    DeepModel   = true;
+    SpongeLayer = false;
+    conv_adj    = 1;
+
+    gcm_off      = false;
+    conservation = false;
+}

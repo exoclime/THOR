@@ -50,7 +50,7 @@
 //
 // Current Code Owners: Joao Mendonca (joao.mendonca@space.dtu.dk)
 //                      Russell Deitrick (russell.deitrick@csh.unibe.ch)
-//                      Urs Schroffinegger (urs.schroffenegger@csh.unibe.ch)
+//                      Urs Schroffenegger (urs.schroffenegger@csh.unibe.ch)
 //
 // History:
 // Version Date       Comment
@@ -2585,6 +2585,36 @@ void Icogrid::zonal_mean_tab_f(int *   zonal_mean_tab,
     // printf("max count = %d\n", max_count);
     delete[] count_num;
     delete[] lat_array;
+}
+
+void Icogrid::free_memory() {
+    printf("Freeing Grid memory.\n");
+
+    // Free memory that's not passed and freed by ESP.
+
+    free(nvec);
+    free(point_xyz);
+    free(pent_ind);
+    free(halo);
+    free(point_xyzq);
+    free(areas);
+
+    // Allocated data passed over to ESP object
+    // Grid serves only for setup, but should live all throughout sim.
+    free(point_local);
+    free(maps);
+    free(lonlat);
+    free(Altitude);
+    free(Altitudeh);
+    free(nvecoa);
+    free(nvecti);
+    free(nvecte);
+    free(areasT);
+
+    free(areasTr);
+    free(div);
+    free(grad);
+    free(func_r);
 }
 
 

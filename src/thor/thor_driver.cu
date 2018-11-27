@@ -35,7 +35,7 @@
 //
 // Current Code Owners: Joao Mendonca (joao.mendonca@space.dtu.dk)
 //                      Russell Deitrick (russell.deitrick@csh.unibe.ch)
-//                      Urs Schroffinegger (urs.schroffenegger@csh.unibe.ch)
+//                      Urs Schroffenegger (urs.schroffenegger@csh.unibe.ch)
 //
 // History:
 // Version Date       Comment
@@ -60,16 +60,7 @@
 
 #include "phy_modules.h"
 
-__host__ void ESP::Thor(const XPlanet& Planet,   // planet parameters
-                        bool           HyDiff,   // Turn on/off hyper-diffusion.
-                        bool           DivDampP, // Turn on/off divergence damping.
-                        bool           NonHydro, // Turn on/off non-hydrostatic.
-                        bool           DeepModel_) {       // Turn on/off deep atmosphere.
-                                                 //
-                                                 //  Number of threads per block.
-
-    DeepModel = DeepModel_;
-
+__host__ void ESP::Thor(const SimulationSetup& sim) {
     const int NTH = 256;
 
     // Vertical Eq only works on vertical stack of data, can run independently, only uses shared
@@ -141,11 +132,11 @@ __host__ void ESP::Thor(const XPlanet& Planet,   // planet parameters
                                                 Wk_d,
                                                 Rhok_d,
                                                 Altitude_d,
-                                                Planet.A,
+                                                sim.A,
                                                 (double3*)func_r_d,
                                                 maps_d,
                                                 nl_region,
-                                                DeepModel);
+                                                sim.DeepModel);
         // Updates: Adv_d, v_d
         Compute_Advec_Cori_Poles<6><<<2, 1>>>(Adv_d,
                                               v_d,
@@ -154,12 +145,12 @@ __host__ void ESP::Thor(const XPlanet& Planet,   // planet parameters
                                               Wk_d,
                                               Rhok_d,
                                               Altitude_d,
-                                              Planet.A,
+                                              sim.A,
                                               func_r_d,
                                               point_local_d,
                                               point_num,
                                               nv,
-                                              DeepModel);
+                                              sim.DeepModel);
 
         cudaDeviceSynchronize();
         // Updates: Adv_d
@@ -169,11 +160,11 @@ __host__ void ESP::Thor(const XPlanet& Planet,   // planet parameters
                                                             Rhok_d,
                                                             Altitude_d,
                                                             Altitudeh_d,
-                                                            Planet.Omega,
-                                                            Planet.A,
+                                                            sim.Omega,
+                                                            sim.A,
                                                             nv,
                                                             point_num,
-                                                            DeepModel);
+                                                            sim.DeepModel);
 
         //
         //      Computes temperature, internal energy, potential temperature and effective gravity.
@@ -192,10 +183,10 @@ __host__ void ESP::Thor(const XPlanet& Planet,   // planet parameters
                                                                       gtil_d,
                                                                       gtilh_d,
                                                                       Whk_d,
-                                                                      Planet.P_Ref,
-                                                                      Planet.Gravit,
-                                                                      Planet.Cp,
-                                                                      Planet.Rd,
+                                                                      sim.P_Ref,
+                                                                      sim.Gravit,
+                                                                      sim.Cp,
+                                                                      sim.Rd,
                                                                       Altitude_d,
                                                                       Altitudeh_d,
                                                                       point_num,
@@ -213,7 +204,7 @@ __host__ void ESP::Thor(const XPlanet& Planet,   // planet parameters
         cudaMemset(Slowpressure_d, 0, sizeof(double) * point_num * nv);
         //
         //      Hyper-Diffusion.
-        if (HyDiff) {
+        if (sim.HyDiff) {
             cudaMemset(diff_d, 0, sizeof(double) * 6 * point_num * nv);
             cudaDeviceSynchronize();
             //Updates: diffmh_d, diffw_d, diffrh_d, diffpr_d, diff_d
@@ -233,12 +224,12 @@ __host__ void ESP::Thor(const XPlanet& Planet,   // planet parameters
                                               func_r_d,
                                               Kdh4_d,
                                               Altitude_d,
-                                              Planet.A,
-                                              Planet.Rd,
+                                              sim.A,
+                                              sim.Rd,
                                               maps_d,
                                               nl_region,
                                               0,
-                                              DeepModel);
+                                              sim.DeepModel);
             //Updates: diffmh_d, diffw_d, diffrh_d, diffpr_d, diff_d
             Diffusion_Op_Poles<5><<<NBDP, 1>>>(diffmh_d,
                                                diffw_d,
@@ -257,12 +248,12 @@ __host__ void ESP::Thor(const XPlanet& Planet,   // planet parameters
                                                Kdh4_d,
                                                Altitude_d,
                                                Altitudeh_d,
-                                               Planet.A,
-                                               Planet.Rd,
+                                               sim.A,
+                                               sim.Rd,
                                                point_local_d,
                                                point_num,
                                                0,
-                                               DeepModel);
+                                               sim.DeepModel);
             cudaDeviceSynchronize();
             //Updates: diffmh_d, diffw_d, diffrh_d, diffpr_d, diff_d
             Diffusion_Op<LN, LN><<<NBD, NT>>>(diffmh_d,
@@ -281,12 +272,12 @@ __host__ void ESP::Thor(const XPlanet& Planet,   // planet parameters
                                               func_r_d,
                                               Kdh4_d,
                                               Altitude_d,
-                                              Planet.A,
-                                              Planet.Rd,
+                                              sim.A,
+                                              sim.Rd,
                                               maps_d,
                                               nl_region,
                                               1,
-                                              DeepModel);
+                                              sim.DeepModel);
             //Updates: diffmh_d, diffw_d, diffrh_d, diffpr_d, diff_d
             Diffusion_Op_Poles<5><<<NBDP, 1>>>(diffmh_d,
                                                diffw_d,
@@ -305,29 +296,28 @@ __host__ void ESP::Thor(const XPlanet& Planet,   // planet parameters
                                                Kdh4_d,
                                                Altitude_d,
                                                Altitudeh_d,
-                                               Planet.A,
-                                               Planet.Rd,
+                                               sim.A,
+                                               sim.Rd,
                                                point_local_d,
                                                point_num,
                                                1,
-                                               DeepModel);
+                                               sim.DeepModel);
 
-            BENCH_POINT_I_S_PHY(current_step, rk, "Diffusion_Op_Poles", (), ("diffmh_d", "diffw_d", "diffrh_d", "diffpr_d", "diff_d", "difftr_d" ))
+            BENCH_POINT_I_S_PHY(current_step, rk, "Diffusion_Op_Poles", (), ("diffmh_d", "diffw_d", "diffrh_d", "diffpr_d", "diff_d"))
         }
 
         if (phy_modules_execute)
             phy_modules_dyn_core_loop_slow_modes(*this,
-                                                 Planet,
+                                                 sim,
                                                  current_step,
-                                                 times,
-                                                 HyDiff);
+                                                 times);
 
         BENCH_POINT_I_S_PHY(current_step, rk, "DivDamp", (), ("Rhos_d", "Rhok_d", "Mhs_d", "Mhk_d", "Whs_d", "Whk_d", "pressures_d", "pressurek_d", "pressure_d"))
         //
         //      Divergence damping
         cudaMemset(DivM_d, 0, sizeof(double) * point_num * 3 * nv);
         cudaMemset(divg_Mh_d, 0, sizeof(double) * point_num * 3 * nv);
-        if (DivDampP) {
+        if (sim.DivDampP) {
             cudaDeviceSynchronize();
             // Updates: DivM_d, divg_Mh_d
             DivM_Op<LN, LN><<<NB, NT>>>(DivM_d,
@@ -342,11 +332,11 @@ __host__ void ESP::Thor(const XPlanet& Planet,   // planet parameters
                                         func_r_d,
                                         Altitudeh_d,
                                         Altitude_d,
-                                        Planet.A,
+                                        sim.A,
                                         maps_d,
                                         nl_region,
                                         0,
-                                        DeepModel);
+                                        sim.DeepModel);
             // Updates: DivM_d, divg_Mh_d
             DivM_Op_Poles<5><<<NBP, 1>>>(DivM_d,
                                          divg_Mh_d,
@@ -360,11 +350,11 @@ __host__ void ESP::Thor(const XPlanet& Planet,   // planet parameters
                                          func_r_d,
                                          Altitudeh_d,
                                          Altitude_d,
-                                         Planet.A,
+                                         sim.A,
                                          point_local_d,
                                          point_num,
                                          0,
-                                         DeepModel);
+                                         sim.DeepModel);
 
             cudaDeviceSynchronize();
             // Updates: DivM_d, divg_Mh_d
@@ -380,11 +370,11 @@ __host__ void ESP::Thor(const XPlanet& Planet,   // planet parameters
                                         func_r_d,
                                         Altitudeh_d,
                                         Altitude_d,
-                                        Planet.A,
+                                        sim.A,
                                         maps_d,
                                         nl_region,
                                         1,
-                                        DeepModel);
+                                        sim.DeepModel);
             // Updates: DivM_d, divg_Mh_d
             DivM_Op_Poles<5><<<NBP, 1>>>(DivM_d,
                                          divg_Mh_d,
@@ -398,11 +388,11 @@ __host__ void ESP::Thor(const XPlanet& Planet,   // planet parameters
                                          func_r_d,
                                          Altitudeh_d,
                                          Altitude_d,
-                                         Planet.A,
+                                         sim.A,
                                          point_local_d,
                                          point_num,
                                          1,
-                                         DeepModel);
+                                         sim.DeepModel);
         }
 
         BENCH_POINT_I_S(current_step, rk, "DivM_Op_Poles", (), ("DivM_d", "divg_Mh_d"))
@@ -434,15 +424,15 @@ __host__ void ESP::Thor(const XPlanet& Planet,   // planet parameters
                                                div_d,
                                                Altitude_d,
                                                Altitudeh_d,
-                                               Planet.A,
-                                               Planet.Gravit,
-                                               Planet.Cp,
-                                               Planet.Rd,
+                                               sim.A,
+                                               sim.Gravit,
+                                               sim.Cp,
+                                               sim.Rd,
                                                func_r_d,
                                                maps_d,
                                                nl_region,
-                                               DeepModel,
-                                               NonHydro);
+                                               sim.DeepModel,
+                                               sim.NonHydro);
         cudaDeviceSynchronize();
         // Updates: SlowMh_d, SlowWh_d, SlowRho_d, Slowpressure_d
         Compute_Slow_Modes_Poles<6><<<2, 1>>>(SlowMh_d,
@@ -466,16 +456,16 @@ __host__ void ESP::Thor(const XPlanet& Planet,   // planet parameters
                                               div_d,
                                               Altitude_d,
                                               Altitudeh_d,
-                                              Planet.A,
-                                              Planet.Gravit,
-                                              Planet.Cp,
-                                              Planet.Rd,
+                                              sim.A,
+                                              sim.Gravit,
+                                              sim.Cp,
+                                              sim.Rd,
                                               func_r_d,
                                               point_local_d,
                                               nv,
                                               point_num,
-                                              DeepModel,
-                                              NonHydro);
+                                              sim.DeepModel,
+                                              sim.NonHydro);
 
 
         BENCH_POINT_I_S(current_step, rk, "Compute_Slow_Modes_Poles", (), ("SlowMh_d", "SlowWh_d", "SlowRho_d", "Slowpressure_d"))
@@ -484,7 +474,7 @@ __host__ void ESP::Thor(const XPlanet& Planet,   // planet parameters
         if (rk > 0) {
             cudaDeviceSynchronize();
 
-            BENCH_POINT_I_S_PHY(current_step, rk, "bRK", (), ("Rhos_d", "Rhok_d", "Mhs_d", "Mhk_d", "Whs_d", "Whk_d", "pressures_d", "pressurek_d", "pressure_d" ))
+            BENCH_POINT_I_S_PHY(current_step, rk, "bRK", (), ("Rhos_d", "Rhok_d", "Mhs_d", "Mhk_d", "Whs_d", "Whk_d", "pressures_d", "pressurek_d", "pressure_d"))
 
             // Updates: Mhs_d, Whs_d, Ws_d, Rhos_d, pressures_d
             UpdateRK<<<(point_num / NTH) + 1, NTH>>>(Mhs_d,
@@ -506,7 +496,7 @@ __host__ void ESP::Thor(const XPlanet& Planet,   // planet parameters
                                                      point_num,
                                                      nv);
 
-            BENCH_POINT_I_S_PHY(current_step, rk, "RK", (), ("Rhos_d", "Rhok_d", "Mhs_d", "Mhk_d", "Whs_d", "Whk_d", "pressures_d", "pressurek_d", "pressure_d" ))
+            BENCH_POINT_I_S_PHY(current_step, rk, "RK", (), ("Rhos_d", "Rhok_d", "Mhs_d", "Mhk_d", "Whs_d", "Whk_d", "pressures_d", "pressurek_d", "pressure_d"))
         }
 
         //
@@ -516,7 +506,7 @@ __host__ void ESP::Thor(const XPlanet& Planet,   // planet parameters
             // printf("// nsmall = %d //////////////////\n",ns);
             cudaMemset(DivM_d, 0, sizeof(double) * point_num * 3 * nv);
             cudaMemset(divg_Mh_d, 0, sizeof(double) * point_num * 3 * nv);
-            if (DivDampP) {
+            if (sim.DivDampP) {
                 cudaDeviceSynchronize();
                 // Updates: DivM_d, divg_Mh_d
                 DivM_Op<LN, LN><<<NB, NT>>>(DivM_d,
@@ -531,11 +521,11 @@ __host__ void ESP::Thor(const XPlanet& Planet,   // planet parameters
                                             func_r_d,
                                             Altitudeh_d,
                                             Altitude_d,
-                                            Planet.A,
+                                            sim.A,
                                             maps_d,
                                             nl_region,
                                             0,
-                                            DeepModel);
+                                            sim.DeepModel);
                 // Updates: DivM_d, divg_Mh_d
                 DivM_Op_Poles<5><<<NBP, 1>>>(DivM_d,
                                              divg_Mh_d,
@@ -549,11 +539,11 @@ __host__ void ESP::Thor(const XPlanet& Planet,   // planet parameters
                                              func_r_d,
                                              Altitudeh_d,
                                              Altitude_d,
-                                             Planet.A,
+                                             sim.A,
                                              point_local_d,
                                              point_num,
                                              0,
-                                             DeepModel);
+                                             sim.DeepModel);
 
                 cudaDeviceSynchronize();
                 // Updates: DivM_d, divg_Mh_d
@@ -569,11 +559,11 @@ __host__ void ESP::Thor(const XPlanet& Planet,   // planet parameters
                                             func_r_d,
                                             Altitudeh_d,
                                             Altitude_d,
-                                            Planet.A,
+                                            sim.A,
                                             maps_d,
                                             nl_region,
                                             1,
-                                            DeepModel);
+                                            sim.DeepModel);
                 // Updates: DivM_d, divg_Mh_d
                 DivM_Op_Poles<5><<<NBP, 1>>>(DivM_d,
                                              divg_Mh_d,
@@ -587,11 +577,11 @@ __host__ void ESP::Thor(const XPlanet& Planet,   // planet parameters
                                              func_r_d,
                                              Altitudeh_d,
                                              Altitude_d,
-                                             Planet.A,
+                                             sim.A,
                                              point_local_d,
                                              point_num,
                                              1,
-                                             DeepModel);
+                                             sim.DeepModel);
 
                 BENCH_POINT_I_SS(current_step, rk, ns, "DivM_Op_Poles", (), ("DivM_d", "divg_Mh_d"))
             }
@@ -605,12 +595,12 @@ __host__ void ESP::Thor(const XPlanet& Planet,   // planet parameters
                                             grad_d,
                                             Altitude_d,
                                             diffmh_d,
-                                            Planet.A,
+                                            sim.A,
                                             func_r_d,
                                             times,
                                             maps_d,
                                             nl_region,
-                                            DeepModel);
+                                            sim.DeepModel);
             // Updates: Mhs_d
             Momentum_Eq_Poles<6><<<2, 1>>>(Mhs_d,
                                            pressures_d,
@@ -618,13 +608,13 @@ __host__ void ESP::Thor(const XPlanet& Planet,   // planet parameters
                                            grad_d,
                                            Altitude_d,
                                            DivM_d,
-                                           Planet.A,
+                                           sim.A,
                                            func_r_d,
                                            times,
                                            point_local_d,
                                            nv,
                                            point_num,
-                                           DeepModel);
+                                           sim.DeepModel);
 
             //          Vertical Momentum
             cudaDeviceSynchronize();
@@ -639,12 +629,12 @@ __host__ void ESP::Thor(const XPlanet& Planet,   // planet parameters
                                                           Sp_d,
                                                           Sd_d,
                                                           Altitude_d,
-                                                          Planet.Cp,
-                                                          Planet.Rd,
-                                                          Planet.A,
+                                                          sim.Cp,
+                                                          sim.Rd,
+                                                          sim.A,
                                                           maps_d,
                                                           nl_region,
-                                                          DeepModel);
+                                                          sim.DeepModel);
 
 
             cudaDeviceSynchronize();
@@ -657,13 +647,13 @@ __host__ void ESP::Thor(const XPlanet& Planet,   // planet parameters
                                                          Sp_d,
                                                          Sd_d,
                                                          Altitude_d,
-                                                         Planet.Cp,
-                                                         Planet.Rd,
-                                                         Planet.A,
+                                                         sim.Cp,
+                                                         sim.Rd,
+                                                         sim.A,
                                                          point_local_d,
                                                          point_num,
                                                          nv,
-                                                         DeepModel);
+                                                         sim.DeepModel);
 
             BENCH_POINT_I_SS(current_step, rk, ns, "Prepare_Implicit_Vertical", (), ("Sp_d", "Sd_d"))
 
@@ -683,18 +673,18 @@ __host__ void ESP::Thor(const XPlanet& Planet,   // planet parameters
                                                                            Sp_d,
                                                                            Sd_d,
                                                                            SlowWh_d,
-                                                                           Planet.Cp,
-                                                                           Planet.Rd,
+                                                                           sim.Cp,
+                                                                           sim.Rd,
                                                                            times,
-                                                                           Planet.Gravit,
+                                                                           sim.Gravit,
                                                                            Altitude_d,
                                                                            Altitudeh_d,
-                                                                           Planet.A,
-                                                                           NonHydro,
+                                                                           sim.A,
+                                                                           sim.NonHydro,
                                                                            point_num,
                                                                            nv,
                                                                            nvi,
-                                                                           DeepModel);
+                                                                           sim.DeepModel);
 
             cudaError_t err = cudaGetLastError();
 
@@ -711,12 +701,12 @@ __host__ void ESP::Thor(const XPlanet& Planet,   // planet parameters
             // update the physics modules in fast mode
             if (phy_modules_execute)
                 phy_modules_dyn_core_loop_fast_modes(*this,
-                                                     planet,
+                                                     sim,
                                                      current_step,
                                                      times);
 
 
-            BENCH_POINT_I_SS_PHY(current_step, rk, ns, "Phy_mod_fast_mode", (), ("Whs_d", "Ws_d", "pressures_d", "h_d", "hh_d", "Rhos_d" ))
+            BENCH_POINT_I_SS_PHY(current_step, rk, ns, "Phy_mod_fast_mode", (), ("Whs_d", "Ws_d", "pressures_d", "h_d", "hh_d", "Rhos_d"))
 
             // Updates: pressures_d, Rhos_d
             Density_Pressure_Eqs<LN, LN><<<NB, NT>>>(pressures_d,
@@ -734,14 +724,14 @@ __host__ void ESP::Thor(const XPlanet& Planet,   // planet parameters
                                                      div_d,
                                                      Altitude_d,
                                                      Altitudeh_d,
-                                                     Planet.Cp,
-                                                     Planet.Rd,
-                                                     Planet.A,
-                                                     Planet.P_Ref,
+                                                     sim.Cp,
+                                                     sim.Rd,
+                                                     sim.A,
+                                                     sim.P_Ref,
                                                      times,
                                                      maps_d,
                                                      nl_region,
-                                                     DeepModel);
+                                                     sim.DeepModel);
 
             cudaDeviceSynchronize();
             // Updates: pressures_d, Rhos_d
@@ -760,15 +750,15 @@ __host__ void ESP::Thor(const XPlanet& Planet,   // planet parameters
                                                     div_d,
                                                     Altitude_d,
                                                     Altitudeh_d,
-                                                    Planet.Cp,
-                                                    Planet.Rd,
-                                                    Planet.A,
-                                                    Planet.P_Ref,
+                                                    sim.Cp,
+                                                    sim.Rd,
+                                                    sim.A,
+                                                    sim.P_Ref,
                                                     times,
                                                     point_local_d,
                                                     point_num,
                                                     nv,
-                                                    DeepModel);
+                                                    sim.DeepModel);
 
             BENCH_POINT_I_SS(current_step, rk, ns, "Density_Pressure_Eqs", (), ("pressures_d", "Rhos_d"))
         }
@@ -791,12 +781,12 @@ __host__ void ESP::Thor(const XPlanet& Planet,   // planet parameters
                                                   point_num,
                                                   nv);
 
-        BENCH_POINT_I_S_PHY(current_step, rk, "RK2", (), ("Rhos_d", "Rhok_d", "Mhs_d", "Mhk_d", "Whs_d", "Whk_d", "pressures_d", "pressurek_d" ))
+        BENCH_POINT_I_S_PHY(current_step, rk, "RK2", (), ("Rhos_d", "Rhok_d", "Mhs_d", "Mhk_d", "Whs_d", "Whk_d", "pressures_d", "pressurek_d"))
     }
     //  Update diagnostic variables.
     cudaDeviceSynchronize();
 
-    BENCH_POINT_I_PHY(current_step, "END", (), ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d" ))
+    BENCH_POINT_I_PHY(current_step, "END", (), ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"))
 
     cudaMemcpy(Mh_d, Mhk_d, point_num * nv * 3 * sizeof(double), cudaMemcpyDeviceToDevice);
     cudaMemcpy(Wh_d, Whk_d, point_num * nvi * sizeof(double), cudaMemcpyDeviceToDevice);
