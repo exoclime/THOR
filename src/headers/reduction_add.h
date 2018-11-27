@@ -180,5 +180,19 @@ double cpu_sum(double *d, long length) {
         double o = cpu_reduction_sum(buf, BLOCK_SIZE);
         out += o;
     }
+        
+    return out;
+};
+
+
+template<int BLOCK_SIZE>
+double cpu_linear_sum(double *d, long length) {
+
+    double out = 0.0;
+    for (long i = 0l; i < length; i++) {
+        out += d[i];
+    }
+    
+        
     return out;
 };
