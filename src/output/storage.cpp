@@ -35,10 +35,14 @@
 //
 //       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016
 //
+// Current Code Owners: Joao Mendonca (joao.mendonca@space.dtu.dk)
+//                      Russell Deitrick (russell.deitrick@csh.unibe.ch)
+//                      Urs Schroffinegger (urs.schroffenegger@csh.unibe.ch)
+//
 // History:
 // Version Date       Comment
 // ======= ====       =======
-//
+// 2.0     30/11/2018 Released version (RD & US)
 // 1.0     16/08/2017 Released version  (JM)
 //
 ////////////////////////////////////////////////////////////////////////
@@ -58,4 +62,3 @@ storage::storage(const string& filename, const bool& read):
     else
         file = std::unique_ptr<H5File>(new H5File(filename, H5F_ACC_TRUNC));
 }
-

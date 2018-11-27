@@ -28,16 +28,19 @@
 // Known issues: None.
 //
 //
-// Current Code Owner: Joao Mendonca, EEG. joao.mendonca@csh.unibe.ch
 //
 // If you use this code please cite the following reference:
 //
 //       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016
 //
+// Current Code Owners: Joao Mendonca (joao.mendonca@space.dtu.dk)
+//                      Russell Deitrick (russell.deitrick@csh.unibe.ch)
+//                      Urs Schroffenegger (urs.schroffenegger@csh.unibe.ch)
+//
 // History:
 // Version Date       Comment
 // ======= ====       =======
-//
+// 2.0     30/11/2018 Released version (RD & US)
 // 1.0     16/08/2017 Released version  (JM)
 //
 ////////////////////////////////////////////////////////////////////////
@@ -111,14 +114,14 @@ public:
                     T&            data) {
         std::unique_ptr<T[]> buf = nullptr;
         int size = 0;
-        
+
         bool out = read_table(name, buf, size);
-        
+
         if (out && size == 1)
             data = buf[0];
         if (size  != 1)
             return false;
-        
+
         return out;
     }
 
@@ -354,11 +357,11 @@ bool storage::read_table_to_ptr(const string& name,
             else {
                 return false;
             }
-            
+
             if (size == int(dims_out[0]))
             {
-                
-            
+
+
                 // build output array
 
 
@@ -366,8 +369,8 @@ bool storage::read_table_to_ptr(const string& name,
                 dataset.read(data, dt);
             }
             else
-                return false;            
-            
+                return false;
+
         }
 
         // end of try block
