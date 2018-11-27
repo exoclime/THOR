@@ -88,5 +88,9 @@ public:
     int  conv_adj;
     bool gcm_off;
 
+    bool rest;
+    int TPprof;
+    
+
     SimulationSetup();
 };

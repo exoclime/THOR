@@ -297,12 +297,10 @@ __host__ void ESP::alloc_data(bool conservation) {
     }
 }
 
-__host__ bool ESP::initial_values(bool               rest,
-                                  const std::string &initial_conditions_filename,
+__host__ bool ESP::initial_values(const std::string &initial_conditions_filename,
                                   const bool &       continue_sim,
                                   double             timestep_dyn,
                                   SimulationSetup &  sim,
-                                  int                TPprof,
                                   int &              nstep,
                                   double &           simulation_start_time,
                                   int &              output_file_idx) {
@@ -313,7 +311,7 @@ __host__ bool ESP::initial_values(bool               rest,
     //
     //
     //  Initial atmospheric conditions
-    if (rest) {
+    if (sim.rest) {
         double Ha = sim.Rd * sim.Tmean / sim.Gravit;
         for (int i = 0; i < point_num; i++) {
             //
@@ -322,10 +320,10 @@ __host__ bool ESP::initial_values(bool               rest,
 
             for (int lev = 0; lev < nv; lev++) {
                 pressure_h[i * nv + lev] = sim.P_Ref * exp(-Altitude_h[lev] / Ha);
-                if (TPprof == 0) {
+                if (sim.TPprof == 0) {
                     temperature_h[i * nv + lev] = sim.Tmean;
                 }
-                else if (TPprof == 1) {
+                else if (sim.TPprof == 1) {
                     double tau                  = pressure_h[i * nv + lev] / (1e4); //tau = 1 at 0.1 bar
                     double gamma                = 0.6;                              // ratio of sw to lw opacity
                     double f                    = 0.25;
@@ -592,10 +590,10 @@ __host__ bool ESP::initial_values(bool               rest,
     cudaMemcpy(grad_d, grad_h, 7 * 3 * point_num * sizeof(double), cudaMemcpyHostToDevice);
     cudaMemcpy(Kdhz_d, Kdhz_h, nv * sizeof(double), cudaMemcpyHostToDevice);
     cudaMemcpy(Kdh4_d, Kdh4_h, nv * sizeof(double), cudaMemcpyHostToDevice);
-    
+
     if (sim.SpongeLayer == true)
         cudaMemcpy(zonal_mean_tab_d, zonal_mean_tab_h, 3 * point_num * sizeof(int), cudaMemcpyHostToDevice);
-    
+
     //  Initialize arrays
     cudaMemset(Adv_d, 0, sizeof(double) * 3 * point_num * nv);
     cudaMemset(v_d, 0, sizeof(double) * nv * point_num * 3);
@@ -635,7 +633,7 @@ __host__ bool ESP::initial_values(bool               rest,
 
     // modules need to set their initial conditions
     if (phy_modules_execute) {
-        if (rest) // no initial condition file
+        if (sim.rest) // no initial condition file
             phy_modules_init_data(*this, sim, nullptr);
         else {
             // load initial condition file and pass it to modules

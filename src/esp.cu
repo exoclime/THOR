@@ -257,8 +257,7 @@ int main(int argc, char** argv) {
     // rest supersedes initial condition entry,
     // but if initial condition set from  command line, it overrides
     // rest variable
-    bool rest = true;
-    config_reader.append_config_var("rest", rest, rest_default);
+    config_reader.append_config_var("rest", sim.rest, rest_default);
 
     string initial_conditions = "initialfilename.h5";
     config_reader.append_config_var("initial", initial_conditions, string(initial_conditions_default));
@@ -279,9 +278,8 @@ int main(int argc, char** argv) {
     config_reader.append_config_var("results_path", output_path, string(output_path_default));
 
     config_reader.append_config_var("gcm_off", sim.gcm_off, gcm_off_default);
-
-    int TPprof = 0;
-    config_reader.append_config_var("TPprof", TPprof, TPprof_default);
+    
+    config_reader.append_config_var("TPprof", sim.TPprof, TPprof_default);
 
     config_reader.append_config_var("conservation", sim.conservation, conservation_default);
     //*****************************************************************
@@ -316,7 +314,7 @@ int main(int argc, char** argv) {
 
 
     if (argparser.get_arg("initial", inital_conditions_arg)) {
-        rest                      = false;
+        sim.rest                      = false;
         initial_conditions        = inital_conditions_arg;
         initial_condition_arg_set = true;
 
@@ -337,7 +335,7 @@ int main(int argc, char** argv) {
 
 
     if (argparser.get_arg("continue", continue_filename)) {
-        rest         = false;
+        sim.rest         = false;
         continue_sim = true;
 
         if (run_as_batch) {
@@ -389,7 +387,7 @@ int main(int argc, char** argv) {
     config_OK &= check_greater("GPU_ID_N", GPU_ID_N, -1);
     config_OK &= check_greater("n_out", n_out, 0);
 
-    config_OK &= check_range("TPprof", TPprof, -1, 2);
+    config_OK &= check_range("TPprof", sim.TPprof, -1, 2);
 
     if (simulation_ID.length() < 160) {
         sprintf(sim.simulation_ID, "%s", simulation_ID.c_str());
@@ -485,7 +483,7 @@ int main(int argc, char** argv) {
                 printf("continuing batch run from file %s\n", last_file.c_str());
 
                 // we want to continue the simulation
-                rest         = false;
+                sim.rest         = false;
                 continue_sim = true;
 
                 // overwrite the results files we'd encounter
@@ -650,10 +648,7 @@ int main(int argc, char** argv) {
     // Initial conditions
     int  output_file_idx = 0;
     int  step_idx        = 0;
-    bool load_initial    = X.initial_values(rest,                  // Option to
-                                                                // start the
-                                                                // atmosphere
-                                                                // from rest
+    bool load_initial    = X.initial_values(
                                          initial_conditions,    // initial conditions if not
                                                                 // started from
                                                                 // rest
@@ -665,7 +660,6 @@ int main(int argc, char** argv) {
                                                                 // start at 0?
                                          timestep,              // Time-step [s]
                                          sim,                   // simulation parameters
-                                         TPprof,                // isothermal = 0, guillot = 1
                                          step_idx,              // current step index
                                          simulation_start_time, // output:
                                                                 // simulation start time
@@ -771,8 +765,8 @@ int main(int argc, char** argv) {
     printf("    \n");
     printf(" Simulation\n");
 
-    printf("   Start from rest = %s \n", rest ? "true" : "false");
-    if (!rest)
+    printf("   Start from rest = %s \n", sim.rest ? "true" : "false");
+    if (!sim.rest)
         printf("   Loading initial conditions from = %s \n", initial_conditions.c_str());
     printf("   Output directory = %s \n", output_path.c_str());
     printf("   Start output numbering at %d.\n", output_file_idx);

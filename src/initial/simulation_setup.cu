@@ -84,4 +84,8 @@ SimulationSetup::SimulationSetup() {
 
     gcm_off      = false;
     conservation = false;
+
+    rest = true;
+    TPprof = 0;   // isothermal = 0, guillot = 1
+    
 }
