@@ -262,12 +262,10 @@ public:
 
     void alloc_data(bool);
 
-    bool initial_values(bool               rest,
-                        const std::string &initial_conditions_filename,
+    bool initial_values(const std::string &initial_conditions_filename,
                         const bool &       continue_sim,
                         double             timestep_dyn,
                         SimulationSetup &  sim,
-                        int                TPprof,
                         int &              nsteps,
                         double &           simulation_start_time,
                         int &              output_file_idx);

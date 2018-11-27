@@ -177,6 +177,37 @@ __host__ void ESP::output(int                    fidx, // Index of output file
         s.append_value(sim.Cp, "/Cp", "J/(Kg K)", "Specific heat capacity");
         //      SpongeLayer option
         s.append_value(sim.SpongeLayer ? 1.0 : 0.0, "/SpongeLayer", "-", "Using SpongeLayer?");
+        //      DeepModel option
+        s.append_value(sim.DeepModel ? 1.0 : 0.0, "/DeepModel", "-", "Using Deep Model");
+
+        //      NonHydro option
+        s.append_value(sim.NonHydro ? 1.0 : 0.0, "/NonHydro", "-", "Using Non Hydrostatic parameter");
+
+        //      DivDampP option
+        s.append_value(sim.DivDampP ? 1.0 : 0.0, "/DivDampP", "-", "Using Divergence-damping");
+
+        //      HyDiff option
+        s.append_value(sim.HyDiff ? 1.0 : 0.0, "/HyDiff", "-", "Using Hyper diffusion");
+
+        //      Hyperdiffusion strength 
+        s.append_value(sim.Diffc, "/Diffc", "-", "Hyperdiffusion strength");
+
+        //      Tmean
+        s.append_value(sim.Tmean, "/Tmean", "K", "Mean atmospheric temperature");
+
+        //      conv adj option
+        s.append_value(sim.conv_adj, "/conv_adj", "-", "Using convection adjustment");
+
+        //      GCM on/off option
+        s.append_value(sim.gcm_off ? 1.0 : 0.0, "/gcm_off", "-", "GCM off");
+
+        //      rest option
+        s.append_value(sim.rest ? 1.0 : 0.0, "/rest", "-", "Starting from rest");
+
+        //      TPprof option
+        s.append_value(sim.TPprof, "/TPprof", "-", "Initial TP profile option");
+
+
         //      core_benchmark  option
         s.append_value(int(core_benchmark), "/core_benchmark", "-", "Using benchmark forcing or RT");
         if (sim.SpongeLayer) {
