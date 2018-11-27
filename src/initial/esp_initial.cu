@@ -52,6 +52,8 @@
 #include "phy/profx_conservation.h"
 #include "phy/valkyrie_jet_steadystate.h"
 #include "storage.h"
+#include "log_writer.h"
+
 #include <map>
 #include <stdio.h>
 
@@ -280,7 +282,7 @@ __host__ void ESP::alloc_data(bool conservation) {
     }
 
     // PHY modules
-    printf("  Dynamical core memory initialised.\n");
+    log::printf("  Dynamical core memory initialised.\n");
 
     if (phy_modules_execute) {
 
@@ -289,9 +291,9 @@ __host__ void ESP::alloc_data(bool conservation) {
         // Physics module register arrays that need to be updated in dynamical core Runge-Kutta step
         phy_modules_core_arrays.allocate_device_array();
         if (init_modules)
-            printf("  Module memory initialised.\n");
+            log::printf("  Module memory initialised.\n");
         else {
-            printf("  Error initialising module memory.\n");
+            log::printf("  Error initialising module memory.\n");
             exit(-1);
         }
     }
@@ -410,7 +412,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
             if (!match_output_file_numbering_scheme(initial_conditions_filename,
                                                     basename,
                                                     file_number)) {
-                printf("Loading initial conditions: "
+                log::printf("Loading initial conditions: "
                        "Could not recognise file numbering scheme "
                        "for input %s: (found base: %s, num: %d) \n",
                        initial_conditions_filename.c_str(),
@@ -429,18 +431,18 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
         // check existence of files
         if (!path_exists(initial_conditions_filename)) {
-            printf("initial condition file %s not found.\n", initial_conditions_filename.c_str());
+            log::printf("initial condition file %s not found.\n", initial_conditions_filename.c_str());
             return false;
         }
 
         if (!path_exists(planet_filename)) {
-            printf("planet_file %s not found.\n", planet_filename.c_str());
+            log::printf("planet_file %s not found.\n", planet_filename.c_str());
             return false;
         }
 
 
-        printf("Loading planet from: %s\n", planet_filename.c_str());
-        printf("Loading initial conditions from: %s\n", initial_conditions_filename.c_str());
+        log::printf("Loading planet from: %s\n", planet_filename.c_str());
+        log::printf("Loading initial conditions from: %s\n", initial_conditions_filename.c_str());
 
         // Check planet data
         {
@@ -464,7 +466,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
 
                 if (value != element.second) {
-                    printf("mismatch for %s value between config value: %f and initial condition value %f.\n",
+                    log::printf("mismatch for %s value between config value: %f and initial condition value %f.\n",
                            element.first.c_str(),
                            element.second,
                            value);
@@ -479,7 +481,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
 
                 if (value != element.second) {
-                    printf("mismatch for %s value between config value: %d and initial condition value %d.\n",
+                    log::printf("mismatch for %s value between config value: %d and initial condition value %d.\n",
                            element.first.c_str(),
                            element.second,
                            value);
@@ -489,7 +491,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
 
             if (load_OK == false || values_match == false) {
-                printf("Could not reload full configuration.\n");
+                log::printf("Could not reload full configuration.\n");
 
                 return false;
             }
@@ -503,29 +505,29 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
             // Step number
             load_OK &= s.read_value("/nstep", nstep);
 
-            printf("Reloaded %s: %d.\n", "/nstep", load_OK ? 1 : 0);
+            log::printf("Reloaded %s: %d.\n", "/nstep", load_OK ? 1 : 0);
 
             //      Density
             load_OK &= s.read_table_to_ptr("/Rho", Rho_h, point_num * nv);
-            printf("Reloaded %s: %d.\n", "/Rho", load_OK ? 1 : 0);
+            log::printf("Reloaded %s: %d.\n", "/Rho", load_OK ? 1 : 0);
             //      Pressure
             load_OK &= s.read_table_to_ptr("/Pressure", pressure_h, point_num * nv);
-            printf("Reloaded %s: %d.\n", "/Pressure", load_OK ? 1 : 0);
+            log::printf("Reloaded %s: %d.\n", "/Pressure", load_OK ? 1 : 0);
             //      Horizontal momentum
             load_OK &= s.read_table_to_ptr("/Mh", Mh_h, point_num * nv * 3);
-            printf("Reloaded %s: %d.\n", "/Mh", load_OK ? 1 : 0);
+            log::printf("Reloaded %s: %d.\n", "/Mh", load_OK ? 1 : 0);
             //      Vertical momentum
             load_OK &= s.read_table_to_ptr("/Wh", Wh_h, point_num * nvi);
-            printf("Reloaded %s: %d.\n", "/Wh", load_OK ? 1 : 0);
+            log::printf("Reloaded %s: %d.\n", "/Wh", load_OK ? 1 : 0);
 
             //      Simulation start time
             load_OK &= s.read_value("/simulation_time", simulation_start_time);
-            printf("Reloaded %s: %d.\n", "/simulation_time", load_OK ? 1 : 0);
+            log::printf("Reloaded %s: %d.\n", "/simulation_time", load_OK ? 1 : 0);
         }
 
 
         if (!load_OK) {
-            printf("Error reloading simulation state\n");
+            log::printf("Error reloading simulation state\n");
 
             return false;
         }
@@ -755,14 +757,29 @@ __host__ ESP::~ESP() {
 
     //  Extras-nan
     cudaFree(check_d);
-    cudaFree(vbar_d);
 
+    // Sponge Layer
+    cudaFree(vbar_d);
     cudaFree(zonal_mean_tab_d);
+
+
+
+    free(vbar_h);
+    free(utmp_h);
+    free(vtmp_h);
+    free(wtmp_h);
+
+    cudaFree(utmp);
+    cudaFree(vtmp);
+    cudaFree(wtmp);
+
+    
+
 
 
     if (phy_modules_execute)
         phy_modules_free_mem();
 
 
-    printf("\n\n Free memory!\n\n");
+    log::printf("\n\n Free memory!\n\n");
 }

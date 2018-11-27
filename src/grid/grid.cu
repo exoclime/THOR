@@ -60,8 +60,9 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
-#include "../headers/grid.h"
+#include "grid.h"
 #include "vector_operations.h"
+#include "log_writer.h"
 
 // some helper local functions
 inline double3 normproj(const double3 &v1, const double3 &v2) {
@@ -89,7 +90,7 @@ __host__ Icogrid::Icogrid(bool   sprd,        // Spring dynamics option
                           bool   sponge,
                           int *  max_count) {
 
-    printf("\n\n Building icosahedral grid!");
+    log::printf("\n\n Building icosahedral grid!");
 
     //  Number of vertices
     point_num = 2 + 10 * pow(2.0, 2.0 * glevel); // Horizontal
@@ -107,7 +108,7 @@ __host__ Icogrid::Icogrid(bool   sprd,        // Spring dynamics option
     else if (glevel == 7)
         divide_face = 3;
     else {
-        printf("\nParameter not tested! Use the predefined divide_face values.\n");
+        log::printf("\nParameter not tested! Use the predefined divide_face values.\n");
         exit(EXIT_FAILURE);
     }
     grid_level = glevel;
@@ -306,7 +307,7 @@ __host__ Icogrid::Icogrid(bool   sprd,        // Spring dynamics option
                          max_count);
     }
 
-    printf(" GRID DONE!\n\n");
+    log::printf(" GRID DONE!\n\n");
 }
 
 
@@ -1591,7 +1592,7 @@ void Icogrid::spring_dynamics(int *   point_local,
 
     int lim = 100000; // Limit of iterations.
 
-    printf("\n\n Running spring dynamics.\n\n");
+    log::printf("\n\n Running spring dynamics.\n\n");
 
     for (int i = 0; i < point_num; i++) {
         vel[i] = make_double3(0.0, 0.0, 0.0);
@@ -1674,7 +1675,7 @@ void Icogrid::spring_dynamics(int *   point_local,
         if (max_v < cond) break;
     }
 
-    printf(" Done!\n\n");
+    log::printf(" Done!\n\n");
 
     delete[] xyzi;
     delete[] vel;
@@ -2577,18 +2578,18 @@ void Icogrid::zonal_mean_tab_f(int *   zonal_mean_tab,
     for (int i = 0; i < point_num; i++) {
         int ind                   = zonal_mean_tab[i * 3];
         zonal_mean_tab[i * 3 + 1] = count_num[ind];
-        // printf("ind, count = %d, %d\n", ind, count_num[ind]);
+        // log::printf("ind, count = %d, %d\n", ind, count_num[ind]);
         if (count_num[ind] > *max_count) *max_count = count_num[ind];
     }
     *max_count = pow(2, ceil(log(*max_count) / log(2)));
 
-    // printf("max count = %d\n", max_count);
+    // log::printf("max count = %d\n", max_count);
     delete[] count_num;
     delete[] lat_array;
 }
 
 void Icogrid::free_memory() {
-    printf("Freeing Grid memory.\n");
+    log::printf("Freeing Grid memory.\n");
 
     // Free memory that's not passed and freed by ESP.
 

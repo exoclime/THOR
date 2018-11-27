@@ -47,6 +47,7 @@
 ////////////////////////////////////////////////////////////////////////
 #include <iostream>
 
+#include "log_writer.h"
 
 __host__ void getDeviceData(const double *device, double *host, int size) {
     cudaMemcpy(host, device, size, cudaMemcpyDeviceToHost);
@@ -102,6 +103,6 @@ void check_last_cuda_error(std::string ref_name) {
 
     // Check device query
     if (err != cudaSuccess) {
-        printf("'%s' cuda error: %s\n", ref_name.c_str(), cudaGetErrorString(err));
+        log::printf("'%s' cuda error: %s\n", ref_name.c_str(), cudaGetErrorString(err));
     }
 }

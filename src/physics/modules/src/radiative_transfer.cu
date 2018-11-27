@@ -52,27 +52,27 @@ radiative_transfer::~radiative_transfer() {
 }
 
 void radiative_transfer::print_config() {
-    printf("  Radiative transfer module\n");
+    log::printf("  Radiative transfer module\n");
 
     // basic star-planet properties
-    printf("    Tstar                       = %f K.\n", Tstar);
-    printf("    Orbital distance            = %f au.\n", planet_star_dist);
-    printf("    Radius of host star         = %f R_sun.\n", radius_star);
-    printf("    Diffusivity factor          = %f.\n", diff_fac);
-    printf("    Lower boundary temperature  = %f K.\n", Tlow);
-    printf("    Bond albedo                 = %f.\n", albedo);
-    printf("    Shortwave Absorption coef   = %f.\n", tausw);
-    printf("    Longwave Absorption coef    = %f.\n", taulw);
-    printf("\n");
+    log::printf("    Tstar                       = %f K.\n", Tstar);
+    log::printf("    Orbital distance            = %f au.\n", planet_star_dist);
+    log::printf("    Radius of host star         = %f R_sun.\n", radius_star);
+    log::printf("    Diffusivity factor          = %f.\n", diff_fac);
+    log::printf("    Lower boundary temperature  = %f K.\n", Tlow);
+    log::printf("    Bond albedo                 = %f.\n", albedo);
+    log::printf("    Shortwave Absorption coef   = %f.\n", tausw);
+    log::printf("    Longwave Absorption coef    = %f.\n", taulw);
+    log::printf("\n");
 
     // orbit/insolation properties
-    printf("    Synchronous rotation        = %s.\n", sync_rot ? "true" : "false");
-    printf("    Orbital mean motion         = %f rad/s.\n", mean_motion);
-    printf("    Host star initial right asc = %f deg.\n", alpha_i);
-    printf("    Planet true initial long    = %f.\n", true_long_i);
-    printf("    Orbital eccentricity        = %f.\n", ecc);
-    printf("    Obliquity                   = %f deg.\n", obliquity);
-    printf("    Longitude of periastron     = %f deg.\n", longp);
+    log::printf("    Synchronous rotation        = %s.\n", sync_rot ? "true" : "false");
+    log::printf("    Orbital mean motion         = %f rad/s.\n", mean_motion);
+    log::printf("    Host star initial right asc = %f deg.\n", alpha_i);
+    log::printf("    Planet true initial long    = %f.\n", true_long_i);
+    log::printf("    Orbital eccentricity        = %f.\n", ecc);
+    log::printf("    Obliquity                   = %f deg.\n", obliquity);
+    log::printf("    Longitude of periastron     = %f deg.\n", longp);
 }
 
 bool radiative_transfer::initialise_memory(const ESP &              esp,

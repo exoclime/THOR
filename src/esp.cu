@@ -80,6 +80,7 @@
 
 using std::string;
 
+#include "log_writer.h"
 
 enum e_sig {
     ESIG_NOSIG   = 0,
@@ -93,12 +94,12 @@ volatile sig_atomic_t caught_signal = ESIG_NOSIG;
 
 void sigterm_handler(int sig) {
     caught_signal = ESIG_SIGTERM;
-    printf("SIGTERM caught, trying to exit gracefully.\n");
+    log::printf("SIGTERM caught, trying to exit gracefully.\n");
 }
 
 void sigint_handler(int sig) {
     caught_signal = ESIG_SIGINT;
-    printf("SIGINT caught, trying to exit gracefully\n");
+    log::printf("SIGINT caught, trying to exit gracefully\n");
 }
 
 
@@ -131,7 +132,7 @@ void get_cuda_mem_usage(size_t& total_bytes, size_t& free_bytes) {
     cudaError_t cuda_status = cudaMemGetInfo(&free_bytes, &total_bytes);
 
     if (cudaSuccess != cuda_status) {
-        printf("Error: cudaMemGetInfo fails, %s \n", cudaGetErrorString(cuda_status));
+        log:: printf("Error: cudaMemGetInfo fails, %s \n", cudaGetErrorString(cuda_status));
     }
 }
 
@@ -170,7 +171,7 @@ int main(int argc, char** argv) {
     // Parse arguments, exit on fail
     bool parse_ok = argparser.parse(argc, argv);
     if (!parse_ok) {
-        printf("error parsing arguments\n");
+        log::printf("error parsing arguments\n");
 
         argparser.print_help();
         exit(-1);
@@ -182,11 +183,11 @@ int main(int argc, char** argv) {
     argparser.get_positional_arg(config_filename);
 
     //*****************************************************************
-    printf("\n Starting ESP!");
-    printf("\n\n version 1.0\n");
-    printf(" Compiled on %s at %s.\n", __DATE__, __TIME__);
+    log::printf("\n Starting ESP!");
+    log::printf("\n\n version 2.0\n");
+    log::printf(" Compiled on %s at %s.\n", __DATE__, __TIME__);
 
-    printf(" build level: %s\n", BUILD_LEVEL);
+    log::printf(" build level: %s\n", BUILD_LEVEL);
 
 
     //*****************************************************************
@@ -289,12 +290,12 @@ int main(int argc, char** argv) {
 
     //*****************************************************************
     // Read config file
-    printf("\n");
+    log:: printf("\n");
 
     if (config_reader.parse_file(config_filename))
-        printf(" Config file %s read\n", config_filename.c_str());
+        log::printf(" Config file %s read\n", config_filename.c_str());
     else {
-        printf(" Config file %s reading failed, aborting\n", config_filename.c_str());
+        log::printf(" Config file %s reading failed, aborting\n", config_filename.c_str());
         exit(-1);
     }
 
@@ -319,7 +320,7 @@ int main(int argc, char** argv) {
         initial_condition_arg_set = true;
 
         if (!path_exists(initial_conditions)) {
-            printf("Initial conditions file \"%s\" not found\n", initial_conditions.c_str());
+            log::printf("Initial conditions file \"%s\" not found\n", initial_conditions.c_str());
             exit(-1);
         }
     }
@@ -339,20 +340,20 @@ int main(int argc, char** argv) {
         continue_sim = true;
 
         if (run_as_batch) {
-            printf("--continue and --batch options set, options are exclusive, must set only one\n");
+            log::printf("--continue and --batch options set, options are exclusive, must set only one\n");
 
             exit(-1);
         }
 
 
         if (initial_condition_arg_set) {
-            printf("--continue and --initial options set, options are exclusive, must set only one\n");
+            log::printf("--continue and --initial options set, options are exclusive, must set only one\n");
 
             exit(-1);
         }
 
         if (!path_exists(continue_filename)) {
-            printf("Continuation start condition file \"%s\" not found\n", continue_filename.c_str());
+            log::printf("Continuation start condition file \"%s\" not found\n", continue_filename.c_str());
             exit(-1);
         }
 
@@ -393,7 +394,7 @@ int main(int argc, char** argv) {
         sprintf(sim.simulation_ID, "%s", simulation_ID.c_str());
     }
     else {
-        printf("Bad value for config variable simulation_ID: [%s]\n", simulation_ID.c_str());
+        log::printf("Bad value for config variable simulation_ID: [%s]\n", simulation_ID.c_str());
 
         config_OK = false;
     }
@@ -426,16 +427,17 @@ int main(int argc, char** argv) {
         config_OK &= true;
     }
     else {
-        printf("core_benchmark config item not recognised: [%s]\n", core_benchmark_str.c_str());
+        log::printf("core_benchmark config item not recognised: [%s]\n", core_benchmark_str.c_str());
         config_OK &= false;
     }
 
 
     if (!config_OK) {
-        printf("Error in configuration file\n");
+        log::printf("Error in configuration file\n");
         exit(-1);
     }
-    //*****************************************************************
+
+
 #ifdef BENCHMARKING
     string output_path_ref = (path(output_path) / string("ref")).to_string();
 #    ifdef BENCH_POINT_COMPARE
@@ -449,17 +451,38 @@ int main(int argc, char** argv) {
 
     // check output config directory
     if (!create_output_dir(output_path)) {
-        printf("Error creating output result directory: %s\n",
+        log::printf("Error creating output result directory: %s\n",
                output_path.c_str());
         exit(-1);
     }
 
-    //*****************************************************************
+    //****************************************************************
+    // Start logging to file
+    printf("Opening log file.\n");
+    
+    string log_file = (path(output_path) / ( string("esp_log_")+ sim.simulation_ID+ string(".log"))).to_string();
+    
+    log::init_logger(log_file, continue_sim || run_as_batch );
+
+    log::printf_logonly("*********************************************************************\n");
+    std::time_t prog_start_time = std::time(nullptr);
+    log::printf(  "Starting logging to %s.\n\n", log_file.c_str());
+    log::printf(  "Time: %s\n\n", std::ctime(&prog_start_time));
+    
+    
+
+    log::printf_logonly("\n\n version 2.0\n");
+    log::printf_logonly(" Compiled on %s at %s.\n", __DATE__, __TIME__);
+
+    log::printf_logonly(" build level: %s\n\n", BUILD_LEVEL);
+    
+
+    // Data logger
     log_writer logwriter(sim.simulation_ID, output_path);
 
     // Batch mode handling
     if (run_as_batch) {
-        printf("Starting in batch mode.\n");
+        log::printf("Starting in batch mode.\n");
 
 
         // Get last written file from
@@ -471,7 +494,7 @@ int main(int argc, char** argv) {
         try {
             has_last_file = logwriter.check_output_log(last_file_number, last_iteration_number, last_file);
         } catch (const std::exception& e) {
-            printf("[%s:%d] error while checking output log: %s.\n", __FILE__, __LINE__, e.what());
+            log::printf("[%s:%d] error while checking output log: %s.\n", __FILE__, __LINE__, e.what());
             exit(-1);
         }
 
@@ -480,7 +503,7 @@ int main(int argc, char** argv) {
             o /= last_file;
 
             if (path_exists(o.to_string())) {
-                printf("continuing batch run from file %s\n", last_file.c_str());
+                log::printf("continuing batch run from file %s\n", last_file.c_str());
 
                 // we want to continue the simulation
                 sim.rest         = false;
@@ -497,12 +520,12 @@ int main(int argc, char** argv) {
                 logwriter.prepare_diagnostics_file(true);
             }
             else {
-                printf("Did not find last saved file that should exist.\n");
+                log::printf("Did not find last saved file that should exist.\n");
                 exit(-1);
             }
         }
         else {
-            printf("No batch file found, initialise simulation.\n");
+            log::printf("No batch file found, initialise simulation.\n");
             // we don't have an output file, start from scratch, reinitialising outputs
             logwriter.open_output_log_for_write(false /*open in non append mode */);
             logwriter.prepare_conservation_file(false);
@@ -510,7 +533,7 @@ int main(int argc, char** argv) {
         }
     }
     else {
-        printf("Opening result output file.\n");
+        log::printf("Opening result output file.\n");
         logwriter.open_output_log_for_write(continue_sim /*open in append mode */);
         logwriter.prepare_conservation_file(continue_sim);
         logwriter.prepare_diagnostics_file(continue_sim);
@@ -520,7 +543,7 @@ int main(int argc, char** argv) {
     //*****************************************************************
     //  Set the GPU device.
     cudaError_t error;
-    printf(" Using GPU #%d\n", GPU_ID_N);
+    log::printf(" Using GPU #%d\n", GPU_ID_N);
     cudaSetDevice(GPU_ID_N);
 
     //
@@ -531,58 +554,58 @@ int main(int argc, char** argv) {
 
     // Check device query
     if (err != cudaSuccess) {
-        printf("Error getting device count.\n");
-        printf("%s\n", cudaGetErrorString(err));
+        log::printf("Error getting device count.\n");
+        log::printf("%s\n", cudaGetErrorString(err));
         exit(-1);
     }
 
     int device_major_minor_number = 0;
     for (int i = 0; i < ndevices; ++i) {
         // Get device properties
-        printf("\n CUDA Device #%d\n", i);
+        log::printf("\n CUDA Device #%d\n", i);
         cudaDeviceProp devPp;
         cudaGetDeviceProperties(&devPp, i);
 
         if (i == GPU_ID_N)
             device_major_minor_number = devPp.major * 10 + devPp.minor;
 
-        printf(" Name: %s\n", devPp.name);
-        printf(" Compute Capabilities: %d.%d\n", devPp.major, devPp.minor);
-        printf("   Total global memory:           %lu\n", devPp.totalGlobalMem);
-        printf("   Total shared memory per block: %lu\n", devPp.sharedMemPerBlock);
-        printf("   Total registers per block:     %d\n", devPp.regsPerBlock);
-        printf("   Warp size:                     %d\n", devPp.warpSize);
-        printf("   Maximum memory pitch:          %lu\n", devPp.memPitch);
-        printf("   Maximum threads per block:     %d\n", devPp.maxThreadsPerBlock);
-        printf("   Clock rate:                    %d\n", devPp.clockRate);
-        printf("   Total constant memory:         %lu\n", devPp.totalConstMem);
-        printf("   Number of multiprocessors:     %d\n", devPp.multiProcessorCount);
+        log::printf(" Name: %s\n", devPp.name);
+        log::printf(" Compute Capabilities: %d.%d\n", devPp.major, devPp.minor);
+        log::printf("   Total global memory:           %lu\n", devPp.totalGlobalMem);
+        log::printf("   Total shared memory per block: %lu\n", devPp.sharedMemPerBlock);
+        log::printf("   Total registers per block:     %d\n", devPp.regsPerBlock);
+        log::printf("   Warp size:                     %d\n", devPp.warpSize);
+        log::printf("   Maximum memory pitch:          %lu\n", devPp.memPitch);
+        log::printf("   Maximum threads per block:     %d\n", devPp.maxThreadsPerBlock);
+        log::printf("   Clock rate:                    %d\n", devPp.clockRate);
+        log::printf("   Total constant memory:         %lu\n", devPp.totalConstMem);
+        log::printf("   Number of multiprocessors:     %d\n", devPp.multiProcessorCount);
     }
 
     // do we have a device?
     if (ndevices < 1 || err != cudaSuccess) {
-        printf("No device found (compiled SM:%d).\n", DEVICE_SM);
-        printf("Aborting.\n");
+        log::printf("No device found (compiled SM:%d).\n", DEVICE_SM);
+        log::printf("Aborting.\n");
         exit(-1);
     }
 
     // can we match the device ID asked?
     if (GPU_ID_N >= ndevices) {
-        printf("Asked for device #%d but only found %d devices.\n", GPU_ID_N, ndevices);
+        log::printf("Asked for device #%d but only found %d devices.\n", GPU_ID_N, ndevices);
         exit(-1);
     }
 
     // do we have the compute capabilities set at compile time
 
     if (device_major_minor_number < DEVICE_SM) {
-        printf("Found device with id %d does not have sufficent compute capabilities.\n", GPU_ID_N);
-        printf("Capabilities: %d (compiled with SM=%d).\n", device_major_minor_number, DEVICE_SM);
-        printf("Aborting.\n");
+        log::printf("Found device with id %d does not have sufficent compute capabilities.\n", GPU_ID_N);
+        log::printf("Capabilities: %d (compiled with SM=%d).\n", device_major_minor_number, DEVICE_SM);
+        log::printf("Aborting.\n");
         exit(-1);
     }
     else if (device_major_minor_number > DEVICE_SM) {
-        printf("Device has higher compute capability than used at compile time.\n");
-        printf("Capabilities: %d (compiled with SM=%d).\n", device_major_minor_number, DEVICE_SM);
+        log::printf("Device has higher compute capability than used at compile time.\n");
+        log::printf("Capabilities: %d (compiled with SM=%d).\n", device_major_minor_number, DEVICE_SM);
     }
 
 
@@ -641,7 +664,7 @@ int main(int argc, char** argv) {
     // esp output setup
     X.set_output_param(sim.simulation_ID, output_path);
 
-    printf(" Setting the initial conditions.\n\n");
+    log::printf(" Setting the initial conditions.\n\n");
 
     double simulation_start_time = 0.0;
 
@@ -669,7 +692,7 @@ int main(int argc, char** argv) {
 
 
     if (!load_initial) {
-        printf("error loading initial conditions from %s.\n", initial_conditions.c_str());
+        log::printf("error loading initial conditions from %s.\n", initial_conditions.c_str());
         exit(EXIT_FAILURE);
     }
 
@@ -699,13 +722,13 @@ int main(int argc, char** argv) {
 
     if (matching_name_result_files.size() > 0) {
         if (!force_overwrite) {
-            printf("output files already exist and would be overwritten \n"
+            log::printf("output files already exist and would be overwritten \n"
                    "when running simulation. \n"
                    "Files found:\n");
             for (const auto& f : matching_name_result_files)
-                printf("\t%s\n", f.first.c_str());
+                log::printf("\t%s\n", f.first.c_str());
 
-            printf(" Aborting. \n"
+            log::printf(" Aborting. \n"
                    "use --overwrite to overwrite existing files.\n");
             exit(EXIT_FAILURE);
         }
@@ -717,59 +740,59 @@ int main(int argc, char** argv) {
 
     //
     //  Planet conditions
-    printf("\n");
-    printf(" Planet: %s\n", sim.simulation_ID);
-    printf("   Radius = %f m\n", sim.A);
-    printf("   Omega  = %f s-1\n", sim.Omega);
-    printf("   Gravit = %f m/s2\n", sim.Gravit);
-    printf("   Rd     = %f J/(Kg K)\n", sim.Rd);
-    printf("   Cp     = %f J/(Kg K)\n", sim.Cp);
-    printf("   Tmean  = %f K\n", sim.Tmean);
+    log::printf("\n");
+    log::printf(" Planet: %s\n", sim.simulation_ID);
+    log::printf("   Radius = %f m\n", sim.A);
+    log::printf("   Omega  = %f s-1\n", sim.Omega);
+    log::printf("   Gravit = %f m/s2\n", sim.Gravit);
+    log::printf("   Rd     = %f J/(Kg K)\n", sim.Rd);
+    log::printf("   Cp     = %f J/(Kg K)\n", sim.Cp);
+    log::printf("   Tmean  = %f K\n", sim.Tmean);
     //
     //  Numerical Methods
-    printf("\n");
-    printf(" THOR\n");
-    printf("   ********** \n");
-    printf("   Grid - Icosahedral\n");
-    printf("   Glevel          = %d.\n", glevel);
-    printf("   Spring dynamics = %d.\n", spring_dynamics);
-    printf("   Beta            = %f.\n", spring_beta);
-    printf("   Resolution      = %f deg.\n", (180 / M_PI) * sqrt(2 * M_PI / 5) / pow(2, glevel));
-    printf("   Vertical layers = %d.\n", Grid.nv);
-    printf("   ********** \n");
-    printf("   Split-Explicit / HE-VI \n");
-    printf("   FV = Central finite volume \n");
-    printf("   Time integration =  %d s.\n", nsmax * timestep);
-    printf("   Large time-step  =  %d s.\n", timestep);
-    printf("   Start time       =  %f s.\n", simulation_start_time);
+    log::printf("\n");
+    log::printf(" THOR\n");
+    log::printf("   ********** \n");
+    log::printf("   Grid - Icosahedral\n");
+    log::printf("   Glevel          = %d.\n", glevel);
+    log::printf("   Spring dynamics = %d.\n", spring_dynamics);
+    log::printf("   Beta            = %f.\n", spring_beta);
+    log::printf("   Resolution      = %f deg.\n", (180 / M_PI) * sqrt(2 * M_PI / 5) / pow(2, glevel));
+    log::printf("   Vertical layers = %d.\n", Grid.nv);
+    log::printf("   ********** \n");
+    log::printf("   Split-Explicit / HE-VI \n");
+    log::printf("   FV = Central finite volume \n");
+    log::printf("   Time integration =  %d s.\n", nsmax * timestep);
+    log::printf("   Large time-step  =  %d s.\n", timestep);
+    log::printf("   Start time       =  %f s.\n", simulation_start_time);
 
-    printf("    \n");
+    log::printf("    \n");
 
-    printf("   Running Core Benchmark test \"%s\" (%d).\n", core_benchmark_str.c_str(), int(core_benchmark));
+    log::printf("   Running Core Benchmark test \"%s\" (%d).\n", core_benchmark_str.c_str(), int(core_benchmark));
 
-    printf("    \n");
+    log::printf("    \n");
 
-    printf("\n");
-    printf(" Physics module: %s   \n", phy_modules_get_name().c_str());
-    printf("   ********** \n");
+    log::printf("\n");
+    log::printf(" Physics module: %s   \n", phy_modules_get_name().c_str());
+    log::printf("   ********** \n");
 
     if (core_benchmark == NO_BENCHMARK) {
 
-        printf("    \n");
+        log::printf("    \n");
         phy_modules_print_config();
-        printf("    \n");
+        log::printf("    \n");
     }
 
-    printf("   ********** \n");
-    printf("\n");
-    printf("    \n");
-    printf(" Simulation\n");
+    log::printf("   ********** \n");
+    log::printf("\n");
+    log::printf("    \n");
+    log::printf(" Simulation\n");
 
-    printf("   Start from rest = %s \n", sim.rest ? "true" : "false");
+    log::printf("   Start from rest = %s \n", sim.rest ? "true" : "false");
     if (!sim.rest)
-        printf("   Loading initial conditions from = %s \n", initial_conditions.c_str());
-    printf("   Output directory = %s \n", output_path.c_str());
-    printf("   Start output numbering at %d.\n", output_file_idx);
+        log::printf("   Loading initial conditions from = %s \n", initial_conditions.c_str());
+    log::printf("   Output directory = %s \n", output_path.c_str());
+    log::printf("   Start output numbering at %d.\n", output_file_idx);
 
 
     // We'll start writnig data to file and running main loop,
@@ -781,7 +804,7 @@ int main(int argc, char** argv) {
     sigterm_action.sa_flags = 0;
 
     if (sigaction(SIGTERM, &sigterm_action, NULL) == -1) {
-        printf("Error: cannot handle SIGTERM\n"); // Should not happen
+        log::printf("Error: cannot handle SIGTERM\n"); // Should not happen
     }
 
     struct sigaction sigint_action;
@@ -791,7 +814,7 @@ int main(int argc, char** argv) {
     sigint_action.sa_flags = 0;
 
     if (sigaction(SIGINT, &sigint_action, NULL) == -1) {
-        printf("Error: cannot handle SIGINT\n"); // Should not happen
+        log::printf("Error: cannot handle SIGINT\n"); // Should not happen
     }
 
     //
@@ -826,7 +849,7 @@ int main(int argc, char** argv) {
 
     // *********************************************************************************************
     //  Starting model Integration.
-    printf(" Starting the model integration.\n\n");
+    log::printf(" Starting the model integration.\n\n");
 
     // Start timer
     iteration_timer ittimer(step_idx, nsmax);
@@ -902,7 +925,7 @@ int main(int argc, char** argv) {
         end_time_str << str_time;
 
 
-        printf("\n Time step number = %d/%d || Time = %f days. \n\t Elapsed %s || Left: %s || Completion: %s. %s",
+        log::printf("\n Time step number = %d/%d || Time = %f days. \n\t Elapsed %s || Left: %s || Completion: %s. %s",
                nstep,
                nsmax,
                simulation_time / 86400.,
@@ -916,6 +939,8 @@ int main(int argc, char** argv) {
         size_t free_bytes;
         get_cuda_mem_usage(total_bytes, free_bytes);
 
+        // flush log output to file for security
+        log::flush();
 
         logwriter.output_diagnostics(nstep,
                                      simulation_time,
@@ -926,6 +951,7 @@ int main(int argc, char** argv) {
                                      mean_delta_per_step,
                                      end_time);
 
+        
         if (caught_signal != ESIG_NOSIG) {
             //exit loop and application after save on SIGTERM or SIGINT
             break;
@@ -934,16 +960,16 @@ int main(int argc, char** argv) {
     //
     //  Prints the duration of the integration.
     long finishTime = clock();
-    printf("\n\n Integration time = %f seconds\n\n", double((finishTime - startTime)) / double(CLOCKS_PER_SEC));
+    log::printf("\n\n Integration time = %f seconds\n\n", double((finishTime - startTime)) / double(CLOCKS_PER_SEC));
 
     //
     //  Checks for errors in the device.
     cudaDeviceSynchronize();
     error = cudaGetLastError();
-    printf("CudaMalloc error = %d = %s\n\n", error, cudaGetErrorString(error));
+    log::printf("CudaMalloc error = %d = %s\n\n", error, cudaGetErrorString(error));
     //
     //  END OF THE ESP
-    printf("End of the ESP!\n\n");
+    log::printf("End of the ESP!\n\n");
 
     Grid.free_memory();
 

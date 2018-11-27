@@ -56,7 +56,7 @@
 
 #include "binary_test.h"
 #include "debug_helpers.h"
-
+#include "log_writer.h"
 #include "phy_modules.h"
 
 #include "reduction_add.h"
@@ -94,8 +94,7 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
                              max_count);
 
         cudaDeviceSynchronize();
-
-#ifdef GLOBAL_CONSERVATION_REDUCTIONADD
+        
         cudaMemcpy(utmp_h, utmp, max_count * nlat * nv * sizeof(double), cudaMemcpyDeviceToHost);
         cudaMemcpy(vtmp_h, vtmp, max_count * nlat * nv * sizeof(double), cudaMemcpyDeviceToHost);
         cudaMemcpy(wtmp_h, wtmp, max_count * nlat * nv * sizeof(double), cudaMemcpyDeviceToHost);
@@ -109,7 +108,6 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
             }
         }
         cudaMemcpy(vbar_d, vbar_h, 3 * nlat * nv * sizeof(double), cudaMemcpyHostToDevice);
-#endif
 
         // print_vbar(vbar_h, nlat, nv);
 
@@ -153,7 +151,7 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
 #ifdef BENCH_NAN_CHECK
     check_h = check_array_for_nan(temperature_d, nv * point_num, 1, check_d);
     if (check_h) {
-        printf("\n\n Error in NAN check after PROFX:compute_temp!\n");
+        log::printf("\n\n Error in NAN check after PROFX:compute_temp!\n");
         exit(EXIT_FAILURE);
     }
 #endif
@@ -268,7 +266,7 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
     isnan_check<<<16, NTH>>>(temperature_d, nv, point_num, check_d);
     cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
     if (check_h) {
-        printf("\n\n Error in NAN check after PROFX:compute_pressure!\n");
+        log::printf("\n\n Error in NAN check after PROFX:compute_pressure!\n");
         exit(EXIT_FAILURE);
     }
 
@@ -347,35 +345,12 @@ void ESP::conservation(const SimulationSetup& sim) {
                             areasT_d,
                             point_num,
                             sim.DeepModel);
-#ifdef GLOBAL_CONSERVATION_ATOMICADD
-    // copy global conservation data to host for output
-    copy_global_to_host();
-#endif // GLOBAL_CONSERVATION_ATOMICADD
 
-#ifdef GLOBAL_CONSERVATION_REDUCTIONADD
     // run conservation on device
-
     // compute globals
     GlobalE_h    = gpu_sum_on_device<1024>(Etotal_d, point_num * nv);
     GlobalMass_h = gpu_sum_on_device<1024>(Mass_d, point_num * nv);
     GlobalAMx_h  = gpu_sum_on_device<1024>(AngMomx_d, point_num * nv);
     GlobalAMy_h  = gpu_sum_on_device<1024>(AngMomy_d, point_num * nv);
     GlobalAMz_h  = gpu_sum_on_device<1024>(AngMomz_d, point_num * nv);
-
-
-#endif // GLOBAL_CONSERVATION_REDUCTIONADD
-
-#ifdef GLOBAL_CONSERVATION_CPUADD
-
-    // copy conservation data to host
-    copy_conservation_to_host();
-
-    // compute globals
-    GlobalE_h    = cpu_sum<1024>(Etotal_h, point_num * nv);
-    GlobalMass_h = cpu_sum<1024>(Mass_h, point_num * nv);
-    GlobalAMx_h  = cpu_sum<1024>(AngMomx_h, point_num * nv);
-    GlobalAMy_h  = cpu_sum<1024>(AngMomy_h, point_num * nv);
-    GlobalAMz_h  = cpu_sum<1024>(AngMomz_h, point_num * nv);
-
-#endif // GLOBAL_CONSERVATION_CPUADD
 }

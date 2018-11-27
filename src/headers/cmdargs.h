@@ -67,6 +67,7 @@
 #include <string>
 #include <vector>
 
+#include "log_writer.h"
 #include "parser_helpers.h"
 
 using std::string;
@@ -88,19 +89,19 @@ public:
 
 // base template interface class
 template<typename T>
-class arg: public arg_interface
+class arg : public arg_interface
 {
 public:
     arg(const string& short_form_,
         const string& long_form_,
         const T&      value_, // To give the type of the argument, value doesn't get used, other than
                               // for bool that gets set on command line without argument
-        const string& help_string_):
+        const string& help_string_) :
         short_form(short_form_),
         long_form(long_form_),
         help_string(help_string_),
         value(value_),
-        has_value(false) {};
+        has_value(false){};
 
     // parse argument string to internal value
     // calls template function to convert to correct value
@@ -154,11 +155,9 @@ public:
     // description for help string
     void print_desc() {
         if (short_form == "")
-            std::cout << std::setw(28) << " "
-                      << std::setw(0) << help_string << std::endl;
+            printf("%28s%s\n", " ", help_string.c_str());
         else
-            std::cout << " -" << short_form << " / --" << std::setw(20) << std::left << long_form
-                      << std::setw(0) << help_string << std::endl;
+            printf(" -%s / --%-20s %s\n", short_form.c_str(), long_form.c_str(), help_string.c_str());
     }
 
 

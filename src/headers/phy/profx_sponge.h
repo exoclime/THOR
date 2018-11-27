@@ -45,19 +45,6 @@
 ////////////////////////////////////////////////////////////////////////
 
 
-__device__ double myatomicAdd(double *address, double val) {
-    unsigned long long int *address_as_ull = (unsigned long long int *)address;
-    unsigned long long int  old            = *address_as_ull, assumed;
-
-    do {
-        assumed = old;
-        old     = atomicCAS(address_as_ull, assumed, __double_as_longlong(val + __longlong_as_double(assumed)));
-        //  Note: uses integer comparison to avoid hang in case of NaN (since NaN != NaN)
-    } while (assumed != old);
-
-    return __longlong_as_double(old);
-}
-
 __global__ void zonal_v(double *M_d,
                         double *W_d,
                         double *Rho_d,
@@ -90,10 +77,6 @@ __global__ void zonal_v(double *M_d,
         utmp[ind * nv * max_count + lev * max_count + zonal_mean_tab_d[id * 3 + 2]] = u / zonal_mean_tab_d[id * 3 + 1];
         vtmp[ind * nv * max_count + lev * max_count + zonal_mean_tab_d[id * 3 + 2]] = v / zonal_mean_tab_d[id * 3 + 1];
         wtmp[ind * nv * max_count + lev * max_count + zonal_mean_tab_d[id * 3 + 2]] = (W_d[id * nv + lev] / rho) / zonal_mean_tab_d[id * 3 + 1];
-
-        // myatomicAdd(&(vbar_d[ind * nv * 3 + lev * 3 + 0]), u / zonal_mean_tab_d[id * 3 + 1]);
-        // myatomicAdd(&(vbar_d[ind * nv * 3 + lev * 3 + 1]), v / zonal_mean_tab_d[id * 3 + 1]);
-        // myatomicAdd(&(vbar_d[ind * nv * 3 + lev * 3 + 2]), (W_d[id * nv + lev] / rho) / zonal_mean_tab_d[id * 3 + 1]);
     }
 }
 

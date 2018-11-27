@@ -45,8 +45,6 @@
 ////////////////////////////////////////////////////////////////////////
 #pragma once
 
-__device__ double atomicAddFunc(double *address, double val);
-
 __global__ void CalcTotEnergy(double *Etotal_d,
                               double *GlobalE_d,
                               double *Mh_d,

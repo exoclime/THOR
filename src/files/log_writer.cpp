@@ -52,6 +52,10 @@
 #include <stdexcept>
 #include <stdio.h>
 
+// init log static class members
+FILE * log::pFILE = nullptr;
+
+
 log_writer::log_writer(const std::string& sim_id_,
                        const std::string& output_dir_):
     simulation_ID(sim_id_),
@@ -68,7 +72,7 @@ bool log_writer::check_output_log(int& file_number, int& iteration_number, std::
 
     o /= ("esp_write_log_" + simulation_ID + ".txt");
 
-    printf("Testing output log for file %s.\n", o.to_string().c_str());
+    log::printf("Testing output log for file %s.\n", o.to_string().c_str());
 
     bool exists = path_exists(o.to_string());
 
@@ -106,7 +110,7 @@ bool log_writer::check_output_log(int& file_number, int& iteration_number, std::
             inputfile.close();
 
 
-            printf("Found last file iteration %d, file number %d, filename: %s\n",
+            log::printf("Found last file iteration %d, file number %d, filename: %s\n",
                    iteration_number,
                    file_number,
                    last_file.c_str());
@@ -119,7 +123,7 @@ bool log_writer::check_output_log(int& file_number, int& iteration_number, std::
         }
     }
     else {
-        printf("No log output file found.");
+        log::printf("No log output file found.");
 
         return false;
     }
@@ -132,7 +136,7 @@ void log_writer::open_output_log_for_write(bool append) {
 
     o /= ("esp_write_log_" + simulation_ID + ".txt");
 
-    printf(" Output file for result write log: %s.\n", o.to_string().c_str());
+    log::printf(" Output file for result write log: %s.\n", o.to_string().c_str());
 
     if (append)
         fileoutput_output_file.open(o.to_string(), std::ofstream::out | std::ofstream::app);
@@ -161,7 +165,7 @@ int log_writer::prepare_conservation_file(bool append) {
     path o(output_dir);
 
     o /= ("esp_global_" + simulation_ID + ".txt");
-    //printf("Output conservation file to %s\n", o.to_string().c_str());
+    //log::printf("Output conservation file to %s\n", o.to_string().c_str());
 
     // Open for write
     if (append) {
@@ -202,7 +206,7 @@ void log_writer::output_conservation(int    current_step,
                                      double GlobalAMx_h,
                                      double GlobalAMy_h,
                                      double GlobalAMz_h) {
-    //printf("output conservation\n");
+    //log::printf("output conservation\n");
 
     // output global conservation values
     conservation_output_file << current_step << "\t"
@@ -224,7 +228,7 @@ int log_writer::prepare_diagnostics_file(bool append) {
     path o(output_dir);
 
     o /= ("esp_diagnostics_" + simulation_ID + ".txt");
-    //printf("Output conservation file to %s\n", o.to_string().c_str());
+    //log::printf("Output conservation file to %s\n", o.to_string().c_str());
 
     // Open for write
     if (append) {
@@ -268,7 +272,7 @@ void log_writer::output_diagnostics(int         current_step,
                                     double      time_left,
                                     double      mean_delta_per_step,
                                     std::time_t end_time) {
-    //printf("output conservation\n");
+    //log::printf("output conservation\n");
 
     // output global conservation values
     diagnostics_output_file << current_step << "\t"
