@@ -90,7 +90,6 @@ n_out = 7200
 # defaults to 'results'
 results_path = wasp43b_chem
 
-radiative_transfer = true
 Tstar = 4520
 planet_star_dist = 0.015
 radius_star = 0.667
@@ -102,6 +101,4 @@ gcm_off = false
 
 TPprof = 0
 
-chemistry = true
-
-
+chemistry = 1

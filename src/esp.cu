@@ -16,7 +16,7 @@
 //     <http://www.gnu.org/licenses/>.
 // ==============================================================================
 //
-// ESP -  Exoclimes Simulation Platform. (version 1.0)
+// ESP -  Exoclimes Simulation Platform. (version 2.0)
 //
 //
 //
@@ -36,12 +36,14 @@
 //
 //       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016
 //
-// Current Code Owner: Joao Mendonca, EEG. joao.mendonca@csh.unibe.ch
+// Current Code Owners: Joao Mendonca (joao.mendonca@space.dtu.dk)
+//                      Russell Deitrick (russell.deitrick@csh.unibe.ch)
+//                      Urs Schroffenegger (urs.schroffenegger@csh.unibe.ch)
 //
 // History:
 // Version Date       Comment
 // ======= ====       =======
-//
+// 2.0     30/11/2018 Released version (RD & US)
 // 1.0     16/08/2017 Released version  (JM)
 //
 ////////////////////////////////////////////////////////////////////////
@@ -592,6 +594,7 @@ int main(int argc, char** argv) {
     }
 
 
+    int max_count = 0;
     //
     //  Make the icosahedral grid
     Icogrid Grid(spring_dynamics,     // Spring dynamics option
@@ -601,8 +604,8 @@ int main(int argc, char** argv) {
                  nlat,                // Number of lat rings for sponge layer
                  Planet.A,            // Planet radius
                  Planet.Top_altitude, // Top of the model's domain
-                 SpongeLayer);        // Use sponge layer?
-                                      //
+                 SpongeLayer,         // Use sponge layer?
+                 &max_count);
 
     //  Define object X.
     ESP X(Grid.point_local,    // First neighbours

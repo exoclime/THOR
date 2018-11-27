@@ -48,10 +48,14 @@
 //       http://adsabs.harvard.edu/abs/2001JCoPh.174..579T
 //
 //
+// Current Code Owners: Joao Mendonca (joao.mendonca@space.dtu.dk)
+//                      Russell Deitrick (russell.deitrick@csh.unibe.ch)
+//                      Urs Schroffinegger (urs.schroffenegger@csh.unibe.ch)
+//
 // History:
 // Version Date       Comment
 // ======= ====       =======
-//
+// 2.0     30/11/2018 Released version (RD & US)
 // 1.0     16/08/2017 Released version  (JM)
 //
 ////////////////////////////////////////////////////////////////////////
@@ -82,7 +86,8 @@ __host__ Icogrid::Icogrid(bool   sprd,        // Spring dynamics option
                           int    nlat,
                           double A,            // Planet radius [m]
                           double Top_altitude, // Top model's domain [m]
-                          bool   sponge) {
+                          bool   sponge,
+                          int *  max_count) {
 
     printf("\n\n Building icosahedral grid!");
 
@@ -293,11 +298,12 @@ __host__ Icogrid::Icogrid(bool   sprd,        // Spring dynamics option
 
     //  Computes zonal mean for sponge layer operations
     if (sponge == true) {
-        zonal_mean_tab = (int *)malloc(2 * point_num * sizeof(int));
+        zonal_mean_tab = (int *)malloc(3 * point_num * sizeof(int));
         zonal_mean_tab_f(zonal_mean_tab,
                          lonlat,
                          nlat,
-                         point_num);
+                         point_num,
+                         max_count);
     }
 
     printf(" GRID DONE!\n\n");
@@ -2524,7 +2530,8 @@ void Icogrid::gra_operator(double *areasT,
 void Icogrid::zonal_mean_tab_f(int *   zonal_mean_tab,
                                double *lonlat,
                                int     nlat,
-                               int     point_num) {
+                               int     point_num,
+                               int *   max_count) {
 
     //
     //  Description:
@@ -2541,12 +2548,13 @@ void Icogrid::zonal_mean_tab_f(int *   zonal_mean_tab,
     double  des_lat = M_PI / nlat;
     int *   count_num;
     double *lat_array;
+    // int     max_count = 0;
 
     count_num = new int[nlat]();
     lat_array = new double[nlat + 1]();
 
     for (int i = 0; i < point_num; i++)
-        for (int k = 0; k < 2; k++) zonal_mean_tab[i * 2 + k] = 0;
+        for (int k = 0; k < 2; k++) zonal_mean_tab[i * 3 + k] = 0;
 
     for (int j = 0; j < nlat; j++) count_num[j] = 0;
     lat_array[0] = -M_PI / 2.0;
@@ -2554,21 +2562,27 @@ void Icogrid::zonal_mean_tab_f(int *   zonal_mean_tab,
     for (int i = 0; i < point_num; i++) {
         for (int j = 0; j < nlat; j++) {
             if (lonlat[i * 2 + 1] >= lat_array[j] && lonlat[i * 2 + 1] < lat_array[j + 1]) {
-                zonal_mean_tab[i * 2] = j;
-                count_num[j]          = count_num[j] + 1;
+                zonal_mean_tab[i * 3]     = j;
+                zonal_mean_tab[i * 3 + 2] = count_num[j];
+                count_num[j]              = count_num[j] + 1;
                 break;
             }
         }
         if (lonlat[i * 2 + 1] >= lat_array[nlat]) {
-            zonal_mean_tab[i * 2] = nlat - 1;
-            count_num[nlat - 1]   = count_num[nlat - 1] + 1;
+            zonal_mean_tab[i * 3]     = nlat - 1;
+            zonal_mean_tab[i * 3 + 2] = count_num[nlat - 1];
+            count_num[nlat - 1]       = count_num[nlat - 1] + 1;
         }
     }
     for (int i = 0; i < point_num; i++) {
-        int ind                   = zonal_mean_tab[i * 2];
-        zonal_mean_tab[i * 2 + 1] = count_num[ind];
+        int ind                   = zonal_mean_tab[i * 3];
+        zonal_mean_tab[i * 3 + 1] = count_num[ind];
+        // printf("ind, count = %d, %d\n", ind, count_num[ind]);
+        if (count_num[ind] > *max_count) *max_count = count_num[ind];
     }
+    *max_count = pow(2, ceil(log(*max_count) / log(2)));
 
+    // printf("max count = %d\n", max_count);
     delete[] count_num;
     delete[] lat_array;
 }

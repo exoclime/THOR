@@ -28,7 +28,6 @@
 // Known issues:
 //   - None.
 //
-// Current Code Owner: Joao Mendonca, EEG. joao.mendonca@csh.unibe.ch
 //
 // If you use this code please cite the following reference:
 //
@@ -40,11 +39,14 @@
 //       "Shallow Water Model on a Modified Icosahedral Geodesic Grid by Using Spring Dynamics",
 //       http://adsabs.harvard.edu/abs/2001JCoPh.174..579T
 //
+// Current Code Owners: Joao Mendonca (joao.mendonca@space.dtu.dk)
+//                      Russell Deitrick (russell.deitrick@csh.unibe.ch)
+//                      Urs Schroffenegger (urs.schroffenegger@csh.unibe.ch)
 //
 // History:
 // Version Date       Comment
 // ======= ====       =======
-//
+// 2.0     30/11/2018 Released version (RD & US)
 // 1.0     16/08/2017 Released version  (JM)
 //
 ////////////////////////////////////////////////////////////////////////

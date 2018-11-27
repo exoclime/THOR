@@ -35,12 +35,14 @@
 //
 //       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016
 //
-// Current Code Owner: Joao Mendonca, EEG. joao.mendonca@csh.unibe.ch
+// Current Code Owners: Joao Mendonca (joao.mendonca@space.dtu.dk)
+//                      Russell Deitrick (russell.deitrick@csh.unibe.ch)
+//                      Urs Schroffinegger (urs.schroffenegger@csh.unibe.ch)
 //
 // History:
 // Version Date       Comment
 // ======= ====       =======
-//
+// 2.0     30/11/2018 Released version (RD & US)
 // 1.0     16/08/2017 Released version  (JM)
 //
 ////////////////////////////////////////////////////////////////////////
@@ -84,7 +86,8 @@ __host__ ESP::ESP(int *           point_local_,
                   int             point_num_,
                   bool            conservation,
                   benchmark_types core_benchmark_,
-                  log_writer &    logwriter_) :
+                  log_writer &    logwriter_,
+                  int             max_count_) :
     nl_region(nl_region_),
     nr(nr_),
     point_num(point_num_),
@@ -121,6 +124,7 @@ __host__ ESP::ESP(int *           point_local_,
     Rv_sponge = Rv_sponge_;
     ns_sponge = ns_sponge_;
     t_shrink  = t_shrink_;
+    max_count = max_count_;
 
     if (core_benchmark == NO_BENCHMARK) {
         phy_modules_execute = true;
@@ -249,8 +253,13 @@ __host__ void ESP::alloc_data(bool conservation) {
     //  Extras-nan
     cudaMalloc((void **)&check_d, sizeof(bool));
 
-    cudaMalloc((void **)&vbar_d, 3 * nv * point_num * sizeof(double));
-    cudaMalloc((void **)&zonal_mean_tab_d, 2 * point_num * sizeof(int));
+    cudaMalloc((void **)&vbar_d, 3 * nv * nlat * sizeof(double));
+    cudaMalloc((void **)&zonal_mean_tab_d, 3 * point_num * sizeof(int));
+    vbar_h = (double *)malloc(3 * nv * nlat * sizeof(double));
+    cudaMalloc((void **)&utmp, nv * nlat * max_count * sizeof(double));
+    cudaMalloc((void **)&vtmp, nv * nlat * max_count * sizeof(double));
+    cudaMalloc((void **)&wtmp, nv * nlat * max_count * sizeof(double));
+    utmp_h = (double *)malloc(nv * nlat * max_count * sizeof(double));
 
     if (conservation == true) {
         //  Conservation quantities
@@ -444,11 +453,11 @@ __host__ bool ESP::initial_values(bool               rest,
             mapValuesDouble["/Top_altitude"] = planet.Top_altitude;
             mapValuesInt["/glevel"]       = glevel;
             mapValuesInt["/vlevel"]       = nv;
-            
+
             storage s(planet_filename, true);
-            
+
             bool values_match = true;
-            
+
             for (const std::pair<std::string, double> &element : mapValuesDouble) {
                 double value = 0.0;
                 load_OK      = s.read_value(element.first, value);
@@ -493,7 +502,7 @@ __host__ bool ESP::initial_values(bool               rest,
             // Step number
             load_OK &= s.read_value("/nstep", nstep);
             printf("Reloaded %s: %d.\n", "/nstep", load_OK?1:0);
-            
+
             //      Density
             load_OK &= s.read_table_to_ptr("/Rho", Rho_h, point_num * nv);
             printf("Reloaded %s: %d.\n", "/Rho", load_OK?1:0);
@@ -516,10 +525,10 @@ __host__ bool ESP::initial_values(bool               rest,
         if (!load_OK)
         {
             printf("Error reloading simulation state\n");
-            
+
             return false;
         }
-        
+
 
         for (int i = 0; i < point_num; i++)
             for (int lev = 0; lev < nv; lev++)
@@ -582,7 +591,7 @@ __host__ bool ESP::initial_values(bool               rest,
     cudaMemcpy(Kdh4_d, Kdh4_h, nv * sizeof(double), cudaMemcpyHostToDevice);
 
     if (sponge == true)
-        cudaMemcpy(zonal_mean_tab_d, zonal_mean_tab_h, 2 * point_num * sizeof(int), cudaMemcpyHostToDevice);
+        cudaMemcpy(zonal_mean_tab_d, zonal_mean_tab_h, 3 * point_num * sizeof(int), cudaMemcpyHostToDevice);
 
     //  Initialize arrays
     cudaMemset(Adv_d, 0, sizeof(double) * 3 * point_num * nv);

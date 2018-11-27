@@ -32,12 +32,14 @@
 //
 //       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016
 //
-// Current Code Owner: Joao Mendonca, EEG. joao.mendonca@csh.unibe.ch
+// Current Code Owners: Joao Mendonca (joao.mendonca@space.dtu.dk)
+//                      Russell Deitrick (russell.deitrick@csh.unibe.ch)
+//                      Urs Schroffenegger (urs.schroffenegger@csh.unibe.ch)
 //
 // History:
 // Version Date       Comment
 // ======= ====       =======
-//
+// 2.0     30/11/2018 Released version (RD & US)
 // 1.0     16/08/2017 Released version  (JM)
 //
 ////////////////////////////////////////////////////////////////////////
@@ -62,7 +64,11 @@ __global__ void zonal_v(double *M_d,
                         double *vbar_d,
                         int *   zonal_mean_tab_d,
                         double *lonlat_d,
-                        int     num) {
+                        int     num,
+                        double *utmp,
+                        double *vtmp,
+                        double *wtmp,
+                        int     max_count) {
 
     int    id  = blockIdx.x * blockDim.x + threadIdx.x;
     int    nv  = gridDim.y;
@@ -72,7 +78,7 @@ __global__ void zonal_v(double *M_d,
     if (id < num) {
         double lon;
         double rho = Rho_d[id * nv + lev];
-        int    ind = zonal_mean_tab_d[id * 2];
+        int    ind = zonal_mean_tab_d[id * 3];
         if (lonlat_d[id * 2] < 0)
             lon = lonlat_d[id * 2] + 2.0 * M_PI;
         else
@@ -81,9 +87,22 @@ __global__ void zonal_v(double *M_d,
 
         v = (M_d[id * nv * 3 + lev * 3 + 0] * (-sin(lonlat_d[id * 2 + 1]) * cos(lon)) + M_d[id * nv * 3 + lev * 3 + 1] * (-sin(lonlat_d[id * 2 + 1]) * sin(lon)) + M_d[id * nv * 3 + lev * 3 + 2] * (cos(lonlat_d[id * 2 + 1]))) / rho;
 
-        myatomicAdd(&(vbar_d[ind * nv * 3 + lev * 3 + 0]), u / zonal_mean_tab_d[id * 2 + 1]);
-        myatomicAdd(&(vbar_d[ind * nv * 3 + lev * 3 + 1]), v / zonal_mean_tab_d[id * 2 + 1]);
-        myatomicAdd(&(vbar_d[ind * nv * 3 + lev * 3 + 2]), (W_d[id * nv + lev] / rho) / zonal_mean_tab_d[id * 2 + 1]);
+        utmp[ind * nv * max_count + lev * max_count + zonal_mean_tab_d[id * 3 + 2]] = u / zonal_mean_tab_d[id * 3 + 1];
+        vtmp[ind * nv * max_count + lev * max_count + zonal_mean_tab_d[id * 3 + 2]] = v / zonal_mean_tab_d[id * 3 + 1];
+        wtmp[ind * nv * max_count + lev * max_count + zonal_mean_tab_d[id * 3 + 2]] = (W_d[id * nv + lev] / rho) / zonal_mean_tab_d[id * 3 + 1];
+
+        // myatomicAdd(&(vbar_d[ind * nv * 3 + lev * 3 + 0]), u / zonal_mean_tab_d[id * 3 + 1]);
+        // myatomicAdd(&(vbar_d[ind * nv * 3 + lev * 3 + 1]), v / zonal_mean_tab_d[id * 3 + 1]);
+        // myatomicAdd(&(vbar_d[ind * nv * 3 + lev * 3 + 2]), (W_d[id * nv + lev] / rho) / zonal_mean_tab_d[id * 3 + 1]);
+    }
+}
+
+void print_vbar(double *vbar_h, int nlat, int nv) {
+    int ind, lev = nv - 1;
+
+    printf("\n");
+    for (ind = 0; ind < nlat; ind++) {
+        printf("%d, %g, %g, %g\n", ind, vbar_h[ind * nv * 3 + lev * 3 + 0], vbar_h[ind * nv * 3 + lev * 3 + 1], vbar_h[ind * nv * 3 + lev * 3 + 2]);
     }
 }
 
@@ -122,7 +141,7 @@ __global__ void sponge_layer(double *M_d,
     int    id = blockIdx.x * blockDim.x + threadIdx.x;
 
     if (id < num) {
-        int    intlat  = zonal_mean_tab_d[id * 2];
+        int    intlat  = zonal_mean_tab_d[id * 3];
         double des_lat = M_PI / nlat;
         double vbu, vbv, vbw;
         double lat1, lat2, lat3, lat;

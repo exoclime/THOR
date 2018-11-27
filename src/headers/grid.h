@@ -34,12 +34,14 @@
 //
 //       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016
 //
-// Current Code Owner: Joao Mendonca, EEG. joao.mendonca@csh.unibe.ch
+// Current Code Owners: Joao Mendonca (joao.mendonca@space.dtu.dk)
+//                      Russell Deitrick (russell.deitrick@csh.unibe.ch)
+//                      Urs Schroffenegger (urs.schroffenegger@csh.unibe.ch)
 //
 // History:
 // Version Date       Comment
 // ======= ====       =======
-//
+// 2.0     30/11/2018 Released version (RD & US)
 // 1.0     16/08/2017 Released version  (JM)
 //
 ////////////////////////////////////////////////////////////////////////
@@ -99,7 +101,7 @@ public:
 
     int *zonal_mean_tab; //something something
 
-    Icogrid(bool, double, int, int, int, double, double, bool);
+    Icogrid(bool, double, int, int, int, double, double, bool, int *);
 
 private:
     // Functions to build the grid
@@ -122,5 +124,5 @@ private:
     void compute_func(double *, double *, int);
     void div_operator(double *, double *, double *, double *, int *, int);
     void gra_operator(double *, double *, double *, double *, int *, int);
-    void zonal_mean_tab_f(int *, double *, int, int);
+    void zonal_mean_tab_f(int *, double *, int, int, int *);
 };
