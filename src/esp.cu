@@ -599,7 +599,7 @@ int main(int argc, char** argv) {
                  nlat,             // Number of lat rings for sponge layer
                  sim.A,            // Planet radius
                  sim.Top_altitude, // Top of the model's domain
-                 sim.SpongeLayer // Use sponge layer?
+                 sim.SpongeLayer,  // Use sponge layer?
                  &max_count);
 
     //  Define object X.
@@ -952,6 +952,6 @@ int main(int argc, char** argv) {
     printf("End of the ESP!\n\n");
 
     Grid.free_memory();
-    
+
     return 0;
 }
