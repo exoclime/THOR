@@ -205,6 +205,8 @@ public:
     double *vbar_h;
     double *utmp;
     double *utmp_h;
+    double *vtmp_h;
+    double *wtmp_h;
     double *vtmp;
     double *wtmp;
     int *   zonal_mean_tab_d;
@@ -299,8 +301,8 @@ public:
                bool           conservation);           // calc/output conservation quantities
 
 
-    void output(int            fidx,         // Index of output file
-                const XPlanet &Planet,       // planet parameters
+    void output(int            fidx,   // Index of output file
+                const XPlanet &Planet, // planet parameters
                 bool           conservation,
                 bool           SpongeLayer);
 

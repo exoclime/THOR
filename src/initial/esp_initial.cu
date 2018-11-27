@@ -260,6 +260,9 @@ __host__ void ESP::alloc_data(bool conservation) {
     cudaMalloc((void **)&vtmp, nv * nlat * max_count * sizeof(double));
     cudaMalloc((void **)&wtmp, nv * nlat * max_count * sizeof(double));
     utmp_h = (double *)malloc(nv * nlat * max_count * sizeof(double));
+    vtmp_h = (double *)malloc(nv * nlat * max_count * sizeof(double));
+    wtmp_h = (double *)malloc(nv * nlat * max_count * sizeof(double));
+
 
     if (conservation == true) {
         //  Conservation quantities
@@ -447,12 +450,12 @@ __host__ bool ESP::initial_values(bool               rest,
         {
             // values to check agains variable
             map<string, double> mapValuesDouble;
-            map<string, int> mapValuesInt;
+            map<string, int>    mapValuesInt;
 
             mapValuesDouble["/A"]            = planet.A;
             mapValuesDouble["/Top_altitude"] = planet.Top_altitude;
-            mapValuesInt["/glevel"]       = glevel;
-            mapValuesInt["/vlevel"]       = nv;
+            mapValuesInt["/glevel"]          = glevel;
+            mapValuesInt["/vlevel"]          = nv;
 
             storage s(planet_filename, true);
 
@@ -474,7 +477,7 @@ __host__ bool ESP::initial_values(bool               rest,
 
             for (const std::pair<std::string, int> &element : mapValuesInt) {
                 int value = 0.0;
-                load_OK      = s.read_value(element.first, value);
+                load_OK   = s.read_value(element.first, value);
 
 
                 if (value != element.second) {
@@ -501,29 +504,28 @@ __host__ bool ESP::initial_values(bool               rest,
             storage s(initial_conditions_filename, true);
             // Step number
             load_OK &= s.read_value("/nstep", nstep);
-            printf("Reloaded %s: %d.\n", "/nstep", load_OK?1:0);
+            printf("Reloaded %s: %d.\n", "/nstep", load_OK ? 1 : 0);
 
             //      Density
             load_OK &= s.read_table_to_ptr("/Rho", Rho_h, point_num * nv);
-            printf("Reloaded %s: %d.\n", "/Rho", load_OK?1:0);
+            printf("Reloaded %s: %d.\n", "/Rho", load_OK ? 1 : 0);
             //      Pressure
             load_OK &= s.read_table_to_ptr("/Pressure", pressure_h, point_num * nv);
-            printf("Reloaded %s: %d.\n", "/Pressure", load_OK?1:0);
+            printf("Reloaded %s: %d.\n", "/Pressure", load_OK ? 1 : 0);
             //      Horizontal momentum
             load_OK &= s.read_table_to_ptr("/Mh", Mh_h, point_num * nv * 3);
-            printf("Reloaded %s: %d.\n", "/Mh", load_OK?1:0);
+            printf("Reloaded %s: %d.\n", "/Mh", load_OK ? 1 : 0);
             //      Vertical momentum
             load_OK &= s.read_table_to_ptr("/Wh", Wh_h, point_num * nvi);
-            printf("Reloaded %s: %d.\n", "/Wh", load_OK?1:0);
+            printf("Reloaded %s: %d.\n", "/Wh", load_OK ? 1 : 0);
 
             //      Simulation start time
             load_OK &= s.read_value("/simulation_time", simulation_start_time);
-            printf("Reloaded %s: %d.\n", "/simulation_time", load_OK?1:0);
+            printf("Reloaded %s: %d.\n", "/simulation_time", load_OK ? 1 : 0);
         }
 
 
-        if (!load_OK)
-        {
+        if (!load_OK) {
             printf("Error reloading simulation state\n");
 
             return false;

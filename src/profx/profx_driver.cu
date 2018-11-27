@@ -100,27 +100,31 @@ __host__ void ESP::ProfX(const XPlanet& Planet,
         cudaDeviceSynchronize();
 
 #ifdef GLOBAL_CONSERVATION_REDUCTIONADD
+        cudaMemcpy(utmp_h, utmp, max_count * nlat * nv * sizeof(double), cudaMemcpyDeviceToHost);
+        cudaMemcpy(vtmp_h, utmp, max_count * nlat * nv * sizeof(double), cudaMemcpyDeviceToHost);
+        cudaMemcpy(wtmp_h, utmp, max_count * nlat * nv * sizeof(double), cudaMemcpyDeviceToHost);
+
         int ilat, lev, ind;
         for (ilat = 0; ilat < nlat; ilat++) {
-            // vbar_h[ilat * nv + 3 + (nv - 1) * 3 + 0] = 0;
-            // vbar_h[ilat * nv + 3 + (nv - 1) * 3 + 1] = 0;
-            // vbar_h[ilat * nv + 3 + (nv - 1) * 3 + 2] = 0;
-            // for (ind = 0; ind < max_count; ind++) {
-            //     vbar_h[ilat * nv + 3 + (nv - 1) * 3 + 0] += utmp[ilat * nv + 3 + (nv - 1) * 3 + ind];
-            //     vbar_h[ilat * nv + 3 + (nv - 1) * 3 + 1] += vtmp[ilat * nv + 3 + (nv - 1) * 3 + ind];
-            //     vbar_h[ilat * nv + 3 + (nv - 1) * 3 + 2] += wtmp[ilat * nv + 3 + (nv - 1) * 3 + ind];
-            // }
-
-            for (lev = 0; lev < nv; lev++) {
-                vbar_h[ilat * nv * 3 + lev * 3 + 0] = gpu_sum_on_device<1024>(&(utmp[ilat * nv * max_count + lev * max_count]), max_count);
-                vbar_h[ilat * nv * 3 + lev * 3 + 1] = gpu_sum_on_device<1024>(&(vtmp[ilat * nv * max_count + lev * max_count]), max_count);
-                vbar_h[ilat * nv * 3 + lev * 3 + 2] = gpu_sum_on_device<1024>(&(wtmp[ilat * nv * max_count + lev * max_count]), max_count);
+            vbar_h[ilat * nv + 3 + (nv - 1) * 3 + 0] = 0;
+            vbar_h[ilat * nv + 3 + (nv - 1) * 3 + 1] = 0;
+            vbar_h[ilat * nv + 3 + (nv - 1) * 3 + 2] = 0;
+            for (ind = 0; ind < max_count; ind++) {
+                vbar_h[ilat * nv * 3 + (nv - 1) * 3 + 0] += utmp_h[ilat * nv * max_count + (nv - 1) * max_count + ind];
+                vbar_h[ilat * nv * 3 + (nv - 1) * 3 + 1] += vtmp_h[ilat * nv * max_count + (nv - 1) * max_count + ind];
+                vbar_h[ilat * nv * 3 + (nv - 1) * 3 + 2] += wtmp_h[ilat * nv * max_count + (nv - 1) * max_count + ind];
             }
+
+            // for (lev = 0; lev < nv; lev++) {
+            //     vbar_h[ilat * nv * 3 + lev * 3 + 0] = gpu_sum_on_device<1024>(&(utmp[ilat * nv * max_count + lev * max_count]), max_count);
+            //     vbar_h[ilat * nv * 3 + lev * 3 + 1] = gpu_sum_on_device<1024>(&(vtmp[ilat * nv * max_count + lev * max_count]), max_count);
+            //     vbar_h[ilat * nv * 3 + lev * 3 + 2] = gpu_sum_on_device<1024>(&(wtmp[ilat * nv * max_count + lev * max_count]), max_count);
+            // }
         }
         cudaMemcpy(vbar_d, vbar_h, 3 * nlat * nv * sizeof(double), cudaMemcpyHostToDevice);
 #endif
 
-        // print_vbar(vbar_h, nlat, nv);
+        print_vbar(vbar_h, nlat, nv);
 
         if (shrink_sponge == true) {
             if (current_step * timestep >= t_shrink * 86400) {
