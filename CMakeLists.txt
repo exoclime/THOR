@@ -180,6 +180,8 @@ set(SRC_DIRECTORIES
 set(SRC_GEN_INIT
   src/test/gen_init.cpp
   src/utils/storage.cpp
+  src/utils/log_writer.cpp
+  src/utils/directories.cpp
   src/ESP/grid.cu
   src/ESP/simulation_setup.cu)
 

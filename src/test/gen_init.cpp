@@ -54,6 +54,7 @@
 
 #include "hdf5.h"
 #include "storage.h"
+#include "directories.h"
 #include <cmath>
 #include <cstring>
 
@@ -122,15 +123,9 @@ basis_sph base_sph_vectors(double theta, double phi) {
     return basis;
 }
 
-void Output(int                ntstep,       // Number of integration steps
+
+void Output(int                current_step, // Number of integration steps
             int                fidx,         // Index of output file
-            double             Cp,           // Specific heat capacities [J/(Kg K)]
-            double             Rd,           // Gas constant [J/(Kg K)]
-            double             Omega,        // Rotation rate [s-1]
-            double             Gravit,       // Gravitational acceleration [m/s2]
-            double             P_Ref,        // Reference surface pressure [Pa]
-            double             Top_altitude, // Top of the model's domain [m]
-            double             A,            // Planet radius [m]
             bool               spring_dynamics,
             double             spring_beta,
             string             simulation_ID,   // Planet ID
@@ -146,268 +141,166 @@ void Output(int                ntstep,       // Number of integration steps
     //
     //  Description: Model output.
     //
-    hid_t   file_id, dataset_id, att, dataspace_id;
-    hid_t   stringType, stringSpace;
-    hsize_t dims[1];
-
     char FILE_NAME1[160];
 
-    stringType  = H5Tcopy(H5T_C_S1);
-    stringSpace = H5Screate(H5S_SCALAR);
-
     //  GRID OUTPUT
-    if (ntstep == 0) {
+    if (current_step == 0) {
         sprintf(FILE_NAME1, "%s/esp_output_grid_%s.h5", output_dir.c_str(), simulation_ID.c_str());
 
-        //      Create a new file using default properties.
-        file_id = H5Fcreate(FILE_NAME1, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
-        //      Create the data space for the dataset.
-        dims[0]      = Grid.nv;
-        dataspace_id = H5Screate_simple(1, dims, NULL);
-        //      Create the dataset.
-        dataset_id = H5Dcreate2(file_id, "/Altitude", H5T_IEEE_F64LE, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-        //      Write the dataset.
-        H5Dwrite(dataset_id, H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, Grid.Altitude);
-        //      Write attributes
-        H5Tset_size(stringType, strlen("Altitude"));
-        att = H5Acreate(dataset_id, "Variable", stringType, stringSpace, H5P_DEFAULT, H5P_DEFAULT);
-        H5Awrite(att, stringType, "Altitude");
-        H5Aclose(att);
-        H5Tset_size(stringType, strlen("m"));
-        att = H5Acreate(dataset_id, "units", stringType, stringSpace, H5P_DEFAULT, H5P_DEFAULT);
-        H5Awrite(att, stringType, "m");
-        //      End access to the dataset and release resources used by it.
-        H5Dclose(dataset_id);
-        H5Aclose(att);
-        H5Sclose(dataspace_id);
+        storage s(FILE_NAME1);
+
+        s.append_table(Grid.Altitude,
+                       Grid.nv,
+                       "/Altitude",
+                       "m",
+                       "Altitude");
 
         //      Altitudeh
-        dims[0]      = Grid.nv + 1;
-        dataspace_id = H5Screate_simple(1, dims, NULL);
-        dataset_id   = H5Dcreate2(file_id, "/Altitudeh", H5T_IEEE_F64LE, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-        H5Dwrite(dataset_id, H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, Grid.Altitudeh);
-        H5Tset_size(stringType, strlen("Altitude at the interfaces"));
-        att = H5Acreate(dataset_id, "Variable", stringType, stringSpace, H5P_DEFAULT, H5P_DEFAULT);
-        H5Awrite(att, stringType, "Altitude at the interfaces");
-        H5Aclose(att);
-        H5Tset_size(stringType, strlen("m"));
-        att = H5Acreate(dataset_id, "units", stringType, stringSpace, H5P_DEFAULT, H5P_DEFAULT);
-        H5Awrite(att, stringType, "m");
-        H5Dclose(dataset_id);
-        H5Aclose(att);
-        H5Sclose(dataspace_id);
+        s.append_table(Grid.Altitudeh,
+                       Grid.nv + 1,
+                       "/Altitudeh",
+                       "m",
+                       "Altitude at the interfaces");
 
         //      AreasT
-        dims[0]      = Grid.point_num;
-        dataspace_id = H5Screate_simple(1, dims, NULL);
-        dataset_id   = H5Dcreate2(file_id, "/areasT", H5T_IEEE_F64LE, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-        H5Dwrite(dataset_id, H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, Grid.areasT);
-        H5Tset_size(stringType, strlen("Main cells areas"));
-        att = H5Acreate(dataset_id, "Variable", stringType, stringSpace, H5P_DEFAULT, H5P_DEFAULT);
-        H5Awrite(att, stringType, "Main cells areas");
-        H5Aclose(att);
-        H5Tset_size(stringType, strlen("m^2"));
-        att = H5Acreate(dataset_id, "units", stringType, stringSpace, H5P_DEFAULT, H5P_DEFAULT);
-        H5Awrite(att, stringType, "m^2");
-        H5Dclose(dataset_id);
-        H5Aclose(att);
-        H5Sclose(dataspace_id);
+        s.append_table(Grid.areasT,
+                       Grid.point_num,
+                       "/areasT",
+                       "m^2",
+                       "Main cells areas");
 
         //      Lon-lat grid
-        dims[0]      = 2 * Grid.point_num;
-        dataspace_id = H5Screate_simple(1, dims, NULL);
-        dataset_id   = H5Dcreate2(file_id, "/lonlat", H5T_IEEE_F64LE, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-        H5Dwrite(dataset_id, H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, Grid.lonlat);
-        H5Tset_size(stringType, strlen("Longitudes and latitudes"));
-        att = H5Acreate(dataset_id, "Variable", stringType, stringSpace, H5P_DEFAULT, H5P_DEFAULT);
-        H5Awrite(att, stringType, "Longitudes and latitudes");
-        H5Aclose(att);
-        H5Tset_size(stringType, strlen("-"));
-        att = H5Acreate(dataset_id, "units", stringType, stringSpace, H5P_DEFAULT, H5P_DEFAULT);
-        H5Awrite(att, stringType, "-");
-        H5Dclose(dataset_id);
-        H5Aclose(att);
-        H5Sclose(dataspace_id);
+        s.append_table(Grid.lonlat,
+                       2 * Grid.point_num,
+                       "/lonlat",
+                       "-",
+                       "Longitudes and latitudes");
 
         //      Number of horizontal points
-        double point_num_a[] = {(double)Grid.point_num};
-        dims[0]              = 1;
-        dataspace_id         = H5Screate_simple(1, dims, NULL);
-        dataset_id           = H5Dcreate2(file_id, "/point_num", H5T_IEEE_F64LE, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-        H5Dwrite(dataset_id, H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, point_num_a);
-        H5Tset_size(stringType, strlen("Number of grid points in one level"));
-        att = H5Acreate(dataset_id, "Variable", stringType, stringSpace, H5P_DEFAULT, H5P_DEFAULT);
-        H5Awrite(att, stringType, "Number of grid points in one level");
-        H5Aclose(att);
-        H5Tset_size(stringType, strlen("-"));
-        att = H5Acreate(dataset_id, "units", stringType, stringSpace, H5P_DEFAULT, H5P_DEFAULT);
-        H5Awrite(att, stringType, "-");
-        H5Dclose(dataset_id);
-        H5Aclose(att);
-        H5Sclose(dataspace_id);
+        s.append_value((double)Grid.point_num,
+                       "/point_num",
+                       "-",
+                       "Number of grid points in one level");
 
         //      Number of vertical layers
-        double nv_a[] = {(double)Grid.nv};
-        dims[0]       = 1;
-        dataspace_id  = H5Screate_simple(1, dims, NULL);
-        dataset_id    = H5Dcreate2(file_id, "/nv", H5T_IEEE_F64LE, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-        H5Dwrite(dataset_id, H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, nv_a);
-        H5Tset_size(stringType, strlen("Number of vertical layers"));
-        att = H5Acreate(dataset_id, "Variable", stringType, stringSpace, H5P_DEFAULT, H5P_DEFAULT);
-        H5Awrite(att, stringType, "Number of vertical layers");
-        H5Aclose(att);
-        H5Tset_size(stringType, strlen("-"));
-        att = H5Acreate(dataset_id, "units", stringType, stringSpace, H5P_DEFAULT, H5P_DEFAULT);
-        H5Awrite(att, stringType, "-");
-        H5Dclose(dataset_id);
-        H5Aclose(att);
-        H5Sclose(dataspace_id);
-
+        s.append_value((double)Grid.nv,
+                       "/nv",
+                       "-",
+                       "Number of vertical layers");
         //      point neighbours
-        dims[0]      = 6 * Grid.point_num;
-        dataspace_id = H5Screate_simple(1, dims, NULL);
-        dataset_id   = H5Dcreate2(file_id, "/pntloc", H5T_STD_I32LE, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-        H5Dwrite(dataset_id, H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, Grid.point_local);
-        H5Tset_size(stringType, strlen("Neighbours indexes"));
-        att = H5Acreate(dataset_id, "Variable", stringType, stringSpace, H5P_DEFAULT, H5P_DEFAULT);
-        H5Awrite(att, stringType, "Neighbours indexes");
-        H5Aclose(att);
-        H5Tset_size(stringType, strlen("-"));
-        att = H5Acreate(dataset_id, "units", stringType, stringSpace, H5P_DEFAULT, H5P_DEFAULT);
-        H5Awrite(att, stringType, "-");
-        H5Dclose(dataset_id);
-        H5Aclose(att);
-        H5Sclose(dataspace_id);
-
-
-        //      Close the file.
-        H5Fflush(file_id, H5F_SCOPE_LOCAL);
-        H5Fclose(file_id);
+        s.append_table(Grid.point_local,
+                       6 * Grid.point_num,
+                       "/pntloc",
+                       "-",
+                       "Neighbours indexes");
     }
 
+   
+    
     //  PLANET
-    if (ntstep == 0) {
+    if (current_step == 0) {
         sprintf(FILE_NAME1, "%s/esp_output_planet_%s.h5", output_dir.c_str(), simulation_ID.c_str());
-        file_id = H5Fcreate(FILE_NAME1, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+        storage s(FILE_NAME1);
 
         // glevel
-        write_double_value_to_h5file(file_id, "/glevel", Grid.grid_level, "Horizontal subdivision level", "-");
+        s.append_value(Grid.grid_level, "/glevel", "-", "Horizontal subdivision level");
         // vlevel
-        write_double_value_to_h5file(file_id, "/vlevel", Grid.nv, "Vertical subdivision level", "-");
+        s.append_value(Grid.nv, "/vlevel", "-", "Vertical subdivision level");
         // spring_dynamics
-        write_double_value_to_h5file(file_id, "/spring_dynamics", spring_dynamics ? 1.0 : 0.0, "Spring dynamics", "-");
+        s.append_value(spring_dynamics ? 1.0 : 0.0, "/spring_dynamics", "-", "Spring dynamics");
         // spring beta
-        write_double_value_to_h5file(file_id, "/spring_beta", spring_beta, "Spring Beta", "-");
+        s.append_value(spring_beta, "/spring_beta", "-", "Spring Beta");
         //      A
-        write_double_value_to_h5file(file_id, "/A", planet.A, "Planet radius", "m");
+        s.append_value(sim.A, "/A", "m", "Planet radius");
         //      Rd
-        write_double_value_to_h5file(file_id, "/Rd", planet.Rd, "Gas constant", "J/(Kg K)");
+        s.append_value(sim.Rd, "/Rd", "J/(Kg K)", "Gas constant");
         //      Omega
-        write_double_value_to_h5file(file_id, "/Omega", planet.Omega, "Rotation rate", "1/s");
+        s.append_value(sim.Omega, "/Omega", "1/s", "Rotation rate");
         //      Gravit
-        write_double_value_to_h5file(file_id, "/Gravit", planet.Gravit, "Surface gravity", "m/s^2");
+        s.append_value(sim.Gravit, "/Gravit", "m/s^2", "Surface gravity");
         //      P_Ref
-        write_double_value_to_h5file(file_id, "/P_Ref", planet.P_Ref, "Reference pressure", "Pa");
+        s.append_value(sim.P_Ref, "/P_Ref", "Pa", "Reference pressure");
         //      Top_altitude
-        write_double_value_to_h5file(file_id, "/Top_altitude", planet.Top_altitude, "Top of the model's domain", "m");
+        s.append_value(sim.Top_altitude, "/Top_altitude", "m", "Top of the model's domain");
         //      CP
-        write_double_value_to_h5file(file_id, "/Cp", planet.Cp, "Specific heat capacity", "J/(Kg K)");
+        s.append_value(sim.Cp, "/Cp", "J/(Kg K)", "Specific heat capacity");
+        //      SpongeLayer option
+        s.append_value(sim.SpongeLayer ? 1.0 : 0.0, "/SpongeLayer", "-", "Using SpongeLayer?");
+        //      DeepModel option
+        s.append_value(sim.DeepModel ? 1.0 : 0.0, "/DeepModel", "-", "Using Deep Model");
 
-        H5Fflush(file_id, H5F_SCOPE_LOCAL);
-        H5Fclose(file_id);
+        //      NonHydro option
+        s.append_value(sim.NonHydro ? 1.0 : 0.0, "/NonHydro", "-", "Using Non Hydrostatic parameter");
+
+        //      DivDampP option
+        s.append_value(sim.DivDampP ? 1.0 : 0.0, "/DivDampP", "-", "Using Divergence-damping");
+
+        //      HyDiff option
+        s.append_value(sim.HyDiff ? 1.0 : 0.0, "/HyDiff", "-", "Using Hyper diffusion");
+
+        //      Hyperdiffusion strength
+        s.append_value(sim.Diffc, "/Diffc", "-", "Hyperdiffusion strength");
+
+        //      Tmean
+        s.append_value(sim.Tmean, "/Tmean", "K", "Mean atmospheric temperature");
+
+        //      conv adj option
+        s.append_value(sim.conv_adj, "/conv_adj", "-", "Using convection adjustment");
+
+        //      GCM on/off option
+        s.append_value(sim.gcm_off ? 1.0 : 0.0, "/gcm_off", "-", "GCM off");
+
+        //      rest option
+        s.append_value(sim.rest ? 1.0 : 0.0, "/rest", "-", "Starting from rest");
+
+        //      TPprof option
+        s.append_value(sim.TPprof, "/TPprof", "-", "Initial TP profile option");
     }
 
     //  ESP OUTPUT
-    sprintf(FILE_NAME1, "%s/esp_output_%s_%d.h5", output_dir.c_str(), simulation_ID.c_str(), fidx);
-    file_id = H5Fcreate(FILE_NAME1, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 
+    sprintf(FILE_NAME1, "%s/esp_output_%s_%d.h5", output_dir.c_str(), simulation_ID.c_str(), fidx);
+
+    storage s(FILE_NAME1);
     // step index
-    write_int_value_to_h5file(file_id, "/nstep", ntstep, "Step number", "-");
+    s.append_value(current_step,
+                   "/nstep",
+                   "-",
+                   "Step number");
 
     //  Simulation time
-    dims[0]                    = 1;
-    double simulation_time_a[] = {simulation_time};
-    dataspace_id               = H5Screate_simple(1, dims, NULL);
-    dataset_id                 = H5Dcreate2(file_id, "/simulation_time", H5T_IEEE_F64LE, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-    H5Dwrite(dataset_id, H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, simulation_time_a);
-    H5Tset_size(stringType, strlen("Simulation time"));
-    att = H5Acreate(dataset_id, "Variable", stringType, stringSpace, H5P_DEFAULT, H5P_DEFAULT);
-    H5Awrite(att, stringType, "Simulation time");
-    H5Aclose(att);
-    H5Tset_size(stringType, strlen("s"));
-    att = H5Acreate(dataset_id, "units", stringType, stringSpace, H5P_DEFAULT, H5P_DEFAULT);
-    H5Awrite(att, stringType, "s");
-    H5Dclose(dataset_id);
-    H5Aclose(att);
-    H5Sclose(dataspace_id);
+    s.append_value(simulation_time,
+                   "/simulation_time",
+                   "s",
+                   "Simulation time");
 
     //  Rho
-    dims[0]      = Grid.nv * Grid.point_num;
-    dataspace_id = H5Screate_simple(1, dims, NULL);
-    dataset_id   = H5Dcreate2(file_id, "/Rho", H5T_IEEE_F64LE, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-    H5Dwrite(dataset_id, H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, Rho_h);
-    H5Tset_size(stringType, strlen("Density"));
-    att = H5Acreate(dataset_id, "Variable", stringType, stringSpace, H5P_DEFAULT, H5P_DEFAULT);
-    H5Awrite(att, stringType, "Density");
-    H5Aclose(att);
-    H5Tset_size(stringType, strlen("kg/m^3"));
-    att = H5Acreate(dataset_id, "units", stringType, stringSpace, H5P_DEFAULT, H5P_DEFAULT);
-    H5Awrite(att, stringType, "kg/m^3");
-    H5Dclose(dataset_id);
-    H5Aclose(att);
-    H5Sclose(dataspace_id);
+    s.append_table(Rho_h,
+                   Grid.nv * Grid.point_num,
+                   "/Rho",
+                   "kg/m^3",
+                   "Density");
 
     //  Pressure
-    dims[0]      = Grid.nv * Grid.point_num;
-    dataspace_id = H5Screate_simple(1, dims, NULL);
-    dataset_id   = H5Dcreate2(file_id, "/Pressure", H5T_IEEE_F64LE, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-    H5Dwrite(dataset_id, H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, pressure_h);
-    H5Tset_size(stringType, strlen("Pressure"));
-    att = H5Acreate(dataset_id, "Variable", stringType, stringSpace, H5P_DEFAULT, H5P_DEFAULT);
-    H5Awrite(att, stringType, "Pressure");
-    H5Aclose(att);
-    H5Tset_size(stringType, strlen("Pa"));
-    att = H5Acreate(dataset_id, "units", stringType, stringSpace, H5P_DEFAULT, H5P_DEFAULT);
-    H5Awrite(att, stringType, "Pa");
-    H5Dclose(dataset_id);
-    H5Aclose(att);
-    H5Sclose(dataspace_id);
+    s.append_table(pressure_h,
+                   Grid.nv * Grid.point_num,
+                   "/Pressure",
+                   "Pa",
+                   "Pressure");
 
     //  Mh
-    dims[0]      = Grid.nv * Grid.point_num * 3;
-    dataspace_id = H5Screate_simple(1, dims, NULL);
-    dataset_id   = H5Dcreate2(file_id, "/Mh", H5T_IEEE_F64LE, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-    H5Dwrite(dataset_id, H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, Mh_h);
-    H5Tset_size(stringType, strlen("Horizontal Momentum"));
-    att = H5Acreate(dataset_id, "Variable", stringType, stringSpace, H5P_DEFAULT, H5P_DEFAULT);
-    H5Awrite(att, stringType, "Horizontal Momentum");
-    H5Aclose(att);
-    H5Tset_size(stringType, strlen("kg m/s"));
-    att = H5Acreate(dataset_id, "units", stringType, stringSpace, H5P_DEFAULT, H5P_DEFAULT);
-    H5Awrite(att, stringType, "kg m/s");
-    H5Dclose(dataset_id);
-    H5Aclose(att);
-    H5Sclose(dataspace_id);
+    s.append_table(Mh_h,
+                   Grid.nv * Grid.point_num * 3,
+                   "/Mh",
+                   "kg m/s",
+                   "Horizontal Momentum");
 
     //  Wh
-    dims[0]      = Grid.nvi * Grid.point_num;
-    dataspace_id = H5Screate_simple(1, dims, NULL);
-    dataset_id   = H5Dcreate2(file_id, "/Wh", H5T_IEEE_F64LE, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-    H5Dwrite(dataset_id, H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, Wh_h);
-    H5Tset_size(stringType, strlen("Vertical Momentum"));
-    att = H5Acreate(dataset_id, "Variable", stringType, stringSpace, H5P_DEFAULT, H5P_DEFAULT);
-    H5Awrite(att, stringType, "Vertical Momentum");
-    H5Aclose(att);
-    H5Tset_size(stringType, strlen("kg m/s"));
-    att = H5Acreate(dataset_id, "units", stringType, stringSpace, H5P_DEFAULT, H5P_DEFAULT);
-    H5Awrite(att, stringType, "kg m/s");
-    H5Dclose(dataset_id);
-    H5Aclose(att);
-    H5Sclose(dataspace_id);
-
-    //  Close the file.
-    H5Fflush(file_id, H5F_SCOPE_LOCAL);
-    H5Fclose(file_id);
+    s.append_table(Wh_h,
+                   Grid.nvi * Grid.point_num,
+                   "/Wh",
+                   "kg m/s",
+                   "Vertical Momentum");
 }
 
 
@@ -418,6 +311,8 @@ int main() {
         bool   sponge          = false;
 
 
+        int max_count;
+        
         // level 3 grid
         Icogrid Grid(spring_dynamics, // Spring dynamics option
                      spring_beta,     // Parameter beta for spring dynamics
@@ -426,10 +321,12 @@ int main() {
                      10,
                      6371000.0, // Planet radius
                      36000.0,
-                     sponge); // Top of the model's domain
-
+                     sponge, // Top of the model's domain
+                     &max_count);
+        
         string output_dir = "./gen/results_res_6/";
-
+        create_output_dir(output_dir);
+        
 
         SimulationSetup sim;
 
@@ -486,15 +383,9 @@ int main() {
         //
         //  Writes initial conditions
         double simulation_time = 0.0;
+        
         Output(0,
                0,
-               sim.Cp,           // Specific heat capacity [J/(Kg K)]
-               sim.Rd,           // Gas constant [J/(Kg K)]
-               sim.Omega,        // Rotation rate [s-1]
-               sim.Gravit,       // Gravitational acceleration [m/s2]
-               sim.P_Ref,        // Reference surface pressure [Pa]
-               sim.Top_altitude, // Top of the model's domain [m]
-               sim.A,            // Planet Radius [m]
                spring_dynamics,
                spring_beta,
                sim.simulation_ID, // Simulation ID (e.g., "Earth")
@@ -551,13 +442,6 @@ int main() {
         simulation_time = 1.0;
         Output(1,
                1,
-               sim.Cp,           // Specific heat capacity [J/(Kg K)]
-               sim.Rd,           // Gas constant [J/(Kg K)]
-               sim.Omega,        // Rotation rate [s-1]
-               sim.Gravit,       // Gravitational acceleration [m/s2]
-               sim.P_Ref,        // Reference surface pressure [Pa]
-               sim.Top_altitude, // Top of the model's domain [m]
-               sim.A,            // Planet Radius [m]
                spring_dynamics,
                spring_beta,
                sim.simulation_ID, // Simulation ID (e.g., "Earth")
@@ -615,13 +499,6 @@ int main() {
         simulation_time = 2.0;
         Output(2,
                2,
-               sim.Cp,           // Specific heat capacity [J/(Kg K)]
-               sim.Rd,           // Gas constant [J/(Kg K)]
-               sim.Omega,        // Rotation rate [s-1]
-               sim.Gravit,       // Gravitational acceleration [m/s2]
-               sim.P_Ref,        // Reference surface pressure [Pa]
-               sim.Top_altitude, // Top of the model's domain [m]
-               sim.A,            // Planet Radius [m]
                spring_dynamics,
                spring_beta,
                sim.simulation_ID, // Simulation ID (e.g., "Earth")
