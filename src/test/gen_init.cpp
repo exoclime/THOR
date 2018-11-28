@@ -431,7 +431,7 @@ int main() {
         string output_dir = "./gen/results_res_6/";
 
 
-        XPlanet Planet;
+        SimulationSetup sim;
 
 
         double* Rho_h         = (double*)malloc(Grid.nv * Grid.point_num * sizeof(double));

@@ -56,8 +56,8 @@ obj := $(obj_cpp) $(obj_cuda)
 #objects for tests
 obj_tests_cmdargs := cmdargs_test.o cmdargs.o
 obj_tests_config := config_test.o config_file.o
-obj_tests_storage := storage_test.o storage.o
-obj_tests_directories := directories_test.o directories.o
+obj_tests_storage := storage_test.o storage.o log_writer.o directories.o
+obj_tests_directories := directories_test.o directories.o log_writer.o
 obj_tests_gen_init := gen_init.o storage.o grid.o simulation_setup.o
 obj_tests_reduction_add := reduction_add_test.o reduction_add.o
 
@@ -120,7 +120,7 @@ profiling_flags := -pg -lineinfo --default-stream per-thread
 
 #######################################################################
 # define where to find sources
-source_dirs := src src/grid src/initial src/thor src/profx src/output src/devel src/input src/files src/utils src/test
+source_dirs := src src/ESP src/utils src/test
 
 vpath %.cu $(source_dirs)
 vpath %.cpp $(source_dirs)
@@ -356,9 +356,9 @@ clean:
 	-$(RM) $(BINDIR)/release/esp
 	-$(RM) $(BINDIR)/prof/esp
 	@echo $(CYAN)clean up objects files and dependencies $(END)
-	-$(RM) $(addprefix $(OBJDIR)/debug/,$(obj)) $(obj:%.o=$(OBJDIR)/debug/%.d) $(obj:%.o=$(OBJDIR)/debug/%.o.json)
-	-$(RM) $(addprefix $(OBJDIR)/release/,$(obj)) $(obj:%.o=$(OBJDIR)/release/%.d) $(obj:%.o=$(OBJDIR)/release/%.o.json)
-	-$(RM) $(addprefix $(OBJDIR)/prof/,$(obj)) $(obj:%.o=$(OBJDIR)/prof/%.d) $(obj:%.o=$(OBJDIR)/prof/%.o.json)
+	-$(RM) $(OBJDIR)/debug/*.o $(OBJDIR)/debug/*.d $(OBJDIR)/debug/*.o.json
+	-$(RM) $(OBJDIR)/release/*.o $(OBJDIR)/release/*.d $(OBJDIR)/release/*.o.json
+	-$(RM) $(OBJDIR)/prof/*.o $(OBJDIR)/prof/*.d $(OBJDIR)/prof/*.o.json
 	@echo $(CYAN)clean up tests binaries $(END)
 	-$(RM) $(BINDIR)/tests/cmdargs_test
 	-$(RM) $(BINDIR)/tests/storage_test
@@ -366,19 +366,6 @@ clean:
 	-$(RM) $(BINDIR)/tests/directories_test
 	-$(RM) $(BINDIR)/tests/gen_init
 	-$(RM) $(BINDIR)/tests/test_reduction_add
-	@echo $(CYAN)clean up test object files $(END)
-	-$(RM) $(addprefix $(OBJDIR)/debug/,$(obj_tests_storage))
-	-$(RM) $(addprefix $(OBJDIR)/debug/,$(obj_tests_config))
-	-$(RM) $(addprefix $(OBJDIR)/debug/,$(obj_tests_cmdargs))
-	-$(RM) $(addprefix $(OBJDIR)/debug/,$(obj_tests_directories))
-	-$(RM) $(addprefix $(OBJDIR)/debug/,$(obj_tests_gen_init))
-	@echo $(CYAN)clean up test dependencies $(END)
-	-$(RM) $(obj_tests_cmdargs:%.o=$(OBJDIR)/debug/%.d)
-	-$(RM) $(obj_tests_storage:%.o=$(OBJDIR)/debug/%.d)
-	-$(RM) $(obj_tests_config:%.o=$(OBJDIR)/debug/%.d)
-	-$(RM) $(obj_tests_directories:%.o=$(OBJDIR)/debug/%.d)
-	-$(RM) $(obj_tests_gen_init:%.o=$(OBJDIR)/debug/%.d)
-	-$(RM) $(obj_tests_reduction_add:%.o=$(OBJDIR)/debug/%.d)
 	@echo $(CYAN)clean up symlink $(END)
 	-$(RM) $(BINDIR)/esp
 	@echo $(CYAN)clean up modules directory $(END)

@@ -130,57 +130,61 @@ string (APPEND CMAKE_CUDA_FLAGS " -cudart shared" )
 # source for esp main program
 set(SRC
   src/esp.cu
-  src/grid/grid.cu
-  src/initial/esp_initial.cu
-  src/initial/simulation_setup.cu
-  src/output/esp_output.cu
-  src/profx/profx_driver.cu
-  src/thor/thor_driver.cu
-  src/devel/binary_test.cpp
-  src/devel/debug_helpers.cu
-  src/output/storage.cpp
-  src/input/config_file.cpp
-  src/input/cmdargs.cpp
-  src/files/directories.cpp
-  src/files/log_writer.cpp
+  src/ESP/grid.cu
+  src/ESP/esp_initial.cu
+  src/ESP/simulation_setup.cu
+  src/ESP/esp_output.cu
+  src/ESP/profx_driver.cu
+  src/ESP/thor_driver.cu
+  src/utils/binary_test.cpp
+  src/utils/debug_helpers.cu
+  src/utils/storage.cpp
+  src/utils/config_file.cpp
+  src/utils/cmdargs.cpp
+  src/utils/directories.cpp
+  src/utils/log_writer.cpp
   src/utils/iteration_timer.cpp
-  src/profx/profx_conservation.cu
-  src/thor/reduction_add.cu
-  src/thor/phy_modules_device.cu)
+  src/ESP/profx_conservation.cu
+  src/ESP/reduction_add.cu
+  src/ESP/phy_modules_device.cu)
 
 # source for test program for storage class
 set(SRC_STORAGE
   src/test/storage_test.cpp
-  src/output/storage.cpp)
+  src/utils/storage.cpp
+  src/utils/directories.cpp
+  src/utils/log_writer.cpp)
 
 set(SRC_GRID
-  src/grid/grid.cu
+  src/ESP/grid.cu
   src/test/grid_test.cpp
-  src/output/storage.cpp
-  src/devel/binary_test.cpp
-  src/devel/debug_helpers.cu
-  src/files/directories.cpp)
+  src/utils/storage.cpp
+  src/utils/binary_test.cpp
+  src/utils/debug_helpers.cu
+  src/utils/directories.cpp
+  src/utils/log_writer.cpp)
 
 set(SRC_CONFIG
   src/test/config_test.cpp
-  src/input/config_file.cpp)
+  src/utils/config_file.cpp)
 
 set(SRC_CMDARGS
   src/test/cmdargs_test.cpp
-  src/input/cmdargs.cpp)
+  src/utils/cmdargs.cpp)
 
 set(SRC_DIRECTORIES
+  src/utils/log_writer.cpp
   src/test/directories_test.cpp
-  src/files/directories.cpp)
+  src/utils/directories.cpp)
 
 set(SRC_GEN_INIT
   src/test/gen_init.cpp
-  src/output/storage.cpp
-  src/grid/grid.cu
-  src/initial/simulation_setup.cu)
+  src/utils/storage.cpp
+  src/ESP/grid.cu
+  src/ESP/simulation_setup.cu)
 
 set(SRC_REDUCTION_ADD
-  src/thor/reduction_add.cu
+  src/ESP/reduction_add.cu
   src/test/reduction_add_test.cu)
 
 ######################################################################

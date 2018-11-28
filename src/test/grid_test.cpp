@@ -55,7 +55,7 @@
 #include <iostream>
 #include <map>
 #include <vector>
-
+#include "log_writer.h"
 
 using namespace std;
 
@@ -65,6 +65,8 @@ int main() {
     bool compare = true;
 
     for (int l = 4; l < 7; l++) {
+        int max_count = 0;
+
         Icogrid grid(true, // Spring dynamics option
                      1.15, // Parameter beta for spring dynamics
                      l,    // Horizontal resolution level
@@ -72,7 +74,8 @@ int main() {
                      5,
                      6371000.0, // Planet radius
                      36000.0,   // Top of the model's domain
-                     false);    // sponge layer
+                     false,     // sponge layer
+                     &max_count);
 
         std::map<string, output_def> output_definitions =
             {
