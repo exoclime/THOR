@@ -121,16 +121,22 @@ public:
 
     template <typename ... Args>
     static void printf(Args... args) {
-        if (pFILE != nullptr)
+      // Stop GCC from complaining about format string it can't analyse
+#pragma GCC diagnostic ignored "-Wformat-security"
+      if (pFILE != nullptr)
             fprintf(pFILE, args...);
         
         std::printf(args...);
+#pragma GCC diagnostic pop
     }
 
     template <typename ... Args>
     static void printf_logonly(Args... args) {
+      // Stop GCC from complaining about format string it can't analyse
+#pragma GCC diagnostic ignored "-Wformat-security"
         if (pFILE != nullptr)
             fprintf(pFILE, args...);
+#pragma GCC diagnostic pop
     }
     
 
