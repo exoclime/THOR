@@ -10,7 +10,7 @@ config_version = 1
 num_steps = 345600
 
 # length of timesteps in seconds
-timestep = 300
+timestep = 600
 
 # output directory (relative to current working directory)
 # defaults to 'results'
@@ -134,7 +134,8 @@ Rv_sponge = 1e-5
 
 
 #-- Radiative transfer options (core_benchmark = 0) --------------------------#
-radiative_transfer = true
+radiative_transfer = false
+
 ## RT parameters #######################################
 # stellar temperature (k)
 Tstar = 5800

@@ -3,7 +3,7 @@
 
 $(info Modules RT Makefile )
 
-# set some variables if not set 
+# set some variables if not set
 includedir ?= unset
 h5include ?= unset
 cpp_flags ?= unset
@@ -67,15 +67,6 @@ $(BUILDDIR):
 
 INCLUDE_DIRS = -I$(SHARED_MODULES_INCLUDE) -I$(THOR_INCLUDE) -I$(LOCAL_INCLUDE)
 
-$(BUILDDIR)/chemistry.o: chemistry.cu chemistry.h phy_modules.h phy_module_base.h thor_chemistry.h | $(BUILDDIR)
-	@echo $(YELLOW)creating $@ $(END)
-	if test $$CDB = "-MJ" ; then \
-		$(CC) $(CC_comp_flag) $(arch) $(cuda_flags) $(h5include) $(h5libdir) $(INCLUDE_DIRS) $(CDB) $@.json -o $@ $<; \
-	else \
-		$(CC) $(CC_comp_flag) $(arch) $(cuda_flags) $(h5include) $(h5libdir) $(INCLUDE_DIRS) -o $@ $<; \
-	fi
-
-
 $(BUILDDIR)/radiative_transfer.o: radiative_transfer.cu radiative_transfer.h profx_RT.h phy_modules.h phy_module_base.h | $(BUILDDIR)
 	@echo $(YELLOW)creating $@ $(END)
 	if test $$CDB = "-MJ" ; then \
@@ -90,13 +81,13 @@ $(BUILDDIR)/phy_modules.o: phy_modules.cu phy_modules.h phy_module_base.h | $(BU
 		$(CC) $(CC_comp_flag) $(arch)  $(cuda_flags) $(h5include) $(INCLUDE_DIRS) $(CDB) $@.json -o $@ $<; \
 	else \
 		$(CC) $(CC_comp_flag) $(arch)  $(cuda_flags) $(h5include) $(INCLUDE_DIRS) -o $@ $<; \
-	fi 
+	fi
 
 
-libphy_modules.a: $(BUILDDIR)/chemistry.o $(BUILDDIR)/radiative_transfer.o $(BUILDDIR)/phy_modules.o | $(BUILDDIR)
+libphy_modules.a:  $(BUILDDIR)/radiative_transfer.o $(BUILDDIR)/phy_modules.o | $(BUILDDIR)
 	@echo $(YELLOW)creating $@ $(END)
 	@echo $(GREEN)Linking Modules into static lib $(END)
-	ar rcs $@ $(BUILDDIR)/phy_modules.o $(BUILDDIR)/radiative_transfer.o $(BUILDDIR)/chemistry.o 
+	ar rcs $@ $(BUILDDIR)/phy_modules.o $(BUILDDIR)/radiative_transfer.o 
 
 #######################################################################
 # Cleanup
@@ -109,7 +100,5 @@ clean:
 	-$(RM) $(BUILDDIR)/phy_modules.o.json
 	-$(RM) $(BUILDDIR)/radiative_transfer.o
 	-$(RM) $(BUILDDIR)/radiative_transfer.o.json
-	-$(RM) $(BUILDDIR)/chemistry.o
-	-$(RM) $(BUILDDIR)/chemistry.o.json
 	@echo $(CYAN)remove modules object dir $(END)
 	-$(RM) -d $(BUILDDIR)
