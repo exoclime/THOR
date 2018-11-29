@@ -122,6 +122,7 @@ public:
     template <typename ... Args>
     static void printf(Args... args) {
       // Stop GCC from complaining about format string it can't analyse
+#pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-security"
       if (pFILE != nullptr)
             fprintf(pFILE, args...);
@@ -133,6 +134,7 @@ public:
     template <typename ... Args>
     static void printf_logonly(Args... args) {
       // Stop GCC from complaining about format string it can't analyse
+#pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-security"
         if (pFILE != nullptr)
             fprintf(pFILE, args...);
