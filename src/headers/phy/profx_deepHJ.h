@@ -33,16 +33,15 @@
 //
 //       [1] Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016
 //
-//       [2] Heng et al. 2011
+//       [2] Held, I. M., & Suarez, M. J. 1994, Bullentin of the American
+//           Meteorological Society
 //
-// Current Code Owners: Joao Mendonca (joao.mendonca@space.dtu.dk)
-//                      Russell Deitrick (russell.deitrick@csh.unibe.ch)
-//                      Urs Schroffenegger (urs.schroffenegger@csh.unibe.ch)
+// Current Code Owner: Joao Mendonca, EEG. joao.mendonca@csh.unibe.ch
 //
 // History:
 // Version Date       Comment
 // ======= ====       =======
-// 2.0     30/11/2018 Released version (RD & US)
+//
 // 1.0     16/08/2017 Released version  (JM)
 //
 ////////////////////////////////////////////////////////////////////////
@@ -143,7 +142,7 @@ __global__ void deepHJ(double *Mh_d,
 
         //      Update momenta
         for (int k = 0; k < 3; k++) Mh_d[id * 3 * nv + lev * 3 + k] = Mh_d[id * 3 * nv + lev * 3 + k] / (1.0 + kv_hs * time_step);
-        ;
+
         //      Update temperature
         temperature_d[id * nv + lev] -= kt_hs * time_step * (temperature_d[id * nv + lev] - Teq_hs);
     }
