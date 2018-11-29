@@ -653,7 +653,9 @@ int main(int argc, char** argv) {
           Grid.point_num,      // Number of grid points
           sim.conservation,    // compute conservation values
           core_benchmark,      // benchmark test type
-          logwriter);          // Log writer
+          logwriter,           // Log writer
+          max_count);
+
 
     USE_BENCHMARK();
 
