@@ -10,7 +10,7 @@ config_version = 1
 num_steps = 345600
 
 # length of timesteps in seconds
-timestep = 300
+timestep = 600
 
 # output directory (relative to current working directory)
 # defaults to 'results'
