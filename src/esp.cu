@@ -25,7 +25,7 @@
 //         [2] - Calls the dynamical core THOR (Mendonca et al., 2016).
 //         [3] - Calls the physical core ProfX.
 //         END
-//
+////
 //
 // Known limitations: - Runs in a single GPU.
 //
