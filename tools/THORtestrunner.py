@@ -9,6 +9,14 @@ base_output_dir = pathlib.Path('testing')
 
 run_set_sel = 'fast'
 
+# colors for console output
+W = '\033[0m'  # white (normal)
+R = '\033[31m'  # red
+G = '\033[32m'  # green
+O = '\033[33m'  # orange
+B = '\033[34m'  # blue
+P = '\033[35m'  # purple
+
 
 def testfunction(neame, output_dir, params=None):
     # do some test, return value
@@ -19,33 +27,57 @@ def testfunction(neame, output_dir, params=None):
 fast_set = [
     {'name': 'earth_hs',
      'base_ifile': 'ifile/earth_hstest.thr',
-     'override': {'num_steps': '200'},
-     'status': True,
+     'command_options': [],
+     'override': {'num_steps': '10'},
+     'status': 0,
      'compare_func': testfunction,
      'compare_params': {'param': 'novalue'}},
 
+    {'name': 'shouldfail',
+     'base_ifile': 'ifile/earth_hstest.thr',
+     'command_options': [],
+     'override': {'num_steps': '00'},
+     'status': 255,
+     'compare_func': testfunction,
+     'compare_params': {'param': 'novalue'}},
+
+    {'name': 'earth_hs_norest',
+     'base_ifile': 'ifile/earth_hstest.thr',
+     'command_options': [],
+     'override': {'num_steps': '10',
+                  'rest': 'false',
+                  'initial': 'test_data/esp_initial.h5'},
+     'status': 0,
+     'compare_func': testfunction,
+     'compare_params': {'param': 'novalue'}},
+
+
     {'name': 'deephj',
      'base_ifile': 'ifile/deephj.thr',
-     'override': {'num_steps': '200'},
-     'status': True,
+     'command_options': [],
+     'override': {'num_steps': '10'},
+     'status': 0,
      'compare_func': None,
      'compare_params': None},
     {'name': 'earth_sync',
      'base_ifile': 'ifile/earth_sync.thr',
-     'override': {'num_steps': '200'},
-     'status': True,
+     'command_options': [],
+     'override': {'num_steps': '100'},
+     'status': 0,
      'compare_func': None,
      'compare_params': None},
     {'name': 'shallowhj',
      'base_ifile': 'ifile/shallowhj.thr',
-     'override': {'num_steps': '200'},
-     'status': True,
+     'command_options': [],
+     'override': {'num_steps': '100'},
+     'status': 0,
      'compare_func': None,
      'compare_params': None},
     {'name': 'wasp43b_ex',
      'base_ifile': 'ifile/wasp43b_ex.thr',
-     'override': {'num_steps': '200'},
-     'status': True,
+     'command_options': [],
+     'override': {'num_steps': '100'},
+     'status': 0,
      'compare_func': None,
      'compare_params': None},
 ]
@@ -53,8 +85,9 @@ fast_set = [
 slow_set = [
     {'name': 'earth_hs',
      'base_ifile': 'ifile/earth_hstest.thr',
+     'command_options': [],
      'override': {'num_steps': '10000'},
-     'status': True,
+     'status': 0,
      'compare_func': None,
      'compare_params': None}
 ]
@@ -75,7 +108,7 @@ else:
 test_results = {}
 
 for config_set in run_set:
-    print("Running {}".format(config_set['name']))
+    print(B+"Running {}".format(config_set['name'])+W)
 
     config_parser = configparser.ConfigParser()
     config_parser.optionxform = lambda option: option
@@ -99,11 +132,12 @@ for config_set in run_set:
     f.close()
 
     # run test
-    print("starting bin/esp on {}".format(str(generated_config_name)))
+    command_options = config_set['command_options']
+    print("starting bin/esp on {} with options {}".format(str(generated_config_name), command_options))
     stderr = subprocess.PIPE
     stdout = subprocess.PIPE
     returnstatus = subprocess.run(['bin/esp',
-                                   str(generated_config_name)],
+                                   str(generated_config_name)] + command_options,
                                   stdout=stdout,
                                   stderr=stderr,
                                   universal_newlines=True
@@ -112,9 +146,9 @@ for config_set in run_set:
     # store output somewhere
 
     # check output status
-    if returnstatus.returncode == 0:
-        print("Finished running {} ended correctly".format(
-            config_set['name'], returnstatus.returncode))
+    if returnstatus.returncode == config_set['status']:
+        print(G+"Finished running {} ended correctly".format(
+            config_set['name'], returnstatus.returncode)+W)
 
         # check output data if we have a result evaluation function
         if config_set['compare_func'] is not None:
@@ -123,12 +157,13 @@ for config_set in run_set:
             compare_result = compare_func(
                 config_set['name'], output_dir, compare_parameters)
             if compare_result:
-                print("data check passed")
+                print(G+"data check passed"+W)
             else:
-                print("data check failed")
+                print(R+"data check failed"+W)
+
     else:
-        print("Finished running {} failed with return code: ".format(
-            config_set['name'], returnstatus.returncode))
+        print(R+"Finished running {} failed with return code: ".format(
+            config_set['name'], returnstatus.returncode) + W)
         print("return status for {}: {}".format(
             config_set['name'], returnstatus.returncode))
         print("stdout:\n {}".format(returnstatus.stdout))
