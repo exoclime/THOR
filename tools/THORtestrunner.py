@@ -25,6 +25,7 @@ def testfunction(neame, output_dir, params=None):
 
 # config sets
 fast_set = [
+    # standard earth
     {'name': 'earth_hs',
      'base_ifile': 'ifile/earth_hstest.thr',
      'command_options': [],
@@ -33,6 +34,7 @@ fast_set = [
      'compare_func': testfunction,
      'compare_params': {'param': 'novalue'}},
 
+    # wrong config option, should fail
     {'name': 'shouldfail',
      'base_ifile': 'ifile/earth_hstest.thr',
      'command_options': [],
@@ -41,6 +43,7 @@ fast_set = [
      'compare_func': testfunction,
      'compare_params': {'param': 'novalue'}},
 
+    # does not start from rest
     {'name': 'earth_hs_norest',
      'base_ifile': 'ifile/earth_hstest.thr',
      'command_options': [],
@@ -52,6 +55,7 @@ fast_set = [
      'compare_params': {'param': 'novalue'}},
 
 
+    # deepHJ
     {'name': 'deephj',
      'base_ifile': 'ifile/deephj.thr',
      'command_options': [],
@@ -59,6 +63,7 @@ fast_set = [
      'status': 0,
      'compare_func': None,
      'compare_params': None},
+    # Earth Sync
     {'name': 'earth_sync',
      'base_ifile': 'ifile/earth_sync.thr',
      'command_options': [],
@@ -66,6 +71,7 @@ fast_set = [
      'status': 0,
      'compare_func': None,
      'compare_params': None},
+    # ShallowHJ
     {'name': 'shallowhj',
      'base_ifile': 'ifile/shallowhj.thr',
      'command_options': [],
@@ -73,6 +79,7 @@ fast_set = [
      'status': 0,
      'compare_func': None,
      'compare_params': None},
+    # Planet of the Wasps
     {'name': 'wasp43b_ex',
      'base_ifile': 'ifile/wasp43b_ex.thr',
      'command_options': [],
