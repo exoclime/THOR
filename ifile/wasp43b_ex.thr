@@ -97,7 +97,7 @@ initial = wasp43_sponge2/esp_output_Wasp43b_re.h5
 # Benchmark test for deep hot Jupiter == DeepHotJupiter
 # Benchmark test for tidally locked Earth == TidallyLockedEarth
 # No benchmark test == NoBenchmark (model is then forced with grey RT by default)
-core_benchmark = ShallowHotJupiter
+core_benchmark = NoBenchmark
 
 # Switch off dynamical core (gcm)
 # This is useful for testing/debugging physics modules
