@@ -88,8 +88,8 @@ rest = true
 
 # initial conditions file, used if rest is set to false
 # (path relative to current working directory)
-# defaults to 'ifile/esp.initial.h5'
-initial = wasp43_sponge2/esp_output_Wasp43b_re.h5
+# defaults to 'ifile/esp_initial.h5'
+initial = ifile/esp_initial.h5
 
 # Core benchmark tests
 # Held-Suarez test for Earth == HeldSuarez
