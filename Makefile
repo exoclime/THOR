@@ -58,8 +58,8 @@ obj_tests_cmdargs := cmdargs_test.o cmdargs.o
 obj_tests_config := config_test.o config_file.o
 obj_tests_storage := storage_test.o storage.o log_writer.o directories.o
 obj_tests_directories := directories_test.o directories.o log_writer.o
-obj_tests_gen_init := gen_init.o storage.o grid.o simulation_setup.o
-obj_tests_reduction_add := reduction_add_test.o reduction_add.o
+obj_tests_gen_init := gen_init.o storage.o grid.o simulation_setup.o directories.o log_writer.o
+obj_tests_reduction_add := reduction_add_test.o reduction_add.o  directories.o log_writer.o
 
 
 
