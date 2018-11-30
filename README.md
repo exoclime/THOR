@@ -31,3 +31,6 @@ Finally, run
 ```sh
    $ bin/esp ifile/<config file for your planet>
 ```
+### Furthur information
+
+[View our wiki pages here](https://github.com/exoclime/THOR-dev/wiki)
