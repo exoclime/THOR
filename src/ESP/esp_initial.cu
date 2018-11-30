@@ -426,7 +426,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
             planet_filename = p.parent() + "/esp_output_planet_" + basename + ".h5";
         }
         else {
-            planet_filename = p.parent() + "/" + p.stem() + "_sim.h5";
+            planet_filename = p.parent() + "/" + p.stem() + "_planet.h5";
         }
 
         // check existence of files
@@ -464,7 +464,13 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 double value = 0.0;
                 load_OK      = s.read_value(element.first, value);
 
-
+                if (!load_OK)
+                {
+                    printf("Error reading key %s from reload config.\n", element.first.c_str());
+                    values_match = false;
+                }
+                
+                    
                 if (value != element.second) {
                     log::printf("mismatch for %s value between config value: %f and initial condition value %f.\n",
                            element.first.c_str(),
@@ -476,10 +482,15 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
             // int var
             for (const std::pair<std::string, int> &element : mapValuesInt) {
-                int value = 0.0;
+                int value = 0;
                 load_OK   = s.read_value(element.first, value);
 
-
+                if (!load_OK)
+                {
+                    printf("Error reading key %s from reload config.\n", element.first.c_str());
+                    values_match = false;
+                }
+                
                 if (value != element.second) {
                     log::printf("mismatch for %s value between config value: %d and initial condition value %d.\n",
                            element.first.c_str(),
