@@ -78,7 +78,7 @@ HyDiff  =    true
 DivDampP =    true
 
 # Strength of diffusion
-Diffc = 0.0099
+Diffc = 0.02
 #########################################################
 
 
