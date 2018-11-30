@@ -88,16 +88,16 @@ rest = true
 
 # initial conditions file, used if rest is set to false
 # (path relative to current working directory)
-# defaults to 'ifile/esp.initial.h5'
-initial = wasp43_sponge2/esp_output_Wasp43b_re.h5
+# defaults to 'ifile/esp_initial.h5'
+initial = ifile/esp_initial.h5
 
-# Core benchmark test
-# Held-Suarez test for Earth == 1
-# Benchmark test for tidally locked Earth == 2
-# Benchmark test for shallow hot Jupiter == 3
-# Benchmark test for deep hot Jupiter == 4
-# No HS test == 0 (model is then forced with grey RT by default)
-core_benchmark = 0
+# Core benchmark tests
+# Held-Suarez test for Earth == HeldSuarez
+# Benchmark test for shallow hot Jupiter == ShallowHotJupiter
+# Benchmark test for deep hot Jupiter == DeepHotJupiter
+# Benchmark test for tidally locked Earth == TidallyLockedEarth
+# No benchmark test == NoBenchmark (model is then forced with grey RT by default)
+core_benchmark = NoBenchmark
 
 # Switch off dynamical core (gcm)
 # This is useful for testing/debugging physics modules
