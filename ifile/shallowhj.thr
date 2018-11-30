@@ -50,10 +50,6 @@ Tmean = 1600
 # Reference surface pressure [Pa]
 P_ref = 100000.0
 
-# Altitude of the top of the model domain [m]
-Top_altitude = 4875000
-
-
 #-- Grid options -------------------------------------------------------------#
 # Altitude of the top of the model domain [m]
 Top_altitude = 4875000

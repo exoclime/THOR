@@ -10,20 +10,44 @@ base_output_dir = pathlib.Path('testing')
 run_set_sel = 'fast'
 
 
+def testfunction(neame, output_dir, params=None):
+    # do some test, return value
+    return True
+
+
 # config sets
 fast_set = [
     {'name': 'earth_hs',
      'base_ifile': 'ifile/earth_hstest.thr',
-     'override': {'num_steps': '10'},
+     'override': {'num_steps': '200'},
+     'status': True,
+     'compare_func': testfunction,
+     'compare_params': {'param': 'novalue'}},
+
+    {'name': 'deephj',
+     'base_ifile': 'ifile/deephj.thr',
+     'override': {'num_steps': '200'},
      'status': True,
      'compare_func': None,
      'compare_params': None},
-    {'name': 'deephj',
-     'base_ifile': 'ifile/deephj.thr',
-     'override': {'num_steps': '10'},
+    {'name': 'earth_sync',
+     'base_ifile': 'ifile/earth_sync.thr',
+     'override': {'num_steps': '200'},
      'status': True,
      'compare_func': None,
-     'compare_params': None}
+     'compare_params': None},
+    {'name': 'shallowhj',
+     'base_ifile': 'ifile/shallowhj.thr',
+     'override': {'num_steps': '200'},
+     'status': True,
+     'compare_func': None,
+     'compare_params': None},
+    {'name': 'wasp43b_ex',
+     'base_ifile': 'ifile/wasp43b_ex.thr',
+     'override': {'num_steps': '200'},
+     'status': True,
+     'compare_func': None,
+     'compare_params': None},
 ]
 
 slow_set = [
@@ -92,6 +116,16 @@ for config_set in run_set:
         print("Finished running {} ended correctly".format(
             config_set['name'], returnstatus.returncode))
 
+        # check output data if we have a result evaluation function
+        if config_set['compare_func'] is not None:
+            compare_func = config_set['compare_func']
+            compare_parameters = config_set['compare_params']
+            compare_result = compare_func(
+                config_set['name'], output_dir, compare_parameters)
+            if compare_result:
+                print("data check passed")
+            else:
+                print("data check failed")
     else:
         print("Finished running {} failed with return code: ".format(
             config_set['name'], returnstatus.returncode))
@@ -99,5 +133,3 @@ for config_set in run_set:
             config_set['name'], returnstatus.returncode))
         print("stdout:\n {}".format(returnstatus.stdout))
         print("stderr:\n {}".format(returnstatus.stderr))
-
-    # To be defined later, check output values if present
