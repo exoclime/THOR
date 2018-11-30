@@ -1,10 +1,11 @@
 
 import configparser
 import pathlib
+import subprocess
 
 
 # need command line arguments for those
-base_output_dir = pathlib.Path('results_testing')
+base_output_dir = pathlib.Path('testing')
 
 run_set_sel = 'fast'
 
@@ -53,6 +54,7 @@ for config_set in run_set:
     print("Running {}".format(config_set['name']))
 
     config_parser = configparser.ConfigParser()
+    config_parser.optionxform = lambda option: option
     f = open(config_set['base_ifile'])
     conf = "[config]\n" + f.read()
     config_parser.read_string(conf)
@@ -62,7 +64,7 @@ for config_set in run_set:
         config_parser['config'][key] = value
 
     output_dir = str(base_output_dir / config_set['name'])
-    config_parser['config']['output'] = output_dir
+    config_parser['config']['results_path'] = output_dir
 
     generated_config_name = base_output_dir / (config_set['name'] + ".thr")
 
@@ -70,9 +72,32 @@ for config_set in run_set:
 
     for key, value in config_parser['config'].items():
         f.write("{} = {}\n".format(key, value))
+    f.close()
 
     # run test
+    print("starting bin/esp on {}".format(str(generated_config_name)))
+    stderr = subprocess.PIPE
+    stdout = subprocess.PIPE
+    returnstatus = subprocess.run(['bin/esp',
+                                   str(generated_config_name)],
+                                  stdout=stdout,
+                                  stderr=stderr,
+                                  universal_newlines=True
+                                  )
+
+    # store output somewhere
 
     # check output status
+    if returnstatus.returncode == 0:
+        print("Finished running {} ended correctly".format(
+            config_set['name'], returnstatus.returncode))
+
+    else:
+        print("Finished running {} failed with return code: ".format(
+            config_set['name'], returnstatus.returncode))
+        print("return status for {}: {}".format(
+            config_set['name'], returnstatus.returncode))
+        print("stdout:\n {}".format(returnstatus.stdout))
+        print("stderr:\n {}".format(returnstatus.stderr))
 
     # To be defined later, check output values if present
