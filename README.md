@@ -33,4 +33,4 @@ Finally, run
 ```
 ### Furthur information
 
-[View our wiki pages here](https://github.com/exoclime/THOR-dev/wiki)
+[View our wiki pages here](https://github.com/exoclime/THOR/wiki)
