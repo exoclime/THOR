@@ -1,13 +1,32 @@
 
 import configparser
 import pathlib
-import subprocess
+
+import h5py
+import numpy as np
+import argparse
+
+import asyncio
+
+
+# argument parsing
+parser = argparse.ArgumentParser(description='THOR tester tool')
+
+parser.add_argument("-t",
+                    "--testset",
+                    action='store',
+                    metavar='TESTSET',
+                    help='test set to run',
+                    default="fast")
+
+args = parser.parse_args()
 
 
 # need command line arguments for those
 base_output_dir = pathlib.Path('testing')
+test_data_dir = pathlib.Path('test_data')
 
-run_set_sel = 'fast'
+run_set_sel = args.testset
 
 # colors for console output
 W = '\033[0m'  # white (normal)
@@ -17,13 +36,115 @@ O = '\033[33m'  # orange
 B = '\033[34m'  # blue
 P = '\033[35m'  # purple
 
+# HDF5 helper classes for comparison tests
 
-def testfunction(neame, output_dir, params=None):
+
+def h5diff(ref_file, dat_file, epsilon=None):
+    if not ref_file.exists():
+        print("No ref file {}".format(ref_file))
+        return False
+
+    if not dat_file.exists():
+        print("No dat file {}".format(dat_file))
+        return False
+
+    ref = h5py.File(str(ref_file))
+    dat = h5py.File(str(dat_file))
+
+    comp = True
+    for datasetname in ref:
+        if datasetname not in dat:
+            print("No dataset {} in {}".format(datasetname, dat))
+            comp = False
+        else:
+            # load data set
+            dat_data = np.array(dat[datasetname])
+
+            ref_data = np.array(ref[datasetname])
+            if epsilon is None:
+                if (dat_data != ref_data).any():
+                    print("dataset {} mismatch in {}".format(datasetname, dat))
+                    comp = False
+            else:
+                if (np.abs(dat_data - ref_data) > epsilon).any():
+                    print("dataset {} mismatch in {} with epsilon {}".format(
+                        datasetname, dat, epsilon))
+                    comp = False
+
+    return comp
+
+
+def compare_h5files(name, output_dir, ref_dir, params=None):
+    comparisons = params['comparisons']
+
+    epsilon = None
+    if 'epsilon' in params:
+        epsilon = params['epsilon']
+
+    equal = True
+
+    for filename in comparisons:
+
+        if not h5diff(ref_dir / name / filename, output_dir / name / filename, epsilon):
+            equal = False
+    # do some test, return value
+    return equal
+
+# Dummy test function for comparison
+
+
+def testfunction(name, output_dir, ref_dir, params=None):
     # do some test, return value
     return True
 
 
-# config sets
+######################################################################
+# test sets definition
+grid_and_startup_set = [
+    # standard earth
+    # test startup, grid file, planet file, and two first output files
+    {'name': 'earth_hs_grid_4',
+     'base_ifile': 'ifile/earth_hstest.thr',
+     'command_options': [],
+     'override': {'num_steps': '10',
+                  'n_out': '10',
+                  'glevel': '4',
+                  'vlevel': '32'},
+     'status': 0,
+     'compare_func': compare_h5files,
+     'compare_params': {'comparisons': ['esp_output_grid_Earth.h5',
+                                        'esp_output_planet_Earth.h5',
+                                        'esp_output_Earth_0.h5',
+                                        'esp_output_Earth_1.h5']}},
+    {'name': 'earth_hs_grid_5',
+     'base_ifile': 'ifile/earth_hstest.thr',
+     'command_options': [],
+     'override': {'num_steps': '10',
+                  'n_out': '10',
+                  'glevel': '5',
+                  'vlevel': '32'},
+     'status': 0,
+     'compare_func': compare_h5files,
+     'compare_params': {'comparisons': ['esp_output_grid_Earth.h5',
+                                        'esp_output_planet_Earth.h5',
+                                        'esp_output_Earth_0.h5',
+                                        'esp_output_Earth_1.h5']}},
+    {'name': 'earth_hs_grid_6',
+     'base_ifile': 'ifile/earth_hstest.thr',
+     'command_options': [],
+     'override': {'num_steps': '10',
+                  'n_out': '10',
+                  'glevel': '6',
+                  'vlevel': '32'},
+     'status': 0,
+     'compare_func': compare_h5files,
+     'compare_params': {'comparisons': ['esp_output_grid_Earth.h5',
+                                        'esp_output_planet_Earth.h5',
+                                        'esp_output_Earth_0.h5',
+                                        'esp_output_Earth_1.h5']}},
+]
+
+# fast checks, just checking that it did not crash
 fast_set = [
     # standard earth
     {'name': 'earth_hs',
@@ -89,6 +210,7 @@ fast_set = [
      'compare_params': None},
 ]
 
+# long tests
 slow_set = [
     {'name': 'earth_hs',
      'base_ifile': 'ifile/earth_hstest.thr',
@@ -98,21 +220,62 @@ slow_set = [
      'compare_func': None,
      'compare_params': None}
 ]
-
-
-simulation_sets = {"slow": slow_set,
-                   "fast": fast_set}
+######################################################################
+# the simulation sets we can choose from
+simulation_sets = {'slow': slow_set,
+                   'fast': fast_set,
+                   'grid': grid_and_startup_set}
 
 
 run_set = simulation_sets[run_set_sel]
 
+# make output directory
 if not base_output_dir.exists():
     base_output_dir.mkdir()
 else:
     print("Output {} already exists, can't run".format(str(base_output_dir)))
     exit(-1)
 
+
+# store results output for summary
 test_results = {}
+
+
+def log_result(name, result):
+    print(name + ":\t" + result)
+    if name in test_results:
+        test_results[name].append(result)
+    else:
+        test_results[name] = [result]
+
+# asynchronous function to run a process, capture its output and print out its output
+
+
+async def run_subprocess(process_args):
+    code = 'import datetime; print(datetime.datetime.now())'
+
+    # Create the subprocess; redirect the standard output
+    # into a pipe.
+    proc = await asyncio.create_subprocess_exec(*process_args,
+                                                stdout=asyncio.subprocess.PIPE,
+                                                stderr=asyncio.subprocess.PIPE)
+
+    # Read one line of output.
+    result = ''
+    while True:
+        line = await proc.stdout.readline()
+        if proc.stdout.at_eof():
+            break
+        if line != b'':
+            print(" " + line.decode('ascii'), end='')
+            result += line.decode('ascii')
+
+    # Wait for the subprocess exit.
+    await proc.wait()
+    return result, proc.stderr, proc.returncode
+
+# start event loop
+loop = asyncio.get_event_loop()
 
 for config_set in run_set:
     print(B+"Running {}".format(config_set['name'])+W)
@@ -140,38 +303,44 @@ for config_set in run_set:
 
     # run test
     command_options = config_set['command_options']
+
     print("starting bin/esp on {} with options {}".format(str(generated_config_name), command_options))
-    stderr = subprocess.PIPE
-    stdout = subprocess.PIPE
-    returnstatus = subprocess.run(['bin/esp',
-                                   str(generated_config_name)] + command_options,
-                                  stdout=stdout,
-                                  stderr=stderr,
-                                  universal_newlines=True
-                                  )
+    stdout, stderr, returncode = loop.run_until_complete(run_subprocess(['bin/esp',
+                                                                         str(generated_config_name)] + command_options
+                                                                        ))
 
     # store output somewhere
 
     # check output status
-    if returnstatus.returncode == config_set['status']:
-        print(G+"Finished running {} ended correctly".format(
-            config_set['name'], returnstatus.returncode)+W)
+    if returncode == config_set['status']:
+        log_result(config_set['name'], G+"Finished running {} ended correctly".format(
+            config_set['name'], returncode)+W)
 
         # check output data if we have a result evaluation function
         if config_set['compare_func'] is not None:
             compare_func = config_set['compare_func']
             compare_parameters = config_set['compare_params']
             compare_result = compare_func(
-                config_set['name'], output_dir, compare_parameters)
+                config_set['name'], base_output_dir, test_data_dir, compare_parameters)
             if compare_result:
-                print(G+"data check passed"+W)
+                log_result(config_set['name'], G+"data check passed"+W)
             else:
-                print(R+"data check failed"+W)
+                log_result(config_set['name'], R+"data check failed"+W)
 
     else:
-        print(R+"Finished running {} failed with return code: ".format(
-            config_set['name'], returnstatus.returncode) + W)
-        print("return status for {}: {}".format(
-            config_set['name'], returnstatus.returncode))
-        print("stdout:\n {}".format(returnstatus.stdout))
-        print("stderr:\n {}".format(returnstatus.stderr))
+        log_result(config_set['name'], R+"Finished running {} failed with return code: ".format(
+            config_set['name'], returncode) + W)
+        log_result(config_set['name'], "return status for {}: {}".format(
+            config_set['name'], returncode))
+        log_result(config_set['name'], "stdout:\n {}".format(stdout))
+        log_result(config_set['name'], "stderr:\n {}".format(stderr))
+
+
+loop.close()
+print(72*"*")
+print(72*"*")
+print("****     SUMMARY")
+print(72*"*")
+for name, result in test_results.items():
+    for l in result:
+        print(name + ":\t" + l)
