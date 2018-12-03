@@ -829,6 +829,7 @@ int main(int argc, char** argv) {
         if (sim.conservation == true) {
             X.conservation(sim);
 
+            
             logwriter.output_conservation(0,
                                           simulation_time,
                                           X.GlobalE_h,
@@ -836,6 +837,8 @@ int main(int argc, char** argv) {
                                           X.GlobalAMx_h,
                                           X.GlobalAMy_h,
                                           X.GlobalAMz_h);
+            
+            X.copy_conservation_to_host();
         }
 
         X.output(0, // file index
@@ -898,7 +901,11 @@ int main(int argc, char** argv) {
         //      Prints output every nout steps
         if (nstep % n_out == 0
             || caught_signal != ESIG_NOSIG) {
-            X.copy_to_host();
+                X.copy_to_host();
+                
+            if (sim.conservation == true)
+                X.copy_conservation_to_host();
+            
             X.output(output_file_idx,
                      sim);
 
