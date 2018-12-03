@@ -123,13 +123,6 @@ Rv_sponge = 1e-5
 # when to shrink sponge (days)
 #t_shrink = 1
 
-
-
-Tstar = 4300
-planet_star_dist = 0.015
-radius_star = 0.667
-sync_rot = true
-
 #-- Radiative transfer options (core_benchmark = 0) --------------------------#
 ## RT parameters #######################################
 # stellar temperature (k)
