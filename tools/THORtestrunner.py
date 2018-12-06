@@ -170,7 +170,7 @@ fast_set = [
      'command_options': [],
      'override': {'num_steps': '10',
                   'rest': 'false',
-                  'initial': 'test_data/esp_initial.h5'},
+                  'initial': 'ifile/esp_initial.h5'},
      'status': 0,
      'compare_func': testfunction,
      'compare_params': {'param': 'novalue'}},
