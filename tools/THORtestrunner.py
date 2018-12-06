@@ -19,8 +19,12 @@ parser.add_argument("-t",
                     help='test set to run',
                     default="fast")
 
-args = parser.parse_args()
+parser.add_argument("-w",
+                    "--writemode",
+                    action='store_true',
+                    help='write test data to be used by comparison')
 
+args = parser.parse_args()
 
 # need command line arguments for those
 base_output_dir = pathlib.Path('testing')
@@ -111,6 +115,7 @@ grid_and_startup_set = [
                   'glevel': '4',
                   'vlevel': '32'},
      'status': 0,
+     'writemode_enabled': True,
      'compare_func': compare_h5files,
      'compare_params': {'comparisons': ['esp_output_grid_Earth.h5',
                                         'esp_output_planet_Earth.h5',
@@ -124,6 +129,7 @@ grid_and_startup_set = [
                   'glevel': '5',
                   'vlevel': '32'},
      'status': 0,
+     'writemode_enabled': True,
      'compare_func': compare_h5files,
      'compare_params': {'comparisons': ['esp_output_grid_Earth.h5',
                                         'esp_output_planet_Earth.h5',
@@ -137,6 +143,7 @@ grid_and_startup_set = [
                   'glevel': '6',
                   'vlevel': '32'},
      'status': 0,
+     'writemode_enabled': True,
      'compare_func': compare_h5files,
      'compare_params': {'comparisons': ['esp_output_grid_Earth.h5',
                                         'esp_output_planet_Earth.h5',
@@ -152,6 +159,7 @@ fast_set = [
      'command_options': [],
      'override': {'num_steps': '10'},
      'status': 0,
+     'writemode_enabled': False,
      'compare_func': testfunction,
      'compare_params': {'param': 'novalue'}},
 
@@ -161,6 +169,7 @@ fast_set = [
      'command_options': [],
      'override': {'num_steps': '00'},
      'status': 255,
+     'writemode_enabled': False,
      'compare_func': testfunction,
      'compare_params': {'param': 'novalue'}},
 
@@ -170,8 +179,9 @@ fast_set = [
      'command_options': [],
      'override': {'num_steps': '10',
                   'rest': 'false',
-                  'initial': 'test_data/esp_initial.h5'},
+                  'initial': 'ifile/esp_initial.h5'},
      'status': 0,
+     'writemode_enabled': False,
      'compare_func': testfunction,
      'compare_params': {'param': 'novalue'}},
 
@@ -182,6 +192,7 @@ fast_set = [
      'command_options': [],
      'override': {'num_steps': '10'},
      'status': 0,
+     'writemode_enabled': False,
      'compare_func': None,
      'compare_params': None},
     # Earth Sync
@@ -190,6 +201,7 @@ fast_set = [
      'command_options': [],
      'override': {'num_steps': '100'},
      'status': 0,
+     'writemode_enabled': False,
      'compare_func': None,
      'compare_params': None},
     # ShallowHJ
@@ -198,6 +210,7 @@ fast_set = [
      'command_options': [],
      'override': {'num_steps': '100'},
      'status': 0,
+     'writemode_enabled': False,
      'compare_func': None,
      'compare_params': None},
     # Planet of the Wasps
@@ -206,6 +219,7 @@ fast_set = [
      'command_options': [],
      'override': {'num_steps': '100'},
      'status': 0,
+     'writemode_enabled': False,
      'compare_func': None,
      'compare_params': None},
 ]
@@ -217,6 +231,7 @@ slow_set = [
      'command_options': [],
      'override': {'num_steps': '10000'},
      'status': 0,
+     'writemode_enabled': False,
      'compare_func': None,
      'compare_params': None}
 ]
@@ -230,11 +245,25 @@ simulation_sets = {'slow': slow_set,
 run_set = simulation_sets[run_set_sel]
 
 # make output directory
-if not base_output_dir.exists():
-    base_output_dir.mkdir()
+if args.writemode == True:
+    for config_set in run_set:
+        if config_set['writemode_enabled'] == False:
+            print("Write mode is not enabled for all simulations in set '%s'"%run_set_sel)
+            exit(-1)
+
+    if not test_data_dir.exists():
+        test_data_dir.mkdir()
+        print(G+"Write mode enabled... generating test data in directory '%s'"%test_data_dir)
+    else:
+        print("Output {} already exists, can't run".format(str(test_data_dir)))
+        exit(-1)
+
 else:
-    print("Output {} already exists, can't run".format(str(base_output_dir)))
-    exit(-1)
+    if not base_output_dir.exists():
+        base_output_dir.mkdir()
+    else:
+        print("Output {} already exists, can't run".format(str(base_output_dir)))
+        exit(-1)
 
 
 # store results output for summary
@@ -290,7 +319,11 @@ for config_set in run_set:
     for key, value in config_set['override'].items():
         config_parser['config'][key] = value
 
-    output_dir = str(base_output_dir / config_set['name'])
+    if args.writemode == True:
+        output_dir = str(test_data_dir / config_set['name'])
+    else:
+        output_dir = str(base_output_dir / config_set['name'])
+
     config_parser['config']['results_path'] = output_dir
 
     generated_config_name = base_output_dir / (config_set['name'] + ".thr")
@@ -316,16 +349,17 @@ for config_set in run_set:
         log_result(config_set['name'], G+"Finished running {} ended correctly".format(
             config_set['name'], returncode)+W)
 
-        # check output data if we have a result evaluation function
-        if config_set['compare_func'] is not None:
-            compare_func = config_set['compare_func']
-            compare_parameters = config_set['compare_params']
-            compare_result = compare_func(
-                config_set['name'], base_output_dir, test_data_dir, compare_parameters)
-            if compare_result:
-                log_result(config_set['name'], G+"data check passed"+W)
-            else:
-                log_result(config_set['name'], R+"data check failed"+W)
+        if args.writemode == False:
+            # check output data if we have a result evaluation function
+            if config_set['compare_func'] is not None:
+                compare_func = config_set['compare_func']
+                compare_parameters = config_set['compare_params']
+                compare_result = compare_func(
+                    config_set['name'], base_output_dir, test_data_dir, compare_parameters)
+                if compare_result:
+                    log_result(config_set['name'], G+"data check passed"+W)
+                else:
+                    log_result(config_set['name'], R+"data check failed"+W)
 
     else:
         log_result(config_set['name'], R+"Finished running {} failed with return code: ".format(
