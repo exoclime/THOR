@@ -77,7 +77,7 @@ ifeq ($(COMP), nvcc)
 	CC_comp_flag = -dc
 	ccbin :=
 	# ccbin := -ccbin g++-5
-	CDB := none 
+	CDB := none
 	arch := -arch sm_$(SM)
 	dependencies_flags = --generate-dependencies
 
@@ -356,9 +356,9 @@ clean:
 	-$(RM) $(BINDIR)/release/esp
 	-$(RM) $(BINDIR)/prof/esp
 	@echo $(CYAN)clean up objects files and dependencies $(END)
-	-$(RM) $(OBJDIR)/debug/*.o $(OBJDIR)/debug/*.d $(OBJDIR)/debug/*.o.json
-	-$(RM) $(OBJDIR)/release/*.o $(OBJDIR)/release/*.d $(OBJDIR)/release/*.o.json
-	-$(RM) $(OBJDIR)/prof/*.o $(OBJDIR)/prof/*.d $(OBJDIR)/prof/*.o.json
+	-$(RM) $(OBJDIR)/debug/*.o $(OBJDIR)/debug/*.d $(OBJDIR)/debug/*.d.* $(OBJDIR)/debug/*.o.json
+	-$(RM) $(OBJDIR)/release/*.o $(OBJDIR)/release/*.d $(OBJDIR)/release/*.d.* $(OBJDIR)/release/*.o.json
+	-$(RM) $(OBJDIR)/prof/*.o $(OBJDIR)/prof/*.d $(OBJDIR)/prof/*.d.* $(OBJDIR)/prof/*.o.json
 	@echo $(CYAN)clean up tests binaries $(END)
 	-$(RM) $(BINDIR)/tests/cmdargs_test
 	-$(RM) $(BINDIR)/tests/storage_test
