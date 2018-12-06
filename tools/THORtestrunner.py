@@ -320,10 +320,8 @@ for config_set in run_set:
         config_parser['config'][key] = value
 
     if args.writemode == True:
-        import pdb; pdb.set_trace()
         output_dir = str(test_data_dir / config_set['name'])
     else:
-        import pdb; pdb.set_trace()
         output_dir = str(base_output_dir / config_set['name'])
 
     config_parser['config']['results_path'] = output_dir
