@@ -282,6 +282,7 @@ bool radiative_transfer::store_init(storage &s) {
     s.append_value(tausw, "/tausw", "-", "shortwave optical depth of deepest layer");
     s.append_value(taulw, "/taulw", "-", "longwave optical depth of deepest layer");
     s.append_value(sync_rot ? 1.0 : 0.0, "/sync_rot", "-", "enforce synchronous rotation");
+    s.append_value(mean_motion, "/mean_motion", "rad/s", "Orbital mean motion");
     s.append_value(alpha_i * 180 / M_PI, "/alpha_i", "deg", "initial RA of host star");
     s.append_value(true_long_i * 180 / M_PI, "/true_long_i", "deg", "initial orbital position of planet");
     s.append_value(ecc, "/ecc", "-", "orbital eccentricity");
