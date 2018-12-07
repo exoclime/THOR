@@ -4,6 +4,8 @@ import scipy.interpolate as interp
 import os
 import h5py
 import time
+import subprocess as spr
+
 
 plt.rcParams['image.cmap'] = 'magma'
 # plt.rcParams['font.family'] = 'sans-serif'
@@ -34,6 +36,7 @@ class input:
             self.spring_dynamics = openh5['spring_dynamics'][...]
         self.resultsf = resultsf
         self.simID = simID
+
         if 'SpongeLayer' in openh5.keys():
             self.SpongeLayer = openh5['SpongeLayer'][...]
             if self.SpongeLayer[0] == 1:
@@ -44,7 +47,7 @@ class input:
                 self.core_benchmark = openh5['hstest'][...]
             else:
                 self.core_benchmark = openh5['core_benchmark'][...]
-            if self.core_benchmark[0] == 0:
+            if self.core_benchmark[0] == 0: # need to switch to rt flag
                 self.Tstar = openh5['Tstar'][...]
                 self.planet_star_dist = openh5['planet_star_dist'][...]
                 self.radius_star = openh5['radius_star'][...]
@@ -121,7 +124,7 @@ class output:
                 openh5 = h5py.File(fileh5)
             else:
                 raise IOError(fileh5+' not found!')
-#            import pdb; pdb.set_trace()
+
             Rhoi = openh5['Rho'][...]
             Pressurei = openh5['Pressure'][...]
             Mhi = openh5['Mh'][...]
@@ -187,6 +190,130 @@ class GetOutput:
         self.input = input(resultsf,simID)
         self.grid = grid(resultsf,simID)
         self.output = output(resultsf,simID,ntsi,nts,self.grid,stride=stride)
+
+def regrid(resultsf,simID,ntsi,nts,res_deg=0.5,nlev=40,pscale='log',overwrite=False,comp=4):
+    # runs over files and converts ico-height grid to lat-lon-pr grid
+    outall = GetOutput(resultsf,simID,ntsi,nts)
+    input = outall.input
+    grid = outall.grid
+    output = outall.output
+
+    print('Regrid data in folder '+resultsf+'...\n')
+
+    #figure out pressure grid
+    pmin = np.min(output.Pressure)
+    if pscale == 'log':
+        sigmaref = np.logspace(np.log10(input.P_Ref),np.log10(pmin),nlev)/input.P_Ref
+    elif pscale == 'lin':
+        sigmaref = np.linspace(input.P_Ref,pmin,nlev)/input.P_Ref
+    else:
+        raise IOError('invalid pressure scale entered! use "lin" or "log"')
+
+    d_sig = np.size(sigmaref)
+    Pref = input.P_Ref*sigmaref
+    loni, lati = np.meshgrid(np.arange(0,360,res_deg),\
+        np.arange(-90,90+res_deg,res_deg))
+    d_lon = np.shape(loni)
+    tsp = output.nts-output.ntsi+1
+
+    Temp_icoh = output.Pressure/(input.Rd*output.Rho)
+    interpx = (grid.Altitude-grid.Altitudeh[:-1])/(grid.Altitudeh[1:]-grid.Altitudeh[:-1])
+    # on even height grid, interpolation is excessive, but wth?
+    Wh_icoh = output.Wh[:,:-1,:] + (output.Wh[:,1:,:]-output.Wh[:,:-1,:])*interpx[None,:,None]
+
+    RT = 0
+    if hasattr(input,"core_benchmark"):
+        if input.core_benchmark[0] == 0: # need to switch to 'radiative_tranfer' flag
+            RT = 1
+            fnet_up_icoh = output.fnet_up[:,:-1,:]+(output.fnet_up[:,1:,:]-output.fnet_up[:,:-1,:])*interpx[None,:,None]
+            fnet_dn_icoh = output.fnet_dn[:,:-1,:]+(output.fnet_dn[:,1:,:]-output.fnet_dn[:,:-1,:])*interpx[None,:,None]
+
+
+    for t in np.arange(tsp):
+        print('Regridding time = %d...'%t)
+        Temp_icop = np.zeros((grid.point_num,d_sig))
+        Temp_llp = np.zeros((d_lon[0],d_lon[1],d_sig))
+
+        Rho_icop = np.zeros((grid.point_num,d_sig))
+        Rho_llp = np.zeros((d_lon[0],d_lon[1],d_sig))
+
+        Mh_icop = np.zeros((3,grid.point_num,d_sig))
+        Mh_llp = np.zeros((3,d_lon[0],d_lon[1],d_sig))
+
+        Wh_icop = np.zeros((grid.point_num,d_sig))
+        Wh_llp = np.zeros((d_lon[0],d_lon[1],d_sig))
+
+        if RT == 1:
+            tau_sw_icop = np.zeros((grid.point_num,d_sig))
+            tau_sw_llp = np.zeros((d_lon[0],d_lon[1],d_sig))
+
+            tau_lw_icop = np.zeros((grid.point_num,d_sig))
+            tau_lw_llp = np.zeros((d_lon[0],d_lon[1],d_sig))
+
+            fnet_up_icop = np.zeros((grid.point_num,d_sig))
+            fnet_up_llp = np.zeros((d_lon[0],d_lon[1],d_sig))
+
+            fnet_dn_icop = np.zeros((grid.point_num,d_sig))
+            fnet_dn_llp = np.zeros((d_lon[0],d_lon[1],d_sig))
+
+        for i in np.arange(grid.point_num):
+            #interp to pressure grid
+            sigma = output.Pressure[i,:,t]
+            Temp_icop[i,:] = interp.pchip_interpolate(sigma[::-1],Temp_icoh[i,::-1,t],Pref[::-1])[::-1]
+            Rho_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.Rho[i,::-1,t],Pref[::-1])[::-1]
+            Mh_icop[0,i,:] = interp.pchip_interpolate(sigma[::-1],output.Mh[0,i,::-1,t],Pref[::-1])[::-1]
+            Mh_icop[1,i,:] = interp.pchip_interpolate(sigma[::-1],output.Mh[1,i,::-1,t],Pref[::-1])[::-1]
+            Mh_icop[2,i,:] = interp.pchip_interpolate(sigma[::-1],output.Mh[2,i,::-1,t],Pref[::-1])[::-1]
+            Wh_icop[i,:] = interp.pchip_interpolate(sigma[::-1],Wh_icoh[i,::-1,t],Pref[::-1])[::-1]
+            if RT == 1:
+                tau_sw_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.tau_sw[i,::-1,t],Pref[::-1])[::-1]
+                tau_lw_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.tau_lw[i,::-1,t],Pref[::-1])[::-1]
+                fnet_up_icop[i,:] = interp.pchip_interpolate(sigma[::-1],fnet_up_icoh[i,::-1,t],Pref[::-1])[::-1]
+                fnet_dn_icop[i,:] = interp.pchip_interpolate(sigma[::-1],fnet_dn_icoh[i,::-1,t],Pref[::-1])[::-1]
+
+        # Convert icosahedral grid into lon-lat grid
+        for lev in np.arange(d_sig):
+            Temp_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,Temp_icop[:,lev],(loni,lati),method='nearest')
+            Rho_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,Rho_icop[:,lev],(loni,lati),method='nearest')
+            Mh_llp[0,:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,Mh_icop[0,:,lev],(loni,lati),method='nearest')
+            Mh_llp[1,:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,Mh_icop[1,:,lev],(loni,lati),method='nearest')
+            Mh_llp[2,:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,Mh_icop[2,:,lev],(loni,lati),method='nearest')
+            Wh_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,Wh_icop[:,lev],(loni,lati),method='nearest')
+            if RT == 1:
+                tau_sw_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,tau_sw_icop[:,lev],(loni,lati),method='nearest')
+                tau_lw_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,tau_lw_icop[:,lev],(loni,lati),method='nearest')
+                fnet_up_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,fnet_up_icop[:,lev],(loni,lati),method='nearest')
+                fnet_dn_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,fnet_dn_icop[:,lev],(loni,lati),method='nearest')
+
+        #create h5 files
+        fileh5 = resultsf+'/regrid_'+simID+'_'+np.str(t)+'.h5'
+        if os.path.exists(fileh5):
+            if overwrite == True:
+                openh5 = h5py.File(fileh5,"w")
+            else:
+                raise IOError(fileh5+' already present!')
+        else:
+            openh5 = h5py.File(fileh5,"w")
+
+        print('Writing file '+fileh5+'...')
+        # coordinates
+        Pre = openh5.create_dataset("Pressure",data=Pref,compression='gzip',compression_opts=comp)
+        Lat = openh5.create_dataset("Latitude",data=np.arange(-90,90+res_deg,res_deg),compression='gzip',compression_opts=comp)
+        Lon = openh5.create_dataset("Longitude",data=np.arange(0,360,res_deg),compression='gzip',compression_opts=comp)
+
+        # data
+        Temp = openh5.create_dataset("Temperature",data=Temp_llp,compression='gzip',compression_opts=comp)
+        Rho = openh5.create_dataset("Rho",data=Rho_llp,compression='gzip',compression_opts=comp)
+        Mh = openh5.create_dataset("Mh",data=Mh_llp,compression='gzip',compression_opts=comp)
+        Wh = openh5.create_dataset("Wh",data=Wh_llp,compression='gzip',compression_opts=comp)
+
+        if RT == 1:
+            tau_sw = openh5.create_dataset("tau_sw",data=tau_sw_llp,compression='gzip',compression_opts=comp)
+            tau_lw = openh5.create_dataset("tau_lw",data=tau_lw_llp,compression='gzip',compression_opts=comp)
+            fnet_up = openh5.create_dataset("fnet_up",data=fnet_up_llp,compression='gzip',compression_opts=comp)
+            fnet_dn = openh5.create_dataset("fnet_dn",data=fnet_dn_llp,compression='gzip',compression_opts=comp)
+
+        openh5.close()
 
 def temperature(input,grid,output,sigmaref):
     # Set the reference pressure

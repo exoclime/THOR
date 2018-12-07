@@ -50,7 +50,8 @@ parser.add_argument("-slay","--split_layer",nargs=1,default=['no_split'],help='S
 args = parser.parse_args()
 pview = args.pview
 
-valid = ['uver','wver','wprof','Tver','Tulev','PTver','ulev','PVver','PVlev','TP','RVlev','cons','stream','pause','tracer','PTP']
+valid = ['uver','wver','wprof','Tver','Tulev','PTver','ulev','PVver','PVlev',
+            'TP','RVlev','cons','stream','pause','tracer','PTP','regrid']
 if 'all' in pview:
     pview = valid
 else:
@@ -75,6 +76,11 @@ if args.simulation_ID[0] == 'auto':
     simulation_ID = file0.split(sep='_')[2]
 else:
     simulation_ID = args.simulation_ID[0]
+
+# regrid function is a special case and interupts the other stuff
+if 'regrid' in pview:
+    ham.regrid(resultsf,simulation_ID,ntsi,nts)
+    exit()
 
 outall = ham.GetOutput(resultsf,simulation_ID,ntsi,nts)
 
@@ -110,6 +116,9 @@ else:
 
 if 'pause' in pview:
     import pdb; pdb.set_trace()
+
+
+
 if 'uver' in pview:
     # Averaged zonal winds (latitude vs pressure)
     ham.u(input,grid,output,sigmaref)
