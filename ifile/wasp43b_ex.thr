@@ -126,6 +126,8 @@ Rv_sponge = 1e-5
 
 #-- Radiative transfer options (core_benchmark = 0) --------------------------#
 ## RT parameters #######################################
+radiative_transfer = true
+
 # stellar temperature (k)
 Tstar = 4300
 
