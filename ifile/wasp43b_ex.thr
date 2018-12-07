@@ -30,7 +30,7 @@ simulation_ID = Wasp43b
 radius = 72427000.0
 
 # Rotation rate [rad s^-1]
-rotation_rate = -9.09E-5
+rotation_rate = 9.09E-5
 
 # Gravitational acceleration [m/s^2]
 gravitation = 47
