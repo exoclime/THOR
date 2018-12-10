@@ -56,7 +56,7 @@ public:
                            device_RK_array_manager &phy_modules_core_arrays);
     bool initial_conditions(const ESP &            esp,
                             const SimulationSetup &sim);
-    
+
     bool phy_loop(ESP &                  esp,
                   const SimulationSetup &sim,
                   int                    nstep, // Step number
@@ -74,7 +74,27 @@ public:
     void print_config();
 
 private:
-    // Rad Trans options
+    // Config options
+    double Tstar_config            = 4520;   // Star effective temperature [K]
+    double planet_star_dist_config = 0.015;  // Planet-star distance [au]
+    double radius_star_config      = 0.667;  // Star radius [Rsun]
+    double diff_fac_config         = 0.5;    // Diffusivity factor: 0.5-1.0
+    double Tlow_config             = 970;    // Lower boundary temperature: upward flux coming from the planet's interior
+    double albedo_config           = 0.18;   // Bond albedo
+    double tausw_config            = 532.0;  // Absorption coefficient for the shortwaves
+    double taulw_config            = 1064.0; // Absorption coefficient for the longwaves
+
+
+    bool   sync_rot_config    = true;     // is planet syncronously rotating?
+    double mean_motion_config = 1.991e-7; // orbital mean motion (rad/s)
+    double true_long_i_config = 0;        // initial true longitude of planet (rad)
+    double ecc_config         = 0;        // orbital eccentricity
+    double obliquity_config   = 0;        // obliquity (tilt of spin axis) (rad)
+    double alpha_i_config     = 0;        // initial right asc of host star (relative to long = 0)
+    double longp_config       = 0;        // longitude of periastron (rad)
+
+
+    // Rad trans
     double Tstar            = 4520;   // Star effective temperature [K]
     double planet_star_dist = 0.015;  // Planet-star distance [au]
     double radius_star      = 0.667;  // Star radius [Rsun]
@@ -83,7 +103,6 @@ private:
     double albedo           = 0.18;   // Bond albedo
     double tausw            = 532.0;  // Absorption coefficient for the shortwaves
     double taulw            = 1064.0; // Absorption coefficient for the longwaves
-    
     double incflx;
     //  Arrays used in RT code
     double *fnet_up_d;
