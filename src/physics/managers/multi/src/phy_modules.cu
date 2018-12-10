@@ -29,7 +29,8 @@ void phy_modules_print_config() {
     log::printf("  multi physics module, with radiative transfer \n");
     log::printf("   Radiative Transfer module: %s.\n", radiative_transfer_enabled ? "true" : "false");
 
-    rt.print_config();
+    if (radiative_transfer_enabled)
+        rt.print_config();
 }
 
 

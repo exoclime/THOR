@@ -51,11 +51,19 @@ args = parser.parse_args()
 pview = args.pview
 
 valid = ['uver','wver','wprof','Tver','Tulev','PTver','ulev','PVver','PVlev',
-            'TP','RVlev','cons','stream','pause','tracer','PTP','regrid']
+            'TP','RVlev','cons','stream','pause','tracer','PTP','regrid','KE']
+
+rg_needed = ['uver','wver','Tver','Tulev','PTver','ulev','PVver','PVlev',
+            'RVlev','stream','tracer','PTP','KE']  #these types need regrid
+
+openrg = 0
 if 'all' in pview:
     pview = valid
+    openrg = 1
 else:
     for p in pview:
+        if openrg == 0 and p in rg_needed:
+            openrg = 1
         if p not in valid:
             raise ValueError('%s not a valid plot option. Valid options are '%p+', '.join(valid))
 
@@ -64,7 +72,7 @@ ntsi     = args.initial_file[0]  # initial file id number
 if args.last_file[0] == 'init':
     nts = ntsi
 else:
-    nts      = args.last_file[0]     # last file id number
+    nts = args.last_file[0]     # last file id number
 
 if ntsi > nts:
     nts = ntsi
@@ -82,7 +90,7 @@ if 'regrid' in pview:
     ham.regrid(resultsf,simulation_ID,ntsi,nts)
     exit()
 
-outall = ham.GetOutput(resultsf,simulation_ID,ntsi,nts)
+outall = ham.GetOutput(resultsf,simulation_ID,ntsi,nts,openrg=openrg)
 
 ##########
 # Planet #
@@ -102,6 +110,11 @@ grid = outall.grid
 
 output = outall.output
 
+##################
+# Regridded data #
+##################
+rg = outall.rg
+
 #########
 # Plots #
 #########
@@ -116,8 +129,6 @@ else:
 
 if 'pause' in pview:
     import pdb; pdb.set_trace()
-
-
 
 if 'uver' in pview:
     # Averaged zonal winds (latitude vs pressure)
@@ -142,7 +153,7 @@ if 'PTver' in pview:
     ham.potential_temp(input,grid,output,sigmaref)
 if 'ulev' in pview:
     PR_LV = np.float(args.pressure_lev[0])*100
-    ham.uv_lev(input,grid,output,PR_LV)
+    ham.uv_lev(input,grid,output,rg,PR_LV)
 if 'PVlev' in pview:
     PR_LV = np.float(args.pressure_lev[0])*100
     ham.potential_vort_lev(input,grid,output,PR_LV)
@@ -184,6 +195,9 @@ if 'tracer' in pview:
     ham.tracer_u_lev(input,grid,output,PR_LV,'h2o')
     ham.tracer_u_lev(input,grid,output,PR_LV,'co2')
     ham.tracer_u_lev(input,grid,output,PR_LV,'nh3')
+
+if 'KE' in pview:
+    ham.KE_spect(input,output,rg)
 
 last = time.time()
 print(last-first)
