@@ -14,7 +14,7 @@ timestep = 300
 
 # output
 # output every n steps
-n_out = 200
+n_out = 7200
 
 
 # output directory (relative to current working directory)
