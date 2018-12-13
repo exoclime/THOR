@@ -4,3 +4,6 @@
  * added test script to run multiple sims
  * fix conservation output (was not copied back before output)
  * clean up RT module startup output
+ * added new routines to mjolnir/hamarr (KE, SR)
+ * fixed issues in regrid
+ * changed plot functions to use regrid data

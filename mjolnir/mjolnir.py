@@ -136,7 +136,7 @@ if 'uver' in pview:
     ham.u(input,grid,output,rg,sigmaref)
 if 'wver' in pview:
     # Averaged vertical winds (latitude vs pressure)
-    ham.w_ver(input,grid,output,sigmaref)
+    ham.w_ver(input,grid,output,rg,sigmaref)
 
 if 'wprof' in pview:
     # Averaged vertical winds (latitude vs pressure)
@@ -148,10 +148,10 @@ if 'Tulev' in pview:
     # Averaged temperature and wind field (longitude vs latitude)
     # PR_LV - Pressure level (Pa)
     PR_LV = np.float(args.pressure_lev[0])*100
-    ham.temperature_u_lev(input,grid,output,PR_LV)
+    ham.temperature_u_lev(input,grid,output,rg,PR_LV)
 if 'PTver' in pview:
     # Averaged potential temperature (latitude vs pressure)
-    ham.potential_temp(input,grid,output,sigmaref)
+    ham.potential_temp(input,grid,output,rg,sigmaref)
 if 'ulev' in pview:
     PR_LV = np.float(args.pressure_lev[0])*100
     ham.uv_lev(input,grid,output,rg,PR_LV)
@@ -164,10 +164,7 @@ if 'PVver' in pview:
 if 'RVlev' in pview:
     PR_LV = np.float(args.pressure_lev[0])*100
     ham.rela_vort_lev(input,grid,output,PR_LV)
-# if 'vring' in pview:
-#     #still in development...
-#     sigmaref = np.arange(1,0,-0.05)
-#     ham.vring(input,grid,output,sigmaref)
+
 if 'TP' in pview:
     ham.TPprof(input,grid,output,sigmaref,1902)
 
