@@ -51,9 +51,9 @@ args = parser.parse_args()
 pview = args.pview
 
 valid = ['uver','wver','wprof','Tver','Tulev','PTver','ulev','PVver','PVlev',
-            'TP','RVlev','cons','stream','pause','tracer','PTP','regrid','KE']
+            'TP','RVlev','cons','stream','pause','tracer','PTP','regrid','KE','SR']
 
-rg_needed = ['uver','wver','Tver','Tulev','PTver','ulev','PVver','PVlev',
+rg_needed = ['Tver','uver','wver','Tulev','PTver','ulev','PVver','PVlev',
             'RVlev','stream','tracer','PTP','KE']  #these types need regrid
 
 openrg = 0
@@ -113,7 +113,8 @@ output = outall.output
 ##################
 # Regridded data #
 ##################
-rg = outall.rg
+if openrg == 1:
+    rg = outall.rg
 
 #########
 # Plots #
@@ -132,7 +133,7 @@ if 'pause' in pview:
 
 if 'uver' in pview:
     # Averaged zonal winds (latitude vs pressure)
-    ham.u(input,grid,output,sigmaref)
+    ham.u(input,grid,output,rg,sigmaref)
 if 'wver' in pview:
     # Averaged vertical winds (latitude vs pressure)
     ham.w_ver(input,grid,output,sigmaref)
@@ -142,7 +143,7 @@ if 'wprof' in pview:
     ham.w_prof(input,grid,output)
 if 'Tver' in pview:
     # Averaged temperature (latitude vs pressure)
-    ham.temperature(input,grid,output,sigmaref)
+    ham.temperature(input,grid,output,rg,sigmaref)
 if 'Tulev' in pview:
     # Averaged temperature and wind field (longitude vs latitude)
     # PR_LV - Pressure level (Pa)
@@ -198,6 +199,9 @@ if 'tracer' in pview:
 
 if 'KE' in pview:
     ham.KE_spect(input,output,rg)
+
+if 'SR' in pview:
+    ham.SRindex(input,grid,output)
 
 last = time.time()
 print(last-first)

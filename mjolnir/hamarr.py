@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.colors as colors
 import scipy.interpolate as interp
 import os
 import h5py
@@ -202,8 +203,9 @@ class rg_out:
 
             Rhoi = openh5['Rho'][...]
             Tempi = openh5['Temperature'][...]
-            Mhi = openh5['Mh'][...]
-            Whi = openh5['Wh'][...]
+            Ui = openh5['U'][...]
+            Vi = openh5['V'][...]
+            Wi = openh5['W'][...]
             Prei = openh5['Pressure'][...]
             lati = openh5['Latitude'][...]
             loni = openh5['Longitude'][...]
@@ -218,9 +220,10 @@ class rg_out:
 
             if t == ntsi-1:
                 self.Rho = np.zeros(np.shape(Rhoi)+(nts-ntsi+1,))
-                self.Mh = np.zeros(np.shape(Mhi)+(nts-ntsi+1,))
-                self.Wh = np.zeros(np.shape(Whi)+(nts-ntsi+1,))
-                self.Temp = np.zeros(np.shape(Tempi)+(nts-ntsi+1,))
+                self.U = np.zeros(np.shape(Ui)+(nts-ntsi+1,))
+                self.V = np.zeros(np.shape(Vi)+(nts-ntsi+1,))
+                self.W = np.zeros(np.shape(Wi)+(nts-ntsi+1,))
+                self.Temperature = np.zeros(np.shape(Tempi)+(nts-ntsi+1,))
                 self.Pressure = np.zeros(np.shape(Prei)+(nts-ntsi+1,))
                 self.lat = np.zeros(np.shape(lati)+(nts-ntsi+1,))
                 self.lon = np.zeros(np.shape(loni)+(nts-ntsi+1,))
@@ -231,9 +234,10 @@ class rg_out:
                     self.fnet_dn = np.zeros(np.shape(fnet_dni)+(nts-ntsi+1,))
 
             self.Rho[:,:,:,t-ntsi+1] = Rhoi
-            self.Mh[:,:,:,:,t-ntsi+1] = Mhi
-            self.Wh[:,:,:,t-ntsi+1] = Whi
-            self.Temp[:,:,:,t-ntsi+1] = Tempi
+            self.U[:,:,:,t-ntsi+1] = Ui
+            self.V[:,:,:,t-ntsi+1] = Vi
+            self.W[:,:,:,t-ntsi+1] = Wi
+            self.Temperature[:,:,:,t-ntsi+1] = Tempi
             self.Pressure[:,t-ntsi+1] = Prei
             self.lat[:,t-ntsi+1] = lati
             self.lon[:,t-ntsi+1] = loni
@@ -292,101 +296,111 @@ def regrid(resultsf,simID,ntsi,nts,res_deg=0.5,nlev=40,pscale='log',overwrite=Fa
             fnet_dn_icoh = output.fnet_dn[:,:-1,:]+(output.fnet_dn[:,1:,:]-output.fnet_dn[:,:-1,:])*interpx[None,:,None]
 
     for t in np.arange(ntsi,nts+1):
-        print('Regridding time = %d...'%t)
-        Temp_icop = np.zeros((grid.point_num,d_sig))
-        Temp_llp = np.zeros((d_lon[0],d_lon[1],d_sig))
-
-        Rho_icop = np.zeros((grid.point_num,d_sig))
-        Rho_llp = np.zeros((d_lon[0],d_lon[1],d_sig))
-
-        Mh_icop = np.zeros((3,grid.point_num,d_sig))
-        Mh_llp = np.zeros((3,d_lon[0],d_lon[1],d_sig))
-
-        Wh_icop = np.zeros((grid.point_num,d_sig))
-        Wh_llp = np.zeros((d_lon[0],d_lon[1],d_sig))
-
-        if RT == 1:
-            tau_sw_icop = np.zeros((grid.point_num,d_sig))
-            tau_sw_llp = np.zeros((d_lon[0],d_lon[1],d_sig))
-
-            tau_lw_icop = np.zeros((grid.point_num,d_sig))
-            tau_lw_llp = np.zeros((d_lon[0],d_lon[1],d_sig))
-
-            fnet_up_icop = np.zeros((grid.point_num,d_sig))
-            fnet_up_llp = np.zeros((d_lon[0],d_lon[1],d_sig))
-
-            fnet_dn_icop = np.zeros((grid.point_num,d_sig))
-            fnet_dn_llp = np.zeros((d_lon[0],d_lon[1],d_sig))
-
-        for i in np.arange(grid.point_num):
-            #interp to pressure grid
-            sigma = output.Pressure[i,:,t-ntsi]
-            Temp_icop[i,:] = interp.pchip_interpolate(sigma[::-1],Temp_icoh[i,::-1,t-ntsi],Pref[::-1])[::-1]
-            Rho_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.Rho[i,::-1,t-ntsi],Pref[::-1])[::-1]
-            Mh_icop[0,i,:] = interp.pchip_interpolate(sigma[::-1],output.Mh[0,i,::-1,t-ntsi],Pref[::-1])[::-1]
-            Mh_icop[1,i,:] = interp.pchip_interpolate(sigma[::-1],output.Mh[1,i,::-1,t-ntsi],Pref[::-1])[::-1]
-            Mh_icop[2,i,:] = interp.pchip_interpolate(sigma[::-1],output.Mh[2,i,::-1,t-ntsi],Pref[::-1])[::-1]
-            Wh_icop[i,:] = interp.pchip_interpolate(sigma[::-1],Wh_icoh[i,::-1,t-ntsi],Pref[::-1])[::-1]
-            if RT == 1:
-                tau_sw_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.tau_sw[i,::-1,t-ntsi],Pref[::-1])[::-1]
-                tau_lw_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.tau_lw[i,::-1,t-ntsi],Pref[::-1])[::-1]
-                fnet_up_icop[i,:] = interp.pchip_interpolate(sigma[::-1],fnet_up_icoh[i,::-1,t-ntsi],Pref[::-1])[::-1]
-                fnet_dn_icop[i,:] = interp.pchip_interpolate(sigma[::-1],fnet_dn_icoh[i,::-1,t-ntsi],Pref[::-1])[::-1]
-
-        # Convert icosahedral grid into lon-lat grid
-        for lev in np.arange(d_sig):
-            Temp_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,Temp_icop[:,lev],(loni,lati),method='nearest')
-            Rho_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,Rho_icop[:,lev],(loni,lati),method='nearest')
-            Mh_llp[0,:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,Mh_icop[0,:,lev],(loni,lati),method='nearest')
-            Mh_llp[1,:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,Mh_icop[1,:,lev],(loni,lati),method='nearest')
-            Mh_llp[2,:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,Mh_icop[2,:,lev],(loni,lati),method='nearest')
-            Wh_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,Wh_icop[:,lev],(loni,lati),method='nearest')
-            if RT == 1:
-                tau_sw_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,tau_sw_icop[:,lev],(loni,lati),method='nearest')
-                tau_lw_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,tau_lw_icop[:,lev],(loni,lati),method='nearest')
-                fnet_up_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,fnet_up_icop[:,lev],(loni,lati),method='nearest')
-                fnet_dn_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,fnet_dn_icop[:,lev],(loni,lati),method='nearest')
-
-        #create h5 files
+        #check for exising h5 files
+        proceed = 0
         fileh5 = resultsf+'/regrid_'+simID+'_'+np.str(t)+'.h5'
         if os.path.exists(fileh5):
             if overwrite == True:
-                openh5 = h5py.File(fileh5,"w")
+                proceed = 1
             else:
-                raise IOError(fileh5+' already present!')
+                print(fileh5+' already present! Skipping time = %d'%t)
         else:
+            proceed = 1
+
+        if proceed == 1:
+            print('Regridding time = %d...'%t)
+            Temp_icop = np.zeros((grid.point_num,d_sig))
+            Temp_llp = np.zeros((d_lon[0],d_lon[1],d_sig))
+
+            Rho_icop = np.zeros((grid.point_num,d_sig))
+            Rho_llp = np.zeros((d_lon[0],d_lon[1],d_sig))
+
+            Mh_icop = np.zeros((3,grid.point_num,d_sig))
+
+            Wh_icop = np.zeros((grid.point_num,d_sig))
+
+            U_llp = np.zeros((d_lon[0],d_lon[1],d_sig))
+            V_llp = np.zeros((d_lon[0],d_lon[1],d_sig))
+            W_llp = np.zeros((d_lon[0],d_lon[1],d_sig))
+
+            if RT == 1:
+                tau_sw_icop = np.zeros((grid.point_num,d_sig))
+                tau_sw_llp = np.zeros((d_lon[0],d_lon[1],d_sig))
+
+                tau_lw_icop = np.zeros((grid.point_num,d_sig))
+                tau_lw_llp = np.zeros((d_lon[0],d_lon[1],d_sig))
+
+                fnet_up_icop = np.zeros((grid.point_num,d_sig))
+                fnet_up_llp = np.zeros((d_lon[0],d_lon[1],d_sig))
+
+                fnet_dn_icop = np.zeros((grid.point_num,d_sig))
+                fnet_dn_llp = np.zeros((d_lon[0],d_lon[1],d_sig))
+
+            for i in np.arange(grid.point_num):
+                #interp to pressure grid
+                sigma = output.Pressure[i,:,t-ntsi]
+                Temp_icop[i,:] = interp.pchip_interpolate(sigma[::-1],Temp_icoh[i,::-1,t-ntsi],Pref[::-1])[::-1]
+                Rho_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.Rho[i,::-1,t-ntsi],Pref[::-1])[::-1]
+                Mh_icop[0,i,:] = interp.pchip_interpolate(sigma[::-1],output.Mh[0,i,::-1,t-ntsi],Pref[::-1])[::-1]
+                Mh_icop[1,i,:] = interp.pchip_interpolate(sigma[::-1],output.Mh[1,i,::-1,t-ntsi],Pref[::-1])[::-1]
+                Mh_icop[2,i,:] = interp.pchip_interpolate(sigma[::-1],output.Mh[2,i,::-1,t-ntsi],Pref[::-1])[::-1]
+                Wh_icop[i,:] = interp.pchip_interpolate(sigma[::-1],Wh_icoh[i,::-1,t-ntsi],Pref[::-1])[::-1]
+                if RT == 1:
+                    tau_sw_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.tau_sw[i,::-1,t-ntsi],Pref[::-1])[::-1]
+                    tau_lw_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.tau_lw[i,::-1,t-ntsi],Pref[::-1])[::-1]
+                    fnet_up_icop[i,:] = interp.pchip_interpolate(sigma[::-1],fnet_up_icoh[i,::-1,t-ntsi],Pref[::-1])[::-1]
+                    fnet_dn_icop[i,:] = interp.pchip_interpolate(sigma[::-1],fnet_dn_icoh[i,::-1,t-ntsi],Pref[::-1])[::-1]
+
+            # Convert icosahedral grid into lon-lat grid
+            U_icop = (-Mh_icop[0]*np.sin(grid.lon[:,None])+Mh_icop[1]*np.cos(grid.lon[:,None]))/Rho_icop
+            V_icop = (-Mh_icop[0]*np.sin(grid.lat[:,None])*np.cos(grid.lon[:,None])\
+                      -Mh_icop[1]*np.sin(grid.lat[:,None])*np.sin(grid.lon[:,None])\
+                      +Mh_icop[2]*np.cos(grid.lat[:,None]))/Rho_icop
+
+            for lev in np.arange(d_sig):
+                Temp_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,Temp_icop[:,lev],(loni,lati),method='nearest')
+                Rho_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,Rho_icop[:,lev],(loni,lati),method='nearest')
+                U_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,U_icop[:,lev],(loni,lati),method='nearest')
+                V_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,V_icop[:,lev],(loni,lati),method='nearest')
+                W_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,Wh_icop[:,lev]/Rho_icop[:,lev],(loni,lati),method='nearest')
+                if RT == 1:
+                    tau_sw_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,tau_sw_icop[:,lev],(loni,lati),method='nearest')
+                    tau_lw_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,tau_lw_icop[:,lev],(loni,lati),method='nearest')
+                    fnet_up_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,fnet_up_icop[:,lev],(loni,lati),method='nearest')
+                    fnet_dn_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,fnet_dn_icop[:,lev],(loni,lati),method='nearest')
+
+            #create h5 files
             openh5 = h5py.File(fileh5,"w")
 
-        print('Writing file '+fileh5+'...')
-        # coordinates
-        Pre = openh5.create_dataset("Pressure",data=Pref,compression='gzip',compression_opts=comp)
-        Lat = openh5.create_dataset("Latitude",data=lat_range,compression='gzip',compression_opts=comp)
-        Lon = openh5.create_dataset("Longitude",data=lon_range,compression='gzip',compression_opts=comp)
+            print('Writing file '+fileh5+'...')
+            # coordinates
+            Pre = openh5.create_dataset("Pressure",data=Pref,compression='gzip',compression_opts=comp)
+            Lat = openh5.create_dataset("Latitude",data=lat_range,compression='gzip',compression_opts=comp)
+            Lon = openh5.create_dataset("Longitude",data=lon_range,compression='gzip',compression_opts=comp)
 
-        # data
-        Temp = openh5.create_dataset("Temperature",data=Temp_llp,compression='gzip',compression_opts=comp)
-        Rho = openh5.create_dataset("Rho",data=Rho_llp,compression='gzip',compression_opts=comp)
-        Mh = openh5.create_dataset("Mh",data=Mh_llp,compression='gzip',compression_opts=comp)
-        Wh = openh5.create_dataset("Wh",data=Wh_llp,compression='gzip',compression_opts=comp)
+            # data
+            Temp = openh5.create_dataset("Temperature",data=Temp_llp,compression='gzip',compression_opts=comp)
+            Rho = openh5.create_dataset("Rho",data=Rho_llp,compression='gzip',compression_opts=comp)
+            U = openh5.create_dataset("U",data=U_llp,compression='gzip',compression_opts=comp)
+            V = openh5.create_dataset("V",data=V_llp,compression='gzip',compression_opts=comp)
+            W = openh5.create_dataset("W",data=W_llp,compression='gzip',compression_opts=comp)
 
-        if RT == 1:
-            tau_sw = openh5.create_dataset("tau_sw",data=tau_sw_llp,compression='gzip',compression_opts=comp)
-            tau_lw = openh5.create_dataset("tau_lw",data=tau_lw_llp,compression='gzip',compression_opts=comp)
-            fnet_up = openh5.create_dataset("fnet_up",data=fnet_up_llp,compression='gzip',compression_opts=comp)
-            fnet_dn = openh5.create_dataset("fnet_dn",data=fnet_dn_llp,compression='gzip',compression_opts=comp)
+            if RT == 1:
+                tau_sw = openh5.create_dataset("tau_sw",data=tau_sw_llp,compression='gzip',compression_opts=comp)
+                tau_lw = openh5.create_dataset("tau_lw",data=tau_lw_llp,compression='gzip',compression_opts=comp)
+                fnet_up = openh5.create_dataset("fnet_up",data=fnet_up_llp,compression='gzip',compression_opts=comp)
+                fnet_dn = openh5.create_dataset("fnet_dn",data=fnet_dn_llp,compression='gzip',compression_opts=comp)
 
-        openh5.close()
+            openh5.close()
 
 def KE_spect(input,output,rg):
     tsp = output.nts-output.ntsi+1
     lon, lat = np.meshgrid(rg.lon[:,0],rg.lat[:,0])
     npre = np.shape(rg.Pressure)[0]
 
-    U = (rg.Mh[0]*(-np.sin(lon[:,:,None,None])) + rg.Mh[1]*np.cos(lon[:,:,None,None]) + rg.Mh[2]*(0))/rg.Rho
-    V = (rg.Mh[0]*(-np.sin(lat[:,:,None,None])*np.cos(lon[:,:,None,None])) + \
-                     rg.Mh[1]*(-np.sin(lat[:,:,None,None])*np.sin(lon[:,:,None,None])) + \
-                     rg.Mh[2]*np.cos(lat[:,:,None,None]))/rg.Rho
-    W = rg.Wh/rg.Rho
+    U = rg.U
+    V = rg.V
+    W = rg.W
 
     lmax = np.int(np.shape(lat)[0]/2)
     u_coeffs = np.zeros((2,lmax,lmax,npre,tsp),dtype=complex)
@@ -426,60 +440,36 @@ def KE_spect(input,output,rg):
 
     import pdb; pdb.set_trace()
 
-def temperature(input,grid,output,sigmaref):
+def temperature(input,grid,output,rg,sigmaref):
     # Set the reference pressure
     Pref = input.P_Ref*sigmaref
     d_sig = np.size(sigmaref)
 
     # Set the latitude-longitude grid.
-    res_deg = 0.005
-    loni, lati = np.meshgrid(np.arange(0,2*np.pi,res_deg),\
-        np.arange(-np.pi/2,np.pi/2,res_deg))
+    loni, lati = np.meshgrid(rg.lon,rg.lat)
     d_lon = np.shape(loni)
     tsp = output.nts-output.ntsi+1
-    ###############
-    # Temperature #
-    ###############
-
-    # Initialize arrays
-    Temperatureii = np.zeros(grid.nv)
-    Temperaturei = np.zeros((grid.point_num,d_sig))
-    Temperature = np.zeros((d_lon[0],d_lon[1],d_sig,tsp))
-
-    # Compute temperatures
-    for t in np.arange(tsp):
-        for i in np.arange(grid.point_num):
-            sigma = output.Pressure[i,:,t]
-            for lev in np.arange(grid.nv):
-                Temperatureii[lev] = output.Pressure[i,lev,t]/(input.Rd*output.Rho[i,lev,t])
-            # Interpolate atmospheric column ot the reference pressure.
-            # Need to reverse index all arrays because pchip only works if x is increasing
-            Temperaturei[i,:] = interp.pchip_interpolate(sigma[::-1],Temperatureii[::-1],Pref[::-1])[::-1]
-        # Convert icosahedral grid into lon-lat grid
-        for lev in np.arange(d_sig):
-            Temperature[:,:,lev,t] = interp.griddata(np.vstack([grid.lon,grid.lat]).T,Temperaturei[:,lev],(loni,lati),method='nearest')
-
-    del Temperatureii, Temperaturei
 
     # Averaging in time and longitude.
     if tsp > 1:
-        Temperaturel = np.mean(Temperature[:,:,:,:],axis=1)
-        del Temperature
+        Temperaturel = np.mean(rg.Temperature[:,:,:,:],axis=1)
         Temperaturelt = np.mean(Temperaturel[:,:,:],axis=2)
         del Temperaturel
     else:
-        Temperaturelt = np.mean(Temperature[:,:,:,0],axis=1)
-        del Temperature
+        Temperaturelt = np.mean(rg.Temperature[:,:,:,0],axis=1)
 
     #################
     # Create figure #
     #################
 
     # Latitude
-    latp = np.arange(-np.pi/2,np.pi/2,res_deg)
+    latp = rg.lat[:,0]*np.pi/180
+
+    # need to set desired pressure range
+    prange = np.where(np.logical_and(rg.Pressure>=np.min(Pref),rg.Pressure<=np.max(Pref)))
 
     # Contour plot
-    C = plt.contourf(latp*180/np.pi,Pref/1e5,Temperaturelt.T,40)
+    C = plt.contourf(latp*180/np.pi,rg.Pressure[prange[0],0]/1e5,Temperaturelt[:,prange[0]].T,40)
     for cc in C.collections:
         cc.set_edgecolor("face") #fixes a stupid bug in matplotlib 2.0
     plt.gca().invert_yaxis()
@@ -488,6 +478,7 @@ def temperature(input,grid,output,sigmaref):
     plt.xlabel('Latitude (deg)')
     plt.ylabel('Pressure (bar)')
     plt.title('Time = %#.3f - %#.3f days'%(output.time[0],output.time[-1]))
+    # plt.ylim(np.max(Pref)/1e5,np.min(Pref)/1e5)
 
     plt.plot(latp*180/np.pi,np.zeros_like(latp)+np.max(output.Pressure[:,grid.nv-1,:])/1e5,'r--')
     clb = plt.colorbar(C)
@@ -498,7 +489,7 @@ def temperature(input,grid,output,sigmaref):
     plt.savefig(input.resultsf+'/figures/temperature_ver_i%d_l%d.pdf'%(output.ntsi,output.nts))
     plt.close()
 
-def u(input,grid,output,sigmaref):
+def u(input,grid,output,rg,sigmaref):
     # contour spacing
     csp = 500
 
@@ -507,93 +498,66 @@ def u(input,grid,output,sigmaref):
     d_sig = np.size(sigmaref)
 
     # Set the latitude-longitude grid
-    res_deg = 0.005
-    loni, lati = np.meshgrid(np.arange(0,2*np.pi,res_deg),\
-        np.arange(-np.pi/2,np.pi/2,res_deg))
+    loni, lati = np.meshgrid(rg.lon,rg.lat)
     d_lon = np.shape(loni)
     tsp = output.nts-output.ntsi+1
 
     ##################
-    # Zonal momentum #
+    #    Averages    #
     ##################
-
-    # Initialize arrays
-    ZonalMii = np.zeros(grid.nv)
-    ZonalMi = np.zeros((grid.point_num,d_sig))
-    ZonalM = np.zeros((d_lon[0],d_lon[1],d_sig,tsp))
-
-    ZonalMtemp = (output.Mh[0]*(-np.sin(grid.lon[:,None,None])) + \
-                output.Mh[1]*np.cos(grid.lon[:,None,None]))/output.Rho
-    # ZonalMtemp1 = np.vstack((ZonalMtemp[:,:,0],ZonalMtemp[:,:,1]))
-    #
-    # Ptemp = np.vstack((output.Pressure[:,:,0],output.Pressure[:,:,1]))
-    #
-    # y = np.arange(grid.point_num*tsp)
-    # x = np.arange(grid.nv)
-    # xx, yy = np.meshgrid(x,y)
-    # fint2d = interp.interp2d(Ptemp,yy,ZonalMtemp1)
-    # #ZonalMtemp2 = np.reshape(fint2d(Pref,Ptemp[:,0]),(grid.point_num,len(Pref),tsp))
-    # ZonalMtemp2 = fint2d(Pref,Ptemp[:,0])
-
-    # Compute zonal Winds
-    # v = np.hstack((output.Pressure,ZonalMtemp))
-    for t in np.arange(tsp):
-        for i in np.arange(grid.point_num):
-            sigma = output.Pressure[i,:,t]
-            # for lev in np.arange(grid.nv):
-            #     ZonalMii[lev] = (output.Mh[0,i,lev,t]*(-np.sin(grid.lon[i])) + \
-            #                      output.Mh[1,i,lev,t]*np.cos(grid.lon[i]) + \
-            #                      output.Mh[2,i,lev,t]*(0))/output.Rho[i,lev,t]
-            # Interpolate atmospheric column to the reference pressure
-            # import pdb; pdb.set_trace()
-
-            ZonalMi[i,:] = interp.pchip_interpolate(sigma[::-1],ZonalMtemp[i,::-1,t],Pref[::-1])[::-1]
-        # Convert icosahedral grid into lon-lat grid
-        for lev in np.arange(d_sig):
-            ZonalM[:,:,lev,t] = interp.griddata(np.vstack([grid.lon,grid.lat]).T,ZonalMi[:,lev],(loni,lati),method='nearest')
-
-    # plt.plot(Pref,ZonalMtemp2[0,:],'b-')
-    # # plt.plot(Pref,ZonalMi[0,:],'r-')
-    # plt.plot(output.Pressure[0,:,0],ZonalMtemp[0,:,0],'k.')
-    # plt.plot(Ptemp[0,:],ZonalMtemp1[0,:],'r-')
-    # plt.show()
-    del ZonalMii, ZonalMi
 
     # Averaging in time and longitude
     if tsp > 1:
-        ZonalMl = np.mean(ZonalM[:,:,:,:],axis=1)
-        del ZonalM
+        ZonalMl = np.mean(rg.U[:,:,:,:],axis=1)
+        # Vl = np.mean(rg.V[:,:,:,:],axis=1)
+        # Wl = np.mean(rg.W[:,:,:,:],axis=1)
         ZonalMlt = np.mean(ZonalMl[:,:,:],axis=2)
-        del ZonalMl
+        # Vlt = np.mean(Vl[:,:,:],axis=2)
+        # Wlt = np.mean(Wl[:,:,:],axis=2)
+        del ZonalMl, Vl, Wl
     else:
-        ZonalMlt = np.mean(ZonalM[:,:,:,0],axis=1)
-        del ZonalM
+        ZonalMlt = np.mean(rg.U[:,:,:,0],axis=1)
+        # Vlt = np.mean(rg.V[:,:,:,0],axis=1)
+        # Wlt = np.mean(rg.W[:,:,:,0],axis=1)
 
     #################
     # Create figure #
     #################
 
+    # set up arrows
+    # vspacing = 18
+    # wspacing = 1
+    # Vq = Vlt[::vspacing,::wspacing].ravel()
+    # Wq = Wlt[::vspacing,::wspacing].ravel()
+    # #preq = rg.Pressure[:,0][::spacing,::spacing].ravel()
+    # #latq = lati[::spacing,::spacing].ravel()
+    # latq, preq = np.meshgrid(rg.lat[::vspacing,0],rg.Pressure[::wspacing,0])
+
     # Latitude
-    latp = np.arange(-np.pi/2,np.pi/2,res_deg)
+    latp = rg.lat[:,0]*np.pi/180
+
+    # need to set desired pressure range (major PITA!)
+    prange = np.where(np.logical_and(rg.Pressure>=np.min(Pref),rg.Pressure<=np.max(Pref)))
 
     # Contour plot
-    C = plt.contourf(latp*180/np.pi,Pref/1e5,ZonalMlt.T,40,cmap='viridis')
-
+    C = plt.contourf(latp*180/np.pi,rg.Pressure[prange[0],0]/1e5,ZonalMlt[:,prange[0]].T,40,cmap='viridis')
+    clb = plt.colorbar(C,extend='both')
+    clb.set_label(r'Velocity (m s$^{-1}$)')
     levp = np.arange(np.ceil(np.min(ZonalMlt)/csp)*csp,np.floor(np.max(ZonalMlt)/csp)*csp,csp)
-    c2 = plt.contour(latp*180/np.pi,Pref/1e5,ZonalMlt.T,levels=levp,colors='w',linewidths=1)
+    c2 = plt.contour(latp*180/np.pi,rg.Pressure[prange[0],0]/1e5,ZonalMlt[:,prange[0]].T,levels=levp,colors='w',linewidths=1)
     plt.clabel(c2,inline=1,fontsize=10)
     for cc in C.collections:
         cc.set_edgecolor("face") #fixes a stupid bug in matplotlib 2.0
     plt.gca().invert_yaxis()
+    # plt.quiver(latq.ravel(),preq.ravel()/1e5,Vq/np.max(Vq),Wq/np.max(Wq),color='0.5')
     if np.max(Pref)/np.min(Pref) > 100:
         plt.gca().set_yscale("log")
     plt.xlabel('Latitude (deg)')
     plt.ylabel('Pressure (bar)')
+    # plt.ylim(np.max(Pref)/1e5,np.min(Pref)/1e5)
     plt.plot(latp*180/np.pi,np.zeros_like(latp)+np.max(output.Pressure[:,grid.nv-1,:])/1e5,'r--')
 
     plt.title('Time = %#.3f - %#.3f days'%(output.time[0],output.time[-1]))
-    clb = plt.colorbar(C)
-    clb.set_label(r'Velocity (m s$^{-1}$)')
     if not os.path.exists(input.resultsf+'/figures'):
         os.mkdir(input.resultsf+'/figures')
     plt.tight_layout()
@@ -798,7 +762,9 @@ def uv_lev(input,grid,output,rg,Plev):
     # Set the latitude-longitude grid.
     res_deg = 0.5*np.pi/180
     loni, lati = np.meshgrid(np.arange(0,2*np.pi,res_deg),\
-        np.arange(-np.pi/2,np.pi/2,res_deg))
+       np.arange(-np.pi/2,np.pi/2,res_deg))
+    # loni, lati = np.meshgrid(rg.lon[:,0],rg.lat[:,0])
+
     d_lon = np.shape(loni)
     tsp = output.nts-output.ntsi+1
 
@@ -820,35 +786,56 @@ def uv_lev(input,grid,output,rg,Plev):
     Uii = np.zeros((d_lon[0],d_lon[1],tsp))
     Vii = np.zeros((d_lon[0],d_lon[1],tsp))
 
-    # Compute winds and temperatures
-    # for t in np.arange(tsp):
-    #     for i in np.arange(grid.point_num):
-    #         for lev in np.arange(grid.nv):
-    #             Pr[lev] = output.Pressure[i,lev,t]
-    #             Mx[lev] = output.Mh[0,i,lev,t]
-    #             My[lev] = output.Mh[1,i,lev,t]
-    #             Mz[lev] = output.Mh[2,i,lev,t]
-    #         # Interpolate in pressure
-    #         Rhot[i] = interp.interp1d(Pr.T[0],output.Rho[i,:,t],kind='linear',fill_value='extrapolate')(Plev)
-    #         Mxf[i] = interp.interp1d(Pr.T[0],Mx.T[0],kind='linear',fill_value='extrapolate')(Plev)
-    #         Myf[i] = interp.interp1d(Pr.T[0],My.T[0],kind='linear',fill_value='extrapolate')(Plev)
-    #         Mzf[i] = interp.interp1d(Pr.T[0],Mz.T[0],kind='linear',fill_value='extrapolate')(Plev)
-    #     for i in np.arange(grid.point_num):
-    #         Ui[i] = (Mxf[i]*(-np.sin(grid.lon[i])) + \
-    #                  Myf[i]*np.cos(grid.lon[i]) + \
-    #                  Mzf[i]*(0))/Rhot[i]
-    #         Vi[i] = (Mxf[i]*(-np.sin(grid.lat[i])*np.cos(grid.lon[i])) + \
-    #                  Myf[i]*(-np.sin(grid.lat[i])*np.sin(grid.lon[i])) + \
-    #                  Mzf[i]*np.cos(grid.lat[i]))/Rhot[i]
-    #     # Convert icosahedral grid into lon-lat grid
-    #     Uii[:,:,t] = interp.griddata(np.vstack([grid.lon,grid.lat]).T,Ui.T[0],(loni,lati),method='nearest')
-    #     Vii[:,:,t] = interp.griddata(np.vstack([grid.lon,grid.lat]).T,Vi.T[0],(loni,lati),method='cubic')
-
+    #Compute winds and temperatures
     for t in np.arange(tsp):
-        above = np.where(rg.Pressure==np.min(rg.Pressure[rg.Pressure>Plev]))[0]
-        below = np.where(rg.Pressure==np.max(rg.Pressure[rg.Pressure<Plev]))[0]
+        for i in np.arange(grid.point_num):
+            for lev in np.arange(grid.nv):
+                Pr[lev] = output.Pressure[i,lev,t]
+                Mx[lev] = output.Mh[0,i,lev,t]
+                My[lev] = output.Mh[1,i,lev,t]
+                Mz[lev] = output.Mh[2,i,lev,t]
+            # Interpolate in pressure
+            Rhot[i] = interp.interp1d(Pr.T[0],output.Rho[i,:,t],kind='linear',fill_value='extrapolate')(Plev)
+            Mxf[i] = interp.interp1d(Pr.T[0],Mx.T[0],kind='linear',fill_value='extrapolate')(Plev)
+            Myf[i] = interp.interp1d(Pr.T[0],My.T[0],kind='linear',fill_value='extrapolate')(Plev)
+            Mzf[i] = interp.interp1d(Pr.T[0],Mz.T[0],kind='linear',fill_value='extrapolate')(Plev)
+        for i in np.arange(grid.point_num):
+            Ui[i] = (Mxf[i]*(-np.sin(grid.lon[i])) + \
+                     Myf[i]*np.cos(grid.lon[i]) + \
+                     Mzf[i]*(0))/Rhot[i]
+            Vi[i] = (Mxf[i]*(-np.sin(grid.lat[i])*np.cos(grid.lon[i])) + \
+                     Myf[i]*(-np.sin(grid.lat[i])*np.sin(grid.lon[i])) + \
+                     Mzf[i]*np.cos(grid.lat[i]))/Rhot[i]
+        # Convert icosahedral grid into lon-lat grid
+        Uii[:,:,t] = interp.griddata(np.vstack([grid.lon,grid.lat]).T,Ui.T[0],(loni,lati),method='nearest')
+        Vii[:,:,t] = interp.griddata(np.vstack([grid.lon,grid.lat]).T,Vi.T[0],(loni,lati),method='cubic')
 
-        Mx = rg.Mh[0,:,:,below,t]*(rg.Pressure[above,t] - Plev) + rg
+    # Uii = np.zeros(np.shape(loni)+(tsp,))
+    # Vii = np.zeros(np.shape(loni)+(tsp,))
+
+    # for t in np.arange(tsp):
+    #     # interpolate
+    #     # above is index of higher pressure bound (lower index)
+    #     # below is index of lower pressure bound (higher index)
+    #     if np.size(rg.Pressure[rg.Pressure>Plev]) == 0:
+    #         above = np.where(rg.Pressure==np.max(rg.Pressure))[0][0]
+    #         below = above + 1
+    #     elif np.size(rg.Pressure[rg.Pressure<Plev]) == 0:
+    #         below = np.where(rg.Pressure==np.min(rg.Pressure))[0][0]
+    #         above = below - 1
+    #     else:
+    #         above = np.where(rg.Pressure==np.min(rg.Pressure[rg.Pressure>Plev]))[0][0]
+    #         below = np.where(rg.Pressure==np.max(rg.Pressure[rg.Pressure<Plev]))[0][0]
+    #
+    #     Uii[:,:,t] = (rg.U[:,:,below,t]*(rg.Pressure[above,t] - Plev)\
+    #         + rg.U[:,:,above,t]*(Plev - rg.Pressure[below,t]))\
+    #         / (rg.Pressure[above,t]-rg.Pressure[below,t])
+    #     Vii[:,:,t] = (rg.V[:,:,below,t]*(rg.Pressure[above,t] - Plev)\
+    #         + rg.V[:,:,above,t]*(Plev - rg.Pressure[below,t]))\
+    #         / (rg.Pressure[above,t]-rg.Pressure[below,t])
+        # Wii[:,:,t] = (rg.W[:,:,below,t]*(rg.Pressure[above,t] - Plev)\
+        #     + rg.W[:,:,above,t]*(Plev - rg.Pressure[below,t]))\
+        #     / (rg.Pressure[above,t]-rg.Pressure[below,t])
 
     # Averaging in time
     if tsp > 1:
@@ -866,6 +853,8 @@ def uv_lev(input,grid,output,rg,Plev):
     plt.figure()
     lonp = np.arange(0,2*np.pi,res_deg)
     latp = np.arange(-np.pi/2,np.pi/2,res_deg)
+    # lonp = rg.lon[:,0]
+    # latp = rg.lat[:,0]
     C = plt.contourf(lonp*180/np.pi,latp*180/np.pi,Uiii,50,cmap='viridis')
     for cc in C.collections:
         cc.set_edgecolor("face") #fixes a stupid bug in matplotlib 2.0
@@ -881,8 +870,8 @@ def uv_lev(input,grid,output,rg,Plev):
     plt.close()
 
     plt.figure()
-    lonp = np.arange(0,2*np.pi,res_deg)
-    latp = np.arange(-np.pi/2,np.pi/2,res_deg)
+    # lonp = np.arange(0,2*np.pi,res_deg)
+    # latp = np.arange(-np.pi/2,np.pi/2,res_deg)
     C = plt.contourf(lonp*180/np.pi,latp*180/np.pi,Viii,50,cmap='viridis')
     for cc in C.collections:
         cc.set_edgecolor("face") #fixes a stupid bug in matplotlib 2.0
@@ -1956,6 +1945,29 @@ def conservation(input,grid,output,split):
 
     CalcEntropy(input,grid,output,split) #should put in Thor at some point?
 
+    #testing smth --------------------------------------------------
+    tsp = output.nts-output.ntsi+1
+
+    Atot = input.A**2
+    solid_ang = grid.areasT/Atot
+    U = (-output.Mh[0]*np.sin(grid.lon[:,None,None])+output.Mh[1]*np.cos(grid.lon[:,None,None]))/output.Rho
+
+    mom = (input.A+grid.Altitude[None,:,None])*np.cos(grid.lat[:,None,None])*\
+          ((input.A+grid.Altitude[None,:,None])*input.Omega*np.cos(grid.lat[:,None,None])+U)
+    mom_col = np.zeros((np.shape(grid.lat)[0],tsp))
+    for t in np.arange(tsp):
+            for loc in np.arange(np.shape(grid.lat)[0]):
+                mom_col[loc,t] = np.trapz(mom[loc,:,t]*(input.A+grid.Altitude)**2*output.Rho[loc,:,t],x=(input.A+grid.Altitude))
+
+    rint = ((input.A+grid.Altitudeh[1:])**3-(input.A+grid.Altitudeh[:-1])**3)/3.0
+    mom_grid = mom*rint[None,:,None]*output.Rho
+
+    Mtot = np.sum(mom_col*solid_ang[:,None],axis=0)
+
+    Mtot2 = np.sum(np.sum(mom_grid*solid_ang[:,None,None],axis=0),axis=0)
+    #-----------------------------------------------------------------
+
+    import pdb; pdb.set_trace()
     for ii in np.arange(len(plots)):
         fig = plt.figure(figsize=(12,8))
         fig.suptitle('Time = %#.3f - %#.3f days, split = %e bar'%(output.time[0],output.time[-1],split/1e5))
@@ -1985,6 +1997,7 @@ def conservation(input,grid,output,split):
         plt.subplot(2,3,3)
         if split == False:
             plt.plot(output.time,output.GlobalAMz,'ko',linestyle='--')
+            plt.plot(output.time,Mtot,'rs',linestyle='-')
         else:
             if plots[ii] == 'weather':
                 plt.plot(output.time,output.WeatherAMz,'bo',linestyle='--')
@@ -2033,3 +2046,35 @@ def conservation(input,grid,output,split):
             os.mkdir(input.resultsf+'/figures')
         plt.savefig(input.resultsf+'/figures/conservation_s%e_i%d_l%d_%s.pdf'%(split/100,output.ntsi,output.nts,plots[ii]))
         plt.close()
+
+def SRindex(input,grid,output):
+    tsp = output.nts-output.ntsi+1
+    #total surface area
+    Atot = 4*np.pi*input.A**2
+    solid_ang = grid.areasT/Atot
+
+    U = (-output.Mh[0]*np.sin(grid.lon[:,None,None])+output.Mh[1]*np.cos(grid.lon[:,None,None]))/output.Rho
+
+    # should I adjust radius for height?? yes!!
+    mom = (input.A+grid.Altitude[None,:,None])*np.cos(grid.lat[:,None,None])*\
+          ((input.A+grid.Altitude[None,:,None])*input.Omega*np.cos(grid.lat[:,None,None])+U)
+    mom0 = (input.A+grid.Altitude[None,:,None])*np.cos(grid.lat[:,None,None])*\
+          ((input.A+grid.Altitude[None,:,None])*input.Omega*np.cos(grid.lat[:,None,None])+np.zeros(np.shape(U[:,:,:])))
+
+    mom_col = np.zeros((np.shape(grid.lat)[0],tsp))
+    mom_col0 = np.zeros((np.shape(grid.lat)[0],tsp))
+
+    for t in np.arange(tsp):
+        for loc in np.arange(np.shape(grid.lat)[0]):
+            mom_col[loc,t] = np.trapz(mom[loc,:,t]*(input.A+grid.Altitude)**2*output.Rho[loc,:,t],x=(input.A+grid.Altitude))
+            mom_col0[loc,t] = np.trapz(mom0[loc,:,t]*(input.A+grid.Altitude)**2*output.Rho[loc,:,t],x=(input.A+grid.Altitude))
+
+    Mtot = np.sum(mom_col*solid_ang[:,None],axis=0)
+    Mtot0 = np.sum(mom_col0*solid_ang[:,None],axis=0)
+
+    S = Mtot/Mtot0 - 1
+
+    import pdb; pdb.set_trace()
+    plt.semilogy(output.time, S)
+    # plt.ylim(2e-5,4e-2)
+    plt.show()
