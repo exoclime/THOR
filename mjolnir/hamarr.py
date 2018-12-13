@@ -1801,20 +1801,21 @@ def SRindex(input,grid,output):
     mom0 = (input.A+grid.Altitude[None,:,None])*np.cos(grid.lat[:,None,None])*\
           ((input.A+grid.Altitude[None,:,None])*input.Omega*np.cos(grid.lat[:,None,None])+np.zeros(np.shape(U[:,:,:])))
 
-    mom_col = np.zeros((np.shape(grid.lat)[0],tsp))
-    mom_col0 = np.zeros((np.shape(grid.lat)[0],tsp))
+    rint = ((input.A+grid.Altitudeh[1:])**3-(input.A+grid.Altitudeh[:-1])**3)/3.0
+    mom_grid = mom*rint[None,:,None]*output.Rho
+    mom_grid0 = mom0*rint[None,:,None]*output.Rho
 
-    for t in np.arange(tsp):
-        for loc in np.arange(np.shape(grid.lat)[0]):
-            mom_col[loc,t] = np.trapz(mom[loc,:,t]*(input.A+grid.Altitude)**2*output.Rho[loc,:,t],x=(input.A+grid.Altitude))
-            mom_col0[loc,t] = np.trapz(mom0[loc,:,t]*(input.A+grid.Altitude)**2*output.Rho[loc,:,t],x=(input.A+grid.Altitude))
-
-    Mtot = np.sum(mom_col*solid_ang[:,None],axis=0)
-    Mtot0 = np.sum(mom_col0*solid_ang[:,None],axis=0)
+    Mtot = np.sum(np.sum(mom_grid*solid_ang[:,None,None],axis=0),axis=0)
+    Mtot0 = np.sum(np.sum(mom_grid0*solid_ang[:,None,None],axis=0),axis=0)
 
     S = Mtot/Mtot0 - 1
 
-    import pdb; pdb.set_trace()
     plt.semilogy(output.time, S)
-    # plt.ylim(2e-5,4e-2)
-    plt.show()
+    plt.xlabel('Time (days)')
+    plt.ylabel('Super-rotation index')
+    plt.tight_layout()
+
+    if not os.path.exists(input.resultsf+'/figures'):
+            os.mkdir(input.resultsf+'/figures')
+    plt.savefig(input.resultsf+'/figures/SRindex_i%d_l%d.pdf'%(output.ntsi,output.nts))
+    plt.close()
