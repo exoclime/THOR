@@ -95,11 +95,13 @@ class output:
         self.time = np.zeros(nts-ntsi+1)
         self.nstep = np.zeros(nts-ntsi+1)
         self.Etotal = np.zeros((grid.point_num,grid.nv,nts-ntsi+1))
+        self.Entropy = np.zeros((grid.point_num,grid.nv,nts-ntsi+1))
         self.Mass = np.zeros((grid.point_num,grid.nv,nts-ntsi+1))
         self.AngMomx = np.zeros((grid.point_num,grid.nv,nts-ntsi+1))
         self.AngMomy = np.zeros((grid.point_num,grid.nv,nts-ntsi+1))
         self.AngMomz = np.zeros((grid.point_num,grid.nv,nts-ntsi+1))
         self.GlobalE = np.zeros(nts-ntsi+1)
+        self.GlobalEnt = np.zeros(nts-ntsi+1)
         self.GlobalMass = np.zeros(nts-ntsi+1)
         self.GlobalAMx = np.zeros(nts-ntsi+1)
         self.GlobalAMy = np.zeros(nts-ntsi+1)
@@ -134,11 +136,13 @@ class output:
             nstep = openh5['nstep'][0]
             if 'Etotal' in openh5.keys():
                 Etotali = openh5['Etotal'][...]
+                Entropyi = openh5['Entropy'][...]
                 Massi = openh5['Mass'][...]
                 AngMomxi = openh5['AngMomx'][...]
                 AngMomyi = openh5['AngMomy'][...]
                 AngMomzi = openh5['AngMomz'][...]
                 self.GlobalE[t-ntsi+1] = openh5['GlobalE'][0]
+                self.GlobalEnt[t-ntsi+1] = openh5['GlobalEnt'][0]
                 self.GlobalMass[t-ntsi+1] = openh5['GlobalMass'][0]
                 self.GlobalAMx[t-ntsi+1] = openh5['GlobalAMx'][0]
                 self.GlobalAMy[t-ntsi+1] = openh5['GlobalAMy'][0]
@@ -171,6 +175,7 @@ class output:
                 self.AngMomx[:,:,t-ntsi+1] = np.reshape(AngMomxi,(grid.point_num,grid.nv))
                 self.AngMomy[:,:,t-ntsi+1] = np.reshape(AngMomyi,(grid.point_num,grid.nv))
                 self.AngMomz[:,:,t-ntsi+1] = np.reshape(AngMomzi,(grid.point_num,grid.nv))
+                self.Entropy[:,:,t-ntsi+1] = np.reshape(Entropyi,(grid.point_num,grid.nv))
 
             if 'traceri' in locals():
                 self.ch4[:,:,t-ntsi+1] = np.reshape(traceri[::5],(grid.point_num,grid.nv))/self.Rho[:,:,t-ntsi+1]
@@ -1685,16 +1690,16 @@ def CalcEntropy(input,grid,output,split):
 def conservation(input,grid,output,split):
     # plot quantities that are interesting for conservation
     if split == False:
-        # if (output.ConvData == False).any():
-        print('Calculating energy, mass, angular momentum...')
-        CalcE_M_AM(input,grid,output,split)
+        if (output.ConvData == False).any():
+            print('Calculating energy, mass, angular momentum...')
+            CalcE_M_AM(input,grid,output,split)
+            CalcEntropy(input,grid,output,split)
         plots = ['global']
 
     else:
         CalcE_M_AM(input,grid,output,split)
+        CalcEntropy(input,grid,output,split)
         plots = ['weather', 'deep']
-
-    CalcEntropy(input,grid,output,split) #should put in Thor at some point?
 
     for ii in np.arange(len(plots)):
         fig = plt.figure(figsize=(12,8))

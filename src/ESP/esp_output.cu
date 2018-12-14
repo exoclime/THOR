@@ -63,6 +63,7 @@
 
 __host__ void ESP::copy_conservation_to_host() {
     cudaMemcpy(Etotal_h, Etotal_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+    cudaMemcpy(Entropy_h, Entropy_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
     cudaMemcpy(Mass_h, Mass_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
     cudaMemcpy(AngMomx_h, AngMomx_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
     cudaMemcpy(AngMomy_h, AngMomy_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
@@ -72,6 +73,7 @@ __host__ void ESP::copy_conservation_to_host() {
 __host__ void ESP::copy_global_to_host() {
     // Transfer global conservation values to host
     cudaMemcpy(&GlobalE_h, GlobalE_d, sizeof(double), cudaMemcpyDeviceToHost);
+    cudaMemcpy(&GlobalEnt_h, GlobalEnt_d, sizeof(double), cudaMemcpyDeviceToHost);
     cudaMemcpy(&GlobalMass_h, GlobalMass_d, sizeof(double), cudaMemcpyDeviceToHost);
     cudaMemcpy(&GlobalAMx_h, GlobalAMx_d, sizeof(double), cudaMemcpyDeviceToHost);
     cudaMemcpy(&GlobalAMy_h, GlobalAMy_d, sizeof(double), cudaMemcpyDeviceToHost);
@@ -189,7 +191,7 @@ __host__ void ESP::output(int                    fidx, // Index of output file
         //      HyDiff option
         s.append_value(sim.HyDiff ? 1.0 : 0.0, "/HyDiff", "-", "Using Hyper diffusion");
 
-        //      Hyperdiffusion strength 
+        //      Hyperdiffusion strength
         s.append_value(sim.Diffc, "/Diffc", "-", "Hyperdiffusion strength");
 
         //      Tmean
@@ -280,6 +282,12 @@ __host__ void ESP::output(int                    fidx, // Index of output file
                        "kg m^2/s^2",
                        "Total Energy");
 
+        s.append_table(Entropy_h,
+                       nv * point_num,
+                       "/Entropy",
+                       "kg m^2/s^2 K^-1",
+                       "Entropy");
+
         //  Mass at each point
         s.append_table(Mass_h,
                        nv * point_num,
@@ -313,6 +321,11 @@ __host__ void ESP::output(int                    fidx, // Index of output file
                        "/GlobalE",
                        "kg m^2/s^2",
                        "Global Total Energy");
+
+        s.append_value(GlobalEnt_h,
+                       "/GlobalEnt",
+                       "kg m^2/s^2 K^-1",
+                       "Global Entropy");
 
         //  GlobalMass (total atmospheric mass over entire planet)
         s.append_value(GlobalMass_h,

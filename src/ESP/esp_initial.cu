@@ -49,10 +49,10 @@
 
 #include "directories.h"
 #include "esp.h"
+#include "log_writer.h"
 #include "phy/profx_conservation.h"
 #include "phy/valkyrie_jet_steadystate.h"
 #include "storage.h"
-#include "log_writer.h"
 
 #include <map>
 #include <stdio.h>
@@ -163,6 +163,7 @@ __host__ void ESP::alloc_data(bool conservation) {
         AngMomx_h = (double *)malloc(nv * point_num * sizeof(double));
         AngMomy_h = (double *)malloc(nv * point_num * sizeof(double));
         AngMomz_h = (double *)malloc(nv * point_num * sizeof(double));
+        Entropy_h = (double *)malloc(nv * point_num * sizeof(double));
     }
 
     //  Allocate data in device
@@ -270,11 +271,13 @@ __host__ void ESP::alloc_data(bool conservation) {
     if (conservation == true) {
         //  Conservation quantities
         cudaMalloc((void **)&Etotal_d, nv * point_num * sizeof(double));
+        cudaMalloc((void **)&Entropy_d, nv * point_num * sizeof(double));
         cudaMalloc((void **)&Mass_d, nv * point_num * sizeof(double));
         cudaMalloc((void **)&AngMomx_d, nv * point_num * sizeof(double));
         cudaMalloc((void **)&AngMomy_d, nv * point_num * sizeof(double));
         cudaMalloc((void **)&AngMomz_d, nv * point_num * sizeof(double));
         cudaMalloc((void **)&GlobalE_d, 1 * sizeof(double));
+        cudaMalloc((void **)&GlobalEnt_d, 1 * sizeof(double));
         cudaMalloc((void **)&GlobalMass_d, 1 * sizeof(double));
         cudaMalloc((void **)&GlobalAMx_d, 1 * sizeof(double));
         cudaMalloc((void **)&GlobalAMy_d, 1 * sizeof(double));
@@ -413,11 +416,11 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                                                     basename,
                                                     file_number)) {
                 log::printf("Loading initial conditions: "
-                       "Could not recognise file numbering scheme "
-                       "for input %s: (found base: %s, num: %d) \n",
-                       initial_conditions_filename.c_str(),
-                       basename.c_str(),
-                       file_number);
+                            "Could not recognise file numbering scheme "
+                            "for input %s: (found base: %s, num: %d) \n",
+                            initial_conditions_filename.c_str(),
+                            basename.c_str(),
+                            file_number);
                 return false;
             }
 
@@ -464,18 +467,17 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 double value = 0.0;
                 load_OK      = s.read_value(element.first, value);
 
-                if (!load_OK)
-                {
+                if (!load_OK) {
                     printf("Error reading key %s from reload config.\n", element.first.c_str());
                     values_match = false;
                 }
-                
-                    
+
+
                 if (value != element.second) {
                     log::printf("mismatch for %s value between config value: %f and initial condition value %f.\n",
-                           element.first.c_str(),
-                           element.second,
-                           value);
+                                element.first.c_str(),
+                                element.second,
+                                value);
                     values_match = false;
                 }
             }
@@ -485,17 +487,16 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 int value = 0;
                 load_OK   = s.read_value(element.first, value);
 
-                if (!load_OK)
-                {
+                if (!load_OK) {
                     printf("Error reading key %s from reload config.\n", element.first.c_str());
                     values_match = false;
                 }
-                
+
                 if (value != element.second) {
                     log::printf("mismatch for %s value between config value: %d and initial condition value %d.\n",
-                           element.first.c_str(),
-                           element.second,
-                           value);
+                                element.first.c_str(),
+                                element.second,
+                                value);
                     values_match = false;
                 }
             }
@@ -756,15 +757,23 @@ __host__ ESP::~ESP() {
 
     //  Conservation quantities
     cudaFree(Etotal_d);
+    cudaFree(Entropy_d);
     cudaFree(Mass_d);
     cudaFree(AngMomx_d);
     cudaFree(AngMomy_d);
     cudaFree(AngMomz_d);
     cudaFree(GlobalE_d);
+    cudaFree(GlobalEnt_d);
     cudaFree(GlobalMass_d);
     cudaFree(GlobalAMx_d);
     cudaFree(GlobalAMy_d);
     cudaFree(GlobalAMz_d);
+    free(Etotal_h);
+    free(Entropy_h);
+    free(Mass_h);
+    free(AngMomx_h);
+    free(AngMomy_h);
+    free(AngMomz_h);
 
     //  Extras-nan
     cudaFree(check_d);
@@ -772,7 +781,6 @@ __host__ ESP::~ESP() {
     // Sponge Layer
     cudaFree(vbar_d);
     cudaFree(zonal_mean_tab_d);
-
 
 
     free(vbar_h);
@@ -783,9 +791,6 @@ __host__ ESP::~ESP() {
     cudaFree(utmp);
     cudaFree(vtmp);
     cudaFree(wtmp);
-
-    
-
 
 
     if (phy_modules_execute)
