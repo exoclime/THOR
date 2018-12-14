@@ -85,7 +85,7 @@ if args.simulation_ID[0] == 'auto':
 else:
     simulation_ID = args.simulation_ID[0]
 
-# regrid function is a special case and interupts the other stuff
+# regrid function is a special case and interrupts the other stuff
 if 'regrid' in pview:
     ham.regrid(resultsf,simulation_ID,ntsi,nts)
     exit()
@@ -116,77 +116,62 @@ output = outall.output
 if openrg == 1:
     rg = outall.rg
 
+# quick and dirty break point, if you just want to look at the output data
+# does not load regridded data!
+if 'pause' in pview:
+    import pdb; pdb.set_trace()
+
 #########
 # Plots #
 #########
-# Sigma values for the plotting
+
+# Sigma (normalized pressure) values for the plotting
 if (args.pressure_min[0]=='default'):
     args.pressure_min[0] = np.max(output.Pressure[:,grid.nv-1,:])/100
-
 if np.max(input.P_Ref)/np.float(args.pressure_min[0]) > 1000:
     sigmaref = np.logspace(np.log10(input.P_Ref),np.log10(np.float(args.pressure_min[0])*100),20)/input.P_Ref
 else:
     sigmaref = np.linspace(input.P_Ref,np.float(args.pressure_min[0])*100,20)/input.P_Ref
 
-if 'pause' in pview:
-    import pdb; pdb.set_trace()
-
+#--- Vertical plot types-------------------------------
 if 'uver' in pview:
     # Averaged zonal winds (latitude vs pressure)
     ham.u(input,grid,output,rg,sigmaref)
 if 'wver' in pview:
     # Averaged vertical winds (latitude vs pressure)
     ham.w_ver(input,grid,output,rg,sigmaref)
-
-if 'wprof' in pview:
-    # Averaged vertical winds (latitude vs pressure)
-    ham.w_prof(input,grid,output)
 if 'Tver' in pview:
     # Averaged temperature (latitude vs pressure)
     ham.temperature(input,grid,output,rg,sigmaref)
-if 'Tulev' in pview:
-    # Averaged temperature and wind field (longitude vs latitude)
-    # PR_LV - Pressure level (Pa)
-    PR_LV = np.float(args.pressure_lev[0])*100
-    ham.temperature_u_lev(input,grid,output,rg,PR_LV)
 if 'PTver' in pview:
     # Averaged potential temperature (latitude vs pressure)
     ham.potential_temp(input,grid,output,rg,sigmaref)
-if 'ulev' in pview:
-    PR_LV = np.float(args.pressure_lev[0])*100
-    ham.uv_lev(input,grid,output,rg,PR_LV)
-if 'PVlev' in pview:
-    PR_LV = np.float(args.pressure_lev[0])*100
-    ham.potential_vort_lev(input,grid,output,PR_LV)
-if 'PVver' in pview:
+if 'PVver' in pview: # RD: needs some work!
     #sigmaref = np.arange(1,0,-0.05)
     ham.potential_vort_vert(input,grid,output,sigmaref)
-if 'RVlev' in pview:
-    PR_LV = np.float(args.pressure_lev[0])*100
-    ham.rela_vort_lev(input,grid,output,PR_LV)
-
-if 'TP' in pview:
-    ham.TPprof(input,grid,output,sigmaref,1902)
-
-if 'PTP' in pview:
-    ham.PTPprof(input,grid,output,sigmaref,1902)
-
-
-if 'cons' in pview:
-    if args.split_layer[0] == 'no_split':
-        split = False
-    else:
-        split = np.float(args.split_layer[0])*100
-    ham.conservation(input,grid,output,split)
-
-if 'stream' in pview:
+if 'stream' in pview: # RD: needs some work!
     if np.max(input.P_Ref)/np.float(args.pressure_min[0]) > 1000:
         sigmaref = np.logspace(np.log10(input.P_Ref),np.log10(np.float(args.pressure_min[0])*100),grid.nv)/input.P_Ref
     else:
         sigmaref = np.linspace(input.P_Ref,np.float(args.pressure_min[0])*100,grid.nv)/input.P_Ref
     ham.streamf(input,grid,output,sigmaref)
 
-if 'tracer' in pview:
+#--- Horizontal plot types-------------------------------
+if 'Tulev' in pview:
+    # Averaged temperature and wind field (longitude vs latitude)
+    # PR_LV - Pressure level (Pa)
+    PR_LV = np.float(args.pressure_lev[0])*100
+    ham.temperature_u_lev(input,grid,output,rg,PR_LV)
+if 'ulev' in pview:
+    PR_LV = np.float(args.pressure_lev[0])*100
+    ham.uv_lev(input,grid,output,rg,PR_LV)
+if 'PVlev' in pview:  # RD: needs some work!
+    PR_LV = np.float(args.pressure_lev[0])*100
+    ham.potential_vort_lev(input,grid,output,PR_LV)
+if 'RVlev' in pview:  # RD: needs some work!
+    PR_LV = np.float(args.pressure_lev[0])*100
+    ham.rela_vort_lev(input,grid,output,PR_LV)
+if 'tracer' in pview:  # RD: needs some work!
     PR_LV = np.float(args.pressure_lev[0])*100
     ham.tracer_u_lev(input,grid,output,PR_LV,'ch4')
     ham.tracer_u_lev(input,grid,output,PR_LV,'co')
@@ -194,9 +179,24 @@ if 'tracer' in pview:
     ham.tracer_u_lev(input,grid,output,PR_LV,'co2')
     ham.tracer_u_lev(input,grid,output,PR_LV,'nh3')
 
-if 'KE' in pview:
-    ham.KE_spect(input,output,rg)
+#--- Pressure profile types-------------------------------
+if 'TP' in pview:
+    ham.TPprof(input,grid,output,sigmaref,1902)
+if 'PTP' in pview:
+    ham.PTPprof(input,grid,output,sigmaref,1902)
+if 'wprof' in pview:  # RD: needs some work!
+    # Averaged vertical winds (latitude vs pressure)
+    ham.w_prof(input,grid,output)
 
+#--- Global diagnostics -----------------------------------
+if 'cons' in pview:  # RD: needs some work!
+    if args.split_layer[0] == 'no_split':
+        split = False
+    else:
+        split = np.float(args.split_layer[0])*100
+    ham.conservation(input,grid,output,split)
+if 'KE' in pview:  # RD: needs some work!
+    ham.KE_spect(input,output,rg)
 if 'SR' in pview:
     ham.SRindex(input,grid,output)
 

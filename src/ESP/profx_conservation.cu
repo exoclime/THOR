@@ -71,16 +71,10 @@ __global__ void CalcTotEnergy(double *Etotal_d,
 
         //calculate control volume
         double zup, zlow, Vol;
-        if (DeepModel) {
-            zup  = Altitudeh_d[lev + 1] + A;
-            zlow = Altitudeh_d[lev] + A;
-            Vol  = 0.5 * areasT[id] / A * (zup * zup - zlow * zlow);
-        }
-        else {
-            zup  = Altitudeh_d[lev + 1];
-            zlow = Altitudeh_d[lev];
-            Vol  = areasT[id] * (zup - zlow);
-        }
+        zup  = Altitudeh_d[lev + 1] + A;
+        zlow = Altitudeh_d[lev] + A;
+        Vol  = areasT[id] / pow(A, 2) * (pow(zup, 3) - pow(zlow, 3)) / 3;
+
         //calc cartesian values of vertical wind
         wx = W_d[id * nv + lev] * cos(lonlat_d[id * 2 + 1]) * cos(lonlat_d[id * 2]);
         wy = W_d[id * nv + lev] * cos(lonlat_d[id * 2 + 1]) * sin(lonlat_d[id * 2]);
@@ -130,26 +124,15 @@ __global__ void CalcAngMom(double *AngMomx_d,
 
         //calculate control volume
         double zup, zlow, Vol;
-        if (DeepModel) {
-            zup  = Altitudeh_d[lev + 1] + A;
-            zlow = Altitudeh_d[lev] + A;
-            Vol  = 0.5 * areasT[id] / A * (zup * zup - zlow * zlow);
-            //radius vector
-            r  = (A + Altitude_d[lev]);
-            rx = r * cos(lonlat_d[id * 2 + 1]) * cos(lonlat_d[id * 2]);
-            ry = r * cos(lonlat_d[id * 2 + 1]) * sin(lonlat_d[id * 2]);
-            rz = r * sin(lonlat_d[id * 2 + 1]);
-        }
-        else {
-            zup  = Altitudeh_d[lev + 1];
-            zlow = Altitudeh_d[lev];
-            Vol  = areasT[id] * (zup - zlow);
-            //radius vector
-            r  = A;
-            rx = r * cos(lonlat_d[id * 2 + 1]) * cos(lonlat_d[id * 2]);
-            ry = r * cos(lonlat_d[id * 2 + 1]) * sin(lonlat_d[id * 2]);
-            rz = r * sin(lonlat_d[id * 2 + 1]);
-        }
+        zup  = Altitudeh_d[lev + 1] + A;
+        zlow = Altitudeh_d[lev] + A;
+        Vol  = areasT[id] / pow(A, 2) * (pow(zup, 3) - pow(zlow, 3)) / 3;
+
+        //radius vector
+        r  = (A + Altitude_d[lev]);
+        rx = r * cos(lonlat_d[id * 2 + 1]) * cos(lonlat_d[id * 2]);
+        ry = r * cos(lonlat_d[id * 2 + 1]) * sin(lonlat_d[id * 2]);
+        rz = r * sin(lonlat_d[id * 2 + 1]);
 
         //angular momentum r x p (total x and y over globe should ~ 0, z ~ const)
         AMx = ry * Mh_d[id * 3 * nv + lev * 3 + 2] - rz * Mh_d[id * 3 * nv + lev * 3 + 1]
@@ -185,16 +168,9 @@ __global__ void CalcMass(double *Mass_d,
     if (id < num) {
         //calculate control volume
         double zup, zlow, Vol;
-        if (DeepModel) {
-            zup  = Altitudeh_d[lev + 1] + A;
-            zlow = Altitudeh_d[lev] + A;
-            Vol  = 0.5 * areasT[id] / A * (zup * zup - zlow * zlow);
-        }
-        else {
-            zup  = Altitudeh_d[lev + 1];
-            zlow = Altitudeh_d[lev];
-            Vol  = areasT[id] * (zup - zlow);
-        }
+        zup  = Altitudeh_d[lev + 1] + A;
+        zlow = Altitudeh_d[lev] + A;
+        Vol  = areasT[id] / pow(A, 2) * (pow(zup, 3) - pow(zlow, 3)) / 3;
 
         //mass in control volume = density*volume
         Mass_d[id * nv + lev] = Rho_d[id * nv + lev] * Vol;

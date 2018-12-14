@@ -1444,8 +1444,7 @@ def TPprof(input,grid,output,sigmaref,column):
         plt.plot(T[np.int(np.floor(grid.nv/2))],P[np.int(np.floor(grid.nv/2))]/100000,'r+',ms =5,alpha=0.5)
         plt.plot(T[np.int(np.floor(grid.nv*0.75))],P[np.int(np.floor(grid.nv*0.75))]/100000,'g+',ms =5,alpha=0.5)
 
-
-    Tad = T[15]*(P/P[15])**kappa
+    Tad = T[15]*(P/P[15])**kappa # need to come up with better way of visualizing the adiabatic conditions
 
     # plt.plot(Tad,P/100,'r--')
     plt.gca().invert_yaxis()
@@ -1478,10 +1477,6 @@ def PTPprof(input,grid,output,sigmaref,column):
         plt.plot(PT[np.int(np.floor(grid.nv/2))],P[np.int(np.floor(grid.nv/2))]/100000,'r+',ms =5,alpha=0.5)
         plt.plot(PT[np.int(np.floor(grid.nv*0.75))],P[np.int(np.floor(grid.nv*0.75))]/100000,'g+',ms =5,alpha=0.5)
 
-
-    # Tad = T[15]*(P/P[15])**kappa
-
-    # plt.plot(Tad,P/100,'r--')
     plt.gca().invert_yaxis()
     plt.ylabel('Pressure (bar)')
     plt.xlabel('Potential Temperature [K]')
@@ -1586,8 +1581,17 @@ def streamf(input,grid,output,sigmaref):
 
 def CalcE_M_AM(input,grid,output,split):
     temperature = output.Pressure/(input.Rd*output.Rho)
-    dz = grid.Altitude[1]-grid.Altitude[0]
-    Vol = grid.areasT*dz
+    # dz = grid.Altitude[1]-grid.Altitude[0]
+    # Vol = grid.areasT*dz
+
+    ## testing @@
+    tsp = output.nts-output.ntsi+1
+
+    Atot = input.A**2
+    solid_ang = grid.areasT/Atot
+
+    rint = ((input.A+grid.Altitudeh[1:])**3-(input.A+grid.Altitudeh[:-1])**3)/3.0
+    Vol0 = solid_ang[:,None]*rint[None,:]
 
     Eint = output.Rho*(input.Cp-input.Rd)*temperature
     Eg = output.Rho*input.Gravit*grid.Altitude[None,:,None]
@@ -1603,9 +1607,9 @@ def CalcE_M_AM(input,grid,output,split):
 
     Ek = 0.5*Mtot2/output.Rho
 
-    output.Etotal = (Eint+Eg+Ek)*Vol[:,None,None]
+    output.Etotal = (Eint+Eg+Ek)*Vol0[:,:,None]
 
-    output.Mass = output.Rho*Vol[:,None,None]
+    output.Mass = output.Rho*Vol0[:,:,None]
 
     r = input.A+grid.Altitude
 
@@ -1615,13 +1619,13 @@ def CalcE_M_AM(input,grid,output,split):
 
     output.AngMomx = (ry*Mtotz-rz*Mtoty-output.Rho*input.Omega[0]*\
                      rz*r[None,:,None]*np.cos(grid.lat[:,None,None])*\
-                     np.cos(grid.lon[:,None,None]))*Vol[:,None,None]
+                     np.cos(grid.lon[:,None,None]))*Vol0[:,:,None]
     output.AngMomy = (-rx*Mtotz+rz*Mtotx-output.Rho*input.Omega[0]*\
                      rz*r[None,:,None]*np.cos(grid.lat[:,None,None])*\
-                     np.sin(grid.lon[:,None,None]))*Vol[:,None,None]
+                     np.sin(grid.lon[:,None,None]))*Vol0[:,:,None]
     output.AngMomz = (rx*Mtoty-ry*Mtotx + output.Rho*input.Omega[0]*\
                      r[None,:,None]**2*np.cos(grid.lat[:,None,None])*\
-                     np.cos(grid.lat[:,None,None]))*Vol[:,None,None]
+                     np.cos(grid.lat[:,None,None]))*Vol0[:,:,None]
 
     if split == False:
         output.GlobalE = np.sum(np.sum(output.Etotal,0),0)
@@ -1655,13 +1659,20 @@ def CalcE_M_AM(input,grid,output,split):
 
 def CalcEntropy(input,grid,output,split):
     temperature = output.Pressure/(input.Rd*output.Rho)
-    dz = grid.Altitude[1]-grid.Altitude[0]
-    Vol = grid.areasT*dz
+    # dz = grid.Altitude[1]-grid.Altitude[0]
+    # Vol = grid.areasT*dz
+
+    Atot = input.A**2
+    solid_ang = grid.areasT/Atot
+
+    rint = ((input.A+grid.Altitudeh[1:])**3-(input.A+grid.Altitudeh[:-1])**3)/3.0
+    Vol0 = solid_ang[:,None]*rint[None,:]
+
     kappa = input.Rd/input.Cp
 
     potT = temperature*(input.P_Ref/output.Pressure)**kappa
     S = input.Cp * np.log(potT)
-    output.Entropy = S*Vol[:,None,None]
+    output.Entropy = S*Vol0[:,:,None]
     if split == False:
         output.GlobalEnt = np.sum(np.sum(output.Entropy,0),0)
     else:
@@ -1674,9 +1685,9 @@ def CalcEntropy(input,grid,output,split):
 def conservation(input,grid,output,split):
     # plot quantities that are interesting for conservation
     if split == False:
-        if (output.ConvData == False).any():
-            print('Calculating energy, mass, angular momentum...')
-            CalcE_M_AM(input,grid,output,split)
+        # if (output.ConvData == False).any():
+        print('Calculating energy, mass, angular momentum...')
+        CalcE_M_AM(input,grid,output,split)
         plots = ['global']
 
     else:
@@ -1685,29 +1696,6 @@ def conservation(input,grid,output,split):
 
     CalcEntropy(input,grid,output,split) #should put in Thor at some point?
 
-    #testing smth --------------------------------------------------
-    tsp = output.nts-output.ntsi+1
-
-    Atot = input.A**2
-    solid_ang = grid.areasT/Atot
-    U = (-output.Mh[0]*np.sin(grid.lon[:,None,None])+output.Mh[1]*np.cos(grid.lon[:,None,None]))/output.Rho
-
-    mom = (input.A+grid.Altitude[None,:,None])*np.cos(grid.lat[:,None,None])*\
-          ((input.A+grid.Altitude[None,:,None])*input.Omega*np.cos(grid.lat[:,None,None])+U)
-    mom_col = np.zeros((np.shape(grid.lat)[0],tsp))
-    for t in np.arange(tsp):
-            for loc in np.arange(np.shape(grid.lat)[0]):
-                mom_col[loc,t] = np.trapz(mom[loc,:,t]*(input.A+grid.Altitude)**2*output.Rho[loc,:,t],x=(input.A+grid.Altitude))
-
-    rint = ((input.A+grid.Altitudeh[1:])**3-(input.A+grid.Altitudeh[:-1])**3)/3.0
-    mom_grid = mom*rint[None,:,None]*output.Rho
-
-    Mtot = np.sum(mom_col*solid_ang[:,None],axis=0)
-
-    Mtot2 = np.sum(np.sum(mom_grid*solid_ang[:,None,None],axis=0),axis=0)
-    #-----------------------------------------------------------------
-
-    import pdb; pdb.set_trace()
     for ii in np.arange(len(plots)):
         fig = plt.figure(figsize=(12,8))
         fig.suptitle('Time = %#.3f - %#.3f days, split = %e bar'%(output.time[0],output.time[-1],split/1e5))
@@ -1737,7 +1725,6 @@ def conservation(input,grid,output,split):
         plt.subplot(2,3,3)
         if split == False:
             plt.plot(output.time,output.GlobalAMz,'ko',linestyle='--')
-            plt.plot(output.time,Mtot,'rs',linestyle='-')
         else:
             if plots[ii] == 'weather':
                 plt.plot(output.time,output.WeatherAMz,'bo',linestyle='--')
