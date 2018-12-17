@@ -408,7 +408,7 @@ def regrid(resultsf,simID,ntsi,nts,res_deg=0.5,nlev=40,pscale='log',overwrite=Fa
 
 def KE_spect(input,grid,output,rg,sigmaref,coord = 'icoh',lmax_adjust = 10):
     tsp = output.nts-output.ntsi+1
-    lmax_grid = np.int(np.floor(np.sqrt(grid.point_num)))
+    lmax_grid = np.int(np.floor(np.sqrt(grid.point_num))/2-1)
 
     if coord == 'llp':
         lon, lat = np.meshgrid(rg.lon[:,0],rg.lat[:,0])
@@ -451,7 +451,7 @@ def KE_spect(input,grid,output,rg,sigmaref,coord = 'icoh',lmax_adjust = 10):
         Vz = (output.Mh[2] + Wz)
 
         KE = 0.5*(Vx**2+Vy**2+Vz**2)
-        lmax = np.int(np.floor(np.sqrt(grid.point_num))+lmax_adjust) #sets lmax based on grid size
+        lmax = np.int(lmax_grid+lmax_adjust) #sets lmax based on grid size
 
         x_coeffs = np.zeros((2,lmax+1,lmax+1,grid.nv,tsp),dtype=complex)
         y_coeffs = np.zeros((2,lmax+1,lmax+1,grid.nv,tsp),dtype=complex)

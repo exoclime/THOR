@@ -7,3 +7,4 @@
  * added new routines to mjolnir/hamarr (KE, SR)
  * fixed issues in regrid
  * changed many of the plot functions to use regrid data (some still need work)
+ * added entropy to global & grid conservation outputs
