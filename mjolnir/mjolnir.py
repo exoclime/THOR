@@ -47,6 +47,8 @@ parser.add_argument("-l","--last_file",nargs=1,default=['init'],type=int,help='L
 parser.add_argument("-p","--pressure_lev",nargs=1,default=[2.5e2],help='Pressure level to plot in temperature/velocity/vorticity field (mbar)')
 parser.add_argument("-pmin","--pressure_min",nargs=1,default=['default'],help='Lowest pressure value to plot in vertical plots')
 parser.add_argument("-slay","--split_layer",nargs=1,default=['no_split'],help='Split conserved quantities into weather and deep layers at this pressure')
+parser.add_argument("-coord","--coordinate_sys",nargs=1,default=['icoh'],help='For KE spectrum, use either icoh grid or llp grid')
+parser.add_argument("-ladj","--lmax_adjust",nargs=1,default=[10],help='For KE spectrum, icoh grid, adjust number of wave numbers to fit')
 args = parser.parse_args()
 pview = args.pview
 
@@ -196,7 +198,8 @@ if 'cons' in pview:  # RD: needs some work!
         split = np.float(args.split_layer[0])*100
     ham.conservation(input,grid,output,split)
 if 'KE' in pview:  # RD: needs some work!
-    ham.KE_spect(input,output,rg)
+    PR_LV = np.float(args.pressure_lev[0])*100
+    ham.KE_spect(input,grid,output,rg,PR_LV,coord=args.coordinate_sys[0],lmax_adjust=args.lmax_adjust[0])
 if 'SR' in pview:
     ham.SRindex(input,grid,output)
 

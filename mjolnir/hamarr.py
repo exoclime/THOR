@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
+import matplotlib.cm as cm
 import scipy.interpolate as interp
 import os
 import h5py
@@ -107,6 +108,7 @@ class output:
         self.GlobalAMy = np.zeros(nts-ntsi+1)
         self.GlobalAMz = np.zeros(nts-ntsi+1)
         self.ConvData = np.zeros(nts-ntsi+1)
+        self.EntData = np.zeros(nts-ntsi+1)
         self.Insol = np.zeros((grid.point_num,nts-ntsi+1))
 
         self.ch4 = np.zeros((grid.point_num,grid.nv,nts-ntsi+1))
@@ -136,13 +138,11 @@ class output:
             nstep = openh5['nstep'][0]
             if 'Etotal' in openh5.keys():
                 Etotali = openh5['Etotal'][...]
-                Entropyi = openh5['Entropy'][...]
                 Massi = openh5['Mass'][...]
                 AngMomxi = openh5['AngMomx'][...]
                 AngMomyi = openh5['AngMomy'][...]
                 AngMomzi = openh5['AngMomz'][...]
                 self.GlobalE[t-ntsi+1] = openh5['GlobalE'][0]
-                self.GlobalEnt[t-ntsi+1] = openh5['GlobalEnt'][0]
                 self.GlobalMass[t-ntsi+1] = openh5['GlobalMass'][0]
                 self.GlobalAMx[t-ntsi+1] = openh5['GlobalAMx'][0]
                 self.GlobalAMy[t-ntsi+1] = openh5['GlobalAMy'][0]
@@ -151,6 +151,13 @@ class output:
             else:
                 print('Warning: conservation diagnostics not available in file %s'%fileh5)
                 self.ConvData[t-ntsi+1] = False
+            if 'Entropy' in openh5.keys():
+                Entropyi = openh5['Entropy'][...]
+                self.GlobalEnt[t-ntsi+1] = openh5['GlobalEnt'][0]
+                self.EntData[t-ntsi+1] = True
+            else:
+                print('Warning: entropy not available in file %s'%fileh5)
+                self.EntData[t-ntsi+1] = False
             if 'insol' in openh5.keys():
                 self.Insol[:,t-ntsi+1] = openh5['insol'][...]
             if 'tracer' in openh5.keys():
@@ -175,6 +182,7 @@ class output:
                 self.AngMomx[:,:,t-ntsi+1] = np.reshape(AngMomxi,(grid.point_num,grid.nv))
                 self.AngMomy[:,:,t-ntsi+1] = np.reshape(AngMomyi,(grid.point_num,grid.nv))
                 self.AngMomz[:,:,t-ntsi+1] = np.reshape(AngMomzi,(grid.point_num,grid.nv))
+            if 'Entropyi' in locals():
                 self.Entropy[:,:,t-ntsi+1] = np.reshape(Entropyi,(grid.point_num,grid.nv))
 
             if 'traceri' in locals():
@@ -398,52 +406,109 @@ def regrid(resultsf,simID,ntsi,nts,res_deg=0.5,nlev=40,pscale='log',overwrite=Fa
 
             openh5.close()
 
-def KE_spect(input,output,rg):
+def KE_spect(input,grid,output,rg,sigmaref,coord = 'icoh',lmax_adjust = 10):
     tsp = output.nts-output.ntsi+1
-    lon, lat = np.meshgrid(rg.lon[:,0],rg.lat[:,0])
-    npre = np.shape(rg.Pressure)[0]
+    lmax_grid = np.int(np.floor(np.sqrt(grid.point_num)))
 
-    U = rg.U
-    V = rg.V
-    W = rg.W
+    if coord == 'llp':
+        lon, lat = np.meshgrid(rg.lon[:,0],rg.lat[:,0])
+        npre = np.shape(rg.Pressure)[0]
 
-    lmax = np.int(np.shape(lat)[0]/2)
-    u_coeffs = np.zeros((2,lmax,lmax,npre,tsp),dtype=complex)
-    v_coeffs = np.zeros((2,lmax,lmax,npre,tsp),dtype=complex)
-    w_coeffs = np.zeros((2,lmax,lmax,npre,tsp),dtype=complex)
-    KE_coeffs = np.zeros((2,lmax,lmax,npre,tsp),dtype=complex)
-    KE_power = np.zeros((lmax,npre,tsp))
+        U = rg.U*rg.Rho
+        V = rg.V*rg.Rho
+        W = rg.W*rg.Rho
 
-    waven = np.arange(lmax)  #total spherical wavenumber
+        lmax = np.int(np.shape(lat)[0]/2)
+        u_coeffs = np.zeros((2,lmax,lmax,npre,tsp),dtype=complex)
+        v_coeffs = np.zeros((2,lmax,lmax,npre,tsp),dtype=complex)
+        w_coeffs = np.zeros((2,lmax,lmax,npre,tsp),dtype=complex)
+        KE_coeffs = np.zeros((2,lmax,lmax,npre,tsp),dtype=complex)
+        KE_power = np.zeros((lmax,npre,tsp))
 
-    fig, ax = plt.subplots(1, 1)
-    for t in np.arange(tsp):
-        for p in np.arange(npre):
-            # sampling = 2 for a lat-lon grid (lon axis is 2x lat axis)
-            u_coeffs[:,:,:,p,t] = chairs.expand.SHExpandDHC(U[:,:,p,t],sampling=2)
-            v_coeffs[:,:,:,p,t] = chairs.expand.SHExpandDHC(V[:,:,p,t],sampling=2)
-            w_coeffs[:,:,:,p,t] = chairs.expand.SHExpandDHC(W[:,:,p,t],sampling=2)
+        KE = 0.5*(U**2+V**2+W**2)
 
-            KE_coeffs[:,:,:,p,t] = (np.abs(u_coeffs[:,:,:,p,t])**2+np.abs(v_coeffs[:,:,:,p,t])**2)/4.0
-            KE_power[:,p,t] = chairs.spectralanalysis.spectrum(KE_coeffs,unit='per_lm')
+        waven = np.arange(lmax)  #total spherical wavenumber
 
-            ax.plot(waven, KE_power[:,p,t])
+        cmap = cm.get_cmap('cividis')
+        fig, ax = plt.subplots(1, 1)
+        for t in np.arange(tsp):
+            for p in np.arange(npre):
+                #KE_coeffs[:,:,:,p,t] = (np.abs(u_coeffs[:,:,:,p,t])**2+np.abs(v_coeffs[:,:,:,p,t])**2)/4.0
+                KE_coeffs[:,:,:,p,t] = chairs.expand.SHExpandDHC(KE[:,:,p,t],sampling=2)
+
+                KE_power[:,p,t] = chairs.spectralanalysis.spectrum(KE_coeffs,unit='per_lm')
+
+                ax.plot(waven, KE_power[:,p,t],'k-',c=cmap(p/npre),lw=1)
+
+    elif coord == 'icoh':
+        W = 0.5*(output.Wh[:,1:,:]+output.Wh[:,:-1,:])
+        Wx = W*np.cos(grid.lat[:,None,None])*np.cos(grid.lon[:,None,None])
+        Wy = W*np.cos(grid.lat[:,None,None])*np.sin(grid.lon[:,None,None])
+        Wz = W*np.sin(grid.lat[:,None,None])
+
+        Vx = (output.Mh[0] + Wx)
+        Vy = (output.Mh[1] + Wy)
+        Vz = (output.Mh[2] + Wz)
+
+        KE = 0.5*(Vx**2+Vy**2+Vz**2)
+        lmax = np.int(np.floor(np.sqrt(grid.point_num))+lmax_adjust) #sets lmax based on grid size
+
+        x_coeffs = np.zeros((2,lmax+1,lmax+1,grid.nv,tsp),dtype=complex)
+        y_coeffs = np.zeros((2,lmax+1,lmax+1,grid.nv,tsp),dtype=complex)
+        z_coeffs = np.zeros((2,lmax+1,lmax+1,grid.nv,tsp),dtype=complex)
+        KE_coeffs = np.zeros((2,lmax+1,lmax+1,grid.nv,tsp),dtype=complex)
+        KE_power = np.zeros((lmax+1,grid.nv,tsp))
+        waven = np.arange(lmax+1)  #total spherical wavenumber
+
+        cmap = cm.get_cmap('cividis')
+        fig, ax = plt.subplots(1, 1)
+        for t in np.arange(tsp):
+            for lev in np.arange(grid.nv):
+                KE_coeffs[:,:,:,lev,t], chiz = chairs.expand.SHExpandLSQ(KE[:,lev,t],grid.lat*180/np.pi,grid.lon*180/np.pi,lmax)
+                KE_power[:,lev,t] = chairs.spectralanalysis.spectrum(KE_coeffs,unit='per_lm')
+                ax.plot(waven, KE_power[:,lev,t],'k-',c=cmap(lev/grid.nv),lw=1)
+    else:
+        raise IOError("Invalid coord option! Valid options are 'icoh' or 'llp'")
 
     ax.set_yscale('log')
     ax.set_xscale('log')
-    ax.set(ylabel='KE (m$^2$ s$^{-2}$)',xlabel='n')
+    ax.vlines(lmax_grid,ax.get_ylim()[0],ax.get_ylim()[1],zorder=1000,linestyle='--')
+    ax.set(ylabel='KE density (kg m$^{-1}$ s$^{-2}$)',xlabel='n')
 
+    if not os.path.exists(input.resultsf+'/figures'):
+        os.mkdir(input.resultsf+'/figures')
+    plt.tight_layout()
+    plt.savefig(input.resultsf+'/figures/KEspectrum_%i_%s.pdf'%(output.ntsi,coord))
+    plt.close()
 
-    plt.figure()
+    norm = colors.Normalize(vmin = np.min(KE[:,0,0]),vmax=np.max(KE[:,0,0]))
+
+    fig = plt.figure()
+    fig.subplots_adjust(left=0.1,right=0.97)
     plt.subplot(2,1,1)
-    C = plt.contourf(rg.lon[:,0],rg.lat[:,0],rg.Temp[:,:,0,0],cmap='viridis')
-    for cc in C.collections:
-        cc.set_edgecolor("face")
-    clb = plt.colorbar(C)
+    if coord == 'llp':
+        plt.imshow(KE[:,:,0,0],origin='lower',extent=(0,360,-90,90),norm=norm,aspect='auto')
+    if coord == 'icoh':
+        plt.tricontourf(grid.lon*180/np.pi,grid.lat*180/np.pi,KE[:,0,0],levels=30)
+    plt.xlabel('Longitude ($^{\circ}$)')
+    plt.ylabel('Latitude ($^{\circ}$)')
+    clb = plt.colorbar()
+    clb.set_label('Kinetic energy density (kg m$^{-1}$ s$^{-2}$)')
 
-    plt.show()
+    KEcomp = chairs.expand.MakeGridDH(KE_coeffs[:,:,:,0,0],sampling=2)
+    lat = np.linspace(-90,90,np.shape(KEcomp)[0])
+    lon = np.linspace(0,360,np.shape(KEcomp)[1])
 
-    import pdb; pdb.set_trace()
+    plt.subplot(2,1,2)
+    plt.imshow(np.real(KEcomp),origin='lower',extent=(0,360,-90,90),norm=norm,aspect='auto')
+    plt.xlabel('Latitude ($^{\circ}$)')
+    plt.ylabel('Longitude ($^{\circ}$)')
+    plt.colorbar()
+    clb.set_label('Kinetic energy density (kg m$^{-1}$ s$^{-2}$)')
+
+    plt.savefig(input.resultsf+'/figures/KEmap_lowest_%i_%s.pdf'%(output.ntsi,coord))
+    plt.close()
+
 
 def temperature(input,grid,output,rg,sigmaref):
     # Set the reference pressure
@@ -1693,6 +1758,8 @@ def conservation(input,grid,output,split):
         if (output.ConvData == False).any():
             print('Calculating energy, mass, angular momentum...')
             CalcE_M_AM(input,grid,output,split)
+        if (output.EntData == False).any():
+            print('Calculating entropy...')
             CalcEntropy(input,grid,output,split)
         plots = ['global']
 

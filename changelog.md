@@ -6,4 +6,4 @@
  * clean up RT module startup output
  * added new routines to mjolnir/hamarr (KE, SR)
  * fixed issues in regrid
- * changed plot functions to use regrid data
+ * changed many of the plot functions to use regrid data (some still need work)
