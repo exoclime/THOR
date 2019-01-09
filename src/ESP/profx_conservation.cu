@@ -122,7 +122,6 @@ __global__ void CalcAngMom(double *AngMomx_d,
     if (id < num) {
         double AMx, AMy, AMz;
         double rx, ry, rz, r;
-        double rx1, ry1, rz1;
 
         //calculate control volume
         double zup, zlow, Vol;
