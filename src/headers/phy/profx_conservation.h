@@ -77,6 +77,7 @@ __global__ void CalcAngMom(double *AngMomx_d,
                            double *Altitudeh_d,
                            double *lonlat_d,
                            double *areasT,
+                           double *func_r_d,
                            int     num,
                            bool    DeepModel);
 

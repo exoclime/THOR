@@ -111,6 +111,7 @@ __global__ void CalcAngMom(double *AngMomx_d,
                            double *Altitudeh_d,
                            double *lonlat_d,
                            double *areasT,
+                           double *func_r_d,
                            int     num,
                            bool    DeepModel) {
 
@@ -121,6 +122,7 @@ __global__ void CalcAngMom(double *AngMomx_d,
     if (id < num) {
         double AMx, AMy, AMz;
         double rx, ry, rz, r;
+        double rx1, ry1, rz1;
 
         //calculate control volume
         double zup, zlow, Vol;
@@ -130,9 +132,9 @@ __global__ void CalcAngMom(double *AngMomx_d,
 
         //radius vector
         r  = (A + Altitude_d[lev]);
-        rx = r * cos(lonlat_d[id * 2 + 1]) * cos(lonlat_d[id * 2]);
-        ry = r * cos(lonlat_d[id * 2 + 1]) * sin(lonlat_d[id * 2]);
-        rz = r * sin(lonlat_d[id * 2 + 1]);
+        rx = r * func_r_d[id * 3 + 0];
+        ry = r * func_r_d[id * 3 + 1];
+        rz = r * func_r_d[id * 3 + 2];
 
         //angular momentum r x p (total x and y over globe should ~ 0, z ~ const)
         AMx = ry * Mh_d[id * 3 * nv + lev * 3 + 2] - rz * Mh_d[id * 3 * nv + lev * 3 + 1]

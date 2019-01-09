@@ -345,6 +345,7 @@ void ESP::conservation(const SimulationSetup& sim) {
                             Altitudeh_d,
                             lonlat_d,
                             areasT_d,
+                            func_r_d,
                             point_num,
                             sim.DeepModel);
 
