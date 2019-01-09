@@ -8,6 +8,7 @@ import h5py
 import time
 import subprocess as spr
 import pyshtools as chairs
+import pdb
 
 plt.rcParams['image.cmap'] = 'magma'
 # plt.rcParams['font.family'] = 'sans-serif'
@@ -201,8 +202,9 @@ class output:
 class rg_out:
     def __init__(self,resultsf,simID,ntsi,nts,input,grid):
         RT = 0
-        if input.core_benchmark[0] == 0: # need to switch to 'radiative_tranfer' flag
-            RT = 1
+        if "core_benchmark" in dir(input):
+            if input.core_benchmark[0] == 0: # need to switch to 'radiative_tranfer' flag
+                RT = 1
 
         # Read model results
         for t in np.arange(ntsi-1,nts):
@@ -276,7 +278,6 @@ def regrid(resultsf,simID,ntsi,nts,res_deg=0.5,nlev=40,pscale='log',overwrite=Fa
     output = outall.output
 
     print('Regrid data in folder '+resultsf+'...\n')
-
     #figure out pressure grid
     pmin = np.min(output.Pressure)
     if pscale == 'log':
@@ -295,6 +296,8 @@ def regrid(resultsf,simID,ntsi,nts,res_deg=0.5,nlev=40,pscale='log',overwrite=Fa
     loni, lati = np.meshgrid(lon_range,lat_range)
     d_lon = np.shape(loni)
     tsp = output.nts-output.ntsi+1
+
+    import pdb; pdb.set_trace()
 
     Temp_icoh = output.Pressure/(input.Rd*output.Rho)
     interpx = (grid.Altitude-grid.Altitudeh[:-1])/(grid.Altitudeh[1:]-grid.Altitudeh[:-1])
@@ -474,6 +477,12 @@ def KE_spect(input,grid,output,rg,sigmaref,coord = 'icoh',lmax_adjust = 10):
     ax.set_xscale('log')
     ax.vlines(lmax_grid,ax.get_ylim()[0],ax.get_ylim()[1],zorder=1000,linestyle='--')
     ax.set(ylabel='KE density (kg m$^{-1}$ s$^{-2}$)',xlabel='n')
+    # import pdb; pdb.set_trace()
+    ke3line = ax.get_ylim()[0] + waven**(-3.0)
+    ke53line = ax.get_ylim()[0] + waven**(-5.0/3)
+    ax.plot(waven,ke3line,'r:')
+    ax.plot(waven,ke53line,':',color='r')
+
 
     if not os.path.exists(input.resultsf+'/figures'):
         os.mkdir(input.resultsf+'/figures')
@@ -509,6 +518,108 @@ def KE_spect(input,grid,output,rg,sigmaref,coord = 'icoh',lmax_adjust = 10):
     plt.savefig(input.resultsf+'/figures/KEmap_lowest_%i_%s.pdf'%(output.ntsi,coord))
     plt.close()
 
+def vertical_lat(input,grid,output,rg,sigmaref,z,slice='avg'):
+    # generic pressure/latitude plot function
+
+    # contour spacing
+    csp = 500
+
+    # Set the reference pressure
+    Pref = input.P_Ref*sigmaref
+    d_sig = np.size(sigmaref)
+    tsp = output.nts-output.ntsi+1
+
+    if slice == 'avg':
+        # Set the latitude-longitude grid
+        loni, lati = np.meshgrid(rg.lon,rg.lat)
+        d_lon = np.shape(loni)
+
+        ##################
+        #    Averages    #
+        ##################
+
+        # Averaging in time and longitude
+        if tsp > 1:
+            Zonall = np.mean(z['value'][:,:,:,:],axis=1)
+            # Vl = np.mean(rg.V[:,:,:,:],axis=1)
+            # Wl = np.mean(rg.W[:,:,:,:],axis=1)
+            Zonallt = np.mean(Zonall[:,:,:],axis=2)
+            # Vlt = np.mean(Vl[:,:,:],axis=2)
+            # Wlt = np.mean(Wl[:,:,:],axis=2)
+            del Zonall
+        else:
+            Zonallt = np.mean(z['value'][:,:,:,0],axis=1)
+            # Vlt = np.mean(rg.V[:,:,:,0],axis=1)
+            # Wlt = np.mean(rg.W[:,:,:,0],axis=1)
+
+    else:
+        try:
+            slice = np.float(slice)
+        except:
+            raise IOError("'slice' option must be 'avg' or a longitude (degrees)")
+
+        if slice in rg.lon:
+            Zonall = z['value'][:,rg.lon[:,0]==slice,:,:]
+        else:
+            Zonall = np.zeros((len(rg.lat),1,d_sig,tsp))
+            # interpolate to slice given
+            for t in tsp:
+                for lev in np.arange(d_sig):
+                    Zonall[:,0,lev,tsp] = interp.griddata(np.vstack([rg.lon,rg.lat]).T,z['value'][:,:,lev,tsp],(slice,rg.lat))
+
+        # Averaging in time
+        if tsp > 1:
+            Zonallt = np.mean(Zonall[:,0,:,:],axis=2)
+            del Zonall
+        else:
+            Zonallt = Zonall[:,0,:,0]
+
+    #################
+    # Create figure #
+    #################
+
+    # set up arrows
+    # vspacing = 18
+    # wspacing = 1
+    # Vq = Vlt[::vspacing,::wspacing].ravel()
+    # Wq = Wlt[::vspacing,::wspacing].ravel()
+    # #preq = rg.Pressure[:,0][::spacing,::spacing].ravel()
+    # #latq = lati[::spacing,::spacing].ravel()
+    # latq, preq = np.meshgrid(rg.lat[::vspacing,0],rg.Pressure[::wspacing,0])
+
+    # Latitude
+    latp = rg.lat[:,0]*np.pi/180
+
+    # need to set desired pressure range (major PITA!)
+    prange = np.where(np.logical_and(rg.Pressure>=np.min(Pref),rg.Pressure<=np.max(Pref)))
+
+    # Contour plot
+    C = plt.contourf(latp*180/np.pi,rg.Pressure[prange[0],0]/1e5,Zonallt[:,prange[0]].T,40,cmap=z['cmap'])
+    clb = plt.colorbar(C,extend='both')
+    clb.set_label(z['label'])
+    levp = np.arange(np.ceil(np.min(Zonallt[:,prange[0]])/csp)*csp,np.floor(np.max(Zonallt[:,prange[0]])/csp)*csp,csp)
+    c2 = plt.contour(latp*180/np.pi,rg.Pressure[prange[0],0]/1e5,Zonallt[:,prange[0]].T,levels=levp,colors='w',linewidths=1)
+    plt.clabel(c2,inline=1,fontsize=10)
+    for cc in C.collections:
+        cc.set_edgecolor("face") #fixes a stupid bug in matplotlib 2.0
+    plt.gca().invert_yaxis()
+    # plt.quiver(latq.ravel(),preq.ravel()/1e5,Vq/np.max(Vq),Wq/np.max(Wq),color='0.5')
+    if np.max(Pref)/np.min(Pref) > 100:
+        plt.gca().set_yscale("log")
+    plt.xlabel('Latitude (deg)')
+    plt.ylabel('Pressure (bar)')
+    plt.plot(latp*180/np.pi,np.zeros_like(latp)+np.max(output.Pressure[:,grid.nv-1,:])/1e5,'r--')
+    #    plt.plot(latp*180/np.pi,np.zeros_like(latp)+np.max(output.Pressure[:,grid.nv-1,:])/1e5,'r--')
+
+    plt.title('Time = %#.3f - %#.3f days'%(output.time[0],output.time[-1]))
+    if not os.path.exists(input.resultsf+'/figures'):
+        os.mkdir(input.resultsf+'/figures')
+    plt.tight_layout()
+    if slice == 'avg':
+        plt.savefig(input.resultsf+'/figures/%s_ver_i%d_l%d_avg.pdf'%(z['name'],output.ntsi,output.nts))
+    else:
+        plt.savefig(input.resultsf+'/figures/%s_ver_i%d_l%d_sl%#.2f.pdf'%(z['name'],output.ntsi,output.nts,slice))
+    plt.close()
 
 def temperature(input,grid,output,rg,sigmaref):
     # Set the reference pressure
@@ -557,36 +668,59 @@ def temperature(input,grid,output,rg,sigmaref):
     plt.savefig(input.resultsf+'/figures/temperature_ver_i%d_l%d.pdf'%(output.ntsi,output.nts))
     plt.close()
 
-def u(input,grid,output,rg,sigmaref):
+def u(input,grid,output,rg,sigmaref,slice='avg'):
     # contour spacing
     csp = 500
 
     # Set the reference pressure
     Pref = input.P_Ref*sigmaref
     d_sig = np.size(sigmaref)
-
-    # Set the latitude-longitude grid
-    loni, lati = np.meshgrid(rg.lon,rg.lat)
-    d_lon = np.shape(loni)
     tsp = output.nts-output.ntsi+1
 
-    ##################
-    #    Averages    #
-    ##################
+    if slice == 'avg':
+        # Set the latitude-longitude grid
+        loni, lati = np.meshgrid(rg.lon,rg.lat)
+        d_lon = np.shape(loni)
 
-    # Averaging in time and longitude
-    if tsp > 1:
-        ZonalMl = np.mean(rg.U[:,:,:,:],axis=1)
-        # Vl = np.mean(rg.V[:,:,:,:],axis=1)
-        # Wl = np.mean(rg.W[:,:,:,:],axis=1)
-        ZonalMlt = np.mean(ZonalMl[:,:,:],axis=2)
-        # Vlt = np.mean(Vl[:,:,:],axis=2)
-        # Wlt = np.mean(Wl[:,:,:],axis=2)
-        del ZonalMl, Vl, Wl
+        ##################
+        #    Averages    #
+        ##################
+
+        # Averaging in time and longitude
+        if tsp > 1:
+            ZonalMl = np.mean(rg.U[:,:,:,:],axis=1)
+            # Vl = np.mean(rg.V[:,:,:,:],axis=1)
+            # Wl = np.mean(rg.W[:,:,:,:],axis=1)
+            ZonalMlt = np.mean(ZonalMl[:,:,:],axis=2)
+            # Vlt = np.mean(Vl[:,:,:],axis=2)
+            # Wlt = np.mean(Wl[:,:,:],axis=2)
+            del ZonalMl, Vl, Wl
+        else:
+            ZonalMlt = np.mean(rg.U[:,:,:,0],axis=1)
+            # Vlt = np.mean(rg.V[:,:,:,0],axis=1)
+            # Wlt = np.mean(rg.W[:,:,:,0],axis=1)
+
     else:
-        ZonalMlt = np.mean(rg.U[:,:,:,0],axis=1)
-        # Vlt = np.mean(rg.V[:,:,:,0],axis=1)
-        # Wlt = np.mean(rg.W[:,:,:,0],axis=1)
+        try:
+            slice = np.float(slice)
+        except:
+            raise IOError("'slice' option must be 'avg' or a longitude (degrees)")
+
+        if slice in rg.lon:
+            ZonalMl = rg.U[:,rg.lon[:,0]==slice,:,:]
+        else:
+            ZonalMl = np.zeros((len(rg.lat),1,d_sig,tsp))
+            # interpolate to slice given
+            for t in tsp:
+                for lev in np.arange(d_sig):
+                    ZonalMl[:,0,lev,tsp] = interp.griddata(np.vstack([rg.lon,rg.lat]).T,rg.U[:,:,lev,tsp],(slice,rg.lat))
+
+        # Averaging in time
+        if tsp > 1:
+            ZonalMlt = np.mean(ZonalMl[:,0,:,:],axis=2)
+            del ZonalMl
+        else:
+            ZonalMlt = ZonalMl[:,0,:,0]
 
     #################
     # Create figure #
@@ -611,7 +745,7 @@ def u(input,grid,output,rg,sigmaref):
     C = plt.contourf(latp*180/np.pi,rg.Pressure[prange[0],0]/1e5,ZonalMlt[:,prange[0]].T,40,cmap='viridis')
     clb = plt.colorbar(C,extend='both')
     clb.set_label(r'Velocity (m s$^{-1}$)')
-    levp = np.arange(np.ceil(np.min(ZonalMlt)/csp)*csp,np.floor(np.max(ZonalMlt)/csp)*csp,csp)
+    levp = np.arange(np.ceil(np.min(ZonalMlt[:,prange[0]])/csp)*csp,np.floor(np.max(ZonalMlt[:,prange[0]])/csp)*csp,csp)
     c2 = plt.contour(latp*180/np.pi,rg.Pressure[prange[0],0]/1e5,ZonalMlt[:,prange[0]].T,levels=levp,colors='w',linewidths=1)
     plt.clabel(c2,inline=1,fontsize=10)
     for cc in C.collections:
@@ -623,11 +757,16 @@ def u(input,grid,output,rg,sigmaref):
     plt.xlabel('Latitude (deg)')
     plt.ylabel('Pressure (bar)')
     plt.plot(latp*180/np.pi,np.zeros_like(latp)+np.max(output.Pressure[:,grid.nv-1,:])/1e5,'r--')
+    #    plt.plot(latp*180/np.pi,np.zeros_like(latp)+np.max(output.Pressure[:,grid.nv-1,:])/1e5,'r--')
+
     plt.title('Time = %#.3f - %#.3f days'%(output.time[0],output.time[-1]))
     if not os.path.exists(input.resultsf+'/figures'):
         os.mkdir(input.resultsf+'/figures')
     plt.tight_layout()
-    plt.savefig(input.resultsf+'/figures/u_ver_i%d_l%d.pdf'%(output.ntsi,output.nts))
+    if slice == 'avg':
+        plt.savefig(input.resultsf+'/figures/u_ver_i%d_l%d_avg.pdf'%(output.ntsi,output.nts))
+    else:
+        plt.savefig(input.resultsf+'/figures/u_ver_i%d_l%d_sl%#.2f.pdf'%(output.ntsi,output.nts,slice))
     plt.close()
 
 def w_prof(input,grid,output):
@@ -1494,6 +1633,34 @@ def rela_vort_lev(input,grid,output,sigmaref):
     plt.savefig(input.resultsf+'/figures/rela_vort_lev%d_i%d_l%d.pdf'%(sigmaref/input.P_Ref*1000,output.ntsi,output.nts))
     plt.close()
 
+def profile(input,grid,output,z,stride=50):
+    # Pref = input.P_Ref*sigmaref
+    # d_sig = np.size(sigmaref)
+
+    tsp = output.nts-output.ntsi+1
+
+    for column in np.arange(0,grid.point_num,stride):
+        if tsp > 1:
+            P = np.mean(output.Pressure[column,:,:],axis=2)
+            x = np.mean(z['value'][column,:,:],axis=2)
+        else:
+            P = output.Pressure[column,:,0]
+            x = z['value'][column,:,0]
+
+        plt.semilogy(x,P/1e5,'k-',alpha= 0.5,lw=1)
+        plt.plot(x[np.int(np.floor(grid.nv/2))],P[np.int(np.floor(grid.nv/2))]/100000,'r+',ms =5,alpha=0.5)
+        plt.plot(x[np.int(np.floor(grid.nv*0.75))],P[np.int(np.floor(grid.nv*0.75))]/100000,'g+',ms =5,alpha=0.5)
+
+    # plt.plot(Tad,P/100,'r--')
+    plt.gca().invert_yaxis()
+    plt.ylabel('Pressure (bar)')
+    plt.xlabel(z['label'])
+    plt.title('Time = %#.3f - %#.3f days'%(output.time[0],output.time[-1]))
+    if not os.path.exists(input.resultsf+'/figures'):
+        os.mkdir(input.resultsf+'/figures')
+    plt.savefig(input.resultsf+'/figures/%sPprofile_i%d_l%d.pdf'%(z['name'],output.ntsi,output.nts))
+    plt.close()
+
 def TPprof(input,grid,output,sigmaref,column):
     Pref = input.P_Ref*sigmaref
     d_sig = np.size(sigmaref)
@@ -1525,6 +1692,8 @@ def TPprof(input,grid,output,sigmaref,column):
         os.mkdir(input.resultsf+'/figures')
     plt.savefig(input.resultsf+'/figures/TPprofile_i%d_l%d.pdf'%(output.ntsi,output.nts))
     plt.close()
+
+
 
 def PTPprof(input,grid,output,sigmaref,column):
     Pref = input.P_Ref*sigmaref

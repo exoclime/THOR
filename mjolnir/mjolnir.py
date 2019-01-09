@@ -49,11 +49,12 @@ parser.add_argument("-pmin","--pressure_min",nargs=1,default=['default'],help='L
 parser.add_argument("-slay","--split_layer",nargs=1,default=['no_split'],help='Split conserved quantities into weather and deep layers at this pressure')
 parser.add_argument("-coord","--coordinate_sys",nargs=1,default=['icoh'],help='For KE spectrum, use either icoh grid or llp grid')
 parser.add_argument("-ladj","--lmax_adjust",nargs=1,default=[0],help='For KE spectrum, icoh grid, adjust number of wave numbers to fit')
+parser.add_argument("-slice","--slice",nargs=1,default=['avg'],help='Plot a long/lat slice or average over all values')
 args = parser.parse_args()
 pview = args.pview
 
 valid = ['uver','wver','wprof','Tver','Tulev','PTver','ulev','PVver','PVlev',
-            'TP','RVlev','cons','stream','pause','tracer','PTP','regrid','KE','SR']
+            'TP','RVlev','cons','stream','pause','tracer','PTP','regrid','KE','SR','uprof']
 
 rg_needed = ['Tver','uver','wver','Tulev','PTver','ulev','PVver','PVlev',
             'RVlev','stream','tracer','PTP','KE']  #these types need regrid
@@ -137,14 +138,20 @@ else:
 
 #--- Vertical plot types-------------------------------
 if 'uver' in pview:
+    z = {'value':rg.U, 'label':r'Velocity (m s$^{-1}$)', 'name':'u', 'cmap':'viridis'}
     # Averaged zonal winds (latitude vs pressure)
-    ham.u(input,grid,output,rg,sigmaref)
+    #ham.u(input,grid,output,rg,sigmaref,slice=args.slice[0])
+    ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice[0])
 if 'wver' in pview:
+    z = {'value':rg.W, 'label':r'Velocity (m s$^{-1}$)', 'name':'w', 'cmap':'viridis'}
     # Averaged vertical winds (latitude vs pressure)
-    ham.w_ver(input,grid,output,rg,sigmaref)
+    #ham.w_ver(input,grid,output,rg,sigmaref)
+    ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice[0])
 if 'Tver' in pview:
+    z = {'value':rg.Temperature, 'label':r'Temperature (K)', 'name':'temperature', 'cmap':'magma'}
     # Averaged temperature (latitude vs pressure)
-    ham.temperature(input,grid,output,rg,sigmaref)
+    #ham.temperature(input,grid,output,rg,sigmaref)
+    ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice[0])
 if 'PTver' in pview:
     # Averaged potential temperature (latitude vs pressure)
     ham.potential_temp(input,grid,output,rg,sigmaref)
@@ -183,12 +190,21 @@ if 'tracer' in pview:  # RD: needs some work!
 
 #--- Pressure profile types-------------------------------
 if 'TP' in pview:
-    ham.TPprof(input,grid,output,sigmaref,1902)
+    z = {'value': output.Pressure/input.Rd/output.Rho, 'label':'Temperature (K)', 'name':'T' }
+    #ham.TPprof(input,grid,output,sigmaref,1902)
+    ham.profile(input,grid,output,z)
 if 'PTP' in pview:
     ham.PTPprof(input,grid,output,sigmaref,1902)
 if 'wprof' in pview:  # RD: needs some work!
+    z = {'value': output.Wh[:,1:,:]/output.Rho, 'label':r'Vertical velocity (m s$^{-1}$)', 'name':'W' }
+    ham.profile(input,grid,output,z,stride=20)
     # Averaged vertical winds (latitude vs pressure)
-    ham.w_prof(input,grid,output)
+    # ham.w_prof(input,grid,output)
+if 'uprof' in pview:  # RD: needs some work!
+    u = (-output.Mh[0]*np.sin(grid.lon[:,None,None])+output.Mh[1]*np.cos(grid.lon[:,None,None]))/output.Rho
+    z = {'value': u, 'label':r'Zonal velocity (m s$^{-1}$)', 'name':'U' }
+    ham.profile(input,grid,output,z,stride=20)
+
 
 #--- Global diagnostics -----------------------------------
 if 'cons' in pview:  # RD: needs some work!
