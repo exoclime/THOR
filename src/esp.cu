@@ -426,6 +426,10 @@ int main(int argc, char** argv) {
         core_benchmark = JET_STEADY;
         config_OK &= true;
     }
+    else if (core_benchmark_str == "AcousticTest") {
+        core_benchmark = ACOUSTIC_TEST;
+        config_OK &= true;
+    }
     else {
         log::printf("core_benchmark config item not recognised: [%s]\n", core_benchmark_str.c_str());
         config_OK &= false;

@@ -46,6 +46,7 @@
 
 #include "esp.h"
 #include "phy/dry_conv_adj.h"
+#include "phy/profx_acoustic_test.h"
 #include "phy/profx_auxiliary.h"
 #include "phy/profx_conservation.h"
 #include "phy/profx_deepHJ.h"
@@ -239,6 +240,18 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
                             lonlat_d,
                             timestep,
                             point_num);
+    }
+    else if (core_benchmark == ACOUSTIC_TEST) {
+        if (current_step == 1) {
+            acoustic_test<<<NB, NTH>>>(pressure_d,
+                                       Rho_d,
+                                       temperature_d,
+                                       sim.Rd,
+                                       Altitude_d,
+                                       lonlat_d,
+                                       sim.Top_altitude,
+                                       point_num);
+        }
     }
 
     BENCH_POINT_I_PHY(current_step, "phy_core_benchmark", (), ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"))
