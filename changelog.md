@@ -8,3 +8,7 @@
  * fixed issues in regrid
  * changed many of the plot functions to use regrid data (some still need work)
  * added entropy to global & grid conservation outputs
+ * fixed pt update error in Density_Pressure_Eqs_Poles
+ * started generalizing plot functions in hamarr to make adding new quantities easier
+ * added acoustic wave experiment from Tomita & Satoh 2004
+ 
