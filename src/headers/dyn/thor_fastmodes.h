@@ -397,7 +397,7 @@ __global__ void Density_Pressure_Eqs(double *pressure_d,
     pt = (P_Ref / (Rd * r)) * pow((pressure_d[id * nv + lev] + pressurek_d[id * nv + lev]) / P_Ref, Cv / Cp);
 
     aux += pt * r;
-    //aux += pt_s[ir]*r;
+    // aux += pt_s[ir]*r;
 
     // printf("***** (pt_small - pt_large) = %g \n*******",(pt-pt_s[ir]));
     // Updates pressure
@@ -527,7 +527,13 @@ __global__ void Density_Pressure_Eqs_Poles(double *pressure_d,
 
             aux = -(nflxpt_p + dwptdz) * dt;
             r   = Rhok_d[id * nv + lev] + Rho_d[id * nv + lev];
-            aux += pt_d[id * nv + lev] * r;
+
+            double pt;
+            pt = (P_Ref / (Rd * r)) * pow((pressure_d[id * nv + lev] + pressurek_d[id * nv + lev]) / P_Ref, Cv / Cp);
+
+            aux += pt * r;
+
+            // aux += pt_d[id * nv + lev] * r;
 
             // Updates pressure
             p                         = P_Ref * pow(Rd * aux / P_Ref, Cp / Cv);

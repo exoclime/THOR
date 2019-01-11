@@ -53,11 +53,11 @@
 #include <stdio.h>
 
 // init log static class members
-FILE * log::pFILE = nullptr;
+FILE* log::pFILE = nullptr;
 
 
 log_writer::log_writer(const std::string& sim_id_,
-                       const std::string& output_dir_):
+                       const std::string& output_dir_) :
     simulation_ID(sim_id_),
     output_dir(output_dir_) {
 }
@@ -111,9 +111,9 @@ bool log_writer::check_output_log(int& file_number, int& iteration_number, std::
 
 
             log::printf("Found last file iteration %d, file number %d, filename: %s\n",
-                   iteration_number,
-                   file_number,
-                   last_file.c_str());
+                        iteration_number,
+                        file_number,
+                        last_file.c_str());
 
 
             return read_filename;
@@ -191,7 +191,9 @@ int log_writer::prepare_conservation_file(bool append) {
                                  << "\t"
                                  << "GlobalAMy_h"
                                  << "\t"
-                                 << "GlobalAMz_h" << std::endl;
+                                 << "GlobalAMz_h"
+                                 << "\t"
+                                 << "GlobalEnt_h" << std::endl;
     }
 
 
@@ -205,7 +207,8 @@ void log_writer::output_conservation(int    current_step,
                                      double GlobalMass_h,
                                      double GlobalAMx_h,
                                      double GlobalAMy_h,
-                                     double GlobalAMz_h) {
+                                     double GlobalAMz_h,
+                                     double GlobalEnt_h) {
     //log::printf("output conservation\n");
 
     // output global conservation values
@@ -215,7 +218,8 @@ void log_writer::output_conservation(int    current_step,
                              << GlobalMass_h << "\t"
                              << GlobalAMx_h << "\t"
                              << GlobalAMy_h << "\t"
-                             << GlobalAMz_h << std::endl;
+                             << GlobalAMz_h << "\t"
+                             << GlobalEnt_h << std::endl;
 
 
     // flush file to disk

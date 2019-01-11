@@ -2,68 +2,73 @@
 # config format version
 config_version = 1
 
-# WASP-43b with grey RT and sponge layer (Mendonca+ 2018)
+# earth acoustic wave test (Tomita & Satoh 2004)
 
 
 #-- Time stepping and output options -----------------------------------------#
 # number of steps
-num_steps = 432000
+num_steps = 96
 
 # length of timesteps in seconds
-timestep = 300
+timestep = 1800
 
 # output
 # output every n steps
-n_out = 100
-
+n_out = 2
 
 # output directory (relative to current working directory)
 # defaults to 'results'
-results_path = wasp43b_example
+results_path = acoustic_test
+
+# calculate and output quantities we hope to conserve
+# angular momentum, energy, mass, (entropy soon)
+conservation = true
 
 
 #-- Planetary parameters -----------------------------------------------------#
 # name of simulation for output files
-simulation_ID = Wasp43b
+simulation_ID = Earth
 
 # Radius [m]
-radius = 72427000.0
+radius = 6371000.0
 
 # Rotation rate [rad s^-1]
-rotation_rate = 9.09E-5
+rotation_rate = 0
 
 # Gravitational acceleration [m/s^2]
-gravitation = 47
+gravitation = 9.8
 
-# Gas constant [J/(Kg K)]
-Rd = 3714
+# Gas constant [J/(Kg K)] (R_univ/mean_molecular_mass)
+Rd = 287.0
 
 # Specific heat capacities [J/(Kg K)]
-Cp = 13000
+Cp = 1005.0
 
 # Mean atmospheric temperature [K]
-Tmean = 1800.0
+Tmean = 300.0
 
-# Reference surface pressure [Pa]
-P_ref = 10000000.0
+# Reference surface pressure [Pa] (pressure at bottom of model)
+P_ref = 100000.0
+
+# Initialize atmosphere with Guillot TP profile (0 = isothermal)?
+TPprof = 0
 
 
 #-- Grid options -------------------------------------------------------------#
 # Altitude of the top of the model domain [m]
-Top_altitude = 1.4e6
+Top_altitude = 10000.0
 
 # Horizontal resolution level.
-glevel = 4
+glevel = 5
 
 # Number of vertical layers
-vlevel = 40
+vlevel = 20
 
 # Spring dynamics
 spring_dynamics = true
 
 # Parameter beta for spring dynamics
 spring_beta = 1.15
-
 
 ## diffusion ############################################
 # Hyper-diffusion
@@ -73,15 +78,15 @@ HyDiff  =    true
 DivDampP =    true
 
 # Strength of diffusion
-Diffc = 0.015
+Diffc = 0.0
 #########################################################
-conservation = true
+
 
 #-- Model options ------------------------------------------------------------#
 # Non-hydrostatic parameter
 NonHydro = true
 
-# Deep atmosphere
+# Deep atmosphere (scale quantities for altitude + radius)
 DeepModel = true
 
 # Initial conditions
@@ -90,7 +95,7 @@ rest = true
 # initial conditions file, used if rest is set to false
 # (path relative to current working directory)
 # defaults to 'ifile/esp_initial.h5'
-initial = ifile/esp_initial.h5
+initial =ifile/esp_initial.h5
 
 # Core benchmark tests
 # Held-Suarez test for Earth == HeldSuarez
@@ -98,16 +103,19 @@ initial = ifile/esp_initial.h5
 # Benchmark test for deep hot Jupiter == DeepHotJupiter
 # Benchmark test for tidally locked Earth == TidallyLockedEarth
 # No benchmark test == NoBenchmark (model is then forced with grey RT by default)
-core_benchmark = NoBenchmark
+core_benchmark = AcousticTest
 
 # Switch off dynamical core (gcm)
 # This is useful for testing/debugging physics modules
 gcm_off = false
 
+# enable convective adjustment scheme
+conv_adj = 0
+
 
 #-- Sponge layer (Rayleigh drag) ---------------------------------------------#
 # use sponge layer (Rayleigh drag) at top of atmosphere?
-SpongeLayer = true
+SpongeLayer = false
 
 # latitude rings (zonal mean is calculated over these)
 nlat = 20
@@ -116,7 +124,7 @@ nlat = 20
 ns_sponge = 0.75
 
 # strength of sponge layer (1/damping time)
-Rv_sponge = 1e-3
+Rv_sponge = 1e-5
 
 # shrink sponge by half after some time (experimental)
 #shrink_sponge = true
@@ -124,30 +132,30 @@ Rv_sponge = 1e-3
 # when to shrink sponge (days)
 #t_shrink = 1
 
-#-- Radiative transfer options (core_benchmark = 0) --------------------------#
-## RT parameters #######################################
-radiative_transfer = true
 
+#-- Radiative transfer options (core_benchmark = NoBenchmark) --------------------------#
+radiative_transfer = false
+## RT parameters #######################################
 # stellar temperature (k)
-Tstar = 4300
+Tstar = 5800
 
 # orbital distance or semi-major axis (au)
-planet_star_dist = 0.015
+planet_star_dist = 1
 
 # radius of host star (R_sun)
-radius_star = 0.667
+radius_star = 1
 
 # bond albedo of planet
-albedo = 0.18
+albedo = 0.3
 
 # grey opt. depth of thermal wavelengths (at ref pressure)
-taulw = 1064
+taulw = 10
 
 # grey opt. depth of incoming stellar flux (at ref pressure)
-tausw = 532
+tausw = 1.67
 
 # temperature of internal heat flux (bottom boundary) (K)
-Tlow = 970
+Tlow = 50
 
 # diffusivity factor
 diff_fac = 0.5
@@ -176,7 +184,6 @@ sync_rot = true
 # (stupid Earth convention applies)
 #longp = 0
 #########################################################
-
 
 #-- Device options -----------------------------------------------------------#
 # GPU ID number

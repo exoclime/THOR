@@ -132,7 +132,7 @@ void get_cuda_mem_usage(size_t& total_bytes, size_t& free_bytes) {
     cudaError_t cuda_status = cudaMemGetInfo(&free_bytes, &total_bytes);
 
     if (cudaSuccess != cuda_status) {
-        log:: printf("Error: cudaMemGetInfo fails, %s \n", cudaGetErrorString(cuda_status));
+        log::printf("Error: cudaMemGetInfo fails, %s \n", cudaGetErrorString(cuda_status));
     }
 }
 
@@ -279,7 +279,7 @@ int main(int argc, char** argv) {
     config_reader.append_config_var("results_path", output_path, string(output_path_default));
 
     config_reader.append_config_var("gcm_off", sim.gcm_off, gcm_off_default);
-    
+
     config_reader.append_config_var("TPprof", sim.TPprof, TPprof_default);
 
     config_reader.append_config_var("conservation", sim.conservation, conservation_default);
@@ -290,7 +290,7 @@ int main(int argc, char** argv) {
 
     //*****************************************************************
     // Read config file
-    log:: printf("\n");
+    log::printf("\n");
 
     if (config_reader.parse_file(config_filename))
         log::printf(" Config file %s read\n", config_filename.c_str());
@@ -315,7 +315,7 @@ int main(int argc, char** argv) {
 
 
     if (argparser.get_arg("initial", inital_conditions_arg)) {
-        sim.rest                      = false;
+        sim.rest                  = false;
         initial_conditions        = inital_conditions_arg;
         initial_condition_arg_set = true;
 
@@ -336,7 +336,7 @@ int main(int argc, char** argv) {
 
 
     if (argparser.get_arg("continue", continue_filename)) {
-        sim.rest         = false;
+        sim.rest     = false;
         continue_sim = true;
 
         if (run_as_batch) {
@@ -426,6 +426,10 @@ int main(int argc, char** argv) {
         core_benchmark = JET_STEADY;
         config_OK &= true;
     }
+    else if (core_benchmark_str == "AcousticTest") {
+        core_benchmark = ACOUSTIC_TEST;
+        config_OK &= true;
+    }
     else {
         log::printf("core_benchmark config item not recognised: [%s]\n", core_benchmark_str.c_str());
         config_OK &= false;
@@ -452,30 +456,29 @@ int main(int argc, char** argv) {
     // check output config directory
     if (!create_output_dir(output_path)) {
         log::printf("Error creating output result directory: %s\n",
-               output_path.c_str());
+                    output_path.c_str());
         exit(-1);
     }
 
     //****************************************************************
     // Start logging to file
     printf("Opening log file.\n");
-    
-    string log_file = (path(output_path) / ( string("esp_log_")+ sim.simulation_ID+ string(".log"))).to_string();
-    
-    log::init_logger(log_file, continue_sim || run_as_batch );
+
+    string log_file = (path(output_path) / (string("esp_log_") + sim.simulation_ID + string(".log"))).to_string();
+
+    log::init_logger(log_file, continue_sim || run_as_batch);
 
     log::printf_logonly("*********************************************************************\n");
     std::time_t prog_start_time = std::time(nullptr);
-    log::printf(  "Starting logging to %s.\n\n", log_file.c_str());
-    log::printf(  "Time: %s\n\n", std::ctime(&prog_start_time));
-    
-    
+    log::printf("Starting logging to %s.\n\n", log_file.c_str());
+    log::printf("Time: %s\n\n", std::ctime(&prog_start_time));
+
 
     log::printf_logonly("\n\n version 2.0\n");
     log::printf_logonly(" Compiled on %s at %s.\n", __DATE__, __TIME__);
 
     log::printf_logonly(" build level: %s\n\n", BUILD_LEVEL);
-    
+
 
     // Data logger
     log_writer logwriter(sim.simulation_ID, output_path);
@@ -506,7 +509,7 @@ int main(int argc, char** argv) {
                 log::printf("continuing batch run from file %s\n", last_file.c_str());
 
                 // we want to continue the simulation
-                sim.rest         = false;
+                sim.rest     = false;
                 continue_sim = true;
 
                 // overwrite the results files we'd encounter
@@ -674,23 +677,23 @@ int main(int argc, char** argv) {
     int  output_file_idx = 0;
     int  step_idx        = 0;
     bool load_initial    = X.initial_values(
-                                         initial_conditions,    // initial conditions if not
-                                                                // started from
-                                                                // rest
-                                         continue_sim,          // if we
-                                                                // specify
-                                                                // initial
-                                                                // conditions,
-                                                                // continue or
-                                                                // start at 0?
-                                         timestep,              // Time-step [s]
-                                         sim,                   // simulation parameters
-                                         step_idx,              // current step index
-                                         simulation_start_time, // output:
-                                                                // simulation start time
-                                         output_file_idx);      // output file
-                                                                   // read + 1, 0
-                                                                   // if nothing read
+        initial_conditions,    // initial conditions if not
+                               // started from
+                               // rest
+        continue_sim,          // if we
+                               // specify
+                               // initial
+                               // conditions,
+                               // continue or
+                               // start at 0?
+        timestep,              // Time-step [s]
+        sim,                   // simulation parameters
+        step_idx,              // current step index
+        simulation_start_time, // output:
+                               // simulation start time
+        output_file_idx);      // output file
+                                  // read + 1, 0
+                                  // if nothing read
 
 
     if (!load_initial) {
@@ -725,13 +728,13 @@ int main(int argc, char** argv) {
     if (matching_name_result_files.size() > 0) {
         if (!force_overwrite) {
             log::printf("output files already exist and would be overwritten \n"
-                   "when running simulation. \n"
-                   "Files found:\n");
+                        "when running simulation. \n"
+                        "Files found:\n");
             for (const auto& f : matching_name_result_files)
                 log::printf("\t%s\n", f.first.c_str());
 
             log::printf(" Aborting. \n"
-                   "use --overwrite to overwrite existing files.\n");
+                        "use --overwrite to overwrite existing files.\n");
             exit(EXIT_FAILURE);
         }
     }
@@ -829,15 +832,16 @@ int main(int argc, char** argv) {
         if (sim.conservation == true) {
             X.conservation(sim);
 
-            
+
             logwriter.output_conservation(0,
                                           simulation_time,
                                           X.GlobalE_h,
                                           X.GlobalMass_h,
                                           X.GlobalAMx_h,
                                           X.GlobalAMy_h,
-                                          X.GlobalAMz_h);
-            
+                                          X.GlobalAMz_h,
+                                          X.GlobalEnt_h);
+
             X.copy_conservation_to_host();
         }
 
@@ -894,18 +898,19 @@ int main(int argc, char** argv) {
                                           X.GlobalMass_h,
                                           X.GlobalAMx_h,
                                           X.GlobalAMy_h,
-                                          X.GlobalAMz_h);
+                                          X.GlobalAMz_h,
+                                          X.GlobalEnt_h);
         }
 
         //
         //      Prints output every nout steps
         if (nstep % n_out == 0
             || caught_signal != ESIG_NOSIG) {
-                X.copy_to_host();
-                
+            X.copy_to_host();
+
             if (sim.conservation == true)
                 X.copy_conservation_to_host();
-            
+
             X.output(output_file_idx,
                      sim);
 
@@ -935,13 +940,13 @@ int main(int argc, char** argv) {
 
 
         log::printf("\n Time step number = %d/%d || Time = %f days. \n\t Elapsed %s || Left: %s || Completion: %s. %s",
-               nstep,
-               nsmax,
-               simulation_time / 86400.,
-               duration_to_str(elapsed_time).c_str(),
-               duration_to_str(time_left).c_str(),
-               end_time_str.str().c_str(),
-               file_output ? "[saved output]" : "");
+                    nstep,
+                    nsmax,
+                    simulation_time / 86400.,
+                    duration_to_str(elapsed_time).c_str(),
+                    duration_to_str(time_left).c_str(),
+                    end_time_str.str().c_str(),
+                    file_output ? "[saved output]" : "");
 
         // get memory statistics
         size_t total_bytes;
@@ -960,7 +965,7 @@ int main(int argc, char** argv) {
                                      mean_delta_per_step,
                                      end_time);
 
-        
+
         if (caught_signal != ESIG_NOSIG) {
             //exit loop and application after save on SIGTERM or SIGINT
             break;

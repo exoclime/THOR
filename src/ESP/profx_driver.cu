@@ -46,6 +46,7 @@
 
 #include "esp.h"
 #include "phy/dry_conv_adj.h"
+#include "phy/profx_acoustic_test.h"
 #include "phy/profx_auxiliary.h"
 #include "phy/profx_conservation.h"
 #include "phy/profx_deepHJ.h"
@@ -70,8 +71,8 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
     const int NTH = 256;
 
     //  Specify the block sizes.
-    dim3 NB((point_num / NTH) + 1, nv, 1);
-    dim3 NBRT((point_num / NTH) + 1, 1, 1);
+    dim3      NB((point_num / NTH) + 1, nv, 1);
+    dim3      NBRT((point_num / NTH) + 1, 1, 1);
 
     if (sim.SpongeLayer == true) {
         dim3 NBT((point_num / NTH) + 1, nv, 1);
@@ -94,7 +95,7 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
                              max_count);
 
         cudaDeviceSynchronize();
-        
+
         cudaMemcpy(utmp_h, utmp, max_count * nlat * nv * sizeof(double), cudaMemcpyDeviceToHost);
         cudaMemcpy(vtmp_h, vtmp, max_count * nlat * nv * sizeof(double), cudaMemcpyDeviceToHost);
         cudaMemcpy(wtmp_h, wtmp, max_count * nlat * nv * sizeof(double), cudaMemcpyDeviceToHost);
@@ -240,6 +241,18 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
                             timestep,
                             point_num);
     }
+    else if (core_benchmark == ACOUSTIC_TEST) {
+        if (current_step == 1) {
+            acoustic_test<<<NB, NTH>>>(pressure_d,
+                                       Rho_d,
+                                       temperature_d,
+                                       sim.Rd,
+                                       Altitude_d,
+                                       lonlat_d,
+                                       sim.Top_altitude,
+                                       point_num);
+        }
+    }
 
     BENCH_POINT_I_PHY(current_step, "phy_core_benchmark", (), ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"))
 
@@ -280,7 +293,7 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
 #endif // BENCHMARKING
 
     BENCH_POINT_I(current_step, "phy_END", (), ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"));
-    
+
     //
     //END OF INTEGRATION
     //
@@ -300,6 +313,8 @@ void ESP::conservation(const SimulationSetup& sim) {
     cudaMemset(GlobalAMx_d, 0, sizeof(double));
     cudaMemset(GlobalAMy_d, 0, sizeof(double));
     cudaMemset(GlobalAMz_d, 0, sizeof(double));
+    cudaMemset(GlobalEnt_d, 0, sizeof(double));
+
 
     CalcMass<<<NB, NTH>>>(Mass_d,
                           GlobalMass_d,
@@ -343,8 +358,24 @@ void ESP::conservation(const SimulationSetup& sim) {
                             Altitudeh_d,
                             lonlat_d,
                             areasT_d,
+                            func_r_d,
                             point_num,
                             sim.DeepModel);
+
+    CalcEntropy<<<NB, NTH>>>(Entropy_d,
+                             pressure_d,
+                             temperature_d,
+                             sim.Cp,
+                             sim.Rd,
+                             sim.A,
+                             sim.P_Ref,
+                             Altitude_d,
+                             Altitudeh_d,
+                             lonlat_d,
+                             areasT_d,
+                             func_r_d,
+                             point_num,
+                             sim.DeepModel);
 
     // run conservation on device
     // compute globals
@@ -353,4 +384,5 @@ void ESP::conservation(const SimulationSetup& sim) {
     GlobalAMx_h  = gpu_sum_on_device<1024>(AngMomx_d, point_num * nv);
     GlobalAMy_h  = gpu_sum_on_device<1024>(AngMomy_d, point_num * nv);
     GlobalAMz_h  = gpu_sum_on_device<1024>(AngMomz_d, point_num * nv);
+    GlobalEnt_h  = gpu_sum_on_device<1024>(Entropy_d, point_num * nv);
 }

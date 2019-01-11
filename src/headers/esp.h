@@ -126,6 +126,8 @@ public:
     double  GlobalAMx_h;
     double  GlobalAMy_h;
     double  GlobalAMz_h;
+    double *Entropy_h;   //entropy in control volume
+    double  GlobalEnt_h; //entropy over entire atmosphere
 
     ///////////////////////////
     //  Device
@@ -224,6 +226,8 @@ public:
     double *GlobalAMx_d;
     double *GlobalAMy_d;
     double *GlobalAMz_d;
+    double *Entropy_d; // entropy in control volume
+    double *GlobalEnt_d;
 
     ///////////////////////////
 

@@ -96,7 +96,7 @@
 
 #define conservation_default false //output energy, mass, angular momentum, etc
 
-#define conv_adj_default 0  // use convective adjustment scheme
+#define conv_adj_default 0 // use convective adjustment scheme
 
 enum benchmark_types {
     NO_BENCHMARK         = 0,
@@ -104,5 +104,6 @@ enum benchmark_types {
     TIDALLY_LOCKED_EARTH = 2,
     SHALLOW_HOT_JUPITER  = 3,
     DEEP_HOT_JUPITER     = 4,
-    JET_STEADY           = 5
+    JET_STEADY           = 5,
+    ACOUSTIC_TEST        = 6
 };

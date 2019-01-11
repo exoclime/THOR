@@ -19,29 +19,41 @@ parser.add_argument("-t",
                     help='test set to run',
                     default="fast")
 
-parser.add_argument("-w",
-                    "--writemode",
-                    action='store_true',
-                    help='write test data to be used by comparison')
+parser.add_argument("-o",
+                    "--output_dir",
+                    action='store',
+                    metavar='OUTPUTDIR',
+                    help='directory for output of test files',
+                    default="testing")
+
+parser.add_argument("-d",
+                    "--data_dir",
+                    action='store',
+                    metavar='DATADIR',
+                    help='directory containing comparison data for test',
+                    default="test_data")
 
 args = parser.parse_args()
 
-# need command line arguments for those
-base_output_dir = pathlib.Path('testing')
-test_data_dir = pathlib.Path('test_data')
-
 run_set_sel = args.testset
+
+# need command line arguments for those
+parent_test_dir = pathlib.Path(args.output_dir)
+parent_data_dir = pathlib.Path(args.data_dir)
+
+base_output_dir = parent_test_dir / run_set_sel
+test_data_dir = parent_data_dir / run_set_sel
 
 # colors for console output
 W = '\033[0m'  # white (normal)
 R = '\033[31m'  # red
 G = '\033[32m'  # green
 O = '\033[33m'  # orange
-B = '\033[34m'  # blue
+B = '\033[34m'  # blue is hard to read on dark background
 P = '\033[35m'  # purple
+C = '\033[1;36m'  # bold cyan
 
 # HDF5 helper classes for comparison tests
-
 
 def h5diff(ref_file, dat_file, epsilon=None):
     if not ref_file.exists():
@@ -115,7 +127,6 @@ grid_and_startup_set = [
                   'glevel': '4',
                   'vlevel': '32'},
      'status': 0,
-     'writemode_enabled': True,
      'compare_func': compare_h5files,
      'compare_params': {'comparisons': ['esp_output_grid_Earth.h5',
                                         'esp_output_planet_Earth.h5',
@@ -129,7 +140,6 @@ grid_and_startup_set = [
                   'glevel': '5',
                   'vlevel': '32'},
      'status': 0,
-     'writemode_enabled': True,
      'compare_func': compare_h5files,
      'compare_params': {'comparisons': ['esp_output_grid_Earth.h5',
                                         'esp_output_planet_Earth.h5',
@@ -143,7 +153,6 @@ grid_and_startup_set = [
                   'glevel': '6',
                   'vlevel': '32'},
      'status': 0,
-     'writemode_enabled': True,
      'compare_func': compare_h5files,
      'compare_params': {'comparisons': ['esp_output_grid_Earth.h5',
                                         'esp_output_planet_Earth.h5',
@@ -159,7 +168,6 @@ fast_set = [
      'command_options': [],
      'override': {'num_steps': '10'},
      'status': 0,
-     'writemode_enabled': False,
      'compare_func': testfunction,
      'compare_params': {'param': 'novalue'}},
 
@@ -169,7 +177,6 @@ fast_set = [
      'command_options': [],
      'override': {'num_steps': '00'},
      'status': 255,
-     'writemode_enabled': False,
      'compare_func': testfunction,
      'compare_params': {'param': 'novalue'}},
 
@@ -179,9 +186,8 @@ fast_set = [
      'command_options': [],
      'override': {'num_steps': '10',
                   'rest': 'false',
-                  'initial': 'ifile/esp_initial.h5'},
+                  'initial': str(parent_data_dir / 'earth_hs_norest' / 'esp_initial.h5')},
      'status': 0,
-     'writemode_enabled': False,
      'compare_func': testfunction,
      'compare_params': {'param': 'novalue'}},
 
@@ -192,7 +198,6 @@ fast_set = [
      'command_options': [],
      'override': {'num_steps': '10'},
      'status': 0,
-     'writemode_enabled': False,
      'compare_func': None,
      'compare_params': None},
     # Earth Sync
@@ -201,7 +206,6 @@ fast_set = [
      'command_options': [],
      'override': {'num_steps': '100'},
      'status': 0,
-     'writemode_enabled': False,
      'compare_func': None,
      'compare_params': None},
     # ShallowHJ
@@ -210,7 +214,6 @@ fast_set = [
      'command_options': [],
      'override': {'num_steps': '100'},
      'status': 0,
-     'writemode_enabled': False,
      'compare_func': None,
      'compare_params': None},
     # Planet of the Wasps
@@ -219,7 +222,6 @@ fast_set = [
      'command_options': [],
      'override': {'num_steps': '100'},
      'status': 0,
-     'writemode_enabled': False,
      'compare_func': None,
      'compare_params': None},
 ]
@@ -229,11 +231,83 @@ slow_set = [
     {'name': 'earth_hs',
      'base_ifile': 'ifile/earth_hstest.thr',
      'command_options': [],
-     'override': {'num_steps': '10000'},
+     'override': {'num_steps': '10000',
+                  'n_out': '2000' },
      'status': 0,
-     'writemode_enabled': False,
-     'compare_func': None,
-     'compare_params': None}
+     'compare_func': compare_h5files,
+     'compare_params': {'comparisons': ['esp_output_grid_Earth.h5',
+                                       'esp_output_planet_Earth.h5',
+                                       'esp_output_Earth_0.h5',
+                                       'esp_output_Earth_1.h5',
+                                       'esp_output_Earth_2.h5',
+                                       'esp_output_Earth_3.h5'
+                                       'esp_output_Earth_4.h5',
+                                       'esp_output_Earth_5.h5' ]}},
+
+     {'name': 'deephj',
+     'base_ifile': 'ifile/deephj.thr',
+     'command_options': [],
+     'override': {'num_steps': '30000',
+                  'n_out': '6000'},
+     'status': 0,
+     'compare_func': compare_h5files,
+     'compare_params': {'comparisons': ['esp_output_grid_deep.h5',
+                                        'esp_output_planet_deep.h5',
+                                        'esp_output_deep_0.h5',
+                                        'esp_output_deep_1.h5',
+                                        'esp_output_deep_2.h5',
+                                        'esp_output_deep_3.h5'
+                                        'esp_output_deep_4.h5',
+                                        'esp_output_deep_5.h5' ]}},
+
+
+     {'name': 'earth_sync',
+     'base_ifile': 'ifile/earth_sync.thr',
+     'command_options': [],
+     'override': {'num_steps': '40000',
+                  'n_out':'8000' },
+     'status': 0,
+     'compare_func': compare_h5files,
+     'compare_params': {'comparisons': ['esp_output_grid_Earth.h5',
+                                        'esp_output_planet_Earth.h5',
+                                        'esp_output_Earth_0.h5',
+                                        'esp_output_Earth_1.h5',
+                                        'esp_output_Earth_2.h5',
+                                        'esp_output_Earth_3.h5'
+                                        'esp_output_Earth_4.h5',
+                                        'esp_output_Earth_5.h5' ]}},
+
+     {'name': 'shallowhj',
+     'base_ifile': 'ifile/shallowhj.thr',
+     'command_options': [],
+     'override': {'num_steps': '40000',
+                  'n_out': '8000'},
+     'status': 0,
+     'compare_func': compare_h5files,
+     'compare_params': {'comparisons': ['esp_output_grid_shallow.h5',
+                                        'esp_output_planet_shallow.h5',
+                                        'esp_output_shallow_0.h5',
+                                        'esp_output_shallow_1.h5',
+                                        'esp_output_shallow_2.h5',
+                                        'esp_output_shallow_3.h5'
+                                        'esp_output_shallow_4.h5',
+                                        'esp_output_shallow_5.h5' ]}},
+
+     {'name': 'wasp43b_ex',
+     'base_ifile': 'ifile/wasp43b_ex.thr',
+     'command_options': [],
+     'override': {'num_steps': '10000',
+                  'n_out': '2000'},
+     'status': 0,
+     'compare_func': compare_h5files,
+     'compare_params': {'comparisons': ['esp_output_grid_Wasp43b.h5',
+                                        'esp_output_planet_Wasp43b.h5',
+                                        'esp_output_Wasp43b_0.h5',
+                                        'esp_output_Wasp43b_1.h5',
+                                        'esp_output_Wasp43b_2.h5',
+                                        'esp_output_Wasp43b_3.h5'
+                                        'esp_output_Wasp43b_4.h5',
+                                        'esp_output_Wasp43b_5.h5' ]}},
 ]
 ######################################################################
 # the simulation sets we can choose from
@@ -241,29 +315,17 @@ simulation_sets = {'slow': slow_set,
                    'fast': fast_set,
                    'grid': grid_and_startup_set}
 
-
 run_set = simulation_sets[run_set_sel]
 
 # make output directory
-if args.writemode == True:
-    for config_set in run_set:
-        if config_set['writemode_enabled'] == False:
-            print("Write mode is not enabled for all simulations in set '%s'"%run_set_sel)
-            exit(-1)
+if not parent_test_dir.exists():
+    parent_test_dir.mkdir()
 
-    if not test_data_dir.exists():
-        test_data_dir.mkdir()
-        print(G+"Write mode enabled... generating test data in directory '%s'"%test_data_dir)
-    else:
-        print("Output {} already exists, can't run".format(str(test_data_dir)))
-        exit(-1)
-
+if not base_output_dir.exists():
+    base_output_dir.mkdir()
 else:
-    if not base_output_dir.exists():
-        base_output_dir.mkdir()
-    else:
-        print("Output {} already exists, can't run".format(str(base_output_dir)))
-        exit(-1)
+    print("Output {} already exists, can't run".format(str(base_output_dir)))
+    exit(-1)
 
 
 # store results output for summary
@@ -307,7 +369,7 @@ async def run_subprocess(process_args):
 loop = asyncio.get_event_loop()
 
 for config_set in run_set:
-    print(B+"Running {}".format(config_set['name'])+W)
+    print(C+"Running {} in output directory {}".format(config_set['name'], str(base_output_dir))+W)
 
     config_parser = configparser.ConfigParser()
     config_parser.optionxform = lambda option: option
@@ -319,10 +381,7 @@ for config_set in run_set:
     for key, value in config_set['override'].items():
         config_parser['config'][key] = value
 
-    if args.writemode == True:
-        output_dir = str(test_data_dir / config_set['name'])
-    else:
-        output_dir = str(base_output_dir / config_set['name'])
+    output_dir = str(base_output_dir / config_set['name'])
 
     config_parser['config']['results_path'] = output_dir
 
@@ -349,17 +408,16 @@ for config_set in run_set:
         log_result(config_set['name'], G+"Finished running {} ended correctly".format(
             config_set['name'], returncode)+W)
 
-        if args.writemode == False:
-            # check output data if we have a result evaluation function
-            if config_set['compare_func'] is not None:
-                compare_func = config_set['compare_func']
-                compare_parameters = config_set['compare_params']
-                compare_result = compare_func(
-                    config_set['name'], base_output_dir, test_data_dir, compare_parameters)
-                if compare_result:
-                    log_result(config_set['name'], G+"data check passed"+W)
-                else:
-                    log_result(config_set['name'], R+"data check failed"+W)
+        # check output data if we have a result evaluation function
+        if config_set['compare_func'] is not None:
+            compare_func = config_set['compare_func']
+            compare_parameters = config_set['compare_params']
+            compare_result = compare_func(
+                config_set['name'], base_output_dir, test_data_dir, compare_parameters)
+            if compare_result:
+                log_result(config_set['name'], G+"data check passed"+W)
+            else:
+                log_result(config_set['name'], R+"data check failed"+W)
 
     else:
         log_result(config_set['name'], R+"Finished running {} failed with return code: ".format(
