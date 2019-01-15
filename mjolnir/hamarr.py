@@ -297,8 +297,6 @@ def regrid(resultsf,simID,ntsi,nts,res_deg=0.5,nlev=40,pscale='log',overwrite=Fa
     d_lon = np.shape(loni)
     tsp = output.nts-output.ntsi+1
 
-    import pdb; pdb.set_trace()
-
     Temp_icoh = output.Pressure/(input.Rd*output.Rho)
     interpx = (grid.Altitude-grid.Altitudeh[:-1])/(grid.Altitudeh[1:]-grid.Altitudeh[:-1])
     # on even height grid, interpolation is excessive, but wth?

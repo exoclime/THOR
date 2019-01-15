@@ -50,6 +50,7 @@
 #include "phy/profx_auxiliary.h"
 #include "phy/profx_conservation.h"
 #include "phy/profx_deepHJ.h"
+#include "phy/profx_gwave_test.h"
 #include "phy/profx_held_suarez.h"
 #include "phy/profx_shallowHJ.h"
 #include "phy/profx_sponge.h"
@@ -253,7 +254,20 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
                                        point_num);
         }
     }
-
+    else if (core_benchmark == GWAVE_TEST) {
+        if (current_step == 1) {
+            gwave_test<<<NB, NTH>>>(pressure_d,
+                                    Rho_d,
+                                    temperature_d,
+                                    sim.Rd,
+                                    sim.Cp,
+                                    sim.P_Ref,
+                                    Altitude_d,
+                                    lonlat_d,
+                                    sim.Top_altitude,
+                                    point_num);
+        }
+    }
     BENCH_POINT_I_PHY(current_step, "phy_core_benchmark", (), ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"))
 
     if (phy_modules_execute) {

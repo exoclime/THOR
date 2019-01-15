@@ -105,5 +105,6 @@ enum benchmark_types {
     SHALLOW_HOT_JUPITER  = 3,
     DEEP_HOT_JUPITER     = 4,
     JET_STEADY           = 5,
-    ACOUSTIC_TEST        = 6
+    ACOUSTIC_TEST        = 6,
+    GWAVE_TEST           = 7
 };
