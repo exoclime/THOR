@@ -11,3 +11,5 @@
  * fixed pot temp update error in Density_Pressure_Eqs_Poles *major*
  * started generalizing plot functions in hamarr to make adding new quantities easier
  * added acoustic wave experiment from Tomita & Satoh 2004
+ * added gravity wave experiment from Tomita & Satoh 2004
+ 
