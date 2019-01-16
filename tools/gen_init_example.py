@@ -14,7 +14,7 @@ base_file = {'name': 'gen_ic_earth',
                           'vlevel': '20',
                           'rest': 'true'},
              'status': 0,
-             'vertical_file': 'ifile/TPprof_Earth_N1e-2.dat'}
+             'vertical_file': 'tools/TPprof_Earth_N1e-2.dat'}
 
 #run to make thor generate the h5 files
 ic.gen_h5_files(base_file)
