@@ -282,6 +282,9 @@ int main(int argc, char** argv) {
 
     config_reader.append_config_var("TPprof", sim.TPprof, TPprof_default);
 
+    // string TPprof_file = "TPprof_Earth.dat";
+    // config_reader.append_config_var("TPprof_file", TPprof_file, string(TPprof_file_default));
+
     config_reader.append_config_var("conservation", sim.conservation, conservation_default);
     //*****************************************************************
     // read configs for modules

@@ -339,28 +339,28 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                                                   + 0.035974396 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
                                                   + 0.0025740066 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil;
                 }
-                else if (core_benchmark == GWAVE_TEST) {
-                    double logP, T;
-                    double z = Altitude_h[lev];
-
-                    // polyfits for p and T
-
-                    logP = -1.37612360e-43 * pow(z, 10) + 2.00798224e-38 * pow(z, 9)
-                           - 1.24246778e-33 * pow(z, 8) + 4.23036939e-29 * pow(z, 7)
-                           - 8.62759777e-25 * pow(z, 6) + 1.07412969e-20 * pow(z, 5)
-                           - 8.01672225e-17 * pow(z, 4) + 3.22105391e-13 * pow(z, 3)
-                           - 1.21896813e-09 * pow(z, 2) - 4.89605492e-05 * z + 4.99996357e+00;
-
-                    pressure_h[i * nv + lev] = pow(10, logP);
-
-                    T = -4.33142273e-43 * pow(z, 10) + 6.77155131e-38 * pow(z, 9)
-                        - 4.43671732e-33 * pow(z, 8) + 1.58585968e-28 * pow(z, 7)
-                        - 3.36951404e-24 * pow(z, 6) + 4.34779036e-20 * pow(z, 5)
-                        - 3.33483209e-16 * pow(z, 4) + 1.30739555e-12 * pow(z, 3)
-                        - 3.70525988e-08 * pow(z, 2) - 6.68791954e-03 * z + 2.99999835e+02;
-
-                    temperature_h[i * nv + lev] = T;
-                }
+                // else if (core_benchmark == GWAVE_TEST) {
+                //     double logP, T;
+                //     double z = Altitude_h[lev];
+                //
+                //     // polyfits for p and T
+                //
+                //     logP = -1.37612360e-43 * pow(z, 10) + 2.00798224e-38 * pow(z, 9)
+                //            - 1.24246778e-33 * pow(z, 8) + 4.23036939e-29 * pow(z, 7)
+                //            - 8.62759777e-25 * pow(z, 6) + 1.07412969e-20 * pow(z, 5)
+                //            - 8.01672225e-17 * pow(z, 4) + 3.22105391e-13 * pow(z, 3)
+                //            - 1.21896813e-09 * pow(z, 2) - 4.89605492e-05 * z + 4.99996357e+00;
+                //
+                //     pressure_h[i * nv + lev] = pow(10, logP);
+                //
+                //     T = -4.33142273e-43 * pow(z, 10) + 6.77155131e-38 * pow(z, 9)
+                //         - 4.43671732e-33 * pow(z, 8) + 1.58585968e-28 * pow(z, 7)
+                //         - 3.36951404e-24 * pow(z, 6) + 4.34779036e-20 * pow(z, 5)
+                //         - 3.33483209e-16 * pow(z, 4) + 1.30739555e-12 * pow(z, 3)
+                //         - 3.70525988e-08 * pow(z, 2) - 6.68791954e-03 * z + 2.99999835e+02;
+                //
+                //     temperature_h[i * nv + lev] = T;
+                // }
                 else {
                     if (sim.TPprof == 0) {
                         temperature_h[i * nv + lev] = sim.Tmean;

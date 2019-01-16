@@ -90,12 +90,12 @@ NonHydro = true
 DeepModel = true
 
 # Initial conditions
-rest = true
+rest = false
 
 # initial conditions file, used if rest is set to false
 # (path relative to current working directory)
 # defaults to 'ifile/esp_initial.h5'
-initial =ifile/esp_initial.h5
+initial = ic_special/gen_ic_earth/esp_initial.h5
 
 # Core benchmark tests
 # Held-Suarez test for Earth == HeldSuarez
