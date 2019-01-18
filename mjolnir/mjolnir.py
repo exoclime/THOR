@@ -9,6 +9,8 @@ from imp import reload
 reload(ham)
 import time
 import subprocess as spr
+import scipy.interpolate as interp
+
 
 first = time.time()
 ###########################################################################
@@ -54,7 +56,7 @@ args = parser.parse_args()
 pview = args.pview
 
 valid = ['uver','wver','wprof','Tver','Tulev','PTver','ulev','PVver','PVlev',
-            'TP','RVlev','cons','stream','pause','tracer','PTP','regrid','KE','SR','uprof']
+            'TP','RVlev','cons','stream','pause','tracer','PTP','regrid','KE','SR','uprof','cfl','dPW']
 
 rg_needed = ['Tver','uver','wver','Tulev','PTver','ulev','PVver','PVlev',
             'RVlev','stream','tracer','PTP','KE']  #these types need regrid
@@ -203,6 +205,22 @@ if 'wprof' in pview:  # RD: needs some work!
 if 'uprof' in pview:  # RD: needs some work!
     u = (-output.Mh[0]*np.sin(grid.lon[:,None,None])+output.Mh[1]*np.cos(grid.lon[:,None,None]))/output.Rho
     z = {'value': u, 'label':r'Zonal velocity (m s$^{-1}$)', 'name':'U' }
+    ham.profile(input,grid,output,z,stride=20)
+if 'cfl' in pview:
+    dt = output.time[0]/output.nstep[0]*86400
+    dx = np.sqrt(np.min(grid.areasT))
+    cs = np.sqrt(input.Cp/(input.Cp-input.Rd)*output.Pressure/output.Rho)
+    z = {'value': cs*dt/dx, 'label':'CFL number for (horizontal) acoustic waves', 'name':'CFL' }
+    ham.profile(input,grid,output,z,stride=20)
+if 'dPW' in pview:
+    x = grid.Altitude
+    x0 = grid.Altitudeh[:-1]
+    x1 = grid.Altitudeh[1:]
+    y0 = output.Wh[:,:-1,:]
+    y1 = output.Wh[:,1:,:]
+    W = (y0*(x1-x)[None,:,None]+y1*(x-x0)[None,:,None])/(x1-x0)[None,:,None]
+    dp = np.gradient(output.Pressure,axis=1)
+    z = {'value':  dp*W/output.Rho, 'label':r'$\Delta P W$', 'name':'dPW' }
     ham.profile(input,grid,output,z,stride=20)
 
 

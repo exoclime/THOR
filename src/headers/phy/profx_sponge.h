@@ -70,13 +70,21 @@ __global__ void zonal_v(double *M_d,
             lon = lonlat_d[id * 2] + 2.0 * M_PI;
         else
             lon = lonlat_d[id * 2];
-        u = (M_d[id * nv * 3 + lev * 3 + 0] * (-sin(lon)) + M_d[id * nv * 3 + lev * 3 + 1] * (cos(lon)) + M_d[id * nv * 3 + lev * 3 + 2] * 0) / rho;
+        u = (M_d[id * nv * 3 + lev * 3 + 0] * (-sin(lon))
+             + M_d[id * nv * 3 + lev * 3 + 1] * (cos(lon)) + M_d[id * nv * 3 + lev * 3 + 2] * 0)
+            / rho;
 
-        v = (M_d[id * nv * 3 + lev * 3 + 0] * (-sin(lonlat_d[id * 2 + 1]) * cos(lon)) + M_d[id * nv * 3 + lev * 3 + 1] * (-sin(lonlat_d[id * 2 + 1]) * sin(lon)) + M_d[id * nv * 3 + lev * 3 + 2] * (cos(lonlat_d[id * 2 + 1]))) / rho;
+        v = (M_d[id * nv * 3 + lev * 3 + 0] * (-sin(lonlat_d[id * 2 + 1]) * cos(lon))
+             + M_d[id * nv * 3 + lev * 3 + 1] * (-sin(lonlat_d[id * 2 + 1]) * sin(lon))
+             + M_d[id * nv * 3 + lev * 3 + 2] * (cos(lonlat_d[id * 2 + 1])))
+            / rho;
 
-        utmp[ind * nv * max_count + lev * max_count + zonal_mean_tab_d[id * 3 + 2]] = u / zonal_mean_tab_d[id * 3 + 1];
-        vtmp[ind * nv * max_count + lev * max_count + zonal_mean_tab_d[id * 3 + 2]] = v / zonal_mean_tab_d[id * 3 + 1];
-        wtmp[ind * nv * max_count + lev * max_count + zonal_mean_tab_d[id * 3 + 2]] = (W_d[id * nv + lev] / rho) / zonal_mean_tab_d[id * 3 + 1];
+        utmp[ind * nv * max_count + lev * max_count + zonal_mean_tab_d[id * 3 + 2]] =
+            u / zonal_mean_tab_d[id * 3 + 1];
+        vtmp[ind * nv * max_count + lev * max_count + zonal_mean_tab_d[id * 3 + 2]] =
+            v / zonal_mean_tab_d[id * 3 + 1];
+        wtmp[ind * nv * max_count + lev * max_count + zonal_mean_tab_d[id * 3 + 2]] =
+            (W_d[id * nv + lev] / rho) / zonal_mean_tab_d[id * 3 + 1];
     }
 }
 
@@ -85,7 +93,11 @@ void print_vbar(double *vbar_h, int nlat, int nv) {
 
     printf("\n");
     for (ind = 0; ind < nlat; ind++) {
-        printf("%d, %g, %g, %g\n", ind, vbar_h[ind * nv * 3 + lev * 3 + 0], vbar_h[ind * nv * 3 + lev * 3 + 1], vbar_h[ind * nv * 3 + lev * 3 + 2]);
+        printf("%d, %g, %g, %g\n",
+               ind,
+               vbar_h[ind * nv * 3 + lev * 3 + 0],
+               vbar_h[ind * nv * 3 + lev * 3 + 1],
+               vbar_h[ind * nv * 3 + lev * 3 + 2]);
     }
 }
 
@@ -157,32 +169,41 @@ __global__ void sponge_layer(double *M_d,
                 intt = (lat - lat2) / (lat1 - lat2);
                 intl = (lat - lat1) / (lat2 - lat1);
 
-                vbu = vbar_d[(intlat - 1) * nv * 3 + lev * 3 + 0] * intt + vbar_d[intlat * nv * 3 + lev * 3 + 0] * intl;
-                vbv = vbar_d[(intlat - 1) * nv * 3 + lev * 3 + 1] * intt + vbar_d[intlat * nv * 3 + lev * 3 + 1] * intl;
-                vbw = vbar_d[(intlat - 1) * nv * 3 + lev * 3 + 2] * intt + vbar_d[intlat * nv * 3 + lev * 3 + 2] * intl;
+                vbu = vbar_d[(intlat - 1) * nv * 3 + lev * 3 + 0] * intt
+                      + vbar_d[intlat * nv * 3 + lev * 3 + 0] * intl;
+                vbv = vbar_d[(intlat - 1) * nv * 3 + lev * 3 + 1] * intt
+                      + vbar_d[intlat * nv * 3 + lev * 3 + 1] * intl;
+                vbw = vbar_d[(intlat - 1) * nv * 3 + lev * 3 + 2] * intt
+                      + vbar_d[intlat * nv * 3 + lev * 3 + 2] * intl;
             }
             else if (lat >= lat2 && lat < lat3) {
 
                 intt = (lat - lat3) / (lat2 - lat3);
                 intl = (lat - lat2) / (lat3 - lat2);
 
-                vbu = vbar_d[(intlat)*nv * 3 + lev * 3 + 0] * intt + vbar_d[(intlat + 1) * nv * 3 + lev * 3 + 0] * intl;
-                vbv = vbar_d[(intlat)*nv * 3 + lev * 3 + 1] * intt + vbar_d[(intlat + 1) * nv * 3 + lev * 3 + 1] * intl;
-                vbw = vbar_d[(intlat)*nv * 3 + lev * 3 + 2] * intt + vbar_d[(intlat + 1) * nv * 3 + lev * 3 + 2] * intl;
+                vbu = vbar_d[(intlat)*nv * 3 + lev * 3 + 0] * intt
+                      + vbar_d[(intlat + 1) * nv * 3 + lev * 3 + 0] * intl;
+                vbv = vbar_d[(intlat)*nv * 3 + lev * 3 + 1] * intt
+                      + vbar_d[(intlat + 1) * nv * 3 + lev * 3 + 1] * intl;
+                vbw = vbar_d[(intlat)*nv * 3 + lev * 3 + 2] * intt
+                      + vbar_d[(intlat + 1) * nv * 3 + lev * 3 + 2] * intl;
             }
             double kv;
 
-            u = (M_d[id * nv * 3 + lev * 3 + 0] * (-sin(lon)) + M_d[id * nv * 3 + lev * 3 + 1] * (cos(lon)) + M_d[id * nv * 3 + lev * 3 + 2] * 0) / rho;
+            u = (M_d[id * nv * 3 + lev * 3 + 0] * (-sin(lon))
+                 + M_d[id * nv * 3 + lev * 3 + 1] * (cos(lon)) + M_d[id * nv * 3 + lev * 3 + 2] * 0)
+                / rho;
 
-            v = (M_d[id * nv * 3 + lev * 3 + 0] * (-sin(lonlat_d[id * 2 + 1]) * cos(lon)) + M_d[id * nv * 3 + lev * 3 + 1] * (-sin(lonlat_d[id * 2 + 1]) * sin(lon)) + M_d[id * nv * 3 + lev * 3 + 2] * (cos(lonlat_d[id * 2 + 1]))) / rho;
+            v = (M_d[id * nv * 3 + lev * 3 + 0] * (-sin(lonlat_d[id * 2 + 1]) * cos(lon))
+                 + M_d[id * nv * 3 + lev * 3 + 1] * (-sin(lonlat_d[id * 2 + 1]) * sin(lon))
+                 + M_d[id * nv * 3 + lev * 3 + 2] * (cos(lonlat_d[id * 2 + 1])))
+                / rho;
             ;
 
             w = W_d[id * nv + lev] / rho;
 
             n = Altitude_d[lev] / ztop;
-            if (n >= ns) {
-                kv = Rv * pow(sin(0.5 * M_PI * (n - ns) * (1.0) / (1.0 - ns)), 2.0);
-            }
+            if (n >= ns) { kv = Rv * pow(sin(0.5 * M_PI * (n - ns) * (1.0) / (1.0 - ns)), 2.0); }
             else {
                 kv = 0.0;
             }

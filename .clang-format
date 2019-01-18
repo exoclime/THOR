@@ -68,7 +68,7 @@ BreakStringLiterals: true
 # limit of lign break
 # 0: no limit
 # the original code, didn't always use it (used for function calls and declarations, not for formulas), should we use one?
-ColumnLimit: 0
+ColumnLimit: 100
 
 # CommentPragmas: str
 CompactNamespaces: true

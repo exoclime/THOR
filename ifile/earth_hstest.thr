@@ -50,9 +50,6 @@ Tmean = 300.0
 # Reference surface pressure [Pa] (pressure at bottom of model)
 P_ref = 100000.0
 
-# Initialize atmosphere with Guillot TP profile (0 = isothermal)?
-TPprof = 0
-
 
 #-- Grid options -------------------------------------------------------------#
 # Altitude of the top of the model domain [m]

@@ -734,6 +734,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                                      sim.DeepModel);
 
             cudaDeviceSynchronize();
+            BENCH_POINT_I_SS(current_step, rk, ns, "Density_Pressure_Eqs", (), ("pressures_d", "Rhos_d"))
             // Updates: pressures_d, Rhos_d
             Density_Pressure_Eqs_Poles<6><<<2, 1>>>(pressures_d,
                                                     pressurek_d,
@@ -760,7 +761,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                                     nv,
                                                     sim.DeepModel);
 
-            BENCH_POINT_I_SS(current_step, rk, ns, "Density_Pressure_Eqs", (), ("pressures_d", "Rhos_d"))
+            BENCH_POINT_I_SS(current_step, rk, ns, "Density_Pressure_Eqs_Poles", (), ("pressures_d", "Rhos_d"))
         }
         BENCH_POINT_I_S_PHY(current_step, rk, "bRK2", (), ("Rhos_d", "Rhok_d", "Mhs_d", "Mhk_d", "Whs_d", "Whk_d", "pressures_d", "pressurek_d"))
         //      Update quantities for the long loop.

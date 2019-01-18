@@ -130,9 +130,7 @@ __host__ ESP::ESP(int *           point_local_,
 
     // Set the physics module execute state for the rest of the lifetime of ESP object
     // only execute physics modules when no benchmarks are enabled
-    if (core_benchmark == NO_BENCHMARK) {
-        phy_modules_execute = true;
-    }
+    if (core_benchmark == NO_BENCHMARK) { phy_modules_execute = true; }
     else
         phy_modules_execute = false;
 
@@ -330,54 +328,26 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                     if (pressure_h[i * nv + lev] >= 1e5) {
                         Ptil = log10(pressure_h[i * nv + lev] / 100000);
                     }
-                    temperature_h[i * nv + lev] = 1696.6986 + 132.2318 * Ptil - 174.30459 * Ptil * Ptil
-                                                  + 12.579612 * Ptil * Ptil * Ptil + 59.513639 * Ptil * Ptil * Ptil * Ptil
-                                                  + 9.6706522 * Ptil * Ptil * Ptil * Ptil * Ptil
-                                                  - 4.1136048 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
-                                                  - 1.0632301 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
-                                                  + 0.064400203 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
-                                                  + 0.035974396 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
-                                                  + 0.0025740066 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil;
+                    temperature_h[i * nv + lev] =
+                        1696.6986 + 132.2318 * Ptil - 174.30459 * Ptil * Ptil
+                        + 12.579612 * Ptil * Ptil * Ptil + 59.513639 * Ptil * Ptil * Ptil * Ptil
+                        + 9.6706522 * Ptil * Ptil * Ptil * Ptil * Ptil
+                        - 4.1136048 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
+                        - 1.0632301 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
+                        + 0.064400203 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
+                        + 0.035974396 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
+                        + 0.0025740066 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
+                              * Ptil * Ptil;
                 }
-                // else if (core_benchmark == GWAVE_TEST) {
-                //     double logP, T;
-                //     double z = Altitude_h[lev];
-                //
-                //     // polyfits for p and T
-                //
-                //     logP = -1.37612360e-43 * pow(z, 10) + 2.00798224e-38 * pow(z, 9)
-                //            - 1.24246778e-33 * pow(z, 8) + 4.23036939e-29 * pow(z, 7)
-                //            - 8.62759777e-25 * pow(z, 6) + 1.07412969e-20 * pow(z, 5)
-                //            - 8.01672225e-17 * pow(z, 4) + 3.22105391e-13 * pow(z, 3)
-                //            - 1.21896813e-09 * pow(z, 2) - 4.89605492e-05 * z + 4.99996357e+00;
-                //
-                //     pressure_h[i * nv + lev] = pow(10, logP);
-                //
-                //     T = -4.33142273e-43 * pow(z, 10) + 6.77155131e-38 * pow(z, 9)
-                //         - 4.43671732e-33 * pow(z, 8) + 1.58585968e-28 * pow(z, 7)
-                //         - 3.36951404e-24 * pow(z, 6) + 4.34779036e-20 * pow(z, 5)
-                //         - 3.33483209e-16 * pow(z, 4) + 1.30739555e-12 * pow(z, 3)
-                //         - 3.70525988e-08 * pow(z, 2) - 6.68791954e-03 * z + 2.99999835e+02;
-                //
-                //     temperature_h[i * nv + lev] = T;
-                // }
                 else {
-                    if (sim.TPprof == 0) {
-                        temperature_h[i * nv + lev] = sim.Tmean;
-                    }
-                    else if (sim.TPprof == 1) {
-                        // RD comment: this doesn't work very often, prob because pressure is inconsistent! Needs updating!
-                        double tau                  = pressure_h[i * nv + lev] / (1e4); //tau = 1 at 0.1 bar
-                        double gamma                = 0.6;                              // ratio of sw to lw opacity
-                        double f                    = 0.25;
-                        temperature_h[i * nv + lev] = pow(3 * sim.Tmean * sim.Tmean * sim.Tmean * sim.Tmean * f * (2 / 3 + 1 / (gamma * sqrt(3)) + (gamma / sqrt(3) - 1 / (gamma * sqrt(3))) * exp(-gamma * tau * sqrt(3))), 0.25);
-                    }
+                    temperature_h[i * nv + lev] = sim.Tmean;
                 }
             }
 
             for (int lev = 0; lev < nv; lev++) {
                 //              Density [kg/m3]
-                Rho_h[i * nv + lev] = pressure_h[i * nv + lev] / (temperature_h[i * nv + lev] * sim.Rd);
+                Rho_h[i * nv + lev] =
+                    pressure_h[i * nv + lev] / (temperature_h[i * nv + lev] * sim.Rd);
 
                 //              Momentum [kg/m3 m/s]
                 Mh_h[i * 3 * nv + 3 * lev + 0] = 0.0;
@@ -398,10 +368,14 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
             dim3 NB((point_num / NTH) + 1, nv, 1);
 
             cudaMemcpy(Altitude_d, Altitude_h, nv * sizeof(double), cudaMemcpyHostToDevice);
-            cudaMemcpy(pressure_d, pressure_h, point_num * nv * sizeof(double), cudaMemcpyHostToDevice);
+            cudaMemcpy(
+                pressure_d, pressure_h, point_num * nv * sizeof(double), cudaMemcpyHostToDevice);
             cudaMemcpy(Mh_d, Mh_h, 3 * point_num * nv * sizeof(double), cudaMemcpyHostToDevice);
             cudaMemcpy(Rho_d, Rho_h, point_num * nv * sizeof(double), cudaMemcpyHostToDevice);
-            cudaMemcpy(temperature_d, temperature_h, point_num * nv * sizeof(double), cudaMemcpyHostToDevice);
+            cudaMemcpy(temperature_d,
+                       temperature_h,
+                       point_num * nv * sizeof(double),
+                       cudaMemcpyHostToDevice);
             cudaMemcpy(lonlat_d, lonlat_h, 2 * point_num * sizeof(double), cudaMemcpyHostToDevice);
             setup_jet<<<NB, NTH>>>(Mh_d,
                                    // setup_jet <<< 1, 1 >>>  (Mh_d,
@@ -417,8 +391,12 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                                    point_num);
 
             cudaMemcpy(Mh_h, Mh_d, 3 * point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
-            cudaMemcpy(temperature_h, temperature_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
-            cudaMemcpy(pressure_h, pressure_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+            cudaMemcpy(temperature_h,
+                       temperature_d,
+                       point_num * nv * sizeof(double),
+                       cudaMemcpyDeviceToHost);
+            cudaMemcpy(
+                pressure_h, pressure_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
             cudaMemcpy(Rho_h, Rho_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
         }
 
@@ -437,9 +415,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
         // Reload correct file if we are continuing from a specific file
         if (continue_sim) {
-            if (!match_output_file_numbering_scheme(initial_conditions_filename,
-                                                    basename,
-                                                    file_number)) {
+            if (!match_output_file_numbering_scheme(
+                    initial_conditions_filename, basename, file_number)) {
                 log::printf("Loading initial conditions: "
                             "Could not recognise file numbering scheme "
                             "for input %s: (found base: %s, num: %d) \n",
@@ -459,7 +436,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
         // check existence of files
         if (!path_exists(initial_conditions_filename)) {
-            log::printf("initial condition file %s not found.\n", initial_conditions_filename.c_str());
+            log::printf("initial condition file %s not found.\n",
+                        initial_conditions_filename.c_str());
             return false;
         }
 
@@ -499,7 +477,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
 
                 if (value != element.second) {
-                    log::printf("mismatch for %s value between config value: %f and initial condition value %f.\n",
+                    log::printf("mismatch for %s value between config value: %f and initial "
+                                "condition value %f.\n",
                                 element.first.c_str(),
                                 element.second,
                                 value);
@@ -518,7 +497,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 }
 
                 if (value != element.second) {
-                    log::printf("mismatch for %s value between config value: %d and initial condition value %d.\n",
+                    log::printf("mismatch for %s value between config value: %d and initial "
+                                "condition value %d.\n",
                                 element.first.c_str(),
                                 element.second,
                                 value);
@@ -572,7 +552,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
         for (int i = 0; i < point_num; i++)
             for (int lev = 0; lev < nv; lev++)
-                temperature_h[i * nv + lev] = pressure_h[i * nv + lev] / (sim.Rd * Rho_h[i * nv + lev]);
+                temperature_h[i * nv + lev] =
+                    pressure_h[i * nv + lev] / (sim.Rd * Rho_h[i * nv + lev]);
 
         for (int i = 0; i < point_num; i++) {
             for (int lev = 0; lev < nv; lev++) {
@@ -609,7 +590,10 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
     //  Copy memory to the device
     cudaMemcpy(point_local_d, point_local_h, 6 * point_num * sizeof(int), cudaMemcpyHostToDevice);
-    cudaMemcpy(maps_d, maps_h, (nl_region + 2) * (nl_region + 2) * nr * sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpy(maps_d,
+               maps_h,
+               (nl_region + 2) * (nl_region + 2) * nr * sizeof(int),
+               cudaMemcpyHostToDevice);
     cudaMemcpy(Altitude_d, Altitude_h, nv * sizeof(double), cudaMemcpyHostToDevice);
     cudaMemcpy(Altitudeh_d, Altitudeh_h, nvi * sizeof(double), cudaMemcpyHostToDevice);
     cudaMemcpy(nvecoa_d, nvecoa_h, 6 * 3 * point_num * sizeof(double), cudaMemcpyHostToDevice);
@@ -619,7 +603,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
     cudaMemcpy(areasT_d, areasT_h, point_num * sizeof(double), cudaMemcpyHostToDevice);
     cudaMemcpy(lonlat_d, lonlat_h, 2 * point_num * sizeof(double), cudaMemcpyHostToDevice);
     cudaMemcpy(func_r_d, func_r_h, 3 * point_num * sizeof(double), cudaMemcpyHostToDevice);
-    cudaMemcpy(temperature_d, temperature_h, point_num * nv * sizeof(double), cudaMemcpyHostToDevice);
+    cudaMemcpy(
+        temperature_d, temperature_h, point_num * nv * sizeof(double), cudaMemcpyHostToDevice);
     cudaMemcpy(Mh_d, Mh_h, point_num * nv * 3 * sizeof(double), cudaMemcpyHostToDevice);
     cudaMemcpy(W_d, W_h, point_num * nv * sizeof(double), cudaMemcpyHostToDevice);
     cudaMemcpy(Wh_d, Wh_h, point_num * nvi * sizeof(double), cudaMemcpyHostToDevice);
@@ -631,7 +616,10 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
     cudaMemcpy(Kdh4_d, Kdh4_h, nv * sizeof(double), cudaMemcpyHostToDevice);
 
     if (sim.SpongeLayer == true)
-        cudaMemcpy(zonal_mean_tab_d, zonal_mean_tab_h, 3 * point_num * sizeof(int), cudaMemcpyHostToDevice);
+        cudaMemcpy(zonal_mean_tab_d,
+                   zonal_mean_tab_h,
+                   3 * point_num * sizeof(int),
+                   cudaMemcpyHostToDevice);
 
     //  Initialize arrays
     cudaMemset(Adv_d, 0, sizeof(double) * 3 * point_num * nv);
@@ -818,8 +806,7 @@ __host__ ESP::~ESP() {
     cudaFree(wtmp);
 
 
-    if (phy_modules_execute)
-        phy_modules_free_mem();
+    if (phy_modules_execute) phy_modules_free_mem();
 
 
     log::printf("\n\n Free memory!\n\n");

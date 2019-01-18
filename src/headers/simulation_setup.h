@@ -89,8 +89,6 @@ public:
     bool gcm_off;
 
     bool rest;
-    int TPprof;
-    
 
     SimulationSetup();
 };

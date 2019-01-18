@@ -12,4 +12,5 @@
  * started generalizing plot functions in hamarr to make adding new quantities easier
  * added acoustic wave experiment from Tomita & Satoh 2004
  * added gravity wave experiment from Tomita & Satoh 2004
- 
+ * added python scripts to allow editing of initial h5 files (preliminary)
+ * removed TPprof option, which didn't work as desired anyway
