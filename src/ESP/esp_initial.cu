@@ -578,13 +578,25 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
     //  Diffusion
     //  Horizontal
     double *Kdhz_h, *Kdh4_h;
-    Kdhz_h = new double[nv];
-    Kdh4_h = new double[nv];
+    Kdhz_h = new double[nv]; // horizontal divergence damping strength
+    Kdh4_h = new double[nv]; // horizontal diffusion strength
     for (int lev = 0; lev < nv; lev++) {
         //      Diffusion constant.
         double dbar = sqrt(2 * M_PI / 5) * sim.A / (pow(2, glevel));
         Kdh4_h[lev] = sim.Diffc * pow(dbar, 4.) / timestep_dyn;
         Kdhz_h[lev] = sim.Diffc * pow(dbar, 4.) / timestep_dyn;
+    }
+
+    //  Diffusion
+    //  Vertical
+    double *Kdvz_h, *Kdv6_h;
+    Kdvz_h = new double[nv]; // vertical divergence damping strength
+    Kdv6_h = new double[nv]; // vertical diffusion strength
+    for (int lev = 0; lev < nv; lev++) {
+        //      Diffusion constant.
+        double dbar = sqrt(2 * M_PI / 5) * sim.A / (pow(2, glevel));
+        Kdv6_h[lev] = sim.Diffc_v * pow(dbar, 6.) / timestep_dyn;
+        Kdvz_h[lev] = 0.0; //not used (yet?)
     }
 
 

@@ -218,6 +218,9 @@ int main(int argc, char** argv) {
     config_reader.append_config_var("Top_altitude", sim.Top_altitude, sim.Top_altitude);
     config_reader.append_config_var("Diffc", sim.Diffc, sim.Diffc);
 
+    // i'm going to try to add vertical diffusion!
+    config_reader.append_config_var("Diffc_v", sim.Diffc_v, sim.Diffc_v);
+
     // grid
     bool   spring_dynamics = true;
     int    glevel          = 4;

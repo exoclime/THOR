@@ -73,6 +73,7 @@ SimulationSetup::SimulationSetup() {
     P_Ref        = 10000000.0; // Reference surface pressure [Pa]
     Top_altitude = 1235376.0;  // Altitude of the top of the model domain [m]
     Diffc        = 0.009973;   // Strength of diffusion
+    Diffc_v      = 0.0;
 
     HyDiff   = true;
     DivDampP = true;

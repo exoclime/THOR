@@ -76,6 +76,7 @@ public:
     double P_Ref;
     double Top_altitude;
     double Diffc;
+    double Diffc_v;
 
     // Sim
     bool SpongeLayer; // Use sponge layer?

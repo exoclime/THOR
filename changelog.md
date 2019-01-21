@@ -13,4 +13,4 @@
  * added acoustic wave experiment from Tomita & Satoh 2004
  * added gravity wave experiment from Tomita & Satoh 2004
  * added python scripts to allow editing of initial h5 files (preliminary)
- * removed TPprof option, which didn't work as desired anyway
+ * removed TPprof option, which didn't work as desired anyway: users should use the python tools to edit initial h5 files if non-isothermal state is needed
