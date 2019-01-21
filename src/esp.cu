@@ -220,6 +220,8 @@ int main(int argc, char** argv) {
 
     // i'm going to try to add vertical diffusion!
     config_reader.append_config_var("Diffc_v", sim.Diffc_v, sim.Diffc_v);
+    // ... and separate div damping
+    config_reader.append_config_var("DivDampc", sim.DivDampc, sim.DivDampc);
 
     // grid
     bool   spring_dynamics = true;

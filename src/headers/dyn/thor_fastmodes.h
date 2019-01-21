@@ -213,7 +213,7 @@ __global__ void Momentum_Eq_Poles(double *M_d,
                                      + grad_p[3 * 1 + k] * pressure_p[1]
                                      + grad_p[3 * 2 + k] * pressure_p[2]
                                      + grad_p[3 * 3 + k] * pressure_p[3]
-                                     + grad_p[3 * 4 + k] * pressure_p[4] 
+                                     + grad_p[3 * 4 + k] * pressure_p[4]
                                      + grad_p[3 * 5 + k] * pressure_p[5]);
                 // clang-format on
             }
@@ -255,6 +255,7 @@ __global__ void Density_Pressure_Eqs(double *pressure_d,
                                      double *pth_d,
                                      double *SlowRho_d,
                                      double *diffpr_d,
+                                     double *diffprv_d,
                                      double *div_d,
                                      double *Altitude_d,
                                      double *Altitudeh_d,
@@ -440,8 +441,9 @@ __global__ void Density_Pressure_Eqs(double *pressure_d,
 
     // printf("***** (pt_small - pt_large) = %g \n*******",(pt-pt_s[ir]));
     // Updates pressure
-    p                         = P_Ref * pow(Rd * aux / P_Ref, Cp / Cv);
-    pressure_d[id * nv + lev] = p - pressurek_d[id * nv + lev] + diffpr_d[id * nv + lev] * dt;
+    p = P_Ref * pow(Rd * aux / P_Ref, Cp / Cv);
+    pressure_d[id * nv + lev] =
+        p - pressurek_d[id * nv + lev] + (diffpr_d[id * nv + lev] + diffprv_d[id * nv + lev]) * dt;
 
     // Updates density
     nflxr_s[iri] += dwdz;
@@ -464,6 +466,7 @@ __global__ void Density_Pressure_Eqs_Poles(double *pressure_d,
                                            double *pth_d,
                                            double *SlowRho_d,
                                            double *diffpr_d,
+                                           double *diffprv_d,
                                            double *div_d,
                                            double *Altitude_d,
                                            double *Altitudeh_d,
@@ -592,9 +595,9 @@ __global__ void Density_Pressure_Eqs_Poles(double *pressure_d,
             // aux += pt_d[id * nv + lev] * r;
 
             // Updates pressure
-            p = P_Ref * pow(Rd * aux / P_Ref, Cp / Cv);
-            pressure_d[id * nv + lev] =
-                p - pressurek_d[id * nv + lev] + diffpr_d[id * nv + lev] * dt;
+            p                         = P_Ref * pow(Rd * aux / P_Ref, Cp / Cv);
+            pressure_d[id * nv + lev] = p - pressurek_d[id * nv + lev]
+                                        + (diffpr_d[id * nv + lev] + diffprv_d[id * nv + lev]) * dt;
 
             // if (isnan(pressure_d[id * nv + lev])) {
             //     printf("(id, lev) = (%d, %d)", id, lev);

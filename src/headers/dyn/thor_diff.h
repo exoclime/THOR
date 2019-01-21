@@ -552,14 +552,14 @@ __global__ void Diffusion_Op_Poles(double* diffmh_d,
     }
 }
 
-__global__ void Correct_Horizontal(double* diffmh_d, double* func_r_d, int num) {
+__global__ void Correct_Horizontal(double* diffmh_d, double* diffmv_d, double* func_r_d, int num) {
     //this function removes any spurious vertical compenent in horizontal momentum
     int id  = blockIdx.x * blockDim.x + threadIdx.x;
     int nv  = gridDim.y;
     int lev = blockIdx.y;
 
     if (id < num) {
-        double dmhr;
+        double dmhr, dmvr;
         dmhr = func_r_d[id * 3 + 0] * diffmh_d[id * nv * 3 + lev * 3 + 0]
                + func_r_d[id * 3 + 1] * diffmh_d[id * nv * 3 + lev * 3 + 1]
                + func_r_d[id * 3 + 2] * diffmh_d[id * nv * 3 + lev * 3 + 2];
@@ -567,118 +567,197 @@ __global__ void Correct_Horizontal(double* diffmh_d, double* func_r_d, int num) 
         diffmh_d[id * nv * 3 + lev * 3 + 0] += -func_r_d[id * 3 + 0] * dmhr;
         diffmh_d[id * nv * 3 + lev * 3 + 1] += -func_r_d[id * 3 + 1] * dmhr;
         diffmh_d[id * nv * 3 + lev * 3 + 2] += -func_r_d[id * 3 + 2] * dmhr;
+
+        dmvr = func_r_d[id * 3 + 0] * diffmv_d[id * nv * 3 + lev * 3 + 0]
+               + func_r_d[id * 3 + 1] * diffmv_d[id * nv * 3 + lev * 3 + 1]
+               + func_r_d[id * 3 + 2] * diffmv_d[id * nv * 3 + lev * 3 + 2];
+
+        diffmv_d[id * nv * 3 + lev * 3 + 0] += -func_r_d[id * 3 + 0] * dmvr;
+        diffmv_d[id * nv * 3 + lev * 3 + 1] += -func_r_d[id * 3 + 1] * dmvr;
+        diffmv_d[id * nv * 3 + lev * 3 + 2] += -func_r_d[id * 3 + 2] * dmvr;
     }
 }
 
-// __global__ void Diffusion_Op_Vert(double* diffmh_d,
-//                                   double* diffw_d,
-//                                   double* diffrh_d,
-//                                   double* diffpr_d,
-//                                   double* diff_d,
-//                                   double* Mh_d,
-//                                   double* Rho_d,
-//                                   double* temperature_d,
-//                                   double* W_d,
-//                                   double* areasTr_d,
-//                                   double* nvecoa_d,
-//                                   double* nvecti_d,
-//                                   double* nvecte_d,
-//                                   double* func_r_d,
-//                                   double* Kv_d,
-//                                   double* Altitude_d,
-//                                   double  A,
-//                                   double  Rd,
-//                                   int*    maps_d,
-//                                   int     nl_region,
-//                                   bool    step_num,
-//                                   bool    DeepModel) {
-//
-//     int id = blockIdx.x * blockDim.x + threadIdx.x;
-//     if (id < num) {
-//         int nv  = gridDim.y;
-//         int lev = blockIdx.y;
-//         int var = blockIdx.z;
-//
-//         /////////////////////////////////////////
-//         __shared__ double a_s[3];
-//         __shared__ double Rho_s[3];
-//         __shared__ double r_s[3];
-//         /////////////////////////////////////////
-//
-//         double dz;
-//
-//
-//         if (lev == 0) {
-//             // lowest level, must calc laplacian differently
-//         }
-//         else if (lev >= (nv - 1)) {
-//             // highest level, must calc laplacian differently
-//         }
-//         else {
-//             for (int ilev = 0; ilev < 3; ilev++) {
-//                 Rho_s[ilev] =
-//                     Rho_d[id * nv + lev - 1 + ilev]; // set density at level and above and below
-//                 r_s[ilev] = A + Altitude_d[lev - 1 + ilev];
-//             }
-//
-//             __syncthreads();
-//             for (ilev = 0; ilev < 3; ilev++) {
-//                 if (step_num == 0) {
-//                     // first time thru, arg is fluid property
-//                     if (var == 0)
-//                         a_s[ilev] = Rho_d[id * nv + lev - 1 + ilev];
-//                     else if (var == 1)
-//                         a_s[ilev] = Mh_d[id * nv * 3 + (lev - 1 + ilev) * 3 + 0] / Rho_s[ilev];
-//                     else if (var == 2)
-//                         a_s[ilev] = Mh_d[id * nv * 3 + (lev - 1 + ilev) * 3 + 1] / Rho_s[ilev];
-//                     else if (var == 3)
-//                         a_s[ilev] = Mh_d[id * nv * 3 + (lev - 1 + ilev) * 3 + 2] / Rho_s[ilev];
-//                     else if (var == 4)
-//                         a_s[ilev] = W_d[id * nv + lev - 1 + ilev] / Rho_s[ilev];
-//                     else if (var == 5)
-//                         a_s[ilev] = temperature_d[id * nv + lev - 1 + ilev];
-//                 }
-//                 else if (step_num == 1) {
-//                     // second time, argument is previous time's results
-//                     a_s[ilev] = diffv_d[id * nv * 6 + lev * 6 + var];
-//                 }
-//                 else if (step_num == 2) {
-//                     // third time, argument is previous time's result * diffc * rho
-//                     a_s[ilev] = -Kv_d[lev] * diffv_d[id * nv * 6 + lev * 6 + var];
-//                     if (var > 0) a_s[ilev] *= Rho_s[ilev];
-//                     if (var == 5) a_s[ilev] *= Rd;
-//                 }
-//                 if (DeepModel) a_s[ilev] *= r_s[ilev];
-//             }
-//
-//             __syncthreads();
-//             // grid spacing in vertical
-//             dz = Altitude_d[lev + 1] - Altitude_d[lev];
-//
-//             // now, calculate vertical laplacian term
-//             lapl = (a_s[2] - 2.0 * a_s[1] + a_s[0]) / pow(dz, 2);
-//             if (DeepModel) lapl *= 1.0 / r_s[ilev];
-//
-//             if (step_num < 2) {
-//                 diffv_d[id * nv * 6 + lev * 6 + var] = lapl; //
-//             }
-//             else if (step_num == 2) {
-//                 if (var == 0) diffrv_d[id * nv + lev] = lap;
-//                 if (var == 1) diffmv_d[id * nv * 3 + lev * 3 + 0] = lap;
-//                 if (var == 2) diffmv_d[id * nv * 3 + lev * 3 + 1] = lap;
-//                 if (var == 3) {
-//                     funcx = func_r_d[id * 3 + 0];
-//                     funcy = func_r_d[id * 3 + 1];
-//                     funcz = func_r_d[id * 3 + 2];
-//                     dmvz  = lap;
-//                     dmvr  = funcx * diffmv_d[id * nv * 3 + lev * 3 + 0]
-//                            + funcy * diffmv_d[id * nv * 3 + lev * 3 + 1] + funcz * dmvz;
-//                     diffmv_d[id * nv * 3 + lev * 3 + 0] += -funcx * dmvr;
-//                     diffmv_d[id * nv * 3 + lev * 3 + 1] += -funcy * dmvr;
-//                     diffmv_d[id * nv * 3 + lev * 3 + 2] = dmvz - funcz * dmvr;
-//                 }
-//                 if (var == 4) diffw_d[id * nv + lev] = lap;
-//                 if (var == 5) diffpr_d[id * nv + lev] = lap;
-//             }
-//         }
-//     }
+__global__ void Diffusion_Op_Vert(double* diffmv_d,
+                                  double* diffwv_d,
+                                  double* diffrv_d,
+                                  double* diffprv_d,
+                                  double* diffv_d,
+                                  double* Mh_d,
+                                  double* Rho_d,
+                                  double* temperature_d,
+                                  double* W_d,
+                                  double* func_r_d,
+                                  double* Kv_d,
+                                  double* Altitude_d,
+                                  double  A,
+                                  double  Rd,
+                                  int     num,
+                                  bool    step_num,
+                                  bool    DeepModel) {
+
+    int id = blockIdx.x * blockDim.x + threadIdx.x;
+    if (id < num) {
+        int nv  = gridDim.y;
+        int lev = blockIdx.y;
+        int var = blockIdx.z;
+
+        /////////////////////////////////////////
+        __shared__ double a_s[3];
+        __shared__ double Rho_s[3];
+        __shared__ double r_s[3];
+        /////////////////////////////////////////
+
+        double dz, lapl;
+        int    ilev;
+        double zextr, ext0, ext1;
+
+        for (ilev = 0; ilev < 3; ilev++) {
+            if (lev == 0 && ilev == 0) {
+                // lowest level, must calc laplacian differently
+                zextr = 2 * Altitude_d[lev] - Altitude_d[lev + 1];
+                ext0  = (Altitude_d[lev] - zextr) / (Altitude_d[lev] - Altitude_d[lev + 1]);
+                ext1  = (zextr - Altitude_d[lev + 1]) / (Altitude_d[lev] - Altitude_d[lev + 1]);
+
+                Rho_s[ilev] =
+                    Rho_d[id * nv + lev + 1] * ext0
+                    + Rho_d[id * nv + lev] * ext1; // set density at level and above and below
+                r_s[ilev] = A + zextr;
+            }
+            else if (lev == (nv - 1) && ilev == 2) {
+                // highest level, must calc laplacian differently
+                zextr = 2 * Altitude_d[lev] - Altitude_d[lev - 1];
+                ext0  = (Altitude_d[lev] - zextr) / (Altitude_d[lev] - Altitude_d[lev - 1]);
+                ext1  = (zextr - Altitude_d[lev - 1]) / (Altitude_d[lev] - Altitude_d[lev - 1]);
+
+                Rho_s[ilev] =
+                    Rho_d[id * nv + lev - 1] * ext0
+                    + Rho_d[id * nv + lev] * ext1; // set density at level and above and below
+                r_s[ilev] = A + zextr;
+            }
+            else {
+                Rho_s[ilev] =
+                    Rho_d[id * nv + lev - 1 + ilev]; // set density at level and above and below
+                r_s[ilev] = A + Altitude_d[lev - 1 + ilev];
+            }
+        }
+
+        __syncthreads();
+        for (ilev = 0; ilev < 3; ilev++) {
+            if (step_num == 0) {
+                if (lev == 0 && ilev == 0) {
+                    if (var == 0)
+                        a_s[ilev] = Rho_d[id * nv + lev + 1] * ext0 + Rho_d[id * nv + lev] * ext1;
+                    else if (var == 1)
+                        a_s[ilev] = (Mh_d[id * nv * 3 + (lev + 1) * 3 + 0] * ext0
+                                     + Mh_d[id * nv * 3 + (lev)*3 + 0] * ext1)
+                                    / Rho_s[ilev];
+                    else if (var == 2)
+                        a_s[ilev] = (Mh_d[id * nv * 3 + (lev + 1) * 3 + 1] * ext0
+                                     + Mh_d[id * nv * 3 + (lev)*3 + 1] * ext1)
+                                    / Rho_s[ilev];
+                    else if (var == 3)
+                        a_s[ilev] = (Mh_d[id * nv * 3 + (lev + 1) * 3 + 2] * ext0
+                                     + Mh_d[id * nv * 3 + (lev)*3 + 2] * ext1)
+                                    / Rho_s[ilev];
+                    else if (var == 4)
+                        a_s[ilev] = (W_d[id * nv + lev + 1] * ext0 + W_d[id * nv + lev] * ext1)
+                                    / Rho_s[ilev];
+                    else if (var == 5)
+                        a_s[ilev] = temperature_d[id * nv + lev + 1] * ext0
+                                    + temperature_d[id * nv + lev] * ext1;
+                }
+                else if (lev == (nv - 1) && ilev == 2) {
+                    if (var == 0)
+                        a_s[ilev] = Rho_d[id * nv + lev - 1] * ext0 + Rho_d[id * nv + lev] * ext1;
+                    else if (var == 1)
+                        a_s[ilev] = (Mh_d[id * nv * 3 + (lev - 1) * 3 + 0] * ext0
+                                     + Mh_d[id * nv * 3 + (lev)*3 + 0] * ext1)
+                                    / Rho_s[ilev];
+                    else if (var == 2)
+                        a_s[ilev] = (Mh_d[id * nv * 3 + (lev - 1) * 3 + 1] * ext0
+                                     + Mh_d[id * nv * 3 + (lev)*3 + 1] * ext1)
+                                    / Rho_s[ilev];
+                    else if (var == 3)
+                        a_s[ilev] = (Mh_d[id * nv * 3 + (lev - 1) * 3 + 2] * ext0
+                                     + Mh_d[id * nv * 3 + (lev)*3 + 2] * ext1)
+                                    / Rho_s[ilev];
+                    else if (var == 4)
+                        a_s[ilev] = (W_d[id * nv + lev - 1] * ext0 + W_d[id * nv + lev] * ext1)
+                                    / Rho_s[ilev];
+                    else if (var == 5)
+                        a_s[ilev] = temperature_d[id * nv + lev - 1] * ext0
+                                    + temperature_d[id * nv + lev] * ext1;
+                }
+                else {
+                    // first time thru, arg is fluid property
+                    if (var == 0)
+                        a_s[ilev] = Rho_d[id * nv + lev - 1 + ilev];
+                    else if (var == 1)
+                        a_s[ilev] = Mh_d[id * nv * 3 + (lev - 1 + ilev) * 3 + 0] / Rho_s[ilev];
+                    else if (var == 2)
+                        a_s[ilev] = Mh_d[id * nv * 3 + (lev - 1 + ilev) * 3 + 1] / Rho_s[ilev];
+                    else if (var == 3)
+                        a_s[ilev] = Mh_d[id * nv * 3 + (lev - 1 + ilev) * 3 + 2] / Rho_s[ilev];
+                    else if (var == 4)
+                        a_s[ilev] = W_d[id * nv + lev - 1 + ilev] / Rho_s[ilev];
+                    else if (var == 5)
+                        a_s[ilev] = temperature_d[id * nv + lev - 1 + ilev];
+                }
+            }
+            else if (step_num == 1) {
+                // second time, argument is previous time's results
+                if (lev == 0 && ilev == 0) {
+                    a_s[ilev] = diffv_d[id * nv * 6 + (lev + 1) * 6 + var] * ext0
+                                + diffv_d[id * nv * 6 + (lev)*6 + var] * ext1;
+                }
+                else if (lev == (nv - 1) && ilev == 2) {
+                    a_s[ilev] = diffv_d[id * nv * 6 + (lev - 1) * 6 + var] * ext0
+                                + diffv_d[id * nv * 6 + (lev)*6 + var] * ext1;
+                }
+                else {
+                    a_s[ilev] = diffv_d[id * nv * 6 + lev * 6 + var];
+                }
+            }
+            else if (step_num == 2) {
+                // third time, argument is previous time's result * diffc * rho
+                if (lev == 0 && ilev == 0) {
+                    a_s[ilev] = -Kv_d[lev]
+                                * (diffv_d[id * nv * 6 + (lev + 1) * 6 + var] * ext0
+                                   + diffv_d[id * nv * 6 + (lev)*6 + var] * ext1);
+                }
+                else if (lev == (nv - 1) && ilev == 2) {
+                    a_s[ilev] = -Kv_d[lev]
+                                * (diffv_d[id * nv * 6 + (lev - 1) * 6 + var] * ext0
+                                   + diffv_d[id * nv * 6 + (lev)*6 + var] * ext1);
+                }
+                else {
+                    a_s[ilev] = -Kv_d[lev] * diffv_d[id * nv * 6 + lev * 6 + var];
+                }
+                if (var > 0) a_s[ilev] *= Rho_s[ilev];
+                if (var == 5) a_s[ilev] *= Rd;
+            }
+            if (DeepModel) a_s[ilev] *= r_s[ilev];
+        }
+
+        __syncthreads();
+        // grid spacing in vertical
+        dz = Altitude_d[lev + 1] - Altitude_d[lev];
+
+        // now, calculate vertical laplacian term
+        lapl = (a_s[2] - 2.0 * a_s[1] + a_s[0]) / pow(dz, 2);
+        if (DeepModel) lapl *= 1.0 / r_s[ilev];
+
+        if (step_num < 2) {
+            diffv_d[id * nv * 6 + lev * 6 + var] = lapl; //
+        }
+        else if (step_num == 2) {
+            if (var == 0) diffrv_d[id * nv + lev] = lapl;
+            if (var == 1) diffmv_d[id * nv * 3 + lev * 3 + 0] = lapl;
+            if (var == 2) diffmv_d[id * nv * 3 + lev * 3 + 1] = lapl;
+            if (var == 3) diffmv_d[id * nv * 3 + lev * 3 + 2] = lapl;
+            if (var == 4) diffwv_d[id * nv + lev] = lapl;
+            if (var == 5) diffprv_d[id * nv + lev] = lapl;
+        }
+    }
+}

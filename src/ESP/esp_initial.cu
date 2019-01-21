@@ -244,6 +244,8 @@ __host__ void ESP::alloc_data(bool conservation) {
     //  Diffusion
     cudaMalloc((void **)&Kdhz_d, nv * sizeof(double));
     cudaMalloc((void **)&Kdh4_d, nv * sizeof(double));
+    cudaMalloc((void **)&Kdvz_d, nv * sizeof(double));
+    cudaMalloc((void **)&Kdv6_d, nv * sizeof(double));
     cudaMalloc((void **)&DivM_d, nv * point_num * 3 * sizeof(double));
     cudaMalloc((void **)&diffpr_d, nv * point_num * sizeof(double));
     cudaMalloc((void **)&diffmh_d, 3 * nv * point_num * sizeof(double));
@@ -251,6 +253,12 @@ __host__ void ESP::alloc_data(bool conservation) {
     cudaMalloc((void **)&diffrh_d, nv * point_num * sizeof(double));
     cudaMalloc((void **)&diff_d, 6 * nv * point_num * sizeof(double));
     cudaMalloc((void **)&divg_Mh_d, 3 * nv * point_num * sizeof(double));
+
+    cudaMalloc((void **)&diffprv_d, nv * point_num * sizeof(double));
+    cudaMalloc((void **)&diffmv_d, 3 * nv * point_num * sizeof(double));
+    cudaMalloc((void **)&diffwv_d, nv * point_num * sizeof(double));
+    cudaMalloc((void **)&diffrv_d, nv * point_num * sizeof(double));
+    cudaMalloc((void **)&diffv_d, 6 * nv * point_num * sizeof(double));
 
     //  Extras-nan
     cudaMalloc((void **)&check_d, sizeof(bool));
@@ -584,7 +592,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
         //      Diffusion constant.
         double dbar = sqrt(2 * M_PI / 5) * sim.A / (pow(2, glevel));
         Kdh4_h[lev] = sim.Diffc * pow(dbar, 4.) / timestep_dyn;
-        Kdhz_h[lev] = sim.Diffc * pow(dbar, 4.) / timestep_dyn;
+        Kdhz_h[lev] = sim.DivDampc * pow(dbar, 4.) / timestep_dyn;
     }
 
     //  Diffusion
@@ -596,7 +604,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
         //      Diffusion constant.
         double dbar = sqrt(2 * M_PI / 5) * sim.A / (pow(2, glevel));
         Kdv6_h[lev] = sim.Diffc_v * pow(dbar, 6.) / timestep_dyn;
-        Kdvz_h[lev] = 0.0; //not used (yet?)
+        Kdvz_h[lev] = 0.0; //not used (yet? perhaps in future)
     }
 
 
@@ -626,6 +634,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
     cudaMemcpy(grad_d, grad_h, 7 * 3 * point_num * sizeof(double), cudaMemcpyHostToDevice);
     cudaMemcpy(Kdhz_d, Kdhz_h, nv * sizeof(double), cudaMemcpyHostToDevice);
     cudaMemcpy(Kdh4_d, Kdh4_h, nv * sizeof(double), cudaMemcpyHostToDevice);
+    cudaMemcpy(Kdvz_d, Kdvz_h, nv * sizeof(double), cudaMemcpyHostToDevice);
+    cudaMemcpy(Kdv6_d, Kdv6_h, nv * sizeof(double), cudaMemcpyHostToDevice);
 
     if (sim.SpongeLayer == true)
         cudaMemcpy(zonal_mean_tab_d,
@@ -666,9 +676,16 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
     cudaMemset(diff_d, 0, sizeof(double) * 6 * nv * point_num);
     cudaMemset(divg_Mh_d, 0, sizeof(double) * 3 * nv * point_num);
 
+    cudaMemset(diffprv_d, 0, sizeof(double) * nv * point_num);
+    cudaMemset(diffmv_d, 0, sizeof(double) * 3 * nv * point_num);
+    cudaMemset(diffwv_d, 0, sizeof(double) * nv * point_num);
+    cudaMemset(diffrv_d, 0, sizeof(double) * nv * point_num);
+    cudaMemset(diffv_d, 0, sizeof(double) * 6 * nv * point_num);
 
     delete[] Kdh4_h;
     delete[] Kdhz_h;
+    delete[] Kdv6_h;
+    delete[] Kdvz_h;
 
     // modules need to set their initial conditions
     if (phy_modules_execute) {
@@ -772,6 +789,8 @@ __host__ ESP::~ESP() {
     //  Diffusion
     cudaFree(Kdhz_d);
     cudaFree(Kdh4_d);
+    cudaFree(Kdvz_d);
+    cudaFree(Kdv6_d);
     cudaFree(DivM_d);
     cudaFree(diffpr_d);
     cudaFree(diffmh_d);
@@ -779,6 +798,12 @@ __host__ ESP::~ESP() {
     cudaFree(diffrh_d);
     cudaFree(diff_d);
     cudaFree(divg_Mh_d);
+
+    cudaFree(diffprv_d);
+    cudaFree(diffmv_d);
+    cudaFree(diffwv_d);
+    cudaFree(diffrv_d);
+    cudaFree(diffv_d);
 
     //  Conservation quantities
     cudaFree(Etotal_d);

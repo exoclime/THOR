@@ -104,9 +104,11 @@ public:
     double *Mh_h;
     double *W_h;
     double *Wh_h;
-
-    double *Kdhz_h;
-    double *Kdh4_h;
+    //
+    // double *Kdhz_h;
+    // double *Kdh4_h;
+    // double *Kdvz_h;
+    // double *Kdv6_h;
 
     bool check_h;
 
@@ -192,6 +194,8 @@ public:
 
     double *Kdhz_d;
     double *Kdh4_d;
+    double *Kdvz_d;
+    double *Kdv6_d;
 
     double *DivM_d;
     double *diffpr_d;
@@ -199,7 +203,13 @@ public:
     double *diffw_d;
     double *diffrh_d;
 
+    double *diffprv_d;
+    double *diffmv_d;
+    double *diffwv_d;
+    double *diffrv_d;
+
     double *diff_d;
+    double *diffv_d;
     double *divg_Mh_d;
     bool *  check_d;
 
@@ -276,9 +286,7 @@ public:
                         double &           simulation_start_time,
                         int &              output_file_idx);
 
-    void init_timestep(int    nstep,
-                       double simtime,
-                       double timestep_) {
+    void init_timestep(int nstep, double simtime, double timestep_) {
         current_step    = nstep;
         simulation_time = simtime;
         timestep        = timestep_;
@@ -296,8 +304,7 @@ public:
                 const SimulationSetup &sim); // planet parameters)
 
 
-    void set_output_param(const std::string &sim_id_,
-                          const std::string &output_dir_);
+    void set_output_param(const std::string &sim_id_, const std::string &output_dir_);
 
     void conservation(const SimulationSetup &sim);
 
