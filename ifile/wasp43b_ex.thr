@@ -7,14 +7,14 @@ config_version = 1
 
 #-- Time stepping and output options -----------------------------------------#
 # number of steps
-num_steps = 200
+num_steps = 432000
 
 # length of timesteps in seconds
 timestep = 300
 
 # output
 # output every n steps
-n_out = 200
+n_out = 7200
 
 
 # output directory (relative to current working directory)
