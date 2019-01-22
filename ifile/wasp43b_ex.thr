@@ -14,7 +14,7 @@ timestep = 300
 
 # output
 # output every n steps
-n_out = 100
+n_out = 7200
 
 
 # output directory (relative to current working directory)
@@ -119,7 +119,7 @@ nlat = 20
 ns_sponge = 0.75
 
 # strength of sponge layer (1/damping time)
-Rv_sponge = 1e-3
+Rv_sponge = 1e-4
 
 # shrink sponge by half after some time (experimental)
 #shrink_sponge = true
