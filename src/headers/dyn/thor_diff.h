@@ -553,7 +553,7 @@ __global__ void Diffusion_Op_Poles(double* diffmh_d,
 }
 
 __global__ void Correct_Horizontal(double* diffmh_d, double* diffmv_d, double* func_r_d, int num) {
-    //this function removes any spurious vertical compenent in horizontal momentum
+    //this function removes any spurious vertical component in horizontal momentum diffusion
     int id  = blockIdx.x * blockDim.x + threadIdx.x;
     int nv  = gridDim.y;
     int lev = blockIdx.y;

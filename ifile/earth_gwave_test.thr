@@ -75,6 +75,9 @@ DivDampP =    false
 
 # Strength of diffusion
 Diffc = 0.01
+
+# Strength of divergence damping
+DivDampc = 0.01
 #########################################################
 
 
