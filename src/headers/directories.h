@@ -41,6 +41,8 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
+#pragma once
+
 #include <string>
 #include <vector>
 
@@ -61,9 +63,7 @@ class path
 public:
     path(const string& path);
 
-    bool is_absolute() {
-        return is_absolute_path;
-    }
+    bool is_absolute() { return is_absolute_path; }
 
     // last file extension separated by a '.'
     string suffix();

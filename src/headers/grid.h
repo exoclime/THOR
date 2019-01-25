@@ -56,6 +56,7 @@
 
 #include <math.h>
 
+
 class Icogrid
 {
 
@@ -105,6 +106,7 @@ public:
     Icogrid(bool, double, int, int, int, double, double, bool, int *);
     void free_memory();
 
+
 private:
     // Functions to build the grid
     void sphere_ico(double *, int, int, int, int, int, int, int *, int, int);
@@ -122,7 +124,16 @@ private:
     void cart2sphe(double *, double *, int);
     void correct_xyz_points(double, double *, double *, int *, int);
     void control_areas(double *, double *, double *, int *, double *, double *, int *, int);
-    void control_vec(double *, double *, double *, double *, double *, double *, double *, int *, int *, int);
+    void control_vec(double *,
+                     double *,
+                     double *,
+                     double *,
+                     double *,
+                     double *,
+                     double *,
+                     int *,
+                     int *,
+                     int);
     void compute_func(double *, double *, int);
     void div_operator(double *, double *, double *, double *, int *, int);
     void gra_operator(double *, double *, double *, double *, int *, int);

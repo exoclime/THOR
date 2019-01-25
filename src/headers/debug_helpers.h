@@ -48,6 +48,7 @@
 
 
 #pragma once
+#include "binary_test.h"
 #include <string>
 using std::string;
 
@@ -63,5 +64,9 @@ bool *init_device_mem_check(bool *ptr);
 void  deinit_device_mem_check(bool *ptr);
 // check array for nan on device array or host array
 bool check_array_for_nan(double *ptr, int size, bool on_device, bool *device_mem_check_b);
+
+#ifdef BENCHMARKING
+void crash_report(const output_def &def, std::string output_dir, const std::string &iteration);
+#endif
 
 void check_last_cuda_error(string ref_name);

@@ -18,3 +18,4 @@
  to a separate function "Correct_Horizontal" to avoid potential issues related to the order
  in which threads are called
  * incorrect diffusion quantity (diffmh_d) was being passed to Momentum_Eq in the dynamical core, changed now to correct value (DivM_d)
+ * added crash_report tool that dumps location of nans when the model crashes

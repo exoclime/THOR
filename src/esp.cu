@@ -443,7 +443,7 @@ int main(int argc, char** argv) {
 
 
 #ifdef BENCHMARKING
-    string output_path_ref = (path(output_path) / string("ref")).to_string();
+    string output_path_ref = path(output_path).to_string();
 #    ifdef BENCH_POINT_COMPARE
     output_path = (path(output_path) / string("compare")).to_string();
 #    endif // BENCH_POINT_COMPARE
