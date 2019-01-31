@@ -327,6 +327,10 @@ __global__ void Compute_Slow_Modes(double *SlowMh_d,
     Slowpressure_d[id * nv + lev] =
         (Rd / Cv) * (-nflxp_s[iri] - gtil_d[id * nv + lev] - dwhdz + vgp) + diffpr_d[id * nv + lev]
         + diffprv_d[id * nv + lev];
+
+    // if (diffprv_d[id * nv + lev] > 0) {
+    //     printf("hi!\n"); //
+    // }
 }
 
 template<int NN>
@@ -548,7 +552,7 @@ __global__ void Compute_Slow_Modes_Poles(double *SlowMh_d,
 
             // Rho
             nflxr_p += dwdz;
-            SlowRho_d[id * nv + lev] = -nflxr_p + diffrh_d[id * nv + lev]+ diffrv_d[id * nv + lev];
+            SlowRho_d[id * nv + lev] = -nflxr_p + diffrh_d[id * nv + lev] + diffrv_d[id * nv + lev];
 
             // pressure
             r   = 1.0 / rhot;
@@ -558,7 +562,7 @@ __global__ void Compute_Slow_Modes_Poles(double *SlowMh_d,
 
             Slowpressure_d[id * nv + lev] =
                 (Rd / Cv) * (-nflxp_p - gtil_d[id * nv + lev] - dwhdz + vgp)
-                + diffpr_d[id * nv + lev]+ diffprv_d[id * nv + lev];
+                + diffpr_d[id * nv + lev] + diffprv_d[id * nv + lev];
 
             if (lev < nv - 1) {
                 pressurel = pressure_p[0];

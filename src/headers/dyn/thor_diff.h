@@ -593,7 +593,7 @@ __global__ void Diffusion_Op_Vert(double* diffmv_d,
                                   double  A,
                                   double  Rd,
                                   int     num,
-                                  bool    step_num,
+                                  int     step_num,
                                   bool    DeepModel) {
 
     int id = blockIdx.x * blockDim.x + threadIdx.x;
@@ -603,9 +603,9 @@ __global__ void Diffusion_Op_Vert(double* diffmv_d,
         int var = blockIdx.z;
 
         /////////////////////////////////////////
-        __shared__ double a_s[3];
-        __shared__ double Rho_s[3];
-        __shared__ double r_s[3];
+        double a_s[3];
+        double Rho_s[3];
+        double r_s[3];
         /////////////////////////////////////////
 
         double dz, lapl;
@@ -746,7 +746,7 @@ __global__ void Diffusion_Op_Vert(double* diffmv_d,
 
         // now, calculate vertical laplacian term
         lapl = (a_s[2] - 2.0 * a_s[1] + a_s[0]) / pow(dz, 2);
-        if (DeepModel) lapl *= 1.0 / r_s[ilev];
+        if (DeepModel) lapl *= 1.0 / r_s[1];
 
         if (step_num < 2) {
             diffv_d[id * nv * 6 + lev * 6 + var] = lapl; //

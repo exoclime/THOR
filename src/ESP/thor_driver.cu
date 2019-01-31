@@ -339,6 +339,21 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                               0,
                                               sim.DeepModel);
 
+            BENCH_POINT_I_S_PHY(current_step,
+                                rk,
+                                "Diffusion_Op_Vert1",
+                                (),
+                                ("diffmh_d",
+                                 "diffw_d",
+                                 "diffrh_d",
+                                 "diffpr_d",
+                                 "diff_d",
+                                 "diffmv_d",
+                                 "diffwv_d",
+                                 "diffrv_d",
+                                 "diffprv_d",
+                                 "diffv_d"))
+
             Diffusion_Op_Vert<<<NBALL, NTH>>>(diffmv_d,
                                               diffwv_d,
                                               diffrv_d,
@@ -356,6 +371,20 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                               point_num,
                                               1,
                                               sim.DeepModel);
+            BENCH_POINT_I_S_PHY(current_step,
+                                rk,
+                                "Diffusion_Op_Vert2",
+                                (),
+                                ("diffmh_d",
+                                 "diffw_d",
+                                 "diffrh_d",
+                                 "diffpr_d",
+                                 "diff_d",
+                                 "diffmv_d",
+                                 "diffwv_d",
+                                 "diffrv_d",
+                                 "diffprv_d",
+                                 "diffv_d"))
 
             Diffusion_Op_Vert<<<NBALL, NTH>>>(diffmv_d,
                                               diffwv_d,
@@ -380,9 +409,18 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
 
             BENCH_POINT_I_S_PHY(current_step,
                                 rk,
-                                "Diffusion_Op_Poles",
+                                "Diffusion_Op_Vert",
                                 (),
-                                ("diffmh_d", "diffw_d", "diffrh_d", "diffpr_d", "diff_d"))
+                                ("diffmh_d",
+                                 "diffw_d",
+                                 "diffrh_d",
+                                 "diffpr_d",
+                                 "diff_d",
+                                 "diffmv_d",
+                                 "diffwv_d",
+                                 "diffrv_d",
+                                 "diffprv_d",
+                                 "diffv_d"))
         }
 
         if (phy_modules_execute)

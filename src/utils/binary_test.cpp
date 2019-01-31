@@ -257,6 +257,48 @@ map<string, output_def> build_definitions(ESP& esp, Icogrid& grid) {
           true,
           std::bind(&ESP::dummy, &esp, std::placeholders::_1, std::placeholders::_2)}},
 
+        {"diffrv_d",
+         {esp.diffrv_d,
+          esp.nv * esp.point_num,
+          "Diff Rho Vert",
+          "dfrv",
+          true,
+          std::bind(
+              &ESP::index_to_location_scalar, &esp, std::placeholders::_1, std::placeholders::_2)}},
+        {"diffprv_d",
+         {esp.diffprv_d,
+          esp.nv * esp.point_num,
+          "Diff Press Vert",
+          "dfprv",
+          true,
+          std::bind(
+              &ESP::index_to_location_scalar, &esp, std::placeholders::_1, std::placeholders::_2)}},
+        {"diffmv_d",
+         {esp.diffmv_d,
+          esp.nv * esp.point_num * 3,
+          "Diff Mom Vert",
+          "dfmv",
+          true,
+          std::bind(
+              &ESP::index_to_location_vector, &esp, std::placeholders::_1, std::placeholders::_2)}},
+        {"diffwv_d",
+         {esp.diffwv_d,
+          esp.nv * esp.point_num,
+          "Diff VMom Vert",
+          "dfwv",
+          true,
+          std::bind(
+              &ESP::index_to_location_scalar, &esp, std::placeholders::_1, std::placeholders::_2)}},
+
+        {"diffv_d",
+         {esp.diffv_d,
+          6 * esp.nv * esp.point_num,
+          "Diff Vert",
+          "difv",
+          true,
+          std::bind(&ESP::dummy, &esp, std::placeholders::_1, std::placeholders::_2)}},
+
+
         {"DivM_d",
          {esp.DivM_d,
           esp.nv * esp.point_num * 3,

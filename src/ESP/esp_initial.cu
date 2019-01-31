@@ -602,8 +602,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
     Kdv6_h = new double[nv]; // vertical diffusion strength
     for (int lev = 0; lev < nv; lev++) {
         //      Diffusion constant.
-        double dbar = sqrt(2 * M_PI / 5) * sim.A / (pow(2, glevel));
-        Kdv6_h[lev] = sim.Diffc_v * pow(dbar, 6.) / timestep_dyn;
+        double dz   = sim.Top_altitude / nv;
+        Kdv6_h[lev] = sim.Diffc_v * pow(dz, 6.) / timestep_dyn;
         Kdvz_h[lev] = 0.0; //not used (yet? perhaps in future)
     }
 
