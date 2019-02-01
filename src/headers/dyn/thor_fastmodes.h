@@ -448,9 +448,9 @@ __global__ void Density_Pressure_Eqs(double *pressure_d,
     // Updates density
     nflxr_s[iri] += dwdz;
     Rho_d[id * nv + lev] += (SlowRho_d[id * nv + lev] - nflxr_s[iri]) * dt;
-    if (isnan(pressure_d[id * nv + lev])) {
-        printf("(id, lev) = (%d, %d)", id, lev); //
-    }
+    // if (isnan(pressure_d[id * nv + lev])) {
+    //     printf("(id, lev) = (%d, %d)", id, lev); //
+    // }
 }
 
 template<int NN>

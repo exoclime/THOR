@@ -716,7 +716,7 @@ __global__ void Diffusion_Op_Vert(double* diffmv_d,
                                 + diffv_d[id * nv * 6 + (lev)*6 + var] * ext1;
                 }
                 else {
-                    a_s[ilev] = diffv_d[id * nv * 6 + lev * 6 + var];
+                    a_s[ilev] = diffv_d[id * nv * 6 + (lev - 1 + ilev) * 6 + var];
                 }
             }
             else if (step_num == 2) {
@@ -732,7 +732,7 @@ __global__ void Diffusion_Op_Vert(double* diffmv_d,
                                    + diffv_d[id * nv * 6 + (lev)*6 + var] * ext1);
                 }
                 else {
-                    a_s[ilev] = -Kv_d[lev] * diffv_d[id * nv * 6 + lev * 6 + var];
+                    a_s[ilev] = -Kv_d[lev] * diffv_d[id * nv * 6 + (lev - 1 + ilev) * 6 + var];
                 }
                 if (var > 0) a_s[ilev] *= Rho_s[ilev];
                 if (var == 5) a_s[ilev] *= Rd;
@@ -748,6 +748,9 @@ __global__ void Diffusion_Op_Vert(double* diffmv_d,
         lapl = (a_s[2] - 2.0 * a_s[1] + a_s[0]) / pow(dz, 2);
         if (DeepModel) lapl *= 1.0 / r_s[1];
 
+        if (id == 0 && var == 0) {
+            printf("argghhh1!\n"); //stupid place to put a stupid break point
+        }
         if (step_num < 2) {
             diffv_d[id * nv * 6 + lev * 6 + var] = lapl; //
         }

@@ -339,6 +339,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                               0,
                                               sim.DeepModel);
 
+            cudaDeviceSynchronize();
             BENCH_POINT_I_S_PHY(current_step,
                                 rk,
                                 "Diffusion_Op_Vert1",
@@ -371,6 +372,8 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                               point_num,
                                               1,
                                               sim.DeepModel);
+            cudaDeviceSynchronize();
+
             BENCH_POINT_I_S_PHY(current_step,
                                 rk,
                                 "Diffusion_Op_Vert2",

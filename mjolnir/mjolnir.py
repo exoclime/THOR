@@ -59,7 +59,7 @@ valid = ['uver','wver','wprof','Tver','Tulev','PTver','ulev','PVver','PVlev',
             'TP','RVlev','cons','stream','pause','tracer','PTP','regrid','KE','SR','uprof','cfl']
 
 rg_needed = ['Tver','uver','wver','Tulev','PTver','ulev','PVver','PVlev',
-            'RVlev','stream','tracer','PTP','KE']  #these types need regrid
+            'RVlev','stream','tracer','PTP']  #these types need regrid
 
 openrg = 0
 if 'all' in pview:
@@ -224,7 +224,7 @@ if 'cons' in pview:  # RD: needs some work!
     ham.conservation(input,grid,output,split)
 if 'KE' in pview:  # RD: needs some work!
     PR_LV = np.float(args.pressure_lev[0])*100
-    ham.KE_spect(input,grid,output,rg,PR_LV,coord=args.coordinate_sys[0],lmax_adjust=args.lmax_adjust[0])
+    ham.KE_spect(input,grid,output,PR_LV,coord=args.coordinate_sys[0],lmax_adjust=args.lmax_adjust[0])
 if 'SR' in pview:
     ham.SRindex(input,grid,output)
 

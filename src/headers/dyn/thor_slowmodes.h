@@ -137,6 +137,11 @@ __global__ void Compute_Slow_Modes(double *SlowMh_d,
     bool load_halo = compute_mem_idx(maps_d, nhl, nhl2, ig, igh, ir, ir2, pent_ind);
     id             = ig;
 
+    //hack
+    if (ig == 0) {
+        printf("%d %d %e %e\n", ig, lev, Rho_d[ig * nv + lev], diffrv_d[ig * nv + lev]);
+    }
+
     v_s[ir * 3 + 0] = Mh_d[ig * 3 * nv + lev * 3 + 0];
     v_s[ir * 3 + 1] = Mh_d[ig * 3 * nv + lev * 3 + 1];
     v_s[ir * 3 + 2] = Mh_d[ig * 3 * nv + lev * 3 + 2];

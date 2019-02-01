@@ -288,7 +288,7 @@ def regrid(resultsf,simID,ntsi,nts,res_deg=0.5,nlev=40,pscale='log',overwrite=Fa
         raise IOError('invalid pressure scale entered! use "lin" or "log"')
 
     d_sig = np.size(sigmaref)
-    Pref = input.P_Ref*sigmaref
+    Pref = input.P_Ref*sigmaref[:,0]
     lat_range_tmp = np.arange(-90,90+res_deg,res_deg)
     # recenter so that there are an even number of latitude points
     lat_range = (lat_range_tmp[:-1]+lat_range_tmp[1:])/2
@@ -407,41 +407,41 @@ def regrid(resultsf,simID,ntsi,nts,res_deg=0.5,nlev=40,pscale='log',overwrite=Fa
 
             openh5.close()
 
-def KE_spect(input,grid,output,rg,sigmaref,coord = 'icoh',lmax_adjust = 10):
+def KE_spect(input,grid,output,sigmaref,coord = 'icoh',lmax_adjust = 0):
     tsp = output.nts-output.ntsi+1
     lmax_grid = np.int(np.floor(np.sqrt(grid.point_num))/2-1)
 
-    if coord == 'llp':
-        lon, lat = np.meshgrid(rg.lon[:,0],rg.lat[:,0])
-        npre = np.shape(rg.Pressure)[0]
+    # if coord == 'llp':
+    #     lon, lat = np.meshgrid(rg.lon[:,0],rg.lat[:,0])
+    #     npre = np.shape(rg.Pressure)[0]
+    #
+    #     U = rg.U*rg.Rho
+    #     V = rg.V*rg.Rho
+    #     W = rg.W*rg.Rho
+    #
+    #     lmax = np.int(np.shape(lat)[0]/2)
+    #     u_coeffs = np.zeros((2,lmax,lmax,npre,tsp),dtype=complex)
+    #     v_coeffs = np.zeros((2,lmax,lmax,npre,tsp),dtype=complex)
+    #     w_coeffs = np.zeros((2,lmax,lmax,npre,tsp),dtype=complex)
+    #     KE_coeffs = np.zeros((2,lmax,lmax,npre,tsp),dtype=complex)
+    #     KE_power = np.zeros((lmax,npre,tsp))
+    #
+    #     KE = 0.5*(U**2+V**2+W**2)
+    #
+    #     waven = np.arange(lmax)  #total spherical wavenumber
+    #
+    #     cmap = cm.get_cmap('cividis')
+    #     fig, ax = plt.subplots(1, 1)
+    #     for t in np.arange(tsp):
+    #         for p in np.arange(npre):
+    #             #KE_coeffs[:,:,:,p,t] = (np.abs(u_coeffs[:,:,:,p,t])**2+np.abs(v_coeffs[:,:,:,p,t])**2)/4.0
+    #             KE_coeffs[:,:,:,p,t] = chairs.expand.SHExpandDHC(KE[:,:,p,t],sampling=2)
+    #
+    #             KE_power[:,p,t] = chairs.spectralanalysis.spectrum(KE_coeffs,unit='per_lm')
+    #
+    #             ax.plot(waven, KE_power[:,p,t],'k-',c=cmap(p/npre),lw=1)
 
-        U = rg.U*rg.Rho
-        V = rg.V*rg.Rho
-        W = rg.W*rg.Rho
-
-        lmax = np.int(np.shape(lat)[0]/2)
-        u_coeffs = np.zeros((2,lmax,lmax,npre,tsp),dtype=complex)
-        v_coeffs = np.zeros((2,lmax,lmax,npre,tsp),dtype=complex)
-        w_coeffs = np.zeros((2,lmax,lmax,npre,tsp),dtype=complex)
-        KE_coeffs = np.zeros((2,lmax,lmax,npre,tsp),dtype=complex)
-        KE_power = np.zeros((lmax,npre,tsp))
-
-        KE = 0.5*(U**2+V**2+W**2)
-
-        waven = np.arange(lmax)  #total spherical wavenumber
-
-        cmap = cm.get_cmap('cividis')
-        fig, ax = plt.subplots(1, 1)
-        for t in np.arange(tsp):
-            for p in np.arange(npre):
-                #KE_coeffs[:,:,:,p,t] = (np.abs(u_coeffs[:,:,:,p,t])**2+np.abs(v_coeffs[:,:,:,p,t])**2)/4.0
-                KE_coeffs[:,:,:,p,t] = chairs.expand.SHExpandDHC(KE[:,:,p,t],sampling=2)
-
-                KE_power[:,p,t] = chairs.spectralanalysis.spectrum(KE_coeffs,unit='per_lm')
-
-                ax.plot(waven, KE_power[:,p,t],'k-',c=cmap(p/npre),lw=1)
-
-    elif coord == 'icoh':
+    if coord == 'icoh':
         W = 0.5*(output.Wh[:,1:,:]+output.Wh[:,:-1,:])
         Wx = W*np.cos(grid.lat[:,None,None])*np.cos(grid.lon[:,None,None])
         Wy = W*np.cos(grid.lat[:,None,None])*np.sin(grid.lon[:,None,None])
@@ -463,29 +463,37 @@ def KE_spect(input,grid,output,rg,sigmaref,coord = 'icoh',lmax_adjust = 10):
 
         cmap = cm.get_cmap('cividis')
         fig, ax = plt.subplots(1, 1)
-        for t in np.arange(tsp):
-            for lev in np.arange(grid.nv):
-                KE_coeffs[:,:,:,lev,t], chiz = chairs.expand.SHExpandLSQ(KE[:,lev,t],grid.lat*180/np.pi,grid.lon*180/np.pi,lmax)
-                KE_power[:,lev,t] = chairs.spectralanalysis.spectrum(KE_coeffs,unit='per_lm')
-                ax.plot(waven, KE_power[:,lev,t],'k-',c=cmap(lev/grid.nv),lw=1)
-    else:
-        raise IOError("Invalid coord option! Valid options are 'icoh' or 'llp'")
 
+        if tsp == 1:
+            for lev in np.arange(grid.nv):
+                KE_coeffs[:,:,:,lev,0], chiz = chairs.expand.SHExpandLSQ(KE[:,lev,0],grid.lat*180/np.pi,grid.lon*180/np.pi,lmax)
+                KE_power[:,lev,0] = chairs.spectralanalysis.spectrum(KE_coeffs,unit='per_lm')
+                ax.plot(waven, KE_power[:,lev,0],'k-',c=cmap(lev/grid.nv),lw=1)
+        else:
+            for t in np.arange(tsp):
+                KE_coeffs[:,:,:,grid.nv-1,t], chiz = chairs.expand.SHExpandLSQ(KE[:,grid.nv-1,t],grid.lat*180/np.pi,grid.lon*180/np.pi,lmax)
+                KE_power[:,grid.nv-1,t] = chairs.spectralanalysis.spectrum(KE_coeffs,unit='per_lm')
+                ax.plot(waven, KE_power[:,grid.nv-1,t],'k-',c=cmap(t/tsp),lw=1)
+
+    else:
+        raise IOError("Invalid coord option! Valid options are 'icoh'")
+
+    # ax.plot(waven,np.mean(KE_power[:,:,t],axis=1),'k-',lw=2)
     ax.set_yscale('log')
     ax.set_xscale('log')
     ax.vlines(lmax_grid,ax.get_ylim()[0],ax.get_ylim()[1],zorder=1000,linestyle='--')
     ax.set(ylabel='KE density (kg m$^{-1}$ s$^{-2}$)',xlabel='n')
     # import pdb; pdb.set_trace()
-    ke3line = ax.get_ylim()[0] + waven**(-3.0)
-    ke53line = ax.get_ylim()[0] + waven**(-5.0/3)
-    ax.plot(waven,ke3line,'r:')
-    ax.plot(waven,ke53line,':',color='r')
+    # ke3line = ax.get_ylim()[0] + waven**(-3.0)
+    # ke53line = ax.get_ylim()[0] + waven**(-5.0/3)
+    # ax.plot(waven,ke3line,'r:')
+    # ax.plot(waven,ke53line,':',color='r')
 
 
     if not os.path.exists(input.resultsf+'/figures'):
         os.mkdir(input.resultsf+'/figures')
     plt.tight_layout()
-    plt.savefig(input.resultsf+'/figures/KEspectrum_%i_%s.pdf'%(output.ntsi,coord))
+    plt.savefig(input.resultsf+'/figures/KEspectrum_%i_%i_%s.pdf'%(output.ntsi,output.nts,coord))
     plt.close()
 
     norm = colors.Normalize(vmin = np.min(KE[:,0,0]),vmax=np.max(KE[:,0,0]))
