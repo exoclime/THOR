@@ -154,6 +154,9 @@ __host__ void ESP::output(int                    fidx, // Index of output file
         s.append_value(sim.Cp, "/Cp", "J/(Kg K)", "Specific heat capacity");
         //      SpongeLayer option
         s.append_value(sim.SpongeLayer ? 1.0 : 0.0, "/SpongeLayer", "-", "Using SpongeLayer?");
+        s.append_value(
+            sim.TempSponge ? 1.0 : 0.0, "/TempSponge", "-", "Using thermal SpongeLayer?");
+
         //      DeepModel option
         s.append_value(sim.DeepModel ? 1.0 : 0.0, "/DeepModel", "-", "Using Deep Model");
 

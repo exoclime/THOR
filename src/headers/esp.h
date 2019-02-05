@@ -211,7 +211,8 @@ public:
     double *diffrv_d;
 
     double *diff_d;
-    double *diffv_d;
+    double *diffv_d1;
+    double *diffv_d2;
     double *divg_Mh_d;
     bool *  check_d;
 
@@ -223,6 +224,10 @@ public:
     double *wtmp_h;
     double *vtmp;
     double *wtmp;
+    double *Tbar_d;
+    double *Tbar_h;
+    double *Ttmp;
+    double *Ttmp_h;
     int *   zonal_mean_tab_d;
     int     max_count;   // max number of points in latitude rings
     double *pressureh_d; // midpoint pressure used in dry conv adj

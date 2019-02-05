@@ -75,7 +75,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
     dim3      NBDP(2, nv, 6);              // Number of blocks in the diffusion routine. (POLES)
     dim3      NBP(2, nv, 1);               // Number of blocks. (POLES)
 
-    dim3 NBALL((point_num / NTH) + 1, nv, 1); //Number of blocks to execute on all grid points
+    dim3 NBALL((point_num / NTH) + 1, nv, 6); //Number of blocks to execute on all grid points
 
 
     //  Number of Small steps
@@ -321,11 +321,13 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                                1,
                                                sim.DeepModel);
 
+            cudaDeviceSynchronize();
             Diffusion_Op_Vert<<<NBALL, NTH>>>(diffmv_d,
                                               diffwv_d,
                                               diffrv_d,
                                               diffprv_d,
-                                              diffv_d,
+                                              diffv_d1,
+                                              diffv_d2,
                                               Mhk_d,
                                               Rhok_d,
                                               temperature_d,
@@ -359,7 +361,8 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                               diffwv_d,
                                               diffrv_d,
                                               diffprv_d,
-                                              diffv_d,
+                                              diffv_d1,
+                                              diffv_d2,
                                               Mhk_d,
                                               Rhok_d,
                                               temperature_d,
@@ -393,7 +396,8 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                               diffwv_d,
                                               diffrv_d,
                                               diffprv_d,
-                                              diffv_d,
+                                              diffv_d1,
+                                              diffv_d2,
                                               Mhk_d,
                                               Rhok_d,
                                               temperature_d,
@@ -409,6 +413,11 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
 
             cudaDeviceSynchronize();
             Correct_Horizontal<<<NBALL, NTH>>>(diffmh_d, diffmv_d, func_r_d, point_num);
+
+            // double* diff;
+            // diff = (double*)malloc(point_num * nv * sizeof(double));
+            // cudaMemcpy(diff, diffrv_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+            // for (int i = 0; i < nv; i++) { printf("%d %e\n", i, diff[i]); }
 
             BENCH_POINT_I_S_PHY(current_step,
                                 rk,

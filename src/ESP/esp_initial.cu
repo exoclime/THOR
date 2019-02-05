@@ -258,7 +258,8 @@ __host__ void ESP::alloc_data(bool conservation) {
     cudaMalloc((void **)&diffmv_d, 3 * nv * point_num * sizeof(double));
     cudaMalloc((void **)&diffwv_d, nv * point_num * sizeof(double));
     cudaMalloc((void **)&diffrv_d, nv * point_num * sizeof(double));
-    cudaMalloc((void **)&diffv_d, 6 * nv * point_num * sizeof(double));
+    cudaMalloc((void **)&diffv_d1, 6 * nv * point_num * sizeof(double));
+    cudaMalloc((void **)&diffv_d2, 6 * nv * point_num * sizeof(double));
 
     //  Extras-nan
     cudaMalloc((void **)&check_d, sizeof(bool));
@@ -272,7 +273,10 @@ __host__ void ESP::alloc_data(bool conservation) {
     utmp_h = (double *)malloc(nv * nlat * max_count * sizeof(double));
     vtmp_h = (double *)malloc(nv * nlat * max_count * sizeof(double));
     wtmp_h = (double *)malloc(nv * nlat * max_count * sizeof(double));
-
+    cudaMalloc((void **)&Tbar_d, nv * nlat * sizeof(double));
+    Tbar_h = (double *)malloc(nv * nlat * sizeof(double));
+    cudaMalloc((void **)&Ttmp, nv * nlat * max_count * sizeof(double));
+    Ttmp_h = (double *)malloc(nv * nlat * max_count * sizeof(double));
 
     if (conservation == true) {
         //  Conservation quantities
@@ -680,7 +684,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
     cudaMemset(diffmv_d, 0, sizeof(double) * 3 * nv * point_num);
     cudaMemset(diffwv_d, 0, sizeof(double) * nv * point_num);
     cudaMemset(diffrv_d, 0, sizeof(double) * nv * point_num);
-    cudaMemset(diffv_d, 0, sizeof(double) * 6 * nv * point_num);
+    cudaMemset(diffv_d1, 0, sizeof(double) * 6 * nv * point_num);
+    cudaMemset(diffv_d2, 0, sizeof(double) * 6 * nv * point_num);
 
     delete[] Kdh4_h;
     delete[] Kdhz_h;
@@ -803,7 +808,8 @@ __host__ ESP::~ESP() {
     cudaFree(diffmv_d);
     cudaFree(diffwv_d);
     cudaFree(diffrv_d);
-    cudaFree(diffv_d);
+    cudaFree(diffv_d1);
+    cudaFree(diffv_d2);
 
     //  Conservation quantities
     cudaFree(Etotal_d);
@@ -831,16 +837,20 @@ __host__ ESP::~ESP() {
     // Sponge Layer
     cudaFree(vbar_d);
     cudaFree(zonal_mean_tab_d);
-
+    cudaFree(Tbar_d);
 
     free(vbar_h);
     free(utmp_h);
     free(vtmp_h);
     free(wtmp_h);
 
+    free(Tbar_h);
+    free(Ttmp_h);
+
     cudaFree(utmp);
     cudaFree(vtmp);
     cudaFree(wtmp);
+    cudaFree(Ttmp);
 
 
     if (phy_modules_execute) phy_modules_free_mem();

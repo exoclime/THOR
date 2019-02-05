@@ -138,9 +138,15 @@ __global__ void Compute_Slow_Modes(double *SlowMh_d,
     id             = ig;
 
     //hack
-    if (ig == 0) {
-        printf("%d %d %e %e\n", ig, lev, Rho_d[ig * nv + lev], diffrv_d[ig * nv + lev]);
-    }
+    // if (ig == 0) {
+    //     printf("%d %d %e %e %e %e\n",
+    //            ig,
+    //            lev,
+    //            Rho_d[ig * nv + lev],
+    //            pressure_d[ig * nv + lev] / Rd / Rho_d[ig * nv + lev],
+    //            diffrv_d[ig * nv + lev],
+    //            diffprv_d[ig * nv + lev]);
+    // }
 
     v_s[ir * 3 + 0] = Mh_d[ig * 3 * nv + lev * 3 + 0];
     v_s[ir * 3 + 1] = Mh_d[ig * 3 * nv + lev * 3 + 1];

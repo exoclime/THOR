@@ -582,7 +582,8 @@ __global__ void Diffusion_Op_Vert(double* diffmv_d,
                                   double* diffwv_d,
                                   double* diffrv_d,
                                   double* diffprv_d,
-                                  double* diffv_d,
+                                  double* diffv_d1,
+                                  double* diffv_d2,
                                   double* Mh_d,
                                   double* Rho_d,
                                   double* temperature_d,
@@ -603,156 +604,84 @@ __global__ void Diffusion_Op_Vert(double* diffmv_d,
         int var = blockIdx.z;
 
         /////////////////////////////////////////
-        double a_s[3];
-        double Rho_s[3];
-        double r_s[3];
+        double a_s[5];
+        double Rho_s[5];
+        double r_s[5];
         /////////////////////////////////////////
 
         double dz, lapl;
         int    ilev;
-        double zextr, ext0, ext1;
+        int    pad, nterms;
 
-        for (ilev = 0; ilev < 3; ilev++) {
-            if (lev == 0 && ilev == 0) {
-                // lowest level, must calc laplacian differently
-                zextr = 2 * Altitude_d[lev] - Altitude_d[lev + 1];
-                ext0  = (Altitude_d[lev] - zextr) / (Altitude_d[lev] - Altitude_d[lev + 1]);
-                ext1  = (zextr - Altitude_d[lev + 1]) / (Altitude_d[lev] - Altitude_d[lev + 1]);
-
-                Rho_s[ilev] =
-                    Rho_d[id * nv + lev + 1] * ext0
-                    + Rho_d[id * nv + lev] * ext1; // set density at level and above and below
-                r_s[ilev] = A + zextr;
-            }
-            else if (lev == (nv - 1) && ilev == 2) {
-                // highest level, must calc laplacian differently
-                zextr = 2 * Altitude_d[lev] - Altitude_d[lev - 1];
-                ext0  = (Altitude_d[lev] - zextr) / (Altitude_d[lev] - Altitude_d[lev - 1]);
-                ext1  = (zextr - Altitude_d[lev - 1]) / (Altitude_d[lev] - Altitude_d[lev - 1]);
-
-                Rho_s[ilev] =
-                    Rho_d[id * nv + lev - 1] * ext0
-                    + Rho_d[id * nv + lev] * ext1; // set density at level and above and below
-                r_s[ilev] = A + zextr;
-            }
-            else {
-                Rho_s[ilev] =
-                    Rho_d[id * nv + lev - 1 + ilev]; // set density at level and above and below
-                r_s[ilev] = A + Altitude_d[lev - 1 + ilev];
-            }
+        if (lev == 0) { //current lev is ilev = 0
+            pad    = 0;
+            nterms = 3;
+        }
+        else if (lev == 1 || lev == nv - 2) { //current lev is ilev = 1
+            pad    = 1;
+            nterms = 3;
+        }
+        else if (lev == nv - 1) { //current lev is ilev = 2
+            pad    = 2;
+            nterms = 3;
+        }
+        else { //current lev is ilev = 2
+            pad    = 2;
+            nterms = 5;
         }
 
-        __syncthreads();
-        for (ilev = 0; ilev < 3; ilev++) {
+        for (ilev = 0; ilev < nterms; ilev++) {
+            Rho_s[ilev] = Rho_d[id * nv + lev - pad + ilev];
+            r_s[ilev]   = A + Altitude_d[lev - pad + ilev];
+
             if (step_num == 0) {
-                if (lev == 0 && ilev == 0) {
-                    if (var == 0)
-                        a_s[ilev] = Rho_d[id * nv + lev + 1] * ext0 + Rho_d[id * nv + lev] * ext1;
-                    else if (var == 1)
-                        a_s[ilev] = (Mh_d[id * nv * 3 + (lev + 1) * 3 + 0] * ext0
-                                     + Mh_d[id * nv * 3 + (lev)*3 + 0] * ext1)
-                                    / Rho_s[ilev];
-                    else if (var == 2)
-                        a_s[ilev] = (Mh_d[id * nv * 3 + (lev + 1) * 3 + 1] * ext0
-                                     + Mh_d[id * nv * 3 + (lev)*3 + 1] * ext1)
-                                    / Rho_s[ilev];
-                    else if (var == 3)
-                        a_s[ilev] = (Mh_d[id * nv * 3 + (lev + 1) * 3 + 2] * ext0
-                                     + Mh_d[id * nv * 3 + (lev)*3 + 2] * ext1)
-                                    / Rho_s[ilev];
-                    else if (var == 4)
-                        a_s[ilev] = (W_d[id * nv + lev + 1] * ext0 + W_d[id * nv + lev] * ext1)
-                                    / Rho_s[ilev];
-                    else if (var == 5)
-                        a_s[ilev] = temperature_d[id * nv + lev + 1] * ext0
-                                    + temperature_d[id * nv + lev] * ext1;
-                }
-                else if (lev == (nv - 1) && ilev == 2) {
-                    if (var == 0)
-                        a_s[ilev] = Rho_d[id * nv + lev - 1] * ext0 + Rho_d[id * nv + lev] * ext1;
-                    else if (var == 1)
-                        a_s[ilev] = (Mh_d[id * nv * 3 + (lev - 1) * 3 + 0] * ext0
-                                     + Mh_d[id * nv * 3 + (lev)*3 + 0] * ext1)
-                                    / Rho_s[ilev];
-                    else if (var == 2)
-                        a_s[ilev] = (Mh_d[id * nv * 3 + (lev - 1) * 3 + 1] * ext0
-                                     + Mh_d[id * nv * 3 + (lev)*3 + 1] * ext1)
-                                    / Rho_s[ilev];
-                    else if (var == 3)
-                        a_s[ilev] = (Mh_d[id * nv * 3 + (lev - 1) * 3 + 2] * ext0
-                                     + Mh_d[id * nv * 3 + (lev)*3 + 2] * ext1)
-                                    / Rho_s[ilev];
-                    else if (var == 4)
-                        a_s[ilev] = (W_d[id * nv + lev - 1] * ext0 + W_d[id * nv + lev] * ext1)
-                                    / Rho_s[ilev];
-                    else if (var == 5)
-                        a_s[ilev] = temperature_d[id * nv + lev - 1] * ext0
-                                    + temperature_d[id * nv + lev] * ext1;
-                }
-                else {
-                    // first time thru, arg is fluid property
-                    if (var == 0)
-                        a_s[ilev] = Rho_d[id * nv + lev - 1 + ilev];
-                    else if (var == 1)
-                        a_s[ilev] = Mh_d[id * nv * 3 + (lev - 1 + ilev) * 3 + 0] / Rho_s[ilev];
-                    else if (var == 2)
-                        a_s[ilev] = Mh_d[id * nv * 3 + (lev - 1 + ilev) * 3 + 1] / Rho_s[ilev];
-                    else if (var == 3)
-                        a_s[ilev] = Mh_d[id * nv * 3 + (lev - 1 + ilev) * 3 + 2] / Rho_s[ilev];
-                    else if (var == 4)
-                        a_s[ilev] = W_d[id * nv + lev - 1 + ilev] / Rho_s[ilev];
-                    else if (var == 5)
-                        a_s[ilev] = temperature_d[id * nv + lev - 1 + ilev];
-                }
+                if (var == 0)
+                    a_s[ilev] = Rho_d[id * nv + lev - pad + ilev];
+                else if (var == 1)
+                    a_s[ilev] = Mh_d[id * nv * 3 + (lev - pad + ilev) * 3 + 0] / Rho_s[ilev];
+                else if (var == 2)
+                    a_s[ilev] = Mh_d[id * nv * 3 + (lev - pad + ilev) * 3 + 1] / Rho_s[ilev];
+                else if (var == 3)
+                    a_s[ilev] = Mh_d[id * nv * 3 + (lev - pad + ilev) * 3 + 2] / Rho_s[ilev];
+                else if (var == 4)
+                    a_s[ilev] = W_d[id * nv + lev - pad + ilev] / Rho_s[ilev];
+                else if (var == 5)
+                    a_s[ilev] = temperature_d[id * nv + lev - pad + ilev];
             }
             else if (step_num == 1) {
-                // second time, argument is previous time's results
-                if (lev == 0 && ilev == 0) {
-                    a_s[ilev] = diffv_d[id * nv * 6 + (lev + 1) * 6 + var] * ext0
-                                + diffv_d[id * nv * 6 + (lev)*6 + var] * ext1;
-                }
-                else if (lev == (nv - 1) && ilev == 2) {
-                    a_s[ilev] = diffv_d[id * nv * 6 + (lev - 1) * 6 + var] * ext0
-                                + diffv_d[id * nv * 6 + (lev)*6 + var] * ext1;
-                }
-                else {
-                    a_s[ilev] = diffv_d[id * nv * 6 + (lev - 1 + ilev) * 6 + var];
-                }
+                a_s[ilev] = diffv_d1[id * nv * 6 + (lev - pad + ilev) * 6 + var];
             }
             else if (step_num == 2) {
-                // third time, argument is previous time's result * diffc * rho
-                if (lev == 0 && ilev == 0) {
-                    a_s[ilev] = -Kv_d[lev]
-                                * (diffv_d[id * nv * 6 + (lev + 1) * 6 + var] * ext0
-                                   + diffv_d[id * nv * 6 + (lev)*6 + var] * ext1);
-                }
-                else if (lev == (nv - 1) && ilev == 2) {
-                    a_s[ilev] = -Kv_d[lev]
-                                * (diffv_d[id * nv * 6 + (lev - 1) * 6 + var] * ext0
-                                   + diffv_d[id * nv * 6 + (lev)*6 + var] * ext1);
-                }
-                else {
-                    a_s[ilev] = -Kv_d[lev] * diffv_d[id * nv * 6 + (lev - 1 + ilev) * 6 + var];
-                }
+                a_s[ilev] = -Kv_d[lev] * diffv_d2[id * nv * 6 + (lev - pad + ilev) * 6 + var];
                 if (var > 0) a_s[ilev] *= Rho_s[ilev];
                 if (var == 5) a_s[ilev] *= Rd;
             }
             if (DeepModel) a_s[ilev] *= r_s[ilev];
         }
 
-        __syncthreads();
         // grid spacing in vertical
-        dz = Altitude_d[lev + 1] - Altitude_d[lev];
+        dz = Altitude_d[1] - Altitude_d[0];
 
         // now, calculate vertical laplacian term
-        lapl = (a_s[2] - 2.0 * a_s[1] + a_s[0]) / pow(dz, 2);
-        if (DeepModel) lapl *= 1.0 / r_s[1];
-
-        if (id == 0 && var == 0) {
-            printf("argghhh1!\n"); //stupid place to put a stupid break point
+        if (nterms == 3) {                                        //second order accuracy
+            lapl = (a_s[2] - 2.0 * a_s[1] + a_s[0]) / pow(dz, 2); //
         }
-        if (step_num < 2) {
-            diffv_d[id * nv * 6 + lev * 6 + var] = lapl; //
+        else if (nterms == 5) { //fourth order accuracy
+            lapl = (-a_s[4] + 16.0 * a_s[3] - 30.0 * a_s[2] + 16.0 * a_s[1] - a_s[0]) / pow(dz, 2)
+                   / 12.0;
+        }
+        if (DeepModel) lapl *= 1.0 / r_s[pad];
+
+        // if (id == 0 && var == 0 && lev == 5) {
+        //     // printf("argghhh1!\n"); //stupid place to put a stupid break point
+        //     lapl *= 1.0;
+        // }
+
+        if (step_num == 0) {
+            diffv_d1[id * nv * 6 + lev * 6 + var] = lapl; //
+        }
+        else if (step_num == 1) {
+            diffv_d2[id * nv * 6 + lev * 6 + var] = lapl; //
         }
         else if (step_num == 2) {
             if (var == 0) diffrv_d[id * nv + lev] = lapl;

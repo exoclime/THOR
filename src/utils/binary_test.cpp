@@ -291,7 +291,7 @@ map<string, output_def> build_definitions(ESP& esp, Icogrid& grid) {
               &ESP::index_to_location_scalar, &esp, std::placeholders::_1, std::placeholders::_2)}},
 
         {"diffv_d",
-         {esp.diffv_d,
+         {esp.diffv_d2,
           6 * esp.nv * esp.point_num,
           "Diff Vert",
           "difv",
