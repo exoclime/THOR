@@ -83,6 +83,7 @@ __host__ ESP::ESP(int *           point_local_,
                   int             nlat_,
                   int *           zonal_mean_tab,
                   double          Rv_sponge_,
+                  double          RvT_sponge_,
                   double          ns_sponge_,
                   double          t_shrink_,
                   int             point_num_,
@@ -123,10 +124,11 @@ __host__ ESP::ESP(int *           point_local_,
 
     zonal_mean_tab_h = zonal_mean_tab;
 
-    Rv_sponge = Rv_sponge_;
-    ns_sponge = ns_sponge_;
-    t_shrink  = t_shrink_;
-    max_count = max_count_;
+    Rv_sponge  = Rv_sponge_;
+    RvT_sponge = RvT_sponge_;
+    ns_sponge  = ns_sponge_;
+    t_shrink   = t_shrink_;
+    max_count  = max_count_;
 
     // Set the physics module execute state for the rest of the lifetime of ESP object
     // only execute physics modules when no benchmarks are enabled

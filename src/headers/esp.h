@@ -116,6 +116,7 @@ public:
 
     int *  zonal_mean_tab_h;
     double Rv_sponge;
+    double RvT_sponge;
     double ns_sponge;
     double t_shrink;
 
@@ -273,6 +274,7 @@ public:
         int             nlat_,
         int *           zonal_mean_tab,
         double          Rv_sponge_,
+        double          RvT_sponge_,
         double          ns_sponge_,
         double          t_shrink_,
         int             point_num_,

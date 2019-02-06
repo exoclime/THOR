@@ -58,6 +58,7 @@
 // Sponge layer
 #define nlat_default 20             // Number of latitude rings for mean zonal wind (sponge layer)
 #define Rv_sponge_default 1e-4      // Maximum damping (top of model)
+#define RvT_sponge_default 1e-4     // Maximum damping (top of model)
 #define ns_sponge_default 0.75      // Lowest level of sponge layer
 #define shrink_sponge_default false // shrink sponge layer after some time
 #define t_shrink_default 500.0      // shrink sponge after this many days

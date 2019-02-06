@@ -45,6 +45,7 @@
 //
 ////////////////////////////////////////////////////////////////////////
 #include "kernel_halo_helpers.h"
+#define REALLY_SMALL 1e-300
 
 template<int NX, int NY>
 __global__ void Momentum_Eq(double *M_d,
@@ -439,9 +440,18 @@ __global__ void Density_Pressure_Eqs(double *pressure_d,
     aux += pt * r;
     // aux += pt_s[ir]*r;
 
+
     // printf("***** (pt_small - pt_large) = %g \n*******",(pt-pt_s[ir]));
     // Updates pressure
-    p = P_Ref * pow(Rd * aux / P_Ref, Cp / Cv);
+    // if (aux >= 0) {
+    p = P_Ref * pow(Rd * aux / P_Ref, Cp / Cv); //
+    // }
+    // else {
+    //     p = 0;
+    // }
+    // if (p < -1 * (diffpr_d[id * nv + lev] + diffprv_d[id * nv + lev])) {
+    //     p = -1 * (diffpr_d[id * nv + lev] + diffprv_d[id * nv + lev]);
+    // }
     pressure_d[id * nv + lev] =
         p - pressurek_d[id * nv + lev] + (diffpr_d[id * nv + lev] + diffprv_d[id * nv + lev]) * dt;
 
@@ -593,9 +603,18 @@ __global__ void Density_Pressure_Eqs_Poles(double *pressure_d,
             aux += pt * r;
 
             // aux += pt_d[id * nv + lev] * r;
+            // if (aux >= 0) {
+            p = P_Ref * pow(Rd * aux / P_Ref, Cp / Cv); //
+            // }
+            // else {
+            //     p = 0;
+            // }
+            // if (p < -1 * (diffpr_d[id * nv + lev] + diffprv_d[id * nv + lev])) {
+            //     p = -1 * (diffpr_d[id * nv + lev] + diffprv_d[id * nv + lev]);
+            // }
 
             // Updates pressure
-            p                         = P_Ref * pow(Rd * aux / P_Ref, Cp / Cv);
+            // p                         = P_Ref * pow(Rd * aux / P_Ref, Cp / Cv);
             pressure_d[id * nv + lev] = p - pressurek_d[id * nv + lev]
                                         + (diffpr_d[id * nv + lev] + diffprv_d[id * nv + lev]) * dt;
 

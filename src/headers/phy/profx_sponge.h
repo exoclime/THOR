@@ -140,6 +140,7 @@ __global__ void sponge_layer(double *M_d,
                              double *Altitude_d,
                              double *Altitudeh_d,
                              double  Rv,
+                             double  RvT,
                              double  Rv_fac,
                              double  nsi,
                              double  dt,
@@ -189,19 +190,21 @@ __global__ void sponge_layer(double *M_d,
 
             // retrieve zonal averages and interpolate if necessary
             if (lat <= -M_PI / 2 + 0.5 * des_lat) {
+                //near poles, just use value in polar ring
                 vbu     = vbar_d[intlat * nv * 3 + lev * 3 + 0];
                 vbv     = vbar_d[intlat * nv * 3 + lev * 3 + 1];
                 vbw     = vbar_d[intlat * nv * 3 + lev * 3 + 2];
                 temp_av = Tbar_d[intlat * nv + lev];
             }
             else if (lat >= -M_PI / 2 + 0.5 * des_lat + des_lat * (nlat - 1)) {
+                //near poles, just use value in polar ring
                 vbu     = vbar_d[intlat * nv * 3 + lev * 3 + 0];
                 vbv     = vbar_d[intlat * nv * 3 + lev * 3 + 1];
                 vbw     = vbar_d[intlat * nv * 3 + lev * 3 + 2];
                 temp_av = Tbar_d[intlat * nv + lev];
             }
             else if (lat >= lat1 && lat < lat2) {
-
+                // interpolate between nearest rings to smooth over latitude
                 intt = (lat - lat2) / (lat1 - lat2);
                 intl = (lat - lat1) / (lat2 - lat1);
 
@@ -214,7 +217,7 @@ __global__ void sponge_layer(double *M_d,
                 temp_av = Tbar_d[(intlat - 1) * nv + lev] * intt + Tbar_d[intlat * nv + lev] * intl;
             }
             else if (lat >= lat2 && lat < lat3) {
-
+                // interpolate between nearest rings to smooth over latitude
                 intt = (lat - lat3) / (lat2 - lat3);
                 intl = (lat - lat2) / (lat3 - lat2);
 
@@ -269,9 +272,16 @@ __global__ void sponge_layer(double *M_d,
             W_d[id * nv + lev] += dw * rho;
 
             if (temp_sponge) {
-                double temperature, dT;
+                double temperature, dT, kvT;
+                if (n >= ns) {
+                    kvT =
+                        Rv_fac * RvT * pow(sin(0.5 * M_PI * (n - ns) * (1.0) / (1.0 - ns)), 2.0); //
+                }
+                else {
+                    kvT = 0.0;
+                }
                 temperature = pressure_d[id * nv + lev] / Rd / Rho_d[id * nv + lev];
-                dT          = -kv * (temperature - temp_av) * dt;
+                dT          = -kvT * (temperature - temp_av) * dt;
                 pressure_d[id * nv + lev] += Rd * Rho_d[id * nv + lev] * dT;
             }
         }
