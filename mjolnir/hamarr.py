@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
+import matplotlib.axes as axes
 import matplotlib.cm as cm
 import scipy.interpolate as interp
 import os
@@ -411,36 +412,6 @@ def KE_spect(input,grid,output,sigmaref,coord = 'icoh',lmax_adjust = 0):
     tsp = output.nts-output.ntsi+1
     lmax_grid = np.int(np.floor(np.sqrt(grid.point_num))/2-1)
 
-    # if coord == 'llp':
-    #     lon, lat = np.meshgrid(rg.lon[:,0],rg.lat[:,0])
-    #     npre = np.shape(rg.Pressure)[0]
-    #
-    #     U = rg.U*rg.Rho
-    #     V = rg.V*rg.Rho
-    #     W = rg.W*rg.Rho
-    #
-    #     lmax = np.int(np.shape(lat)[0]/2)
-    #     u_coeffs = np.zeros((2,lmax,lmax,npre,tsp),dtype=complex)
-    #     v_coeffs = np.zeros((2,lmax,lmax,npre,tsp),dtype=complex)
-    #     w_coeffs = np.zeros((2,lmax,lmax,npre,tsp),dtype=complex)
-    #     KE_coeffs = np.zeros((2,lmax,lmax,npre,tsp),dtype=complex)
-    #     KE_power = np.zeros((lmax,npre,tsp))
-    #
-    #     KE = 0.5*(U**2+V**2+W**2)
-    #
-    #     waven = np.arange(lmax)  #total spherical wavenumber
-    #
-    #     cmap = cm.get_cmap('cividis')
-    #     fig, ax = plt.subplots(1, 1)
-    #     for t in np.arange(tsp):
-    #         for p in np.arange(npre):
-    #             #KE_coeffs[:,:,:,p,t] = (np.abs(u_coeffs[:,:,:,p,t])**2+np.abs(v_coeffs[:,:,:,p,t])**2)/4.0
-    #             KE_coeffs[:,:,:,p,t] = chairs.expand.SHExpandDHC(KE[:,:,p,t],sampling=2)
-    #
-    #             KE_power[:,p,t] = chairs.spectralanalysis.spectrum(KE_coeffs,unit='per_lm')
-    #
-    #             ax.plot(waven, KE_power[:,p,t],'k-',c=cmap(p/npre),lw=1)
-
     if coord == 'icoh':
         W = 0.5*(output.Wh[:,1:,:]+output.Wh[:,:-1,:])
         Wx = W*np.cos(grid.lat[:,None,None])*np.cos(grid.lon[:,None,None])
@@ -483,12 +454,10 @@ def KE_spect(input,grid,output,sigmaref,coord = 'icoh',lmax_adjust = 0):
     ax.set_xscale('log')
     ax.vlines(lmax_grid,ax.get_ylim()[0],ax.get_ylim()[1],zorder=1000,linestyle='--')
     ax.set(ylabel='KE density (kg m$^{-1}$ s$^{-2}$)',xlabel='n')
-    # import pdb; pdb.set_trace()
     # ke3line = ax.get_ylim()[0] + waven**(-3.0)
     # ke53line = ax.get_ylim()[0] + waven**(-5.0/3)
     # ax.plot(waven,ke3line,'r:')
     # ax.plot(waven,ke53line,':',color='r')
-
 
     if not os.path.exists(input.resultsf+'/figures'):
         os.mkdir(input.resultsf+'/figures')
@@ -524,7 +493,7 @@ def KE_spect(input,grid,output,sigmaref,coord = 'icoh',lmax_adjust = 0):
     plt.savefig(input.resultsf+'/figures/KEmap_lowest_%i_%s.pdf'%(output.ntsi,coord))
     plt.close()
 
-def vertical_lat(input,grid,output,rg,sigmaref,z,slice='avg'):
+def vertical_lat(input,grid,output,rg,sigmaref,z,slice=(0,360),save=True,axis=False):
     # generic pressure/latitude plot function
 
     # contour spacing
@@ -535,9 +504,20 @@ def vertical_lat(input,grid,output,rg,sigmaref,z,slice='avg'):
     d_sig = np.size(sigmaref)
     tsp = output.nts-output.ntsi+1
 
-    if slice == 'avg':
+    if not isinstance(slice,tuple):
+        raise IOError("'slice' argument must be a tuple")
+
+    if len(slice) == 2:
         # Set the latitude-longitude grid
-        loni, lati = np.meshgrid(rg.lon,rg.lat)
+        if slice[1]-slice[0] > 360:
+            raise IOError("'slice' cannot exceed a range of 360 degrees")
+        if slice[1] < slice[0]:
+            raise IOError("'slice' values must be arranged (small, large) because I am too lazy to code it better")
+        if slice[0] < 0:
+            mask_ind = np.logical_or((rg.lon-360)>=slice[0],rg.lon<=slice[1])
+        else:
+            mask_ind = np.logical_and(rg.lon>=slice[0],rg.lon<=slice[1])
+        loni, lati = np.meshgrid(rg.lon[mask_ind],rg.lat)
         d_lon = np.shape(loni)
 
         ##################
@@ -546,7 +526,7 @@ def vertical_lat(input,grid,output,rg,sigmaref,z,slice='avg'):
 
         # Averaging in time and longitude
         if tsp > 1:
-            Zonall = np.mean(z['value'][:,:,:,:],axis=1)
+            Zonall = np.mean(z['value'][:,mask_ind[:,0],:,:],axis=1)
             # Vl = np.mean(rg.V[:,:,:,:],axis=1)
             # Wl = np.mean(rg.W[:,:,:,:],axis=1)
             Zonallt = np.mean(Zonall[:,:,:],axis=2)
@@ -554,11 +534,11 @@ def vertical_lat(input,grid,output,rg,sigmaref,z,slice='avg'):
             # Wlt = np.mean(Wl[:,:,:],axis=2)
             del Zonall
         else:
-            Zonallt = np.mean(z['value'][:,:,:,0],axis=1)
+            Zonallt = np.mean(z['value'][:,:,:,0][:,mask_ind[:,0],:],axis=1)
             # Vlt = np.mean(rg.V[:,:,:,0],axis=1)
             # Wlt = np.mean(rg.W[:,:,:,0],axis=1)
 
-    else:
+    elif len(slice) == 1:
         try:
             slice = np.float(slice)
         except:
@@ -583,7 +563,6 @@ def vertical_lat(input,grid,output,rg,sigmaref,z,slice='avg'):
     #################
     # Create figure #
     #################
-
     # set up arrows
     # vspacing = 18
     # wspacing = 1
@@ -600,180 +579,46 @@ def vertical_lat(input,grid,output,rg,sigmaref,z,slice='avg'):
     prange = np.where(np.logical_and(rg.Pressure>=np.min(Pref),rg.Pressure<=np.max(Pref)))
 
     # Contour plot
-    C = plt.contourf(latp*180/np.pi,rg.Pressure[prange[0],0]/1e5,Zonallt[:,prange[0]].T,40,cmap=z['cmap'])
-    clb = plt.colorbar(C,extend='both')
+    if isinstance(axis,axes.SubplotBase):
+        C = axis.contourf(latp*180/np.pi,rg.Pressure[prange[0],0]/1e5,Zonallt[:,prange[0]].T,40,cmap=z['cmap'])
+        ax = axis
+    elif axis == False:
+        C = plt.contourf(latp*180/np.pi,rg.Pressure[prange[0],0]/1e5,Zonallt[:,prange[0]].T,40,cmap=z['cmap'])
+        ax = plt.gca()
+    else:
+        raise IOError("'axis = {}' but {} is not an axes.SubplotBase instance".format(axis,axis))
+
+    clb = plt.colorbar(C,extend='both',ax=ax)
     clb.set_label(z['label'])
     levp = np.arange(np.ceil(np.min(Zonallt[:,prange[0]])/csp)*csp,np.floor(np.max(Zonallt[:,prange[0]])/csp)*csp,csp)
-    c2 = plt.contour(latp*180/np.pi,rg.Pressure[prange[0],0]/1e5,Zonallt[:,prange[0]].T,levels=levp,colors='w',linewidths=1)
+    c2 = ax.contour(latp*180/np.pi,rg.Pressure[prange[0],0]/1e5,Zonallt[:,prange[0]].T,levels=levp,colors='w',linewidths=1)
     plt.clabel(c2,inline=1,fontsize=10)
     for cc in C.collections:
         cc.set_edgecolor("face") #fixes a stupid bug in matplotlib 2.0
-    plt.gca().invert_yaxis()
+    ax.invert_yaxis()
     # plt.quiver(latq.ravel(),preq.ravel()/1e5,Vq/np.max(Vq),Wq/np.max(Wq),color='0.5')
     if np.max(Pref)/np.min(Pref) > 100:
-        plt.gca().set_yscale("log")
-    plt.xlabel('Latitude (deg)')
-    plt.ylabel('Pressure (bar)')
-    plt.plot(latp*180/np.pi,np.zeros_like(latp)+np.max(output.Pressure[:,grid.nv-1,:])/1e5,'r--')
+        ax.set_yscale("log")
+    ax.set_xlabel('Latitude (deg)')
+    ax.set_ylabel('Pressure (bar)')
+    ax.plot(latp*180/np.pi,np.zeros_like(latp)+np.max(output.Pressure[:,grid.nv-1,:])/1e5,'r--')
     #    plt.plot(latp*180/np.pi,np.zeros_like(latp)+np.max(output.Pressure[:,grid.nv-1,:])/1e5,'r--')
 
-    plt.title('Time = %#.3f - %#.3f days'%(output.time[0],output.time[-1]))
+    if len(slice) == 2:
+        ax.set_title('Time = %#.3f-%#.3f days, Lon = (%#.3f,%#.3f)'%(output.time[0],output.time[-1],slice[0],slice[1]))
+    else:
+        ax.set_title('Time = %#.3f-%#.3f days, Lon = (%#.3f,)'%(output.time[0],output.time[-1],slice[0]))
+
     if not os.path.exists(input.resultsf+'/figures'):
         os.mkdir(input.resultsf+'/figures')
     plt.tight_layout()
-    if slice == 'avg':
-        plt.savefig(input.resultsf+'/figures/%s_ver_i%d_l%d_avg.pdf'%(z['name'],output.ntsi,output.nts))
-    else:
-        plt.savefig(input.resultsf+'/figures/%s_ver_i%d_l%d_sl%#.2f.pdf'%(z['name'],output.ntsi,output.nts,slice))
-    plt.close()
-
-def temperature(input,grid,output,rg,sigmaref):
-    # Set the reference pressure
-    Pref = input.P_Ref*sigmaref
-    d_sig = np.size(sigmaref)
-
-    # Set the latitude-longitude grid.
-    loni, lati = np.meshgrid(rg.lon,rg.lat)
-    d_lon = np.shape(loni)
-    tsp = output.nts-output.ntsi+1
-
-    # Averaging in time and longitude.
-    if tsp > 1:
-        Temperaturel = np.mean(rg.Temperature[:,:,:,:],axis=1)
-        Temperaturelt = np.mean(Temperaturel[:,:,:],axis=2)
-        del Temperaturel
-    else:
-        Temperaturelt = np.mean(rg.Temperature[:,:,:,0],axis=1)
-
-    #################
-    # Create figure #
-    #################
-
-    # Latitude
-    latp = rg.lat[:,0]*np.pi/180
-
-    # need to set desired pressure range
-    prange = np.where(np.logical_and(rg.Pressure>=np.min(Pref),rg.Pressure<=np.max(Pref)))
-
-    # Contour plot
-    C = plt.contourf(latp*180/np.pi,rg.Pressure[prange[0],0]/1e5,Temperaturelt[:,prange[0]].T,40)
-    for cc in C.collections:
-        cc.set_edgecolor("face") #fixes a stupid bug in matplotlib 2.0
-    plt.gca().invert_yaxis()
-    if np.max(Pref)/np.min(Pref) > 100:
-        plt.gca().set_yscale("log")
-    plt.xlabel('Latitude (deg)')
-    plt.ylabel('Pressure (bar)')
-    plt.title('Time = %#.3f - %#.3f days'%(output.time[0],output.time[-1]))
-    plt.plot(latp*180/np.pi,np.zeros_like(latp)+np.max(output.Pressure[:,grid.nv-1,:])/1e5,'r--')
-    clb = plt.colorbar(C)
-    clb.set_label(r'Temperature (K)')
-    if not os.path.exists(input.resultsf+'/figures'):
-        os.mkdir(input.resultsf+'/figures')
-    plt.tight_layout()
-    plt.savefig(input.resultsf+'/figures/temperature_ver_i%d_l%d.pdf'%(output.ntsi,output.nts))
-    plt.close()
-
-def u(input,grid,output,rg,sigmaref,slice='avg'):
-    # contour spacing
-    csp = 500
-
-    # Set the reference pressure
-    Pref = input.P_Ref*sigmaref
-    d_sig = np.size(sigmaref)
-    tsp = output.nts-output.ntsi+1
-
-    if slice == 'avg':
-        # Set the latitude-longitude grid
-        loni, lati = np.meshgrid(rg.lon,rg.lat)
-        d_lon = np.shape(loni)
-
-        ##################
-        #    Averages    #
-        ##################
-
-        # Averaging in time and longitude
-        if tsp > 1:
-            ZonalMl = np.mean(rg.U[:,:,:,:],axis=1)
-            # Vl = np.mean(rg.V[:,:,:,:],axis=1)
-            # Wl = np.mean(rg.W[:,:,:,:],axis=1)
-            ZonalMlt = np.mean(ZonalMl[:,:,:],axis=2)
-            # Vlt = np.mean(Vl[:,:,:],axis=2)
-            # Wlt = np.mean(Wl[:,:,:],axis=2)
-            del ZonalMl, Vl, Wl
+    if save == True:
+        # save the plot to file designated by z
+        if len(slice)==2:
+            plt.savefig(input.resultsf+'/figures/%s_ver_i%d_l%d_lon%#.2f-%#.2f.pdf'%(z['name'],output.ntsi,output.nts,slice[0],slice[1]))
         else:
-            ZonalMlt = np.mean(rg.U[:,:,:,0],axis=1)
-            # Vlt = np.mean(rg.V[:,:,:,0],axis=1)
-            # Wlt = np.mean(rg.W[:,:,:,0],axis=1)
-
-    else:
-        try:
-            slice = np.float(slice)
-        except:
-            raise IOError("'slice' option must be 'avg' or a longitude (degrees)")
-
-        if slice in rg.lon:
-            ZonalMl = rg.U[:,rg.lon[:,0]==slice,:,:]
-        else:
-            ZonalMl = np.zeros((len(rg.lat),1,d_sig,tsp))
-            # interpolate to slice given
-            for t in tsp:
-                for lev in np.arange(d_sig):
-                    ZonalMl[:,0,lev,tsp] = interp.griddata(np.vstack([rg.lon,rg.lat]).T,rg.U[:,:,lev,tsp],(slice,rg.lat))
-
-        # Averaging in time
-        if tsp > 1:
-            ZonalMlt = np.mean(ZonalMl[:,0,:,:],axis=2)
-            del ZonalMl
-        else:
-            ZonalMlt = ZonalMl[:,0,:,0]
-
-    #################
-    # Create figure #
-    #################
-
-    # set up arrows
-    # vspacing = 18
-    # wspacing = 1
-    # Vq = Vlt[::vspacing,::wspacing].ravel()
-    # Wq = Wlt[::vspacing,::wspacing].ravel()
-    # #preq = rg.Pressure[:,0][::spacing,::spacing].ravel()
-    # #latq = lati[::spacing,::spacing].ravel()
-    # latq, preq = np.meshgrid(rg.lat[::vspacing,0],rg.Pressure[::wspacing,0])
-
-    # Latitude
-    latp = rg.lat[:,0]*np.pi/180
-
-    # need to set desired pressure range (major PITA!)
-    prange = np.where(np.logical_and(rg.Pressure>=np.min(Pref),rg.Pressure<=np.max(Pref)))
-
-    # Contour plot
-    C = plt.contourf(latp*180/np.pi,rg.Pressure[prange[0],0]/1e5,ZonalMlt[:,prange[0]].T,40,cmap='viridis')
-    clb = plt.colorbar(C,extend='both')
-    clb.set_label(r'Velocity (m s$^{-1}$)')
-    levp = np.arange(np.ceil(np.min(ZonalMlt[:,prange[0]])/csp)*csp,np.floor(np.max(ZonalMlt[:,prange[0]])/csp)*csp,csp)
-    c2 = plt.contour(latp*180/np.pi,rg.Pressure[prange[0],0]/1e5,ZonalMlt[:,prange[0]].T,levels=levp,colors='w',linewidths=1)
-    plt.clabel(c2,inline=1,fontsize=10)
-    for cc in C.collections:
-        cc.set_edgecolor("face") #fixes a stupid bug in matplotlib 2.0
-    plt.gca().invert_yaxis()
-    # plt.quiver(latq.ravel(),preq.ravel()/1e5,Vq/np.max(Vq),Wq/np.max(Wq),color='0.5')
-    if np.max(Pref)/np.min(Pref) > 100:
-        plt.gca().set_yscale("log")
-    plt.xlabel('Latitude (deg)')
-    plt.ylabel('Pressure (bar)')
-    plt.plot(latp*180/np.pi,np.zeros_like(latp)+np.max(output.Pressure[:,grid.nv-1,:])/1e5,'r--')
-    #    plt.plot(latp*180/np.pi,np.zeros_like(latp)+np.max(output.Pressure[:,grid.nv-1,:])/1e5,'r--')
-
-    plt.title('Time = %#.3f - %#.3f days'%(output.time[0],output.time[-1]))
-    if not os.path.exists(input.resultsf+'/figures'):
-        os.mkdir(input.resultsf+'/figures')
-    plt.tight_layout()
-    if slice == 'avg':
-        plt.savefig(input.resultsf+'/figures/u_ver_i%d_l%d_avg.pdf'%(output.ntsi,output.nts))
-    else:
-        plt.savefig(input.resultsf+'/figures/u_ver_i%d_l%d_sl%#.2f.pdf'%(output.ntsi,output.nts,slice))
-    plt.close()
+            plt.savefig(input.resultsf+'/figures/%s_ver_i%d_l%d_lon%#.2f.pdf'%(z['name'],output.ntsi,output.nts,slice[0]))
+        plt.close()
 
 def w_prof(input,grid,output):
     tsp = output.nts-output.ntsi+1
@@ -838,84 +683,6 @@ def w_prof(input,grid,output):
     plt.savefig(input.resultsf+'/figures/Wprofile_i%d_l%d.pdf'%(output.ntsi,output.nts))
     plt.close()
 
-def w_ver(input,grid,output,rg,sigmaref):
-    # contour spacing
-    csp = 200
-
-    # Set the reference pressure
-    Pref = input.P_Ref*sigmaref
-    d_sig = np.size(sigmaref)
-
-    # Set the latitude-longitude grid
-    loni, lati = np.meshgrid(rg.lon,rg.lat)
-    d_lon = np.shape(loni)
-    tsp = output.nts-output.ntsi+1
-
-    # Averaging in time and longitude
-    if tsp > 1:
-        VertMl = np.mean(rg.W[:,:,:,:],axis=1)
-        VertMeq = np.mean(rg.W[np.logical_and(lati>=-20.0,lati<=20.0)[:,1],:,:,:],axis=0)
-        VertMlt = np.mean(VertMl[:,:,:],axis=2)
-        VertMeqt = np.mean(VertMeq[:,:,:],axis=2)
-        del VertMl, VertMeq
-    else:
-        VertMlt = np.mean(rg.W[:,:,:,0],axis=1)
-        VertMeqt = np.mean(rg.W[np.logical_and(lati>=-20.0,lati<=20.0)[:,1],:,:,0],axis=0)
-
-    #################
-    # Create figure #
-    #################
-
-    # Latitude
-    latp = rg.lat[:,0]*np.pi/180
-    lonp = rg.lon[:,0]*np.pi/180
-
-    # need to set desired pressure range
-    prange = np.where(np.logical_and(rg.Pressure>=np.min(Pref),rg.Pressure<=np.max(Pref)))
-
-    # Contour plot
-    C = plt.contourf(latp*180/np.pi,rg.Pressure[prange[0],0]/1e5,VertMlt[:,prange[0]].T,40,cmap='viridis')
-    levp = np.arange(np.ceil(np.min(VertMlt)/csp)*csp,np.floor(np.max(VertMlt)/csp)*csp,csp)
-    c2 = plt.contour(latp*180/np.pi,rg.Pressure[prange[0],0]/1e5,VertMlt[:,prange[0]].T,[0],colors='w',linewidths=1)
-    # plt.clabel(c2,inline=1,fontsize=10)
-    for cc in C.collections:
-        cc.set_edgecolor("face") #fixes a stupid bug in matplotlib 2.0
-    plt.gca().invert_yaxis()
-    if np.max(Pref)/np.min(Pref) > 100:
-        plt.gca().set_yscale("log")
-    plt.xlabel('Latitude (deg)')
-    plt.ylabel('Pressure (bar)')
-    plt.plot(latp*180/np.pi,np.zeros_like(latp)+np.max(output.Pressure[:,grid.nv-1,:])/1e5,'r--')
-    plt.title('Time = %#.3f - %#.3f days'%(output.time[0],output.time[-1]))
-    clb = plt.colorbar(C)
-    clb.set_label(r'Velocity (m s$^{-1}$)')
-    if not os.path.exists(input.resultsf+'/figures'):
-        os.mkdir(input.resultsf+'/figures')
-    plt.tight_layout()
-    plt.savefig(input.resultsf+'/figures/w_ver_i%d_l%d.pdf'%(output.ntsi,output.nts))
-    plt.close()
-
-    plt.figure()
-    C = plt.contourf(lonp*180/np.pi,rg.Pressure[prange[0],0]/1e5,VertMeqt[:,prange[0]].T,40,cmap='viridis')
-    levp = np.arange(np.ceil(np.min(VertMeqt)/csp)*csp,np.floor(np.max(VertMeqt)/csp)*csp,csp)
-    c2 = plt.contour(lonp*180/np.pi,rg.Pressure[prange[0],0]/1e5,VertMeqt[:,prange[0]].T,[0],colors='w',linewidths=1)
-    # plt.clabel(c2,inline=1,fontsize=10)
-    for cc in C.collections:
-        cc.set_edgecolor("face") #fixes a stupid bug in matplotlib 2.0
-    plt.gca().invert_yaxis()
-    if np.max(Pref)/np.min(Pref) > 100:
-        plt.gca().set_yscale("log")
-    plt.xlabel('Longitude (deg)')
-    plt.ylabel('Pressure (bar)')
-    plt.plot(lonp*180/np.pi,np.zeros_like(lonp)+np.max(output.Pressure[:,grid.nv-1,:])/1e5,'r--')
-    plt.title('Time = %#.3f - %#.3f days'%(output.time[0],output.time[-1]))
-    clb = plt.colorbar(C)
-    clb.set_label(r'Velocity (m s$^{-1}$)')
-    if not os.path.exists(input.resultsf+'/figures'):
-        os.mkdir(input.resultsf+'/figures')
-    plt.tight_layout()
-    plt.savefig(input.resultsf+'/figures/weq_ver_i%d_l%d.pdf'%(output.ntsi,output.nts))
-    plt.close()
 
 def uv_lev(input,grid,output,rg,Plev):
     loni, lati = np.meshgrid(rg.lon[:,0],rg.lat[:,0])
@@ -1173,64 +940,6 @@ def tracer_u_lev(input,grid,output,Plev,trace):
         os.mkdir(input.resultsf+'/figures')
     plt.tight_layout()
     plt.savefig(input.resultsf+'/figures/chem-'+trace+'-uv_lev%#.3fmbar_i%d_l%d.pdf'%(Plev/100,output.ntsi,output.nts))
-    plt.close()
-
-def potential_temp(input,grid,output,rg,sigmaref):
-    # Set the reference pressure
-    Pref = input.P_Ref*sigmaref
-    d_sig = np.size(sigmaref)
-    kappa_ad = input.Rd/input.Cp  # adiabatic coefficient
-
-    # Set the latitude-longitude grid.
-    res_deg = 0.005
-    loni, lati = np.meshgrid(rg.lon,rg.lat)
-    tsp = output.nts-output.ntsi+1
-
-    #########################
-    # Potential temperature #
-    #########################
-
-    Theta = rg.Pressure[None,None,:,:]/(input.Rd*rg.Rho) * \
-             (rg.Pressure[None,None,:,:]/input.P_Ref)**(-kappa_ad)
-
-    # Averaging in time and longitude.
-    if tsp > 1:
-        Thetal = np.mean(Theta[:,:,:,:],axis=1)
-        del Theta
-        Thetalt = np.mean(Thetal[:,:,:],axis=2)
-        del Thetal
-    else:
-        Thetalt = np.mean(Theta[:,:,:,0],axis=1)
-        del Theta
-
-    #################
-    # Create figure #
-    #################
-
-    # Latitude
-    latp = rg.lat[:,0]*np.pi/180
-
-    # need to set desired pressure range
-    prange = np.where(np.logical_and(rg.Pressure>=np.min(Pref),rg.Pressure<=np.max(Pref)))
-
-    # Contour plot
-    C = plt.contourf(latp*180/np.pi,rg.Pressure[prange[0],0]/1e5,Thetalt[:,prange[0]].T,40,linewidths=None)
-    for cc in C.collections:
-        cc.set_edgecolor("face") #fixes a stupid bug in matplotlib 2.0
-    plt.gca().invert_yaxis()
-    if np.max(Pref)/np.min(Pref) > 100:
-        plt.gca().set_yscale("log")
-    plt.xlabel('Latitude (deg)')
-    plt.ylabel('Pressure (bar)')
-    plt.plot(latp*180/np.pi,np.zeros_like(latp)+np.max(output.Pressure[:,grid.nv-1,:])/1e5,'r--')
-
-    plt.title('Time = %#.3f - %#.3f days'%(output.time[0],output.time[-1]))
-    clb = plt.colorbar(C)
-    clb.set_label(r'Potential temperature (K)')
-    if not os.path.exists(input.resultsf+'/figures'):
-        os.mkdir(input.resultsf+'/figures')
-    plt.tight_layout()
-    plt.savefig(input.resultsf+'/figures/potential_temp_i%d_l%d.pdf'%(output.ntsi,output.nts))
     plt.close()
 
 def dFunc_dZ(f, alti, nv):
@@ -2053,3 +1762,8 @@ def SRindex(input,grid,output):
             os.mkdir(input.resultsf+'/figures')
     plt.savefig(input.resultsf+'/figures/SRindex_i%d_l%d.pdf'%(output.ntsi,output.nts))
     plt.close()
+
+
+def Calc_PV_llp(input,grid,output,rg):
+    kappa_ad = input.Rd/input.Cp  # adiabatic coefficient
+    pt = rg.Temperature*(rg.Pressure/input.P_Ref)**(-kappa_ad)

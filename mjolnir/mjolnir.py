@@ -51,7 +51,7 @@ parser.add_argument("-pmin","--pressure_min",nargs=1,default=['default'],help='L
 parser.add_argument("-slay","--split_layer",nargs=1,default=['no_split'],help='Split conserved quantities into weather and deep layers at this pressure')
 parser.add_argument("-coord","--coordinate_sys",nargs=1,default=['icoh'],help='For KE spectrum, use either icoh grid or llp grid')
 parser.add_argument("-ladj","--lmax_adjust",nargs=1,default=[0],help='For KE spectrum, icoh grid, adjust number of wave numbers to fit')
-parser.add_argument("-slice","--slice",nargs=1,default=['avg'],help='Plot a long/lat slice or average over all values')
+parser.add_argument("-slice","--slice",nargs=1,default=(0,360),help='Plot a long/lat slice or average over all values')
 args = parser.parse_args()
 pview = args.pview
 
@@ -143,20 +143,24 @@ if 'uver' in pview:
     z = {'value':rg.U, 'label':r'Velocity (m s$^{-1}$)', 'name':'u', 'cmap':'viridis'}
     # Averaged zonal winds (latitude vs pressure)
     #ham.u(input,grid,output,rg,sigmaref,slice=args.slice[0])
-    ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice[0])
+    fig, ax = plt.subplots(nrows=1, ncols=2)
+    ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice,axis=ax[1])
 if 'wver' in pview:
     z = {'value':rg.W, 'label':r'Velocity (m s$^{-1}$)', 'name':'w', 'cmap':'viridis'}
     # Averaged vertical winds (latitude vs pressure)
     #ham.w_ver(input,grid,output,rg,sigmaref)
-    ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice[0])
+    ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice)
 if 'Tver' in pview:
     z = {'value':rg.Temperature, 'label':r'Temperature (K)', 'name':'temperature', 'cmap':'magma'}
     # Averaged temperature (latitude vs pressure)
     #ham.temperature(input,grid,output,rg,sigmaref)
-    ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice[0])
+    ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice)
 if 'PTver' in pview:
+    kappa_ad = input.Rd/input.Cp  # adiabatic coefficient
+    pt = rg.Temperature*(rg.Pressure/input.P_Ref)**(-kappa_ad)
+    z = {'value':pt, 'label':r'Potential Temperature (K)', 'name':'potential_temp', 'cmap':'magma'}
     # Averaged potential temperature (latitude vs pressure)
-    ham.potential_temp(input,grid,output,rg,sigmaref)
+    ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice)
 if 'PVver' in pview: # RD: needs some work!
     #sigmaref = np.arange(1,0,-0.05)
     ham.potential_vort_vert(input,grid,output,sigmaref)
