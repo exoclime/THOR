@@ -120,8 +120,15 @@ __host__ void ESP::output(int                    fidx, // Index of output file
 
         //      Number of vertical layers
         s.append_value((double)nv, "/nv", "-", "Number of vertical layers");
+
         //      point neighbours
         s.append_table(point_local_h, 6 * point_num, "/pntloc", "-", "Neighbours indexes");
+
+        //      gradient operator
+        s.append_table(grad_h, 7 * 3 * point_num, "/grad", "m^-1", "Horizontal gradient operator");
+
+        //      divergence operator
+        s.append_table(div_h, 7 * 3 * point_num, "/div", "m^-1", "Horizontal divergence operator");
     }
 
     //  PLANET

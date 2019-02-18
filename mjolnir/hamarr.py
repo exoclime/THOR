@@ -79,12 +79,15 @@ class grid:
         self.areasT = openh5['areasT'][...]
         self.lonlat = openh5['lonlat'][...]
         self.point_num = np.int(openh5['point_num'][0])
-        self.pntloc = openh5['pntloc'][...]
+        self.pntloc = np.reshape(openh5['pntloc'][...],(self.point_num,6)) # indices of nearest neighbors
         self.nv = np.int(openh5['nv'][0])
+        self.grad = np.reshape(openh5['grad'][...],(self.point_num,7,3))
+        self.div = np.reshape(openh5['div'][...],(self.point_num,7,3))
         openh5.close()
         self.nvi = self.nv+1
         self.lon = (self.lonlat[::2])%(2*np.pi)
         self.lat = self.lonlat[1::2]
+
 
 class output:
     def __init__(self,resultsf,simID,ntsi,nts,grid,stride=1):
