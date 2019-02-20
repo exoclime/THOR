@@ -81,8 +81,9 @@ class grid:
         self.point_num = np.int(openh5['point_num'][0])
         self.pntloc = np.reshape(openh5['pntloc'][...],(self.point_num,6)) # indices of nearest neighbors
         self.nv = np.int(openh5['nv'][0])
-        self.grad = np.reshape(openh5['grad'][...],(self.point_num,7,3))
-        self.div = np.reshape(openh5['div'][...],(self.point_num,7,3))
+        if 'grad' in openh5.keys():
+            self.grad = np.reshape(openh5['grad'][...],(self.point_num,7,3))
+            self.div = np.reshape(openh5['div'][...],(self.point_num,7,3))
         openh5.close()
         self.nvi = self.nv+1
         self.lon = (self.lonlat[::2])%(2*np.pi)
@@ -204,7 +205,7 @@ class output:
                 self.fnet_up[:,:,t-ntsi+1] = np.reshape(fupi,(grid.point_num,grid.nvi))
 
 class rg_out:
-    def __init__(self,resultsf,simID,ntsi,nts,input,grid):
+    def __init__(self,resultsf,simID,ntsi,nts,input,output,grid):
         RT = 0
         if "core_benchmark" in dir(input):
             if input.core_benchmark[0] == 0: # need to switch to 'radiative_tranfer' flag
@@ -235,6 +236,12 @@ class rg_out:
                 fnet_upi = openh5['fnet_up'][...]
                 fnet_dni = openh5['fnet_dn'][...]
 
+            if not 'PV' in openh5.keys():
+                calc_RV_PV(grid,output,input,loni,lati,Prei,t-ntsi+1,fileh5)
+
+            PVi = openh5['PV'][...]
+            RVi = openh5['RV'][...]
+
             openh5.close()
 
             if t == ntsi-1:
@@ -246,6 +253,8 @@ class rg_out:
                 self.Pressure = np.zeros(np.shape(Prei)+(nts-ntsi+1,))
                 self.lat = np.zeros(np.shape(lati)+(nts-ntsi+1,))
                 self.lon = np.zeros(np.shape(loni)+(nts-ntsi+1,))
+                self.PV = np.zeros(np.shape(PVi)+(nts-ntsi+1,))
+                self.RV = np.zeros(np.shape(RVi)+(nts-ntsi+1,))
                 if RT == 1:
                     self.tau_sw = np.zeros(np.shape(tau_swi)+(nts-ntsi+1,))
                     self.tau_lw = np.zeros(np.shape(tau_lwi)+(nts-ntsi+1,))
@@ -260,6 +269,8 @@ class rg_out:
             self.Pressure[:,t-ntsi+1] = Prei
             self.lat[:,t-ntsi+1] = lati
             self.lon[:,t-ntsi+1] = loni
+            self.PV[:,:,:,t-ntsi+1] = PVi
+            self.RV[:,:,:,:,t-ntsi+1] = RVi
             if RT == 1:
                 self.tau_sw[:,:,:,t-ntsi+1] = tau_swi
                 self.tau_lw[:,:,:,t-ntsi+1] = tau_lwi
@@ -272,7 +283,103 @@ class GetOutput:
         self.grid = grid(resultsf,simID)
         self.output = output(resultsf,simID,ntsi,nts,self.grid,stride=stride)
         if openrg == 1:
-            self.rg = rg_out(resultsf,simID,ntsi,nts,self.input,self.grid)
+            self.rg = rg_out(resultsf,simID,ntsi,nts,self.input,self.output,self.grid)
+
+def calc_RV_PV(grid,output,input,lons,lats,sigma,t_ind,fileh5,comp=4):
+    #Calculates relative and potential vorticity on height levels, then interpolates to pressure.
+    #It is easiest to calculate these on a lat-lon-altitude grid since conversion
+    #to pressure requires transformation of vertical velocity and computing 3D curls
+    #at the grid level would require heavy interpolation and invocation of stokes thm
+    ang_res = 4.0/2**(input.glevel-4)
+    # first interpolate to near thor grid resolution
+
+    lat_range_tmp = np.arange(-90,90+ang_res,ang_res)
+    lat_range = (lat_range_tmp[:-1]+lat_range_tmp[1:])/2
+    lon_range = np.arange(0,360,ang_res)
+
+    loni, lati, alti = np.meshgrid(lon_range,lat_range,grid.Altitude)
+    d_lon = np.shape(loni)
+    res_deg = ang_res*np.pi/180
+
+    U = (-output.Mh[0,:,:,t_ind]*np.sin(grid.lon[:,None])+output.Mh[1,:,:,t_ind]*np.cos(grid.lon[:,None]))/output.Rho[:,:,t_ind]
+    V = (-output.Mh[0,:,:,t_ind]*np.sin(grid.lat[:,None])*np.cos(grid.lon[:,None])\
+                      -output.Mh[1,:,:,t_ind]*np.sin(grid.lat[:,None])*np.sin(grid.lon[:,None])\
+                      +output.Mh[2,:,:,t_ind]*np.cos(grid.lat[:,None]))/output.Rho[:,:,t_ind]
+    interpx = (grid.Altitude-grid.Altitudeh[:-1])/(grid.Altitudeh[1:]-grid.Altitudeh[:-1])
+    W = (output.Wh[:,:-1,t_ind] + (output.Wh[:,1:,t_ind]-output.Wh[:,:-1,t_ind])*interpx[None,:])/output.Rho[:,:,t_ind]
+    Temp_icoh = output.Pressure[:,:,t_ind]/(input.Rd*output.Rho[:,:,t_ind])
+    pt = Temp_icoh*(output.Pressure[:,:,t_ind]/input.P_Ref)**(-input.Rd/input.Cp)
+
+    #full meshgrid
+    lonf, latf = np.meshgrid(lons,lats)
+
+    pt_llz = np.zeros((d_lon[0],d_lon[1],len(grid.Altitude)))
+    rho_llz = np.zeros((d_lon[0],d_lon[1],len(grid.Altitude)))
+    p_llz = np.zeros((d_lon[0],d_lon[1],len(grid.Altitude)))
+    U_llz = np.zeros((d_lon[0],d_lon[1],len(grid.Altitude)))
+    V_llz = np.zeros((d_lon[0],d_lon[1],len(grid.Altitude)))
+    W_llz = np.zeros((d_lon[0],d_lon[1],len(grid.Altitude)))
+
+    for lev in np.arange(len(grid.Altitude)):
+        pt_llz[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,pt[:,lev],(loni[:,:,lev],lati[:,:,lev]),method='nearest')
+        rho_llz[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,output.Rho[:,lev,t_ind],(loni[:,:,lev],lati[:,:,lev]),method='nearest')
+        p_llz[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,output.Pressure[:,lev,t_ind],(loni[:,:,lev],lati[:,:,lev]),method='nearest')
+        U_llz[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,U[:,lev],(loni[:,:,lev],lati[:,:,lev]),method='nearest')
+        V_llz[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,V[:,lev],(loni[:,:,lev],lati[:,:,lev]),method='nearest')
+        W_llz[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,W[:,lev],(loni[:,:,lev],lati[:,:,lev]),method='nearest')
+
+    # Compute gradient of potential temp
+    dz = np.abs(grid.Altitude[1] - grid.Altitude[0])
+    dptdz = dFunc_dZ(pt_llz,alti,grid.nv,dz)
+
+    dptdlat = dFunc_dLat(pt_llz,res_deg)/(input.A+alti)
+
+    dptdlon = dFunc_dLon(pt_llz,res_deg)/(input.A+alti)/np.cos(lati)
+
+    # Compute curl of wind speeds
+    curlVz, curlVlat, curlVlon = CurlF(W_llz,V_llz,U_llz,lati*np.pi/180,alti,res_deg,grid.nv,input.A,dz)
+    RV_llz = np.zeros((3,d_lon[0],d_lon[1],len(grid.Altitude)))
+    RV_llz[0] = curlVz
+    RV_llz[1] = curlVlat
+    RV_llz[2] = curlVlon
+
+    curlVlon += 2*input.Omega
+
+    curlVz /= rho_llz
+    curlVlat /= rho_llz
+    curlVlon /= rho_llz
+
+    PV_llz = curlVz*dptdz + curlVlat*dptdlat + curlVlon*dptdlon
+
+    PV_llp = np.zeros((d_lon[0],d_lon[1], len(sigma)))
+    RV_llp = np.zeros((3,d_lon[0],d_lon[1], len(sigma)))
+    for ilat in np.arange(d_lon[0]):
+        for ilon in np.arange(d_lon[1]):
+            PV_llp[ilat,ilon,:] = interp.pchip_interpolate(p_llz[ilat,ilon,:][::-1],
+                                            PV_llz[ilat,ilon,:][::-1],sigma[::-1])[::-1]
+            RV_llp[0,ilat,ilon,:] = interp.pchip_interpolate(p_llz[ilat,ilon,:][::-1],
+                                            RV_llz[0,ilat,ilon,:][::-1],sigma[::-1])[::-1]
+            RV_llp[1,ilat,ilon,:] = interp.pchip_interpolate(p_llz[ilat,ilon,:][::-1],
+                                            RV_llz[1,ilat,ilon,:][::-1],sigma[::-1])[::-1]
+            RV_llp[2,ilat,ilon,:] = interp.pchip_interpolate(p_llz[ilat,ilon,:][::-1],
+                                            RV_llz[2,ilat,ilon,:][::-1],sigma[::-1])[::-1]
+
+    # grid now to higher resolution
+    PV_llp_f = np.zeros(np.shape(lonf)+(len(sigma),))
+    RV_llp_f = np.zeros((3,)+np.shape(lonf)+(len(sigma),))
+
+    for lev in np.arange(len(sigma)):
+        locs = np.vstack([np.ravel(loni[:,:,lev]),np.ravel(lati[:,:,lev])]).T
+        PV_llp_f[:,:,lev] = interp.griddata(locs,np.ravel(PV_llp[:,:,lev]),(lonf,latf),method='nearest')
+        RV_llp_f[0,:,:,lev] = interp.griddata(locs,np.ravel(RV_llp[0,:,:,lev]),(lonf,latf),method='nearest')
+        RV_llp_f[1,:,:,lev] = interp.griddata(locs,np.ravel(RV_llp[1,:,:,lev]),(lonf,latf),method='nearest')
+        RV_llp_f[2,:,:,lev] = interp.griddata(locs,np.ravel(RV_llp[2,:,:,lev]),(lonf,latf),method='nearest')
+
+    openh5 = h5py.File(fileh5,"r+")
+    print('Adding vorticities to regrid file...')
+    PV = openh5.create_dataset("PV",data=PV_llp_f,compression='gzip',compression_opts=comp)
+    RV = openh5.create_dataset("RV",data=RV_llp_f,compression='gzip',compression_opts=comp)
+    openh5.close()
 
 def regrid(resultsf,simID,ntsi,nts,res_deg=0.5,nlev=40,pscale='log',overwrite=False,comp=4):
     # runs over files and converts ico-height grid to lat-lon-pr grid
@@ -411,6 +518,9 @@ def regrid(resultsf,simID,ntsi,nts,res_deg=0.5,nlev=40,pscale='log',overwrite=Fa
 
             openh5.close()
 
+            ## calculate relative and potential vorticity and add to regrid file
+            calc_RV_PV(grid,output,input,lon_range,lat_range,Pref,t-ntsi,fileh5)
+
 def KE_spect(input,grid,output,sigmaref,coord = 'icoh',lmax_adjust = 0):
     tsp = output.nts-output.ntsi+1
     lmax_grid = np.int(np.floor(np.sqrt(grid.point_num))/2-1)
@@ -496,7 +606,7 @@ def KE_spect(input,grid,output,sigmaref,coord = 'icoh',lmax_adjust = 0):
     plt.savefig(input.resultsf+'/figures/KEmap_lowest_%i_%s.pdf'%(output.ntsi,coord))
     plt.close()
 
-def vertical_lat(input,grid,output,rg,sigmaref,z,slice=(0,360),save=True,axis=False):
+def vertical_lat(input,grid,output,rg,sigmaref,z,slice=[0,360],save=True,axis=False):
     # generic pressure/latitude plot function
 
     # contour spacing
@@ -507,8 +617,8 @@ def vertical_lat(input,grid,output,rg,sigmaref,z,slice=(0,360),save=True,axis=Fa
     d_sig = np.size(sigmaref)
     tsp = output.nts-output.ntsi+1
 
-    if not isinstance(slice,tuple):
-        raise IOError("'slice' argument must be a tuple")
+    if not isinstance(slice,list):
+        raise IOError("'slice' argument must be a list")
 
     if len(slice) == 2:
         # Set the latitude-longitude grid
@@ -542,19 +652,14 @@ def vertical_lat(input,grid,output,rg,sigmaref,z,slice=(0,360),save=True,axis=Fa
             # Wlt = np.mean(rg.W[:,:,:,0],axis=1)
 
     elif len(slice) == 1:
-        try:
-            slice = np.float(slice)
-        except:
-            raise IOError("'slice' option must be 'avg' or a longitude (degrees)")
-
-        if slice in rg.lon:
-            Zonall = z['value'][:,rg.lon[:,0]==slice,:,:]
+        if slice[0] in rg.lon:
+            Zonall = z['value'][:,rg.lon[:,0]==slice[0],:,:]
         else:
             Zonall = np.zeros((len(rg.lat),1,d_sig,tsp))
             # interpolate to slice given
             for t in tsp:
                 for lev in np.arange(d_sig):
-                    Zonall[:,0,lev,tsp] = interp.griddata(np.vstack([rg.lon,rg.lat]).T,z['value'][:,:,lev,tsp],(slice,rg.lat))
+                    Zonall[:,0,lev,tsp] = interp.griddata(np.vstack([rg.lon,rg.lat]).T,z['value'][:,:,lev,tsp],(slice[0],rg.lat))
 
         # Averaging in time
         if tsp > 1:
@@ -562,6 +667,9 @@ def vertical_lat(input,grid,output,rg,sigmaref,z,slice=(0,360),save=True,axis=Fa
             del Zonall
         else:
             Zonallt = Zonall[:,0,:,0]
+
+    else:
+        raise IOError("'slice' must have 1 or 2 values")
 
     #################
     # Create figure #
@@ -945,71 +1053,70 @@ def tracer_u_lev(input,grid,output,Plev,trace):
     plt.savefig(input.resultsf+'/figures/chem-'+trace+'-uv_lev%#.3fmbar_i%d_l%d.pdf'%(Plev/100,output.ntsi,output.nts))
     plt.close()
 
-def dFunc_dZ(f, alti, nv):
+def dFunc_dZ(f, alti, nv, dz):
     dfdz = np.zeros_like(f)
-    dz = alti[0,0,1,0]-alti[0,0,0,0]
+    # dz = alti[0,0,1]-alti[0,0,0]
 
     # Over z (vertical direction)
-    for t in np.arange(np.shape(f)[-1]):
-        for i in np.arange(nv):
-            if i == 0:
-                #lower edge, first order gradient
-                dfdz[:,:,i,t] = (f[:,:,i+1,t]-f[:,:,i,t])/dz
-            elif i == 1 or i == (nv-2):
-                #second order gradient at penultimate layers
-                dfdz[:,:,i,t] = (f[:,:,i+1,t]-f[:,:,i-1,t])/(2*dz)
-            elif i == (nv-1):
-                #highest edge, first order gradient
-                dfdz[:,:,i,t] = (f[:,:,i,t]-f[:,:,i-1,t])/dz
-            else:
-                #five point stencil
-                dfdz[:,:,i,t] = (-f[:,:,i+2,t]+8*f[:,:,i+1,t]\
-                                    -8*f[:,:,i-1,t]+f[:,:,i-2,t])/(12*dz)
+    for i in np.arange(nv):
+        if i == 0:
+            #lower edge, first order gradient
+            dfdz[:,:,i] = (f[:,:,i+1]-f[:,:,i])/dz
+        elif i == 1 or i == (nv-2):
+            #second order gradient at penultimate layers
+            dfdz[:,:,i] = (f[:,:,i+1]-f[:,:,i-1])/(2*dz)
+        elif i == (nv-1):
+            #highest edge, first order gradient
+            dfdz[:,:,i] = (f[:,:,i]-f[:,:,i-1])/dz
+        else:
+            #five point stencil
+            dfdz[:,:,i] = (-f[:,:,i+2]+8*f[:,:,i+1]\
+                                -8*f[:,:,i-1]+f[:,:,i-2])/(12*dz)
+
     return dfdz
 
 def dFunc_dLat(f, dLat):
     dfdlat = np.zeros_like(f)
 
     # Over lat (vertical direction)
-    for t in np.arange(np.shape(f)[-1]):
-        for i in np.arange(np.shape(f)[0]):
-            if i == 0:
-                #lower edge, first order gradient
-                dfdlat[i,:,:,t] = (f[i+1,:,:,t]-f[i,:,:,t])/dLat
-            elif i == 1 or i == (np.shape(f)[0]-2):
-                #second order gradient at penultimate layers
-                dfdlat[i,:,:,t] = (f[i+1,:,:,t]-f[i-1,:,:,t])/(2*dLat)
-            elif i == (np.shape(f)[0]-1):
-                #highest edge, first order gradient
-                dfdlat[i,:,:,t] = (f[i,:,:,t]-f[i-1,:,:,t])/dLat
-            else:
-                #five point stencil
-                dfdlat[i,:,:,t] = (-f[i+2,:,:,t]+8*f[i+1,:,:,t]\
-                                    -8*f[i-1,:,:,t]+f[i-2,:,:,t])/(12*dLat)
+    # for t in np.arange(np.shape(f)[-1]):
+    for i in np.arange(np.shape(f)[0]):
+        if i == 0:
+            #lower edge, first order gradient
+            dfdlat[i,:,:] = (f[i+1,:,:]-f[i,:,:])/dLat
+        elif i == 1 or i == (np.shape(f)[0]-2):
+            #second order gradient at penultimate layers
+            dfdlat[i,:,:] = (f[i+1,:,:]-f[i-1,:,:])/(2*dLat)
+        elif i == (np.shape(f)[0]-1):
+            #highest edge, first order gradient
+            dfdlat[i,:,:] = (f[i,:,:]-f[i-1,:,:])/dLat
+        else:
+            #five point stencil
+            dfdlat[i,:,:] = (-f[i+2,:,:]+8*f[i+1,:,:]\
+                                -8*f[i-1,:,:]+f[i-2,:,:])/(12*dLat)
     return dfdlat
 
 def dFunc_dLon(f, dLon):
     dfdlon = np.zeros_like(f)
 
     # Over lon (vertical direction)
-    for t in np.arange(np.shape(f)[-1]):
-        for i in np.arange(np.shape(f)[1]):
-            if i == 0:
-                #lower edge, first order gradient
-                dfdlon[:,i,:,t] = (f[:,i+1,:,t]-f[:,i,:,t])/dLon
-            elif i == 1 or i == (np.shape(f)[1]-2):
-                #second order gradient at penultimate layers
-                dfdlon[:,i,:,t] = (f[:,i+1,:,t]-f[:,i-1,:,t])/(2*dLon)
-            elif i == (np.shape(f)[1]-1):
-                #highest edge, first order gradient
-                dfdlon[:,i,:,t] = (f[:,i,:,t]-f[:,i-1,:,t])/dLon
-            else:
-                #five point stencil
-                dfdlon[:,i,:,t] = (-f[:,i+2,:,t]+8*f[:,i+1,:,t]\
-                                    -8*f[:,i-1,:,t]+f[:,i-2,:,t])/(12*dLon)
+    for i in np.arange(np.shape(f)[1]):
+        if i == 0:
+            #lower edge, first order gradient
+            dfdlon[:,i,:] = (f[:,i+1,:]-f[:,i,:])/dLon
+        elif i == 1 or i == (np.shape(f)[1]-2):
+            #second order gradient at penultimate layers
+            dfdlon[:,i,:] = (f[:,i+1,:]-f[:,i-1,:])/(2*dLon)
+        elif i == (np.shape(f)[1]-1):
+            #highest edge, first order gradient
+            dfdlon[:,i,:] = (f[:,i,:]-f[:,i-1,:])/dLon
+        else:
+            #five point stencil
+            dfdlon[:,i,:] = (-f[:,i+2,:]+8*f[:,i+1,:]\
+                                -8*f[:,i-1,:]+f[:,i-2,:])/(12*dLon)
     return dfdlon
 
-def CurlF(fr,flat,flon,lati,alti,res_deg,nv,A):
+def CurlF(fr,flat,flon,lati,alti,res_deg,nv,A,dz):
     curlFz = np.zeros_like(fr)
     curlFlat = np.zeros_like(fr)
     curlFlon = np.zeros_like(fr)
@@ -1017,10 +1124,10 @@ def CurlF(fr,flat,flon,lati,alti,res_deg,nv,A):
     curlFz = -1.0*(dFunc_dLat(flon*np.cos(lati),res_deg)-dFunc_dLon(flat,res_deg))
     curlFz /= (np.cos(lati)*(A+alti))
 
-    curlFlat = -1.0*(dFunc_dLon(fr,res_deg)/np.cos(lati)-dFunc_dZ((A+alti)*flon,alti,nv))
+    curlFlat = -1.0*(dFunc_dLon(fr,res_deg)/np.cos(lati)-dFunc_dZ((A+alti)*flon,alti,nv,dz))
     curlFlat /= (A+alti)
 
-    curlFlon = -1.0*(dFunc_dZ((A+alti)*flat,alti,nv)-dFunc_dLat(fr,res_deg))
+    curlFlon = -1.0*(dFunc_dZ((A+alti)*flat,alti,nv,dz)-dFunc_dLat(fr,res_deg))
     curlFlon /= (A+alti)
 
     return curlFz, curlFlat, curlFlon
@@ -1765,8 +1872,3 @@ def SRindex(input,grid,output):
             os.mkdir(input.resultsf+'/figures')
     plt.savefig(input.resultsf+'/figures/SRindex_i%d_l%d.pdf'%(output.ntsi,output.nts))
     plt.close()
-
-
-def Calc_PV_llp(input,grid,output,rg):
-    kappa_ad = input.Rd/input.Cp  # adiabatic coefficient
-    pt = rg.Temperature*(rg.Pressure/input.P_Ref)**(-kappa_ad)

@@ -51,7 +51,7 @@ parser.add_argument("-pmin","--pressure_min",nargs=1,default=['default'],help='L
 parser.add_argument("-slay","--split_layer",nargs=1,default=['no_split'],help='Split conserved quantities into weather and deep layers at this pressure')
 parser.add_argument("-coord","--coordinate_sys",nargs=1,default=['icoh'],help='For KE spectrum, use either icoh grid or llp grid')
 parser.add_argument("-ladj","--lmax_adjust",nargs=1,default=[0],help='For KE spectrum, icoh grid, adjust number of wave numbers to fit')
-parser.add_argument("-slice","--slice",nargs=1,default=(0,360),help='Plot a long/lat slice or average over all values')
+parser.add_argument("-slice","--slice",nargs='+',default=[0,360],help='Plot a long/lat slice or average over all values', type =float)
 args = parser.parse_args()
 pview = args.pview
 
@@ -143,8 +143,7 @@ if 'uver' in pview:
     z = {'value':rg.U, 'label':r'Velocity (m s$^{-1}$)', 'name':'u', 'cmap':'viridis'}
     # Averaged zonal winds (latitude vs pressure)
     #ham.u(input,grid,output,rg,sigmaref,slice=args.slice[0])
-    fig, ax = plt.subplots(nrows=1, ncols=2)
-    ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice,axis=ax[1])
+    ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice)
 if 'wver' in pview:
     z = {'value':rg.W, 'label':r'Velocity (m s$^{-1}$)', 'name':'w', 'cmap':'viridis'}
     # Averaged vertical winds (latitude vs pressure)

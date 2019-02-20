@@ -646,6 +646,7 @@ int main(int argc, char** argv) {
           Grid.areasTr,        // Areas of the triangles
           Grid.div,            // Divergence operator
           Grid.grad,           // Gradient operator
+          Grid.curlz,          // Curl operator (vertical component)
           Grid.func_r,         // Normalised vector
           Grid.nl_region,      // Number of points in one side of a rhombus
           Grid.nr,             // Number of rhombi

@@ -97,6 +97,7 @@ public:
 
     double *div_h;
     double *grad_h;
+    double *curlz_h;
 
     double *func_r_h;
 
@@ -263,6 +264,7 @@ public:
         double *        areasTr_,
         double *        div_,
         double *        grad_,
+        double *        curlz_,
         double *        func_r_,
         int             nl_region_,
         int             nr_,

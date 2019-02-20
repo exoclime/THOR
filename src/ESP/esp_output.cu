@@ -129,6 +129,10 @@ __host__ void ESP::output(int                    fidx, // Index of output file
 
         //      divergence operator
         s.append_table(div_h, 7 * 3 * point_num, "/div", "m^-1", "Horizontal divergence operator");
+
+        //      curl z operator
+        s.append_table(
+            curlz_h, 7 * 3 * point_num, "/curlz", "m^-1", "Vertical component of curl operator");
     }
 
     //  PLANET

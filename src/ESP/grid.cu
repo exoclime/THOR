@@ -192,6 +192,7 @@ __host__ Icogrid::Icogrid(bool   sprd,        // Spring dynamics option
     nvecoa = (double *)malloc(6 * 3 * point_num * sizeof(double));
     nvecti = (double *)malloc(6 * 3 * point_num * sizeof(double));
     nvecte = (double *)malloc(6 * 3 * point_num * sizeof(double));
+    mvec   = (double *)malloc(6 * 3 * point_num * sizeof(double));
     control_vec(nvec,
                 nvecoa,
                 nvecti,
@@ -201,7 +202,8 @@ __host__ Icogrid::Icogrid(bool   sprd,        // Spring dynamics option
                 point_xyzq,
                 point_local,
                 pent_ind,
-                point_num);
+                point_num,
+                mvec);
 
     //  Set the Altitudes
     Altitude  = (double *)malloc(nv * sizeof(double));
@@ -219,6 +221,10 @@ __host__ Icogrid::Icogrid(bool   sprd,        // Spring dynamics option
     //  Computes the gradiente operator.
     grad = (double *)malloc(7 * 3 * point_num * sizeof(double));
     gra_operator(areasT, areas, grad, nvec, pent_ind, point_num);
+
+    //  Computes the vertical curl operator.
+    curlz = (double *)malloc(7 * 3 * point_num * sizeof(double));
+    gra_operator(areasT, areas, curlz, mvec, pent_ind, point_num);
 
     //  Computes zonal mean for sponge layer operations
     if (sponge == true) {
@@ -2128,7 +2134,8 @@ void Icogrid::control_vec(double *nvec,
                           double *xyzq,
                           int *   point_local,
                           int *   pent_ind,
-                          int     point_num) {
+                          int     point_num,
+                          double *mvec) {
 
     //
     //  Description:
@@ -2150,19 +2157,20 @@ void Icogrid::control_vec(double *nvec,
     double3 *nvecti3 = (double3 *)nvecti;
     double3 *nvecte3 = (double3 *)nvecte;
 
+    double3 *mvec3 = (double3 *)mvec;
+
     double3 *xyz3  = (double3 *)xyz;
     double3 *xyzq3 = (double3 *)xyzq;
 
     // Local variables.
     double vec_l, l;
-    double fac_nv;
+    double fac_nv, fac_mv;
 
     int geo;
 
     // Local arrays.
     double3 v1, v2;
-    double3 nv;
-
+    double3 nv, mv;
 
     for (int i = 0; i < point_num; i++) {
 
@@ -2195,9 +2203,15 @@ void Icogrid::control_vec(double *nvec,
                 nvec3[i * 6 + j] = nv * fac_nv;
 
                 nevcoa3[i * 6 + j] = nvec3[i * 6 + j] / areasT[i];
+
+                mv               = v1 - v2; //unnormalized vector parallel to cv edges
+                fac_mv           = l / length(mv);
+                mvec3[i * 6 + j] = mv * fac_mv; //now normalized and l is incorporated
             }
 
             nvec3[i * 6 + 5] = make_double3(0.0, 0.0, 0.0);
+
+            mvec3[i * 6 + 5] = make_double3(0.0, 0.0, 0.0);
 
             nevcoa3[i * 6 + 5] = make_double3(0.0, 0.0, 0.0);
         }
@@ -2225,6 +2239,10 @@ void Icogrid::control_vec(double *nvec,
                 nvec3[i * 6 + j] = nv * fac_nv;
 
                 nevcoa3[i * 6 + j] = nvec3[i * 6 + j] / areasT[i];
+
+                mv               = v1 - v2; //unnormalized vector parallel to cv edges
+                fac_mv           = l / length(mv);
+                mvec3[i * 6 + j] = mv * fac_mv; //now normalized and l is incorporated
             }
         }
 
@@ -2509,6 +2527,186 @@ void Icogrid::div_operator(double *areasT,
         for (int j = 0; j < 7; j++)
             for (int k = 0; k < 3; k++)
                 div[i * 7 * 3 + j * 3 + k] = div[i * 7 * 3 + j * 3 + k] / (2.0 * areasT[i]);
+    }
+    delete[] areasq2;
+}
+
+void Icogrid::curlz_operator(double *areasT,
+                             double *areas,
+                             double *curlz,
+                             double *mvec,
+                             int *   pent_ind,
+                             int     point_num) {
+
+    //
+    //  Description:
+    //
+    //  Computes the vertical curl operator from equation 10 of Tomita+ 2001
+    //  (There is probably no clean way of calculating the horizontal components,
+    //   which should be small in most situations)
+    //
+    //  This is currently not used by the code, it is only calculated and output
+    //  for convenience in post-processing (calculating vorticity, e.g.)
+    //
+    //  Input: - areas     - Sub-areas (alpha, beta and gamma).
+    //         - areasT    - Control volume area.
+    //         - mvec      - Vectors parallel to the edges of the control volume midway between vertices
+    //         - pent_ind  - Pentagon' indexes.
+    //         - point_num - Number of vertices.
+    //
+    //  Output: - curlz - vertical curl operator.
+    //
+    // Local variables:
+    int    geo;
+    double area1, area2, area3, area4, area5, area6;
+
+    double *areasq2;
+
+    areasq2 = new double[6 * 3 * point_num]();
+
+    for (int i = 0; i < point_num; i++) {
+
+        geo = 6; // Hexagons.
+        for (int k = 0; k < 12; k++)
+            if (i == pent_ind[k]) geo = 5; // Pentagons.
+
+        area1 = areas[i * 6 * 3 + 0 * 3 + 0] + areas[i * 6 * 3 + 0 * 3 + 1]
+                + areas[i * 6 * 3 + 0 * 3 + 2];
+        area2 = areas[i * 6 * 3 + 1 * 3 + 0] + areas[i * 6 * 3 + 1 * 3 + 1]
+                + areas[i * 6 * 3 + 1 * 3 + 2];
+        area3 = areas[i * 6 * 3 + 2 * 3 + 0] + areas[i * 6 * 3 + 2 * 3 + 1]
+                + areas[i * 6 * 3 + 2 * 3 + 2];
+        area4 = areas[i * 6 * 3 + 3 * 3 + 0] + areas[i * 6 * 3 + 3 * 3 + 1]
+                + areas[i * 6 * 3 + 3 * 3 + 2];
+        area5 = areas[i * 6 * 3 + 4 * 3 + 0] + areas[i * 6 * 3 + 4 * 3 + 1]
+                + areas[i * 6 * 3 + 4 * 3 + 2];
+
+        if (geo == 5)
+            area6 = 0;
+        else
+            area6 = areas[i * 6 * 3 + 5 * 3 + 0] + areas[i * 6 * 3 + 5 * 3 + 1]
+                    + areas[i * 6 * 3 + 5 * 3 + 2];
+
+        for (int k = 0; k < 3; k++) {
+            areasq2[i * 6 * 3 + 0 * 3 + k] = areas[i * 6 * 3 + 0 * 3 + k] / area1;
+            areasq2[i * 6 * 3 + 1 * 3 + k] = areas[i * 6 * 3 + 1 * 3 + k] / area2;
+            areasq2[i * 6 * 3 + 2 * 3 + k] = areas[i * 6 * 3 + 2 * 3 + k] / area3;
+            areasq2[i * 6 * 3 + 3 * 3 + k] = areas[i * 6 * 3 + 3 * 3 + k] / area4;
+            areasq2[i * 6 * 3 + 4 * 3 + k] = areas[i * 6 * 3 + 4 * 3 + k] / area5;
+            if (geo == 5)
+                areasq2[i * 6 * 3 + 5 * 3 + k] = 0;
+            else
+                areasq2[i * 6 * 3 + 5 * 3 + k] = areas[i * 6 * 3 + 5 * 3 + k] / area6;
+        }
+    }
+
+    for (int i = 0; i < point_num; i++) {
+
+        geo = 6; // Hexagons.
+        for (int k = 0; k < 12; k++)
+            if (i == pent_ind[k]) geo = 5; // Pentagons.
+
+        for (int k = 0; k < 3; k++) {
+            if (geo == 5) { //Pentagons.
+                curlz[i * 7 * 3 + 0 * 3 + k] =
+                    mvec[i * 6 * 3 + 0 * 3 + k]
+                        * (areasq2[i * 6 * 3 + 0 * 3 + 0] + areasq2[i * 6 * 3 + 1 * 3 + 0])
+                    + mvec[i * 6 * 3 + 1 * 3 + k]
+                          * (areasq2[i * 6 * 3 + 1 * 3 + 0] + areasq2[i * 6 * 3 + 2 * 3 + 0])
+                    + mvec[i * 6 * 3 + 2 * 3 + k]
+                          * (areasq2[i * 6 * 3 + 2 * 3 + 0] + areasq2[i * 6 * 3 + 3 * 3 + 0])
+                    + mvec[i * 6 * 3 + 3 * 3 + k]
+                          * (areasq2[i * 6 * 3 + 3 * 3 + 0] + areasq2[i * 6 * 3 + 4 * 3 + 0])
+                    + mvec[i * 6 * 3 + 4 * 3 + k]
+                          * (areasq2[i * 6 * 3 + 4 * 3 + 0] + areasq2[i * 6 * 3 + 0 * 3 + 0]);
+
+                curlz[i * 7 * 3 + 1 * 3 + k] =
+                    mvec[i * 6 * 3 + 4 * 3 + k]
+                        * (areasq2[i * 6 * 3 + 0 * 3 + 1] + areasq2[i * 6 * 3 + 4 * 3 + 2])
+                    + mvec[i * 6 * 3 + 3 * 3 + k] * areasq2[i * 6 * 3 + 4 * 3 + 2]
+                    + mvec[i * 6 * 3 + 0 * 3 + k] * areasq2[i * 6 * 3 + 0 * 3 + 1];
+
+                curlz[i * 7 * 3 + 2 * 3 + k] =
+                    mvec[i * 6 * 3 + 0 * 3 + k]
+                        * (areasq2[i * 6 * 3 + 1 * 3 + 1] + areasq2[i * 6 * 3 + 0 * 3 + 2])
+                    + mvec[i * 6 * 3 + 4 * 3 + k] * areasq2[i * 6 * 3 + 0 * 3 + 2]
+                    + mvec[i * 6 * 3 + 1 * 3 + k] * areasq2[i * 6 * 3 + 1 * 3 + 1];
+
+                curlz[i * 7 * 3 + 3 * 3 + k] =
+                    mvec[i * 6 * 3 + 1 * 3 + k]
+                        * (areasq2[i * 6 * 3 + 2 * 3 + 1] + areasq2[i * 6 * 3 + 1 * 3 + 2])
+                    + mvec[i * 6 * 3 + 0 * 3 + k] * areasq2[i * 6 * 3 + 1 * 3 + 2]
+                    + mvec[i * 6 * 3 + 2 * 3 + k] * areasq2[i * 6 * 3 + 2 * 3 + 1];
+
+                curlz[i * 7 * 3 + 4 * 3 + k] =
+                    mvec[i * 6 * 3 + 2 * 3 + k]
+                        * (areasq2[i * 6 * 3 + 3 * 3 + 1] + areasq2[i * 6 * 3 + 2 * 3 + 2])
+                    + mvec[i * 6 * 3 + 1 * 3 + k] * areasq2[i * 6 * 3 + 2 * 3 + 2]
+                    + mvec[i * 6 * 3 + 3 * 3 + k] * areasq2[i * 6 * 3 + 3 * 3 + 1];
+
+                curlz[i * 7 * 3 + 5 * 3 + k] =
+                    mvec[i * 6 * 3 + 3 * 3 + k]
+                        * (areasq2[i * 6 * 3 + 4 * 3 + 1] + areasq2[i * 6 * 3 + 3 * 3 + 2])
+                    + mvec[i * 6 * 3 + 2 * 3 + k] * areasq2[i * 6 * 3 + 3 * 3 + 2]
+                    + mvec[i * 6 * 3 + 4 * 3 + k] * areasq2[i * 6 * 3 + 4 * 3 + 1];
+
+                curlz[i * 7 * 3 + 6 * 3 + k] = 0.0;
+            }
+            else {
+                curlz[i * 7 * 3 + 0 * 3 + k] =
+                    mvec[i * 6 * 3 + 0 * 3 + k]
+                        * (areasq2[i * 6 * 3 + 0 * 3 + 0] + areasq2[i * 6 * 3 + 1 * 3 + 0])
+                    + mvec[i * 6 * 3 + 1 * 3 + k]
+                          * (areasq2[i * 6 * 3 + 1 * 3 + 0] + areasq2[i * 6 * 3 + 2 * 3 + 0])
+                    + mvec[i * 6 * 3 + 2 * 3 + k]
+                          * (areasq2[i * 6 * 3 + 2 * 3 + 0] + areasq2[i * 6 * 3 + 3 * 3 + 0])
+                    + mvec[i * 6 * 3 + 3 * 3 + k]
+                          * (areasq2[i * 6 * 3 + 3 * 3 + 0] + areasq2[i * 6 * 3 + 4 * 3 + 0])
+                    + mvec[i * 6 * 3 + 4 * 3 + k]
+                          * (areasq2[i * 6 * 3 + 4 * 3 + 0] + areasq2[i * 6 * 3 + 5 * 3 + 0])
+                    + mvec[i * 6 * 3 + 5 * 3 + k]
+                          * (areasq2[i * 6 * 3 + 5 * 3 + 0] + areasq2[i * 6 * 3 + 0 * 3 + 0]);
+
+                curlz[i * 7 * 3 + 1 * 3 + k] =
+                    mvec[i * 6 * 3 + 5 * 3 + k]
+                        * (areasq2[i * 6 * 3 + 0 * 3 + 1] + areasq2[i * 6 * 3 + 5 * 3 + 2])
+                    + mvec[i * 6 * 3 + 4 * 3 + k] * areasq2[i * 6 * 3 + 5 * 3 + 2]
+                    + mvec[i * 6 * 3 + 0 * 3 + k] * areasq2[i * 6 * 3 + 0 * 3 + 1];
+
+                curlz[i * 7 * 3 + 2 * 3 + k] =
+                    mvec[i * 6 * 3 + 0 * 3 + k]
+                        * (areasq2[i * 6 * 3 + 1 * 3 + 1] + areasq2[i * 6 * 3 + 0 * 3 + 2])
+                    + mvec[i * 6 * 3 + 5 * 3 + k] * areasq2[i * 6 * 3 + 0 * 3 + 2]
+                    + mvec[i * 6 * 3 + 1 * 3 + k] * areasq2[i * 6 * 3 + 1 * 3 + 1];
+
+                curlz[i * 7 * 3 + 3 * 3 + k] =
+                    mvec[i * 6 * 3 + 1 * 3 + k]
+                        * (areasq2[i * 6 * 3 + 2 * 3 + 1] + areasq2[i * 6 * 3 + 1 * 3 + 2])
+                    + mvec[i * 6 * 3 + 0 * 3 + k] * areasq2[i * 6 * 3 + 1 * 3 + 2]
+                    + mvec[i * 6 * 3 + 2 * 3 + k] * areasq2[i * 6 * 3 + 2 * 3 + 1];
+
+                curlz[i * 7 * 3 + 4 * 3 + k] =
+                    mvec[i * 6 * 3 + 2 * 3 + k]
+                        * (areasq2[i * 6 * 3 + 3 * 3 + 1] + areasq2[i * 6 * 3 + 2 * 3 + 2])
+                    + mvec[i * 6 * 3 + 1 * 3 + k] * areasq2[i * 6 * 3 + 2 * 3 + 2]
+                    + mvec[i * 6 * 3 + 3 * 3 + k] * areasq2[i * 6 * 3 + 3 * 3 + 1];
+
+                curlz[i * 7 * 3 + 5 * 3 + k] =
+                    mvec[i * 6 * 3 + 3 * 3 + k]
+                        * (areasq2[i * 6 * 3 + 4 * 3 + 1] + areasq2[i * 6 * 3 + 3 * 3 + 2])
+                    + mvec[i * 6 * 3 + 2 * 3 + k] * areasq2[i * 6 * 3 + 3 * 3 + 2]
+                    + mvec[i * 6 * 3 + 4 * 3 + k] * areasq2[i * 6 * 3 + 4 * 3 + 1];
+
+                curlz[i * 7 * 3 + 6 * 3 + k] =
+                    mvec[i * 6 * 3 + 4 * 3 + k]
+                        * (areasq2[i * 6 * 3 + 5 * 3 + 1] + areasq2[i * 6 * 3 + 4 * 3 + 2])
+                    + mvec[i * 6 * 3 + 3 * 3 + k] * areasq2[i * 6 * 3 + 4 * 3 + 2]
+                    + mvec[i * 6 * 3 + 5 * 3 + k] * areasq2[i * 6 * 3 + 5 * 3 + 1];
+            }
+        }
+        for (int j = 0; j < 7; j++)
+            for (int k = 0; k < 3; k++)
+                curlz[i * 7 * 3 + j * 3 + k] = curlz[i * 7 * 3 + j * 3 + k] / (2.0 * areasT[i]);
     }
     delete[] areasq2;
 }

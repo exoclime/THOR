@@ -693,3 +693,130 @@ __global__ void Diffusion_Op_Vert(double* diffmv_d,
         }
     }
 }
+
+template<int nv>
+__global__ void vertical_diff_joao(double* diffmv_d,      //
+                                   double* diffwv_d,      //
+                                   double* diffrv_d,      //
+                                   double* diffprv_d,     //
+                                   double* Mh_d,          //
+                                   double* Rho_d,         //
+                                   double* Temperature_d, //
+                                   double* W_d,           //
+                                   double* Kv_d,          //
+                                   double* Altitude_d,    //
+                                   double* Altitudeh_d,
+                                   double  A,  //
+                                   double  Rd, //
+                                   bool    DeepModel,
+                                   int     num) { //
+
+    int id  = blockIdx.x * blockDim.x + threadIdx.x;
+    int var = blockIdx.z;
+
+    double ai[nv + 2];
+    double af[nv + 2];
+
+    double dz[nv];
+    double dzh[nv + 1];
+
+    double rhoh[nv + 1];
+
+    if (id < num) {
+        for (int lev = 0; lev < nv + 2; lev++) {
+            if (lev == 0) {
+                double r_d = Rho_d[id * nv + 0];
+                if (var == 0) ai[lev] = r_d;
+                if (var == 1) ai[lev] = Mh_d[id * nv * 3 + 0] / r_d;
+                if (var == 2) ai[lev] = Mh_d[id * nv * 3 + 1] / r_d;
+                if (var == 3) ai[lev] = Mh_d[id * nv * 3 + 2] / r_d;
+                if (var == 4) ai[lev] = W_d[id * nv + 0] / r_d;
+                if (var == 5) ai[lev] = Temperature_d[id * nv + 0];
+            }
+            else if (lev == nv + 1) {
+                double r_d = Rho_d[id * nv + nv - 1];
+                if (var == 0) ai[lev] = r_d;
+                if (var == 1) ai[lev] = Mh_d[id * nv * 3 + (nv - 1) * 3 + 0] / r_d;
+                if (var == 2) ai[lev] = Mh_d[id * nv * 3 + (nv - 1) * 3 + 1] / r_d;
+                if (var == 3) ai[lev] = Mh_d[id * nv * 3 + (nv - 1) * 3 + 2] / r_d;
+                if (var == 4) ai[lev] = W_d[id * nv + (nv - 1)] / r_d;
+                if (var == 5) ai[lev] = Temperature_d[id * nv + nv - 1];
+            }
+            else {
+                double r_d = Rho_d[id * nv + lev - 1];
+                if (var == 0) ai[lev] = r_d;
+                if (var == 1) ai[lev] = Mh_d[id * nv * 3 + (lev - 1) * 3 + 0] / r_d;
+                if (var == 2) ai[lev] = Mh_d[id * nv * 3 + (lev - 1) * 3 + 1] / r_d;
+                if (var == 3) ai[lev] = Mh_d[id * nv * 3 + (lev - 1) * 3 + 2] / r_d;
+                if (var == 4) ai[lev] = W_d[id * nv + (lev - 1)] / r_d;
+                if (var == 5) ai[lev] = Temperature_d[id * nv + lev - 1];
+            }
+
+            if (lev < nv) dz[lev] = 1.0 / (Altitudeh_d[lev + 1] - Altitudeh_d[lev]);
+            if (lev == 0)
+                dzh[lev] = 1.0 / (2.0 * Altitude_d[0]);
+            else if (lev == nv)
+                dzh[lev] = 1.0 / (2 * (Altitudeh_d[nv] - Altitude_d[nv - 1]));
+            else if (lev < nv)
+                dzh[lev] = 1.0 / (Altitude_d[lev] - Altitude_d[lev - 1]);
+        }
+
+        for (int l = 0; l < 2; l++) {
+            for (int lev = 0; lev < nv; lev++)
+                af[lev] = ((ai[lev + 2] - ai[lev + 1]) * dzh[lev + 1]
+                           - (ai[lev + 1] - ai[lev]) * dzh[lev])
+                          * dz[lev];
+            if (l == 0) {
+                ai[0]      = af[0];
+                ai[nv + 1] = af[nv - 1];
+                for (int lev = 0; lev < nv; lev++) ai[lev + 1] = af[lev];
+            }
+            else {
+                ai[0]      = af[0];
+                ai[nv + 1] = af[nv - 1];
+                for (int lev = 0; lev < nv; lev++) ai[lev + 1] = af[lev];
+            }
+        }
+
+        for (int lev = 0; lev < nv + 1; lev++) {
+            if (lev == 0)
+                rhoh[0] = Rho_d[id * nv] * Kv_d[0];
+            else if (lev == nv)
+                rhoh[nv] = Rho_d[id * nv + nv - 1] * Kv_d[nv - 1];
+            else {
+                double rl   = Rho_d[id * nv + lev - 1] * Kv_d[lev - 1];
+                double rp   = Rho_d[id * nv + lev] * Kv_d[lev];
+                double xi   = Altitudeh_d[lev];
+                double xim  = Altitude_d[lev - 1];
+                double xip  = Altitude_d[lev];
+                double intl = (xi - xip) / (xim - xip);
+                double intp = (xi - xim) / (xip - xim);
+                rhoh[lev]   = (rl * intl + rp * intp);
+            }
+        }
+
+        for (int lev = 0; lev < nv; lev++) {
+            if (var != 5) {
+                af[lev] = ((ai[lev + 2] - ai[lev + 1]) * dzh[lev + 1] * rhoh[lev + 1]
+                           - (ai[lev + 1] - ai[lev]) * dzh[lev] * rhoh[lev])
+                          * dz[lev];
+            }
+            else {
+                af[lev] = ((ai[lev + 2] - ai[lev + 1]) * dzh[lev + 1] * rhoh[lev + 1]
+                           - (ai[lev + 1] - ai[lev]) * dzh[lev] * rhoh[lev])
+                          * dz[lev] * Rd;
+            }
+        }
+
+        //  if(id == 100 && var == 1) for(int lev = 0; lev < nv; lev++) printf("%d %f %f\n", lev, Mh_d[id*nv*3 + lev*3 + 0], af[lev]*1000000);
+
+        for (int lev = 0; lev < nv; lev++) {
+            if (var == 0) diffrv_d[id * nv + lev] = 0.0; //af[lev];
+            if (var == 1) diffmv_d[id * nv * 3 + lev * 3 + 0] = af[lev];
+            if (var == 2) diffmv_d[id * nv * 3 + lev * 3 + 1] = af[lev];
+            if (var == 3) diffmv_d[id * nv * 3 + lev * 3 + 2] = af[lev];
+            if (var == 4) diffwv_d[id * nv + lev] = af[lev];
+            if (var == 5) diffprv_d[id * nv + lev] = af[lev];
+        }
+    }
+}

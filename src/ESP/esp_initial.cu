@@ -72,6 +72,7 @@ __host__ ESP::ESP(int *           point_local_,
                   double *        areasTr_,
                   double *        div_,
                   double *        grad_,
+                  double *        curlz_,
                   double *        func_r_,
                   int             nl_region_,
                   int             nr_,
@@ -117,8 +118,9 @@ __host__ ESP::ESP(int *           point_local_,
     areasTr_h = areasTr_;
     areasT_h  = areasT_;
 
-    div_h  = div_;
-    grad_h = grad_;
+    div_h   = div_;
+    grad_h  = grad_;
+    curlz_h = curlz_;
 
     func_r_h = func_r_;
 

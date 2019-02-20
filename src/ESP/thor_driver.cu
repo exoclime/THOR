@@ -76,6 +76,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
     dim3      NBP(2, nv, 1);               // Number of blocks. (POLES)
 
     dim3 NBALL((point_num / NTH) + 1, nv, 6); //Number of blocks to execute on all grid points
+    dim3 NBALL0((point_num / NTH) + 1, 1, 6); //Number of blocks to execute on all grid points
 
 
     //  Number of Small steps
@@ -322,94 +323,110 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                                sim.DeepModel);
 
             cudaDeviceSynchronize();
-            Diffusion_Op_Vert<<<NBALL, NTH>>>(diffmv_d,
-                                              diffwv_d,
-                                              diffrv_d,
-                                              diffprv_d,
-                                              diffv_d1,
-                                              diffv_d2,
-                                              Mhk_d,
-                                              Rhok_d,
-                                              temperature_d,
-                                              Wk_d,
-                                              func_r_d,
-                                              Kdv6_d,
-                                              Altitude_d,
-                                              sim.A,
-                                              sim.Rd,
-                                              point_num,
-                                              0,
-                                              sim.DeepModel);
+            // Diffusion_Op_Vert<<<NBALL, NTH>>>(diffmv_d,
+            //                                   diffwv_d,
+            //                                   diffrv_d,
+            //                                   diffprv_d,
+            //                                   diffv_d1,
+            //                                   diffv_d2,
+            //                                   Mhk_d,
+            //                                   Rhok_d,
+            //                                   temperature_d,
+            //                                   Wk_d,
+            //                                   func_r_d,
+            //                                   Kdv6_d,
+            //                                   Altitude_d,
+            //                                   sim.A,
+            //                                   sim.Rd,
+            //                                   point_num,
+            //                                   0,
+            //                                   sim.DeepModel);
+            //
+            // cudaDeviceSynchronize();
+            // BENCH_POINT_I_S_PHY(current_step,
+            //                     rk,
+            //                     "Diffusion_Op_Vert1",
+            //                     (),
+            //                     ("diffmh_d",
+            //                      "diffw_d",
+            //                      "diffrh_d",
+            //                      "diffpr_d",
+            //                      "diff_d",
+            //                      "diffmv_d",
+            //                      "diffwv_d",
+            //                      "diffrv_d",
+            //                      "diffprv_d",
+            //                      "diffv_d"))
+            //
+            // Diffusion_Op_Vert<<<NBALL, NTH>>>(diffmv_d,
+            //                                   diffwv_d,
+            //                                   diffrv_d,
+            //                                   diffprv_d,
+            //                                   diffv_d1,
+            //                                   diffv_d2,
+            //                                   Mhk_d,
+            //                                   Rhok_d,
+            //                                   temperature_d,
+            //                                   Wk_d,
+            //                                   func_r_d,
+            //                                   Kdv6_d,
+            //                                   Altitude_d,
+            //                                   sim.A,
+            //                                   sim.Rd,
+            //                                   point_num,
+            //                                   1,
+            //                                   sim.DeepModel);
+            // cudaDeviceSynchronize();
+            //
+            // BENCH_POINT_I_S_PHY(current_step,
+            //                     rk,
+            //                     "Diffusion_Op_Vert2",
+            //                     (),
+            //                     ("diffmh_d",
+            //                      "diffw_d",
+            //                      "diffrh_d",
+            //                      "diffpr_d",
+            //                      "diff_d",
+            //                      "diffmv_d",
+            //                      "diffwv_d",
+            //                      "diffrv_d",
+            //                      "diffprv_d",
+            //                      "diffv_d"))
+            //
+            // Diffusion_Op_Vert<<<NBALL, NTH>>>(diffmv_d,
+            //                                   diffwv_d,
+            //                                   diffrv_d,
+            //                                   diffprv_d,
+            //                                   diffv_d1,
+            //                                   diffv_d2,
+            //                                   Mhk_d,
+            //                                   Rhok_d,
+            //                                   temperature_d,
+            //                                   Wk_d,
+            //                                   func_r_d,
+            //                                   Kdv6_d,
+            //                                   Altitude_d,
+            //                                   sim.A,
+            //                                   sim.Rd,
+            //                                   point_num,
+            //                                   2,
+            //                                   sim.DeepModel);
 
-            cudaDeviceSynchronize();
-            BENCH_POINT_I_S_PHY(current_step,
-                                rk,
-                                "Diffusion_Op_Vert1",
-                                (),
-                                ("diffmh_d",
-                                 "diffw_d",
-                                 "diffrh_d",
-                                 "diffpr_d",
-                                 "diff_d",
-                                 "diffmv_d",
-                                 "diffwv_d",
-                                 "diffrv_d",
-                                 "diffprv_d",
-                                 "diffv_d"))
-
-            Diffusion_Op_Vert<<<NBALL, NTH>>>(diffmv_d,
-                                              diffwv_d,
-                                              diffrv_d,
-                                              diffprv_d,
-                                              diffv_d1,
-                                              diffv_d2,
-                                              Mhk_d,
-                                              Rhok_d,
-                                              temperature_d,
-                                              Wk_d,
-                                              func_r_d,
-                                              Kdv6_d,
-                                              Altitude_d,
-                                              sim.A,
-                                              sim.Rd,
-                                              point_num,
-                                              1,
-                                              sim.DeepModel);
-            cudaDeviceSynchronize();
-
-            BENCH_POINT_I_S_PHY(current_step,
-                                rk,
-                                "Diffusion_Op_Vert2",
-                                (),
-                                ("diffmh_d",
-                                 "diffw_d",
-                                 "diffrh_d",
-                                 "diffpr_d",
-                                 "diff_d",
-                                 "diffmv_d",
-                                 "diffwv_d",
-                                 "diffrv_d",
-                                 "diffprv_d",
-                                 "diffv_d"))
-
-            Diffusion_Op_Vert<<<NBALL, NTH>>>(diffmv_d,
-                                              diffwv_d,
-                                              diffrv_d,
-                                              diffprv_d,
-                                              diffv_d1,
-                                              diffv_d2,
-                                              Mhk_d,
-                                              Rhok_d,
-                                              temperature_d,
-                                              Wk_d,
-                                              func_r_d,
-                                              Kdv6_d,
-                                              Altitude_d,
-                                              sim.A,
-                                              sim.Rd,
-                                              point_num,
-                                              2,
-                                              sim.DeepModel);
+            vertical_diff_joao<40><<<NBALL0, NTH>>>(diffmv_d,      //
+                                                    diffwv_d,      //
+                                                    diffrv_d,      //
+                                                    diffprv_d,     //
+                                                    Mhk_d,         //
+                                                    Rhok_d,        //
+                                                    temperature_d, //
+                                                    Wk_d,          //
+                                                    Kdv6_d,        //
+                                                    Altitude_d,    //
+                                                    Altitudeh_d,
+                                                    sim.A,  //
+                                                    sim.Rd, //
+                                                    sim.DeepModel,
+                                                    point_num);
 
             cudaDeviceSynchronize();
             Correct_Horizontal<<<NBALL, NTH>>>(diffmh_d, diffmv_d, func_r_d, point_num);
