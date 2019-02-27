@@ -463,6 +463,7 @@ __global__ void Density_Pressure_Eqs(double *pressure_d,
     // }
 }
 
+
 template<int NN>
 __global__ void Density_Pressure_Eqs_Poles(double *pressure_d,
                                            double *pressurek_d,
