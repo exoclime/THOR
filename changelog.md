@@ -21,3 +21,4 @@
  * added crash_report tool that dumps location of nans when the model crashes
  * further updates to python plotting tools to make them more flexible
  * added "custom_example.py" to mjolnir to demonstrate how to make multipanel plots with the python tools
+ * grid output now contains differential operators grad, div, and vertical component of curl (the latter is not used by the model, but may be useful in post-processing)
