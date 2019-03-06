@@ -420,8 +420,8 @@ def calc_RV_PV(grid,output,input,lons,lats,sigma,t_ind,fileh5,comp=4):
     print('Adding vorticities to regrid file...')
     PV = openh5.create_dataset("PV",data=PV_llp_f,compression='gzip',compression_opts=comp)
     RV = openh5.create_dataset("RV",data=RV_llp_f,compression='gzip',compression_opts=comp)
-    Lat = openh5.create_dataset("Lat_lowres",data=lat_range,compression='gzip',compression_opts=comp)
-    Lon = openh5.create_dataset("Lon_lowres",data=lon_range,compression='gzip',compression_opts=comp)
+    Latlr = openh5.create_dataset("Lat_lowres",data=lat_range,compression='gzip',compression_opts=comp)
+    Lonlr = openh5.create_dataset("Lon_lowres",data=lon_range,compression='gzip',compression_opts=comp)
     openh5.close()
 
 def regrid(resultsf,simID,ntsi,nts,res_deg=0.5,nlev=40,pscale='log',overwrite=False,comp=4):
@@ -430,8 +430,6 @@ def regrid(resultsf,simID,ntsi,nts,res_deg=0.5,nlev=40,pscale='log',overwrite=Fa
     input = outall.input
     grid = outall.grid
     output = outall.output
-
-    res_deg = 4.0/2**(input.glevel-4) #temporary
 
     print('Regrid data in folder '+resultsf+'...\n')
     #figure out pressure grid
@@ -581,7 +579,6 @@ def regrid(resultsf,simID,ntsi,nts,res_deg=0.5,nlev=40,pscale='log',overwrite=Fa
             Pre = openh5.create_dataset("Pressure",data=Pref,compression='gzip',compression_opts=comp)
             Lat = openh5.create_dataset("Latitude",data=lat_range,compression='gzip',compression_opts=comp)
             Lon = openh5.create_dataset("Longitude",data=lon_range,compression='gzip',compression_opts=comp)
-
             # data
             Temp = openh5.create_dataset("Temperature",data=Temp_llp,compression='gzip',compression_opts=comp)
             Rho = openh5.create_dataset("Rho",data=Rho_llp,compression='gzip',compression_opts=comp)

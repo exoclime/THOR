@@ -59,7 +59,7 @@ valid = ['uver','wver','wprof','Tver','Tulev','PTver','ulev','PVver','PVlev',
             'TP','RVlev','cons','stream','pause','tracer','PTP','regrid','KE','SR','uprof','cfl']
 
 rg_needed = ['Tver','uver','wver','Tulev','PTver','ulev','PVver','PVlev',
-            'RVlev','stream','tracer','PTP']  #these types need regrid
+            'RVlev','stream','tracer']  #these types need regrid
 
 openrg = 0
 if 'all' in pview:
@@ -186,35 +186,45 @@ if 'Tulev' in pview:
     # Averaged temperature and wind field (longitude vs latitude)
     # PR_LV - Pressure level (Pa)
     PR_LV = np.float(args.pressure_lev[0])*100
-    z = {'value':rg.Temperature, 'label':r'Temperature (K)', 'name':'temperature-uv', 'cmap':'magma'}
+    z = {'value':rg.Temperature, 'label':r'Temperature (K)', 'name':'temperature-uv',
+            'cmap':'magma', 'lat':rg.lat, 'lon':rg.lon}
     ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True)
 if 'ulev' in pview:
     PR_LV = np.float(args.pressure_lev[0])*100
-    z = {'value':rg.U, 'label':r'Zonal Velocity (m s$^{-1}$)', 'name':'u', 'cmap':'viridis'}
+    z = {'value':rg.U, 'label':r'Zonal Velocity (m s$^{-1}$)', 'name':'u',
+        'cmap':'viridis', 'lat':rg.lat, 'lon':rg.lon}
     ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True)
-    z = {'value':rg.V, 'label':r'Meridional Velocity (m s$^{-1}$)', 'name':'v', 'cmap':'viridis'}
+    z = {'value':rg.V, 'label':r'Meridional Velocity (m s$^{-1}$)', 'name':'v',
+        'cmap':'viridis', 'lat':rg.lat, 'lon':rg.lon}
     ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True)
 if 'PVlev' in pview:
     PR_LV = np.float(args.pressure_lev[0])*100
-    z = {'value':rg.PV, 'label':r'Potential Vorticity (K m$^2$ kg$^{-1}$ s$^{-1}$)', 'name':'pot_vort', 'cmap':'viridis'}
+    z = {'value':rg.PV, 'label':r'Potential Vorticity (K m$^2$ kg$^{-1}$ s$^{-1}$)',
+        'name':'pot_vort', 'cmap':'viridis', 'lat':rg.lat_lr, 'lon':rg.lon_lr}
     ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True)
     # ham.potential_vort_lev(input,grid,output,PR_LV)
 if 'RVlev' in pview:
     PR_LV = np.float(args.pressure_lev[0])*100
-    z = {'value':rg.RV[0], 'label':r'Relative Vorticity (s$^{-1}$)', 'name':'rela_vort', 'cmap':'viridis'}
+    z = {'value':rg.RV[0], 'label':r'Relative Vorticity (s$^{-1}$)',
+        'name':'rela_vort', 'cmap':'viridis', 'lat':rg.lat_lr, 'lon':rg.lon_lr}
     ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True)
     # ham.rela_vort_lev(input,grid,output,PR_LV)
 if 'tracer' in pview:
     PR_LV = np.float(args.pressure_lev[0])*100
-    z = {'value':np.log10(rg.ch4), 'label':r'Log(mixing ratio)', 'name':'chem-ch4-uv1', 'cmap':'magma'}
+    z = {'value':np.log10(rg.ch4), 'label':r'Log(mixing ratio)',
+        'name':'chem-ch4-uv1', 'cmap':'magma', 'lat':rg.lat, 'lon':rg.lon}
     ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True)
-    z = {'value':np.log10(rg.co), 'label':r'Log(mixing ratio)', 'name':'chem-co-uv1', 'cmap':'magma'}
+    z = {'value':np.log10(rg.co), 'label':r'Log(mixing ratio)',
+        'name':'chem-co-uv1', 'cmap':'magma', 'lat':rg.lat, 'lon':rg.lon}
     ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True)
-    z = {'value':np.log10(rg.h2o), 'label':r'Log(mixing ratio)', 'name':'chem-h2o-uv1', 'cmap':'magma'}
+    z = {'value':np.log10(rg.h2o), 'label':r'Log(mixing ratio)',
+        'name':'chem-h2o-uv1', 'cmap':'magma', 'lat':rg.lat, 'lon':rg.lon}
     ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True)
-    z = {'value':np.log10(rg.co2), 'label':r'Log(mixing ratio)', 'name':'chem-co2-uv1', 'cmap':'magma'}
+    z = {'value':np.log10(rg.co2), 'label':r'Log(mixing ratio)',
+        'name':'chem-co2-uv1', 'cmap':'magma', 'lat':rg.lat, 'lon':rg.lon}
     ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True)
-    z = {'value':np.log10(rg.nh3), 'label':r'Log(mixing ratio)', 'name':'chem-nh3-uv1', 'cmap':'magma'}
+    z = {'value':np.log10(rg.nh3), 'label':r'Log(mixing ratio)',
+        'name':'chem-nh3-uv1', 'cmap':'magma', 'lat':rg.lat, 'lon':rg.lon}
     ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True)
 
 
@@ -224,7 +234,11 @@ if 'TP' in pview:
     #ham.TPprof(input,grid,output,sigmaref,1902)
     ham.profile(input,grid,output,z)
 if 'PTP' in pview:
-    ham.PTPprof(input,grid,output,sigmaref,1902)
+    kappa_ad = input.Rd/input.Cp  # adiabatic coefficient
+    T = output.Pressure/input.Rd/output.Rho
+    pt = T*(output.Pressure/input.P_Ref)**(-kappa_ad)
+    z = {'value': pt, 'label':'Potential Temperature (K)', 'name':'PT' }
+    ham.profile(input,grid,output,z)
 if 'wprof' in pview:  # RD: needs some work!
     z = {'value': output.Wh[:,1:,:]/output.Rho, 'label':r'Vertical velocity (m s$^{-1}$)', 'name':'W' }
     ham.profile(input,grid,output,z,stride=20)

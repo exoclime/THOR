@@ -19,3 +19,5 @@
  in which threads are called
  * incorrect diffusion quantity (diffmh_d) was being passed to Momentum_Eq in the dynamical core, changed now to correct value (DivM_d)
  * added crash_report tool that dumps location of nans when the model crashes
+ * further updates to python plotting tools to make them more flexible
+ * added "custom_example.py" to mjolnir to demonstrate how to make multipanel plots with the python tools
