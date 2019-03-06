@@ -249,7 +249,6 @@ int main(int argc, char** argv) {
     config_reader.append_config_var("NonHydro", sim.NonHydro, NonHydro_default);
     config_reader.append_config_var("DeepModel", sim.DeepModel, DeepModel_default);
     config_reader.append_config_var("SpongeLayer", sim.SpongeLayer, SpongeLayer_default);
-    config_reader.append_config_var("TempSponge", sim.TempSponge, TempSponge_default);
     config_reader.append_config_var("nlat", nlat, nlat_default);
     config_reader.append_config_var("Rv_sponge", Rv_sponge, Rv_sponge_default);
     config_reader.append_config_var("RvT_sponge", RvT_sponge, RvT_sponge_default);

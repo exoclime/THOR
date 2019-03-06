@@ -79,8 +79,8 @@ public:
     double DivDampc;
 
     // Sim
-    bool SpongeLayer; // Use sponge layer?
-    bool TempSponge;  // include thermal term in sponge layer?
+    bool SpongeLayer;        // Use sponge layer?
+    bool TempSponge = false; // include thermal term in sponge layer?
     bool DeepModel;
     bool HyDiff;       // Turn on/off hyper-diffusion.
     bool DivDampP;     // Turn on/off divergence damping.
