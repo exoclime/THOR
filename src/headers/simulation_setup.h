@@ -76,7 +76,6 @@ public:
     double P_Ref;
     double Top_altitude;
     double Diffc;
-    double Diffc_v;
     double DivDampc;
 
     // Sim

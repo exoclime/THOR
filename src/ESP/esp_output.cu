@@ -183,7 +183,6 @@ __host__ void ESP::output(int                    fidx, // Index of output file
 
         //      Hyperdiffusion strength
         s.append_value(sim.Diffc, "/Diffc", "-", "Hyperdiffusion strength");
-        s.append_value(sim.Diffc_v, "/Diffc_v", "-", "Vertical hyperdiffusion strength");
 
         //      Tmean
         s.append_value(sim.Tmean, "/Tmean", "K", "Mean atmospheric temperature");
