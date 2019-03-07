@@ -318,7 +318,7 @@ class GetOutput:
         if openrg == 1:
             self.rg = rg_out(resultsf,simID,ntsi,nts,self.input,self.output,self.grid)
 
-def calc_RV_PV(grid,output,input,lons,lats,sigma,t_ind,fileh5,comp=4):
+def calc_RV_PV(grid,output,input,lons,lats,sigma,t_ind,fileh5,comp=4,pressure_vert=True):
     #Calculates relative and potential vorticity on height levels, then interpolates to pressure.
     #It is easiest to calculate these on a lat-lon-altitude grid since conversion
     #to pressure requires transformation of vertical velocity and computing 3D curls
@@ -385,24 +385,28 @@ def calc_RV_PV(grid,output,input,lons,lats,sigma,t_ind,fileh5,comp=4):
 
     PV_llz = curlVz*dptdz + curlVlat*dptdlat + curlVlon*dptdlon
 
-    PV_llp = np.zeros((d_lon[0],d_lon[1], len(sigma)))
-    RV_llp = np.zeros((3,d_lon[0],d_lon[1], len(sigma)))
+    if pressure_vert == True:
+        PV_llp = np.zeros((d_lon[0],d_lon[1], len(sigma)))
+        RV_llp = np.zeros((3,d_lon[0],d_lon[1], len(sigma)))
 
-    for ilat in np.arange(d_lon[0]):
-        for ilon in np.arange(d_lon[1]):
-            # interpolate to pressure grid
-            PV_llp[ilat,ilon,:] = interp.pchip_interpolate(p_llz[ilat,ilon,:][::-1],
-                                            PV_llz[ilat,ilon,:][::-1],sigma[::-1])[::-1]
-            RV_llp[0,ilat,ilon,:] = interp.pchip_interpolate(p_llz[ilat,ilon,:][::-1],
-                                            RV_llz[0,ilat,ilon,:][::-1],sigma[::-1])[::-1]
-            RV_llp[1,ilat,ilon,:] = interp.pchip_interpolate(p_llz[ilat,ilon,:][::-1],
-                                            RV_llz[1,ilat,ilon,:][::-1],sigma[::-1])[::-1]
-            RV_llp[2,ilat,ilon,:] = interp.pchip_interpolate(p_llz[ilat,ilon,:][::-1],
-                                            RV_llz[2,ilat,ilon,:][::-1],sigma[::-1])[::-1]
+        for ilat in np.arange(d_lon[0]):
+            for ilon in np.arange(d_lon[1]):
+                # interpolate to pressure grid
+                PV_llp[ilat,ilon,:] = interp.pchip_interpolate(p_llz[ilat,ilon,:][::-1],
+                                                PV_llz[ilat,ilon,:][::-1],sigma[::-1])[::-1]
+                RV_llp[0,ilat,ilon,:] = interp.pchip_interpolate(p_llz[ilat,ilon,:][::-1],
+                                                RV_llz[0,ilat,ilon,:][::-1],sigma[::-1])[::-1]
+                RV_llp[1,ilat,ilon,:] = interp.pchip_interpolate(p_llz[ilat,ilon,:][::-1],
+                                                RV_llz[1,ilat,ilon,:][::-1],sigma[::-1])[::-1]
+                RV_llp[2,ilat,ilon,:] = interp.pchip_interpolate(p_llz[ilat,ilon,:][::-1],
+                                                RV_llz[2,ilat,ilon,:][::-1],sigma[::-1])[::-1]
 
-    #testing something...
-    PV_llp_f = PV_llp
-    RV_llp_f = RV_llp
+        #testing something...
+        PV_llp_f = PV_llp
+        RV_llp_f = RV_llp
+    else:
+        PV_llp_f = PV_llz
+        RV_llp_f = PV_llz
 
     # # grid now to higher resolution
     # PV_llp_f = np.zeros(np.shape(lonf)+(len(sigma),))
@@ -424,7 +428,7 @@ def calc_RV_PV(grid,output,input,lons,lats,sigma,t_ind,fileh5,comp=4):
     Lonlr = openh5.create_dataset("Lon_lowres",data=lon_range,compression='gzip',compression_opts=comp)
     openh5.close()
 
-def regrid(resultsf,simID,ntsi,nts,res_deg=0.5,nlev=40,pscale='log',overwrite=False,comp=4):
+def regrid(resultsf,simID,ntsi,nts,res_deg=0.5,nlev=40,pscale='log',overwrite=False,comp=4,pressure_vert=True):
     # runs over files and converts ico-height grid to lat-lon-pr grid
     outall = GetOutput(resultsf,simID,ntsi,nts)
     input = outall.input
@@ -471,7 +475,10 @@ def regrid(resultsf,simID,ntsi,nts,res_deg=0.5,nlev=40,pscale='log',overwrite=Fa
     for t in np.arange(ntsi,nts+1):
         #check for exising h5 files
         proceed = 0
-        fileh5 = resultsf+'/regrid_'+simID+'_'+np.str(t)+'.h5'
+        if pressure_vert == True:
+            fileh5 = resultsf+'/regrid_'+simID+'_'+np.str(t)+'.h5'
+        else:
+            fileh5 = resultsf+'/regrid_height_'+simID+'_'+np.str(t)+'.h5'
         if os.path.exists(fileh5):
             if overwrite == True:
                 proceed = 1
@@ -484,6 +491,7 @@ def regrid(resultsf,simID,ntsi,nts,res_deg=0.5,nlev=40,pscale='log',overwrite=Fa
             print('Regridding time = %d...'%t)
             Temp_icop = np.zeros((grid.point_num,d_sig))
             Temp_llp = np.zeros((d_lon[0],d_lon[1],d_sig))
+            Temp_llp2 = np.zeros((d_lon[0],d_lon[1],d_sig))
 
             Rho_icop = np.zeros((grid.point_num,d_sig))
             Rho_llp = np.zeros((d_lon[0],d_lon[1],d_sig))
@@ -525,27 +533,43 @@ def regrid(resultsf,simID,ntsi,nts,res_deg=0.5,nlev=40,pscale='log',overwrite=Fa
                 nh3_icop = np.zeros((grid.point_num,d_sig))
                 nh3_llp = np.zeros((d_lon[0],d_lon[1],d_sig))
 
-
-            for i in np.arange(grid.point_num):
-                #interp to pressure grid
-                sigma = output.Pressure[i,:,t-ntsi]
-                Temp_icop[i,:] = interp.pchip_interpolate(sigma[::-1],Temp_icoh[i,::-1,t-ntsi],Pref[::-1])[::-1]
-                Rho_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.Rho[i,::-1,t-ntsi],Pref[::-1])[::-1]
-                Mh_icop[0,i,:] = interp.pchip_interpolate(sigma[::-1],output.Mh[0,i,::-1,t-ntsi],Pref[::-1])[::-1]
-                Mh_icop[1,i,:] = interp.pchip_interpolate(sigma[::-1],output.Mh[1,i,::-1,t-ntsi],Pref[::-1])[::-1]
-                Mh_icop[2,i,:] = interp.pchip_interpolate(sigma[::-1],output.Mh[2,i,::-1,t-ntsi],Pref[::-1])[::-1]
-                Wh_icop[i,:] = interp.pchip_interpolate(sigma[::-1],Wh_icoh[i,::-1,t-ntsi],Pref[::-1])[::-1]
+            if pressure_vert == True: # use pressure as vertical coordinate
+                for i in np.arange(grid.point_num):
+                    #interp to pressure grid
+                    sigma = output.Pressure[i,:,t-ntsi]
+                    Temp_icop[i,:] = interp.pchip_interpolate(sigma[::-1],Temp_icoh[i,::-1,t-ntsi],Pref[::-1])[::-1]
+                    Rho_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.Rho[i,::-1,t-ntsi],Pref[::-1])[::-1]
+                    Mh_icop[0,i,:] = interp.pchip_interpolate(sigma[::-1],output.Mh[0,i,::-1,t-ntsi],Pref[::-1])[::-1]
+                    Mh_icop[1,i,:] = interp.pchip_interpolate(sigma[::-1],output.Mh[1,i,::-1,t-ntsi],Pref[::-1])[::-1]
+                    Mh_icop[2,i,:] = interp.pchip_interpolate(sigma[::-1],output.Mh[2,i,::-1,t-ntsi],Pref[::-1])[::-1]
+                    Wh_icop[i,:] = interp.pchip_interpolate(sigma[::-1],Wh_icoh[i,::-1,t-ntsi],Pref[::-1])[::-1]
+                    if RT == 1:
+                        tau_sw_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.tau_sw[i,::-1,t-ntsi],Pref[::-1])[::-1]
+                        tau_lw_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.tau_lw[i,::-1,t-ntsi],Pref[::-1])[::-1]
+                        fnet_up_icop[i,:] = interp.pchip_interpolate(sigma[::-1],fnet_up_icoh[i,::-1,t-ntsi],Pref[::-1])[::-1]
+                        fnet_dn_icop[i,:] = interp.pchip_interpolate(sigma[::-1],fnet_dn_icoh[i,::-1,t-ntsi],Pref[::-1])[::-1]
+                    if chem == 1:
+                        ch4_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.ch4[i,::-1,t-ntsi],Pref[::-1])[::-1]
+                        co_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.co[i,::-1,t-ntsi],Pref[::-1])[::-1]
+                        h2o_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.h2o[i,::-1,t-ntsi],Pref[::-1])[::-1]
+                        co2_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.co2[i,::-1,t-ntsi],Pref[::-1])[::-1]
+                        nh3_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.nh3[i,::-1,t-ntsi],Pref[::-1])[::-1]
+            else:  # keep height at vertical coordinate (sometimes useful)
+                Temp_icop[:,:] = Temp_icoh[:,:,t-ntsi]
+                Rho_icop[:,:] = output.Rho[:,:,t-ntsi]
+                Mh_icop[:,:,:] = output.Mh[:,:,:,t-ntsi]
+                Wh_icop[:,:] = Wh_icoh[:,:,t-ntsi]
                 if RT == 1:
-                    tau_sw_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.tau_sw[i,::-1,t-ntsi],Pref[::-1])[::-1]
-                    tau_lw_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.tau_lw[i,::-1,t-ntsi],Pref[::-1])[::-1]
-                    fnet_up_icop[i,:] = interp.pchip_interpolate(sigma[::-1],fnet_up_icoh[i,::-1,t-ntsi],Pref[::-1])[::-1]
-                    fnet_dn_icop[i,:] = interp.pchip_interpolate(sigma[::-1],fnet_dn_icoh[i,::-1,t-ntsi],Pref[::-1])[::-1]
+                    tau_sw_icop[:,:] = output.tau_sw[:,:,t-ntsi]
+                    tau_lw_icop[:,:] = output.tau_lw[:,:,t-ntsi]
+                    fnet_up_icop[:,:] = fnet_up_icoh[:,:,t-ntsi]
+                    fnet_dn_icop[:,:] = fnet_dn_icoh[:,:,t-ntsi]
                 if chem == 1:
-                    ch4_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.ch4[i,::-1,t-ntsi],Pref[::-1])[::-1]
-                    co_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.co[i,::-1,t-ntsi],Pref[::-1])[::-1]
-                    h2o_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.h2o[i,::-1,t-ntsi],Pref[::-1])[::-1]
-                    co2_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.co2[i,::-1,t-ntsi],Pref[::-1])[::-1]
-                    nh3_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.nh3[i,::-1,t-ntsi],Pref[::-1])[::-1]
+                    ch4_icop[:,:] = output.ch4[:,:,t-ntsi]
+                    co_icop[:,:] = output.co[:,:,t-ntsi]
+                    h2o_icop[:,:] = output.h2o[:,:,t-ntsi]
+                    co2_icop[:,:] = output.co2[:,:,t-ntsi]
+                    nh3_icop[:,:] = output.nh3[:,:,t-ntsi]
 
             # Convert icosahedral grid into lon-lat grid
             U_icop = (-Mh_icop[0]*np.sin(grid.lon[:,None])+Mh_icop[1]*np.cos(grid.lon[:,None]))/Rho_icop
@@ -576,11 +600,16 @@ def regrid(resultsf,simID,ntsi,nts,res_deg=0.5,nlev=40,pscale='log',overwrite=Fa
 
             print('Writing file '+fileh5+'...')
             # coordinates
-            Pre = openh5.create_dataset("Pressure",data=Pref,compression='gzip',compression_opts=comp)
+            if pressure_vert == True:
+                Pre = openh5.create_dataset("Pressure",data=Pref,compression='gzip',compression_opts=comp)
+            else:
+                Alt = openh5.create_dataset("Altitude",data=grid.Altitude,compression='gzip',compression_opts=comp)
             Lat = openh5.create_dataset("Latitude",data=lat_range,compression='gzip',compression_opts=comp)
             Lon = openh5.create_dataset("Longitude",data=lon_range,compression='gzip',compression_opts=comp)
             # data
             Temp = openh5.create_dataset("Temperature",data=Temp_llp,compression='gzip',compression_opts=comp)
+            Temp2 = openh5.create_dataset("Temperature2",data=Temp_llp2,compression='gzip',compression_opts=comp)
+
             Rho = openh5.create_dataset("Rho",data=Rho_llp,compression='gzip',compression_opts=comp)
             U = openh5.create_dataset("U",data=U_llp,compression='gzip',compression_opts=comp)
             V = openh5.create_dataset("V",data=V_llp,compression='gzip',compression_opts=comp)
@@ -602,7 +631,7 @@ def regrid(resultsf,simID,ntsi,nts,res_deg=0.5,nlev=40,pscale='log',overwrite=Fa
             openh5.close()
 
             ## calculate relative and potential vorticity and add to regrid file
-            calc_RV_PV(grid,output,input,lon_range,lat_range,Pref,t-ntsi,fileh5)
+            calc_RV_PV(grid,output,input,lon_range,lat_range,Pref,t-ntsi,fileh5,pressure_vert)
 
 def Get_Prange(input,grid,output,args,xtype='lat'):
     # Sigma (normalized pressure) values for the plotting
