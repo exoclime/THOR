@@ -47,8 +47,9 @@
 
 #include "dyn/phy_modules_device.h"
 
-extern __constant__ device_RK_array dynamical_core_phy_modules_arrays[NUM_PHY_MODULES_DYN_CORE_ARRAYS];
-extern __constant__ int             num_dynamical_arrays[1];
+extern __constant__     device_RK_array
+                        dynamical_core_phy_modules_arrays[NUM_PHY_MODULES_DYN_CORE_ARRAYS];
+extern __constant__ int num_dynamical_arrays[1];
 
 
 __global__ void Compute_Temperature_H_Pt_Geff(double *temperature_d,
@@ -121,9 +122,10 @@ __global__ void Compute_Temperature_H_Pt_Geff(double *temperature_d,
             if (lev == 0) {
                 hh_d[id * (nv + 1) + 0] = h;
 
-                pl                   = pressure_d[id * nv + 1] - rho * Gravit * (-alt - Altitude_d[1]);
-                rhoh                 = 0.5 * (pressure + pl) / (Rd * temperature);
-                pth_d[id * (nv + 1)] = (P_Ref / (Rd * rhoh)) * pow(0.5 * (pressure + pl) / P_Ref, CvoCp);
+                pl   = pressure_d[id * nv + 1] - rho * Gravit * (-alt - Altitude_d[1]);
+                rhoh = 0.5 * (pressure + pl) / (Rd * temperature);
+                pth_d[id * (nv + 1)] =
+                    (P_Ref / (Rd * rhoh)) * pow(0.5 * (pressure + pl) / P_Ref, CvoCp);
 
                 gtilh_d[id * (nv + 1)] = 0.0;
                 gtilh                  = 0.0;
@@ -131,10 +133,12 @@ __global__ void Compute_Temperature_H_Pt_Geff(double *temperature_d,
             else if (lev == nv) {
                 hh_d[id * (nv + 1) + nv] = h;
 
-                pp = pressure_d[id * nv + nv - 2] - rho * Gravit * (2 * Altitudeh_d[nv] - alt - Altitude_d[nv - 2]);
+                pp = pressure_d[id * nv + nv - 2]
+                     - rho * Gravit * (2 * Altitudeh_d[nv] - alt - Altitude_d[nv - 2]);
                 if (pp < 0) pp = 0;
-                rhoh                      = 0.5 * (pressure + pp) / (Rd * temperature);
-                pth_d[id * (nv + 1) + nv] = (P_Ref / (Rd * rhoh)) * pow(0.5 * (pressure + pp) / P_Ref, CvoCp);
+                rhoh = 0.5 * (pressure + pp) / (Rd * temperature);
+                pth_d[id * (nv + 1) + nv] =
+                    (P_Ref / (Rd * rhoh)) * pow(0.5 * (pressure + pp) / P_Ref, CvoCp);
 
                 gtilh_d[id * (nv + 1) + nv] = 0.0;
                 gtilht                      = 0.0;
@@ -184,8 +188,9 @@ __global__ void Compute_Temperature_H_Pt_Geff(double *temperature_d,
 
         for (int lev = 0; lev < nv + 1; lev++) {
             if (lev == 0) {
-                dz   = 2.0 * Altitude_d[0];
-                pl   = pressure_d[id * nv + 1] - Rho_d[id * nv + 0] * Gravit * (-Altitude_d[0] - Altitude_d[1]);
+                dz = 2.0 * Altitude_d[0];
+                pl = pressure_d[id * nv + 1]
+                     - Rho_d[id * nv + 0] * Gravit * (-Altitude_d[0] - Altitude_d[1]);
                 dpdz = (pressure_d[id * nv + 0] - pl) / dz;
                 rhoh = 0.5 * (pressure_d[id * nv + 0] + pl) / (Rd * temperature_d[id * nv + 0]);
 
@@ -193,11 +198,14 @@ __global__ void Compute_Temperature_H_Pt_Geff(double *temperature_d,
             }
             else if (lev == nv) {
 
-                dz   = 2.0 * (Altitudeh_d[nv] - Altitude_d[nv - 1]);
-                pp   = pressure_d[id * nv + nv - 2] - Rho_d[id * nv + nv - 1] * Gravit * (2 * Altitudeh_d[nv] - Altitude_d[nv - 1] - Altitude_d[nv - 2]);
+                dz = 2.0 * (Altitudeh_d[nv] - Altitude_d[nv - 1]);
+                pp = pressure_d[id * nv + nv - 2]
+                     - Rho_d[id * nv + nv - 1] * Gravit
+                           * (2 * Altitudeh_d[nv] - Altitude_d[nv - 1] - Altitude_d[nv - 2]);
                 dpdz = (pp - pressure_d[id * nv + nv - 1]) / dz;
 
-                rhoh = 0.5 * (pressure_d[id * nv + nv - 1] + pp) / (Rd * temperature_d[id * nv + nv - 1]);
+                rhoh = 0.5 * (pressure_d[id * nv + nv - 1] + pp)
+                       / (Rd * temperature_d[id * nv + nv - 1]);
 
                 gtilh_d[id * (nv + 1) + nv] = -(1.0 / rhoh) * dpdz;
             }
@@ -292,7 +300,9 @@ __global__ void UpdateRK(double *M_d,
                 double *arrayi  = dynamical_core_phy_modules_arrays[i].arrayi_d;
                 double *arrayk  = dynamical_core_phy_modules_arrays[i].arrayk_d;
                 for (int itr = 0; itr < num_dim; itr++) {
-                    array[(id * nv + lev) * num_dim + itr] = arrayi[(id * nv + lev) * num_dim + itr] - arrayk[(id * nv + lev) * num_dim + itr];
+                    array[(id * nv + lev) * num_dim + itr] =
+                        arrayi[(id * nv + lev) * num_dim + itr]
+                        - arrayk[(id * nv + lev) * num_dim + itr];
                 }
             }
         }
@@ -398,7 +408,8 @@ __global__ void UpdateRK2(double *M_d,
                 double *arrayk  = dynamical_core_phy_modules_arrays[i].arrayk_d;
 
                 for (int itr = 0; itr < num_dim; itr++) {
-                    arrayk[(id * nv + lev) * num_dim + itr] += array[(id * nv + lev) * num_dim + itr];
+                    arrayk[(id * nv + lev) * num_dim + itr] +=
+                        array[(id * nv + lev) * num_dim + itr];
                 }
             }
         }
@@ -444,9 +455,7 @@ __global__ void isnan_check_thor(double *array, int width, int height, bool *che
 
     while (idx < width) {
         for (int i = 0; i < height; i++)
-            if (isnan(array[(i * width) + idx])) {
-                *check = true;
-            }
+            if (isnan(array[(i * width) + idx])) { *check = true; }
         idx += gridDim.x + blockDim.x;
     }
 }

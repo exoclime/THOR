@@ -54,6 +54,7 @@
 #include <vector>
 
 #include "debug.h"
+#include "directories.h"
 #include <algorithm>
 #include <iomanip>
 #include <memory>
@@ -67,55 +68,62 @@
 #    define BRACED_INIT_LIST(...) \
         { __VA_ARGS__ }
 #    define USE_BENCHMARK() binary_test& btester = binary_test::get_instance();
-#    define SET_BENCHMARK_PATH(path) binary_test& btester = binary_test::get_instance().set_output("bindata_", path);
+#    define SET_BENCHMARK_PATH(path) \
+        binary_test& btester = binary_test::get_instance().set_output("bindata_", path);
 #    define INIT_BENCHMARK(esp, grid, path)                                           \
         binary_test::get_instance().append_definitions(build_definitions(esp, grid)); \
         binary_test::get_instance().set_output("bindata_", path);
-#    define BENCH_POINT(iteration, name, in, out) \
-        btester.check_data(iteration, name, std::vector<std::string>(BRACED_INIT_LIST in), std::vector<std::string>(BRACED_INIT_LIST out), false);
-#    define BENCH_POINT_I(iteration, name, in, out) \
-        btester.check_data(std::to_string(iteration), name, std::vector<std::string>(BRACED_INIT_LIST in), std::vector<std::string>(BRACED_INIT_LIST out), false);
-#    define BENCH_POINT_I_S(iteration, subiteration, name, in, out)        \
-        btester.check_data(std::to_string(iteration)                       \
-                               + "-"                                       \
-                               + std::to_string(subiteration),             \
+#    define BENCH_POINT(iteration, name, in, out)                          \
+        btester.check_data(iteration,                                      \
                            name,                                           \
                            std::vector<std::string>(BRACED_INIT_LIST in),  \
                            std::vector<std::string>(BRACED_INIT_LIST out), \
                            false);
-
-#    define BENCH_POINT_I_SS(iteration, subiteration, subsubiteration, name, in, out) \
-        btester.check_data(std::to_string(iteration)                                  \
-                               + "-"                                                  \
-                               + std::to_string(subiteration)                         \
-                               + "-"                                                  \
-                               + std::to_string(subsubiteration),                     \
-                           name,                                                      \
-                           std::vector<std::string>(BRACED_INIT_LIST in),             \
-                           std::vector<std::string>(BRACED_INIT_LIST out),            \
+#    define BENCH_POINT_I(iteration, name, in, out)                        \
+        btester.check_data(std::to_string(iteration),                      \
+                           name,                                           \
+                           std::vector<std::string>(BRACED_INIT_LIST in),  \
+                           std::vector<std::string>(BRACED_INIT_LIST out), \
+                           false);
+#    define BENCH_POINT_I_S(iteration, subiteration, name, in, out)                        \
+        btester.check_data(std::to_string(iteration) + "-" + std::to_string(subiteration), \
+                           name,                                                           \
+                           std::vector<std::string>(BRACED_INIT_LIST in),                  \
+                           std::vector<std::string>(BRACED_INIT_LIST out),                 \
                            false);
 
-#    define BENCH_POINT_PHY(iteration, name, in, out) \
-        btester.check_data(iteration, name, std::vector<std::string>(BRACED_INIT_LIST in), std::vector<std::string>(BRACED_INIT_LIST out), true);
-#    define BENCH_POINT_I_PHY(iteration, name, in, out) \
-        btester.check_data(std::to_string(iteration), name, std::vector<std::string>(BRACED_INIT_LIST in), std::vector<std::string>(BRACED_INIT_LIST out), true);
-#    define BENCH_POINT_I_S_PHY(iteration, subiteration, name, in, out)    \
-        btester.check_data(std::to_string(iteration)                       \
-                               + "-"                                       \
-                               + std::to_string(subiteration),             \
+#    define BENCH_POINT_I_SS(iteration, subiteration, subsubiteration, name, in, out)           \
+        btester.check_data(std::to_string(iteration) + "-" + std::to_string(subiteration) + "-" \
+                               + std::to_string(subsubiteration),                               \
+                           name,                                                                \
+                           std::vector<std::string>(BRACED_INIT_LIST in),                       \
+                           std::vector<std::string>(BRACED_INIT_LIST out),                      \
+                           false);
+
+#    define BENCH_POINT_PHY(iteration, name, in, out)                      \
+        btester.check_data(iteration,                                      \
                            name,                                           \
                            std::vector<std::string>(BRACED_INIT_LIST in),  \
                            std::vector<std::string>(BRACED_INIT_LIST out), \
                            true);
-#    define BENCH_POINT_I_SS_PHY(iteration, subiteration, subsubiteration, name, in, out) \
-        btester.check_data(std::to_string(iteration)                                      \
-                               + "-"                                                      \
-                               + std::to_string(subiteration)                             \
-                               + "-"                                                      \
-                               + std::to_string(subsubiteration),                         \
-                           name,                                                          \
-                           std::vector<std::string>(BRACED_INIT_LIST in),                 \
-                           std::vector<std::string>(BRACED_INIT_LIST out),                \
+#    define BENCH_POINT_I_PHY(iteration, name, in, out)                    \
+        btester.check_data(std::to_string(iteration),                      \
+                           name,                                           \
+                           std::vector<std::string>(BRACED_INIT_LIST in),  \
+                           std::vector<std::string>(BRACED_INIT_LIST out), \
+                           true);
+#    define BENCH_POINT_I_S_PHY(iteration, subiteration, name, in, out)                    \
+        btester.check_data(std::to_string(iteration) + "-" + std::to_string(subiteration), \
+                           name,                                                           \
+                           std::vector<std::string>(BRACED_INIT_LIST in),                  \
+                           std::vector<std::string>(BRACED_INIT_LIST out),                 \
+                           true);
+#    define BENCH_POINT_I_SS_PHY(iteration, subiteration, subsubiteration, name, in, out)       \
+        btester.check_data(std::to_string(iteration) + "-" + std::to_string(subiteration) + "-" \
+                               + std::to_string(subsubiteration),                               \
+                           name,                                                                \
+                           std::vector<std::string>(BRACED_INIT_LIST in),                       \
+                           std::vector<std::string>(BRACED_INIT_LIST out),                      \
                            true);
 
 
@@ -138,6 +146,7 @@
 #    include "esp.h"
 #    include "grid.h"
 #    include "storage.h"
+#    include <functional>
 #    include <map>
 #    include <memory>
 #    include <vector>
@@ -148,11 +157,12 @@ using std::vector;
 
 
 struct output_def {
-    double*& data;
-    int      size;
-    string   name;
-    string   short_name;
-    bool     device_ptr;
+    double*&                             data;
+    int                                  size;
+    string                               name;
+    string                               short_name;
+    bool                                 device_ptr;
+    std::function<std::string(int, int)> fun;
 };
 
 struct compare_statistics {
@@ -170,8 +180,7 @@ struct compare_statistics {
 };
 
 
-map<string, output_def>
-build_definitions(ESP& esp, Icogrid& grd);
+map<string, output_def> build_definitions(ESP& esp, Icogrid& grd);
 
 // singleton storing class for debug
 class binary_test
@@ -202,7 +211,8 @@ public:
                     const bool&           trace_phy_module);
 
     void set_output(string base_name, string dir) {
-        output_dir       = dir;
+        output_dir       = (path(dir) / string("ref")).to_string();
+        output_crash     = (path(dir) / string("crash")).to_string();
         output_base_name = base_name;
     }
 
@@ -224,12 +234,12 @@ private:
 
 
     string output_dir;
+    string output_crash;
     string output_base_name;
 
 
     // make constructor private, can only be instantiated through get_instance
-    binary_test(string output_dir,
-                string output_base_name);
+    binary_test(string output_dir, string output_base_name);
 
     // helper function to compare two arrays for equality
     template<typename T>
@@ -278,7 +288,8 @@ bool binary_test::compare_to_saved_data(storage&            s,
     s.read_table(name, saved_data, size);
 
 
-    bool b = compare_arrays(size, saved_data.get(), data_size, local_data, stats, name, print_details);
+    bool b =
+        compare_arrays(size, saved_data.get(), data_size, local_data, stats, name, print_details);
     //    cout << b << endl;
     return b;
 }
@@ -307,8 +318,7 @@ bool binary_test::compare_arrays(int                 s1,
 #    endif // BENCH_COMPARE_PRINT_STATISTICS
 
     if (s1 != s2) {
-        if (print)
-            log::printf( ":\tdifferent sized arrays (%d:%d)\n", array.c_str(),s1, s2);
+        if (print) log::printf(":\tdifferent sized arrays (%d:%d)\n", array.c_str(), s1, s2);
 
         return false;
     }
@@ -333,8 +343,9 @@ bool binary_test::compare_arrays(int                 s1,
 
             //            if (print && i < 10)
             if (print)
-                log::printf("%s [ %d ]:\tdifferent value (%.20e:%.20e)\n", array.c_str(), i, d1[i], d2[i]);
-            
+                log::printf(
+                    "%s [ %d ]:\tdifferent value (%.20e:%.20e)\n", array.c_str(), i, d1[i], d2[i]);
+
 #    ifdef BENCH_COMPARE_PRINT_STATISTICS
             stats.num_failures += 1;
 

@@ -18,7 +18,7 @@ n_out = 2
 
 # output directory (relative to current working directory)
 # defaults to 'results'
-results_path = acoustic_test
+results_path = acoustic_test_divdonly
 
 # calculate and output quantities we hope to conserve
 # angular momentum, energy, mass, (entropy soon)
@@ -50,10 +50,6 @@ Tmean = 300.0
 # Reference surface pressure [Pa] (pressure at bottom of model)
 P_ref = 100000.0
 
-# Initialize atmosphere with Guillot TP profile (0 = isothermal)?
-TPprof = 0
-
-
 #-- Grid options -------------------------------------------------------------#
 # Altitude of the top of the model domain [m]
 Top_altitude = 10000.0
@@ -72,13 +68,16 @@ spring_beta = 1.15
 
 ## diffusion ############################################
 # Hyper-diffusion
-HyDiff  =    true
+HyDiff  =    false
 
 # Divergence-damping
 DivDampP =    true
 
 # Strength of diffusion
-Diffc = 0.0
+Diffc = 0.02
+
+# Strength of divergence damping
+DivDampc = 0.02
 #########################################################
 
 

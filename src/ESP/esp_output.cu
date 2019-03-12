@@ -104,55 +104,41 @@ __host__ void ESP::output(int                    fidx, // Index of output file
 
         storage s(FILE_NAME1);
 
-        s.append_table(Altitude_h,
-                       nv,
-                       "/Altitude",
-                       "m",
-                       "Altitude");
+        s.append_table(Altitude_h, nv, "/Altitude", "m", "Altitude");
 
         //      Altitudeh
-        s.append_table(Altitudeh_h,
-                       nv + 1,
-                       "/Altitudeh",
-                       "m",
-                       "Altitude at the interfaces");
+        s.append_table(Altitudeh_h, nv + 1, "/Altitudeh", "m", "Altitude at the interfaces");
 
         //      AreasT
-        s.append_table(areasT_h,
-                       point_num,
-                       "/areasT",
-                       "m^2",
-                       "Main cells areas");
+        s.append_table(areasT_h, point_num, "/areasT", "m^2", "Main cells areas");
 
         //      Lon-lat grid
-        s.append_table(lonlat_h,
-                       2 * point_num,
-                       "/lonlat",
-                       "-",
-                       "Longitudes and latitudes");
+        s.append_table(lonlat_h, 2 * point_num, "/lonlat", "-", "Longitudes and latitudes");
 
         //      Number of horizontal points
-        s.append_value((double)point_num,
-                       "/point_num",
-                       "-",
-                       "Number of grid points in one level");
+        s.append_value((double)point_num, "/point_num", "-", "Number of grid points in one level");
 
         //      Number of vertical layers
-        s.append_value((double)nv,
-                       "/nv",
-                       "-",
-                       "Number of vertical layers");
+        s.append_value((double)nv, "/nv", "-", "Number of vertical layers");
+
         //      point neighbours
-        s.append_table(point_local_h,
-                       6 * point_num,
-                       "/pntloc",
-                       "-",
-                       "Neighbours indexes");
+        s.append_table(point_local_h, 6 * point_num, "/pntloc", "-", "Neighbours indexes");
+
+        //      gradient operator
+        s.append_table(grad_h, 7 * 3 * point_num, "/grad", "m^-1", "Horizontal gradient operator");
+
+        //      divergence operator
+        s.append_table(div_h, 7 * 3 * point_num, "/div", "m^-1", "Horizontal divergence operator");
+
+        //      curl z operator
+        s.append_table(
+            curlz_h, 7 * 3 * point_num, "/curlz", "m^-1", "Vertical component of curl operator");
     }
 
     //  PLANET
     if (current_step == 0) {
-        sprintf(FILE_NAME1, "%s/esp_output_planet_%s.h5", output_dir.c_str(), simulation_ID.c_str());
+        sprintf(
+            FILE_NAME1, "%s/esp_output_planet_%s.h5", output_dir.c_str(), simulation_ID.c_str());
         storage s(FILE_NAME1);
 
         // glevel
@@ -179,11 +165,15 @@ __host__ void ESP::output(int                    fidx, // Index of output file
         s.append_value(sim.Cp, "/Cp", "J/(Kg K)", "Specific heat capacity");
         //      SpongeLayer option
         s.append_value(sim.SpongeLayer ? 1.0 : 0.0, "/SpongeLayer", "-", "Using SpongeLayer?");
+        s.append_value(
+            sim.TempSponge ? 1.0 : 0.0, "/TempSponge", "-", "Using thermal SpongeLayer?");
+
         //      DeepModel option
         s.append_value(sim.DeepModel ? 1.0 : 0.0, "/DeepModel", "-", "Using Deep Model");
 
         //      NonHydro option
-        s.append_value(sim.NonHydro ? 1.0 : 0.0, "/NonHydro", "-", "Using Non Hydrostatic parameter");
+        s.append_value(
+            sim.NonHydro ? 1.0 : 0.0, "/NonHydro", "-", "Using Non Hydrostatic parameter");
 
         //      DivDampP option
         s.append_value(sim.DivDampP ? 1.0 : 0.0, "/DivDampP", "-", "Using Divergence-damping");
@@ -206,12 +196,9 @@ __host__ void ESP::output(int                    fidx, // Index of output file
         //      rest option
         s.append_value(sim.rest ? 1.0 : 0.0, "/rest", "-", "Starting from rest");
 
-        //      TPprof option
-        s.append_value(sim.TPprof, "/TPprof", "-", "Initial TP profile option");
-
-
         //      core_benchmark  option
-        s.append_value(int(core_benchmark), "/core_benchmark", "-", "Using benchmark forcing or RT");
+        s.append_value(
+            int(core_benchmark), "/core_benchmark", "-", "Using benchmark forcing or RT");
         if (sim.SpongeLayer) {
             //      nlat
             s.append_value(nlat, "/nlat", "-", "number of lat rings for sponge layer");
@@ -224,9 +211,7 @@ __host__ void ESP::output(int                    fidx, // Index of output file
         // store module name in the description
         s.append_value(0.0, "/phy_module", "-", phy_modules_get_name());
 
-        if (phy_modules_execute) {
-            phy_modules_store_init(s);
-        }
+        if (phy_modules_execute) { phy_modules_store_init(s); }
     }
 
     //  ESP OUTPUT
@@ -235,125 +220,60 @@ __host__ void ESP::output(int                    fidx, // Index of output file
 
     storage s(FILE_NAME1);
     // step index
-    s.append_value(current_step,
-                   "/nstep",
-                   "-",
-                   "Step number");
+    s.append_value(current_step, "/nstep", "-", "Step number");
 
     //  Simulation time
-    s.append_value(simulation_time,
-                   "/simulation_time",
-                   "s",
-                   "Simulation time");
+    s.append_value(simulation_time, "/simulation_time", "s", "Simulation time");
 
     //  Rho
-    s.append_table(Rho_h,
-                   nv * point_num,
-                   "/Rho",
-                   "kg/m^3",
-                   "Density");
+    s.append_table(Rho_h, nv * point_num, "/Rho", "kg/m^3", "Density");
 
     //  Pressure
-    s.append_table(pressure_h,
-                   nv * point_num,
-                   "/Pressure",
-                   "Pa",
-                   "Pressure");
+    s.append_table(pressure_h, nv * point_num, "/Pressure", "Pa", "Pressure");
 
     //  Mh
-    s.append_table(Mh_h,
-                   nv * point_num * 3,
-                   "/Mh",
-                   "kg m/s",
-                   "Horizontal Momentum");
+    s.append_table(Mh_h, nv * point_num * 3, "/Mh", "kg m/s", "Horizontal Momentum");
 
     //  Wh
-    s.append_table(Wh_h,
-                   nvi * point_num,
-                   "/Wh",
-                   "kg m/s",
-                   "Vertical Momentum");
+    s.append_table(Wh_h, nvi * point_num, "/Wh", "kg m/s", "Vertical Momentum");
 
     if (sim.conservation == true) {
         //  Etotal at each point
-        s.append_table(Etotal_h,
-                       nv * point_num,
-                       "/Etotal",
-                       "kg m^2/s^2",
-                       "Total Energy");
+        s.append_table(Etotal_h, nv * point_num, "/Etotal", "kg m^2/s^2", "Total Energy");
 
-        s.append_table(Entropy_h,
-                       nv * point_num,
-                       "/Entropy",
-                       "kg m^2/s^2 K^-1",
-                       "Entropy");
+        s.append_table(Entropy_h, nv * point_num, "/Entropy", "kg m^2/s^2 K^-1", "Entropy");
 
         //  Mass at each point
-        s.append_table(Mass_h,
-                       nv * point_num,
-                       "/Mass",
-                       "kg",
-                       "Mass");
+        s.append_table(Mass_h, nv * point_num, "/Mass", "kg", "Mass");
 
         //  AngMomx at each point
-        s.append_table(AngMomx_h,
-                       nv * point_num,
-                       "/AngMomx",
-                       "kg m^2/s",
-                       "AngMom in X");
+        s.append_table(AngMomx_h, nv * point_num, "/AngMomx", "kg m^2/s", "AngMom in X");
         //
         // //  AngMomy at each point
-        s.append_table(AngMomy_h,
-                       nv * point_num,
-                       "/AngMomy",
-                       "kg m^2/s",
-                       "AngMom in Y");
+        s.append_table(AngMomy_h, nv * point_num, "/AngMomy", "kg m^2/s", "AngMom in Y");
         //
         // //  AngMomz at each point
-        s.append_table(AngMomz_h,
-                       nv * point_num,
-                       "/AngMomz",
-                       "kg m^2/s",
-                       "AngMom in Z");
+        s.append_table(AngMomz_h, nv * point_num, "/AngMomz", "kg m^2/s", "AngMom in Z");
 
         //  GlobalE (total energy over entire planet)
-        s.append_value(GlobalE_h,
-                       "/GlobalE",
-                       "kg m^2/s^2",
-                       "Global Total Energy");
+        s.append_value(GlobalE_h, "/GlobalE", "kg m^2/s^2", "Global Total Energy");
 
-        s.append_value(GlobalEnt_h,
-                       "/GlobalEnt",
-                       "kg m^2/s^2 K^-1",
-                       "Global Entropy");
+        s.append_value(GlobalEnt_h, "/GlobalEnt", "kg m^2/s^2 K^-1", "Global Entropy");
 
         //  GlobalMass (total atmospheric mass over entire planet)
-        s.append_value(GlobalMass_h,
-                       "/GlobalMass",
-                       "kg",
-                       "Global Mass");
+        s.append_value(GlobalMass_h, "/GlobalMass", "kg", "Global Mass");
 
         //  GlobalAMx (total angular momentum in x direction over entire planet)
-        s.append_value(GlobalAMx_h,
-                       "/GlobalAMx",
-                       "kg m^2/s",
-                       "Global AngMomX");
+        s.append_value(GlobalAMx_h, "/GlobalAMx", "kg m^2/s", "Global AngMomX");
 
         //  GlobalAMy (total angular momentum in y direction over entire planet)
-        s.append_value(GlobalAMy_h,
-                       "/GlobalAMy",
-                       "kg m^2/s",
-                       "Global AngMomY");
+        s.append_value(GlobalAMy_h, "/GlobalAMy", "kg m^2/s", "Global AngMomY");
 
         //  GlobalAMz (total angular momentum in y direction over entire planet)
-        s.append_value(GlobalAMz_h,
-                       "/GlobalAMz",
-                       "kg m^2/s",
-                       "Global AngMomZ");
+        s.append_value(GlobalAMz_h, "/GlobalAMz", "kg m^2/s", "Global AngMomZ");
     }
 
-    if (phy_modules_execute)
-        phy_modules_store(*this, s);
+    if (phy_modules_execute) phy_modules_store(*this, s);
 
     char buf[256];
 
@@ -363,8 +283,7 @@ __host__ void ESP::output(int                    fidx, // Index of output file
 }
 
 // Store path to output and prepare output files
-void ESP::set_output_param(const std::string& sim_id_,
-                           const std::string& output_dir_) {
+void ESP::set_output_param(const std::string& sim_id_, const std::string& output_dir_) {
     simulation_ID = sim_id_;
     output_dir    = output_dir_;
 }

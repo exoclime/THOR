@@ -90,8 +90,9 @@ __global__ void shallowHJ(double *Mh_d,
         double kv_hs, kt_hs;
         ////////////
         //      Calculates surface pressure
-        psm1 = pressure_d[id * nv + 1] - Rho_d[id * nv + 0] * Gravit * (-Altitude_d[0] - Altitude_d[1]);
-        ps   = 0.5 * (pressure_d[id * nv + 0] + psm1);
+        psm1 = pressure_d[id * nv + 1]
+               - Rho_d[id * nv + 0] * Gravit * (-Altitude_d[0] - Altitude_d[1]);
+        ps = 0.5 * (pressure_d[id * nv + 0] + psm1);
 
         pre = pressure_d[id * nv + lev];
 
@@ -100,7 +101,9 @@ __global__ void shallowHJ(double *Mh_d,
         // Calculate T_vert from Equation 23 & 24 (Heng, Menou, and Phillips 2011)
         if (Altitude_d[lev] <= zstra) {
             beta_trop = sin(0.5 * M_PI * (sigma - sigma_stra) / (1.0 - sigma_stra));
-            T_vert    = T_surf - Gamma_trop * (zstra + 0.5 * (Altitude_d[lev] - zstra)) + sqrt(pow(0.5 * Gamma_trop * (Altitude_d[lev] - zstra), 2) + Delta_Tstra * Delta_Tstra);
+            T_vert    = T_surf - Gamma_trop * (zstra + 0.5 * (Altitude_d[lev] - zstra))
+                     + sqrt(pow(0.5 * Gamma_trop * (Altitude_d[lev] - zstra), 2)
+                            + Delta_Tstra * Delta_Tstra);
         }
         else {
             beta_trop = 0.0;
@@ -116,8 +119,10 @@ __global__ void shallowHJ(double *Mh_d,
         //      Momentum dissipation constant.
         kv_hs = 0.0; //no boundary layer friction
 
-        //      Update momentasigmab
-        for (int k = 0; k < 3; k++) Mh_d[id * 3 * nv + lev * 3 + k] = Mh_d[id * 3 * nv + lev * 3 + k] / (1.0 + kv_hs * time_step);
+        //      Update momentum
+        for (int k = 0; k < 3; k++)
+            Mh_d[id * 3 * nv + lev * 3 + k] =
+                Mh_d[id * 3 * nv + lev * 3 + k] / (1.0 + kv_hs * time_step);
         ;
         //      Update temperature
         temperature_d[id * nv + lev] -= kt_hs * time_step * (temperature_d[id * nv + lev] - Teq_hs);

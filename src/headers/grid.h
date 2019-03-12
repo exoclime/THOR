@@ -56,6 +56,7 @@
 
 #include <math.h>
 
+
 class Icogrid
 {
 
@@ -92,8 +93,11 @@ public:
     double *nvecte; // Normal vectors for diffusion 3
     double *nvecti; // Normal vectors for diffusion 2
 
-    double *div;  // Divergence operator
-    double *grad; // Gradient operator
+    double *mvec; // unit vectors used in curl operator
+
+    double *div;   // Divergence operator
+    double *grad;  // Gradient operator
+    double *curlz; // vertical component of curl operator
 
     int *point_local; // First neighbours
 
@@ -104,6 +108,7 @@ public:
 
     Icogrid(bool, double, int, int, int, double, double, bool, int *);
     void free_memory();
+
 
 private:
     // Functions to build the grid
@@ -122,9 +127,20 @@ private:
     void cart2sphe(double *, double *, int);
     void correct_xyz_points(double, double *, double *, int *, int);
     void control_areas(double *, double *, double *, int *, double *, double *, int *, int);
-    void control_vec(double *, double *, double *, double *, double *, double *, double *, int *, int *, int);
+    void control_vec(double *,
+                     double *,
+                     double *,
+                     double *,
+                     double *,
+                     double *,
+                     double *,
+                     int *,
+                     int *,
+                     int,
+                     double *);
     void compute_func(double *, double *, int);
     void div_operator(double *, double *, double *, double *, int *, int);
     void gra_operator(double *, double *, double *, double *, int *, int);
+    void curlz_operator(double *, double *, double *, double *, int *, int);
     void zonal_mean_tab_f(int *, double *, int, int, int *);
 };

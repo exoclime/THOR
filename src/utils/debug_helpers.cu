@@ -47,6 +47,8 @@
 ////////////////////////////////////////////////////////////////////////
 #include <iostream>
 
+#include "binary_test.h"
+#include "directories.h"
 #include "log_writer.h"
 
 __host__ void getDeviceData(const double *device, double *host, int size) {
@@ -71,9 +73,7 @@ __global__ void isnan_check_device(double *array, int size, bool *check) {
 
     int idx = threadIdx.x + blockDim.x * blockIdx.x;
 
-    if (idx < size && ::isnan(array[idx])) {
-        *check = true;
-    }
+    if (idx < size && ::isnan(array[idx])) { *check = true; }
 }
 
 
@@ -92,11 +92,40 @@ __host__ bool check_array_for_nan(double *ptr, int size, bool on_device, bool *c
     else {
         bool isnan = false;
         for (int i = 0; i < size; i++) {
-            isnan |= std::isnan(ptr[i]);
+            isnan |= std::isnan(ptr[i]); //
         }
         return isnan;
     }
 }
+
+#ifdef BENCHMARKING
+void crash_report(const output_def &def, std::string output_dir, const std::string &iteration) {
+    int  first = 1;
+    path o(output_dir);
+    o /= ("crash_report_" + iteration + "_" + def.short_name + ".txt");
+    std::fstream crash_report_file;
+    crash_report_file.open(o.to_string(), std::ofstream::out);
+    if (def.device_ptr) {
+        double *ptr_h;
+        ptr_h = new double[def.size];
+        cudaMemcpy(ptr_h, def.data, def.size * sizeof(double), cudaMemcpyDeviceToHost);
+        for (int i = 0; i < def.size; i++) {
+            if (std::isnan(ptr_h[i])) {
+                crash_report_file << def.fun(i, first) << std::endl;
+                first = 0;
+            }
+        }
+    }
+    else {
+        for (int i = 0; i < def.size; i++) {
+            if (std::isnan(def.data[i])) {
+                crash_report_file << def.fun(i, first) << std::endl;
+                first = 0;
+            }
+        }
+    }
+}
+#endif
 
 void check_last_cuda_error(std::string ref_name) {
     cudaError_t err = cudaGetLastError();
