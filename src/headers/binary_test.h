@@ -318,7 +318,8 @@ bool binary_test::compare_arrays(int                 s1,
 #    endif // BENCH_COMPARE_PRINT_STATISTICS
 
     if (s1 != s2) {
-        if (print) log::printf(":\tdifferent sized arrays (%d:%d)\n", array.c_str(), s1, s2);
+        if (print)
+            log::printf(":\tdifferent sized arrays (%d:%d)\n", array.c_str(), s1, s2);
 
         return false;
     }

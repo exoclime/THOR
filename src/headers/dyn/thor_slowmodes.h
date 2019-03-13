@@ -422,14 +422,17 @@ __global__ void Compute_Slow_Modes_Poles(double *SlowMh_d,
 
     /////////////////////////////////////////
     if (id < num) {
-        for (int i = 0; i < 5; i++) local_p[i] = point_local_d[id * 6 + i];
+        for (int i = 0; i < 5; i++)
+            local_p[i] = point_local_d[id * 6 + i];
         func_r_p[0] = func_r_d[id * 3 + 0];
         func_r_p[1] = func_r_d[id * 3 + 1];
         func_r_p[2] = func_r_d[id * 3 + 2];
         for (int i = 0; i < 7; i++)
-            for (int k = 0; k < 3; k++) div_p[i * 3 + k] = div_d[id * 7 * 3 + i * 3 + k];
+            for (int k = 0; k < 3; k++)
+                div_p[i * 3 + k] = div_d[id * 7 * 3 + i * 3 + k];
         for (int i = 0; i < 7; i++)
-            for (int k = 0; k < 3; k++) grad_p[i * 3 + k] = grad_d[id * 7 * 3 + i * 3 + k];
+            for (int k = 0; k < 3; k++)
+                grad_p[i * 3 + k] = grad_d[id * 7 * 3 + i * 3 + k];
 
         for (int lev = 0; lev < nv; lev++) {
 
@@ -451,7 +454,8 @@ __global__ void Compute_Slow_Modes_Poles(double *SlowMh_d,
             advy = Adv_d[id * 3 * nv + lev * 3 + 1];
             advz = Adv_d[id * 3 * nv + lev * 3 + 2];
 
-            if (lev > 0) advrl = advrt;
+            if (lev > 0)
+                advrl = advrt;
             advrt = advx * func_r_p[0] + advy * func_r_p[1] + advz * func_r_p[2];
 
             advx += -advrt * func_r_p[0];
@@ -462,10 +466,12 @@ __global__ void Compute_Slow_Modes_Poles(double *SlowMh_d,
                 altht = Altitudeh_d[lev + 1];
                 althl = Altitudeh_d[lev];
             }
-            if (lev > 0) altl = alt;
+            if (lev > 0)
+                altl = alt;
             alt = Altitude_d[lev];
 
-            if (lev > 0) rhol = rhot;
+            if (lev > 0)
+                rhol = rhot;
             rhot = Rho_d[id * nv + lev];
 
             if (DeepModel) {

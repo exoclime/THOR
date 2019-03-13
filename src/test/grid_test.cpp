@@ -139,7 +139,8 @@ int main() {
         btester.set_output("grid_test_" + std::to_string(l), "./results/grid_test/");
         btester.append_definitions(output_definitions);
 
-        if (output) btester.output_reference(std::to_string(l), "test", data_output);
+        if (output)
+            btester.output_reference(std::to_string(l), "test", data_output);
 
 
         if (compare) {

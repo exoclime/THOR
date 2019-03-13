@@ -71,7 +71,9 @@ struct vector3 {
     friend vector3 operator+(const vector3& A, const vector3& B);
     friend vector3 operator-(const vector3& A, const vector3& B);
 
-    double norm() { return sqrt(pow(x, 2.0) + pow(y, 2.0) + pow(z, 2.0)); }
+    double norm() {
+        return sqrt(pow(x, 2.0) + pow(y, 2.0) + pow(z, 2.0));
+    }
 };
 
 

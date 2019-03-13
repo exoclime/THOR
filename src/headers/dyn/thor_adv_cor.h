@@ -273,7 +273,8 @@ __global__ void Compute_Advec_Cori_Poles(double* Adv_d,         //
 
     /////////////////////////////////////////
     if (id < num) {
-        for (int i = 0; i < 5; i++) local_p[i] = point_local_d[id * 6 + i];
+        for (int i = 0; i < 5; i++)
+            local_p[i] = point_local_d[id * 6 + i];
         func_r_p[0] = func_r_d[id * 3 + 0];
         func_r_p[1] = func_r_d[id * 3 + 1];
         func_r_p[2] = func_r_d[id * 3 + 2];
@@ -283,7 +284,8 @@ __global__ void Compute_Advec_Cori_Poles(double* Adv_d,         //
             func_r_p[i * 3 + 2] = func_r_d[local_p[i - 1] * 3 + 2];
         }
         for (int i = 0; i < 7; i++)
-            for (int k = 0; k < 3; k++) div_p[i * 3 + k] = div_d[id * 7 * 3 + i * 3 + k];
+            for (int k = 0; k < 3; k++)
+                div_p[i * 3 + k] = div_d[id * 7 * 3 + i * 3 + k];
 
         for (int lev = 0; lev < nv; lev++) {
             v_p[0] = Mh_d[id * 3 * nv + lev * 3 + 0];
@@ -489,18 +491,23 @@ __global__ void Compute_Advec_Cori2(double* Adv_d,       //
                 altht = Altitudeh_d[lev + 2];
                 altl  = alt;
                 alt   = altt;
-                if (lev < nv - 2) altt = Altitude_d[lev + 2];
+                if (lev < nv - 2)
+                    altt = Altitude_d[lev + 2];
                 whl = wht;
-                if (lev < nv - 2) wht = Wh_d[id * (nv + 1) + lev + 2];
+                if (lev < nv - 2)
+                    wht = Wh_d[id * (nv + 1) + lev + 2];
                 vxl = vx;
                 vx  = vxt;
-                if (lev < nv - 2) vxt = v_d[id * 3 * nv + (lev + 2) * 3 + 0];
+                if (lev < nv - 2)
+                    vxt = v_d[id * 3 * nv + (lev + 2) * 3 + 0];
                 vyl = vy;
                 vy  = vyt;
-                if (lev < nv - 2) vyt = v_d[id * 3 * nv + (lev + 2) * 3 + 1];
+                if (lev < nv - 2)
+                    vyt = v_d[id * 3 * nv + (lev + 2) * 3 + 1];
                 vzl = vz;
                 vz  = vzt;
-                if (lev < nv - 2) vzt = v_d[id * 3 * nv + (lev + 2) * 3 + 2];
+                if (lev < nv - 2)
+                    vzt = v_d[id * 3 * nv + (lev + 2) * 3 + 2];
             }
         }
     }

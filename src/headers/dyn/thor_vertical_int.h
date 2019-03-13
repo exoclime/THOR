@@ -498,9 +498,11 @@ __global__ void Prepare_Implicit_Vertical_Poles(double *Mh_d,
     double alt, rscale;
     double Cv = Cp - Rd;
     if (id < num) {
-        for (int i = 0; i < 5; i++) local_p[i] = point_local_d[id * 6 + i];
+        for (int i = 0; i < 5; i++)
+            local_p[i] = point_local_d[id * 6 + i];
         for (int i = 0; i < 7; i++)
-            for (int k = 0; k < 3; k++) div_p[i * 3 + k] = div_d[id * 7 * 3 + i * 3 + k];
+            for (int k = 0; k < 3; k++)
+                div_p[i * 3 + k] = div_d[id * 7 * 3 + i * 3 + k];
 
         for (int lev = 0; lev < nv; lev++) {
             v_p[0] = Mh_d[id * 3 * nv + lev * 3 + 0];

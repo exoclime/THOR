@@ -128,7 +128,8 @@ void cmdargs::print_help() {
 
     cout << "Keyword arguments:" << endl;
 
-    for (auto&& a : args) a->print_desc();
+    for (auto&& a : args)
+        a->print_desc();
 }
 
 
@@ -214,7 +215,8 @@ bool cmdargs::parser_state_machine(const string& str) {
 
             parser_state_nargs--;
 
-            if (parser_state_nargs == 0) parser_state = PARSE_FOR_KEY;
+            if (parser_state_nargs == 0)
+                parser_state = PARSE_FOR_KEY;
 
             return parsed;
 

@@ -133,7 +133,8 @@ inline bool is_key_value_pair(const string& line, string& key, string& value) {
         else
             break;
     }
-    if (i == line.length()) return false;
+    if (i == line.length())
+        return false;
 
     // append char as key until whitespace or = symbol
     key = "";
@@ -158,7 +159,8 @@ inline bool is_key_value_pair(const string& line, string& key, string& value) {
             return false;
     }
 
-    if (i == line.length()) return false;
+    if (i == line.length())
+        return false;
 
     i++;
 
@@ -171,7 +173,8 @@ inline bool is_key_value_pair(const string& line, string& key, string& value) {
         else
             break;
     }
-    if (i == line.length()) return false;
+    if (i == line.length())
+        return false;
 
     // append char as value until whitespace or = symbol
     value = "";
@@ -183,7 +186,8 @@ inline bool is_key_value_pair(const string& line, string& key, string& value) {
         else
             value += line[i];
     }
-    if (value.length() > 0) return true;
+    if (value.length() > 0)
+        return true;
 
     return false;
 
@@ -210,7 +214,8 @@ inline bool is_long_cmdargs(const string& in, string& out) {
 #ifdef NO_REGEX_SUPPORT
     if (in.length() >= 3 and in[0] == '-' and in[1] == '-') {
         for (size_t i = 2; i < in.length(); i++) {
-            if ((in[i] == ' ') || (in[i] == '-') || (in[i] == '\t')) return false;
+            if ((in[i] == ' ') || (in[i] == '-') || (in[i] == '\t'))
+                return false;
             out += in[i];
         }
         return true;

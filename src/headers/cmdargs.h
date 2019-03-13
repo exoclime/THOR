@@ -116,11 +116,15 @@ public:
     };
 
     // For arguments that have no value, set as having a value so that it uses its default
-    void set_default() { has_value = true; };
+    void set_default() {
+        has_value = true;
+    };
 
 
     // Number of arguments following this key
-    int get_nargs() { return 1; }
+    int get_nargs() {
+        return 1;
+    }
 
     // check if this argument matches the key
     bool is_key(const string& str) {
@@ -133,13 +137,19 @@ public:
     }
 
     // return the value
-    T get() { return value; }
+    T get() {
+        return value;
+    }
 
     // returns if this argument has been set through command line
-    bool is_set() { return has_value; }
+    bool is_set() {
+        return has_value;
+    }
 
     // name of argument
-    string get_name() { return long_form; }
+    string get_name() {
+        return long_form;
+    }
 
     // description for help string
     void print_desc() {
@@ -194,7 +204,9 @@ private:
     arg_interface* operator[](string idx);
 
     // helper to add argument
-    void add_arg(std::unique_ptr<arg_interface> arg) { args.push_back(std::move(arg)); }
+    void add_arg(std::unique_ptr<arg_interface> arg) {
+        args.push_back(std::move(arg));
+    }
 
     // Storage map as key value pair
     std::vector<std::unique_ptr<arg_interface>> args;
@@ -291,7 +303,8 @@ template<typename T> bool cmdargs::get_arg(const string& long_form, T& value) {
     arg<T>* argument = (arg<T>*)(*this)[long_form];
 
     bool is_set = argument->is_set();
-    if (is_set) value = argument->get();
+    if (is_set)
+        value = argument->get();
 
 
     return is_set;

@@ -587,7 +587,8 @@ binary_test::binary_test(string output_dir_, string output_base_name_) :
     create_output_dir(output_dir);
 }
 binary_test::~binary_test() {
-    if (nan_check_d != nullptr) deinit_device_mem_check(nan_check_d);
+    if (nan_check_d != nullptr)
+        deinit_device_mem_check(nan_check_d);
 }
 // generic data test function
 void binary_test::check_data(const string&         iteration,
@@ -670,7 +671,8 @@ bool binary_test::check_nan(const string&             iteration,
 
 
         for (auto& def : data_output) {
-            if (!path_exists(output_crash)) create_output_dir(output_crash);
+            if (!path_exists(output_crash))
+                create_output_dir(output_crash);
             crash_report(def, output_crash, iteration);
         }
         printf("Crash report output in %s\n", output_crash.c_str());
@@ -686,7 +688,8 @@ void binary_test::output_reference(const string&             iteration,
     // open file
     string output_name = output_dir + "/" + output_base_name + ref_name + "_" + iteration + ".h5";
 
-    if (!path_exists(output_dir)) create_output_dir(output_dir);
+    if (!path_exists(output_dir))
+        create_output_dir(output_dir);
 
 
     storage s(output_name);
@@ -806,7 +809,8 @@ void binary_test::append_definitions(const map<string, output_def>& defs) {
     output_definitions.insert(defs.begin(), defs.end());
     int memsize = 0;
     for (auto& d : output_definitions) {
-        if (d.second.size > memsize) memsize = d.second.size;
+        if (d.second.size > memsize)
+            memsize = d.second.size;
     }
 
     mem_buf = std::unique_ptr<double[]>(new double[memsize], std::default_delete<double[]>());

@@ -91,7 +91,8 @@ __global__ void dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
                 pp = Pressure_d[id * nv + nv - 2]
                      - Rho_d[id * nv + nv - 1] * Gravit
                            * (2 * Altitudeh_d[nv] - Altitude_d[nv - 1] - Altitude_d[nv - 2]);
-                if (pp < 0) pp = 0; //prevents pressure from going negative
+                if (pp < 0)
+                    pp = 0; //prevents pressure from going negative
                 ptop                             = 0.5 * (Pressure_d[id * nv + nv - 1] + pp);
                 Pressureh_d[id * (nv + 1) + lev] = ptop;
             }
@@ -122,7 +123,8 @@ __global__ void dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
             for (int lev = 0; lev < nv - 1; lev++) {
                 // sweep upward, find lowest unstable layer
                 if (pt_d[id * nv + lev + 1] - pt_d[id * nv + lev] < stable) {
-                    if (bot > lev) bot = lev;
+                    if (bot > lev)
+                        bot = lev;
                 }
             }
 

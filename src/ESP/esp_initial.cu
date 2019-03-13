@@ -859,7 +859,8 @@ __host__ ESP::~ESP() {
     cudaFree(Ttmp);
 
 
-    if (phy_modules_execute) phy_modules_free_mem();
+    if (phy_modules_execute)
+        phy_modules_free_mem();
 
 
     log::printf("\n\n Free memory!\n\n");

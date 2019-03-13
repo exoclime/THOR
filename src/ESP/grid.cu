@@ -584,7 +584,8 @@ void Icogrid::sphere_ico(double *xyz_,
     xyz[num - 1] = make_double3(0.0, 0.0, -1.0);
 
     //Pentagons' indexes
-    for (int faces = 0; faces < 10; faces++) pent_ind[faces] = faces * nfaces * nl2;
+    for (int faces = 0; faces < 10; faces++)
+        pent_ind[faces] = faces * nfaces * nl2;
     pent_ind[10] = num - 2;
     pent_ind[11] = num - 1;
 
@@ -613,7 +614,8 @@ void Icogrid::neighbors_indx(int *point_local, double *xyz, int *pent_ind, int p
     double *distance;
     distance = new double[point_num]();
 
-    for (int i = 0; i < 6 * point_num; i++) point_local[i] = -1;
+    for (int i = 0; i < 6 * point_num; i++)
+        point_local[i] = -1;
 
     //  Find neighbors.
     for (int i = 0; i < point_num; i++) {
@@ -741,15 +743,18 @@ void Icogrid::reorder_neighbors_indx(int *point_local, double *xyz, int *pent_in
     point_local_new = new int[point_num * 6];
 
     for (int i = 0; i < point_num; i++)
-        for (int j = 0; j < 6; j++) point_local_new[i * 6 + j] = point_local[i * 6 + j];
+        for (int j = 0; j < 6; j++)
+            point_local_new[i * 6 + j] = point_local[i * 6 + j];
 
     // Reorder indexes.
     for (int i = 0; i < point_num; i++) {
         geo = 6; // Hexagons.
         for (int k = 0; k < 12; k++)
-            if (i == pent_ind[k]) geo = 5; // Pentagons.
+            if (i == pent_ind[k])
+                geo = 5; // Pentagons.
         if (geo == 5) {
-            for (int j = 0; j < 6; j++) ang[j] = 0;
+            for (int j = 0; j < 6; j++)
+                ang[j] = 0;
             x1 = 0;
             y1 = 0;
             z1 = 0;
@@ -793,7 +798,8 @@ void Icogrid::reorder_neighbors_indx(int *point_local, double *xyz, int *pent_in
             }
         }
         else {
-            for (int j = 0; j < 6; j++) ang[j] = 0;
+            for (int j = 0; j < 6; j++)
+                ang[j] = 0;
             x1 = 0;
             y1 = 0;
             z1 = 0;
@@ -837,7 +843,8 @@ void Icogrid::reorder_neighbors_indx(int *point_local, double *xyz, int *pent_in
     }
 
     for (int i = 0; i < point_num; i++)
-        for (int j = 0; j < 6; j++) point_local[i * 6 + j] = point_local_new[i * 6 + j];
+        for (int j = 0; j < 6; j++)
+            point_local[i * 6 + j] = point_local_new[i * 6 + j];
 
     delete[] ang;
     delete[] point_local_new;
@@ -876,11 +883,13 @@ void Icogrid::reorder_neighbors_indx_pl(int *   point_local,
     point_local_new = new int[point_num * 6];
 
     for (int i = 0; i < point_num; i++)
-        for (int j = 0; j < 6; j++) point_local_new[i * 6 + j] = point_local[i * 6 + j];
+        for (int j = 0; j < 6; j++)
+            point_local_new[i * 6 + j] = point_local[i * 6 + j];
 
     // Reorder indexes.
     for (int i = point_num - 2; i < point_num; i++) {
-        for (int j = 0; j < 6; j++) ang[j] = 0;
+        for (int j = 0; j < 6; j++)
+            ang[j] = 0;
         x1 = 0;
         y1 = 0;
         z1 = 0;
@@ -924,7 +933,8 @@ void Icogrid::reorder_neighbors_indx_pl(int *   point_local,
     }
 
     for (int i = point_num - 2; i < point_num; i++)
-        for (int j = 0; j < 6; j++) point_local[i * 6 + j] = point_local_new[i * 6 + j];
+        for (int j = 0; j < 6; j++)
+            point_local[i * 6 + j] = point_local_new[i * 6 + j];
 
     delete[] ang;
     delete[] point_local_new;
@@ -967,7 +977,8 @@ void Icogrid::generate_halos(int *halo, int *point_local, int n_region, int divi
     int out_ind;
     int ind_nei = 0;
 
-    for (int i = 0; i < 10 * nfaces * 4 * (nl_region + 2); i++) halo[i] = -1;
+    for (int i = 0; i < 10 * nfaces * 4 * (nl_region + 2); i++)
+        halo[i] = -1;
 
     // Generate halos.
     for (int fc = 0; fc < 10; fc++) {
@@ -1442,7 +1453,8 @@ void Icogrid::reorder_neighbors_indx_rhombi(int *point_local,
     int geo, np;
     int nh2 = nlhalo * 4;
     for (int i = 0; i < point_num; i++)
-        for (int j = 0; j < 6; j++) point_local[i * 6 + j] = -1;
+        for (int j = 0; j < 6; j++)
+            point_local[i * 6 + j] = -1;
 
     for (int i = 0; i < ni; i++) {
 
@@ -1450,7 +1462,8 @@ void Icogrid::reorder_neighbors_indx_rhombi(int *point_local,
         geo = 6; // Hexagons.
         np  = nl2 * i;
         for (int l = 0; l < 12; l++)
-            if (np == pent_ind[l]) geo = 5; // Pentagons.
+            if (np == pent_ind[l])
+                geo = 5; // Pentagons.
 
         // Find neibours.
         for (int j = 0; j < nl_region; j++) {
@@ -1718,8 +1731,10 @@ void Icogrid::spring_dynamics(int *   point_local,
         // Check convergence.
         max_v = -1E-10;
         for (int i = 0; i < point_num; i++)
-            if (Fnet[i] > max_v) max_v = Fnet[i];
-        if (max_v < cond) break;
+            if (Fnet[i] > max_v)
+                max_v = Fnet[i];
+        if (max_v < cond)
+            break;
     }
 
     log::printf(" Done!\n\n");
@@ -1762,7 +1777,8 @@ void Icogrid::find_qpoints(int *   point_local,
     for (int i = 0; i < point_num; i++) {
         geo = 6; // Hexagons.
         for (int k = 0; k < 12; k++)
-            if (i == pent_ind[k]) geo = 5; // Pentagons.
+            if (i == pent_ind[k])
+                geo = 5; // Pentagons.
 
 
         for (int j = 0; j < geo - 1; j++) {
@@ -1777,7 +1793,8 @@ void Icogrid::find_qpoints(int *   point_local,
         vc3 = normproj(xyz3[i], xyz3[point_local[i * 6 + 0]]);
 
         xyzq3[i * 6 + geo - 1] = normalize(vc1 + vc2 + vc3);
-        if (geo == 5) xyzq3[i * 6 + 5] = make_double3(0.0, 0.0, 0.0);
+        if (geo == 5)
+            xyzq3[i * 6 + 5] = make_double3(0.0, 0.0, 0.0);
     }
 }
 
@@ -1816,12 +1833,14 @@ void Icogrid::relocate_centres(int *   point_local,
     for (int i = 0; i < point_num; i++) {
         geo = 6; // Hexagons.
         for (int k = 0; k < 12; k++)
-            if (i == pent_ind[k]) geo = 5; // Pentagons.
+            if (i == pent_ind[k])
+                geo = 5; // Pentagons.
 
         vgc = make_double3(0.0, 0.0, 0.0);
 
         // add all projected vectors
-        for (int j = 1; j < geo; j++) vgc += normproj(xyzq3[i * 6 + j], xyzq3[i * 6 + j - 1]);
+        for (int j = 1; j < geo; j++)
+            vgc += normproj(xyzq3[i * 6 + j], xyzq3[i * 6 + j - 1]);
 
         vgc += normproj(xyzq3[i * 6 + 0], xyzq3[i * 6 + geo - 1]);
 
@@ -1846,8 +1865,10 @@ void Icogrid::set_altitudes(double *Altitude, double *Altitudeh, double Top_alti
 
     double res_vert = Top_altitude / nv;
     Altitudeh[0]    = 0.0;
-    for (int lev = 0; lev < nv; lev++) Altitudeh[lev + 1] = Altitudeh[lev] + res_vert;
-    for (int lev = 0; lev < nv; lev++) Altitude[lev] = (Altitudeh[lev] + Altitudeh[lev + 1]) / 2.0;
+    for (int lev = 0; lev < nv; lev++)
+        Altitudeh[lev + 1] = Altitudeh[lev] + res_vert;
+    for (int lev = 0; lev < nv; lev++)
+        Altitude[lev] = (Altitudeh[lev] + Altitudeh[lev + 1]) / 2.0;
 }
 
 
@@ -1899,7 +1920,8 @@ void Icogrid::correct_xyz_points(double  A,
     for (int i = 0; i < point_num; i++) {
         geo = 6; // Hexagons.
         for (int k = 0; k < 12; k++)
-            if (i == pent_ind[k]) geo = 5; // Pentagons.
+            if (i == pent_ind[k])
+                geo = 5; // Pentagons.
         if (geo == 5) {
             for (int j = 0; j < 5; j++) { // Pentagons.
                 xyzq3[i * 6 + j] = xyzq3[i * 6 + j] * A;
@@ -1931,8 +1953,10 @@ inline double comp_ang(const double3 &a, const double3 &b, const double3 &c) {
 
     double ang = dot(w1, w2) / (length(w1) * length(w2));
 
-    if (ang > 1) ang = 1;
-    if (ang < -1) ang = -1;
+    if (ang > 1)
+        ang = 1;
+    if (ang < -1)
+        ang = -1;
 
     return acos(ang);
 }
@@ -1977,7 +2001,8 @@ void Icogrid::control_areas(double *areasT,
     double areav;
 
 
-    for (int i = 0; i < point_num * 6 * 3; i++) areas[i] = 0.0;
+    for (int i = 0; i < point_num * 6 * 3; i++)
+        areas[i] = 0.0;
 
     for (int i = 0; i < point_num; i++) {
         //
@@ -1985,7 +2010,8 @@ void Icogrid::control_areas(double *areasT,
         //
         geo = 6; // Hexagons.
         for (int k = 0; k < 12; k++)
-            if (i == pent_ind[k]) geo = 5; // Pentagons.
+            if (i == pent_ind[k])
+                geo = 5; // Pentagons.
         if (geo == 5) {
             for (int j = 0; j < 5; j++) { //Pentagons
                 for (int k = 0; k < 3; k++) {
@@ -2097,7 +2123,8 @@ void Icogrid::control_areas(double *areasT,
 
         geo = 6; // Hexagons.
         for (int k = 0; k < 12; k++)
-            if (i == pent_ind[k]) geo = 5; // Pentagons.
+            if (i == pent_ind[k])
+                geo = 5; // Pentagons.
         for (int j = 0; j < 6; j++) {
             if (geo == 5 && j == 4) {
                 a = xyz3[i];
@@ -2182,7 +2209,8 @@ void Icogrid::control_vec(double *nvec,
 
         geo = 6; // Hexagons.
         for (int k = 0; k < 12; k++)
-            if (i == pent_ind[k]) geo = 5; // Pentagons.
+            if (i == pent_ind[k])
+                geo = 5; // Pentagons.
 
         if (geo == 5) {
 
@@ -2359,7 +2387,8 @@ void Icogrid::compute_func(double *func_r, double *xyz, int point_num) {
     double3 *xyz3    = (double3 *)xyz;
 
 
-    for (int i = 0; i < point_num; i++) func_r3[i] = normalize(xyz3[i]);
+    for (int i = 0; i < point_num; i++)
+        func_r3[i] = normalize(xyz3[i]);
 }
 
 void Icogrid::div_operator(double *areasT,
@@ -2394,7 +2423,8 @@ void Icogrid::div_operator(double *areasT,
 
         geo = 6; // Hexagons.
         for (int k = 0; k < 12; k++)
-            if (i == pent_ind[k]) geo = 5; // Pentagons.
+            if (i == pent_ind[k])
+                geo = 5; // Pentagons.
 
         area1 = areas[i * 6 * 3 + 0 * 3 + 0] + areas[i * 6 * 3 + 0 * 3 + 1]
                 + areas[i * 6 * 3 + 0 * 3 + 2];
@@ -2430,7 +2460,8 @@ void Icogrid::div_operator(double *areasT,
 
         geo = 6; // Hexagons.
         for (int k = 0; k < 12; k++)
-            if (i == pent_ind[k]) geo = 5; // Pentagons.
+            if (i == pent_ind[k])
+                geo = 5; // Pentagons.
 
         for (int k = 0; k < 3; k++) {
             if (geo == 5) { //Pentagons.
@@ -2574,7 +2605,8 @@ void Icogrid::curlz_operator(double *areasT,
 
         geo = 6; // Hexagons.
         for (int k = 0; k < 12; k++)
-            if (i == pent_ind[k]) geo = 5; // Pentagons.
+            if (i == pent_ind[k])
+                geo = 5; // Pentagons.
 
         area1 = areas[i * 6 * 3 + 0 * 3 + 0] + areas[i * 6 * 3 + 0 * 3 + 1]
                 + areas[i * 6 * 3 + 0 * 3 + 2];
@@ -2610,7 +2642,8 @@ void Icogrid::curlz_operator(double *areasT,
 
         geo = 6; // Hexagons.
         for (int k = 0; k < 12; k++)
-            if (i == pent_ind[k]) geo = 5; // Pentagons.
+            if (i == pent_ind[k])
+                geo = 5; // Pentagons.
 
         for (int k = 0; k < 3; k++) {
             if (geo == 5) { //Pentagons.
@@ -2748,7 +2781,8 @@ void Icogrid::gra_operator(double *areasT,
 
         geo = 6; // Hexagons.
         for (int k = 0; k < 12; k++)
-            if (i == pent_ind[k]) geo = 5; // Pentagons.
+            if (i == pent_ind[k])
+                geo = 5; // Pentagons.
 
         area1 = areas[i * 6 * 3 + 0 * 3 + 0] + areas[i * 6 * 3 + 0 * 3 + 1]
                 + areas[i * 6 * 3 + 0 * 3 + 2];
@@ -2785,7 +2819,8 @@ void Icogrid::gra_operator(double *areasT,
         geo = 6; // Hexagons.
 
         for (int k = 0; k < 12; k++)
-            if (i == pent_ind[k]) geo = 5; // Pentagons.
+            if (i == pent_ind[k])
+                geo = 5; // Pentagons.
         for (int k = 0; k < 3; k++) {
             if (geo == 5) { //Pentagons.
                 grad[i * 7 * 3 + 0 * 3 + k] =
@@ -2930,11 +2965,14 @@ void Icogrid::zonal_mean_tab_f(int *   zonal_mean_tab,
     lat_array = new double[nlat + 1]();
 
     for (int i = 0; i < point_num; i++)
-        for (int k = 0; k < 2; k++) zonal_mean_tab[i * 3 + k] = 0;
+        for (int k = 0; k < 2; k++)
+            zonal_mean_tab[i * 3 + k] = 0;
 
-    for (int j = 0; j < nlat; j++) count_num[j] = 0;
+    for (int j = 0; j < nlat; j++)
+        count_num[j] = 0;
     lat_array[0] = -M_PI / 2.0;
-    for (int j = 1; j < nlat + 1; j++) lat_array[j] = lat_array[j - 1] + des_lat;
+    for (int j = 1; j < nlat + 1; j++)
+        lat_array[j] = lat_array[j - 1] + des_lat;
     for (int i = 0; i < point_num; i++) {
         for (int j = 0; j < nlat; j++) {
             if (lonlat[i * 2 + 1] >= lat_array[j] && lonlat[i * 2 + 1] < lat_array[j + 1]) {
@@ -2954,7 +2992,8 @@ void Icogrid::zonal_mean_tab_f(int *   zonal_mean_tab,
         int ind                   = zonal_mean_tab[i * 3];
         zonal_mean_tab[i * 3 + 1] = count_num[ind];
         // log::printf("ind, count = %d, %d\n", ind, count_num[ind]);
-        if (count_num[ind] > *max_count) *max_count = count_num[ind];
+        if (count_num[ind] > *max_count)
+            *max_count = count_num[ind];
     }
     *max_count = pow(2, ceil(log(*max_count) / log(2)));
 

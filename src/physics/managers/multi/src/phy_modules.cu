@@ -30,7 +30,8 @@ void phy_modules_print_config() {
     log::printf("   Radiative Transfer module: %s.\n",
                 radiative_transfer_enabled ? "true" : "false");
 
-    if (radiative_transfer_enabled) rt.print_config();
+    if (radiative_transfer_enabled)
+        rt.print_config();
 }
 
 
@@ -39,7 +40,8 @@ bool phy_modules_init_mem(const ESP& esp, device_RK_array_manager& phy_modules_c
 
     bool out = true;
 
-    if (radiative_transfer_enabled) rt.initialise_memory(esp, phy_modules_core_arrays);
+    if (radiative_transfer_enabled)
+        rt.initialise_memory(esp, phy_modules_core_arrays);
 
     return out;
 }
@@ -52,7 +54,8 @@ bool phy_modules_init_data(const ESP& esp, const SimulationSetup& sim, storage* 
         // load initialisation data from storage s
     }
 
-    if (radiative_transfer_enabled) out &= rt.initial_conditions(esp, sim);
+    if (radiative_transfer_enabled)
+        out &= rt.initial_conditions(esp, sim);
 
     return out;
 }
@@ -99,7 +102,8 @@ bool phy_modules_phy_loop(ESP& esp, const SimulationSetup& sim, int nstep, doubl
     // run all the modules main loop
     bool out = true;
 
-    if (radiative_transfer_enabled) rt.phy_loop(esp, sim, nstep, time_step);
+    if (radiative_transfer_enabled)
+        rt.phy_loop(esp, sim, nstep, time_step);
 
     return out;
 }
@@ -118,7 +122,8 @@ bool phy_modules_store_init(storage& s) {
 
 bool phy_modules_store(const ESP& esp, storage& s) {
 
-    if (radiative_transfer_enabled) rt.store(esp, s);
+    if (radiative_transfer_enabled)
+        rt.store(esp, s);
 
     return true;
 }
@@ -128,7 +133,8 @@ bool phy_modules_free_mem() {
     // generate all the modules config
     bool out = true;
 
-    if (radiative_transfer_enabled) rt.free_memory();
+    if (radiative_transfer_enabled)
+        rt.free_memory();
 
     return out;
 }

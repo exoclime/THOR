@@ -20,7 +20,9 @@ public:
                                    device_RK_array_manager& phy_modules_core_arrays) = 0;
     virtual bool initial_conditions(const ESP& esp, const SimulationSetup& sim)      = 0;
 
-    virtual bool dyn_core_loop_init(const ESP& esp) { return true; };
+    virtual bool dyn_core_loop_init(const ESP& esp) {
+        return true;
+    };
     virtual bool dyn_core_loop_slow_modes(const ESP&             esp,
                                           const SimulationSetup& sim,
 
@@ -36,7 +38,9 @@ public:
     {
         return true;
     };
-    virtual bool dyn_core_loop_end(const ESP& esp) { return true; };
+    virtual bool dyn_core_loop_end(const ESP& esp) {
+        return true;
+    };
 
     virtual bool phy_loop(ESP&                   esp,
                           const SimulationSetup& sim,

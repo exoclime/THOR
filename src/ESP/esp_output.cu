@@ -275,7 +275,8 @@ __host__ void ESP::output(int                    fidx, // Index of output file
         s.append_value(GlobalAMz_h, "/GlobalAMz", "kg m^2/s", "Global AngMomZ");
     }
 
-    if (phy_modules_execute) phy_modules_store(*this, s);
+    if (phy_modules_execute)
+        phy_modules_store(*this, s);
 
     char buf[256];
 

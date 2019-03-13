@@ -68,14 +68,16 @@ int main() {
 
         double d[s];
 
-        for (int i = 0; i < num_d; i++) d[i] = double(i) / double(s);
+        for (int i = 0; i < num_d; i++)
+            d[i] = double(i) / double(s);
 
         f.append_table(d, s, "Numbers", "m", "Number table");
 
         uint32_t s2 = num_i;
 
         int d2[s2];
-        for (int i = 0; i < num_i; i++) d2[i] = i;
+        for (int i = 0; i < num_i; i++)
+            d2[i] = i;
 
         f.append_table(d2, s2, "Indices", "m^2", "indices table");
     }
@@ -107,7 +109,8 @@ int main() {
                         cnt++;
                     }
                 }
-                if (cnt > 0) cout << "got " << cnt << " wrong data points" << endl;
+                if (cnt > 0)
+                    cout << "got " << cnt << " wrong data points" << endl;
             }
         }
 
@@ -128,7 +131,8 @@ int main() {
                         cout << "wrong data(" << i << ")"
                              << "\tGot:\t" << data_ptr[i] << "\texpected:\t" << i << endl;
                 }
-                if (cnt > 0) cout << "got " << cnt << " wrong data points" << endl;
+                if (cnt > 0)
+                    cout << "got " << cnt << " wrong data points" << endl;
             }
         }
     }

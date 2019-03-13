@@ -111,7 +111,8 @@ bool create_output_dir(const string &output_dir) {
 
     for (const auto &dir : directories) {
         // check if directory exists
-        if (path != "") path += string("/");
+        if (path != "")
+            path += string("/");
         path += dir;
 
         if (path_exists(path)) {
@@ -154,7 +155,8 @@ vector<string> path::suffixes() {
 
     if (elements.size() > 0) {
         vector<string> tokens = split(elements.back(), '.');
-        for (unsigned int i = 1; i < tokens.size(); i++) out.push_back(tokens[i]);
+        for (unsigned int i = 1; i < tokens.size(); i++)
+            out.push_back(tokens[i]);
     }
 
     return out;
@@ -178,9 +180,11 @@ string path::stem() {
 
     if (elements.size() > 0) {
         vector<string> tokens = split(elements.back(), '.');
-        if (tokens.size() > 0) out = tokens[0];
+        if (tokens.size() > 0)
+            out = tokens[0];
 
-        for (unsigned int i = 1; i < tokens.size() - 1; i++) out += "." + tokens[i];
+        for (unsigned int i = 1; i < tokens.size() - 1; i++)
+            out += "." + tokens[i];
     }
 
     return out;
@@ -188,7 +192,8 @@ string path::stem() {
 
 string path::parent() {
     string p = "";
-    if (is_absolute_path) p += "/";
+    if (is_absolute_path)
+        p += "/";
 
     for (unsigned int i = 0; i < elements.size() - 1; i++) {
         p += elements[i];
@@ -202,7 +207,8 @@ string path::parent() {
 
 string path::to_string() {
     string p = "";
-    if (is_absolute_path) p += "/";
+    if (is_absolute_path)
+        p += "/";
 
     for (unsigned int i = 0; i < elements.size(); i++) {
         p += elements[i];
@@ -221,10 +227,12 @@ const char *path::c_str() {
 
 path::path(const string &p) {
     vector<string> tokens = split(p, '/');
-    if (tokens.size() > 0 && tokens[0] == "") is_absolute_path = true;
+    if (tokens.size() > 0 && tokens[0] == "")
+        is_absolute_path = true;
 
     for (const auto &el : tokens) {
-        if (el != "") elements.push_back(el);
+        if (el != "")
+            elements.push_back(el);
     }
 }
 
@@ -256,7 +264,8 @@ bool match_output_file_numbering_scheme(const string &file_path, string &basenam
     basename = "";
     number   = -1;
 
-    if (p.suffix() != "h5") return false;
+    if (p.suffix() != "h5")
+        return false;
 
     string filename_base = p.stem();
 

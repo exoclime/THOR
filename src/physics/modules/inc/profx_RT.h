@@ -68,7 +68,8 @@ __host__ double ecc2true_anomaly(double ecc_anomaly, double ecc) {
     double tanf2, true_anomaly;
     tanf2        = sqrt((1.0 + ecc) / (1.0 - ecc)) * tan(ecc_anomaly / 2.0);
     true_anomaly = 2.0 * atan(tanf2);
-    if (true_anomaly < 0.0) true_anomaly += 2 * M_PI;
+    if (true_anomaly < 0.0)
+        true_anomaly += 2 * M_PI;
     return true_anomaly;
 }
 
@@ -77,8 +78,10 @@ __host__ double true2ecc_anomaly(double true_anomaly, double ecc) {
     // Convert from true to eccentric anomaly
 
     double cosE, ecc_anomaly;
-    while (true_anomaly < 0.0) true_anomaly += 2 * M_PI;
-    while (true_anomaly >= 2 * M_PI) true_anomaly -= 2 * M_PI;
+    while (true_anomaly < 0.0)
+        true_anomaly += 2 * M_PI;
+    while (true_anomaly >= 2 * M_PI)
+        true_anomaly -= 2 * M_PI;
     cosE = (cos(true_anomaly) + ecc) / (1.0 + ecc * cos(true_anomaly));
     if (true_anomaly < M_PI) {
         ecc_anomaly = acos(cosE);
@@ -171,7 +174,8 @@ __device__ void radcsw(double *phtemp,
         fnet_dn_d[id * (nv + 1) + lev - 1] =
             fnet_dn_d[id * (nv + 1) + lev]
             * exp(-(1.0 / coszrs) * tau_d[id * nv * 2 + (lev - 1) * 2]);
-    for (int lev = 0; lev <= nv; lev++) fnet_up_d[id * (nv + 1) + lev] = 0.0;
+    for (int lev = 0; lev <= nv; lev++)
+        fnet_up_d[id * (nv + 1) + lev] = 0.0;
 
     // Update temperature rates.
     for (int lev = 0; lev < nv; lev++) {
@@ -253,7 +257,8 @@ __device__ void radclw(double *phtemp,
     fnet_dn_d[id * (nv + 1) + nv] = 0.0; // Upper boundary
     for (int lev = nv - 1; lev >= 0; lev--) {
         double ed = 0.0;
-        if (tau_d[id * nv * 2 + 2 * lev + 1] < 0.0) tau_d[id * nv * 2 + 2 * lev + 1] = 0.0;
+        if (tau_d[id * nv * 2 + 2 * lev + 1] < 0.0)
+            tau_d[id * nv * 2 + 2 * lev + 1] = 0.0;
 
         tb = thtemp[id * (nv + 1) + lev];
         tl = ttemp[id * nv + lev];
@@ -411,7 +416,8 @@ __global__ void rtm_dual_band(double *pressure_d,
                      + (pressure_d[id * nv + nv - 1] - pressure_d[id * nv + nv - 2])
                            / (Altitude_d[nv - 1] - Altitude_d[nv - 2])
                            * (2 * Altitudeh_d[nv] - Altitude_d[nv - 1] - Altitude_d[nv - 2]);
-                if (pp < 0) pp = 0; //prevents pressure at the top from becoming negative
+                if (pp < 0)
+                    pp = 0; //prevents pressure at the top from becoming negative
                 ptop = 0.5 * (pressure_d[id * nv + nv - 1] + pp);
 
                 phtemp[id * nvi + nv] = ptop;
@@ -468,8 +474,10 @@ __global__ void rtm_dual_band(double *pressure_d,
             insol_d[id] = 0;
         }
 
-        for (int lev = 0; lev <= nv; lev++) fnet_up_d[id * nvi + lev] = 0.0;
-        for (int lev = 0; lev <= nv; lev++) fnet_dn_d[id * nvi + lev] = 0.0;
+        for (int lev = 0; lev <= nv; lev++)
+            fnet_up_d[id * nvi + lev] = 0.0;
+        for (int lev = 0; lev <= nv; lev++)
+            fnet_dn_d[id * nvi + lev] = 0.0;
 
         radclw(phtemp,
                ttemp,

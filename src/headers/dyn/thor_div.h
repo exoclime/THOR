@@ -107,9 +107,11 @@ __global__ void DivM_Op(double* DivM_d,
     id             = ig;
 
     if (laststep)
-        for (int k = 0; k < 3; k++) a_s[ir * 3 + k] = divg_Mh_d[ig * nv * 3 + lev * 3 + k];
+        for (int k = 0; k < 3; k++)
+            a_s[ir * 3 + k] = divg_Mh_d[ig * nv * 3 + lev * 3 + k];
     else {
-        for (int k = 0; k < 3; k++) a_s[ir * 3 + k] = Mh_d[ig * 3 * nv + lev * 3 + k];
+        for (int k = 0; k < 3; k++)
+            a_s[ir * 3 + k] = Mh_d[ig * 3 * nv + lev * 3 + k];
         wl_s[ir] = Wh_d[ig * (nv + 1) + lev];
         wt_s[ir] = Wh_d[ig * (nv + 1) + lev + 1];
     }
@@ -123,16 +125,19 @@ __global__ void DivM_Op(double* DivM_d,
                 for (int k = 0; k < 3; k++)
                     a_s[ir2 * 3 + k] = divg_Mh_d[igh * nv * 3 + lev * 3 + k];
             else {
-                for (int k = 0; k < 3; k++) a_s[ir2 * 3 + k] = Mh_d[igh * 3 * nv + lev * 3 + k];
+                for (int k = 0; k < 3; k++)
+                    a_s[ir2 * 3 + k] = Mh_d[igh * 3 * nv + lev * 3 + k];
                 wl_s[ir2] = Wh_d[igh * (nv + 1) + lev];
                 wt_s[ir2] = Wh_d[igh * (nv + 1) + lev + 1];
             }
         }
         else {
             if (laststep)
-                for (int k = 0; k < 3; k++) a_s[ir2 * 3 + k] = 0.0;
+                for (int k = 0; k < 3; k++)
+                    a_s[ir2 * 3 + k] = 0.0;
             else {
-                for (int k = 0; k < 3; k++) a_s[ir2 * 3 + k] = 0.0;
+                for (int k = 0; k < 3; k++)
+                    a_s[ir2 * 3 + k] = 0.0;
                 wl_s[ir2] = 0.0;
                 wt_s[ir2] = 0.0;
             }
@@ -155,7 +160,8 @@ __global__ void DivM_Op(double* DivM_d,
     lapy = 0.0;
     lapz = 0.0;
 
-    if (!laststep) dz = 1.0 / (Altitudeh_d[lev] - Altitudeh_d[lev + 1]);
+    if (!laststep)
+        dz = 1.0 / (Altitudeh_d[lev] - Altitudeh_d[lev + 1]);
 
     for (int j = 0; j < 6; j++) {
         jp1 = (pent_ind) * (j == 4 ? 0 : j + 1) + (!pent_ind) * (j == 5 ? 0 : j + 1);
@@ -267,7 +273,8 @@ __global__ void DivM_Op(double* DivM_d,
         lapy += (lap1 + dwdz + lap2 + dwdz2) * nvecoa_d[id * 6 * 3 + j * 3 + 1] * AT0;
         lapz += (lap1 + dwdz + lap2 + dwdz2) * nvecoa_d[id * 6 * 3 + j * 3 + 2] * AT0;
 
-        if (pent_ind && j == 4) break;
+        if (pent_ind && j == 4)
+            break;
     }
 
     if (laststep) {
@@ -345,36 +352,46 @@ __global__ void DivM_Op_Poles(double* DivM_d,
 
     /////////////////////////////////////////
 
-    for (int i = 0; i < 5; i++) local_p[i] = local_d[id * 6 + i];
-    for (int i = 0; i < 5; i++) areasTr_p[i] = areasTr_d[id * 6 + i];
     for (int i = 0; i < 5; i++)
-        for (int k = 0; k < 3; k++) nvecoa_p[i * 3 + k] = nvecoa_d[id * 6 * 3 + i * 3 + k];
+        local_p[i] = local_d[id * 6 + i];
     for (int i = 0; i < 5; i++)
-        for (int k = 0; k < 3; k++) nvecti_p[i * 3 + k] = nvecti_d[id * 6 * 3 + i * 3 + k];
+        areasTr_p[i] = areasTr_d[id * 6 + i];
     for (int i = 0; i < 5; i++)
-        for (int k = 0; k < 3; k++) nvecte_p[i * 3 + k] = nvecte_d[id * 6 * 3 + i * 3 + k];
+        for (int k = 0; k < 3; k++)
+            nvecoa_p[i * 3 + k] = nvecoa_d[id * 6 * 3 + i * 3 + k];
+    for (int i = 0; i < 5; i++)
+        for (int k = 0; k < 3; k++)
+            nvecti_p[i * 3 + k] = nvecti_d[id * 6 * 3 + i * 3 + k];
+    for (int i = 0; i < 5; i++)
+        for (int k = 0; k < 3; k++)
+            nvecte_p[i * 3 + k] = nvecte_d[id * 6 * 3 + i * 3 + k];
 
-    if (laststep) sdiff = K_d[lev];
+    if (laststep)
+        sdiff = K_d[lev];
 
     alt = Altitude_d[lev];
 
     if (laststep) {
-        for (int k = 0; k < 3; k++) a_p[0 + k] = divg_Mh_d[id * nv * 3 + lev * 3 + k];
+        for (int k = 0; k < 3; k++)
+            a_p[0 + k] = divg_Mh_d[id * nv * 3 + lev * 3 + k];
         for (int i = 1; i < 6; i++)
             for (int k = 0; k < 3; k++)
                 a_p[i * 3 + k] = divg_Mh_d[local_p[i - 1] * nv * 3 + lev * 3 + k];
     }
     else {
-        for (int k = 0; k < 3; k++) a_p[0 * 3 + k] = Mh_d[id * 3 * nv + lev * 3 + k];
+        for (int k = 0; k < 3; k++)
+            a_p[0 * 3 + k] = Mh_d[id * 3 * nv + lev * 3 + k];
         for (int i = 1; i < 6; i++)
             for (int k = 0; k < 3; k++)
                 a_p[i * 3 + k] = Mh_d[local_p[i - 1] * 3 * nv + lev * 3 + k];
 
         wl_p[0] = Wh_d[id * (nv + 1) + lev];
-        for (int i = 1; i < 6; i++) wl_p[i] = Wh_d[local_p[i - 1] * (nv + 1) + lev];
+        for (int i = 1; i < 6; i++)
+            wl_p[i] = Wh_d[local_p[i - 1] * (nv + 1) + lev];
 
         wt_p[0] = Wh_d[id * (nv + 1) + lev + 1];
-        for (int i = 1; i < 6; i++) wt_p[i] = Wh_d[local_p[i - 1] * (nv + 1) + lev + 1];
+        for (int i = 1; i < 6; i++)
+            wt_p[i] = Wh_d[local_p[i - 1] * (nv + 1) + lev + 1];
     }
 
     if (DeepModel) {
@@ -390,7 +407,8 @@ __global__ void DivM_Op_Poles(double* DivM_d,
     lapy = 0.0;
     lapz = 0.0;
 
-    if (!laststep) dz = 1.0 / (Altitudeh_d[lev] - Altitudeh_d[lev + 1]);
+    if (!laststep)
+        dz = 1.0 / (Altitudeh_d[lev] - Altitudeh_d[lev + 1]);
 
     for (int k = 0; k < 5; k++) {
         int j   = k + 1;

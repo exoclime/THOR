@@ -123,7 +123,8 @@ public:
         // Stop GCC from complaining about format string it can't analyse
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-security"
-        if (pFILE != nullptr) fprintf(pFILE, args...);
+        if (pFILE != nullptr)
+            fprintf(pFILE, args...);
 
         std::printf(args...);
 #pragma GCC diagnostic pop
@@ -133,13 +134,15 @@ public:
         // Stop GCC from complaining about format string it can't analyse
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-security"
-        if (pFILE != nullptr) fprintf(pFILE, args...);
+        if (pFILE != nullptr)
+            fprintf(pFILE, args...);
 #pragma GCC diagnostic pop
     }
 
 
     static void flush() {
-        if (pFILE != nullptr) fflush(pFILE);
+        if (pFILE != nullptr)
+            fflush(pFILE);
     }
 
 
@@ -147,7 +150,8 @@ private:
     log();
 
     ~log() {
-        if (pFILE != nullptr) fclose(pFILE);
+        if (pFILE != nullptr)
+            fclose(pFILE);
     }
 
     static FILE* pFILE;

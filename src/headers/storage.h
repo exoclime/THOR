@@ -103,8 +103,10 @@ public:
 
         bool out = read_table(name, buf, size);
 
-        if (out && size == 1) data = buf[0];
-        if (size != 1) return false;
+        if (out && size == 1)
+            data = buf[0];
+        if (size != 1)
+            return false;
 
         return out;
     }
@@ -119,9 +121,13 @@ public:
         //       return PredType::STD_REF_OBJ;
     }
 
-    DataType get_datatype(double& input) { return PredType::IEEE_F64LE; }
+    DataType get_datatype(double& input) {
+        return PredType::IEEE_F64LE;
+    }
 
-    DataType get_datatype(int& input) { return PredType::STD_I32LE; }
+    DataType get_datatype(int& input) {
+        return PredType::STD_I32LE;
+    }
 
 private:
     std::unique_ptr<H5File> file;

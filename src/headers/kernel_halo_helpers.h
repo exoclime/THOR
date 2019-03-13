@@ -64,7 +64,8 @@ __device__ __forceinline__ bool compute_mem_idx(int*       maps_d,
     ig = maps_d[ib * nhl2 + ir];
 
     if (x == 0 && y == 0)
-        if (maps_d[ib * nhl2] == -1) pent_ind = true;
+        if (maps_d[ib * nhl2] == -1)
+            pent_ind = true;
 
     ///////////////////////////////
     //////////// Halo /////////////

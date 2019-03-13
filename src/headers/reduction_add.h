@@ -80,14 +80,16 @@ template<int BLOCK_SIZE> __global__ void gpu_reduction_sum(double *d, double *o,
     // loop on stride and add
     for (int stride = blockDim.x; stride > 0; stride /= 2) {
         __syncthreads();
-        if (threadIdx.x < stride) ds_in[threadIdx.x] += ds_in[threadIdx.x + stride];
+        if (threadIdx.x < stride)
+            ds_in[threadIdx.x] += ds_in[threadIdx.x + stride];
     }
 
     __syncthreads();
 
     // copy to output
 
-    if (threadIdx.x == 0) o[blockIdx.x] = ds_in[0];
+    if (threadIdx.x == 0)
+        o[blockIdx.x] = ds_in[0];
 };
 
 // host function running reduction add on data from device
@@ -99,16 +101,19 @@ template<int BLOCK_SIZE> __host__ double gpu_sum_on_device(double *in_d, long le
     // create device temp array
     cudaMalloc((void **)&out_d, num_blocks * sizeof(double));
     cudaError_t err = cudaGetLastError();
-    if (err != cudaSuccess) log::printf("Malloc: %s\n", cudaGetErrorString(err));
+    if (err != cudaSuccess)
+        log::printf("Malloc: %s\n", cudaGetErrorString(err));
 
 
     gpu_reduction_sum<BLOCK_SIZE><<<num_blocks, BLOCK_SIZE>>>(in_d, out_d, length);
     err = cudaGetLastError();
-    if (err != cudaSuccess) log::printf("krnl: %s\n", cudaGetErrorString(err));
+    if (err != cudaSuccess)
+        log::printf("krnl: %s\n", cudaGetErrorString(err));
 
     cudaMemcpy(out_h, out_d, num_blocks * sizeof(double), cudaMemcpyDeviceToHost);
     err = cudaGetLastError();
-    if (err != cudaSuccess) log::printf("cpyD2H: %s\n", cudaGetErrorString(err));
+    if (err != cudaSuccess)
+        log::printf("cpyD2H: %s\n", cudaGetErrorString(err));
 
     double out = 0.0;
     for (int i = 0; i < num_blocks; i++) {
@@ -130,12 +135,14 @@ template<int BLOCK_SIZE> __host__ double gpu_sum_from_host(double *d, long lengt
 
     cudaMalloc((void **)&in_d, length * sizeof(double));
     cudaError_t err = cudaGetLastError();
-    if (err != cudaSuccess) log::printf("Malloc: %s\n", cudaGetErrorString(err));
+    if (err != cudaSuccess)
+        log::printf("Malloc: %s\n", cudaGetErrorString(err));
 
 
     cudaMemcpy(in_d, d, length * sizeof(double), cudaMemcpyHostToDevice);
     err = cudaGetLastError();
-    if (err != cudaSuccess) log::printf("cpyH2D: %s\n", cudaGetErrorString(err));
+    if (err != cudaSuccess)
+        log::printf("cpyH2D: %s\n", cudaGetErrorString(err));
 
     double out = gpu_sum_on_device<BLOCK_SIZE>(in_d, length);
 
