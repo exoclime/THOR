@@ -603,13 +603,17 @@ void binary_test::check_data(const string&         iteration,
     vector<output_def> data_output;
     for (auto& name : output_vars) {
         auto&& it = output_definitions.find(name);
-        if (it != output_definitions.end()) { data_output.push_back(it->second); }
+        if (it != output_definitions.end()) {
+            data_output.push_back(it->second);
+        }
     }
 
     if (trace_phy_modules) {
         for (auto& name : phy_modules_data_out) {
             auto&& it = output_definitions.find(name);
-            if (it != output_definitions.end()) { data_output.push_back(it->second); }
+            if (it != output_definitions.end()) {
+                data_output.push_back(it->second);
+            }
         }
     }
 
@@ -625,11 +629,15 @@ void binary_test::check_data(const string&         iteration,
 #    endif // BENCH_POINT_COMPARE
 
 #    ifdef BENCH_NAN_CHECK
-    if (nan_check_d == nullptr) { nan_check_d = init_device_mem_check(nan_check_d); }
+    if (nan_check_d == nullptr) {
+        nan_check_d = init_device_mem_check(nan_check_d);
+    }
 
     bool out;
     out = check_nan(iteration, ref_name, data_output);
-    if (!out) { exit(-1); }
+    if (!out) {
+        exit(-1);
+    }
 #    endif // BENCH_NAN_CHECK
 }
 // Check for NaNs
@@ -751,7 +759,9 @@ bool binary_test::compare_to_reference(const string&             iteration,
             comp = compare_to_saved_data(s, def.short_name, def.data, def.size, stats);
         }
 #    ifdef BENCH_COMPARE_PRINT_STATISTICS
-        if (comp == false) { stats_table[def.short_name] = stats; }
+        if (comp == false) {
+            stats_table[def.short_name] = stats;
+        }
 #    endif // BENCH_COMPARE_PRINT_STATISTICS
 
         oss << " " << def.short_name << ": " << comp;

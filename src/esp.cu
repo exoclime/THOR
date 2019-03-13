@@ -327,7 +327,9 @@ int main(int argc, char** argv) {
 
     bool run_as_batch_arg = false;
     bool run_as_batch     = false;
-    if (argparser.get_arg("batch", run_as_batch_arg)) { run_as_batch = run_as_batch_arg; }
+    if (argparser.get_arg("batch", run_as_batch_arg)) {
+        run_as_batch = run_as_batch_arg;
+    }
 
     string continue_filename = "";
     bool   continue_sim      = false;
@@ -387,7 +389,9 @@ int main(int argc, char** argv) {
     config_OK &= check_greater("GPU_ID_N", GPU_ID_N, -1);
     config_OK &= check_greater("n_out", n_out, 0);
 
-    if (simulation_ID.length() < 160) { sprintf(sim.simulation_ID, "%s", simulation_ID.c_str()); }
+    if (simulation_ID.length() < 160) {
+        sprintf(sim.simulation_ID, "%s", simulation_ID.c_str());
+    }
     else {
         log::printf("Bad value for config variable simulation_ID: [%s]\n", simulation_ID.c_str());
 

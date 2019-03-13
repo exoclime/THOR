@@ -52,10 +52,10 @@
 
 #include "grid.h"
 
+#include "log_writer.h"
 #include <iostream>
 #include <map>
 #include <vector>
-#include "log_writer.h"
 
 using namespace std;
 
@@ -77,15 +77,14 @@ int main() {
                      false,     // sponge layer
                      &max_count);
 
-        std::map<string, output_def> output_definitions =
-            {
-                // {"map name, {variable pointer, table size, name, short name, on device}}
-                // grid
-                {"point_xyz", {grid.point_xyz, grid.point_num * 3, "xyz", "x", false}},
+        std::map<string, output_def> output_definitions = {
+            // {"map name, {variable pointer, table size, name, short name, on device}}
+            // grid
+            {"point_xyz", {grid.point_xyz, grid.point_num * 3, "xyz", "x", false}},
 
-                {"point_xyzq", {grid.point_xyzq, grid.point_num * 3 * 6, "xyzq", "xq", false}},
+            {"point_xyzq", {grid.point_xyzq, grid.point_num * 3 * 6, "xyzq", "xq", false}},
 
-                /*
+            /*
               disable int tables for now
               {"pent_ind",      { grid.pent_ind, 12, "pent_ind", "pi", false}},
 
@@ -94,23 +93,23 @@ int main() {
               {"maps",          { grid.maps, (grid.nl_region+2)*(grid.nl_region+2)*grid.nr, "maps", "m", false}},
             */
 
-                {"func_r", {grid.func_r, 3 * grid.point_num, "func_r", "f", false}},
-                {"areas", {grid.areas, 6 * 3 * grid.point_num, "areas", "a", false}},
-                {"areasTr", {grid.areasTr, 6 * grid.point_num, "areasTr", "aTr", false}},
+            {"func_r", {grid.func_r, 3 * grid.point_num, "func_r", "f", false}},
+            {"areas", {grid.areas, 6 * 3 * grid.point_num, "areas", "a", false}},
+            {"areasTr", {grid.areasTr, 6 * grid.point_num, "areasTr", "aTr", false}},
 
-                {"areasT", {grid.areasT, grid.point_num, "areasT", "aT", false}},
-                {"nvec", {grid.nvec, 6 * 3 * grid.point_num, "nvec", "nc", false}},
-                {"nvecoa", {grid.nvecoa, 6 * 3 * grid.point_num, "nvecoa", "na", false}},
-                {"nvecti", {grid.nvecti, 6 * 3 * grid.point_num, "nvecti", "nti", false}},
-                {"nvecte", {grid.nvecte, 6 * 3 * grid.point_num, "nvecte", "nte", false}},
+            {"areasT", {grid.areasT, grid.point_num, "areasT", "aT", false}},
+            {"nvec", {grid.nvec, 6 * 3 * grid.point_num, "nvec", "nc", false}},
+            {"nvecoa", {grid.nvecoa, 6 * 3 * grid.point_num, "nvecoa", "na", false}},
+            {"nvecti", {grid.nvecti, 6 * 3 * grid.point_num, "nvecti", "nti", false}},
+            {"nvecte", {grid.nvecte, 6 * 3 * grid.point_num, "nvecte", "nte", false}},
 
-                {"Altitude", {grid.Altitude, grid.nv, "Altitude", "Alt", false}},
-                {"Altitudeh", {grid.Altitudeh, grid.nvi, "Altitudeh", "Alth", false}},
-                {"lonlat", {grid.lonlat, 2 * grid.point_num, "lonlat", "ll", false}},
+            {"Altitude", {grid.Altitude, grid.nv, "Altitude", "Alt", false}},
+            {"Altitudeh", {grid.Altitudeh, grid.nvi, "Altitudeh", "Alth", false}},
+            {"lonlat", {grid.lonlat, 2 * grid.point_num, "lonlat", "ll", false}},
 
-                {"div", {grid.div, 7 * 3 * grid.point_num, "div", "d", false}},
-                {"grad", {grid.grad, 7 * 3 * grid.point_num, "grad", "g", false}},
-            };
+            {"div", {grid.div, 7 * 3 * grid.point_num, "div", "d", false}},
+            {"grad", {grid.grad, 7 * 3 * grid.point_num, "grad", "g", false}},
+        };
 
         std::vector<string> output_vars({"point_xyz",
                                          "point_xyzq",
@@ -140,18 +139,13 @@ int main() {
         btester.set_output("grid_test_" + std::to_string(l), "./results/grid_test/");
         btester.append_definitions(output_definitions);
 
-        if (output)
-            btester.output_reference(std::to_string(l),
-                                     "test",
-                                     data_output);
+        if (output) btester.output_reference(std::to_string(l), "test", data_output);
 
 
         if (compare) {
             cout << "start compare " << l << endl;
 
-            bool result = btester.compare_to_reference(std::to_string(l),
-                                                       "test",
-                                                       data_output);
+            bool result = btester.compare_to_reference(std::to_string(l), "test", data_output);
             if (result)
                 cout << "grid compare " << l << " SUCCESS" << endl;
             else

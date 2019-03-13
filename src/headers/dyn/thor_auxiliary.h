@@ -455,7 +455,9 @@ __global__ void isnan_check_thor(double *array, int width, int height, bool *che
 
     while (idx < width) {
         for (int i = 0; i < height; i++)
-            if (isnan(array[(i * width) + idx])) { *check = true; }
+            if (isnan(array[(i * width) + idx])) {
+                *check = true;
+            }
         idx += gridDim.x + blockDim.x;
     }
 }

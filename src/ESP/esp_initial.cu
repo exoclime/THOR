@@ -134,7 +134,9 @@ __host__ ESP::ESP(int *           point_local_,
 
     // Set the physics module execute state for the rest of the lifetime of ESP object
     // only execute physics modules when no benchmarks are enabled
-    if (core_benchmark == NO_BENCHMARK) { phy_modules_execute = true; }
+    if (core_benchmark == NO_BENCHMARK) {
+        phy_modules_execute = true;
+    }
     else
         phy_modules_execute = false;
 

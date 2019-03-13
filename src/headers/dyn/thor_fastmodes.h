@@ -100,7 +100,9 @@ __global__ void Momentum_Eq(double *M_d,
     //////////// Halo /////////////
     ///////////////////////////////
     if (load_halo) {
-        if (igh >= 0) { pressure_s[ir2] = pressure_d[igh * nv + lev]; }
+        if (igh >= 0) {
+            pressure_s[ir2] = pressure_d[igh * nv + lev];
+        }
         else
             pressure_s[ir2] = 0.0;
     }

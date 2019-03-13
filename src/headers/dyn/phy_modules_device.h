@@ -53,10 +53,7 @@ struct device_RK_array {
     int     dimensions;
     device_RK_array(){};
 
-    device_RK_array(double* array_d_,
-                    double* arrayk_d_,
-                    double* arrayi_d_,
-                    int     dimensions_) :
+    device_RK_array(double* array_d_, double* arrayk_d_, double* arrayi_d_, int dimensions_) :
         array_d(array_d_),
         arrayk_d(arrayk_d_),
         arrayi_d(arrayi_d_),

@@ -330,7 +330,9 @@ public:
         idx = (i - lev) / nv;
 
         std::ostringstream string_stream;
-        if (first == 1) { string_stream << "RawIdx\tGridIdx\tLev\tLat\tLong\tAlt" << std::endl; }
+        if (first == 1) {
+            string_stream << "RawIdx\tGridIdx\tLev\tLat\tLong\tAlt" << std::endl;
+        }
         string_stream << i << "\t" << idx << "\t" << lev << "\t"
                       << lonlat_h[idx * 2 + 1] * 180 / M_PI << "\t"
                       << lonlat_h[idx * 2] * 180 / M_PI << "\t" << Altitude_h[lev];
@@ -343,7 +345,9 @@ public:
         idx = (i - lev) / nvi;
 
         std::ostringstream string_stream;
-        if (first == 1) { string_stream << "RawIdx\tGridIdx\tLev\tLat\tLong\tAlt" << std::endl; }
+        if (first == 1) {
+            string_stream << "RawIdx\tGridIdx\tLev\tLat\tLong\tAlt" << std::endl;
+        }
         string_stream << i << "\t" << idx << "\t" << lev << "\t"
                       << lonlat_h[idx * 2 + 1] * 180 / M_PI << "\t"
                       << lonlat_h[idx * 2] * 180 / M_PI << "\t" << Altitudeh_h[lev];
@@ -377,7 +381,9 @@ public:
         int idx = i;
 
         std::ostringstream string_stream;
-        if (first == 1) { string_stream << "RawIdx\tGridIdx\tLat\tLong" << std::endl; }
+        if (first == 1) {
+            string_stream << "RawIdx\tGridIdx\tLat\tLong" << std::endl;
+        }
         string_stream << i << "\t" << idx << "\t" << lonlat_h[idx * 2 + 1] * 180 / M_PI << "\t"
                       << lonlat_h[idx * 2] * 180 / M_PI;
         return string_stream.str();
@@ -389,7 +395,9 @@ public:
         idx = (i - ll) / 2;
 
         std::ostringstream string_stream;
-        if (first == 1) { string_stream << "RawIdx\tGridIdx\tLat?\tLat\tLong" << std::endl; }
+        if (first == 1) {
+            string_stream << "RawIdx\tGridIdx\tLat?\tLat\tLong" << std::endl;
+        }
         string_stream << i << "\t" << idx << "\t" << ll << "\t"
                       << lonlat_h[idx * 2 + 1] * 180 / M_PI << "\t"
                       << lonlat_h[idx * 2] * 180 / M_PI;
@@ -402,7 +410,9 @@ public:
         idx = (i - xyz) / 3;
 
         std::ostringstream string_stream;
-        if (first == 1) { string_stream << "RawIdx\tGridIdx\tXYZ\tLat\tLong" << std::endl; }
+        if (first == 1) {
+            string_stream << "RawIdx\tGridIdx\tXYZ\tLat\tLong" << std::endl;
+        }
         string_stream << i << "\t" << idx << "\t" << xyz << "\t"
                       << lonlat_h[idx * 2 + 1] * 180 / M_PI << "\t"
                       << lonlat_h[idx * 2] * 180 / M_PI;
@@ -415,7 +425,9 @@ public:
         idx  = (i - side) / 6;
 
         std::ostringstream string_stream;
-        if (first == 1) { string_stream << "RawIdx\tGridIdx\tSide\tLat\tLong" << std::endl; }
+        if (first == 1) {
+            string_stream << "RawIdx\tGridIdx\tSide\tLat\tLong" << std::endl;
+        }
         string_stream << i << "\t" << idx << "\t" << side << "\t"
                       << lonlat_h[idx * 2 + 1] * 180 / M_PI << "\t"
                       << lonlat_h[idx * 2] * 180 / M_PI;
@@ -429,7 +441,9 @@ public:
         idx  = (i - 3 * side - xyz) / 6 / 3;
 
         std::ostringstream string_stream;
-        if (first == 1) { string_stream << "RawIdx\tGridIdx\tXYZ\tSide\tLat\tLong" << std::endl; }
+        if (first == 1) {
+            string_stream << "RawIdx\tGridIdx\tXYZ\tSide\tLat\tLong" << std::endl;
+        }
         string_stream << i << "\t" << idx << "\t" << xyz << "\t" << side << "\t"
                       << lonlat_h[idx * 2 + 1] * 180 / M_PI << "\t"
                       << lonlat_h[idx * 2] * 180 / M_PI;
@@ -443,7 +457,9 @@ public:
         idx  = (i - 3 * side - xyz) / 7 / 3;
 
         std::ostringstream string_stream;
-        if (first == 1) { string_stream << "RawIdx\tGridIdx\tXYZ\tVertex\tLat\tLong" << std::endl; }
+        if (first == 1) {
+            string_stream << "RawIdx\tGridIdx\tXYZ\tVertex\tLat\tLong" << std::endl;
+        }
         string_stream << i << "\t" << idx << "\t" << xyz << "\t" << side << "\t"
                       << lonlat_h[idx * 2 + 1] * 180 / M_PI << "\t"
                       << lonlat_h[idx * 2] * 180 / M_PI;

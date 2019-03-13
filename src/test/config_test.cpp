@@ -119,8 +119,7 @@ int main() {
     cf.append_config_var("def_string", def_string, string("default"));
 
 
-    cout << "start parsing" << endl
-         << endl;
+    cout << "start parsing" << endl << endl;
 
     std::basic_istringstream<char> istr(config);
 

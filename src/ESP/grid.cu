@@ -1640,7 +1640,9 @@ void Icogrid::spring_dynamics(int *   point_local,
 
     log::printf("\n\n Running spring dynamics.\n\n");
 
-    for (int i = 0; i < point_num; i++) { vel[i] = make_double3(0.0, 0.0, 0.0); }
+    for (int i = 0; i < point_num; i++) {
+        vel[i] = make_double3(0.0, 0.0, 0.0);
+    }
 
     for (int i = 0; i < 12; i++) {
         xyzi[i]                          = xyz3[pent_ind[i]];
@@ -1652,7 +1654,9 @@ void Icogrid::spring_dynamics(int *   point_local,
 
         for (int i = 0; i < point_num; i++) {
             P[i] = xyz3[i];
-            for (int j = 0; j < 6; j++) { P_Nei[i * 6 + j] = xyz3[point_local[i * 6 + j]]; }
+            for (int j = 0; j < 6; j++) {
+                P_Nei[i * 6 + j] = xyz3[point_local[i * 6 + j]];
+            }
         }
         for (int i = 0; i < point_num; i++) {
             for (int j = 0; j < 6; j++) {
@@ -1669,7 +1673,9 @@ void Icogrid::spring_dynamics(int *   point_local,
             }
         }
 
-        for (int i = 0; i < 12; i++) { F_Nei[pent_ind[i] * 6 + 5] = make_double3(0.0, 0.0, 0.0); }
+        for (int i = 0; i < 12; i++) {
+            F_Nei[pent_ind[i] * 6 + 5] = make_double3(0.0, 0.0, 0.0);
+        }
 
         for (int i = 0; i < point_num; i++) {
             // Calculate net forces in each point.

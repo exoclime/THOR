@@ -88,14 +88,13 @@ public:
 };
 
 // base template interface class
-template<typename T>
-class arg : public arg_interface
+template<typename T> class arg : public arg_interface
 {
 public:
     arg(const string& short_form_,
         const string& long_form_,
-        const T&      value_, // To give the type of the argument, value doesn't get used, other than
-                              // for bool that gets set on command line without argument
+        const T& value_, // To give the type of the argument, value doesn't get used, other than
+                         // for bool that gets set on command line without argument
         const string& help_string_) :
         short_form(short_form_),
         long_form(long_form_),
@@ -117,15 +116,11 @@ public:
     };
 
     // For arguments that have no value, set as having a value so that it uses its default
-    void set_default() {
-        has_value = true;
-    };
+    void set_default() { has_value = true; };
 
 
     // Number of arguments following this key
-    int get_nargs() {
-        return 1;
-    }
+    int get_nargs() { return 1; }
 
     // check if this argument matches the key
     bool is_key(const string& str) {
@@ -138,26 +133,21 @@ public:
     }
 
     // return the value
-    T get() {
-        return value;
-    }
+    T get() { return value; }
 
     // returns if this argument has been set through command line
-    bool is_set() {
-        return has_value;
-    }
+    bool is_set() { return has_value; }
 
     // name of argument
-    string get_name() {
-        return long_form;
-    }
+    string get_name() { return long_form; }
 
     // description for help string
     void print_desc() {
         if (short_form == "")
             printf("%28s%s\n", " ", help_string.c_str());
         else
-            printf(" -%s / --%-20s %s\n", short_form.c_str(), long_form.c_str(), help_string.c_str());
+            printf(
+                " -%s / --%-20s %s\n", short_form.c_str(), long_form.c_str(), help_string.c_str());
     }
 
 
@@ -179,26 +169,19 @@ class cmdargs
 public:
     // Constructor, takes app name and description string as argument
     // for help string
-    cmdargs(const string& app_name,
-            const string& app_desc);
+    cmdargs(const string& app_name, const string& app_desc);
 
     // setup by adding arguments
     template<typename T>
-    bool add_arg(const string& short_form,
-                 const string& long_form,
-                 const T&      value,
-                 const string& help);
+    bool
+    add_arg(const string& short_form, const string& long_form, const T& value, const string& help);
 
-    template<typename T>
-    bool get_arg(const string& long_form,
-                 T&            value);
+    template<typename T> bool get_arg(const string& long_form, T& value);
 
     // positional argument
-    template<typename T>
-    bool add_positional_arg(const T& value, const string& help);
+    template<typename T> bool add_positional_arg(const T& value, const string& help);
 
-    template<typename T>
-    bool get_positional_arg(T& value);
+    template<typename T> bool get_positional_arg(T& value);
 
     // parse argument array
     bool parse(int argc, char** argv);
@@ -211,9 +194,7 @@ private:
     arg_interface* operator[](string idx);
 
     // helper to add argument
-    void add_arg(std::unique_ptr<arg_interface> arg) {
-        args.push_back(std::move(arg));
-    }
+    void add_arg(std::unique_ptr<arg_interface> arg) { args.push_back(std::move(arg)); }
 
     // Storage map as key value pair
     std::vector<std::unique_ptr<arg_interface>> args;
@@ -222,10 +203,7 @@ private:
     std::unique_ptr<arg_interface> positional_arg = nullptr;
 
     // Parsing state machine
-    enum e_parser_state {
-        PARSE_FOR_KEY,
-        GOT_KEY
-    };
+    enum e_parser_state { PARSE_FOR_KEY, GOT_KEY };
 
     e_parser_state parser_state = PARSE_FOR_KEY;
 
@@ -240,17 +218,13 @@ private:
 };
 
 // setup by adding positional argument
-template<typename T>
-bool cmdargs::add_positional_arg(
-    const T&      value,
-    const string& help) {
+template<typename T> bool cmdargs::add_positional_arg(const T& value, const string& help) {
     positional_arg = std::unique_ptr<arg<T>>(new arg<T>("", "", value, help));
 
     return true;
 }
 
-template<typename T>
-bool cmdargs::get_positional_arg(T& value) {
+template<typename T> bool cmdargs::get_positional_arg(T& value) {
 
     if (positional_arg != nullptr) {
         arg<T>* argument = (arg<T>*)(positional_arg.get());
@@ -274,10 +248,10 @@ bool cmdargs::add_arg(const string& short_form,
 
     // check short form
 
-    auto&& it = std::find_if(args.begin(),
-                             args.end(),
-                             [short_form](const std::unique_ptr<arg_interface>& m)
-                                 -> bool { return m->is_key(short_form); });
+    auto&& it = std::find_if(
+        args.begin(), args.end(), [short_form](const std::unique_ptr<arg_interface>& m) -> bool {
+            return m->is_key(short_form);
+        });
 
 
     if (it != args.end()) {
@@ -290,10 +264,10 @@ bool cmdargs::add_arg(const string& short_form,
 
         throw std::range_error(error);
     }
-    auto&& it2 = std::find_if(args.begin(),
-                              args.end(),
-                              [long_form](const std::unique_ptr<arg_interface>& m)
-                                  -> bool { return m->is_key(long_form); });
+    auto&& it2 = std::find_if(
+        args.begin(), args.end(), [long_form](const std::unique_ptr<arg_interface>& m) -> bool {
+            return m->is_key(long_form);
+        });
     if (it2 != args.end()) {
         char error[256];
         sprintf(error,
@@ -313,14 +287,11 @@ bool cmdargs::add_arg(const string& short_form,
 }
 
 // setup by adding arguments
-template<typename T>
-bool cmdargs::get_arg(const string& long_form,
-                      T&            value) {
+template<typename T> bool cmdargs::get_arg(const string& long_form, T& value) {
     arg<T>* argument = (arg<T>*)(*this)[long_form];
 
     bool is_set = argument->is_set();
-    if (is_set)
-        value = argument->get();
+    if (is_set) value = argument->get();
 
 
     return is_set;

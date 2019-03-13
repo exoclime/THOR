@@ -128,7 +128,9 @@ __global__ void Diffusion_Op(double* diffmh_d,
     //////////// Halo /////////////
     ///////////////////////////////
     if (load_halo) {
-        if (igh >= 0) { Rho_s[ir2] = Rho_d[igh * nv + lev]; }
+        if (igh >= 0) {
+            Rho_s[ir2] = Rho_d[igh * nv + lev];
+        }
         else {
 
 

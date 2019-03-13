@@ -78,11 +78,8 @@ __global__ void DivM_Op(double* DivM_d,
     double alt, dz, dwdz, dwdz2;
     double rscale;
     double AT0, AT1, AT2;
-    double a01x, a01y, a01z,
-        a02x, a02y, a02z,
-        a03x, a03y, a03z;
-    double a12x, a12y, a12z,
-        a23x, a23y, a23z;
+    double a01x, a01y, a01z, a02x, a02y, a02z, a03x, a03y, a03z;
+    double a12x, a12y, a12z, a23x, a23y, a23z;
     double meanwl, meanwt, meanwl2, meanwt2;
     double o3 = 1.0 / 3.0;
     double lapx, lapy, lapz, lapr;
@@ -123,7 +120,8 @@ __global__ void DivM_Op(double* DivM_d,
     if (load_halo) {
         if (igh >= 0) {
             if (laststep)
-                for (int k = 0; k < 3; k++) a_s[ir2 * 3 + k] = divg_Mh_d[igh * nv * 3 + lev * 3 + k];
+                for (int k = 0; k < 3; k++)
+                    a_s[ir2 * 3 + k] = divg_Mh_d[igh * nv * 3 + lev * 3 + k];
             else {
                 for (int k = 0; k < 3; k++) a_s[ir2 * 3 + k] = Mh_d[igh * 3 * nv + lev * 3 + k];
                 wl_s[ir2] = Wh_d[igh * (nv + 1) + lev];
@@ -231,21 +229,37 @@ __global__ void DivM_Op(double* DivM_d,
         a03z = (a_s[ir * 3 + 2] + a_s[pt3 * 3 + 2]);
 
         if (j == 0) {
-            lap1 = (-a01x * nvecti_d[id * 6 * 3 + j * 3 + 0] - a01y * nvecti_d[id * 6 * 3 + j * 3 + 1] - a01z * nvecti_d[id * 6 * 3 + j * 3 + 2]
-                    + a12x * nvecte_d[id * 6 * 3 + j * 3 + 0] + a12y * nvecte_d[id * 6 * 3 + j * 3 + 1] + a12z * nvecte_d[id * 6 * 3 + j * 3 + 2]
-                    + a02x * nvecti_d[id * 6 * 3 + jp1 * 3 + 0] + a02y * nvecti_d[id * 6 * 3 + jp1 * 3 + 1] + a02z * nvecti_d[id * 6 * 3 + jp1 * 3 + 2])
-                   * AT1;
+            lap1 =
+                (-a01x * nvecti_d[id * 6 * 3 + j * 3 + 0] - a01y * nvecti_d[id * 6 * 3 + j * 3 + 1]
+                 - a01z * nvecti_d[id * 6 * 3 + j * 3 + 2] + a12x * nvecte_d[id * 6 * 3 + j * 3 + 0]
+                 + a12y * nvecte_d[id * 6 * 3 + j * 3 + 1] + a12z * nvecte_d[id * 6 * 3 + j * 3 + 2]
+                 + a02x * nvecti_d[id * 6 * 3 + jp1 * 3 + 0]
+                 + a02y * nvecti_d[id * 6 * 3 + jp1 * 3 + 1]
+                 + a02z * nvecti_d[id * 6 * 3 + jp1 * 3 + 2])
+                * AT1;
 
-            lap2 = (-a02x * nvecti_d[id * 6 * 3 + jp1 * 3 + 0] - a02y * nvecti_d[id * 6 * 3 + jp1 * 3 + 1] - a02z * nvecti_d[id * 6 * 3 + jp1 * 3 + 2]
-                    + a23x * nvecte_d[id * 6 * 3 + jp1 * 3 + 0] + a23y * nvecte_d[id * 6 * 3 + jp1 * 3 + 1] + a23z * nvecte_d[id * 6 * 3 + jp1 * 3 + 2]
-                    + a03x * nvecti_d[id * 6 * 3 + jp2 * 3 + 0] + a03y * nvecti_d[id * 6 * 3 + jp2 * 3 + 1] + a03z * nvecti_d[id * 6 * 3 + jp2 * 3 + 2])
+            lap2 = (-a02x * nvecti_d[id * 6 * 3 + jp1 * 3 + 0]
+                    - a02y * nvecti_d[id * 6 * 3 + jp1 * 3 + 1]
+                    - a02z * nvecti_d[id * 6 * 3 + jp1 * 3 + 2]
+                    + a23x * nvecte_d[id * 6 * 3 + jp1 * 3 + 0]
+                    + a23y * nvecte_d[id * 6 * 3 + jp1 * 3 + 1]
+                    + a23z * nvecte_d[id * 6 * 3 + jp1 * 3 + 2]
+                    + a03x * nvecti_d[id * 6 * 3 + jp2 * 3 + 0]
+                    + a03y * nvecti_d[id * 6 * 3 + jp2 * 3 + 1]
+                    + a03z * nvecti_d[id * 6 * 3 + jp2 * 3 + 2])
                    * AT2;
         }
         else {
             lap1 = lap2;
-            lap2 = (-a02x * nvecti_d[id * 6 * 3 + jp1 * 3 + 0] - a02y * nvecti_d[id * 6 * 3 + jp1 * 3 + 1] - a02z * nvecti_d[id * 6 * 3 + jp1 * 3 + 2]
-                    + a23x * nvecte_d[id * 6 * 3 + jp1 * 3 + 0] + a23y * nvecte_d[id * 6 * 3 + jp1 * 3 + 1] + a23z * nvecte_d[id * 6 * 3 + jp1 * 3 + 2]
-                    + a03x * nvecti_d[id * 6 * 3 + jp2 * 3 + 0] + a03y * nvecti_d[id * 6 * 3 + jp2 * 3 + 1] + a03z * nvecti_d[id * 6 * 3 + jp2 * 3 + 2])
+            lap2 = (-a02x * nvecti_d[id * 6 * 3 + jp1 * 3 + 0]
+                    - a02y * nvecti_d[id * 6 * 3 + jp1 * 3 + 1]
+                    - a02z * nvecti_d[id * 6 * 3 + jp1 * 3 + 2]
+                    + a23x * nvecte_d[id * 6 * 3 + jp1 * 3 + 0]
+                    + a23y * nvecte_d[id * 6 * 3 + jp1 * 3 + 1]
+                    + a23z * nvecte_d[id * 6 * 3 + jp1 * 3 + 2]
+                    + a03x * nvecti_d[id * 6 * 3 + jp2 * 3 + 0]
+                    + a03y * nvecti_d[id * 6 * 3 + jp2 * 3 + 1]
+                    + a03z * nvecti_d[id * 6 * 3 + jp2 * 3 + 2])
                    * AT2;
         }
 
@@ -313,11 +327,8 @@ __global__ void DivM_Op_Poles(double* DivM_d,
     double rscale;
     double o3 = 1.0 / 3.0;
     double lapx, lapy, lapz, lapr, lap1, lap2;
-    double a01x, a01y, a01z,
-        a02x, a02y, a02z,
-        a03x, a03y, a03z;
-    double a12x, a12y, a12z,
-        a23x, a23y, a23z;
+    double a01x, a01y, a01z, a02x, a02y, a02z, a03x, a03y, a03z;
+    double a12x, a12y, a12z, a23x, a23y, a23z;
     double AT0, AT1, AT2;
     double funcx, funcy, funcz;
 
@@ -350,12 +361,14 @@ __global__ void DivM_Op_Poles(double* DivM_d,
     if (laststep) {
         for (int k = 0; k < 3; k++) a_p[0 + k] = divg_Mh_d[id * nv * 3 + lev * 3 + k];
         for (int i = 1; i < 6; i++)
-            for (int k = 0; k < 3; k++) a_p[i * 3 + k] = divg_Mh_d[local_p[i - 1] * nv * 3 + lev * 3 + k];
+            for (int k = 0; k < 3; k++)
+                a_p[i * 3 + k] = divg_Mh_d[local_p[i - 1] * nv * 3 + lev * 3 + k];
     }
     else {
         for (int k = 0; k < 3; k++) a_p[0 * 3 + k] = Mh_d[id * 3 * nv + lev * 3 + k];
         for (int i = 1; i < 6; i++)
-            for (int k = 0; k < 3; k++) a_p[i * 3 + k] = Mh_d[local_p[i - 1] * 3 * nv + lev * 3 + k];
+            for (int k = 0; k < 3; k++)
+                a_p[i * 3 + k] = Mh_d[local_p[i - 1] * 3 * nv + lev * 3 + k];
 
         wl_p[0] = Wh_d[id * (nv + 1) + lev];
         for (int i = 1; i < 6; i++) wl_p[i] = Wh_d[local_p[i - 1] * (nv + 1) + lev];
@@ -422,22 +435,28 @@ __global__ void DivM_Op_Poles(double* DivM_d,
         AT2  = 0.5 * rscale / (areasTr_p[kp1]);
 
         if (k == 0) {
-            lap1 = (-a01x * nvecti_p[k * 3 + 0] - a01y * nvecti_p[k * 3 + 1] - a01z * nvecti_p[k * 3 + 2]
-                    + a12x * nvecte_p[k * 3 + 0] + a12y * nvecte_p[k * 3 + 1] + a12z * nvecte_p[k * 3 + 2]
-                    + a02x * nvecti_p[kp1 * 3 + 0] + a02y * nvecti_p[kp1 * 3 + 1] + a02z * nvecti_p[kp1 * 3 + 2])
+            lap1 = (-a01x * nvecti_p[k * 3 + 0] - a01y * nvecti_p[k * 3 + 1]
+                    - a01z * nvecti_p[k * 3 + 2] + a12x * nvecte_p[k * 3 + 0]
+                    + a12y * nvecte_p[k * 3 + 1] + a12z * nvecte_p[k * 3 + 2]
+                    + a02x * nvecti_p[kp1 * 3 + 0] + a02y * nvecti_p[kp1 * 3 + 1]
+                    + a02z * nvecti_p[kp1 * 3 + 2])
                    * AT1;
 
-            lap2 = (-a02x * nvecti_p[kp1 * 3 + 0] - a02y * nvecti_p[kp1 * 3 + 1] - a02z * nvecti_p[kp1 * 3 + 2]
-                    + a23x * nvecte_p[kp1 * 3 + 0] + a23y * nvecte_p[kp1 * 3 + 1] + a23z * nvecte_p[kp1 * 3 + 2]
-                    + a03x * nvecti_p[kp2 * 3 + 0] + a03y * nvecti_p[kp2 * 3 + 1] + a03z * nvecti_p[kp2 * 3 + 2])
+            lap2 = (-a02x * nvecti_p[kp1 * 3 + 0] - a02y * nvecti_p[kp1 * 3 + 1]
+                    - a02z * nvecti_p[kp1 * 3 + 2] + a23x * nvecte_p[kp1 * 3 + 0]
+                    + a23y * nvecte_p[kp1 * 3 + 1] + a23z * nvecte_p[kp1 * 3 + 2]
+                    + a03x * nvecti_p[kp2 * 3 + 0] + a03y * nvecti_p[kp2 * 3 + 1]
+                    + a03z * nvecti_p[kp2 * 3 + 2])
                    * AT2;
         }
         else {
             lap1 = lap2;
 
-            lap2 = (-a02x * nvecti_p[kp1 * 3 + 0] - a02y * nvecti_p[kp1 * 3 + 1] - a02z * nvecti_p[kp1 * 3 + 2]
-                    + a23x * nvecte_p[kp1 * 3 + 0] + a23y * nvecte_p[kp1 * 3 + 1] + a23z * nvecte_p[kp1 * 3 + 2]
-                    + a03x * nvecti_p[kp2 * 3 + 0] + a03y * nvecti_p[kp2 * 3 + 1] + a03z * nvecti_p[kp2 * 3 + 2])
+            lap2 = (-a02x * nvecti_p[kp1 * 3 + 0] - a02y * nvecti_p[kp1 * 3 + 1]
+                    - a02z * nvecti_p[kp1 * 3 + 2] + a23x * nvecte_p[kp1 * 3 + 0]
+                    + a23y * nvecte_p[kp1 * 3 + 1] + a23z * nvecte_p[kp1 * 3 + 2]
+                    + a03x * nvecti_p[kp2 * 3 + 0] + a03y * nvecti_p[kp2 * 3 + 1]
+                    + a03z * nvecti_p[kp2 * 3 + 2])
                    * AT2;
         }
         lapx += (lap1 + dwdz + lap2 + dwdz2) * nvecoa_p[k * 3 + 0] * AT0;

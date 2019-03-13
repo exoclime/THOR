@@ -82,55 +82,36 @@ public:
 
     // Store a table of type T - double or int, in output file
     template<typename T>
-    void append_table(T*         data,
-                      const int& size,
-                      string     name,
-                      string     unit,
-                      string     description);
+    void append_table(T* data, const int& size, string name, string unit, string description);
 
     // read table of type T from output file
-    template<typename T>
-    bool read_table(const string&         name,
-                    std::unique_ptr<T[]>& data,
-                    int&                  size);
+    template<typename T> bool read_table(const string& name, std::unique_ptr<T[]>& data, int& size);
 
-    template<typename T>
-    bool read_table_to_ptr(const string& name,
-                           T*            data,
-                           int           size);
+    template<typename T> bool read_table_to_ptr(const string& name, T* data, int size);
 
 
     // write a scalar value to output
-    template<typename T>
-    void append_value(T      value,
-                      string name,
-                      string unit,
-                      string description) {
+    template<typename T> void append_value(T value, string name, string unit, string description) {
         append_table(&value, 1, name, unit, description);
     }
 
     // read a scalar value from input
-    template<typename T>
-    bool read_value(const string& name,
-                    T&            data) {
+    template<typename T> bool read_value(const string& name, T& data) {
 
         std::unique_ptr<T[]> buf  = nullptr;
         int                  size = 0;
 
         bool out = read_table(name, buf, size);
 
-        if (out && size == 1)
-            data = buf[0];
-        if (size != 1)
-            return false;
+        if (out && size == 1) data = buf[0];
+        if (size != 1) return false;
 
         return out;
     }
 
 
     // Template functions for data type detection in append_table function.
-    template<typename T>
-    DataType get_datatype(T& input) {
+    template<typename T> DataType get_datatype(T& input) {
         log::printf("data type not supported for storage.\n");
 
         throw std::runtime_error("data type not supported for storage");
@@ -138,24 +119,16 @@ public:
         //       return PredType::STD_REF_OBJ;
     }
 
-    DataType get_datatype(double& input) {
-        return PredType::IEEE_F64LE;
-    }
+    DataType get_datatype(double& input) { return PredType::IEEE_F64LE; }
 
-    DataType get_datatype(int& input) {
-        return PredType::STD_I32LE;
-    }
+    DataType get_datatype(int& input) { return PredType::STD_I32LE; }
 
 private:
     std::unique_ptr<H5File> file;
 };
 
 template<typename T>
-void storage::append_table(T*         data,
-                           const int& size,
-                           string     name,
-                           string     unit,
-                           string     description) {
+void storage::append_table(T* data, const int& size, string name, string unit, string description) {
     if (file != nullptr) {
         try {
 
@@ -167,26 +140,20 @@ void storage::append_table(T*         data,
             DataSpace dataspace(1, dims);
 
             // create dataset with default properties
-            DataSet dataset(file->createDataSet("/" + name,
-                                                dt,
-                                                dataspace));
+            DataSet dataset(file->createDataSet("/" + name, dt, dataspace));
 
             dataset.write(data, dt);
 
             {
                 StrType   strdatatype(PredType::C_S1, description.length());
                 DataSpace attrspace = H5::DataSpace(H5S_SCALAR);
-                Attribute attr      = dataset.createAttribute("Variable",
-                                                         strdatatype,
-                                                         attrspace);
+                Attribute attr      = dataset.createAttribute("Variable", strdatatype, attrspace);
                 attr.write(strdatatype, description.c_str());
             }
             {
                 StrType   strdatatype(PredType::C_S1, unit.length());
                 DataSpace attrspace = H5::DataSpace(H5S_SCALAR);
-                Attribute attr      = dataset.createAttribute("units",
-                                                         strdatatype,
-                                                         attrspace);
+                Attribute attr      = dataset.createAttribute("units", strdatatype, attrspace);
                 attr.write(strdatatype, unit.c_str());
             }
         } // end of try block
@@ -218,9 +185,7 @@ void storage::append_table(T*         data,
 }
 
 template<typename T>
-bool storage::read_table(const string&         name,
-                         std::unique_ptr<T[]>& data,
-                         int&                  size) {
+bool storage::read_table(const string& name, std::unique_ptr<T[]>& data, int& size) {
     size = 0;
 
     if (file != nullptr) {
@@ -311,10 +276,7 @@ bool storage::read_table(const string&         name,
     return true;
 }
 
-template<typename T>
-bool storage::read_table_to_ptr(const string& name,
-                                T*            data,
-                                int           size) {
+template<typename T> bool storage::read_table_to_ptr(const string& name, T* data, int size) {
 
     if (file != nullptr) {
         DataType dt = get_datatype(data[0]);

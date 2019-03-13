@@ -119,7 +119,7 @@ __device__ __forceinline__ bool compute_mem_idx(int*       maps_d,
     }
 
     if (load_halo)
-      igh = maps_d[ib * nhl2 + ir2];
+        igh = maps_d[ib * nhl2 + ir2];
     else
         igh = 0;
 

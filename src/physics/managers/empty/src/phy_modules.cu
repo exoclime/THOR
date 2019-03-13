@@ -13,8 +13,7 @@ void phy_modules_print_config() {
     log::printf("  empty physics module\n");
 }
 
-bool phy_modules_init_mem(const ESP&               esp,
-                          device_RK_array_manager& phy_modules_core_arrays) {
+bool phy_modules_init_mem(const ESP& esp, device_RK_array_manager& phy_modules_core_arrays) {
 
     // initialise memory on device and host
 
@@ -24,9 +23,7 @@ bool phy_modules_init_mem(const ESP&               esp,
     return true;
 }
 
-bool phy_modules_init_data(const ESP&             esp,
-                           const SimulationSetup& sim,
-                           storage*               s) {
+bool phy_modules_init_data(const ESP& esp, const SimulationSetup& sim, storage* s) {
 
     // initialise the initial conditions
 
@@ -81,10 +78,7 @@ bool phy_modules_dyn_core_loop_end(const ESP& esp) {
     return true;
 }
 
-bool phy_modules_phy_loop(ESP&                   esp,
-                          const SimulationSetup& sim,
-                          int                    nstep,
-                          double                 time_step) {
+bool phy_modules_phy_loop(ESP& esp, const SimulationSetup& sim, int nstep, double time_step) {
 
 
     return true;

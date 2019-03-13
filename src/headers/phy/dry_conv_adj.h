@@ -81,31 +81,37 @@ __global__ void dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
         for (int lev = 0; lev <= nv; lev++) {
             if (lev == 0) {
                 // extrapolate to lower boundary
-                psm                            = Pressure_d[id * nv + 1] - Rho_d[id * nv + 0] * Gravit * (-Altitude_d[0] - Altitude_d[1]);
+                psm = Pressure_d[id * nv + 1]
+                      - Rho_d[id * nv + 0] * Gravit * (-Altitude_d[0] - Altitude_d[1]);
                 ps                             = 0.5 * (Pressure_d[id * nv + 0] + psm);
                 Pressureh_d[id * (nv + 1) + 0] = ps;
             }
             else if (lev == nv) {
                 // extrapolate to top boundary
-                pp = Pressure_d[id * nv + nv - 2] - Rho_d[id * nv + nv - 1] * Gravit * (2 * Altitudeh_d[nv] - Altitude_d[nv - 1] - Altitude_d[nv - 2]);
+                pp = Pressure_d[id * nv + nv - 2]
+                     - Rho_d[id * nv + nv - 1] * Gravit
+                           * (2 * Altitudeh_d[nv] - Altitude_d[nv - 1] - Altitude_d[nv - 2]);
                 if (pp < 0) pp = 0; //prevents pressure from going negative
                 ptop                             = 0.5 * (Pressure_d[id * nv + nv - 1] + pp);
                 Pressureh_d[id * (nv + 1) + lev] = ptop;
             }
             else {
                 // interpolation between layers
-                xi                               = Altitudeh_d[lev];
-                xim                              = Altitude_d[lev - 1];
-                xip                              = Altitude_d[lev];
-                a                                = (xi - xip) / (xim - xip);
-                b                                = (xi - xim) / (xip - xim);
-                Pressureh_d[id * (nv + 1) + lev] = Pressure_d[id * nv + lev - 1] * a + Pressure_d[id * nv + lev] * b;
+                xi  = Altitudeh_d[lev];
+                xim = Altitude_d[lev - 1];
+                xip = Altitude_d[lev];
+                a   = (xi - xip) / (xim - xip);
+                b   = (xi - xim) / (xip - xim);
+                Pressureh_d[id * (nv + 1) + lev] =
+                    Pressure_d[id * nv + lev - 1] * a + Pressure_d[id * nv + lev] * b;
             }
         }
 
         // Compute Potential Temperature
         for (int lev = 0; lev < nv; lev++) {
-            pt_d[id * nv + lev] = Temperature_d[id * nv + lev] * pow(Pressureh_d[id * (nv + 1) + 0] / Pressure_d[id * nv + lev], Rd / Cp);
+            pt_d[id * nv + lev] =
+                Temperature_d[id * nv + lev]
+                * pow(Pressureh_d[id * (nv + 1) + 0] / Pressure_d[id * nv + lev], Rd / Cp);
         }
 
         bool done_col = false;
@@ -142,9 +148,10 @@ __global__ void dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
 
                     for (int lev = bot; lev <= top; lev++) {
                         // calc adiabatic pressure, integrate upward for new pot. temp.
-                        double pu     = Pressureh_d[id * (nv + 1) + lev + 1];
-                        double pl     = Pressureh_d[id * (nv + 1) + lev];
-                        double pi     = pow(Pressure_d[id * nv + lev] / Pressureh_d[id * (nv + 1) + 0], Rd / Cp); // adiabatic pressure wrt bottom of column
+                        double pu = Pressureh_d[id * (nv + 1) + lev + 1];
+                        double pl = Pressureh_d[id * (nv + 1) + lev];
+                        double pi = pow(Pressure_d[id * nv + lev] / Pressureh_d[id * (nv + 1) + 0],
+                                        Rd / Cp); // adiabatic pressure wrt bottom of column
                         double deltap = pl - pu;
 
                         h   = h + pt_d[id * nv + lev] * pi * deltap;
@@ -185,8 +192,10 @@ __global__ void dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
 
         // Compute Temperature & pressure from potential temperature
         for (int lev = 0; lev < nv; lev++) {
-            Temperature_d[id * nv + lev] = pt_d[id * nv + lev] * pow(Pressure_d[id * nv + lev] / Pressureh_d[id * (nv + 1) + 0], Rd / Cp);
-            Pressure_d[id * nv + lev]    = Temperature_d[id * nv + lev] * Rd * Rho_d[id * nv + lev];
+            Temperature_d[id * nv + lev] =
+                pt_d[id * nv + lev]
+                * pow(Pressure_d[id * nv + lev] / Pressureh_d[id * (nv + 1) + 0], Rd / Cp);
+            Pressure_d[id * nv + lev] = Temperature_d[id * nv + lev] * Rd * Rho_d[id * nv + lev];
         }
     }
 }
