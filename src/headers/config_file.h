@@ -73,7 +73,8 @@ public:
 template<typename T> class config_entry : public config_entry_interface
 {
 public:
-    config_entry(T& target_, T default_val_) : target(target_), default_val(default_val_) {}
+    config_entry(T& target_, T default_val_) : target(target_), default_val(default_val_) {
+    }
 
     bool parse(string value) {
         if (parse_data(value, target)) {
@@ -86,9 +87,13 @@ public:
         }
     }
 
-    void set_default() { target = default_val; }
+    void set_default() {
+        target = default_val;
+    }
 
-    string to_str() { return to_strg(target); }
+    string to_str() {
+        return to_strg(target);
+    }
 
 
 private:
