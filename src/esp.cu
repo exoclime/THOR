@@ -244,7 +244,7 @@ int main(int argc, char** argv) {
     double RvT_sponge    = 1e-4;
     double ns_sponge     = 0.75;
     bool   shrink_sponge = false;
-    double t_shrink      = 500;
+    int    t_shrink      = 144000; // number of time steps after which shrink begins
 
     config_reader.append_config_var("NonHydro", sim.NonHydro, NonHydro_default);
     config_reader.append_config_var("DeepModel", sim.DeepModel, DeepModel_default);
@@ -269,7 +269,7 @@ int main(int argc, char** argv) {
     // Benchmark test
     string core_benchmark_str("HeldSuarez");
     config_reader.append_config_var(
-        "core_benchmark", core_benchmark_str, string(core_benchmark_default));
+        "core_benchmark", core_benchmark_str, string(core_benchmark_default)); //
 
     config_reader.append_config_var("conv_adj", sim.conv_adj, conv_adj_default);
 
