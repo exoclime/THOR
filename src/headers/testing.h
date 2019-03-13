@@ -50,15 +50,11 @@ using std::endl;
 
 // helper function to check a variable against a reference and write
 // out to console if they are not equaly.
-template<typename T>
-bool test_val(const string& txt, const T& val, const T& ref) {
+template<typename T> bool test_val(const string& txt, const T& val, const T& ref) {
     if (val == ref)
         return true;
     else {
-        cout << "wrong value: "
-             << txt
-             << " expected: " << ref
-             << " got: " << val << endl;
+        cout << "wrong value: " << txt << " expected: " << ref << " got: " << val << endl;
         return false;
     }
 }

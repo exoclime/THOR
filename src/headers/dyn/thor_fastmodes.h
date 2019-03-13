@@ -100,7 +100,9 @@ __global__ void Momentum_Eq(double *M_d,
     //////////// Halo /////////////
     ///////////////////////////////
     if (load_halo) {
-        if (igh >= 0) { pressure_s[ir2] = pressure_d[igh * nv + lev]; }
+        if (igh >= 0) {
+            pressure_s[ir2] = pressure_d[igh * nv + lev];
+        }
         else
             pressure_s[ir2] = 0.0;
     }
@@ -189,17 +191,20 @@ __global__ void Momentum_Eq_Poles(double *M_d,
     double Mx, My, Mz;
 
     if (id < num) {
-        for (int i = 0; i < 5; i++) local_p[i] = point_local_d[id * 6 + i];
+        for (int i = 0; i < 5; i++)
+            local_p[i] = point_local_d[id * 6 + i];
         func_r_p[0] = func_r_d[id * 3 + 0];
         func_r_p[1] = func_r_d[id * 3 + 1];
         func_r_p[2] = func_r_d[id * 3 + 2];
         for (int i = 0; i < 7; i++)
-            for (int k = 0; k < 3; k++) grad_p[i * 3 + k] = grad_d[id * 7 * 3 + i * 3 + k];
+            for (int k = 0; k < 3; k++)
+                grad_p[i * 3 + k] = grad_d[id * 7 * 3 + i * 3 + k];
 
         for (int lev = 0; lev < nv; lev++) {
 
             pressure_p[0] = pressure_d[id * nv + lev];
-            for (int i = 1; i < 6; i++) pressure_p[i] = pressure_d[local_p[i - 1] * nv + lev];
+            for (int i = 1; i < 6; i++)
+                pressure_p[i] = pressure_d[local_p[i - 1] * nv + lev];
 
             alt = Altitude_d[lev];
 
@@ -514,9 +519,11 @@ __global__ void Density_Pressure_Eqs_Poles(double *pressure_d,
     double Cv = Cp - Rd;
 
     if (id < num) {
-        for (int i = 0; i < 5; i++) local_p[i] = point_local_d[id * 6 + i];
+        for (int i = 0; i < 5; i++)
+            local_p[i] = point_local_d[id * 6 + i];
         for (int i = 0; i < 7; i++)
-            for (int k = 0; k < 3; k++) div_p[i * 3 + k] = div_d[id * 7 * 3 + i * 3 + k];
+            for (int k = 0; k < 3; k++)
+                div_p[i * 3 + k] = div_d[id * 7 * 3 + i * 3 + k];
 
         for (int lev = 0; lev < nv; lev++) {
             v_p[0]  = Mh_d[id * 3 * nv + lev * 3 + 0];

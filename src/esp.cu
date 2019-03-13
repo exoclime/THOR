@@ -112,9 +112,12 @@ std::string duration_to_str(double delta) {
     unsigned int       seconds = delta;
     std::ostringstream str;
 
-    if (days != 0) str << days << "d ";
-    if (hours != 0) str << hours << "h ";
-    if (minutes != 0) str << minutes << "m ";
+    if (days != 0)
+        str << days << "d ";
+    if (hours != 0)
+        str << hours << "h ";
+    if (minutes != 0)
+        str << minutes << "m ";
     str << seconds << "s";
 
     return str.str();
@@ -244,7 +247,7 @@ int main(int argc, char** argv) {
     double RvT_sponge    = 1e-4;
     double ns_sponge     = 0.75;
     bool   shrink_sponge = false;
-    double t_shrink      = 500;
+    int    t_shrink      = 144000; // number of time steps after which shrink begins
 
     config_reader.append_config_var("NonHydro", sim.NonHydro, NonHydro_default);
     config_reader.append_config_var("DeepModel", sim.DeepModel, DeepModel_default);
@@ -269,7 +272,7 @@ int main(int argc, char** argv) {
     // Benchmark test
     string core_benchmark_str("HeldSuarez");
     config_reader.append_config_var(
-        "core_benchmark", core_benchmark_str, string(core_benchmark_default));
+        "core_benchmark", core_benchmark_str, string(core_benchmark_default)); //
 
     config_reader.append_config_var("conv_adj", sim.conv_adj, conv_adj_default);
 
@@ -304,11 +307,13 @@ int main(int argc, char** argv) {
     //*****************************************************************
     // Override config file variables from command line if set
     int GPU_ID_N_arg;
-    if (argparser.get_arg("gpu_id", GPU_ID_N_arg)) GPU_ID_N = GPU_ID_N_arg;
+    if (argparser.get_arg("gpu_id", GPU_ID_N_arg))
+        GPU_ID_N = GPU_ID_N_arg;
 
     string output_dir_arg;
 
-    if (argparser.get_arg("output_dir", output_dir_arg)) output_path = output_dir_arg;
+    if (argparser.get_arg("output_dir", output_dir_arg))
+        output_path = output_dir_arg;
 
     string inital_conditions_arg;
     bool   initial_condition_arg_set = false;
@@ -327,7 +332,9 @@ int main(int argc, char** argv) {
 
     bool run_as_batch_arg = false;
     bool run_as_batch     = false;
-    if (argparser.get_arg("batch", run_as_batch_arg)) { run_as_batch = run_as_batch_arg; }
+    if (argparser.get_arg("batch", run_as_batch_arg)) {
+        run_as_batch = run_as_batch_arg;
+    }
 
     string continue_filename = "";
     bool   continue_sim      = false;
@@ -364,11 +371,13 @@ int main(int argc, char** argv) {
     bool force_overwrite_arg = false;
     bool force_overwrite     = false;
 
-    if (argparser.get_arg("overwrite", force_overwrite_arg)) force_overwrite = force_overwrite_arg;
+    if (argparser.get_arg("overwrite", force_overwrite_arg))
+        force_overwrite = force_overwrite_arg;
 
 
     int nsmax_arg;
-    if (argparser.get_arg("numsteps", nsmax_arg)) nsmax = nsmax_arg;
+    if (argparser.get_arg("numsteps", nsmax_arg))
+        nsmax = nsmax_arg;
 
 
     // Test config variables for coherence
@@ -387,7 +396,9 @@ int main(int argc, char** argv) {
     config_OK &= check_greater("GPU_ID_N", GPU_ID_N, -1);
     config_OK &= check_greater("n_out", n_out, 0);
 
-    if (simulation_ID.length() < 160) { sprintf(sim.simulation_ID, "%s", simulation_ID.c_str()); }
+    if (simulation_ID.length() < 160) {
+        sprintf(sim.simulation_ID, "%s", simulation_ID.c_str());
+    }
     else {
         log::printf("Bad value for config variable simulation_ID: [%s]\n", simulation_ID.c_str());
 
@@ -571,7 +582,8 @@ int main(int argc, char** argv) {
         cudaDeviceProp devPp;
         cudaGetDeviceProperties(&devPp, i);
 
-        if (i == GPU_ID_N) device_major_minor_number = devPp.major * 10 + devPp.minor;
+        if (i == GPU_ID_N)
+            device_major_minor_number = devPp.major * 10 + devPp.minor;
 
         log::printf(" Name: %s\n", devPp.name);
         log::printf(" Compute Capabilities: %d.%d\n", devPp.major, devPp.minor);
@@ -750,7 +762,8 @@ int main(int argc, char** argv) {
             log::printf("output files already exist and would be overwritten \n"
                         "when running simulation. \n"
                         "Files found:\n");
-            for (const auto& f : matching_name_result_files) log::printf("\t%s\n", f.first.c_str());
+            for (const auto& f : matching_name_result_files)
+                log::printf("\t%s\n", f.first.c_str());
 
             log::printf(" Aborting. \n"
                         "use --overwrite to overwrite existing files.\n");
@@ -927,7 +940,8 @@ int main(int argc, char** argv) {
         if (nstep % n_out == 0 || caught_signal != ESIG_NOSIG) {
             X.copy_to_host();
 
-            if (sim.conservation == true) X.copy_conservation_to_host();
+            if (sim.conservation == true)
+                X.copy_conservation_to_host();
 
             X.output(output_file_idx, sim);
 

@@ -135,7 +135,8 @@ __global__ void Compute_Temperature_H_Pt_Geff(double *temperature_d,
 
                 pp = pressure_d[id * nv + nv - 2]
                      - rho * Gravit * (2 * Altitudeh_d[nv] - alt - Altitude_d[nv - 2]);
-                if (pp < 0) pp = 0;
+                if (pp < 0)
+                    pp = 0;
                 rhoh = 0.5 * (pressure + pp) / (Rd * temperature);
                 pth_d[id * (nv + 1) + nv] =
                     (P_Ref / (Rd * rhoh)) * pow(0.5 * (pressure + pp) / P_Ref, CvoCp);
@@ -455,7 +456,9 @@ __global__ void isnan_check_thor(double *array, int width, int height, bool *che
 
     while (idx < width) {
         for (int i = 0; i < height; i++)
-            if (isnan(array[(i * width) + idx])) { *check = true; }
+            if (isnan(array[(i * width) + idx])) {
+                *check = true;
+            }
         idx += gridDim.x + blockDim.x;
     }
 }

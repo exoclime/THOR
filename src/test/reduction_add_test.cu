@@ -61,15 +61,14 @@ using std::cout;
 using std::endl;
 
 
-template<int BLOCK_SIZE>
-bool cpu_gpu_test(double* s, long size) {
+template<int BLOCK_SIZE> bool cpu_gpu_test(double* s, long size) {
     bool overall_result = true;
 
     for (long compute_size = size; compute_size > 0; compute_size /= 2) {
-        std::chrono::system_clock::time_point start             = std::chrono::system_clock::now();
-        double                                reduction_sum_CPU = cpu_sum<BLOCK_SIZE>(s, compute_size);
-        std::chrono::system_clock::time_point stop              = std::chrono::system_clock::now();
-        auto                                  duration_cpu      = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+        std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
+        double reduction_sum_CPU                    = cpu_sum<BLOCK_SIZE>(s, compute_size);
+        std::chrono::system_clock::time_point stop  = std::chrono::system_clock::now();
+        auto duration_cpu = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
 
         start             = std::chrono::system_clock::now();
         double output_val = gpu_sum_from_host<BLOCK_SIZE>(s, compute_size);
@@ -108,8 +107,8 @@ int main() {
     // allocate on heap
     double* s = new double[size];
 
-    std::random_device               rd;        //Will be used to obtain a seed for the random number engine
-    std::mt19937                     gen(rd()); //Standard mersenne_twister_engine seeded with rd()
+    std::random_device rd;        //Will be used to obtain a seed for the random number engine
+    std::mt19937       gen(rd()); //Standard mersenne_twister_engine seeded with rd()
     std::uniform_real_distribution<> dis(0.0, 1.0);
 
 

@@ -56,10 +56,7 @@ double cpu_reduction_sum(double *d, long length);
 
 
 // GPU reduction sum kernel
-template<int BLOCK_SIZE>
-__global__ void gpu_reduction_sum(double *d,
-                                  double *o,
-                                  long    length) {
+template<int BLOCK_SIZE> __global__ void gpu_reduction_sum(double *d, double *o, long length) {
     // temporary memory for all tiles in that thread
     __shared__ double ds_in[2 * BLOCK_SIZE];
 
@@ -96,8 +93,7 @@ __global__ void gpu_reduction_sum(double *d,
 };
 
 // host function running reduction add on data from device
-template<int BLOCK_SIZE>
-__host__ double gpu_sum_on_device(double *in_d, long length) {
+template<int BLOCK_SIZE> __host__ double gpu_sum_on_device(double *in_d, long length) {
     int num_blocks = ceil(double(length) / double(2 * BLOCK_SIZE));
 
     double *out_h = new double[num_blocks];
@@ -133,8 +129,7 @@ __host__ double gpu_sum_on_device(double *in_d, long length) {
 
 
 // host function running reduction add on data from host
-template<int BLOCK_SIZE>
-__host__ double gpu_sum_from_host(double *d, long length) {
+template<int BLOCK_SIZE> __host__ double gpu_sum_from_host(double *d, long length) {
     double *in_d;
 
 
@@ -158,8 +153,7 @@ __host__ double gpu_sum_from_host(double *d, long length) {
 };
 
 
-template<int BLOCK_SIZE>
-double cpu_sum(double *d, long length) {
+template<int BLOCK_SIZE> double cpu_sum(double *d, long length) {
     long num_blocks = ceil(double(length) / double(2 * BLOCK_SIZE));
     long bl         = 2 * BLOCK_SIZE;
 
@@ -182,19 +176,18 @@ double cpu_sum(double *d, long length) {
         double o = cpu_reduction_sum(buf, BLOCK_SIZE);
         out += o;
     }
-        
+
     return out;
 };
 
 
-template<int BLOCK_SIZE>
-double cpu_linear_sum(double *d, long length) {
+template<int BLOCK_SIZE> double cpu_linear_sum(double *d, long length) {
 
     double out = 0.0;
     for (long i = 0l; i < length; i++) {
         out += d[i];
     }
-    
-        
+
+
     return out;
 };

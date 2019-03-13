@@ -113,8 +113,7 @@ bool radiative_transfer::free_memory() {
     return true;
 }
 
-bool radiative_transfer::initial_conditions(const ESP &            esp,
-                                            const SimulationSetup &sim) {
+bool radiative_transfer::initial_conditions(const ESP &esp, const SimulationSetup &sim) {
     RTSetup(Tstar_config,
             planet_star_dist_config,
             radius_star_config,
@@ -202,9 +201,7 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
     if (nstep * time_step < (2 * M_PI / mean_motion)) {
         // stationary orbit/obliquity
         // calculate annually average of insolation for the first orbit
-        annual_insol<<<NBRT, NTH>>>(insol_ann_d,
-                                    insol_d,
-                                    nstep);
+        annual_insol<<<NBRT, NTH>>>(insol_ann_d, insol_d, nstep);
     }
     return true;
 }
@@ -212,7 +209,8 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
 bool radiative_transfer::configure(config_file &config_reader) {
     // basic star-planet properties
     config_reader.append_config_var("Tstar", Tstar_config, Tstar_config);
-    config_reader.append_config_var("planet_star_dist", planet_star_dist_config, planet_star_dist_config);
+    config_reader.append_config_var(
+        "planet_star_dist", planet_star_dist_config, planet_star_dist_config);
     config_reader.append_config_var("radius_star", radius_star_config, radius_star_config);
     config_reader.append_config_var("diff_fac", diff_fac_config, diff_fac_config);
     config_reader.append_config_var("Tlow", Tlow_config, Tlow_config);
@@ -232,14 +230,9 @@ bool radiative_transfer::configure(config_file &config_reader) {
     return true;
 }
 
-bool radiative_transfer::store(const ESP &esp,
-                               storage &  s) {
+bool radiative_transfer::store(const ESP &esp, storage &s) {
     cudaMemcpy(insol_h, insol_d, esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
-    s.append_table(insol_h,
-                   esp.point_num,
-                   "/insol",
-                   "W m^-2",
-                   "insolation (instantaneous)");
+    s.append_table(insol_h, esp.point_num, "/insol", "W m^-2", "insolation (instantaneous)");
 
     cudaMemcpy(insol_ann_h, insol_ann_d, esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
     s.append_table(insol_ann_h,
@@ -248,26 +241,17 @@ bool radiative_transfer::store(const ESP &esp,
                    "W m^-2",
                    "insolation (annual/orbit averaged)");
 
-    cudaMemcpy(fnet_up_h, fnet_up_d, esp.nvi * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
-    s.append_table(fnet_up_h,
-                   esp.nvi * esp.point_num,
-                   "/fnet_up",
-                   "W m^-2",
-                   "upward flux");
+    cudaMemcpy(
+        fnet_up_h, fnet_up_d, esp.nvi * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
+    s.append_table(fnet_up_h, esp.nvi * esp.point_num, "/fnet_up", "W m^-2", "upward flux");
 
-    cudaMemcpy(fnet_dn_h, fnet_dn_d, esp.nvi * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
-    s.append_table(fnet_dn_h,
-                   esp.nvi * esp.point_num,
-                   "/fnet_dn",
-                   "W m^-2",
-                   "downward flux");
+    cudaMemcpy(
+        fnet_dn_h, fnet_dn_d, esp.nvi * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
+    s.append_table(fnet_dn_h, esp.nvi * esp.point_num, "/fnet_dn", "W m^-2", "downward flux");
 
     cudaMemcpy(tau_h, tau_d, esp.nv * esp.point_num * 2 * sizeof(double), cudaMemcpyDeviceToHost);
-    s.append_table(tau_h,
-                   esp.nv * esp.point_num * 2,
-                   "/tau",
-                   " ",
-                   "optical depth across each layer");
+    s.append_table(
+        tau_h, esp.nv * esp.point_num * 2, "/tau", " ", "optical depth across each layer");
 
     return true;
 }
@@ -275,7 +259,10 @@ bool radiative_transfer::store(const ESP &esp,
 bool radiative_transfer::store_init(storage &s) {
     s.append_value(Tstar, "/Tstar", "K", "Temperature of host star");
     s.append_value(Tlow, "/Tlow", "K", "Temperature of interior heat flux");
-    s.append_value(planet_star_dist / 149597870.7, "/planet_star_dist", "au", "distance b/w host star and planet");
+    s.append_value(planet_star_dist / 149597870.7,
+                   "/planet_star_dist",
+                   "au",
+                   "distance b/w host star and planet");
     s.append_value(radius_star / 695508, "/radius_star", "R_sun", "radius of host star");
     s.append_value(diff_fac, "/diff_fac", "-", "diffusivity factor");
     s.append_value(albedo, "/albedo", "-", "bond albedo of planet");
@@ -284,7 +271,8 @@ bool radiative_transfer::store_init(storage &s) {
     s.append_value(sync_rot ? 1.0 : 0.0, "/sync_rot", "-", "enforce synchronous rotation");
     s.append_value(mean_motion, "/mean_motion", "rad/s", "Orbital mean motion");
     s.append_value(alpha_i * 180 / M_PI, "/alpha_i", "deg", "initial RA of host star");
-    s.append_value(true_long_i * 180 / M_PI, "/true_long_i", "deg", "initial orbital position of planet");
+    s.append_value(
+        true_long_i * 180 / M_PI, "/true_long_i", "deg", "initial orbital position of planet");
     s.append_value(ecc, "/ecc", "-", "orbital eccentricity");
     s.append_value(obliquity * 180 / M_PI, "/obliquity", "deg", "tilt of spin axis");
     s.append_value(longp * 180 / M_PI, "/longp", "deg", "longitude of periastron");
@@ -340,8 +328,7 @@ void radiative_transfer::RTSetup(double Tstar_,
     obliquity             = obliquity_ * M_PI / 180.0;
 }
 
-void radiative_transfer::update_spin_orbit(double time,
-                                           double Omega) {
+void radiative_transfer::update_spin_orbit(double time, double Omega) {
 
     // Update the insolation related parameters for spin and orbit
     double ecc_anomaly, true_long;

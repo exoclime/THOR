@@ -30,8 +30,7 @@ __host__ double sign(double val) {
         return 1.0;
 }
 
-__host__ double solve_kepler(double mean_anomaly,
-                             double ecc) {
+__host__ double solve_kepler(double mean_anomaly, double ecc) {
 
     // Solve Kepler's equation (see Murray & Dermott 1999)
     // Get eccentric anomaly from mean anomaly and eccentricity
@@ -54,8 +53,7 @@ __host__ double solve_kepler(double mean_anomaly,
     return ecc_anomaly;
 }
 
-__host__ double calc_r_orb(double ecc_anomaly,
-                           double ecc) {
+__host__ double calc_r_orb(double ecc_anomaly, double ecc) {
 
     // Calc relative distance between planet and star (units of semi-major axis)
 
@@ -63,26 +61,27 @@ __host__ double calc_r_orb(double ecc_anomaly,
     return r;
 }
 
-__host__ double ecc2true_anomaly(double ecc_anomaly,
-                                 double ecc) {
+__host__ double ecc2true_anomaly(double ecc_anomaly, double ecc) {
 
     // Convert from eccentric to true anomaly
 
     double tanf2, true_anomaly;
     tanf2        = sqrt((1.0 + ecc) / (1.0 - ecc)) * tan(ecc_anomaly / 2.0);
     true_anomaly = 2.0 * atan(tanf2);
-    if (true_anomaly < 0.0) true_anomaly += 2 * M_PI;
+    if (true_anomaly < 0.0)
+        true_anomaly += 2 * M_PI;
     return true_anomaly;
 }
 
-__host__ double true2ecc_anomaly(double true_anomaly,
-                                 double ecc) {
+__host__ double true2ecc_anomaly(double true_anomaly, double ecc) {
 
     // Convert from true to eccentric anomaly
 
     double cosE, ecc_anomaly;
-    while (true_anomaly < 0.0) true_anomaly += 2 * M_PI;
-    while (true_anomaly >= 2 * M_PI) true_anomaly -= 2 * M_PI;
+    while (true_anomaly < 0.0)
+        true_anomaly += 2 * M_PI;
+    while (true_anomaly >= 2 * M_PI)
+        true_anomaly -= 2 * M_PI;
     cosE = (cos(true_anomaly) + ecc) / (1.0 + ecc * cos(true_anomaly));
     if (true_anomaly < M_PI) {
         ecc_anomaly = acos(cosE);
@@ -93,15 +92,16 @@ __host__ double true2ecc_anomaly(double true_anomaly,
     return ecc_anomaly;
 }
 
-__device__ double calc_zenith(double *     lonlat_d, //latitude/longitude grid
-                              const double alpha,    //current RA of star (relative to zero long on planet)
-                              const double alpha_i,
-                              const double sin_decl, //declination of star
-                              const double cos_decl,
-                              const bool   sync_rot,
-                              const double ecc,
-                              const double obliquity,
-                              const int    id) {
+__device__ double
+calc_zenith(double *     lonlat_d, //latitude/longitude grid
+            const double alpha,    //current RA of star (relative to zero long on planet)
+            const double alpha_i,
+            const double sin_decl, //declination of star
+            const double cos_decl,
+            const bool   sync_rot,
+            const double ecc,
+            const double obliquity,
+            const int    id) {
 
     // Calculate the insolation (scaling) at a point on the surface
 
@@ -113,7 +113,8 @@ __device__ double calc_zenith(double *     lonlat_d, //latitude/longitude grid
                 coszrs = cos(lonlat_d[id * 2 + 1]) * cos(lonlat_d[id * 2] - alpha_i);
             }
             else { //sync, circular, but some obliquity
-                coszrs = (sin(lonlat_d[id * 2 + 1]) * sin_decl + cos(lonlat_d[id * 2 + 1]) * cos_decl * cos(lonlat_d[id * 2] - alpha_i));
+                coszrs = (sin(lonlat_d[id * 2 + 1]) * sin_decl
+                          + cos(lonlat_d[id * 2 + 1]) * cos_decl * cos(lonlat_d[id * 2] - alpha_i));
             }
         }
         else {                       //in below cases, watch out for numerical drift of mean(alpha)
@@ -121,19 +122,19 @@ __device__ double calc_zenith(double *     lonlat_d, //latitude/longitude grid
                 coszrs = cos(lonlat_d[id * 2 + 1]) * cos(lonlat_d[id * 2] - alpha);
             }
             else { // sync, non-zero obliquity, ecc orbit (full calculation applies)
-                coszrs = (sin(lonlat_d[id * 2 + 1]) * sin_decl + cos(lonlat_d[id * 2 + 1]) * cos_decl * cos(lonlat_d[id * 2] - alpha));
+                coszrs = (sin(lonlat_d[id * 2 + 1]) * sin_decl
+                          + cos(lonlat_d[id * 2 + 1]) * cos_decl * cos(lonlat_d[id * 2] - alpha));
             }
         }
     }
     else {
-        coszrs = (sin(lonlat_d[id * 2 + 1]) * sin_decl + cos(lonlat_d[id * 2 + 1]) * cos_decl * cos(lonlat_d[id * 2] - alpha));
+        coszrs = (sin(lonlat_d[id * 2 + 1]) * sin_decl
+                  + cos(lonlat_d[id * 2 + 1]) * cos_decl * cos(lonlat_d[id * 2] - alpha));
     }
     return coszrs; //zenith angle
 }
 
-__global__ void annual_insol(double *insol_ann_d,
-                             double *insol_d,
-                             int     nstep) {
+__global__ void annual_insol(double *insol_ann_d, double *insol_d, int nstep) {
 
     int id = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -169,13 +170,21 @@ __device__ void radcsw(double *phtemp,
     fnet_dn_d[id * (nv + 1) + nv] = flux_top * exp(-(1.0 / coszrs) * tau);
 
     // Normal integration
-    for (int lev = nv; lev >= 1; lev--) fnet_dn_d[id * (nv + 1) + lev - 1] = fnet_dn_d[id * (nv + 1) + lev] * exp(-(1.0 / coszrs) * tau_d[id * nv * 2 + (lev - 1) * 2]);
-    for (int lev = 0; lev <= nv; lev++) fnet_up_d[id * (nv + 1) + lev] = 0.0;
+    for (int lev = nv; lev >= 1; lev--)
+        fnet_dn_d[id * (nv + 1) + lev - 1] =
+            fnet_dn_d[id * (nv + 1) + lev]
+            * exp(-(1.0 / coszrs) * tau_d[id * nv * 2 + (lev - 1) * 2]);
+    for (int lev = 0; lev <= nv; lev++)
+        fnet_up_d[id * (nv + 1) + lev] = 0.0;
 
     // Update temperature rates.
     for (int lev = 0; lev < nv; lev++) {
-        gocp                 = gravit / Cp;
-        dtemp[id * nv + lev] = gocp * ((fnet_up_d[id * (nv + 1) + lev] - fnet_dn_d[id * (nv + 1) + lev]) - (fnet_up_d[id * (nv + 1) + lev + 1] - fnet_dn_d[id * (nv + 1) + lev + 1])) / (phtemp[id * (nv + 1) + lev] - phtemp[id * (nv + 1) + lev + 1]);
+        gocp = gravit / Cp;
+        dtemp[id * nv + lev] =
+            gocp
+            * ((fnet_up_d[id * (nv + 1) + lev] - fnet_dn_d[id * (nv + 1) + lev])
+               - (fnet_up_d[id * (nv + 1) + lev + 1] - fnet_dn_d[id * (nv + 1) + lev + 1]))
+            / (phtemp[id * (nv + 1) + lev] - phtemp[id * (nv + 1) + lev + 1]);
     }
 }
 
@@ -192,26 +201,28 @@ __device__ int factorial_num(int number) {
     return temp;
 }
 
-__device__ double source_func_lin(double bb,
-                                  double bl,
-                                  double bt,
-                                  double tau,
-                                  double diff_fac) {
+__device__ double source_func_lin(double bb, double bl, double bt, double tau, double diff_fac) {
 
     double e1 = 0.0;
     double e2 = 0.0;
     double e  = 0.0;
 
     if (tau >= 1e-10) {
-        e1 = bb - bl + (bl - (diff_fac / (tau / 2.0)) * (bb - bl)) * (1.0 - exp(-(tau / 2.0) / diff_fac));
-        e2 = bl - bt + (bt - (diff_fac / (tau / 2.0)) * (bl - bt)) * (1.0 - exp(-(tau / 2.0) / diff_fac));
-        e  = e1 + e2 * exp(-(tau / 2.0) / diff_fac);
+        e1 = bb - bl
+             + (bl - (diff_fac / (tau / 2.0)) * (bb - bl)) * (1.0 - exp(-(tau / 2.0) / diff_fac));
+        e2 = bl - bt
+             + (bt - (diff_fac / (tau / 2.0)) * (bl - bt)) * (1.0 - exp(-(tau / 2.0) / diff_fac));
+        e = e1 + e2 * exp(-(tau / 2.0) / diff_fac);
     }
     else {
         for (int i = 0; i < 5; i++) {
             int fac = factorial_num(i + 2);
-            e1      = e1 + (pow(-1.0, i + 2.0)) * ((bl + (i + 1) * bl) / fac) * pow((tau / 2.0) / diff_fac, i + 1.0);
-            e2      = e2 + (pow(-1.0, i + 2.0)) * ((bt + (i + 1) * bb) / fac) * pow((tau / 2.0) / diff_fac, i + 1.0);
+            e1      = e1
+                 + (pow(-1.0, i + 2.0)) * ((bl + (i + 1) * bl) / fac)
+                       * pow((tau / 2.0) / diff_fac, i + 1.0);
+            e2 = e2
+                 + (pow(-1.0, i + 2.0)) * ((bt + (i + 1) * bb) / fac)
+                       * pow((tau / 2.0) / diff_fac, i + 1.0);
         }
         e = e1 + e2 * exp(-(tau / 2.0) / diff_fac);
     }
@@ -246,7 +257,8 @@ __device__ void radclw(double *phtemp,
     fnet_dn_d[id * (nv + 1) + nv] = 0.0; // Upper boundary
     for (int lev = nv - 1; lev >= 0; lev--) {
         double ed = 0.0;
-        if (tau_d[id * nv * 2 + 2 * lev + 1] < 0.0) tau_d[id * nv * 2 + 2 * lev + 1] = 0.0;
+        if (tau_d[id * nv * 2 + 2 * lev + 1] < 0.0)
+            tau_d[id * nv * 2 + 2 * lev + 1] = 0.0;
 
         tb = thtemp[id * (nv + 1) + lev];
         tl = ttemp[id * nv + lev];
@@ -258,18 +270,23 @@ __device__ void radclw(double *phtemp,
 
         ed = source_func_lin(bb, bl, bt, tau_d[id * nv * 2 + 2 * lev + 1], diff_fac);
 
-        fnet_dn_d[id * (nv + 1) + lev] = ed + fnet_dn_d[id * (nv + 1) + lev + 1] * exp(-(1. / diff_fac) * tau_d[id * nv * 2 + 2 * lev + 1]);
+        fnet_dn_d[id * (nv + 1) + lev] =
+            ed
+            + fnet_dn_d[id * (nv + 1) + lev + 1]
+                  * exp(-(1. / diff_fac) * tau_d[id * nv * 2 + 2 * lev + 1]);
     }
     //
     //  Upward Directed Radiation
     //
     fnet_up_d[id * (nv + 1) + 0] = bc * tlow * tlow * tlow * tlow; // Lower boundary;
-    if (fnet_up_d[id * (nv + 1) + 0] < fnet_dn_d[id * (nv + 1) + 0]) fnet_up_d[id * (nv + 1) + 0] = fnet_dn_d[id * (nv + 1) + 0];
+    if (fnet_up_d[id * (nv + 1) + 0] < fnet_dn_d[id * (nv + 1) + 0])
+        fnet_up_d[id * (nv + 1) + 0] = fnet_dn_d[id * (nv + 1) + 0];
     for (int lev = 1; lev <= nv; lev++) {
 
         double eu = 0.0;
 
-        if (tau_d[id * nv * 2 + 2 * (lev - 1) + 1] < 0.0) tau_d[id * nv * 2 + 2 * (lev - 1) + 1] = 0.0;
+        if (tau_d[id * nv * 2 + 2 * (lev - 1) + 1] < 0.0)
+            tau_d[id * nv * 2 + 2 * (lev - 1) + 1] = 0.0;
 
         tb = thtemp[id * (nv + 1) + lev - 1];
         tl = ttemp[id * nv + lev - 1];
@@ -281,11 +298,19 @@ __device__ void radclw(double *phtemp,
 
         eu = source_func_lin(bt, bl, bb, tau_d[id * nv * 2 + 2 * (lev - 1) + 1], diff_fac);
 
-        fnet_up_d[id * (nv + 1) + lev] = eu + fnet_up_d[id * (nv + 1) + lev - 1] * exp(-(1. / diff_fac) * tau_d[id * nv * 2 + 2 * (lev - 1) + 1]);
+        fnet_up_d[id * (nv + 1) + lev] =
+            eu
+            + fnet_up_d[id * (nv + 1) + lev - 1]
+                  * exp(-(1. / diff_fac) * tau_d[id * nv * 2 + 2 * (lev - 1) + 1]);
     }
 
     for (int lev = 0; lev < nv; lev++) {
-        dtemp[id * nv + lev] = dtemp[id * nv + lev] + gocp * ((fnet_up_d[id * (nv + 1) + lev] - fnet_dn_d[id * (nv + 1) + lev]) - (fnet_up_d[id * (nv + 1) + lev + 1] - fnet_dn_d[id * (nv + 1) + lev + 1])) / (phtemp[id * (nv + 1) + lev] - phtemp[id * (nv + 1) + lev + 1]);
+        dtemp[id * nv + lev] =
+            dtemp[id * nv + lev]
+            + gocp
+                  * ((fnet_up_d[id * (nv + 1) + lev] - fnet_dn_d[id * (nv + 1) + lev])
+                     - (fnet_up_d[id * (nv + 1) + lev + 1] - fnet_dn_d[id * (nv + 1) + lev + 1]))
+                  / (phtemp[id * (nv + 1) + lev] - phtemp[id * (nv + 1) + lev + 1]);
     }
 }
 
@@ -300,8 +325,13 @@ __device__ void computetau(double *tau_d,
                            int     nv) {
 
     for (int lev = 0; lev < nv; lev++) {
-        tau_d[id * 2 * nv + lev * 2]     = (tausw / ps0) * (phtemp[id * (nv + 1) + lev] - phtemp[id * (nv + 1) + lev + 1]);
-        tau_d[id * 2 * nv + lev * 2 + 1] = (taulw / ps0) * (phtemp[id * (nv + 1) + lev] - phtemp[id * (nv + 1) + lev + 1]) + (taulw / pow(ps0, 2.0)) * (pow(phtemp[id * (nv + 1) + lev], 2.0) - pow(phtemp[id * (nv + 1) + lev + 1], 2.0));
+        tau_d[id * 2 * nv + lev * 2] =
+            (tausw / ps0) * (phtemp[id * (nv + 1) + lev] - phtemp[id * (nv + 1) + lev + 1]);
+        tau_d[id * 2 * nv + lev * 2 + 1] =
+            (taulw / ps0) * (phtemp[id * (nv + 1) + lev] - phtemp[id * (nv + 1) + lev + 1])
+            + (taulw / pow(ps0, 2.0))
+                  * (pow(phtemp[id * (nv + 1) + lev], 2.0)
+                     - pow(phtemp[id * (nv + 1) + lev + 1], 2.0));
     }
 }
 
@@ -372,8 +402,9 @@ __global__ void rtm_dual_band(double *pressure_d,
         // Calculate pressures and temperatures at interfaces
         for (int lev = 0; lev <= nv; lev++) {
             if (lev == 0) {
-                psm = pressure_d[id * nv + 1] - Rho_d[id * nv + 0] * gravit * (-Altitude_d[0] - Altitude_d[1]);
-                ps  = 0.5 * (pressure_d[id * nv + 0] + psm);
+                psm = pressure_d[id * nv + 1]
+                      - Rho_d[id * nv + 0] * gravit * (-Altitude_d[0] - Altitude_d[1]);
+                ps = 0.5 * (pressure_d[id * nv + 0] + psm);
 
                 phtemp[id * nvi + 0] = ps;
                 ttemp[id * nv + 0]   = temperature_d[id * nv + 0];
@@ -381,8 +412,12 @@ __global__ void rtm_dual_band(double *pressure_d,
             }
             else if (lev == nv) {
                 // pp = pressure_d[id*nv + nv-2] - Rho_d[id*nv + nv-1] * gravit * (2*Altitudeh_d[nv]-Altitude_d[nv-1]-Altitude_d[nv-2]);
-                pp = pressure_d[id * nv + nv - 2] + (pressure_d[id * nv + nv - 1] - pressure_d[id * nv + nv - 2]) / (Altitude_d[nv - 1] - Altitude_d[nv - 2]) * (2 * Altitudeh_d[nv] - Altitude_d[nv - 1] - Altitude_d[nv - 2]);
-                if (pp < 0) pp = 0; //prevents pressure at the top from becoming negative
+                pp = pressure_d[id * nv + nv - 2]
+                     + (pressure_d[id * nv + nv - 1] - pressure_d[id * nv + nv - 2])
+                           / (Altitude_d[nv - 1] - Altitude_d[nv - 2])
+                           * (2 * Altitudeh_d[nv] - Altitude_d[nv - 1] - Altitude_d[nv - 2]);
+                if (pp < 0)
+                    pp = 0; //prevents pressure at the top from becoming negative
                 ptop = 0.5 * (pressure_d[id * nv + nv - 1] + pp);
 
                 phtemp[id * nvi + nv] = ptop;
@@ -396,8 +431,10 @@ __global__ void rtm_dual_band(double *pressure_d,
                 a                    = (xi - xip) / (xim - xip);
                 b                    = (xi - xim) / (xip - xim);
 
-                phtemp[id * nvi + lev] = pressure_d[id * nv + lev - 1] * a + pressure_d[id * nv + lev] * b;
-                thtemp[id * nvi + lev] = temperature_d[id * nv + lev - 1] * a + ttemp[id * nv + lev] * b;
+                phtemp[id * nvi + lev] =
+                    pressure_d[id * nv + lev - 1] * a + pressure_d[id * nv + lev] * b;
+                thtemp[id * nvi + lev] =
+                    temperature_d[id * nv + lev - 1] * a + ttemp[id * nv + lev] * b;
             }
         }
 
@@ -413,14 +450,7 @@ __global__ void rtm_dual_band(double *pressure_d,
                              id);
 
         // Compute opacities
-        computetau(tau_d,
-                   phtemp,
-                   coszrs,
-                   tausw,
-                   taulw,
-                   ps0,
-                   id,
-                   nv);
+        computetau(tau_d, phtemp, coszrs, tausw, taulw, ps0, id, nv);
 
         if (coszrs > 0.0) {
             radcsw(phtemp,
@@ -444,8 +474,10 @@ __global__ void rtm_dual_band(double *pressure_d,
             insol_d[id] = 0;
         }
 
-        for (int lev = 0; lev <= nv; lev++) fnet_up_d[id * nvi + lev] = 0.0;
-        for (int lev = 0; lev <= nv; lev++) fnet_dn_d[id * nvi + lev] = 0.0;
+        for (int lev = 0; lev <= nv; lev++)
+            fnet_up_d[id * nvi + lev] = 0.0;
+        for (int lev = 0; lev <= nv; lev++)
+            fnet_dn_d[id * nvi + lev] = 0.0;
 
         radclw(phtemp,
                ttemp,

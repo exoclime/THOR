@@ -104,7 +104,8 @@ bool config_file::parse_config(std::basic_istream<char>& config) {
             if (it != config_vars.end()) {
                 bool parsed = it->second->parse(value);
                 if (!parsed) {
-                    cout << "ERROR: parsing of value [" << value << "] failed for key [" << key << "] " << endl;
+                    cout << "ERROR: parsing of value [" << value << "] failed for key [" << key
+                         << "] " << endl;
                     parse_success &= false;
                 }
             }

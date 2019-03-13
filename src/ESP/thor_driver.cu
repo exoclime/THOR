@@ -99,7 +99,8 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
     cudaMemset(Ws_d, 0, sizeof(double) * point_num * nv);
     cudaMemset(pressures_d, 0, sizeof(double) * point_num * nv);
 
-    if (phy_modules_execute) phy_modules_dyn_core_loop_init(*this);
+    if (phy_modules_execute)
+        phy_modules_dyn_core_loop_init(*this);
 
     USE_BENCHMARK();
     BENCH_POINT_I(current_step,
@@ -116,13 +117,19 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
     //  Loop for large time integration.
     for (int rk = 0; rk < 3; rk++) {
         //      Local variables to define the length (times) and the number of the small steps (ns_it).
-        if (rk == 0) ns_it = 1;
-        if (rk == 1) ns_it = ns_totali / 2;
-        if (rk == 2) ns_it = ns_totali;
+        if (rk == 0)
+            ns_it = 1;
+        if (rk == 1)
+            ns_it = ns_totali / 2;
+        if (rk == 2)
+            ns_it = ns_totali;
 
-        if (rk == 0) times = timestep / 3.0;
-        if (rk == 1) times = timestep / ns_totald;
-        if (rk == 2) times = timestep / ns_totald;
+        if (rk == 0)
+            times = timestep / 3.0;
+        if (rk == 1)
+            times = timestep / ns_totald;
+        if (rk == 2)
+            times = timestep / ns_totald;
 
         // initialise some memory
 
@@ -892,6 +899,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
     cudaMemcpy(Rho_d, Rhok_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToDevice);
     cudaMemcpy(pressure_d, pressurek_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToDevice);
 
-    if (phy_modules_execute) phy_modules_dyn_core_loop_end(*this);
+    if (phy_modules_execute)
+        phy_modules_dyn_core_loop_end(*this);
 }
 //END OF THOR!

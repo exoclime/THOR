@@ -73,7 +73,9 @@ __global__ void isnan_check_device(double *array, int size, bool *check) {
 
     int idx = threadIdx.x + blockDim.x * blockIdx.x;
 
-    if (idx < size && ::isnan(array[idx])) { *check = true; }
+    if (idx < size && ::isnan(array[idx])) {
+        *check = true;
+    }
 }
 
 

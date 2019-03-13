@@ -207,7 +207,7 @@ class output:
                 self.fnet_up[:,:,t-ntsi+1] = np.reshape(fupi,(grid.point_num,grid.nvi))
 
 class rg_out:
-    def __init__(self,resultsf,simID,ntsi,nts,input,output,grid):
+    def __init__(self,resultsf,simID,ntsi,nts,input,output,grid,pressure_vert=True):
         RT = 0
         if "core_benchmark" in dir(input):
             if input.core_benchmark[0] == 0: # need to switch to 'radiative_tranfer' flag
@@ -220,12 +220,15 @@ class rg_out:
 
         # Read model results
         for t in np.arange(ntsi-1,nts):
-            fileh5 = resultsf+'/regrid_'+simID+'_'+np.str(t+1)+'.h5'
+            if pressure_vert == True:
+                fileh5 = resultsf+'/regrid_'+simID+'_'+np.str(t+1)+'.h5'
+            else:
+                fileh5 = resultsf+'/regrid_height_'+simID+'_'+np.str(t+1)+'.h5'
             if os.path.exists(fileh5):
                 openh5 = h5py.File(fileh5)
             else:
                 print(fileh5+' not found, regridding now with default settings...')
-                regrid(resultsf,simID,ntsi,nts)
+                regrid(resultsf,simID,ntsi,nts,pressure_vert=pressure_vert)
                 openh5 = h5py.File(fileh5)
 
             Rhoi = openh5['Rho'][...]
@@ -233,7 +236,10 @@ class rg_out:
             Ui = openh5['U'][...]
             Vi = openh5['V'][...]
             Wi = openh5['W'][...]
-            Prei = openh5['Pressure'][...]
+            if pressure_vert == True:
+                Prei = openh5['Pressure'][...]
+            else:
+                Alti = openh5['Altitude'][...]
             lati = openh5['Latitude'][...]
             loni = openh5['Longitude'][...]
 
@@ -251,7 +257,7 @@ class rg_out:
                 nh3i = openh5['nh3'][...]
 
             if not 'PV' in openh5.keys():
-                calc_RV_PV(grid,output,input,loni,lati,Prei,t-ntsi+1,fileh5)
+                calc_RV_PV(grid,output,input,loni,lati,Prei,t-ntsi+1,fileh5,pressure_vert=pressure_vert)
 
             PVi = openh5['PV'][...]  #these are regridded at low resolution because they are a pita to calculate
             RVi = openh5['RV'][...]
@@ -266,7 +272,10 @@ class rg_out:
                 self.V = np.zeros(np.shape(Vi)+(nts-ntsi+1,))
                 self.W = np.zeros(np.shape(Wi)+(nts-ntsi+1,))
                 self.Temperature = np.zeros(np.shape(Tempi)+(nts-ntsi+1,))
-                self.Pressure = np.zeros(np.shape(Prei)+(nts-ntsi+1,))
+                if pressure_vert == True:
+                    self.Pressure = np.zeros(np.shape(Prei)+(nts-ntsi+1,))
+                else:
+                    self.Altitude = np.zeros(np.shape(Alti)+(nts-ntsi+1,))
                 self.lat = np.zeros(np.shape(lati)+(nts-ntsi+1,))
                 self.lon = np.zeros(np.shape(loni)+(nts-ntsi+1,))
                 self.PV = np.zeros(np.shape(PVi)+(nts-ntsi+1,))
@@ -290,7 +299,10 @@ class rg_out:
             self.V[:,:,:,t-ntsi+1] = Vi
             self.W[:,:,:,t-ntsi+1] = Wi
             self.Temperature[:,:,:,t-ntsi+1] = Tempi
-            self.Pressure[:,t-ntsi+1] = Prei
+            if pressure_vert == True:
+                self.Pressure[:,t-ntsi+1] = Prei
+            else:
+                self.Altitude[:,t-ntsi+1] = Alti
             self.lat[:,t-ntsi+1] = lati
             self.lon[:,t-ntsi+1] = loni
             self.PV[:,:,:,t-ntsi+1] = PVi
@@ -311,12 +323,12 @@ class rg_out:
 
 
 class GetOutput:
-    def __init__(self,resultsf,simID,ntsi,nts,stride=1,openrg=0):
+    def __init__(self,resultsf,simID,ntsi,nts,stride=1,openrg=0,pressure_vert=True):
         self.input = input(resultsf,simID)
         self.grid = grid(resultsf,simID)
         self.output = output(resultsf,simID,ntsi,nts,self.grid,stride=stride)
         if openrg == 1:
-            self.rg = rg_out(resultsf,simID,ntsi,nts,self.input,self.output,self.grid)
+            self.rg = rg_out(resultsf,simID,ntsi,nts,self.input,self.output,self.grid,pressure_vert=pressure_vert)
 
 def calc_RV_PV(grid,output,input,lons,lats,sigma,t_ind,fileh5,comp=4,pressure_vert=True):
     #Calculates relative and potential vorticity on height levels, then interpolates to pressure.

@@ -211,7 +211,9 @@ __host__ void ESP::output(int                    fidx, // Index of output file
         // store module name in the description
         s.append_value(0.0, "/phy_module", "-", phy_modules_get_name());
 
-        if (phy_modules_execute) { phy_modules_store_init(s); }
+        if (phy_modules_execute) {
+            phy_modules_store_init(s);
+        }
     }
 
     //  ESP OUTPUT
@@ -273,7 +275,8 @@ __host__ void ESP::output(int                    fidx, // Index of output file
         s.append_value(GlobalAMz_h, "/GlobalAMz", "kg m^2/s", "Global AngMomZ");
     }
 
-    if (phy_modules_execute) phy_modules_store(*this, s);
+    if (phy_modules_execute)
+        phy_modules_store(*this, s);
 
     char buf[256];
 

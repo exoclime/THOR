@@ -57,9 +57,7 @@
 using namespace std;
 
 template<typename T>
-bool print_compare(const string&    msg,
-                   const vector<T>& val,
-                   const vector<T>& ref) {
+bool print_compare(const string& msg, const vector<T>& val, const vector<T>& ref) {
     bool test = true;
 
     if (ref.size() != val.size()) {
@@ -67,8 +65,8 @@ bool print_compare(const string&    msg,
         cout << "\033[1;31m"
                 "ERROR"
                 "\033[0m: "
-             << "wrong array sizes for comparison expected: "
-             << ref.size() << " got: " << val.size() << endl;
+             << "wrong array sizes for comparison expected: " << ref.size()
+             << " got: " << val.size() << endl;
     }
     else {
         for (int i = 0; i < ref.size(); i++) {
@@ -76,30 +74,28 @@ bool print_compare(const string&    msg,
                 cout << "\033[1;31m"
                         "ERROR"
                         "\033[0m: "
-                     << "wrong value for element[" << i
-                     << "] expected: " << ref[i]
+                     << "wrong value for element[" << i << "] expected: " << ref[i]
                      << "\t got: " << val[i] << endl;
                 test = false;
             }
         }
     }
 
-    cout << "[" << ((test) ? "\033[1;32m"
-                             "PASS"
-                             "\033[0m"
-                           : "["
-                             "\033[1;31m"
-                             "FAIL"
-                             "\033[0m")
+    cout << "["
+         << ((test) ? "\033[1;32m"
+                      "PASS"
+                      "\033[0m"
+                    : "["
+                      "\033[1;31m"
+                      "FAIL"
+                      "\033[0m")
          << "] " << msg << endl;
 
     return test;
 }
 
 
-bool print_compare(const string& msg,
-                   const string& val,
-                   const string& ref) {
+bool print_compare(const string& msg, const string& val, const string& ref) {
     bool test = ref == val;
 
     if (!test) {
@@ -107,27 +103,24 @@ bool print_compare(const string& msg,
                 "ERROR"
                 "\033[0m: "
              << "wrong value"
-             << " expected: " << ref
-             << "\t got: " << val << endl;
+             << " expected: " << ref << "\t got: " << val << endl;
     }
 
-    cout << "[" << ((test) ? "\033[1;32m"
-                             "PASS"
-                             "\033[0m"
-                           : "["
-                             "\033[1;31m"
-                             "FAIL"
-                             "\033[0m")
+    cout << "["
+         << ((test) ? "\033[1;32m"
+                      "PASS"
+                      "\033[0m"
+                    : "["
+                      "\033[1;31m"
+                      "FAIL"
+                      "\033[0m")
          << "] " << msg << endl;
 
     return test;
 }
 
 
-template<typename T>
-bool print_compare(const string& msg,
-                   const T&      val,
-                   const T&      ref) {
+template<typename T> bool print_compare(const string& msg, const T& val, const T& ref) {
     bool test = ref == val;
 
     if (!test) {
@@ -135,17 +128,17 @@ bool print_compare(const string& msg,
                 "ERROR"
                 "\033[0m: "
              << "wrong value"
-             << " expected: " << ref
-             << "\t got: " << val << endl;
+             << " expected: " << ref << "\t got: " << val << endl;
     }
 
-    cout << "[" << ((test) ? "\033[1;32m"
-                             "PASS"
-                             "\033[0m"
-                           : "["
-                             "\033[1;31m"
-                             "FAIL"
-                             "\033[0m")
+    cout << "["
+         << ((test) ? "\033[1;32m"
+                      "PASS"
+                      "\033[0m"
+                    : "["
+                      "\033[1;31m"
+                      "FAIL"
+                      "\033[0m")
          << "] " << msg << endl;
 
     return test;
@@ -346,9 +339,7 @@ int main() {
         int    number = -1;
 
 
-        bool match = match_output_file_numbering_scheme("esp_output_Earth_5.h5",
-                                                        basename,
-                                                        number);
+        bool match = match_output_file_numbering_scheme("esp_output_Earth_5.h5", basename, number);
 
         success &= print_compare("match check", match, true);
         success &= print_compare("match name", basename, "Earth");
@@ -360,9 +351,8 @@ int main() {
         int    number = -1;
 
 
-        bool match = match_output_file_numbering_scheme("esp_output_super_hot_planet_42.h5",
-                                                        basename,
-                                                        number);
+        bool match = match_output_file_numbering_scheme(
+            "esp_output_super_hot_planet_42.h5", basename, number);
 
         success &= print_compare("match check", match, true);
         success &= print_compare("match name", basename, "super_hot_planet");
@@ -374,9 +364,7 @@ int main() {
         int    number = -1;
 
 
-        bool match = match_output_file_numbering_scheme("esp_ofvgaput_Earth.h5",
-                                                        basename,
-                                                        number);
+        bool match = match_output_file_numbering_scheme("esp_ofvgaput_Earth.h5", basename, number);
 
         success &= print_compare("match check", match, false);
     }
@@ -386,9 +374,8 @@ int main() {
         int    number = -1;
 
 
-        bool match = match_output_file_numbering_scheme("esp_output_Earth_ret.h5",
-                                                        basename,
-                                                        number);
+        bool match =
+            match_output_file_numbering_scheme("esp_output_Earth_ret.h5", basename, number);
 
         success &= print_compare("match check", match, false);
     }

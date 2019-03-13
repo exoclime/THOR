@@ -587,7 +587,8 @@ binary_test::binary_test(string output_dir_, string output_base_name_) :
     create_output_dir(output_dir);
 }
 binary_test::~binary_test() {
-    if (nan_check_d != nullptr) deinit_device_mem_check(nan_check_d);
+    if (nan_check_d != nullptr)
+        deinit_device_mem_check(nan_check_d);
 }
 // generic data test function
 void binary_test::check_data(const string&         iteration,
@@ -603,13 +604,17 @@ void binary_test::check_data(const string&         iteration,
     vector<output_def> data_output;
     for (auto& name : output_vars) {
         auto&& it = output_definitions.find(name);
-        if (it != output_definitions.end()) { data_output.push_back(it->second); }
+        if (it != output_definitions.end()) {
+            data_output.push_back(it->second);
+        }
     }
 
     if (trace_phy_modules) {
         for (auto& name : phy_modules_data_out) {
             auto&& it = output_definitions.find(name);
-            if (it != output_definitions.end()) { data_output.push_back(it->second); }
+            if (it != output_definitions.end()) {
+                data_output.push_back(it->second);
+            }
         }
     }
 
@@ -625,11 +630,15 @@ void binary_test::check_data(const string&         iteration,
 #    endif // BENCH_POINT_COMPARE
 
 #    ifdef BENCH_NAN_CHECK
-    if (nan_check_d == nullptr) { nan_check_d = init_device_mem_check(nan_check_d); }
+    if (nan_check_d == nullptr) {
+        nan_check_d = init_device_mem_check(nan_check_d);
+    }
 
     bool out;
     out = check_nan(iteration, ref_name, data_output);
-    if (!out) { exit(-1); }
+    if (!out) {
+        exit(-1);
+    }
 #    endif // BENCH_NAN_CHECK
 }
 // Check for NaNs
@@ -662,7 +671,8 @@ bool binary_test::check_nan(const string&             iteration,
 
 
         for (auto& def : data_output) {
-            if (!path_exists(output_crash)) create_output_dir(output_crash);
+            if (!path_exists(output_crash))
+                create_output_dir(output_crash);
             crash_report(def, output_crash, iteration);
         }
         printf("Crash report output in %s\n", output_crash.c_str());
@@ -678,7 +688,8 @@ void binary_test::output_reference(const string&             iteration,
     // open file
     string output_name = output_dir + "/" + output_base_name + ref_name + "_" + iteration + ".h5";
 
-    if (!path_exists(output_dir)) create_output_dir(output_dir);
+    if (!path_exists(output_dir))
+        create_output_dir(output_dir);
 
 
     storage s(output_name);
@@ -751,7 +762,9 @@ bool binary_test::compare_to_reference(const string&             iteration,
             comp = compare_to_saved_data(s, def.short_name, def.data, def.size, stats);
         }
 #    ifdef BENCH_COMPARE_PRINT_STATISTICS
-        if (comp == false) { stats_table[def.short_name] = stats; }
+        if (comp == false) {
+            stats_table[def.short_name] = stats;
+        }
 #    endif // BENCH_COMPARE_PRINT_STATISTICS
 
         oss << " " << def.short_name << ": " << comp;
@@ -796,7 +809,8 @@ void binary_test::append_definitions(const map<string, output_def>& defs) {
     output_definitions.insert(defs.begin(), defs.end());
     int memsize = 0;
     for (auto& d : output_definitions) {
-        if (d.second.size > memsize) memsize = d.second.size;
+        if (d.second.size > memsize)
+            memsize = d.second.size;
     }
 
     mem_buf = std::unique_ptr<double[]>(new double[memsize], std::default_delete<double[]>());
