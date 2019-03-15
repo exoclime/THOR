@@ -71,7 +71,8 @@ __global__ void deepHJ(double *Mh_d,
         //double psm1;
         double lat = lonlat_d[id * 2 + 1];
         double lon = lonlat_d[id * 2];
-        if (lon < 0) lon += 2 * M_PI;
+        if (lon < 0)
+            lon += 2 * M_PI;
 
         // Deeeeeep Hot Jupiter stuff....
 
@@ -93,22 +94,24 @@ __global__ void deepHJ(double *Mh_d,
         Ptil = log10(pre / 100000); // log of pressure in bars
 
         if (pre <= 1e6) { //pressure less than ten bars
-            Tnight = 1388.2145 + 267.66586 * Ptil - 215.53357 * Ptil * Ptil
-                     + 61.814807 * Ptil * Ptil * Ptil + 135.68661 * Ptil * Ptil * Ptil * Ptil
-                     + 2.01149044 * Ptil * Ptil * Ptil * Ptil * Ptil
-                     - 40.907246 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
-                     - 19.015628 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
-                     - 3.8771634 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
-                     - 0.38413901 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
-                     - 0.015089084 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil;
-            Tday = 2149.9581 + 4.1395571 * Ptil - 186.24851 * Ptil * Ptil
-                   + 135.52524 * Ptil * Ptil * Ptil + 106.20433 * Ptil * Ptil * Ptil * Ptil
-                   - 35.851966 * Ptil * Ptil * Ptil * Ptil * Ptil
-                   - 50.022826 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
-                   - 18.462489 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
-                   - 3.3319965 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
-                   - 0.30295925 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
-                   - 0.011122316 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil;
+            Tnight =
+                1388.2145 + 267.66586 * Ptil - 215.53357 * Ptil * Ptil
+                + 61.814807 * Ptil * Ptil * Ptil + 135.68661 * Ptil * Ptil * Ptil * Ptil
+                + 2.01149044 * Ptil * Ptil * Ptil * Ptil * Ptil
+                - 40.907246 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
+                - 19.015628 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
+                - 3.8771634 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
+                - 0.38413901 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
+                - 0.015089084 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil;
+            Tday =
+                2149.9581 + 4.1395571 * Ptil - 186.24851 * Ptil * Ptil
+                + 135.52524 * Ptil * Ptil * Ptil + 106.20433 * Ptil * Ptil * Ptil * Ptil
+                - 35.851966 * Ptil * Ptil * Ptil * Ptil * Ptil
+                - 50.022826 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
+                - 18.462489 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
+                - 3.3319965 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
+                - 0.30295925 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
+                - 0.011122316 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil;
             logtrad = 5.4659686 + 1.4940124 * Ptil + 0.66079196 * Ptil * Ptil
                       + 0.16475329 * Ptil * Ptil * Ptil + 0.014241552 * Ptil * Ptil * Ptil * Ptil;
             kt_hs = pow(10, -logtrad); //      Temperature forcing constant.
@@ -124,14 +127,18 @@ __global__ void deepHJ(double *Mh_d,
                      - 1.0632301 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
                      + 0.064400203 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
                      + 0.035974396 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
-                     + 0.0025740066 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil;
+                     + 0.0025740066 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
+                           * Ptil;
             Tday  = Tnight;
             kt_hs = 0.0; //      Temperature forcing constant.
         }
 
         // Calculate Teq from eqn 26 (Heng, Menou, and Phillips 2011)
         if ((lon >= M_PI / 2) && (lon < 3 * M_PI / 2)) {
-            Teq_hs = pow(Tnight * Tnight * Tnight * Tnight + (Tday * Tday * Tday * Tday - Tnight * Tnight * Tnight * Tnight) * cos(lon - M_PI) * cos(lat), 0.25);
+            Teq_hs = pow(Tnight * Tnight * Tnight * Tnight
+                             + (Tday * Tday * Tday * Tday - Tnight * Tnight * Tnight * Tnight)
+                                   * cos(lon - M_PI) * cos(lat),
+                         0.25);
         }
         else {
             Teq_hs = Tnight;
@@ -141,7 +148,9 @@ __global__ void deepHJ(double *Mh_d,
         kv_hs = 0.0; //no boundary layer friction
 
         //      Update momenta
-        for (int k = 0; k < 3; k++) Mh_d[id * 3 * nv + lev * 3 + k] = Mh_d[id * 3 * nv + lev * 3 + k] / (1.0 + kv_hs * time_step);
+        for (int k = 0; k < 3; k++)
+            Mh_d[id * 3 * nv + lev * 3 + k] =
+                Mh_d[id * 3 * nv + lev * 3 + k] / (1.0 + kv_hs * time_step);
 
         //      Update temperature
         temperature_d[id * nv + lev] -= kt_hs * time_step * (temperature_d[id * nv + lev] - Teq_hs);

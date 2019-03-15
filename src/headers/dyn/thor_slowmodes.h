@@ -59,6 +59,10 @@ __global__ void Compute_Slow_Modes(double *SlowMh_d,
                                    double *diffw_d,
                                    double *diffrh_d,
                                    double *diffpr_d,
+                                   double *diffmv_d,
+                                   double *diffwv_d,
+                                   double *diffrv_d,
+                                   double *diffprv_d,
                                    double *pressure_d,
                                    double *h_d,
                                    double *hh_d,
@@ -132,6 +136,18 @@ __global__ void Compute_Slow_Modes(double *SlowMh_d,
     // Load shared memory
     bool load_halo = compute_mem_idx(maps_d, nhl, nhl2, ig, igh, ir, ir2, pent_ind);
     id             = ig;
+
+    //hack
+    // if (ig == 0) {
+    //     printf("%d %d %e %e %e %e %e\n",
+    //            ig,
+    //            lev,
+    //            Rho_d[ig * nv + lev],
+    //            pressure_d[ig * nv + lev] / Rd / Rho_d[ig * nv + lev],
+    //            diffrv_d[ig * nv + lev],
+    //            diffprv_d[ig * nv + lev],
+    //            diffwv_d[ig * nv + lev]);
+    // }
 
     v_s[ir * 3 + 0] = Mh_d[ig * 3 * nv + lev * 3 + 0];
     v_s[ir * 3 + 1] = Mh_d[ig * 3 * nv + lev * 3 + 1];
@@ -229,11 +245,26 @@ __global__ void Compute_Slow_Modes(double *SlowMh_d,
         div5 = div_d[id * 7 * 3 + 3 * 5 + k];
         div6 = div_d[id * 7 * 3 + 3 * 6 + k];
 
-        nflxv_s[iri * 3 + k] = rscale * (grad_d[id * 7 * 3 + 3 * 0 + k] * pressure_s[ir] + grad_d[id * 7 * 3 + 3 * 1 + k] * pressure_s[pt1] + grad_d[id * 7 * 3 + 3 * 2 + k] * pressure_s[pt2] + grad_d[id * 7 * 3 + 3 * 3 + k] * pressure_s[pt3] + grad_d[id * 7 * 3 + 3 * 4 + k] * pressure_s[pt4] + grad_d[id * 7 * 3 + 3 * 5 + k] * pressure_s[pt5] + grad_d[id * 7 * 3 + 3 * 6 + k] * pressure_s[pt6]);
+        nflxv_s[iri * 3 + k] = rscale
+                               * (grad_d[id * 7 * 3 + 3 * 0 + k] * pressure_s[ir]
+                                  + grad_d[id * 7 * 3 + 3 * 1 + k] * pressure_s[pt1]
+                                  + grad_d[id * 7 * 3 + 3 * 2 + k] * pressure_s[pt2]
+                                  + grad_d[id * 7 * 3 + 3 * 3 + k] * pressure_s[pt3]
+                                  + grad_d[id * 7 * 3 + 3 * 4 + k] * pressure_s[pt4]
+                                  + grad_d[id * 7 * 3 + 3 * 5 + k] * pressure_s[pt5]
+                                  + grad_d[id * 7 * 3 + 3 * 6 + k] * pressure_s[pt6]);
 
-        nflxr_s[iri] += rscale * (div0 * v_s[ir * 3 + k] + div1 * v_s[pt1 * 3 + k] + div2 * v_s[pt2 * 3 + k] + div3 * v_s[pt3 * 3 + k] + div4 * v_s[pt4 * 3 + k] + div5 * v_s[pt5 * 3 + k] + div6 * v_s[pt6 * 3 + k]);
+        nflxr_s[iri] +=
+            rscale
+            * (div0 * v_s[ir * 3 + k] + div1 * v_s[pt1 * 3 + k] + div2 * v_s[pt2 * 3 + k]
+               + div3 * v_s[pt3 * 3 + k] + div4 * v_s[pt4 * 3 + k] + div5 * v_s[pt5 * 3 + k]
+               + div6 * v_s[pt6 * 3 + k]);
 
-        nflxp_s[iri] += rscale * (div0 * v_s[ir * 3 + k] * h_s[ir] + div1 * v_s[pt1 * 3 + k] * h_s[pt1] + div2 * v_s[pt2 * 3 + k] * h_s[pt2] + div3 * v_s[pt3 * 3 + k] * h_s[pt3] + div4 * v_s[pt4 * 3 + k] * h_s[pt4] + div5 * v_s[pt5 * 3 + k] * h_s[pt5] + div6 * v_s[pt6 * 3 + k] * h_s[pt6]);
+        nflxp_s[iri] += rscale
+                        * (div0 * v_s[ir * 3 + k] * h_s[ir] + div1 * v_s[pt1 * 3 + k] * h_s[pt1]
+                           + div2 * v_s[pt2 * 3 + k] * h_s[pt2] + div3 * v_s[pt3 * 3 + k] * h_s[pt3]
+                           + div4 * v_s[pt4 * 3 + k] * h_s[pt4] + div5 * v_s[pt5 * 3 + k] * h_s[pt5]
+                           + div6 * v_s[pt6 * 3 + k] * h_s[pt6]);
     }
 
     if (lev == 0) {
@@ -253,11 +284,18 @@ __global__ void Compute_Slow_Modes(double *SlowMh_d,
     dwhdz = (wht * r2p * hht - whl * r2l * hhl) / (dz * r2m);
 
     //Mh
-    dpr = nflxv_s[iri * 3 + 0] * funcx + nflxv_s[iri * 3 + 1] * funcy + nflxv_s[iri * 3 + 2] * funcz;
+    dpr =
+        nflxv_s[iri * 3 + 0] * funcx + nflxv_s[iri * 3 + 1] * funcy + nflxv_s[iri * 3 + 2] * funcz;
 
-    SlowMh_d[id * 3 * nv + lev * 3 + 0] = -(nflxv_s[iri * 3 + 0] - dpr * funcx) - advx + DivM_d[id * 3 * nv + lev * 3 + 0] + diffmh_d[id * 3 * nv + lev * 3 + 0];
-    SlowMh_d[id * 3 * nv + lev * 3 + 1] = -(nflxv_s[iri * 3 + 1] - dpr * funcy) - advy + DivM_d[id * 3 * nv + lev * 3 + 1] + diffmh_d[id * 3 * nv + lev * 3 + 1];
-    SlowMh_d[id * 3 * nv + lev * 3 + 2] = -(nflxv_s[iri * 3 + 2] - dpr * funcz) - advz + DivM_d[id * 3 * nv + lev * 3 + 2] + diffmh_d[id * 3 * nv + lev * 3 + 2];
+    SlowMh_d[id * 3 * nv + lev * 3 + 0] =
+        -(nflxv_s[iri * 3 + 0] - dpr * funcx) - advx + DivM_d[id * 3 * nv + lev * 3 + 0]
+        + diffmh_d[id * 3 * nv + lev * 3 + 0] + diffmv_d[id * 3 * nv + lev * 3 + 0];
+    SlowMh_d[id * 3 * nv + lev * 3 + 1] =
+        -(nflxv_s[iri * 3 + 1] - dpr * funcy) - advy + DivM_d[id * 3 * nv + lev * 3 + 1]
+        + diffmh_d[id * 3 * nv + lev * 3 + 1] + diffmv_d[id * 3 * nv + lev * 3 + 1];
+    SlowMh_d[id * 3 * nv + lev * 3 + 2] =
+        -(nflxv_s[iri * 3 + 2] - dpr * funcz) - advz + DivM_d[id * 3 * nv + lev * 3 + 2]
+        + diffmh_d[id * 3 * nv + lev * 3 + 2] + diffmv_d[id * 3 * nv + lev * 3 + 2];
 
     // Wh
     if (lev == 0) {
@@ -273,9 +311,13 @@ __global__ void Compute_Slow_Modes(double *SlowMh_d,
         intl = (xi - xim) / (xip - xim);
 
         if (NonHydro)
-            swr = (-diffw_d[id * nv + lev - 1] + advrl + rhol * Gravit) * intt + (-diffw_d[id * nv + lev] + advr + rho * Gravit) * intl;
+            swr =
+                (-diffw_d[id * nv + lev - 1] - diffwv_d[id * nv + lev - 1] + advrl + rhol * Gravit)
+                    * intt
+                + (-diffw_d[id * nv + lev] - diffwv_d[id * nv + lev] + advr + rho * Gravit) * intl;
         else
-            swr = (-diffw_d[id * nv + lev - 1] + rhol * Gravit) * intt + (-diffw_d[id * nv + lev] + rho * Gravit) * intl;
+            swr = (-diffw_d[id * nv + lev - 1] - diffwv_d[id * nv + lev - 1] + rhol * Gravit) * intt
+                  + (-diffw_d[id * nv + lev] - diffwv_d[id * nv + lev] + rho * Gravit) * intl;
 
         dz   = alt - altl;
         dpdz = (pressure_s[ir] - pressurel) / dz;
@@ -286,13 +328,21 @@ __global__ void Compute_Slow_Modes(double *SlowMh_d,
 
     // Rho
     nflxr_s[iri] += dwdz;
-    SlowRho_d[id * nv + lev] = -nflxr_s[iri] + diffrh_d[id * nv + lev];
+    SlowRho_d[id * nv + lev] = -nflxr_s[iri] + diffrh_d[id * nv + lev] + diffrv_d[id * nv + lev];
 
     // pressure
     r   = 1.0 / rho;
-    vgp = (nflxv_s[iri * 3 + 0] - dpr * funcx) * v_s[ir * 3 + 0] * r + (nflxv_s[iri * 3 + 1] - dpr * funcy) * v_s[ir * 3 + 1] * r + (nflxv_s[iri * 3 + 2] - dpr * funcz) * v_s[ir * 3 + 2] * r;
+    vgp = (nflxv_s[iri * 3 + 0] - dpr * funcx) * v_s[ir * 3 + 0] * r
+          + (nflxv_s[iri * 3 + 1] - dpr * funcy) * v_s[ir * 3 + 1] * r
+          + (nflxv_s[iri * 3 + 2] - dpr * funcz) * v_s[ir * 3 + 2] * r;
 
-    Slowpressure_d[id * nv + lev] = (Rd / Cv) * (-nflxp_s[iri] - gtil_d[id * nv + lev] - dwhdz + vgp) + diffpr_d[id * nv + lev];
+    Slowpressure_d[id * nv + lev] =
+        (Rd / Cv) * (-nflxp_s[iri] - gtil_d[id * nv + lev] - dwhdz + vgp) + diffpr_d[id * nv + lev]
+        + diffprv_d[id * nv + lev];
+
+    // if (diffprv_d[id * nv + lev] > 0) {
+    //     printf("hi!\n"); //
+    // }
 }
 
 template<int NN>
@@ -309,6 +359,10 @@ __global__ void Compute_Slow_Modes_Poles(double *SlowMh_d,
                                          double *diffw_d,
                                          double *diffrh_d,
                                          double *diffpr_d,
+                                         double *diffmv_d,
+                                         double *diffwv_d,
+                                         double *diffrv_d,
+                                         double *diffprv_d,
                                          double *pressure_d,
                                          double *h_d,
                                          double *hh_d,
@@ -368,14 +422,17 @@ __global__ void Compute_Slow_Modes_Poles(double *SlowMh_d,
 
     /////////////////////////////////////////
     if (id < num) {
-        for (int i = 0; i < 5; i++) local_p[i] = point_local_d[id * 6 + i];
+        for (int i = 0; i < 5; i++)
+            local_p[i] = point_local_d[id * 6 + i];
         func_r_p[0] = func_r_d[id * 3 + 0];
         func_r_p[1] = func_r_d[id * 3 + 1];
         func_r_p[2] = func_r_d[id * 3 + 2];
         for (int i = 0; i < 7; i++)
-            for (int k = 0; k < 3; k++) div_p[i * 3 + k] = div_d[id * 7 * 3 + i * 3 + k];
+            for (int k = 0; k < 3; k++)
+                div_p[i * 3 + k] = div_d[id * 7 * 3 + i * 3 + k];
         for (int i = 0; i < 7; i++)
-            for (int k = 0; k < 3; k++) grad_p[i * 3 + k] = grad_d[id * 7 * 3 + i * 3 + k];
+            for (int k = 0; k < 3; k++)
+                grad_p[i * 3 + k] = grad_d[id * 7 * 3 + i * 3 + k];
 
         for (int lev = 0; lev < nv; lev++) {
 
@@ -397,7 +454,8 @@ __global__ void Compute_Slow_Modes_Poles(double *SlowMh_d,
             advy = Adv_d[id * 3 * nv + lev * 3 + 1];
             advz = Adv_d[id * 3 * nv + lev * 3 + 2];
 
-            if (lev > 0) advrl = advrt;
+            if (lev > 0)
+                advrl = advrt;
             advrt = advx * func_r_p[0] + advy * func_r_p[1] + advz * func_r_p[2];
 
             advx += -advrt * func_r_p[0];
@@ -408,10 +466,12 @@ __global__ void Compute_Slow_Modes_Poles(double *SlowMh_d,
                 altht = Altitudeh_d[lev + 1];
                 althl = Altitudeh_d[lev];
             }
-            if (lev > 0) altl = alt;
+            if (lev > 0)
+                altl = alt;
             alt = Altitude_d[lev];
 
-            if (lev > 0) rhol = rhot;
+            if (lev > 0)
+                rhol = rhot;
             rhot = Rho_d[id * nv + lev];
 
             if (DeepModel) {
@@ -431,11 +491,25 @@ __global__ void Compute_Slow_Modes_Poles(double *SlowMh_d,
             nflxp_p = 0.0;
 
             for (int k = 0; k < 3; k++) {
-                nflxv_p[k] = rscale * (grad_p[3 * 0 + k] * pressure_p[0] + grad_p[3 * 1 + k] * pressure_p[1] + grad_p[3 * 2 + k] * pressure_p[2] + grad_p[3 * 3 + k] * pressure_p[3] + grad_p[3 * 4 + k] * pressure_p[4] + grad_p[3 * 5 + k] * pressure_p[5]);
+                nflxv_p[k] =
+                    rscale
+                    * (grad_p[3 * 0 + k] * pressure_p[0] + grad_p[3 * 1 + k] * pressure_p[1]
+                       + grad_p[3 * 2 + k] * pressure_p[2] + grad_p[3 * 3 + k] * pressure_p[3]
+                       + grad_p[3 * 4 + k] * pressure_p[4] + grad_p[3 * 5 + k] * pressure_p[5]);
 
-                nflxr_p += rscale * (div_p[3 * 0 + k] * v_p[0 * 3 + k] + div_p[3 * 1 + k] * v_p[1 * 3 + k] + div_p[3 * 2 + k] * v_p[2 * 3 + k] + div_p[3 * 3 + k] * v_p[3 * 3 + k] + div_p[3 * 4 + k] * v_p[4 * 3 + k] + div_p[3 * 5 + k] * v_p[5 * 3 + k]);
+                nflxr_p +=
+                    rscale
+                    * (div_p[3 * 0 + k] * v_p[0 * 3 + k] + div_p[3 * 1 + k] * v_p[1 * 3 + k]
+                       + div_p[3 * 2 + k] * v_p[2 * 3 + k] + div_p[3 * 3 + k] * v_p[3 * 3 + k]
+                       + div_p[3 * 4 + k] * v_p[4 * 3 + k] + div_p[3 * 5 + k] * v_p[5 * 3 + k]);
 
-                nflxp_p += rscale * (div_p[3 * 0 + k] * v_p[0 * 3 + k] * h_p[0] + div_p[3 * 1 + k] * v_p[1 * 3 + k] * h_p[1] + div_p[3 * 2 + k] * v_p[2 * 3 + k] * h_p[2] + div_p[3 * 3 + k] * v_p[3 * 3 + k] * h_p[3] + div_p[3 * 4 + k] * v_p[4 * 3 + k] * h_p[4] + div_p[3 * 5 + k] * v_p[5 * 3 + k] * h_p[5]);
+                nflxp_p += rscale
+                           * (div_p[3 * 0 + k] * v_p[0 * 3 + k] * h_p[0]
+                              + div_p[3 * 1 + k] * v_p[1 * 3 + k] * h_p[1]
+                              + div_p[3 * 2 + k] * v_p[2 * 3 + k] * h_p[2]
+                              + div_p[3 * 3 + k] * v_p[3 * 3 + k] * h_p[3]
+                              + div_p[3 * 4 + k] * v_p[4 * 3 + k] * h_p[4]
+                              + div_p[3 * 5 + k] * v_p[5 * 3 + k] * h_p[5]);
             }
 
             if (lev == 0) {
@@ -452,9 +526,15 @@ __global__ void Compute_Slow_Modes_Poles(double *SlowMh_d,
             // Mh
             dpr = nflxv_p[0] * func_r_p[0] + nflxv_p[1] * func_r_p[1] + nflxv_p[2] * func_r_p[2];
 
-            SlowMh_d[id * 3 * nv + lev * 3 + 0] = -(nflxv_p[0] - dpr * func_r_p[0]) - advx + DivM_d[id * 3 * nv + lev * 3 + 0] + diffmh_d[id * 3 * nv + lev * 3 + 0];
-            SlowMh_d[id * 3 * nv + lev * 3 + 1] = -(nflxv_p[1] - dpr * func_r_p[1]) - advy + DivM_d[id * 3 * nv + lev * 3 + 1] + diffmh_d[id * 3 * nv + lev * 3 + 1];
-            SlowMh_d[id * 3 * nv + lev * 3 + 2] = -(nflxv_p[2] - dpr * func_r_p[2]) - advz + DivM_d[id * 3 * nv + lev * 3 + 2] + diffmh_d[id * 3 * nv + lev * 3 + 2];
+            SlowMh_d[id * 3 * nv + lev * 3 + 0] =
+                -(nflxv_p[0] - dpr * func_r_p[0]) - advx + DivM_d[id * 3 * nv + lev * 3 + 0]
+                + diffmh_d[id * 3 * nv + lev * 3 + 0] + diffmv_d[id * 3 * nv + lev * 3 + 0];
+            SlowMh_d[id * 3 * nv + lev * 3 + 1] =
+                -(nflxv_p[1] - dpr * func_r_p[1]) - advy + DivM_d[id * 3 * nv + lev * 3 + 1]
+                + diffmh_d[id * 3 * nv + lev * 3 + 1] + diffmv_d[id * 3 * nv + lev * 3 + 1];
+            SlowMh_d[id * 3 * nv + lev * 3 + 2] =
+                -(nflxv_p[2] - dpr * func_r_p[2]) - advz + DivM_d[id * 3 * nv + lev * 3 + 2]
+                + diffmh_d[id * 3 * nv + lev * 3 + 2] + diffmv_d[id * 3 * nv + lev * 3 + 2];
             // Wh
             if (lev == 0) {
                 SlowWh_d[id * (nv + 1)]      = 0.0;
@@ -468,9 +548,18 @@ __global__ void Compute_Slow_Modes_Poles(double *SlowMh_d,
                 intt = (xi - xip) / (xim - xip);
                 intl = (xi - xim) / (xip - xim);
                 if (NonHydro)
-                    swr = (-diffw_d[id * nv + lev - 1] + advrl + rhol * Gravit) * intt + (-diffw_d[id * nv + lev] + advrt + rhot * Gravit) * intl;
+                    swr = (-diffw_d[id * nv + lev - 1] - diffwv_d[id * nv + lev - 1] + advrl
+                           + rhol * Gravit)
+                              * intt
+                          + (-diffw_d[id * nv + lev] - diffwv_d[id * nv + lev] + advrt
+                             + rhot * Gravit)
+                                * intl;
                 else
-                    swr = (-diffw_d[id * nv + lev - 1] + rhol * Gravit) * intt + (-diffw_d[id * nv + lev] + rhot * Gravit) * intl;
+                    swr =
+                        (-diffw_d[id * nv + lev - 1] - diffwv_d[id * nv + lev - 1] + rhol * Gravit)
+                            * intt
+                        + (-diffw_d[id * nv + lev] - diffwv_d[id * nv + lev] + rhot * Gravit)
+                              * intl;
 
                 dz   = alt - altl;
                 dpdz = (pressure_p[0] - pressurel) / dz;
@@ -481,19 +570,24 @@ __global__ void Compute_Slow_Modes_Poles(double *SlowMh_d,
 
             // Rho
             nflxr_p += dwdz;
-            SlowRho_d[id * nv + lev] = -nflxr_p + diffrh_d[id * nv + lev];
+            SlowRho_d[id * nv + lev] = -nflxr_p + diffrh_d[id * nv + lev] + diffrv_d[id * nv + lev];
 
             // pressure
             r   = 1.0 / rhot;
-            vgp = (nflxv_p[0] - dpr * func_r_p[0]) * v_p[0] * r + (nflxv_p[1] - dpr * func_r_p[1]) * v_p[1] * r + (nflxv_p[2] - dpr * func_r_p[2]) * v_p[2] * r;
+            vgp = (nflxv_p[0] - dpr * func_r_p[0]) * v_p[0] * r
+                  + (nflxv_p[1] - dpr * func_r_p[1]) * v_p[1] * r
+                  + (nflxv_p[2] - dpr * func_r_p[2]) * v_p[2] * r;
 
-            Slowpressure_d[id * nv + lev] = (Rd / Cv) * (-nflxp_p - gtil_d[id * nv + lev] - dwhdz + vgp) + diffpr_d[id * nv + lev];
+            Slowpressure_d[id * nv + lev] =
+                (Rd / Cv) * (-nflxp_p - gtil_d[id * nv + lev] - dwhdz + vgp)
+                + diffpr_d[id * nv + lev] + diffprv_d[id * nv + lev];
 
             if (lev < nv - 1) {
                 pressurel = pressure_p[0];
 
                 pressure_p[0] = pressure_d[id * nv + lev + 1];
-                for (int i = 1; i < 6; i++) pressure_p[i] = pressure_d[local_p[i - 1] * nv + lev + 1];
+                for (int i = 1; i < 6; i++)
+                    pressure_p[i] = pressure_d[local_p[i - 1] * nv + lev + 1];
             }
 
             if (lev != nv - 1) {

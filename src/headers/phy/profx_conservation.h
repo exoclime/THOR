@@ -77,6 +77,7 @@ __global__ void CalcAngMom(double *AngMomx_d,
                            double *Altitudeh_d,
                            double *lonlat_d,
                            double *areasT,
+                           double *func_r_d,
                            int     num,
                            bool    DeepModel);
 
@@ -89,3 +90,18 @@ __global__ void CalcMass(double *Mass_d,
                          double *areasT,
                          int     num,
                          bool    DeepModel);
+
+__global__ void CalcEntropy(double *Entropy_d,
+                            double *pressure_d,
+                            double *temperature_d,
+                            double  Cp,
+                            double  Rd,
+                            double  A,
+                            double  P_Ref,
+                            double *Altitude_d,
+                            double *Altitudeh_d,
+                            double *lonlat_d,
+                            double *areasT,
+                            double *func_r_d,
+                            int     num,
+                            bool    DeepModel);

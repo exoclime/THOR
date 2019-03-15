@@ -49,18 +49,19 @@
 // Computes the 3D advection terms and the velocities in cartesians.
 // (no poles)
 template<int NX, int NY>
-__global__ void Compute_Advec_Cori1(double3* Adv_d,      // Advection term.
-                                    double3* v_d,        // 3D velocity (cartesians).
-                                    double3* Mh_d,       // Horizontal momentum.
-                                    double3* div_d,      // Divergence operator.
-                                    double*  W_d,        // Vertical momentum.
-                                    double*  Rho_d,      // Density.
-                                    double*  Altitude_d, // Altitude.
-                                    double   A,          // Radius.
-                                    double3* func_r_d,   // Unit vectors normal to the spherical surface.
-                                    int*     maps_d,     // Global indexes.
-                                    int      nl_region,  // Length of the side of each rhombi (from the sphere decomposition).
-                                    bool     DeepModel) {    // Switches on and off the deep atmosphere solution (see headers/define.h).
+__global__ void Compute_Advec_Cori1(
+    double3* Adv_d,      // Advection term.
+    double3* v_d,        // 3D velocity (cartesians).
+    double3* Mh_d,       // Horizontal momentum.
+    double3* div_d,      // Divergence operator.
+    double*  W_d,        // Vertical momentum.
+    double*  Rho_d,      // Density.
+    double*  Altitude_d, // Altitude.
+    double   A,          // Radius.
+    double3* func_r_d,   // Unit vectors normal to the spherical surface.
+    int*     maps_d,     // Global indexes.
+    int      nl_region,  // Length of the side of each rhombi (from the sphere decomposition).
+    bool DeepModel) {    // Switches on and off the deep atmosphere solution (see headers/define.h).
 
     int x = threadIdx.x;
     int y = threadIdx.y;
@@ -176,23 +177,58 @@ __global__ void Compute_Advec_Cori1(double3* Adv_d,      // Advection term.
         div5 = div_d[id * 7 + 5];
         div6 = div_d[id * 7 + 6]; // For pent_ind = 1 div6 is equal to 0.
 
-        nflx_s[iri].x += rscale * (div0.x * v_s[ir].x * M_s[ir].x + div1.x * v_s[pt1].x * M_s[pt1].x + div2.x * v_s[pt2].x * M_s[pt2].x + div3.x * v_s[pt3].x * M_s[pt3].x + div4.x * v_s[pt4].x * M_s[pt4].x + div5.x * v_s[pt5].x * M_s[pt5].x + div6.x * v_s[pt6].x * M_s[pt6].x);
+        nflx_s[iri].x += rscale
+                         * (div0.x * v_s[ir].x * M_s[ir].x + div1.x * v_s[pt1].x * M_s[pt1].x
+                            + div2.x * v_s[pt2].x * M_s[pt2].x + div3.x * v_s[pt3].x * M_s[pt3].x
+                            + div4.x * v_s[pt4].x * M_s[pt4].x + div5.x * v_s[pt5].x * M_s[pt5].x
+                            + div6.x * v_s[pt6].x * M_s[pt6].x);
 
-        nflx_s[iri].y += rscale * (div0.x * v_s[ir].y * M_s[ir].x + div1.x * v_s[pt1].y * M_s[pt1].x + div2.x * v_s[pt2].y * M_s[pt2].x + div3.x * v_s[pt3].y * M_s[pt3].x + div4.x * v_s[pt4].y * M_s[pt4].x + div5.x * v_s[pt5].y * M_s[pt5].x + div6.x * v_s[pt6].y * M_s[pt6].x);
+        nflx_s[iri].y += rscale
+                         * (div0.x * v_s[ir].y * M_s[ir].x + div1.x * v_s[pt1].y * M_s[pt1].x
+                            + div2.x * v_s[pt2].y * M_s[pt2].x + div3.x * v_s[pt3].y * M_s[pt3].x
+                            + div4.x * v_s[pt4].y * M_s[pt4].x + div5.x * v_s[pt5].y * M_s[pt5].x
+                            + div6.x * v_s[pt6].y * M_s[pt6].x);
 
-        nflx_s[iri].z += rscale * (div0.x * v_s[ir].z * M_s[ir].x + div1.x * v_s[pt1].z * M_s[pt1].x + div2.x * v_s[pt2].z * M_s[pt2].x + div3.x * v_s[pt3].z * M_s[pt3].x + div4.x * v_s[pt4].z * M_s[pt4].x + div5.x * v_s[pt5].z * M_s[pt5].x + div6.x * v_s[pt6].z * M_s[pt6].x);
+        nflx_s[iri].z += rscale
+                         * (div0.x * v_s[ir].z * M_s[ir].x + div1.x * v_s[pt1].z * M_s[pt1].x
+                            + div2.x * v_s[pt2].z * M_s[pt2].x + div3.x * v_s[pt3].z * M_s[pt3].x
+                            + div4.x * v_s[pt4].z * M_s[pt4].x + div5.x * v_s[pt5].z * M_s[pt5].x
+                            + div6.x * v_s[pt6].z * M_s[pt6].x);
 
-        nflx_s[iri].x += rscale * (div0.y * v_s[ir].x * M_s[ir].y + div1.y * v_s[pt1].x * M_s[pt1].y + div2.y * v_s[pt2].x * M_s[pt2].y + div3.y * v_s[pt3].x * M_s[pt3].y + div4.y * v_s[pt4].x * M_s[pt4].y + div5.y * v_s[pt5].x * M_s[pt5].y + div6.y * v_s[pt6].x * M_s[pt6].y);
+        nflx_s[iri].x += rscale
+                         * (div0.y * v_s[ir].x * M_s[ir].y + div1.y * v_s[pt1].x * M_s[pt1].y
+                            + div2.y * v_s[pt2].x * M_s[pt2].y + div3.y * v_s[pt3].x * M_s[pt3].y
+                            + div4.y * v_s[pt4].x * M_s[pt4].y + div5.y * v_s[pt5].x * M_s[pt5].y
+                            + div6.y * v_s[pt6].x * M_s[pt6].y);
 
-        nflx_s[iri].y += rscale * (div0.y * v_s[ir].y * M_s[ir].y + div1.y * v_s[pt1].y * M_s[pt1].y + div2.y * v_s[pt2].y * M_s[pt2].y + div3.y * v_s[pt3].y * M_s[pt3].y + div4.y * v_s[pt4].y * M_s[pt4].y + div5.y * v_s[pt5].y * M_s[pt5].y + div6.y * v_s[pt6].y * M_s[pt6].y);
+        nflx_s[iri].y += rscale
+                         * (div0.y * v_s[ir].y * M_s[ir].y + div1.y * v_s[pt1].y * M_s[pt1].y
+                            + div2.y * v_s[pt2].y * M_s[pt2].y + div3.y * v_s[pt3].y * M_s[pt3].y
+                            + div4.y * v_s[pt4].y * M_s[pt4].y + div5.y * v_s[pt5].y * M_s[pt5].y
+                            + div6.y * v_s[pt6].y * M_s[pt6].y);
 
-        nflx_s[iri].z += rscale * (div0.y * v_s[ir].z * M_s[ir].y + div1.y * v_s[pt1].z * M_s[pt1].y + div2.y * v_s[pt2].z * M_s[pt2].y + div3.y * v_s[pt3].z * M_s[pt3].y + div4.y * v_s[pt4].z * M_s[pt4].y + div5.y * v_s[pt5].z * M_s[pt5].y + div6.y * v_s[pt6].z * M_s[pt6].y);
+        nflx_s[iri].z += rscale
+                         * (div0.y * v_s[ir].z * M_s[ir].y + div1.y * v_s[pt1].z * M_s[pt1].y
+                            + div2.y * v_s[pt2].z * M_s[pt2].y + div3.y * v_s[pt3].z * M_s[pt3].y
+                            + div4.y * v_s[pt4].z * M_s[pt4].y + div5.y * v_s[pt5].z * M_s[pt5].y
+                            + div6.y * v_s[pt6].z * M_s[pt6].y);
 
-        nflx_s[iri].x += rscale * (div0.z * v_s[ir].x * M_s[ir].z + div1.z * v_s[pt1].x * M_s[pt1].z + div2.z * v_s[pt2].x * M_s[pt2].z + div3.z * v_s[pt3].x * M_s[pt3].z + div4.z * v_s[pt4].x * M_s[pt4].z + div5.z * v_s[pt5].x * M_s[pt5].z + div6.z * v_s[pt6].x * M_s[pt6].z);
+        nflx_s[iri].x += rscale
+                         * (div0.z * v_s[ir].x * M_s[ir].z + div1.z * v_s[pt1].x * M_s[pt1].z
+                            + div2.z * v_s[pt2].x * M_s[pt2].z + div3.z * v_s[pt3].x * M_s[pt3].z
+                            + div4.z * v_s[pt4].x * M_s[pt4].z + div5.z * v_s[pt5].x * M_s[pt5].z
+                            + div6.z * v_s[pt6].x * M_s[pt6].z);
 
-        nflx_s[iri].y += rscale * (div0.z * v_s[ir].y * M_s[ir].z + div1.z * v_s[pt1].y * M_s[pt1].z + div2.z * v_s[pt2].y * M_s[pt2].z + div3.z * v_s[pt3].y * M_s[pt3].z + div4.z * v_s[pt4].y * M_s[pt4].z + div5.z * v_s[pt5].y * M_s[pt5].z + div6.z * v_s[pt6].y * M_s[pt6].z);
-
-        nflx_s[iri].z += rscale * (div0.z * v_s[ir].z * M_s[ir].z + div1.z * v_s[pt1].z * M_s[pt1].z + div2.z * v_s[pt2].z * M_s[pt2].z + div3.z * v_s[pt3].z * M_s[pt3].z + div4.z * v_s[pt4].z * M_s[pt4].z + div5.z * v_s[pt5].z * M_s[pt5].z + div6.z * v_s[pt6].z * M_s[pt6].z);
+        nflx_s[iri].y += rscale
+                         * (div0.z * v_s[ir].y * M_s[ir].z + div1.z * v_s[pt1].y * M_s[pt1].z
+                            + div2.z * v_s[pt2].y * M_s[pt2].z + div3.z * v_s[pt3].y * M_s[pt3].z
+                            + div4.z * v_s[pt4].y * M_s[pt4].z + div5.z * v_s[pt5].y * M_s[pt5].z
+                            + div6.z * v_s[pt6].y * M_s[pt6].z);
+        nflx_s[iri].z += rscale
+                         * (div0.z * v_s[ir].z * M_s[ir].z + div1.z * v_s[pt1].z * M_s[pt1].z
+                            + div2.z * v_s[pt2].z * M_s[pt2].z + div3.z * v_s[pt3].z * M_s[pt3].z
+                            + div4.z * v_s[pt4].z * M_s[pt4].z + div5.z * v_s[pt5].z * M_s[pt5].z
+                            + div6.z * v_s[pt6].z * M_s[pt6].z);
     }
     // Return values (3D advection term and velocities in cartesians).
     Adv_d[id * nv + lev] = nflx_s[iri];
@@ -237,7 +273,8 @@ __global__ void Compute_Advec_Cori_Poles(double* Adv_d,         //
 
     /////////////////////////////////////////
     if (id < num) {
-        for (int i = 0; i < 5; i++) local_p[i] = point_local_d[id * 6 + i];
+        for (int i = 0; i < 5; i++)
+            local_p[i] = point_local_d[id * 6 + i];
         func_r_p[0] = func_r_d[id * 3 + 0];
         func_r_p[1] = func_r_d[id * 3 + 1];
         func_r_p[2] = func_r_d[id * 3 + 2];
@@ -247,7 +284,8 @@ __global__ void Compute_Advec_Cori_Poles(double* Adv_d,         //
             func_r_p[i * 3 + 2] = func_r_d[local_p[i - 1] * 3 + 2];
         }
         for (int i = 0; i < 7; i++)
-            for (int k = 0; k < 3; k++) div_p[i * 3 + k] = div_d[id * 7 * 3 + i * 3 + k];
+            for (int k = 0; k < 3; k++)
+                div_p[i * 3 + k] = div_d[id * 7 * 3 + i * 3 + k];
 
         for (int lev = 0; lev < nv; lev++) {
             v_p[0] = Mh_d[id * 3 * nv + lev * 3 + 0];
@@ -288,11 +326,29 @@ __global__ void Compute_Advec_Cori_Poles(double* Adv_d,         //
             nflxz = 0.0;
 
             for (int k = 0; k < 3; k++) {
-                nflxx += rscale * (div_p[3 * 0 + k] * v_p[0 * 3 + 0] * M_p[0 * 3 + k] + div_p[3 * 1 + k] * v_p[1 * 3 + 0] * M_p[1 * 3 + k] + div_p[3 * 2 + k] * v_p[2 * 3 + 0] * M_p[2 * 3 + k] + div_p[3 * 3 + k] * v_p[3 * 3 + 0] * M_p[3 * 3 + k] + div_p[3 * 4 + k] * v_p[4 * 3 + 0] * M_p[4 * 3 + k] + div_p[3 * 5 + k] * v_p[5 * 3 + 0] * M_p[5 * 3 + k]);
+                nflxx += rscale
+                         * (div_p[3 * 0 + k] * v_p[0 * 3 + 0] * M_p[0 * 3 + k]
+                            + div_p[3 * 1 + k] * v_p[1 * 3 + 0] * M_p[1 * 3 + k]
+                            + div_p[3 * 2 + k] * v_p[2 * 3 + 0] * M_p[2 * 3 + k]
+                            + div_p[3 * 3 + k] * v_p[3 * 3 + 0] * M_p[3 * 3 + k]
+                            + div_p[3 * 4 + k] * v_p[4 * 3 + 0] * M_p[4 * 3 + k]
+                            + div_p[3 * 5 + k] * v_p[5 * 3 + 0] * M_p[5 * 3 + k]);
 
-                nflxy += rscale * (div_p[3 * 0 + k] * v_p[0 * 3 + 1] * M_p[0 * 3 + k] + div_p[3 * 1 + k] * v_p[1 * 3 + 1] * M_p[1 * 3 + k] + div_p[3 * 2 + k] * v_p[2 * 3 + 1] * M_p[2 * 3 + k] + div_p[3 * 3 + k] * v_p[3 * 3 + 1] * M_p[3 * 3 + k] + div_p[3 * 4 + k] * v_p[4 * 3 + 1] * M_p[4 * 3 + k] + div_p[3 * 5 + k] * v_p[5 * 3 + 1] * M_p[5 * 3 + k]);
+                nflxy += rscale
+                         * (div_p[3 * 0 + k] * v_p[0 * 3 + 1] * M_p[0 * 3 + k]
+                            + div_p[3 * 1 + k] * v_p[1 * 3 + 1] * M_p[1 * 3 + k]
+                            + div_p[3 * 2 + k] * v_p[2 * 3 + 1] * M_p[2 * 3 + k]
+                            + div_p[3 * 3 + k] * v_p[3 * 3 + 1] * M_p[3 * 3 + k]
+                            + div_p[3 * 4 + k] * v_p[4 * 3 + 1] * M_p[4 * 3 + k]
+                            + div_p[3 * 5 + k] * v_p[5 * 3 + 1] * M_p[5 * 3 + k]);
 
-                nflxz += rscale * (div_p[3 * 0 + k] * v_p[0 * 3 + 2] * M_p[0 * 3 + k] + div_p[3 * 1 + k] * v_p[1 * 3 + 2] * M_p[1 * 3 + k] + div_p[3 * 2 + k] * v_p[2 * 3 + 2] * M_p[2 * 3 + k] + div_p[3 * 3 + k] * v_p[3 * 3 + 2] * M_p[3 * 3 + k] + div_p[3 * 4 + k] * v_p[4 * 3 + 2] * M_p[4 * 3 + k] + div_p[3 * 5 + k] * v_p[5 * 3 + 2] * M_p[5 * 3 + k]);
+                nflxz += rscale
+                         * (div_p[3 * 0 + k] * v_p[0 * 3 + 2] * M_p[0 * 3 + k]
+                            + div_p[3 * 1 + k] * v_p[1 * 3 + 2] * M_p[1 * 3 + k]
+                            + div_p[3 * 2 + k] * v_p[2 * 3 + 2] * M_p[2 * 3 + k]
+                            + div_p[3 * 3 + k] * v_p[3 * 3 + 2] * M_p[3 * 3 + k]
+                            + div_p[3 * 4 + k] * v_p[4 * 3 + 2] * M_p[4 * 3 + k]
+                            + div_p[3 * 5 + k] * v_p[5 * 3 + 2] * M_p[5 * 3 + k]);
             }
             // Return values (3D advection term and velocities in cartesians).
             Adv_d[id * 3 * nv + lev * 3 + 0] = nflxx;
@@ -435,18 +491,23 @@ __global__ void Compute_Advec_Cori2(double* Adv_d,       //
                 altht = Altitudeh_d[lev + 2];
                 altl  = alt;
                 alt   = altt;
-                if (lev < nv - 2) altt = Altitude_d[lev + 2];
+                if (lev < nv - 2)
+                    altt = Altitude_d[lev + 2];
                 whl = wht;
-                if (lev < nv - 2) wht = Wh_d[id * (nv + 1) + lev + 2];
+                if (lev < nv - 2)
+                    wht = Wh_d[id * (nv + 1) + lev + 2];
                 vxl = vx;
                 vx  = vxt;
-                if (lev < nv - 2) vxt = v_d[id * 3 * nv + (lev + 2) * 3 + 0];
+                if (lev < nv - 2)
+                    vxt = v_d[id * 3 * nv + (lev + 2) * 3 + 0];
                 vyl = vy;
                 vy  = vyt;
-                if (lev < nv - 2) vyt = v_d[id * 3 * nv + (lev + 2) * 3 + 1];
+                if (lev < nv - 2)
+                    vyt = v_d[id * 3 * nv + (lev + 2) * 3 + 1];
                 vzl = vz;
                 vz  = vzt;
-                if (lev < nv - 2) vzt = v_d[id * 3 * nv + (lev + 2) * 3 + 2];
+                if (lev < nv - 2)
+                    vzt = v_d[id * 3 * nv + (lev + 2) * 3 + 2];
             }
         }
     }

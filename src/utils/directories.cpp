@@ -284,9 +284,7 @@ bool match_output_file_numbering_scheme(const string &file_path, string &basenam
         }
 
 
-        if (split_underscores[0] == "esp"
-            && split_underscores[1] == "output"
-            && number > -1) {
+        if (split_underscores[0] == "esp" && split_underscores[1] == "output" && number > -1) {
             basename = split_underscores[2];
 
             for (unsigned int i = 3; i < split_underscores.size() - 1; i++) {

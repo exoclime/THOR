@@ -2,23 +2,23 @@
 # config format version
 config_version = 1
 
-# deep hot jupiter benchmark (Heng+ 2011)
+# earth acoustic wave test (Tomita & Satoh 2004)
 
 
 #-- Time stepping and output options -----------------------------------------#
 # number of steps
-num_steps = 345600
+num_steps = 96
 
 # length of timesteps in seconds
-timestep = 600
-
-# output directory (relative to current working directory)
-# defaults to 'results'
-results_path = deephj_results
+timestep = 1800
 
 # output
 # output every n steps
-n_out = 6912
+n_out = 2
+
+# output directory (relative to current working directory)
+# defaults to 'results'
+results_path = acoustic_test_divdonly
 
 # calculate and output quantities we hope to conserve
 # angular momentum, energy, mass, (entropy soon)
@@ -27,38 +27,38 @@ conservation = true
 
 #-- Planetary parameters -----------------------------------------------------#
 # name of simulation for output files
-simulation_ID = deep
+simulation_ID = Earth
 
 # Radius [m]
-radius = 9.44e7
+radius = 6371000.0
 
 # Rotation rate [rad s^-1]
-rotation_rate = 2.06e-5
+rotation_rate = 0
 
 # Gravitational acceleration [m/s^2]
-gravitation = 9.42
+gravitation = 9.8
 
-# Gas constant [J/(Kg K)]
-Rd = 4593
+# Gas constant [J/(Kg K)] (R_univ/mean_molecular_mass)
+Rd = 287.0
 
 # Specific heat capacities [J/(Kg K)]
-Cp = 14308.4
+Cp = 1005.0
 
 # Mean atmospheric temperature [K]
-Tmean = 1759
+Tmean = 300.0
 
-# Reference surface pressure [Pa]
-P_ref = 22000000.0
+# Reference surface pressure [Pa] (pressure at bottom of model)
+P_ref = 100000.0
 
 #-- Grid options -------------------------------------------------------------#
 # Altitude of the top of the model domain [m]
-Top_altitude = 8e6
+Top_altitude = 10000.0
 
 # Horizontal resolution level.
-glevel = 4
+glevel = 5
 
 # Number of vertical layers
-vlevel = 40
+vlevel = 20
 
 # Spring dynamics
 spring_dynamics = true
@@ -68,7 +68,7 @@ spring_beta = 1.15
 
 ## diffusion ############################################
 # Hyper-diffusion
-HyDiff  =    true
+HyDiff  =    false
 
 # Divergence-damping
 DivDampP =    true
@@ -85,7 +85,7 @@ DivDampc = 0.02
 # Non-hydrostatic parameter
 NonHydro = true
 
-# Deep atmosphere
+# Deep atmosphere (scale quantities for altitude + radius)
 DeepModel = true
 
 # Initial conditions
@@ -94,7 +94,7 @@ rest = true
 # initial conditions file, used if rest is set to false
 # (path relative to current working directory)
 # defaults to 'ifile/esp_initial.h5'
-initial = ifile/esp_initial.h5
+initial =ifile/esp_initial.h5
 
 # Core benchmark tests
 # Held-Suarez test for Earth == HeldSuarez
@@ -102,7 +102,7 @@ initial = ifile/esp_initial.h5
 # Benchmark test for deep hot Jupiter == DeepHotJupiter
 # Benchmark test for tidally locked Earth == TidallyLockedEarth
 # No benchmark test == NoBenchmark (model is then forced with grey RT by default)
-core_benchmark = DeepHotJupiter
+core_benchmark = AcousticTest
 
 # Switch off dynamical core (gcm)
 # This is useful for testing/debugging physics modules
@@ -132,9 +132,8 @@ Rv_sponge = 1e-5
 #t_shrink = 1
 
 
-#-- Radiative transfer options (core_benchmark = 0) --------------------------#
+#-- Radiative transfer options (core_benchmark = NoBenchmark) --------------------------#
 radiative_transfer = false
-
 ## RT parameters #######################################
 # stellar temperature (k)
 Tstar = 5800
@@ -184,7 +183,6 @@ sync_rot = true
 # (stupid Earth convention applies)
 #longp = 0
 #########################################################
-
 
 #-- Device options -----------------------------------------------------------#
 # GPU ID number

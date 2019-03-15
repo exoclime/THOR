@@ -16,6 +16,7 @@ timestep = 300
 # output every n steps
 n_out = 7200
 
+
 # output directory (relative to current working directory)
 # defaults to 'results'
 results_path = wasp43b_example
@@ -29,7 +30,7 @@ simulation_ID = Wasp43b
 radius = 72427000.0
 
 # Rotation rate [rad s^-1]
-rotation_rate = -9.09E-5
+rotation_rate = 9.09E-5
 
 # Gravitational acceleration [m/s^2]
 gravitation = 47
@@ -73,8 +74,11 @@ DivDampP =    true
 
 # Strength of diffusion
 Diffc = 0.015
-#########################################################
 
+# Strength of divergence damping
+DivDampc = 0.015
+#########################################################
+conservation = true
 
 #-- Model options ------------------------------------------------------------#
 # Non-hydrostatic parameter
@@ -106,7 +110,7 @@ gcm_off = false
 
 #-- Sponge layer (Rayleigh drag) ---------------------------------------------#
 # use sponge layer (Rayleigh drag) at top of atmosphere?
-SpongeLayer = false
+SpongeLayer = true
 
 # latitude rings (zonal mean is calculated over these)
 nlat = 20
@@ -115,7 +119,7 @@ nlat = 20
 ns_sponge = 0.75
 
 # strength of sponge layer (1/damping time)
-Rv_sponge = 1e-5
+Rv_sponge = 1e-4
 
 # shrink sponge by half after some time (experimental)
 #shrink_sponge = true
@@ -125,6 +129,8 @@ Rv_sponge = 1e-5
 
 #-- Radiative transfer options (core_benchmark = 0) --------------------------#
 ## RT parameters #######################################
+radiative_transfer = true
+
 # stellar temperature (k)
 Tstar = 4300
 

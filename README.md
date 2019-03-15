@@ -18,10 +18,14 @@ Current code owners: Joao Mendonca: joao.mendonca@space.dtu.dk, Russell Deitrick
    $ cd THOR
    $ cp Makefile.conf.template Makefile.conf
 ```
-Find the `SM` value of your Nvidia GPU. Then open `Makefile.conf` in a text editor and edit like so:
+Find the `SM` value of your Nvidia GPU. Decide if you want to run without any physics module `empty` physics module, or the one with radiative transfer, the `multi` module. Then open `Makefile.conf` in a text editor and edit like so:
 ```
-MODULES_SRC := src/physics/managers/multi/
+MODULES_SRC := src/physics/managers/<module_type>/
 SM:=<SM value of your card> 
+
+``` 
+Set `module_type`to `empty` (default) or `multi`.
+
 ```
 Then head back to the command line and
 ```sh

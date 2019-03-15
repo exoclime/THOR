@@ -57,8 +57,7 @@
 class log_writer
 {
 public:
-    log_writer(const std::string& sim_id_,
-               const std::string& output_dir_);
+    log_writer(const std::string& sim_id_, const std::string& output_dir_);
 
 
     // control file log
@@ -73,7 +72,8 @@ public:
                              double GlobalMass_h,
                              double GlobalAMx_h,
                              double GlobalAMy_h,
-                             double GlobalAMz_h);
+                             double GlobalAMz_h,
+                             double GlobalEnt_h);
     int  prepare_conservation_file(bool append);
 
 
@@ -119,28 +119,26 @@ public:
         }
     }
 
-    template <typename ... Args>
-    static void printf(Args... args) {
-      // Stop GCC from complaining about format string it can't analyse
+    template<typename... Args> static void printf(Args... args) {
+        // Stop GCC from complaining about format string it can't analyse
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-security"
-      if (pFILE != nullptr)
+        if (pFILE != nullptr)
             fprintf(pFILE, args...);
-        
+
         std::printf(args...);
 #pragma GCC diagnostic pop
     }
 
-    template <typename ... Args>
-    static void printf_logonly(Args... args) {
-      // Stop GCC from complaining about format string it can't analyse
+    template<typename... Args> static void printf_logonly(Args... args) {
+        // Stop GCC from complaining about format string it can't analyse
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-security"
         if (pFILE != nullptr)
             fprintf(pFILE, args...);
 #pragma GCC diagnostic pop
     }
-    
+
 
     static void flush() {
         if (pFILE != nullptr)

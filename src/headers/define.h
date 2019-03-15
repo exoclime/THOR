@@ -58,9 +58,10 @@
 // Sponge layer
 #define nlat_default 20             // Number of latitude rings for mean zonal wind (sponge layer)
 #define Rv_sponge_default 1e-4      // Maximum damping (top of model)
+#define RvT_sponge_default 1e-4     // Maximum damping (top of model)
 #define ns_sponge_default 0.75      // Lowest level of sponge layer
 #define shrink_sponge_default false // shrink sponge layer after some time
-#define t_shrink_default 500.0      // shrink sponge after this many days
+#define t_shrink_default 144000     // shrink sponge after this many time steps
 
 // Diffusion
 #define HyDiff_default true   // Hyper-diffusion
@@ -92,11 +93,10 @@
 #define output_path_default "results" // Output directory
 
 #define gcm_off_default false //turns off fluid dynamical core for debugging physics
-#define TPprof_default 0      //initial TP profile (0 = isothermal, 1 = guillot)
 
 #define conservation_default false //output energy, mass, angular momentum, etc
 
-#define conv_adj_default 0  // use convective adjustment scheme
+#define conv_adj_default 0 // use convective adjustment scheme
 
 enum benchmark_types {
     NO_BENCHMARK         = 0,
@@ -104,5 +104,7 @@ enum benchmark_types {
     TIDALLY_LOCKED_EARTH = 2,
     SHALLOW_HOT_JUPITER  = 3,
     DEEP_HOT_JUPITER     = 4,
-    JET_STEADY           = 5
+    JET_STEADY           = 5,
+    ACOUSTIC_TEST        = 6,
+    GWAVE_TEST           = 7
 };
