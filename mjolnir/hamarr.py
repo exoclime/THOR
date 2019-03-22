@@ -231,11 +231,17 @@ class rg_out:
                 regrid(resultsf,simID,ntsi,nts,pressure_vert=pressure_vert)
                 openh5 = h5py.File(fileh5)
 
+            # if not 'del_hseq' in openh5.keys():
+            #     openh5.close()
+            #     regrid(resultsf,simID,ntsi,nts,pressure_vert=pressure_vert)
+            #     openh5 = h5py.File(fileh5)
+
             Rhoi = openh5['Rho'][...]
             Tempi = openh5['Temperature'][...]
             Ui = openh5['U'][...]
             Vi = openh5['V'][...]
             Wi = openh5['W'][...]
+            # del_hseqi = openh5['del_hseq'][...]
             if pressure_vert == True:
                 Prei = openh5['Pressure'][...]
             else:
@@ -282,6 +288,8 @@ class rg_out:
                 self.RV = np.zeros(np.shape(RVi)+(nts-ntsi+1,))
                 self.lat_lr = np.zeros(np.shape(lati_lr)+(nts-ntsi+1,))
                 self.lon_lr = np.zeros(np.shape(loni_lr)+(nts-ntsi+1,))
+
+                # self.del_hseq = np.zeros(np.shape(del_hseqi)+(nts-ntsi+1,))
                 if RT == 1:
                     self.tau_sw = np.zeros(np.shape(tau_swi)+(nts-ntsi+1,))
                     self.tau_lw = np.zeros(np.shape(tau_lwi)+(nts-ntsi+1,))
@@ -299,6 +307,7 @@ class rg_out:
             self.V[:,:,:,t-ntsi+1] = Vi
             self.W[:,:,:,t-ntsi+1] = Wi
             self.Temperature[:,:,:,t-ntsi+1] = Tempi
+            # self.del_hseq[:,:,:,t-ntsi+1] = del_hseqi
             if pressure_vert == True:
                 self.Pressure[:,t-ntsi+1] = Prei
             else:
@@ -471,6 +480,7 @@ def regrid(resultsf,simID,ntsi,nts,res_deg=0.5,nlev=40,pscale='log',overwrite=Fa
     interpx = (grid.Altitude-grid.Altitudeh[:-1])/(grid.Altitudeh[1:]-grid.Altitudeh[:-1])
     # on even height grid, interpolation is excessive, but wth?
     Wh_icoh = output.Wh[:,:-1,:] + (output.Wh[:,1:,:]-output.Wh[:,:-1,:])*interpx[None,:,None]
+    del_hseq = np.gradient(output.Pressure,grid.Altitude,axis=1) + output.Rho*input.Gravit
 
     RT = 0
     if hasattr(input,"core_benchmark"):
@@ -503,7 +513,6 @@ def regrid(resultsf,simID,ntsi,nts,res_deg=0.5,nlev=40,pscale='log',overwrite=Fa
             print('Regridding time = %d...'%t)
             Temp_icop = np.zeros((grid.point_num,d_sig))
             Temp_llp = np.zeros((d_lon[0],d_lon[1],d_sig))
-            Temp_llp2 = np.zeros((d_lon[0],d_lon[1],d_sig))
 
             Rho_icop = np.zeros((grid.point_num,d_sig))
             Rho_llp = np.zeros((d_lon[0],d_lon[1],d_sig))
@@ -515,6 +524,9 @@ def regrid(resultsf,simID,ntsi,nts,res_deg=0.5,nlev=40,pscale='log',overwrite=Fa
             U_llp = np.zeros((d_lon[0],d_lon[1],d_sig))
             V_llp = np.zeros((d_lon[0],d_lon[1],d_sig))
             W_llp = np.zeros((d_lon[0],d_lon[1],d_sig))
+
+            del_hseq_icop = np.zeros((grid.point_num,d_sig))
+            del_hseq_llp = np.zeros((d_lon[0],d_lon[1],d_sig))
 
             if RT == 1:
                 tau_sw_icop = np.zeros((grid.point_num,d_sig))
@@ -555,6 +567,7 @@ def regrid(resultsf,simID,ntsi,nts,res_deg=0.5,nlev=40,pscale='log',overwrite=Fa
                     Mh_icop[1,i,:] = interp.pchip_interpolate(sigma[::-1],output.Mh[1,i,::-1,t-ntsi],Pref[::-1])[::-1]
                     Mh_icop[2,i,:] = interp.pchip_interpolate(sigma[::-1],output.Mh[2,i,::-1,t-ntsi],Pref[::-1])[::-1]
                     Wh_icop[i,:] = interp.pchip_interpolate(sigma[::-1],Wh_icoh[i,::-1,t-ntsi],Pref[::-1])[::-1]
+                    del_hseq_icop[i,:] = interp.pchip_interpolate(sigma[::-1],del_hseq[i,::-1,t-ntsi],Pref[::-1])[::-1]
                     if RT == 1:
                         tau_sw_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.tau_sw[i,::-1,t-ntsi],Pref[::-1])[::-1]
                         tau_lw_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.tau_lw[i,::-1,t-ntsi],Pref[::-1])[::-1]
@@ -571,6 +584,7 @@ def regrid(resultsf,simID,ntsi,nts,res_deg=0.5,nlev=40,pscale='log',overwrite=Fa
                 Rho_icop[:,:] = output.Rho[:,:,t-ntsi]
                 Mh_icop[:,:,:] = output.Mh[:,:,:,t-ntsi]
                 Wh_icop[:,:] = Wh_icoh[:,:,t-ntsi]
+                del_hseq_icop[:,:] = del_hseq[:,:,t-ntsi]
                 if RT == 1:
                     tau_sw_icop[:,:] = output.tau_sw[:,:,t-ntsi]
                     tau_lw_icop[:,:] = output.tau_lw[:,:,t-ntsi]
@@ -595,6 +609,7 @@ def regrid(resultsf,simID,ntsi,nts,res_deg=0.5,nlev=40,pscale='log',overwrite=Fa
                 U_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,U_icop[:,lev],(loni,lati),method='nearest')
                 V_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,V_icop[:,lev],(loni,lati),method='nearest')
                 W_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,Wh_icop[:,lev]/Rho_icop[:,lev],(loni,lati),method='nearest')
+                del_hseq_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,del_hseq_icop[:,lev],(loni,lati),method='nearest')
                 if RT == 1:
                     tau_sw_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,tau_sw_icop[:,lev],(loni,lati),method='nearest')
                     tau_lw_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,tau_lw_icop[:,lev],(loni,lati),method='nearest')
@@ -620,13 +635,12 @@ def regrid(resultsf,simID,ntsi,nts,res_deg=0.5,nlev=40,pscale='log',overwrite=Fa
             Lon = openh5.create_dataset("Longitude",data=lon_range,compression='gzip',compression_opts=comp)
             # data
             Temp = openh5.create_dataset("Temperature",data=Temp_llp,compression='gzip',compression_opts=comp)
-            Temp2 = openh5.create_dataset("Temperature2",data=Temp_llp2,compression='gzip',compression_opts=comp)
 
             Rho = openh5.create_dataset("Rho",data=Rho_llp,compression='gzip',compression_opts=comp)
             U = openh5.create_dataset("U",data=U_llp,compression='gzip',compression_opts=comp)
             V = openh5.create_dataset("V",data=V_llp,compression='gzip',compression_opts=comp)
             W = openh5.create_dataset("W",data=W_llp,compression='gzip',compression_opts=comp)
-
+            del_hseqf = openh5.create_dataset("del_hseq",data=del_hseq_llp,compression='gzip',compression_opts=comp)
             if RT == 1:
                 tau_sw = openh5.create_dataset("tau_sw",data=tau_sw_llp,compression='gzip',compression_opts=comp)
                 tau_lw = openh5.create_dataset("tau_lw",data=tau_lw_llp,compression='gzip',compression_opts=comp)

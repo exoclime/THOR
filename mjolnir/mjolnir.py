@@ -56,10 +56,11 @@ args = parser.parse_args()
 pview = args.pview
 
 valid = ['uver','wver','wprof','Tver','Tulev','PTver','ulev','PVver','PVlev',
-            'TP','RVlev','cons','stream','pause','tracer','PTP','regrid','KE','SR','uprof','cfl']
+            'TP','RVlev','cons','stream','pause','tracer','PTP','regrid','KE',
+            'SR','uprof','cfl','hseq','hsprof','bvprof']
 
 rg_needed = ['Tver','uver','wver','Tulev','PTver','ulev','PVver','PVlev',
-            'RVlev','stream','tracer']  #these types need regrid
+            'RVlev','stream','tracer','hseq']  #these types need regrid
 
 openrg = 0
 if 'all' in pview:
@@ -173,13 +174,11 @@ if 'stream' in pview: # RD: needs some work!
          'cmap':'viridis', 'lat':rg.lat, 'lon':rg.lon}
     sigmaref = ham.Get_Prange(input,grid,output,args,xtype='lat')
     ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice,csp=[0])
-
-    # if np.max(input.P_Ref)/np.float(args.pressure_min[0]) > 1000:
-    #     sigmaref = np.logspace(np.log10(input.P_Ref),np.log10(np.float(args.pressure_min[0])*100),grid.nv)/input.P_Ref
-    # else:
-    #     sigmaref = np.linspace(input.P_Ref,np.float(args.pressure_min[0])*100,grid.nv)/input.P_Ref
-    # ham.streamf(input,grid,output,sigmaref)
-
+if 'hseq' in pview:
+    z = {'value':(rg.del_hseq/(rg.Rho*input.Gravit))[:,:,1:,:], 'label':r'$(dP/dr + \rho g)/(\rho g)$','name':'hseq',
+         'cmap':'magma', 'lat': rg.lat, 'lon': rg.lon}
+    sigmaref = ham.Get_Prange(input,grid,output,args,xtype='lat')
+    ham.vertical_lat(input,grid,output,rg,sigmaref[1:],z,slice=args.slice,csp=[0])
 
 #--- Horizontal plot types-------------------------------
 if 'Tulev' in pview:
@@ -253,6 +252,21 @@ if 'cfl' in pview:
     dx = np.sqrt(np.min(grid.areasT))
     cs = np.sqrt(input.Cp/(input.Cp-input.Rd)*output.Pressure/output.Rho)
     z = {'value': cs*dt/dx, 'label':'CFL number for (horizontal) acoustic waves', 'name':'CFL' }
+    ham.profile(input,grid,output,z,stride=20)
+if 'hsprof' in pview:
+    dpdr = np.gradient(output.Pressure,grid.Altitude,axis=1)
+    hseq = (dpdr + output.Rho*input.Gravit)/output.Rho/input.Gravit
+    hseq[:,0,:] = np.nan
+    hseq[:,-1,:] = np.nan
+    z = {'value': hseq, 'label':r'$dP/dr + \rho g$', 'name':'hsprof'}
+    ham.profile(input,grid,output,z,stride=20)
+if 'bvprof' in pview:
+    kappa_ad = input.Rd/input.Cp  # adiabatic coefficient
+    T = output.Pressure/input.Rd/output.Rho
+    pt = T*(output.Pressure/input.P_Ref)**(-kappa_ad)
+    dptdr = np.gradient(pt,grid.Altitude,axis=1)
+    N = np.sqrt(input.Gravit/pt*dptdr)
+    z =  {'value': N, 'label':r'$N$ (s$^{-1}$)', 'name':'BVprof'}
     ham.profile(input,grid,output,z,stride=20)
 
 
