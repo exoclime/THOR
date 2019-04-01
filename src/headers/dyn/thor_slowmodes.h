@@ -207,6 +207,7 @@ __global__ void Compute_Slow_Modes(double *SlowMh_d,
     advy += -advr * funcy;
     advz += -advr * funcz;
 
+
     // Neighbours
     pt1 = (y + 2) * nhl + x + 1;
     pt2 = (y + 2) * nhl + x + 2;
@@ -218,6 +219,19 @@ __global__ void Compute_Slow_Modes(double *SlowMh_d,
     altht = Altitudeh_d[lev + 1];
     althl = Altitudeh_d[lev];
     alt   = Altitude_d[lev];
+
+    // quasi-hydrostatic (keep only metric terms)
+    if (NonHydro == false) {
+        advr = (pow(Mh_d[id * 3 * nv + lev * 3 + 0], 2) + pow(Mh_d[id * 3 * nv + lev * 3 + 1], 2)
+                + pow(Mh_d[id * 3 * nv + lev * 3 + 2], 2))
+               / (rho * (alt + A));
+        if (lev != 0) {
+            advrl = (pow(Mh_d[id * 3 * nv + (lev - 1) * 3 + 0], 2)
+                     + pow(Mh_d[id * 3 * nv + (lev - 1) * 3 + 1], 2)
+                     + pow(Mh_d[id * 3 * nv + (lev - 1) * 3 + 2], 2))
+                    / (rhol * (altl + A));
+        }
+    }
 
     if (DeepModel) {
         r2p    = pow(altht + A, 2.0);
@@ -310,14 +324,23 @@ __global__ void Compute_Slow_Modes(double *SlowMh_d,
         intt = (xi - xip) / (xim - xip);
         intl = (xi - xim) / (xip - xim);
 
-        if (NonHydro)
+        // if (NonHydro)
+        //     swr =
+        //         (-diffw_d[id * nv + lev - 1] - diffwv_d[id * nv + lev - 1] + advrl + rhol * Gravit)
+        //             * intt
+        //         + (-diffw_d[id * nv + lev] - diffwv_d[id * nv + lev] + advr + rho * Gravit) * intl;
+        // else {
+        if (DeepModel) {
             swr =
                 (-diffw_d[id * nv + lev - 1] - diffwv_d[id * nv + lev - 1] + advrl + rhol * Gravit)
                     * intt
                 + (-diffw_d[id * nv + lev] - diffwv_d[id * nv + lev] + advr + rho * Gravit) * intl;
-        else
+        }
+        else {
             swr = (-diffw_d[id * nv + lev - 1] - diffwv_d[id * nv + lev - 1] + rhol * Gravit) * intt
                   + (-diffw_d[id * nv + lev] - diffwv_d[id * nv + lev] + rho * Gravit) * intl;
+        }
+        // }
 
         dz   = alt - altl;
         dpdz = (pressure_s[ir] - pressurel) / dz;
@@ -474,6 +497,20 @@ __global__ void Compute_Slow_Modes_Poles(double *SlowMh_d,
                 rhol = rhot;
             rhot = Rho_d[id * nv + lev];
 
+            // quasi-hydrostatic (keep only metric terms)
+            if (NonHydro == false) {
+                advrt = (pow(Mh_d[id * 3 * nv + lev * 3 + 0], 2)
+                         + pow(Mh_d[id * 3 * nv + lev * 3 + 1], 2)
+                         + pow(Mh_d[id * 3 * nv + lev * 3 + 2], 2))
+                        / (rhot * (alt + A));
+                if (lev != 0) {
+                    advrl = (pow(Mh_d[id * 3 * nv + (lev - 1) * 3 + 0], 2)
+                             + pow(Mh_d[id * 3 * nv + (lev - 1) * 3 + 1], 2)
+                             + pow(Mh_d[id * 3 * nv + (lev - 1) * 3 + 2], 2))
+                            / (rhol * (altl + A));
+                }
+            }
+
             if (DeepModel) {
                 r2p    = pow(altht + A, 2.0);
                 r2m    = pow(alt + A, 2.0);
@@ -547,7 +584,7 @@ __global__ void Compute_Slow_Modes_Poles(double *SlowMh_d,
 
                 intt = (xi - xip) / (xim - xip);
                 intl = (xi - xim) / (xip - xim);
-                if (NonHydro)
+                if (DeepModel) //(NonHydro)
                     swr = (-diffw_d[id * nv + lev - 1] - diffwv_d[id * nv + lev - 1] + advrl
                            + rhol * Gravit)
                               * intt

@@ -235,6 +235,7 @@ __global__ void Compute_Advec_Cori1(
     v_d[id * nv + lev]   = v_s[ir];
 }
 
+
 // Computes the 3D advection terms and the velocities in cartesians.
 // (poles)
 template<int NN>
