@@ -177,6 +177,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                                             Rhok_d,
                                                             Altitude_d,
                                                             Altitudeh_d,
+                                                            func_r_d,
                                                             sim.Omega,
                                                             sim.A,
                                                             nv,
