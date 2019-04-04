@@ -359,6 +359,8 @@ __global__ void rtm_dual_band(double *pressure_d,
                               double  alb,
                               double  tausw,
                               double  taulw,
+                              bool    latf_lw,
+                              double  taulw_pole,
                               double  incflx,
                               double  ps0,
                               int     num,
@@ -450,7 +452,15 @@ __global__ void rtm_dual_band(double *pressure_d,
                              id);
 
         // Compute opacities
-        computetau(tau_d, phtemp, coszrs, tausw, taulw, ps0, id, nv);
+        double taulw_lat;
+        if (latf_lw) {
+            //latitude dependence of opacity, for e.g., earth
+            taulw_lat = taulw + (taulw_pole - taulw) * pow(sin(lonlat_d[id * 2 + 1]), 2);
+        }
+        else {
+            taulw_lat = taulw;
+        }
+        computetau(tau_d, phtemp, coszrs, tausw, taulw_lat, ps0, id, nv);
 
         if (coszrs > 0.0) {
             radcsw(phtemp,

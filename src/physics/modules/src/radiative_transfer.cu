@@ -63,6 +63,8 @@ void radiative_transfer::print_config() {
     log::printf("    Bond albedo                 = %f.\n", albedo_config);
     log::printf("    Shortwave Absorption coef   = %f.\n", tausw_config);
     log::printf("    Longwave Absorption coef    = %f.\n", taulw_config);
+    log::printf("    Using sin(lat) variation LW?    = %f.\n", latf_lw_config);
+    log::printf("    Longwave Absorption coef (poles)    = %f.\n", taulw_pole_config);
     log::printf("\n");
 
     // orbit/insolation properties
@@ -122,6 +124,8 @@ bool radiative_transfer::initial_conditions(const ESP &esp, const SimulationSetu
             albedo_config,
             tausw_config,
             taulw_config,
+            latf_lw_config,
+            taulw_pole_config,
             sync_rot_config,
             mean_motion_config,
             true_long_i_config,
@@ -182,6 +186,8 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                                  albedo,
                                  tausw,
                                  taulw,
+                                 latf_lw,
+                                 taulw_pole,
                                  incflx,
                                  sim.P_Ref,
                                  esp.point_num,
@@ -217,6 +223,10 @@ bool radiative_transfer::configure(config_file &config_reader) {
     config_reader.append_config_var("albedo", albedo_config, albedo_config);
     config_reader.append_config_var("tausw", tausw_config, tausw_config);
     config_reader.append_config_var("taulw", taulw_config, taulw_config);
+
+    // options for latitude dependence in longwave opacity
+    config_reader.append_config_var("latf_lw", latf_lw_config, latf_lw_config);
+    config_reader.append_config_var("taulw_pole", taulw_pole_config, taulw_pole_config);
 
     // orbit/insolation properties
     config_reader.append_config_var("sync_rot", sync_rot_config, sync_rot_config);
@@ -288,6 +298,8 @@ void radiative_transfer::RTSetup(double Tstar_,
                                  double albedo_,
                                  double tausw_,
                                  double taulw_,
+                                 bool   latf_lw_,
+                                 double taulw_pole_,
                                  bool   sync_rot_,
                                  double mean_motion_,
                                  double true_long_i_,
@@ -308,6 +320,8 @@ void radiative_transfer::RTSetup(double Tstar_,
     albedo           = albedo_;
     tausw            = tausw_;
     taulw            = taulw_;
+    taulw_pole       = taulw_pole_;
+    latf_lw          = latf_lw_;
     double resc_flx  = pow(radius_star / planet_star_dist, 2.0);
     incflx           = resc_flx * bc * Tstar * Tstar * Tstar * Tstar;
 

@@ -78,9 +78,11 @@ private:
     double diff_fac_config         = 0.5;   // Diffusivity factor: 0.5-1.0
     double Tlow_config =
         970; // Lower boundary temperature: upward flux coming from the planet's interior
-    double albedo_config = 0.18;   // Bond albedo
-    double tausw_config  = 532.0;  // Absorption coefficient for the shortwaves
-    double taulw_config  = 1064.0; // Absorption coefficient for the longwaves
+    double albedo_config     = 0.18;   // Bond albedo
+    double tausw_config      = 532.0;  // Absorption coefficient for the shortwaves
+    double taulw_config      = 1064.0; // Absorption coefficient for the longwaves
+    bool   latf_lw_config    = false;  // use sin(lat) dependence for lw opacity
+    double taulw_pole_config = 1064.0; // Absorption coefficient for the longwave (poles)
 
 
     bool   sync_rot_config    = true;     // is planet syncronously rotating?
@@ -98,9 +100,12 @@ private:
     double radius_star      = 0.667; // Star radius [Rsun]
     double diff_fac         = 0.5;   // Diffusivity factor: 0.5-1.0
     double Tlow = 970; // Lower boundary temperature: upward flux coming from the planet's interior
-    double albedo = 0.18;   // Bond albedo
-    double tausw  = 532.0;  // Absorption coefficient for the shortwaves
-    double taulw  = 1064.0; // Absorption coefficient for the longwaves
+    double albedo     = 0.18;   // Bond albedo
+    double tausw      = 532.0;  // Absorption coefficient for the shortwaves
+    double taulw      = 1064.0; // Absorption coefficient for the longwaves
+    double taulw_pole = 1064.0;
+    bool   latf_lw    = false;
+
     double incflx;
     //  Arrays used in RT code
     double *fnet_up_d;
@@ -145,6 +150,8 @@ private:
                     double albedo_,
                     double tausw_,
                     double taulw_,
+                    bool   latf_lw_,
+                    double taulw_pole_,
                     bool   sync_rot_,
                     double mean_motion_,
                     double true_long_i_,
