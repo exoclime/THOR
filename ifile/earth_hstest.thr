@@ -134,7 +134,7 @@ Rv_sponge = 1e-5
 
 
 #-- Radiative transfer options (core_benchmark = NoBenchmark) --------------------------#
-radiative_transfer = true
+radiative_transfer = false
 ## RT parameters #######################################
 # stellar temperature (k)
 Tstar = 5800
@@ -184,6 +184,9 @@ sync_rot = true
 # (stupid Earth convention applies)
 #longp = 0
 #########################################################
+
+boundary_layer = true
+
 
 #-- Device options -----------------------------------------------------------#
 # GPU ID number

@@ -225,6 +225,8 @@ if 'tracer' in pview:
     z = {'value':np.log10(rg.nh3), 'label':r'Log(mixing ratio)',
         'name':'chem-nh3-uv1', 'cmap':'magma', 'lat':rg.lat, 'lon':rg.lon}
     ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True)
+# if 'insol' in pview:
+#     z = {'value':rg.insol}
 
 
 #--- Pressure profile types-------------------------------

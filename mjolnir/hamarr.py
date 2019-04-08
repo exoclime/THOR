@@ -449,12 +449,13 @@ def calc_RV_PV(grid,output,input,lons,lats,sigma,t_ind,fileh5,comp=4,pressure_ve
     Lonlr = openh5.create_dataset("Lon_lowres",data=lon_range,compression='gzip',compression_opts=comp)
     openh5.close()
 
-def regrid(resultsf,simID,ntsi,nts,res_deg=0.5,nlev=40,pscale='log',overwrite=False,comp=4,pressure_vert=True):
+def regrid(resultsf,simID,ntsi,nts,nlev=40,pscale='log',overwrite=False,comp=4,pressure_vert=True):
     # runs over files and converts ico-height grid to lat-lon-pr grid
     outall = GetOutput(resultsf,simID,ntsi,nts)
     input = outall.input
     grid = outall.grid
     output = outall.output
+    res_deg = 4.0/2**(input.glevel-4)
 
     print('Regrid data in folder '+resultsf+'...\n')
     #figure out pressure grid
@@ -541,6 +542,9 @@ def regrid(resultsf,simID,ntsi,nts,res_deg=0.5,nlev=40,pscale='log',overwrite=Fa
                 fnet_dn_icop = np.zeros((grid.point_num,d_sig))
                 fnet_dn_llp = np.zeros((d_lon[0],d_lon[1],d_sig))
 
+                insol_ll = np.zeros((d_lon[0],d_lon[1]))
+
+
             if chem == 1:
                 ch4_icop = np.zeros((grid.point_num,d_sig))
                 ch4_llp = np.zeros((d_lon[0],d_lon[1],d_sig))
@@ -615,6 +619,7 @@ def regrid(resultsf,simID,ntsi,nts,res_deg=0.5,nlev=40,pscale='log',overwrite=Fa
                     tau_lw_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,tau_lw_icop[:,lev],(loni,lati),method='nearest')
                     fnet_up_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,fnet_up_icop[:,lev],(loni,lati),method='nearest')
                     fnet_dn_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,fnet_dn_icop[:,lev],(loni,lati),method='nearest')
+                    insol_ll[:,:] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,output.Insol[:,t-ntsi],(loni,lati),method='nearest')
                 if chem == 1:
                     ch4_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,ch4_icop[:,lev],(loni,lati),method='nearest')
                     co_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,co_icop[:,lev],(loni,lati),method='nearest')
@@ -646,7 +651,7 @@ def regrid(resultsf,simID,ntsi,nts,res_deg=0.5,nlev=40,pscale='log',overwrite=Fa
                 tau_lw = openh5.create_dataset("tau_lw",data=tau_lw_llp,compression='gzip',compression_opts=comp)
                 fnet_up = openh5.create_dataset("fnet_up",data=fnet_up_llp,compression='gzip',compression_opts=comp)
                 fnet_dn = openh5.create_dataset("fnet_dn",data=fnet_dn_llp,compression='gzip',compression_opts=comp)
-
+                insol = openh5.create_dataset("insol",data=insol_ll,compression='gzip',compression_opts=comp)
             if chem == 1:
                 ch4 = openh5.create_dataset("ch4",data=ch4_llp,compression='gzip',compression_opts=comp)
                 co = openh5.create_dataset("co",data=co_llp,compression='gzip',compression_opts=comp)

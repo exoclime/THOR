@@ -81,7 +81,7 @@ private:
     double albedo_config     = 0.18;   // Bond albedo
     double tausw_config      = 532.0;  // Absorption coefficient for the shortwaves
     double taulw_config      = 1064.0; // Absorption coefficient for the longwaves
-    bool   latf_lw_config    = false;  // use sin(lat) dependence for lw opacity
+    bool   latf_lw_config    = false;  // use sin^2(lat) dependence for lw opacity
     double taulw_pole_config = 1064.0; // Absorption coefficient for the longwave (poles)
 
 
