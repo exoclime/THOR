@@ -493,14 +493,18 @@ __global__ void Compute_Advec_Cori2(double* Adv_d,       //
             else {
                 Cx = 2 * Omega
                      * (vz * func_r_d[id * 3 + 2] * func_r_d[id * 3 + 1]
-                        - vy * pow(func_r_d[id * 3 + 2], 2));
+                        - vy * pow(func_r_d[id * 3 + 2], 2))
+                     * rho;
                 Cy = -2 * Omega
                      * (vz * func_r_d[id * 3 + 2] * func_r_d[id * 3 + 0]
-                        - vx * pow(func_r_d[id * 3 + 2], 2));
+                        - vx * pow(func_r_d[id * 3 + 2], 2))
+                     * rho;
                 Cz = 2 * Omega
                      * (vy * func_r_d[id * 3 + 2] * func_r_d[id * 3 + 0]
-                        - vx * func_r_d[id * 3 + 2] * func_r_d[id * 3 + 1]);
+                        - vx * func_r_d[id * 3 + 2] * func_r_d[id * 3 + 1])
+                     * rho;
             }
+
             Adv_d[id * 3 * nv + lev * 3 + 0] += davx + Cx;
             Adv_d[id * 3 * nv + lev * 3 + 1] += davy + Cy;
             Adv_d[id * 3 * nv + lev * 3 + 2] += davz + Cz;
