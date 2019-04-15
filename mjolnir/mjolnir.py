@@ -169,11 +169,13 @@ if 'PVver' in pview:
     ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice)
     # ham.potential_vort_vert(input,grid,output,sigmaref)
 if 'stream' in pview: # RD: needs some work!
-    strm = ham.calc_moc_streamf(input,grid,output)
-    z = {'value':strm, 'label':r'Eulerian streamfunction (kg s$^{-1}$)', 'name':'streamf1',
-         'cmap':'viridis', 'lat':rg.lat, 'lon':rg.lon}
+    # strm = ham.calc_moc_streamf(input,grid,output)
+    # strm = rg.streamf
+    # z = {'value':strm, 'label':r'Eulerian streamfunction (kg s$^{-1}$)', 'name':'streamf2',
+    #      'cmap':'viridis', 'lat':rg.lat, 'lon':rg.lon}
     sigmaref = ham.Get_Prange(input,grid,output,args,xtype='lat')
-    ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice,csp=[0])
+    # ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice,csp=[0])
+    ham.streamf_moc_plot(input,grid,output,rg,sigmaref)
 if 'hseq' in pview:
     z = {'value':(rg.del_hseq/(rg.Rho*input.Gravit))[:,:,1:,:], 'label':r'$(dP/dr + \rho g)/(\rho g)$','name':'hseq',
          'cmap':'magma', 'lat': rg.lat, 'lon': rg.lon}

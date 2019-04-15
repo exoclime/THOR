@@ -278,9 +278,15 @@ __device__ void radclw(double *phtemp,
     //
     //  Upward Directed Radiation
     //
+    if (surface == true) {
+        tlow = Tsurface[id];
+    }
     fnet_up_d[id * (nv + 1) + 0] = bc * tlow * tlow * tlow * tlow; // Lower boundary;
-    if (fnet_up_d[id * (nv + 1) + 0] < fnet_dn_d[id * (nv + 1) + 0])
-        fnet_up_d[id * (nv + 1) + 0] = fnet_dn_d[id * (nv + 1) + 0];
+    if (surface == false) {
+        if (fnet_up_d[id * (nv + 1) + 0] < fnet_dn_d[id * (nv + 1) + 0])
+            // reflecting boundary
+            fnet_up_d[id * (nv + 1) + 0] = fnet_dn_d[id * (nv + 1) + 0];
+    }
     for (int lev = 1; lev <= nv; lev++) {
 
         double eu = 0.0;
@@ -375,7 +381,11 @@ __global__ void rtm_dual_band(double *pressure_d,
                               bool    sync_rot,
                               double  ecc,
                               double  obliquity,
-                              double *insol_d) {
+                              double *insol_d,
+                              bool    surface,
+                              double  Csurf,
+                              double *Tsurface_d,
+                              double *surf_flux_d) {
 
 
     //
@@ -484,6 +494,10 @@ __global__ void rtm_dual_band(double *pressure_d,
             insol_d[id] = 0;
         }
 
+        if (surface = true) {
+            surf_flux_d[id] = fnet_dn_d[id * nvi + 0] - fnet_up_d[id * nvi + 0];
+        }
+
         for (int lev = 0; lev <= nv; lev++)
             fnet_up_d[id * nvi + lev] = 0.0;
         for (int lev = 0; lev <= nv; lev++)
@@ -502,6 +516,11 @@ __global__ void rtm_dual_band(double *pressure_d,
                gravit,
                id,
                nv);
+
+        if (surface = true) {
+            surf_flux_d[id] += fnet_dn_d[id * nvi + 0] - fnet_up_d[id * nvi + 0];
+            Tsurface_d[id] += surf_flux_d[id] * timestep / Csurf;
+        }
 
         for (int lev = 0; lev < nv; lev++) {
             temperature_d[id * nv + lev] = ttemp[id * nv + lev] + dtemp[id * nv + lev] * timestep;

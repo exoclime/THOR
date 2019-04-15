@@ -75,6 +75,10 @@ void radiative_transfer::print_config() {
     log::printf("    Orbital eccentricity        = %f.\n", ecc_config);
     log::printf("    Obliquity                   = %f deg.\n", obliquity_config);
     log::printf("    Longitude of periastron     = %f deg.\n", longp_config);
+
+    // surface parameters
+    log::printf("    Surface                     = %s.\n", surface_config ? "true" : "false");
+    log::printf("    Surface Heat Capacity       = %f deg.\n", Csurf_config);
 }
 
 bool radiative_transfer::initialise_memory(const ESP &              esp,
@@ -97,6 +101,9 @@ bool radiative_transfer::initialise_memory(const ESP &              esp,
     fnet_up_h = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
     fnet_dn_h = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
     tau_h     = (double *)malloc(esp.nv * esp.point_num * 2 * sizeof(double));
+
+    cudaMalloc((void **)&surf_flux_d, esp.point_num * sizeof(double));
+    cudaMalloc((void **)&Tsurface_d, esp.point_num * sizeof(double));
 
     return true;
 }
@@ -134,6 +141,8 @@ bool radiative_transfer::initial_conditions(const ESP &esp, const SimulationSetu
             alpha_i_config,
             obliquity_config,
             sim.Omega,
+            surface_config,
+            Csurf_config,
             esp.point_num);
     return true;
 }
@@ -202,7 +211,11 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                                  sync_rot,
                                  ecc,
                                  obliquity,
-                                 insol_d);
+                                 insol_d,
+                                 surface,
+                                 Csurf,
+                                 Tsurface_d,
+                                 surf_flux_d);
 
     if (nstep * time_step < (2 * M_PI / mean_motion)) {
         // stationary orbit/obliquity
@@ -236,6 +249,11 @@ bool radiative_transfer::configure(config_file &config_reader) {
     config_reader.append_config_var("ecc", ecc_config, ecc_config);
     config_reader.append_config_var("obliquity", obliquity_config, obliquity_config);
     config_reader.append_config_var("longp", longp_config, longp_config);
+
+    // properties for a solid/liquid surface
+    config_reader.append_config_var("surface", surface_config, surface_config);
+    config_reader.append_config_var("Csurf", Csurf_config, Csurf_config);
+
 
     return true;
 }
@@ -287,6 +305,14 @@ bool radiative_transfer::store_init(storage &s) {
     s.append_value(obliquity * 180 / M_PI, "/obliquity", "deg", "tilt of spin axis");
     s.append_value(longp * 180 / M_PI, "/longp", "deg", "longitude of periastron");
 
+    s.append_value(latf_lw ? 1.0 : 0.0, "/latf_lw", "-", "use lat dependent opacity");
+    s.append_value(
+        taulw_pole, "/taulw_pole", "-", "longwave optical depth of deepest layer at poles");
+
+    s.append_value(surface ? 1.0 : 0.0, "/surface", "-", "include solid/liquid surface");
+    s.append_value(Csurf, "/Csurf", "J/K/m^2", "heat capacity of surface by area");
+
+
     return true;
 }
 
@@ -308,6 +334,8 @@ void radiative_transfer::RTSetup(double Tstar_,
                                  double alpha_i_,
                                  double obliquity_,
                                  double Omega,
+                                 bool   surface_,
+                                 double Csurf_,
                                  int    point_num) {
 
     double bc = 5.677036E-8; // Stefan–Boltzmann constant [W m−2 K−4]
@@ -340,6 +368,9 @@ void radiative_transfer::RTSetup(double Tstar_,
     mean_anomaly_i        = fmod(ecc_anomaly_i - ecc * sin(ecc_anomaly_i), (2 * M_PI));
     alpha_i               = alpha_i_ * M_PI / 180.0;
     obliquity             = obliquity_ * M_PI / 180.0;
+
+    surface = surface_;
+    Csurf   = Csurf_;
 }
 
 void radiative_transfer::update_spin_orbit(double time, double Omega) {

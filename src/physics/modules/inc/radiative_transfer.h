@@ -93,6 +93,8 @@ private:
     double alpha_i_config     = 0;        // initial right asc of host star (relative to long = 0)
     double longp_config       = 0;        // longitude of periastron (rad)
 
+    bool   surface_config = false; // use solid/liquid surface at altitude 0
+    double Csurf_config   = 1e7;   // heat capacity of surface (J K^-1 m^-2)
 
     // Rad trans
     double Tstar            = 4520;  // Star effective temperature [K]
@@ -105,6 +107,11 @@ private:
     double taulw      = 1064.0; // Absorption coefficient for the longwaves
     double taulw_pole = 1064.0;
     bool   latf_lw    = false;
+
+    bool    surface;
+    double  Csurf;
+    double *surf_flux_d;
+    double *Tsurface_d;
 
     double incflx;
     //  Arrays used in RT code
