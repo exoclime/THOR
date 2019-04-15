@@ -241,6 +241,8 @@ __device__ void radclw(double *phtemp,
                        double  tlow,
                        double  Cp,
                        double  gravit,
+                       bool    surface,
+                       double  Tsurface,
                        int     id,
                        int     nv) {
 
@@ -279,7 +281,7 @@ __device__ void radclw(double *phtemp,
     //  Upward Directed Radiation
     //
     if (surface == true) {
-        tlow = Tsurface[id];
+        tlow = Tsurface;
     }
     fnet_up_d[id * (nv + 1) + 0] = bc * tlow * tlow * tlow * tlow; // Lower boundary;
     if (surface == false) {
@@ -494,7 +496,7 @@ __global__ void rtm_dual_band(double *pressure_d,
             insol_d[id] = 0;
         }
 
-        if (surface = true) {
+        if (surface == true) {
             surf_flux_d[id] = fnet_dn_d[id * nvi + 0] - fnet_up_d[id * nvi + 0];
         }
 
@@ -514,10 +516,12 @@ __global__ void rtm_dual_band(double *pressure_d,
                tlow,
                Cp,
                gravit,
+               surface,
+               Tsurface_d[id],
                id,
                nv);
 
-        if (surface = true) {
+        if (surface == true) {
             surf_flux_d[id] += fnet_dn_d[id * nvi + 0] - fnet_up_d[id * nvi + 0];
             Tsurface_d[id] += surf_flux_d[id] * timestep / Csurf;
         }

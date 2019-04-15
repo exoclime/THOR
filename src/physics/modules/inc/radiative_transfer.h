@@ -167,6 +167,8 @@ private:
                     double alpha_i_,
                     double obliquity_,
                     double Omega,
+                    bool   surface,
+                    double Csurf,
                     int    point_num);
 
     void update_spin_orbit(double time, double Omega);
