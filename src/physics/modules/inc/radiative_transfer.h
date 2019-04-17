@@ -112,6 +112,7 @@ private:
     double  Csurf;
     double *surf_flux_d;
     double *Tsurface_d;
+    double *Tsurface_h;
 
     double incflx;
     //  Arrays used in RT code
@@ -169,6 +170,7 @@ private:
                     double Omega,
                     bool   surface,
                     double Csurf,
+                    double Tmean,
                     int    point_num);
 
     void update_spin_orbit(double time, double Omega);

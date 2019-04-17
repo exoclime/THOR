@@ -78,7 +78,7 @@ void radiative_transfer::print_config() {
 
     // surface parameters
     log::printf("    Surface                     = %s.\n", surface_config ? "true" : "false");
-    log::printf("    Surface Heat Capacity       = %f deg.\n", Csurf_config);
+    log::printf("    Surface Heat Capacity       = %f J/K/m^2.\n", Csurf_config);
 }
 
 bool radiative_transfer::initialise_memory(const ESP &              esp,
@@ -104,6 +104,7 @@ bool radiative_transfer::initialise_memory(const ESP &              esp,
 
     cudaMalloc((void **)&surf_flux_d, esp.point_num * sizeof(double));
     cudaMalloc((void **)&Tsurface_d, esp.point_num * sizeof(double));
+    Tsurface_h = (double *)malloc(esp.point_num * sizeof(double));
 
     return true;
 }
@@ -143,6 +144,7 @@ bool radiative_transfer::initial_conditions(const ESP &esp, const SimulationSetu
             sim.Omega,
             surface_config,
             Csurf_config,
+            sim.Tmean,
             esp.point_num);
     return true;
 }
@@ -336,6 +338,7 @@ void radiative_transfer::RTSetup(double Tstar_,
                                  double Omega,
                                  bool   surface_,
                                  double Csurf_,
+                                 double Tmean,
                                  int    point_num) {
 
     double bc = 5.677036E-8; // Stefan–Boltzmann constant [W m−2 K−4]
@@ -371,6 +374,14 @@ void radiative_transfer::RTSetup(double Tstar_,
 
     surface = surface_;
     Csurf   = Csurf_;
+    int id;
+    if (surface == true) {
+        for (id = 0; id < point_num; id++) {
+            Tsurface_h[id] = Tmean;
+            cudaMemset(surf_flux_d, 0, sizeof(double) * point_num);
+        }
+    }
+    cudaMemcpy(Tsurface_d, Tsurface_h, point_num * sizeof(double), cudaMemcpyHostToDevice);
 }
 
 void radiative_transfer::update_spin_orbit(double time, double Omega) {
