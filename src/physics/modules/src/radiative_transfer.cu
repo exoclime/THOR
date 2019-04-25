@@ -63,8 +63,11 @@ void radiative_transfer::print_config() {
     log::printf("    Bond albedo                 = %f.\n", albedo_config);
     log::printf("    Shortwave Absorption coef   = %f.\n", tausw_config);
     log::printf("    Longwave Absorption coef    = %f.\n", taulw_config);
-    log::printf("    Using sin(lat) variation LW?    = %f.\n", latf_lw_config);
-    log::printf("    Longwave Absorption coef (poles)    = %f.\n", taulw_pole_config);
+    log::printf("    Using sin(lat) variation LW?      = %f.\n", latf_lw_config);
+    log::printf("    Longwave Absorption coef (poles)  = %f.\n", taulw_pole_config);
+    log::printf("    Power law index of unmixed LW abs = %f.\n", n_lw_config);
+    log::printf("    Strength of mixed LW abs    = %f.\n", f_lw_config);
+    log::printf("    Power law index of SW       = %f.\n", n_sw_config);
     log::printf("\n");
 
     // orbit/insolation properties
@@ -134,6 +137,9 @@ bool radiative_transfer::initial_conditions(const ESP &esp, const SimulationSetu
             taulw_config,
             latf_lw_config,
             taulw_pole_config,
+            n_lw_config,
+            n_sw_config,
+            f_lw_config,
             sync_rot_config,
             mean_motion_config,
             true_long_i_config,
@@ -199,6 +205,9 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                                  taulw,
                                  latf_lw,
                                  taulw_pole,
+                                 n_sw,
+                                 n_lw,
+                                 f_lw,
                                  incflx,
                                  sim.P_Ref,
                                  esp.point_num,
@@ -242,6 +251,11 @@ bool radiative_transfer::configure(config_file &config_reader) {
     // options for latitude dependence in longwave opacity
     config_reader.append_config_var("latf_lw", latf_lw_config, latf_lw_config);
     config_reader.append_config_var("taulw_pole", taulw_pole_config, taulw_pole_config);
+
+    config_reader.append_config_var("n_sw", n_sw_config, n_sw_config);
+    config_reader.append_config_var("n_lw", n_lw_config, n_lw_config);
+    config_reader.append_config_var("f_lw", f_lw_config, f_lw_config);
+
 
     // orbit/insolation properties
     config_reader.append_config_var("sync_rot", sync_rot_config, sync_rot_config);
@@ -310,6 +324,10 @@ bool radiative_transfer::store_init(storage &s) {
     s.append_value(latf_lw ? 1.0 : 0.0, "/latf_lw", "-", "use lat dependent opacity");
     s.append_value(
         taulw_pole, "/taulw_pole", "-", "longwave optical depth of deepest layer at poles");
+    s.append_value(n_lw, "/n_lw", "-", "power law exponent for unmixed absorber in LW");
+    s.append_value(n_sw, "/n_sw", "-", "power law exponent for mixed/unmixed absorber in SW");
+    s.append_value(f_lw, "/f_lw", "-", "fraction of taulw in well-mixed absorber");
+
 
     s.append_value(surface ? 1.0 : 0.0, "/surface", "-", "include solid/liquid surface");
     s.append_value(Csurf, "/Csurf", "J/K/m^2", "heat capacity of surface by area");
@@ -328,6 +346,9 @@ void radiative_transfer::RTSetup(double Tstar_,
                                  double taulw_,
                                  bool   latf_lw_,
                                  double taulw_pole_,
+                                 double n_lw_,
+                                 double n_sw_,
+                                 double f_lw_,
                                  bool   sync_rot_,
                                  double mean_motion_,
                                  double true_long_i_,
@@ -353,8 +374,12 @@ void radiative_transfer::RTSetup(double Tstar_,
     taulw            = taulw_;
     taulw_pole       = taulw_pole_;
     latf_lw          = latf_lw_;
-    double resc_flx  = pow(radius_star / planet_star_dist, 2.0);
-    incflx           = resc_flx * bc * Tstar * Tstar * Tstar * Tstar;
+    n_sw             = n_sw_;
+    n_lw             = n_lw_;
+    f_lw             = f_lw_;
+
+    double resc_flx = pow(radius_star / planet_star_dist, 2.0);
+    incflx          = resc_flx * bc * Tstar * Tstar * Tstar * Tstar;
 
     sync_rot = sync_rot_;
     if (sync_rot) {

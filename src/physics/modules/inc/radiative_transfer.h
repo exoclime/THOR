@@ -83,6 +83,9 @@ private:
     double taulw_config      = 1064.0; // Absorption coefficient for the longwaves
     bool   latf_lw_config    = false;  // use sin^2(lat) dependence for lw opacity
     double taulw_pole_config = 1064.0; // Absorption coefficient for the longwave (poles)
+    double n_lw_config       = 2.0;    // power law dependence for unmixed absorbers in LW
+    double n_sw_config       = 1.0;    // power law dependence for mixed/unmixed absorbers in SW
+    double f_lw_config       = 0.5;    // fraction of taulw in well-mixed absorber
 
 
     bool   sync_rot_config    = true;     // is planet syncronously rotating?
@@ -107,6 +110,9 @@ private:
     double taulw      = 1064.0; // Absorption coefficient for the longwaves
     double taulw_pole = 1064.0;
     bool   latf_lw    = false;
+    double n_lw       = 2.0; // power law dependence for unmixed absorbers in LW
+    double n_sw       = 1.0; // power law dependence for mixed/unmixed absorbers in SW
+    double f_lw       = 0.5; // fraction of taulw in well-mixed absorber
 
     bool    surface;
     double  Csurf;
@@ -160,6 +166,9 @@ private:
                     double taulw_,
                     bool   latf_lw_,
                     double taulw_pole_,
+                    double n_lw_,
+                    double n_sw_,
+                    double f_lw_,
                     bool   sync_rot_,
                     double mean_motion_,
                     double true_long_i_,

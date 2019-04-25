@@ -328,18 +328,23 @@ __device__ void computetau(double *tau_d,
                            double  cosz,
                            double  tausw,
                            double  taulw,
+                           double  n_sw,
+                           double  n_lw,
+                           double  f_lw,
                            double  ps0,
                            int     id,
                            int     nv) {
 
+    // need to update this to use scaling for non-uniform mixing
     for (int lev = 0; lev < nv; lev++) {
         tau_d[id * 2 * nv + lev * 2] =
-            (tausw / ps0) * (phtemp[id * (nv + 1) + lev] - phtemp[id * (nv + 1) + lev + 1]);
+            (tausw / pow(ps0, n_sw))
+            * (pow(phtemp[id * (nv + 1) + lev], n_sw) - pow(phtemp[id * (nv + 1) + lev + 1], n_sw));
         tau_d[id * 2 * nv + lev * 2 + 1] =
-            (taulw / ps0) * (phtemp[id * (nv + 1) + lev] - phtemp[id * (nv + 1) + lev + 1])
-            + (taulw / pow(ps0, 2.0))
-                  * (pow(phtemp[id * (nv + 1) + lev], 2.0)
-                     - pow(phtemp[id * (nv + 1) + lev + 1], 2.0));
+            (taulw * f_lw / ps0) * (phtemp[id * (nv + 1) + lev] - phtemp[id * (nv + 1) + lev + 1])
+            + (taulw * (1 - f_lw) / pow(ps0, n_lw))
+                  * (pow(phtemp[id * (nv + 1) + lev], n_lw)
+                     - pow(phtemp[id * (nv + 1) + lev + 1], n_lw));
     }
 }
 
@@ -369,6 +374,9 @@ __global__ void rtm_dual_band(double *pressure_d,
                               double  taulw,
                               bool    latf_lw,
                               double  taulw_pole,
+                              double  n_sw,
+                              double  n_lw,
+                              double  f_lw,
                               double  incflx,
                               double  ps0,
                               int     num,
@@ -472,7 +480,7 @@ __global__ void rtm_dual_band(double *pressure_d,
         else {
             taulw_lat = taulw;
         }
-        computetau(tau_d, phtemp, coszrs, tausw, taulw_lat, ps0, id, nv);
+        computetau(tau_d, phtemp, coszrs, tausw, taulw_lat, n_sw, n_lw, f_lw, ps0, id, nv);
 
         if (coszrs > 0.0) {
             radcsw(phtemp,

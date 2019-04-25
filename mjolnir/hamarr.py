@@ -246,6 +246,7 @@ class rg_out:
                 Prei = openh5['Pressure'][...]
             else:
                 Alti = openh5['Altitude'][...]
+                Prei = np.zeros_like(Alti)
             lati = openh5['Latitude'][...]
             loni = openh5['Longitude'][...]
 
