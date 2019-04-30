@@ -1942,6 +1942,7 @@ def SRindex(input,grid,output):
     S = Mtot/Mtot0 - 1
 
     plt.semilogy(output.time, S)
+    plt.plot(output.time, -1*S)
     plt.xlabel('Time (days)')
     plt.ylabel('Super-rotation index')
     plt.tight_layout()

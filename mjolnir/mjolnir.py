@@ -57,7 +57,7 @@ pview = args.pview
 
 valid = ['uver','wver','wprof','Tver','Tulev','PTver','ulev','PVver','PVlev',
             'TP','RVlev','cons','stream','pause','tracer','PTP','regrid','KE',
-            'SR','uprof','cfl','hseq','hsprof','bvprof']
+            'SR','uprof','cfl','hseq','hsprof','bvprof','fluxprof']
 
 rg_needed = ['Tver','uver','wver','Tulev','PTver','ulev','PVver','PVlev',
             'RVlev','stream','tracer','hseq']  #these types need regrid
@@ -182,6 +182,7 @@ if 'hseq' in pview:
     sigmaref = ham.Get_Prange(input,grid,output,args,xtype='lat')
     ham.vertical_lat(input,grid,output,rg,sigmaref[1:],z,slice=args.slice,csp=[0])
 
+
 #--- Horizontal plot types-------------------------------
 if 'Tulev' in pview:
     # Averaged temperature and wind field (longitude vs latitude)
@@ -272,7 +273,13 @@ if 'bvprof' in pview:
     N = np.sqrt(input.Gravit/pt*dptdr)
     z =  {'value': N, 'label':r'$N$ (s$^{-1}$)', 'name':'BVprof'}
     ham.profile(input,grid,output,z,stride=20)
-
+if 'fluxprof' in pview:
+    total_f = output.fnet_up - output.fnet_dn
+    fup = total_f[:,:-1,:] + (total_f[:,1:,:]-total_f[:,:-1,:]) *\
+          (grid.Altitude[None,:,None]-grid.Altitudeh[None,:-1,None])/\
+          (grid.Altitudeh[None,1:,None]-grid.Altitudeh[None,:-1,None])
+    z = {'value': fup, 'label':r'Total flux (W m$^{-2}$)', 'name':'ftot'}
+    ham.profile(input,grid,output,z,stride=20)
 
 #--- Global diagnostics -----------------------------------
 if 'cons' in pview:  # RD: needs some work!
