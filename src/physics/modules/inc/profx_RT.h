@@ -201,7 +201,7 @@ __device__ int factorial_num(int number) {
     return temp;
 }
 
-__device__ double source_func_lin(double bb, double bl, double bt, double tau, double diff_fac) {
+__device__ double source_func_lin(double bb, double bl, double bt, double tau, double diff_ang) {
 
     double e1 = 0.0;
     double e2 = 0.0;
@@ -209,22 +209,22 @@ __device__ double source_func_lin(double bb, double bl, double bt, double tau, d
 
     if (tau >= 1e-10) {
         e1 = bb - bl
-             + (bl - (diff_fac / (tau / 2.0)) * (bb - bl)) * (1.0 - exp(-(tau / 2.0) / diff_fac));
+             + (bl - (diff_ang / (tau / 2.0)) * (bb - bl)) * (1.0 - exp(-(tau / 2.0) / diff_ang));
         e2 = bl - bt
-             + (bt - (diff_fac / (tau / 2.0)) * (bl - bt)) * (1.0 - exp(-(tau / 2.0) / diff_fac));
-        e = e1 + e2 * exp(-(tau / 2.0) / diff_fac);
+             + (bt - (diff_ang / (tau / 2.0)) * (bl - bt)) * (1.0 - exp(-(tau / 2.0) / diff_ang));
+        e = e1 + e2 * exp(-(tau / 2.0) / diff_ang);
     }
     else {
         for (int i = 0; i < 5; i++) {
             int fac = factorial_num(i + 2);
             e1      = e1
                  + (pow(-1.0, i + 2.0)) * ((bl + (i + 1) * bl) / fac)
-                       * pow((tau / 2.0) / diff_fac, i + 1.0);
+                       * pow((tau / 2.0) / diff_ang, i + 1.0);
             e2 = e2
                  + (pow(-1.0, i + 2.0)) * ((bt + (i + 1) * bb) / fac)
-                       * pow((tau / 2.0) / diff_fac, i + 1.0);
+                       * pow((tau / 2.0) / diff_ang, i + 1.0);
         }
-        e = e1 + e2 * exp(-(tau / 2.0) / diff_fac);
+        e = e1 + e2 * exp(-(tau / 2.0) / diff_ang);
     }
 
     return e;
@@ -237,7 +237,7 @@ __device__ void radclw(double *phtemp,
                        double *tau_d,
                        double *fnet_up_d,
                        double *fnet_dn_d,
-                       double  diff_fac,
+                       double  diff_ang,
                        double  tlow,
                        double  Cp,
                        double  gravit,
@@ -270,12 +270,12 @@ __device__ void radclw(double *phtemp,
         bl = bc * tl * tl * tl * tl;
         bt = bc * tt * tt * tt * tt;
 
-        ed = source_func_lin(bb, bl, bt, tau_d[id * nv * 2 + 2 * lev + 1], diff_fac);
+        ed = source_func_lin(bb, bl, bt, tau_d[id * nv * 2 + 2 * lev + 1], diff_ang);
 
         fnet_dn_d[id * (nv + 1) + lev] =
             ed
             + fnet_dn_d[id * (nv + 1) + lev + 1]
-                  * exp(-(1. / diff_fac) * tau_d[id * nv * 2 + 2 * lev + 1]);
+                  * exp(-(1. / diff_ang) * tau_d[id * nv * 2 + 2 * lev + 1]);
     }
     //
     //  Upward Directed Radiation
@@ -304,12 +304,12 @@ __device__ void radclw(double *phtemp,
         bl = bc * tl * tl * tl * tl;
         bt = bc * tt * tt * tt * tt;
 
-        eu = source_func_lin(bt, bl, bb, tau_d[id * nv * 2 + 2 * (lev - 1) + 1], diff_fac);
+        eu = source_func_lin(bt, bl, bb, tau_d[id * nv * 2 + 2 * (lev - 1) + 1], diff_ang);
 
         fnet_up_d[id * (nv + 1) + lev] =
             eu
             + fnet_up_d[id * (nv + 1) + lev - 1]
-                  * exp(-(1. / diff_fac) * tau_d[id * nv * 2 + 2 * (lev - 1) + 1]);
+                  * exp(-(1. / diff_ang) * tau_d[id * nv * 2 + 2 * (lev - 1) + 1]);
     }
 
     for (int lev = 0; lev < nv; lev++) {
@@ -367,7 +367,7 @@ __global__ void rtm_dual_band(double *pressure_d,
                               double  tstar,
                               double  planet_star_dist,
                               double  radius_star,
-                              double  diff_fac,
+                              double  diff_ang,
                               double  tlow,
                               double  alb,
                               double  tausw,
@@ -520,7 +520,7 @@ __global__ void rtm_dual_band(double *pressure_d,
                tau_d,
                fnet_up_d,
                fnet_dn_d,
-               diff_fac,
+               diff_ang,
                tlow,
                Cp,
                gravit,
@@ -532,10 +532,14 @@ __global__ void rtm_dual_band(double *pressure_d,
         if (surface == true) {
             surf_flux_d[id] += fnet_dn_d[id * nvi + 0] - fnet_up_d[id * nvi + 0];
             Tsurface_d[id] += surf_flux_d[id] * timestep / Csurf;
+            if (Tsurface_d[id] < 0)
+                Tsurface_d[id] = 0;
         }
 
         for (int lev = 0; lev < nv; lev++) {
             temperature_d[id * nv + lev] = ttemp[id * nv + lev] + dtemp[id * nv + lev] * timestep;
+            if (temperature_d[id * nv + lev] < 0)
+                temperature_d[id * nv + lev] = 0;
         }
     }
 }

@@ -55,7 +55,10 @@ class input:
                 self.Tstar = openh5['Tstar'][...]
                 self.planet_star_dist = openh5['planet_star_dist'][...]
                 self.radius_star = openh5['radius_star'][...]
-                self.diff_fac = openh5['diff_fac'][...]
+                if 'diff_fac' in openh5.keys(): #called diff_fac in old versions
+                    self.diff_ang = openh5['diff_fac'][...]
+                else:
+                    self.diff_ang = openh5['diff_ang'][...]
                 self.Tlow = openh5['Tlow'][...]
                 self.albedo = openh5['albedo'][...]
                 self.tausw = openh5['tausw'][...]
@@ -1279,10 +1282,10 @@ def streamf_moc_plot(input,grid,output,rg,sigmaref,save=True,axis=False,wind_vec
 
     # Contour plot
     if isinstance(axis,axes.SubplotBase):
-        C = axis.contourf(rg.lat[:,0],rg.Pressure[prange[0],0]/1e5,sf[:,prange[0]].T,40,cmap = 'viridis')
+        C = axis.contourf(rg.lat[:,0],rg.Pressure[prange[0],0]/1e5,sf[:,prange[0]].T,100,cmap = 'viridis')
         ax = axis
     elif axis == False:
-        C = plt.contourf(rg.lat[:,0],rg.Pressure[prange[0],0]/1e5,sf[:,prange[0]].T,40,cmap = 'viridis')
+        C = plt.contourf(rg.lat[:,0],rg.Pressure[prange[0],0]/1e5,sf[:,prange[0]].T,100,cmap = 'viridis')
         ax = plt.gca()
     else:
         raise IOError("'axis = {}' but {} is not an axes.SubplotBase instance".format(axis,axis))
@@ -1304,11 +1307,10 @@ def streamf_moc_plot(input,grid,output,rg,sigmaref,save=True,axis=False,wind_vec
         plt.quiver(latq.ravel(),preq.ravel()/1e5,Vq,Wq,color='0.5')
 
     ax.invert_yaxis()
-    ax.set_yscale("log")
     c2 = ax.contour(rg.lat[:,0],rg.Pressure[:,0]/1e5,sf.T,levels=[0.0],colors='w',linewidths=1)
     clb = plt.colorbar(C)
     clb.set_label(r'Eulerian streamfunction (kg s$^{-1}$)')
-    if np.max(Pref)/np.min(Pref) > 100:
+    if np.max(Pref)/np.min(Pref) > 100.1:
         ax.set_yscale("log")
     ax.set_xlabel('Latitude (deg)')
     ax.set_ylabel('Pressure (bar)')

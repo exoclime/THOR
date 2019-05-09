@@ -75,7 +75,7 @@ private:
     double Tstar_config            = 4520;  // Star effective temperature [K]
     double planet_star_dist_config = 0.015; // Planet-star distance [au]
     double radius_star_config      = 0.667; // Star radius [Rsun]
-    double diff_fac_config         = 0.5;   // Diffusivity factor: 0.5-1.0
+    double diff_ang_config         = 0.5;   // Diffusivity angle (1 / diffusivity factor): 0.5-1.0
     double Tlow_config =
         970; // Lower boundary temperature: upward flux coming from the planet's interior
     double albedo_config     = 0.18;   // Bond albedo
@@ -103,7 +103,7 @@ private:
     double Tstar            = 4520;  // Star effective temperature [K]
     double planet_star_dist = 0.015; // Planet-star distance [au]
     double radius_star      = 0.667; // Star radius [Rsun]
-    double diff_fac         = 0.5;   // Diffusivity factor: 0.5-1.0
+    double diff_ang         = 0.5;   // Diffusivity factor: 0.5-1.0
     double Tlow = 970; // Lower boundary temperature: upward flux coming from the planet's interior
     double albedo     = 0.18;   // Bond albedo
     double tausw      = 532.0;  // Absorption coefficient for the shortwaves
@@ -159,7 +159,7 @@ private:
     void    RTSetup(double Tstar_,
                     double planet_star_dist_,
                     double radius_star_,
-                    double diff_fac_,
+                    double diff_ang_,
                     double Tlow_,
                     double albedo_,
                     double tausw_,

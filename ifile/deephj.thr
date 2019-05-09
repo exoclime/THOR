@@ -158,7 +158,7 @@ tausw = 1.67
 Tlow = 50
 
 # diffusivity factor
-diff_fac = 0.5
+diff_ang = 0.5
 #########################################################
 
 ## insolation (orbit + spin-state) parameters ###########

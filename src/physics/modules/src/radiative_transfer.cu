@@ -58,7 +58,7 @@ void radiative_transfer::print_config() {
     log::printf("    Tstar                       = %f K.\n", Tstar_config);
     log::printf("    Orbital distance            = %f au.\n", planet_star_dist_config);
     log::printf("    Radius of host star         = %f R_sun.\n", radius_star_config);
-    log::printf("    Diffusivity factor          = %f.\n", diff_fac_config);
+    log::printf("    1.0/Diffusivity factor      = %f.\n", diff_ang_config);
     log::printf("    Lower boundary temperature  = %f K.\n", Tlow_config);
     log::printf("    Bond albedo                 = %f.\n", albedo_config);
     log::printf("    Shortwave Absorption coef   = %f.\n", tausw_config);
@@ -130,7 +130,7 @@ bool radiative_transfer::initial_conditions(const ESP &esp, const SimulationSetu
     RTSetup(Tstar_config,
             planet_star_dist_config,
             radius_star_config,
-            diff_fac_config,
+            diff_ang_config,
             Tlow_config,
             albedo_config,
             tausw_config,
@@ -198,7 +198,7 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                                  Tstar,
                                  planet_star_dist,
                                  radius_star,
-                                 diff_fac,
+                                 diff_ang,
                                  Tlow,
                                  albedo,
                                  tausw,
@@ -242,7 +242,7 @@ bool radiative_transfer::configure(config_file &config_reader) {
     config_reader.append_config_var(
         "planet_star_dist", planet_star_dist_config, planet_star_dist_config);
     config_reader.append_config_var("radius_star", radius_star_config, radius_star_config);
-    config_reader.append_config_var("diff_fac", diff_fac_config, diff_fac_config);
+    config_reader.append_config_var("diff_ang", diff_ang_config, diff_ang_config);
     config_reader.append_config_var("Tlow", Tlow_config, Tlow_config);
     config_reader.append_config_var("albedo", albedo_config, albedo_config);
     config_reader.append_config_var("tausw", tausw_config, tausw_config);
@@ -308,7 +308,7 @@ bool radiative_transfer::store_init(storage &s) {
                    "au",
                    "distance b/w host star and planet");
     s.append_value(radius_star / 695508, "/radius_star", "R_sun", "radius of host star");
-    s.append_value(diff_fac, "/diff_fac", "-", "diffusivity factor");
+    s.append_value(diff_ang, "/diff_ang", "-", "diffusivity factor");
     s.append_value(albedo, "/albedo", "-", "bond albedo of planet");
     s.append_value(tausw, "/tausw", "-", "shortwave optical depth of deepest layer");
     s.append_value(taulw, "/taulw", "-", "longwave optical depth of deepest layer");
@@ -339,7 +339,7 @@ bool radiative_transfer::store_init(storage &s) {
 void radiative_transfer::RTSetup(double Tstar_,
                                  double planet_star_dist_,
                                  double radius_star_,
-                                 double diff_fac_,
+                                 double diff_ang_,
                                  double Tlow_,
                                  double albedo_,
                                  double tausw_,
@@ -367,7 +367,7 @@ void radiative_transfer::RTSetup(double Tstar_,
     Tstar            = Tstar_;
     planet_star_dist = planet_star_dist_ * 149597870.7; //conv to km
     radius_star      = radius_star_ * 695508;           //conv to km
-    diff_fac         = diff_fac_;
+    diff_ang         = diff_ang_;
     Tlow             = Tlow_;
     albedo           = albedo_;
     tausw            = tausw_;
