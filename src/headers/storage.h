@@ -58,7 +58,7 @@
 using std::string;
 using namespace H5;
 
-#if H5_VERSION_GE(1,10,3)
+#if H5_VERSION_GE(1,10,2)
 #define PRINT_EXCEPTION(exception) exception.printErrorStack()
 #else
 #define PRINT_EXCEPTION(exception) exception.printError()
