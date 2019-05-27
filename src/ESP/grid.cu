@@ -224,7 +224,7 @@ __host__ Icogrid::Icogrid(bool   sprd,        // Spring dynamics option
 
     //  Computes the vertical curl operator.
     curlz = (double *)malloc(7 * 3 * point_num * sizeof(double));
-    gra_operator(areasT, areas, curlz, mvec, pent_ind, point_num);
+    curlz_operator(areasT, areas, curlz, mvec, pent_ind, point_num);
 
     //  Computes zonal mean for sponge layer operations
     if (sponge == true) {

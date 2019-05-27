@@ -24,4 +24,7 @@
  * grid output now contains differential operators grad, div, and vertical component of curl (the latter is not used by the model, but may be useful in post-processing)
  * added new features to double-grey RT: latitude variations, power law scaling of optical
  depth, and surface heating
- * added boundary layer module which calculates drag against the lower surface
+ * added boundary layer module which calculates drag against the lower surface (rayleigh drag only for now)
+ * changed name of 'diff_fac' input parameter to 'diff_ang' to be more consistent ('diff_ang' = 1/diffusivity factor)
+ * fixed incompatibility with recent versions (> 1.10.1) of hdf5 libraries
+ * updated behavior of NonHydro = false and DeepModel = false model options to be consistent with White+ 2005
