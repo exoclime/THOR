@@ -22,3 +22,6 @@
  * further updates to python plotting tools to make them more flexible
  * added "custom_example.py" to mjolnir to demonstrate how to make multipanel plots with the python tools
  * grid output now contains differential operators grad, div, and vertical component of curl (the latter is not used by the model, but may be useful in post-processing)
+ * added new features to double-grey RT: latitude variations, power law scaling of optical
+ depth, and surface heating
+ * added boundary layer module which calculates drag against the lower surface

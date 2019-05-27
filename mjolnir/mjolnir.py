@@ -57,7 +57,7 @@ pview = args.pview
 
 valid = ['uver','wver','wprof','Tver','Tulev','PTver','ulev','PVver','PVlev',
             'TP','RVlev','cons','stream','pause','tracer','PTP','regrid','KE',
-            'SR','uprof','cfl','hseq','hsprof','bvprof']
+            'SR','uprof','cfl','hseq','hsprof','bvprof','fluxprof']
 
 rg_needed = ['Tver','uver','wver','Tulev','PTver','ulev','PVver','PVlev',
             'RVlev','stream','tracer','hseq']  #these types need regrid
@@ -169,16 +169,19 @@ if 'PVver' in pview:
     ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice)
     # ham.potential_vort_vert(input,grid,output,sigmaref)
 if 'stream' in pview: # RD: needs some work!
-    strm = ham.calc_moc_streamf(input,grid,output)
-    z = {'value':strm, 'label':r'Eulerian streamfunction (kg s$^{-1}$)', 'name':'streamf1',
-         'cmap':'viridis', 'lat':rg.lat, 'lon':rg.lon}
+    # strm = ham.calc_moc_streamf(input,grid,output)
+    # strm = rg.streamf
+    # z = {'value':strm, 'label':r'Eulerian streamfunction (kg s$^{-1}$)', 'name':'streamf2',
+    #      'cmap':'viridis', 'lat':rg.lat, 'lon':rg.lon}
     sigmaref = ham.Get_Prange(input,grid,output,args,xtype='lat')
-    ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice,csp=[0])
+    # ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice,csp=[0])
+    ham.streamf_moc_plot(input,grid,output,rg,sigmaref)
 if 'hseq' in pview:
     z = {'value':(rg.del_hseq/(rg.Rho*input.Gravit))[:,:,1:,:], 'label':r'$(dP/dr + \rho g)/(\rho g)$','name':'hseq',
          'cmap':'magma', 'lat': rg.lat, 'lon': rg.lon}
     sigmaref = ham.Get_Prange(input,grid,output,args,xtype='lat')
     ham.vertical_lat(input,grid,output,rg,sigmaref[1:],z,slice=args.slice,csp=[0])
+
 
 #--- Horizontal plot types-------------------------------
 if 'Tulev' in pview:
@@ -225,6 +228,8 @@ if 'tracer' in pview:
     z = {'value':np.log10(rg.nh3), 'label':r'Log(mixing ratio)',
         'name':'chem-nh3-uv1', 'cmap':'magma', 'lat':rg.lat, 'lon':rg.lon}
     ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True)
+# if 'insol' in pview:
+#     z = {'value':rg.insol}
 
 
 #--- Pressure profile types-------------------------------
@@ -268,7 +273,13 @@ if 'bvprof' in pview:
     N = np.sqrt(input.Gravit/pt*dptdr)
     z =  {'value': N, 'label':r'$N$ (s$^{-1}$)', 'name':'BVprof'}
     ham.profile(input,grid,output,z,stride=20)
-
+if 'fluxprof' in pview:
+    total_f = output.fnet_up - output.fnet_dn
+    fup = total_f[:,:-1,:] + (total_f[:,1:,:]-total_f[:,:-1,:]) *\
+          (grid.Altitude[None,:,None]-grid.Altitudeh[None,:-1,None])/\
+          (grid.Altitudeh[None,1:,None]-grid.Altitudeh[None,:-1,None])
+    z = {'value': fup, 'label':r'Total flux (W m$^{-2}$)', 'name':'ftot'}
+    ham.profile(input,grid,output,z,stride=20)
 
 #--- Global diagnostics -----------------------------------
 if 'cons' in pview:  # RD: needs some work!
