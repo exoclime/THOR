@@ -325,7 +325,10 @@ class rg_out:
             self.lat[:,t-ntsi+1] = lati
             self.lon[:,t-ntsi+1] = loni
             self.PV[:,:,:,t-ntsi+1] = PVi
-            self.RV[:,:,:,:,t-ntsi+1] = RVi
+            try:
+                self.RV[:,:,:,:,t-ntsi+1] = RVi
+            except:
+                import pdb; pdb.set_trace()
             self.lat_lr[:,t-ntsi+1] = lati_lr
             self.lon_lr[:,t-ntsi+1] = loni_lr
             # self.streamf[:,:,:,t-ntsi+1] = streamfi
@@ -1282,10 +1285,10 @@ def streamf_moc_plot(input,grid,output,rg,sigmaref,save=True,axis=False,wind_vec
 
     # Contour plot
     if isinstance(axis,axes.SubplotBase):
-        C = axis.contourf(rg.lat[:,0],rg.Pressure[prange[0],0]/1e5,sf[:,prange[0]].T,100,cmap = 'viridis')
+        C = axis.contourf(rg.lat[:,0],rg.Pressure[prange[0],0]/1e5,sf[:,prange[0]].T,40,cmap = 'viridis')
         ax = axis
     elif axis == False:
-        C = plt.contourf(rg.lat[:,0],rg.Pressure[prange[0],0]/1e5,sf[:,prange[0]].T,100,cmap = 'viridis')
+        C = plt.contourf(rg.lat[:,0],rg.Pressure[prange[0],0]/1e5,sf[:,prange[0]].T,40,cmap = 'viridis')
         ax = plt.gca()
     else:
         raise IOError("'axis = {}' but {} is not an axes.SubplotBase instance".format(axis,axis))
@@ -1544,7 +1547,7 @@ def profile(input,grid,output,z,stride=50):
 
     tsp = output.nts-output.ntsi+1
 
-    for column in np.arange(0,grid.point_num,stride):
+    for column in np.array([266]):#np.arange(0,grid.point_num,stride):
         if tsp > 1:
             P = np.mean(output.Pressure[column,:,:],axis=2)
             x = np.mean(z['value'][column,:,:],axis=2)
@@ -1555,6 +1558,7 @@ def profile(input,grid,output,z,stride=50):
         plt.semilogy(x,P/1e5,'k-',alpha= 0.5,lw=1)
         plt.plot(x[np.int(np.floor(grid.nv/2))],P[np.int(np.floor(grid.nv/2))]/100000,'r+',ms =5,alpha=0.5)
         plt.plot(x[np.int(np.floor(grid.nv*0.75))],P[np.int(np.floor(grid.nv*0.75))]/100000,'g+',ms =5,alpha=0.5)
+        plt.plot(x[44],P[44]/1e5,'bs')
 
     # plt.plot(Tad,P/100,'r--')
     plt.gca().invert_yaxis()

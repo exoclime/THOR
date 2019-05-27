@@ -152,7 +152,7 @@ if 'Tver' in pview:
     sigmaref = ham.Get_Prange(input,grid,output,args,xtype='lat')
     # Averaged temperature (latitude vs pressure)
     #ham.temperature(input,grid,output,rg,sigmaref)
-    ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice)
+    ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice,csp=5000)
 if 'PTver' in pview:
     kappa_ad = input.Rd/input.Cp  # adiabatic coefficient
     pt = rg.Temperature*(rg.Pressure/input.P_Ref)**(-kappa_ad)
@@ -160,7 +160,7 @@ if 'PTver' in pview:
          'cmap':'magma', 'lat':rg.lat, 'lon':rg.lon}
     sigmaref = ham.Get_Prange(input,grid,output,args,xtype='lat')
     # Averaged potential temperature (latitude vs pressure)
-    ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice)
+    ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice,csp=5000)
 if 'PVver' in pview:
     # sigmaref = np.arange(1,0,)
     z = {'value':rg.PV, 'label':r'Potential Vorticity (K m$^2$ kg$^{-1}$ s$^{-1}$)',
