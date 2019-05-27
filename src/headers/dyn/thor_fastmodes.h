@@ -466,6 +466,8 @@ __global__ void Density_Pressure_Eqs(double *pressure_d,
     // if (isnan(pressure_d[id * nv + lev])) {
     //     printf("(id, lev) = (%d, %d)", id, lev); //
     // }
+
+    // calc hs balance here and output...?
 }
 
 

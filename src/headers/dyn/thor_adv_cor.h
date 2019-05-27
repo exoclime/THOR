@@ -235,6 +235,7 @@ __global__ void Compute_Advec_Cori1(
     v_d[id * nv + lev]   = v_s[ir];
 }
 
+
 // Computes the 3D advection terms and the velocities in cartesians.
 // (poles)
 template<int NN>
@@ -369,6 +370,7 @@ __global__ void Compute_Advec_Cori2(double* Adv_d,       //
                                     double* Rho_d,       //
                                     double* Altitude_d,  //
                                     double* Altitudeh_d, //
+                                    double* func_r_d,    //
                                     double  Omega,       //
                                     double  A,           //
                                     int     nv,          //
@@ -482,9 +484,30 @@ __global__ void Compute_Advec_Cori2(double* Adv_d,       //
             rho  = Rho_d[id * nv + lev];
 
             // Advection + Coriolis.
-            Adv_d[id * 3 * nv + lev * 3 + 0] += davx - 2.0 * Omega * vy * rho;
-            Adv_d[id * 3 * nv + lev * 3 + 1] += davy + 2.0 * Omega * vx * rho;
-            Adv_d[id * 3 * nv + lev * 3 + 2] += davz;
+            double Cx, Cy, Cz;
+            if (DeepModel) {
+                Cx = -2.0 * Omega * vy * rho;
+                Cy = 2.0 * Omega * vx * rho;
+                Cz = 0.0;
+            }
+            else {
+                Cx = 2 * Omega
+                     * (vz * func_r_d[id * 3 + 2] * func_r_d[id * 3 + 1]
+                        - vy * pow(func_r_d[id * 3 + 2], 2))
+                     * rho;
+                Cy = -2 * Omega
+                     * (vz * func_r_d[id * 3 + 2] * func_r_d[id * 3 + 0]
+                        - vx * pow(func_r_d[id * 3 + 2], 2))
+                     * rho;
+                Cz = 2 * Omega
+                     * (vy * func_r_d[id * 3 + 2] * func_r_d[id * 3 + 0]
+                        - vx * func_r_d[id * 3 + 2] * func_r_d[id * 3 + 1])
+                     * rho;
+            }
+
+            Adv_d[id * 3 * nv + lev * 3 + 0] += davx + Cx;
+            Adv_d[id * 3 * nv + lev * 3 + 1] += davy + Cy;
+            Adv_d[id * 3 * nv + lev * 3 + 2] += davz + Cz;
 
             if (lev < nv - 1) {
                 althl = altht;

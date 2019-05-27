@@ -7,14 +7,14 @@ config_version = 1
 
 #-- Time stepping and output options -----------------------------------------#
 # number of steps
-num_steps = 96
+num_steps = 97
 
 # length of timesteps in seconds
 timestep = 1800
 
 # output
 # output every n steps
-n_out = 2
+n_out = 1
 
 # output directory (relative to current working directory)
 # defaults to 'results'
@@ -157,7 +157,24 @@ tausw = 1.67
 Tlow = 50
 
 # diffusivity factor
-diff_fac = 0.5
+diff_ang = 0.5
+
+# add sin(lat)^2 dependence to tau lw (advanced)
+latf_lw = true
+# opt depth at poles (lw)
+taulw_pole = 1.5
+
+# include surface heating
+surface = true
+# heat capacity of surface
+Csurf = 1e7
+
+# power law index of unmixed absorbers (lw and sw)
+n_lw = 4
+n_sw = 2
+# strength of unmixed absorbers in lw
+f_lw = 0.1
+
 #########################################################
 
 ## insolation (orbit + spin-state) parameters ###########
@@ -183,6 +200,18 @@ sync_rot = true
 # (stupid Earth convention applies)
 #longp = 0
 #########################################################
+
+#-- Boundary layer options (core_benchmark = NoBenchmark) --------------------#
+boundary_layer = false
+
+# type of boundary layer drag
+bl_type = RayleighHS
+
+# strength of drag
+#surf_drag = 1.157407e-5
+
+# boundary layer sigma (drag exist at this % of surface pressure and above)
+#bl_sigma = 0.7
 
 #-- Device options -----------------------------------------------------------#
 # GPU ID number

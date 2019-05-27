@@ -56,10 +56,11 @@ args = parser.parse_args()
 pview = args.pview
 
 valid = ['uver','wver','wprof','Tver','Tulev','PTver','ulev','PVver','PVlev',
-            'TP','RVlev','cons','stream','pause','tracer','PTP','regrid','KE','SR','uprof','cfl']
+            'TP','RVlev','cons','stream','pause','tracer','PTP','regrid','KE',
+            'SR','uprof','cfl','hseq','hsprof','bvprof','fluxprof']
 
 rg_needed = ['Tver','uver','wver','Tulev','PTver','ulev','PVver','PVlev',
-            'RVlev','stream','tracer']  #these types need regrid
+            'RVlev','stream','tracer','hseq']  #these types need regrid
 
 openrg = 0
 if 'all' in pview:
@@ -168,17 +169,18 @@ if 'PVver' in pview:
     ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice)
     # ham.potential_vort_vert(input,grid,output,sigmaref)
 if 'stream' in pview: # RD: needs some work!
-    strm = ham.calc_moc_streamf(input,grid,output)
-    z = {'value':strm, 'label':r'Eulerian streamfunction (kg s$^{-1}$)', 'name':'streamf1',
-         'cmap':'viridis', 'lat':rg.lat, 'lon':rg.lon}
+    # strm = ham.calc_moc_streamf(input,grid,output)
+    # strm = rg.streamf
+    # z = {'value':strm, 'label':r'Eulerian streamfunction (kg s$^{-1}$)', 'name':'streamf2',
+    #      'cmap':'viridis', 'lat':rg.lat, 'lon':rg.lon}
     sigmaref = ham.Get_Prange(input,grid,output,args,xtype='lat')
-    ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice,csp=[0])
-
-    # if np.max(input.P_Ref)/np.float(args.pressure_min[0]) > 1000:
-    #     sigmaref = np.logspace(np.log10(input.P_Ref),np.log10(np.float(args.pressure_min[0])*100),grid.nv)/input.P_Ref
-    # else:
-    #     sigmaref = np.linspace(input.P_Ref,np.float(args.pressure_min[0])*100,grid.nv)/input.P_Ref
-    # ham.streamf(input,grid,output,sigmaref)
+    # ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice,csp=[0])
+    ham.streamf_moc_plot(input,grid,output,rg,sigmaref)
+if 'hseq' in pview:
+    z = {'value':(rg.del_hseq/(rg.Rho*input.Gravit))[:,:,1:,:], 'label':r'$(dP/dr + \rho g)/(\rho g)$','name':'hseq',
+         'cmap':'magma', 'lat': rg.lat, 'lon': rg.lon}
+    sigmaref = ham.Get_Prange(input,grid,output,args,xtype='lat')
+    ham.vertical_lat(input,grid,output,rg,sigmaref[1:],z,slice=args.slice,csp=[0])
 
 
 #--- Horizontal plot types-------------------------------
@@ -226,6 +228,8 @@ if 'tracer' in pview:
     z = {'value':np.log10(rg.nh3), 'label':r'Log(mixing ratio)',
         'name':'chem-nh3-uv1', 'cmap':'magma', 'lat':rg.lat, 'lon':rg.lon}
     ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True)
+# if 'insol' in pview:
+#     z = {'value':rg.insol}
 
 
 #--- Pressure profile types-------------------------------
@@ -254,7 +258,28 @@ if 'cfl' in pview:
     cs = np.sqrt(input.Cp/(input.Cp-input.Rd)*output.Pressure/output.Rho)
     z = {'value': cs*dt/dx, 'label':'CFL number for (horizontal) acoustic waves', 'name':'CFL' }
     ham.profile(input,grid,output,z,stride=20)
-
+if 'hsprof' in pview:
+    dpdr = np.gradient(output.Pressure,grid.Altitude,axis=1)
+    hseq = (dpdr + output.Rho*input.Gravit)/output.Rho/input.Gravit
+    hseq[:,0,:] = np.nan
+    hseq[:,-1,:] = np.nan
+    z = {'value': hseq, 'label':r'$dP/dr + \rho g$', 'name':'hsprof'}
+    ham.profile(input,grid,output,z,stride=20)
+if 'bvprof' in pview:
+    kappa_ad = input.Rd/input.Cp  # adiabatic coefficient
+    T = output.Pressure/input.Rd/output.Rho
+    pt = T*(output.Pressure/input.P_Ref)**(-kappa_ad)
+    dptdr = np.gradient(pt,grid.Altitude,axis=1)
+    N = np.sqrt(input.Gravit/pt*dptdr)
+    z =  {'value': N, 'label':r'$N$ (s$^{-1}$)', 'name':'BVprof'}
+    ham.profile(input,grid,output,z,stride=20)
+if 'fluxprof' in pview:
+    total_f = output.fnet_up - output.fnet_dn
+    fup = total_f[:,:-1,:] + (total_f[:,1:,:]-total_f[:,:-1,:]) *\
+          (grid.Altitude[None,:,None]-grid.Altitudeh[None,:-1,None])/\
+          (grid.Altitudeh[None,1:,None]-grid.Altitudeh[None,:-1,None])
+    z = {'value': fup, 'label':r'Total flux (W m$^{-2}$)', 'name':'ftot'}
+    ham.profile(input,grid,output,z,stride=20)
 
 #--- Global diagnostics -----------------------------------
 if 'cons' in pview:  # RD: needs some work!
