@@ -185,7 +185,7 @@ sync_rot = true
 #longp = 0
 #########################################################
 
-boundary_layer = true
+boundary_layer = false
 
 
 #-- Device options -----------------------------------------------------------#
