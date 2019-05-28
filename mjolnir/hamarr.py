@@ -1547,7 +1547,7 @@ def profile(input,grid,output,z,stride=50):
 
     tsp = output.nts-output.ntsi+1
 
-    for column in np.array([266]):#np.arange(0,grid.point_num,stride):
+    for column in np.arange(0,grid.point_num,stride):
         if tsp > 1:
             P = np.mean(output.Pressure[column,:,:],axis=2)
             x = np.mean(z['value'][column,:,:],axis=2)
@@ -1558,7 +1558,6 @@ def profile(input,grid,output,z,stride=50):
         plt.semilogy(x,P/1e5,'k-',alpha= 0.5,lw=1)
         plt.plot(x[np.int(np.floor(grid.nv/2))],P[np.int(np.floor(grid.nv/2))]/100000,'r+',ms =5,alpha=0.5)
         plt.plot(x[np.int(np.floor(grid.nv*0.75))],P[np.int(np.floor(grid.nv*0.75))]/100000,'g+',ms =5,alpha=0.5)
-        plt.plot(x[44],P[44]/1e5,'bs')
 
     # plt.plot(Tad,P/100,'r--')
     plt.gca().invert_yaxis()

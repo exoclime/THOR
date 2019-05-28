@@ -50,6 +50,7 @@ __global__ void deepHJ(double *Mh_d,
                        double *pressure_d,
                        double *Rho_d,
                        double *temperature_d,
+                       double *profx_dP_d,
                        double  Gravit,
                        double  Cp,
                        double  Rd,
@@ -157,6 +158,11 @@ __global__ void deepHJ(double *Mh_d,
 
         if (pre < 100) {
             Tnight *= exp(0.1 * (log10(pre) - log10(100.0)));
+            if (Tnight < 250)
+                Tnight = 250;
+            Tday *= exp(0.015 * (log10(pre) - log10(100.0)));
+            if (Tday < 1000)
+                Tday = 1000;
         }
 
         // Calculate Teq from eqn 26 (Heng, Menou, and Phillips 2011)
@@ -179,6 +185,9 @@ __global__ void deepHJ(double *Mh_d,
                 Mh_d[id * 3 * nv + lev * 3 + k] / (1.0 + kv_hs * time_step);
 
         //      Update temperature
-        temperature_d[id * nv + lev] -= kt_hs * time_step * (temperature_d[id * nv + lev] - Teq_hs);
+        // temperature_d[id * nv + lev] -= kt_hs * time_step * (temperature_d[id * nv + lev] - Teq_hs);
+        // calculate heating rate as dP/dt
+        profx_dP_d[id * nv + lev] +=
+            Rho_d[id * nv + lev] * Rd * (-kt_hs * (temperature_d[id * nv + lev] - Teq_hs));
     }
 }

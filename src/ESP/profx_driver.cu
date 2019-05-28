@@ -75,6 +75,8 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
     dim3      NB((point_num / NTH) + 1, nv, 1);
     dim3      NBRT((point_num / NTH) + 1, 1, 1);
 
+    cudaMemset(profx_dP_d, 0, sizeof(double) * point_num * nv);
+
     if (sim.SpongeLayer == true) {
         dim3 NBT((point_num / NTH) + 1, nv, 1);
 
@@ -269,6 +271,7 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
                             pressure_d,
                             Rho_d,
                             temperature_d,
+                            profx_dP_d,
                             sim.Gravit,
                             sim.Cp,
                             sim.Rd,

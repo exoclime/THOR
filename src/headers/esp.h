@@ -218,6 +218,8 @@ public:
     double *divg_Mh_d;
     bool *  check_d;
 
+    double *profx_dP_d;
+
     double *vbar_d;
     double *vbar_h;
     double *utmp;
