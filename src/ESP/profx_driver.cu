@@ -76,6 +76,10 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
     dim3      NBRT((point_num / NTH) + 1, 1, 1);
 
     cudaMemset(profx_dP_d, 0, sizeof(double) * point_num * nv);
+    cudaMemset(profx_dMh_d, 0, sizeof(double) * 3 * point_num * nv);
+    cudaMemset(profx_dWh_d, 0, sizeof(double) * point_num * nvi);
+    cudaMemset(profx_dW_d, 0, sizeof(double) * point_num * nv);
+
 
     if (sim.SpongeLayer == true) {
         dim3 NBT((point_num / NTH) + 1, nv, 1);
@@ -171,7 +175,10 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
                                     nlat,
                                     point_num,
                                     nv,
-                                    sim.TempSponge);
+                                    sim.TempSponge,
+                                    profx_dMh_d,
+                                    profx_dWh_d,
+                                    profx_dW_d);
     }
     BENCH_POINT_I(current_step,
                   "phy_Sponge",

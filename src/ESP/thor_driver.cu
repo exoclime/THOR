@@ -474,7 +474,9 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                                maps_d,
                                                nl_region,
                                                sim.DeepModel,
-                                               sim.NonHydro);
+                                               sim.NonHydro,
+                                               profx_dMh_d,
+                                               profx_dWh_d);
         cudaDeviceSynchronize();
         // Updates: SlowMh_d, SlowWh_d, SlowRho_d, Slowpressure_d
         Compute_Slow_Modes_Poles<6><<<2, 1>>>(SlowMh_d,
@@ -511,7 +513,9 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                               nv,
                                               point_num,
                                               sim.DeepModel,
-                                              sim.NonHydro);
+                                              sim.NonHydro,
+                                              profx_dMh_d,
+                                              profx_dWh_d);
 
 
         BENCH_POINT_I_S(current_step,

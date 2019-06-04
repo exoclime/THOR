@@ -268,6 +268,9 @@ __host__ void ESP::alloc_data(bool conservation) {
     cudaMalloc((void **)&diffv_d2, 6 * nv * point_num * sizeof(double));
 
     cudaMalloc((void **)&profx_dP_d, nv * point_num * sizeof(double));
+    cudaMalloc((void **)&profx_dMh_d, 3 * nv * point_num * sizeof(double));
+    cudaMalloc((void **)&profx_dWh_d, nvi * point_num * sizeof(double));
+    cudaMalloc((void **)&profx_dW_d, nv * point_num * sizeof(double));
 
     //  Extras-nan
     cudaMalloc((void **)&check_d, sizeof(bool));

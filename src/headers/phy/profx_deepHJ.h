@@ -185,9 +185,9 @@ __global__ void deepHJ(double *Mh_d,
                 Mh_d[id * 3 * nv + lev * 3 + k] / (1.0 + kv_hs * time_step);
 
         //      Update temperature
-        // temperature_d[id * nv + lev] -= kt_hs * time_step * (temperature_d[id * nv + lev] - Teq_hs);
+        temperature_d[id * nv + lev] -= kt_hs * time_step * (temperature_d[id * nv + lev] - Teq_hs);
         // calculate heating rate as dP/dt
-        profx_dP_d[id * nv + lev] +=
-            Rho_d[id * nv + lev] * Rd * (-kt_hs * (temperature_d[id * nv + lev] - Teq_hs));
+        // profx_dP_d[id * nv + lev] +=
+        //     Rho_d[id * nv + lev] * Rd * (-kt_hs * (temperature_d[id * nv + lev] - Teq_hs));
     }
 }
