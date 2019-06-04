@@ -57,10 +57,10 @@ pview = args.pview
 
 valid = ['uver','wver','wprof','Tver','Tulev','PTver','ulev','PVver','PVlev',
             'TP','RVlev','cons','stream','pause','tracer','PTP','regrid','KE',
-            'SR','uprof','cfl','hseq','hsprof','bvprof','fluxprof']
+            'SR','uprof','cfl']
 
 rg_needed = ['Tver','uver','wver','Tulev','PTver','ulev','PVver','PVlev',
-            'RVlev','stream','tracer','hseq']  #these types need regrid
+            'RVlev','stream','tracer']  #these types need regrid
 
 openrg = 0
 if 'all' in pview:

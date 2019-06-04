@@ -154,7 +154,7 @@ tausw = 532
 # temperature of internal heat flux (bottom boundary) (K)
 Tlow = 970
 
-# diffusivity factor
+# 1/diffusivity factor
 diff_ang = 0.5
 
 # add sin(lat)^2 dependence to tau lw (advanced)
