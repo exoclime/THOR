@@ -7,18 +7,18 @@ config_version = 1
 
 #-- Time stepping and output options -----------------------------------------#
 # number of steps
-num_steps = 345600
+num_steps = 1000
 
 # length of timesteps in seconds
 timestep = 600
 
 # output directory (relative to current working directory)
 # defaults to 'results'
-results_path = deephj_results
+results_path = deephj_results_time2
 
 # output
 # output every n steps
-n_out = 6912
+n_out =1000
 
 # calculate and output quantities we hope to conserve
 # angular momentum, energy, mass, (entropy soon)

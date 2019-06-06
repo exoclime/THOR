@@ -57,6 +57,8 @@
 #include "dyn/thor_slowmodes.h"    // Slow terms.
 #include "dyn/thor_vertical_int.h" // Vertical momentum.
 #include "log_writer.h"
+#include "phy/profx_sponge.h"
+#include "reduction_add.h"
 
 #include "phy_modules.h"
 
@@ -77,6 +79,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
 
     dim3 NBALL((point_num / NTH) + 1, nv, 6); //Number of blocks to execute on all grid points
     dim3 NBALL0((point_num / NTH) + 1, 1, 6); //Number of blocks to execute on all grid points
+    dim3 NBRT((point_num / NTH) + 1, 1, 1);
 
 
     //  Number of Small steps
@@ -439,6 +442,118 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
         //      Slow Modes
         cudaDeviceSynchronize();
 
+        cudaMemset(profx_dMh_d, 0, sizeof(double) * 3 * point_num * nv);
+        cudaMemset(profx_dWh_d, 0, sizeof(double) * point_num * nvi);
+        cudaMemset(profx_dW_d, 0, sizeof(double) * point_num * nv);
+        // put sponge layer here??
+        if (sim.SpongeLayer == true) {
+
+            dim3 NBT((point_num / NTH) + 1, nv, 1);
+            cudaMemset(vbar_d, 0, sizeof(double) * 3 * nlat * nv);
+            cudaMemset(utmp, 0, sizeof(double) * nlat * nv * max_count);
+            cudaMemset(vtmp, 0, sizeof(double) * nlat * nv * max_count);
+            cudaMemset(wtmp, 0, sizeof(double) * nlat * nv * max_count);
+
+            zonal_v<<<NB, NTH>>>(Mhk_d,
+                                 Wk_d,
+                                 Rhok_d,
+                                 vbar_d,
+                                 zonal_mean_tab_d,
+                                 lonlat_d,
+                                 point_num,
+                                 utmp,
+                                 vtmp,
+                                 wtmp,
+                                 max_count);
+
+            cudaDeviceSynchronize();
+
+            cudaMemcpy(
+                utmp_h, utmp, max_count * nlat * nv * sizeof(double), cudaMemcpyDeviceToHost);
+            cudaMemcpy(
+                vtmp_h, vtmp, max_count * nlat * nv * sizeof(double), cudaMemcpyDeviceToHost);
+            cudaMemcpy(
+                wtmp_h, wtmp, max_count * nlat * nv * sizeof(double), cudaMemcpyDeviceToHost);
+
+            int ilat, lev;
+            for (ilat = 0; ilat < nlat; ilat++) {
+                for (lev = 0; lev < nv; lev++) {
+                    vbar_h[ilat * nv * 3 + lev * 3 + 0] = gpu_sum_on_device<1024>(
+                        &(utmp[ilat * nv * max_count + lev * max_count]), max_count);
+                    vbar_h[ilat * nv * 3 + lev * 3 + 1] = gpu_sum_on_device<1024>(
+                        &(vtmp[ilat * nv * max_count + lev * max_count]), max_count);
+                    vbar_h[ilat * nv * 3 + lev * 3 + 2] = gpu_sum_on_device<1024>(
+                        &(wtmp[ilat * nv * max_count + lev * max_count]), max_count);
+                }
+            }
+            cudaMemcpy(vbar_d, vbar_h, 3 * nlat * nv * sizeof(double), cudaMemcpyHostToDevice);
+
+            if (sim.TempSponge) {
+                zonal_temp<<<NB, NTH>>>(pressurek_d,
+                                        Rhok_d,
+                                        Tbar_d,
+                                        zonal_mean_tab_d,
+                                        lonlat_d,
+                                        point_num,
+                                        Ttmp,
+                                        sim.Rd,
+                                        max_count);
+
+                cudaDeviceSynchronize();
+
+                cudaMemcpy(
+                    Ttmp_h, Ttmp, max_count * nlat * nv * sizeof(double), cudaMemcpyDeviceToHost);
+
+                int ilat, lev;
+                for (ilat = 0; ilat < nlat; ilat++) {
+                    for (lev = 0; lev < nv; lev++) {
+                        Tbar_h[ilat * nv + lev] = gpu_sum_on_device<1024>(
+                            &(Ttmp[ilat * nv * max_count + lev * max_count]), max_count);
+                    }
+                }
+                cudaMemcpy(Tbar_d, Tbar_h, nlat * nv * sizeof(double), cudaMemcpyHostToDevice);
+            }
+
+            double Rv_fac = 1;
+            // if (shrink_sponge == true) {
+            //     if (current_step * timestep >= t_shrink * timestep) {
+            //         double shrink_scale = timestep * 1000;
+            //         Rv_fac = exp(-(current_step * timestep - t_shrink * timestep) / shrink_scale);
+            //         // printf("%d, %f\n", current_step, Rv_fac);
+            //     }
+            // }
+
+            sponge_layer<<<NBRT, NTH>>>(Mhk_d,
+                                        Rhok_d,
+                                        Wk_d,
+                                        Whk_d,
+                                        pressurek_d,
+                                        vbar_d,
+                                        Tbar_d,
+                                        zonal_mean_tab_d,
+                                        lonlat_d,
+                                        Altitude_d,
+                                        Altitudeh_d,
+                                        Rv_sponge,
+                                        RvT_sponge,
+                                        Rv_fac,
+                                        ns_sponge,
+                                        timestep,
+                                        sim.Rd,
+                                        nlat,
+                                        point_num,
+                                        nv,
+                                        sim.TempSponge,
+                                        profx_dMh_d,
+                                        profx_dWh_d,
+                                        profx_dW_d);
+        }
+        BENCH_POINT_I(current_step,
+                      "phy_Sponge",
+                      (),
+                      ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"))
+
+        cudaDeviceSynchronize();
 
         // Updates: SlowMh_d, SlowWh_d, SlowRho_d, Slowpressure_d
         Compute_Slow_Modes<LN, LN><<<NB, NT>>>(SlowMh_d,
