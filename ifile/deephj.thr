@@ -18,7 +18,7 @@ results_path = deephj_results_time2
 
 # output
 # output every n steps
-n_out =1000
+n_out = 1000
 
 # calculate and output quantities we hope to conserve
 # angular momentum, energy, mass, (entropy soon)
@@ -114,7 +114,7 @@ conv_adj = 0
 
 #-- Sponge layer (Rayleigh drag) ---------------------------------------------#
 # use sponge layer (Rayleigh drag) at top of atmosphere?
-SpongeLayer = false
+SpongeLayer = true
 
 # latitude rings (zonal mean is calculated over these)
 nlat = 20
@@ -123,7 +123,7 @@ nlat = 20
 ns_sponge = 0.75
 
 # strength of sponge layer (1/damping time)
-Rv_sponge = 1e-5
+Rv_sponge = 1e-3
 
 # shrink sponge by half after some time (experimental)
 #shrink_sponge = true
