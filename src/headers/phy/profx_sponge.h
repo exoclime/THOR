@@ -269,14 +269,17 @@ __global__ void sponge_layer(double *M_d,
             // M_d[id * nv * 3 + lev * 3 + 0] += vx * rho * dt;
             // M_d[id * nv * 3 + lev * 3 + 1] += vy * rho * dt;
             // M_d[id * nv * 3 + lev * 3 + 2] += vz * rho * dt;
-            profx_dMh_d[id * nv * 3 + lev * 3 + 0] += vx * rho; //drag rate... (not total change)
-            profx_dMh_d[id * nv * 3 + lev * 3 + 1] += vy * rho;
-            profx_dMh_d[id * nv * 3 + lev * 3 + 2] += vz * rho;
+            // profx_dMh_d[id * nv * 3 + lev * 3 + 0] += vx * rho; //drag rate... (not total change)
+            // profx_dMh_d[id * nv * 3 + lev * 3 + 1] += vy * rho;
+            // profx_dMh_d[id * nv * 3 + lev * 3 + 2] += vz * rho;
 
             // same for vertical speed
-            dw = -kv * (w - vbw); // * dt;
-            profx_dW_d[id * nv + lev] += dw * rho;
-            // dw = -kv * (w)*dt; //what happens if i damp to zero ??
+            // dw = -kv * (w - vbw); // * dt;
+            //dw = -kv * (w); //*dt; //what happens if i damp to zero ??
+            dw = -kv;
+
+            //profx_dW_d[id * nv + lev] += dw * rho;
+            profx_dW_d[id * nv + lev] += dw;
             // W_d[id * nv + lev] += dw * rho * dt;
 
             if (temp_sponge) {

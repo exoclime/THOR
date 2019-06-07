@@ -613,7 +613,7 @@ __global__ void Compute_Slow_Modes_Poles(double *SlowMh_d,
                 dz   = alt - altl;
                 dpdz = (pressure_p[0] - pressurel) / dz;
                 swr  = swr + dpdz;
-                swr -= profx_dWh_d[id * (nv + 1) + lev];
+                swr -= profx_dWh_d[id * (nv + 1) + lev] * Wh_d[id * (nv + 1) + lev];
 
                 SlowWh_d[id * (nv + 1) + lev] = -swr;
             }

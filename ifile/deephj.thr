@@ -14,11 +14,11 @@ timestep = 600
 
 # output directory (relative to current working directory)
 # defaults to 'results'
-results_path = deephj_results_time2
+results_path = deephj_results_time3
 
 # output
 # output every n steps
-n_out = 1000
+n_out = 100
 
 # calculate and output quantities we hope to conserve
 # angular momentum, energy, mass, (entropy soon)
@@ -123,7 +123,7 @@ nlat = 20
 ns_sponge = 0.75
 
 # strength of sponge layer (1/damping time)
-Rv_sponge = 1e-3
+Rv_sponge = 1e-4
 
 # shrink sponge by half after some time (experimental)
 #shrink_sponge = true

@@ -883,7 +883,8 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                                                            point_num,
                                                                            nv,
                                                                            nvi,
-                                                                           sim.DeepModel);
+                                                                           sim.DeepModel,
+                                                                           profx_dWh_d);
 
             cudaError_t err = cudaGetLastError();
 
