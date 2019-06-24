@@ -1,5 +1,5 @@
-"""                                                                                                                                                                              
-Queue multiple tasks for slurm in batch mode. 
+"""
+Queue multiple tasks for slurm in batch mode.
 """
 
 import subprocess
@@ -20,6 +20,7 @@ def start_esp(args, esp_command, esp_args, initial_file):
                                                   initial_file))
         proc.stdin.close()
         procid_string = proc.stdout.read()
+        print(proc.stderr.read())
         m = batch_id_re.match(procid_string)
         if m is not None:
             batch_id = m.group(1)
