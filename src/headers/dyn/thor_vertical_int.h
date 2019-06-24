@@ -67,8 +67,7 @@ __global__ void Vertical_Eq(double *Whs_d,
                             int     num,
                             int     nv,
                             int     nvi,
-                            bool    DeepModel,
-                            double *profx_dWh_d) {
+                            bool    DeepModel) {
 
     //
     //  Integration-> y'' = c3 y' + c2 y + c1
@@ -109,33 +108,29 @@ __global__ void Vertical_Eq(double *Whs_d,
     double CRdd = Cv / (Rd * deltat * deltat);
     double or2;
     double tor3;
-    double sponge, sponge_p, sponge_m;
 
     if (id < num) {
         for (int lev = 1; lev < nv; lev++) {
             if (lev == 1) { // Fetch data for first layer
-                altht    = Altitudeh_d[lev + 1];
-                althl    = Altitudeh_d[lev - 1];
-                alth     = Altitudeh_d[lev];
-                alt      = Altitude_d[lev];
-                altl     = Altitude_d[lev - 1];
-                hp       = hh_d[id * nvi + lev + 1];
-                h        = hh_d[id * nvi + lev];
-                hm       = hh_d[id * nvi + lev - 1];
-                gp       = gtilh_d[id * nvi + lev + 1];
-                g        = gtilh_d[id * nvi + lev];
-                gm       = gtilh_d[id * nvi + lev - 1];
-                Sp       = Sp_d[id * nv + lev];
-                Spl      = Sp_d[id * nv + lev - 1];
-                p        = pressures_d[id * nv + lev];
-                pl       = pressures_d[id * nv + lev - 1];
-                rl       = Rhos_d[id * nv + lev - 1];
-                r        = Rhos_d[id * nv + lev];
-                Sdl      = Sd_d[id * nv + lev - 1];
-                Sd       = Sd_d[id * nv + lev];
-                sponge_p = profx_dWh_d[id * nvi + lev + 1];
-                sponge   = profx_dWh_d[id * nvi + lev];
-                sponge_m = profx_dWh_d[id * nvi + lev - 1];
+                altht = Altitudeh_d[lev + 1];
+                althl = Altitudeh_d[lev - 1];
+                alth  = Altitudeh_d[lev];
+                alt   = Altitude_d[lev];
+                altl  = Altitude_d[lev - 1];
+                hp    = hh_d[id * nvi + lev + 1];
+                h     = hh_d[id * nvi + lev];
+                hm    = hh_d[id * nvi + lev - 1];
+                gp    = gtilh_d[id * nvi + lev + 1];
+                g     = gtilh_d[id * nvi + lev];
+                gm    = gtilh_d[id * nvi + lev - 1];
+                Sp    = Sp_d[id * nv + lev];
+                Spl   = Sp_d[id * nv + lev - 1];
+                p     = pressures_d[id * nv + lev];
+                pl    = pressures_d[id * nv + lev - 1];
+                rl    = Rhos_d[id * nv + lev - 1];
+                r     = Rhos_d[id * nv + lev];
+                Sdl   = Sd_d[id * nv + lev - 1];
+                Sd    = Sd_d[id * nv + lev];
             }
             if (DeepModel) {
                 double dzp  = 1.0 / (altht - alth);
@@ -164,21 +159,15 @@ __global__ void Vertical_Eq(double *Whs_d,
                 inttm = -(xi - xip) * dzm * dzh;
                 intlm = (xi - xim) * dzm * dzh;
 
-                cc[threadIdx.x * nvi + lev] =
-                    -dzph * or2 * hp - intt * (gp + GCoR - tor3 * hp) + CRdd * deltat * sponge_p;
+                cc[threadIdx.x * nvi + lev] = -dzph * or2 * hp - intt * (gp + GCoR - tor3 * hp);
 
                 if (NonHydro)
-                    bb = CRdd + (dzph + dzmh) * or2 * h + (intl - inttm) * (g + GCoR - tor3 * h)
-                         + CRdd * deltat * sponge;
+                    bb = CRdd + (dzph + dzmh) * or2 * h + (intl - inttm) * (g + GCoR - tor3 * h);
                 else
-                    bb = (dzph + dzmh) * or2 * h + (intl - inttm) * (g + GCoR - tor3 * h)
-                         + CRdd * deltat * sponge;
+                    bb = (dzph + dzmh) * or2 * h + (intl - inttm) * (g + GCoR - tor3 * h);
 
-                aa = -dzmh * or2 * hm + intlm * (gm + GCoR - tor3 * hm) + CRdd * deltat * sponge_m;
+                aa = -dzmh * or2 * hm + intlm * (gm + GCoR - tor3 * hm);
 
-                if (fabs(bb) < (fabs(cc[threadIdx.x * nvi + lev]) + fabs(aa))) {
-                    printf("stop");
-                }
                 dSpdz = (Sp - Spl) * dzh;
                 dPdz  = (p - pl) * dzh;
 
@@ -206,28 +195,25 @@ __global__ void Vertical_Eq(double *Whs_d,
                 }
 
                 if (lev < nv - 1) { // Fetch the data for next layer
-                    althl    = alth;
-                    alth     = altht;
-                    altht    = Altitudeh_d[lev + 2];
-                    altl     = alt;
-                    alt      = Altitude_d[lev + 1];
-                    hm       = hh_d[id * nvi + lev];
-                    h        = hh_d[id * nvi + lev + 1];
-                    hp       = hh_d[id * nvi + lev + 2];
-                    gm       = g;
-                    g        = gp;
-                    gp       = gtilh_d[id * nvi + lev + 2];
-                    Spl      = Sp;
-                    Sp       = Sp_d[id * nv + lev + 1];
-                    pl       = p;
-                    p        = pressures_d[id * nv + lev + 1];
-                    rl       = r;
-                    r        = Rhos_d[id * nv + lev + 1];
-                    Sdl      = Sd;
-                    Sd       = Sd_d[id * nv + lev + 1];
-                    sponge_p = profx_dWh_d[id * nvi + lev + 1];
-                    sponge   = profx_dWh_d[id * nvi + lev];
-                    sponge_m = profx_dWh_d[id * nvi + lev - 1];
+                    althl = alth;
+                    alth  = altht;
+                    altht = Altitudeh_d[lev + 2];
+                    altl  = alt;
+                    alt   = Altitude_d[lev + 1];
+                    hm    = hh_d[id * nvi + lev];
+                    h     = hh_d[id * nvi + lev + 1];
+                    hp    = hh_d[id * nvi + lev + 2];
+                    gm    = g;
+                    g     = gp;
+                    gp    = gtilh_d[id * nvi + lev + 2];
+                    Spl   = Sp;
+                    Sp    = Sp_d[id * nv + lev + 1];
+                    pl    = p;
+                    p     = pressures_d[id * nv + lev + 1];
+                    rl    = r;
+                    r     = Rhos_d[id * nv + lev + 1];
+                    Sdl   = Sd;
+                    Sd    = Sd_d[id * nv + lev + 1];
                 }
             }
             else { // DeepModel == false

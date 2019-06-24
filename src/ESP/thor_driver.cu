@@ -438,6 +438,8 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
 
         BENCH_POINT_I_S(current_step, rk, "DivM_Op_Poles", (), ("DivM_d", "divg_Mh_d"))
 
+        //
+        //      Slow Modes
         cudaDeviceSynchronize();
 
         cudaMemset(profx_dMh_d, 0, sizeof(double) * 3 * point_num * nv);
@@ -551,8 +553,6 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                       (),
                       ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"))
 
-        //
-        //      Slow Modes
         cudaDeviceSynchronize();
 
         // Updates: SlowMh_d, SlowWh_d, SlowRho_d, Slowpressure_d
@@ -883,8 +883,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                                                            point_num,
                                                                            nv,
                                                                            nvi,
-                                                                           sim.DeepModel,
-                                                                           profx_dWh_d);
+                                                                           sim.DeepModel);
 
             cudaError_t err = cudaGetLastError();
 

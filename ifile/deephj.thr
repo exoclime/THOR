@@ -7,7 +7,7 @@ config_version = 1
 
 #-- Time stepping and output options -----------------------------------------#
 # number of steps
-num_steps = 345600
+num_steps = 1000
 
 # length of timesteps in seconds
 timestep = 600
@@ -52,7 +52,7 @@ P_ref = 22000000.0
 
 #-- Grid options -------------------------------------------------------------#
 # Altitude of the top of the model domain [m]
-Top_altitude = 9e6
+Top_altitude = 8e6
 
 # Horizontal resolution level.
 glevel = 4
@@ -77,7 +77,7 @@ DivDampP =    true
 Diffc = 0.02
 
 # Strength of divergence damping
-DivDampc = 0.02
+DivDampc = 0.03
 #########################################################
 
 
@@ -114,20 +114,16 @@ conv_adj = 0
 
 #-- Sponge layer (Rayleigh drag) ---------------------------------------------#
 # use sponge layer (Rayleigh drag) at top of atmosphere?
-SpongeLayer = true
+SpongeLayer = false
 
 # latitude rings (zonal mean is calculated over these)
 nlat = 20
 
 # bottom of sponge layer (fractional height)
-ns_sponge = 0.8
+ns_sponge = 0.75
 
 # strength of sponge layer (1/damping time)
-<<<<<<< Updated upstream
-Rv_sponge = 1e-4
-=======
-Rv_sponge = 1e-3
->>>>>>> Stashed changes
+Rv_sponge = 1e-5
 
 # shrink sponge by half after some time (experimental)
 #shrink_sponge = true
@@ -172,8 +168,8 @@ taulw_pole = 1.5
 # include surface heating
 surface = true
 # heat capacity of surface
-
 Csurf = 1e7
+
 # power law index of unmixed absorbers (lw and sw)
 n_lw = 4
 n_sw = 2
@@ -181,6 +177,7 @@ n_sw = 2
 f_lw = 0.1
 
 #########################################################
+
 ## insolation (orbit + spin-state) parameters ###########
 # synchronous rotation (tidally-locking at 1:1)
 sync_rot = true
