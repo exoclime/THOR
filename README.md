@@ -38,3 +38,5 @@ Finally, run
 ### Furthur information
 
 [View our wiki pages here](https://github.com/exoclime/THOR/wiki)
+
+[Tutorial from ESP Summer School 2019](https://github.com/exoclime/THOR/blob/master/usingthor.pdf)
