@@ -74,6 +74,12 @@
 #include "debug.h"
 #ifdef BENCHMARKING
 #    warning "Compiling with benchmarktest enabled"
+#    ifdef BENCH_POINT_COMPARE
+#        warning "Compare flag enabled"
+#    endif
+#    ifdef BENCH_POINT_WRITE
+#        warning "Write flag enabled"
+#    endif
 #endif
 
 #include <csignal>
