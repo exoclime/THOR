@@ -145,6 +145,7 @@ def edit_init_file(config_set):
 
     #--------winds-------------------------------
     if 'wind_prof' in config_set:
+        import pdb; pdb.set_trace()
         grid_file = output_dir+'/esp_initial_grid.h5'
         if os.path.exists(grid_file):
             gridh5 = h5py.File(grid_file)
@@ -161,9 +162,9 @@ def edit_init_file(config_set):
         openh5['Mh'][::3] = Mx
         openh5['Mh'][1::3] = My
         openh5['Mh'][2::3] = Mz
+        gridh5.close()
 
     openh5.close()
-    gridh5.close()
 
 def deep_hj_winds(lat,alt,uscale,htop):
     #creates a zonal wind profile similar to hot jupiter
