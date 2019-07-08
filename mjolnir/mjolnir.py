@@ -52,9 +52,11 @@ parser.add_argument("-slay","--split_layer",nargs=1,default=['no_split'],help='S
 parser.add_argument("-coord","--coordinate_sys",nargs=1,default=['icoh'],help='For KE spectrum, use either icoh grid or llp grid')
 parser.add_argument("-ladj","--lmax_adjust",nargs=1,default=[0],help='For KE spectrum, icoh grid, adjust number of wave numbers to fit')
 parser.add_argument("-slice","--slice",nargs='+',default=[0,360],help='Plot a long/lat slice or average over all values', type =float)
+parser.add_argument("-mt","--maketable",nargs=1,default=[False],type=bool,help='Print a table in text file of plot data')
 args = parser.parse_args()
 pview = args.pview
 
+maketable = args.maketable[0]
 valid = ['uver','wver','wprof','Tver','Tulev','PTver','ulev','PVver','PVlev',
             'TP','RVlev','cons','stream','pause','tracer','PTP','regrid','KE',
             'SR','uprof','cfl','hseq','hsprof','bvprof','fluxprof']
@@ -134,21 +136,21 @@ if 'pause' in pview:
 #--- Vertical plot types-------------------------------
 if 'uver' in pview:
     z = {'value':rg.U, 'label':r'Velocity (m s$^{-1}$)', 'name':'u',
-         'cmap':'viridis', 'lat':rg.lat, 'lon':rg.lon}
+         'cmap':'viridis', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable}
     sigmaref = ham.Get_Prange(input,grid,output,args,xtype='lat')
     # Averaged zonal winds (latitude vs pressure)
     #ham.u(input,grid,output,rg,sigmaref,slice=args.slice[0])
     ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice)
 if 'wver' in pview:
     z = {'value':rg.W, 'label':r'Velocity (m s$^{-1}$)', 'name':'w',
-         'cmap':'viridis', 'lat':rg.lat, 'lon':rg.lon}
+         'cmap':'viridis', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable}
     sigmaref = ham.Get_Prange(input,grid,output,args,xtype='lat')
     # Averaged vertical winds (latitude vs pressure)
     #ham.w_ver(input,grid,output,rg,sigmaref)
     ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice)
 if 'Tver' in pview:
     z = {'value':rg.Temperature, 'label':r'Temperature (K)', 'name':'temperature',
-         'cmap':'magma', 'lat':rg.lat, 'lon':rg.lon}
+         'cmap':'magma', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable}
     sigmaref = ham.Get_Prange(input,grid,output,args,xtype='lat')
     # Averaged temperature (latitude vs pressure)
     #ham.temperature(input,grid,output,rg,sigmaref)
@@ -157,14 +159,14 @@ if 'PTver' in pview:
     kappa_ad = input.Rd/input.Cp  # adiabatic coefficient
     pt = rg.Temperature*(rg.Pressure/input.P_Ref)**(-kappa_ad)
     z = {'value':pt, 'label':r'Potential Temperature (K)', 'name':'potential_temp',
-         'cmap':'magma', 'lat':rg.lat, 'lon':rg.lon}
+         'cmap':'magma', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable}
     sigmaref = ham.Get_Prange(input,grid,output,args,xtype='lat')
     # Averaged potential temperature (latitude vs pressure)
     ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice)
 if 'PVver' in pview:
     # sigmaref = np.arange(1,0,)
     z = {'value':rg.PV, 'label':r'Potential Vorticity (K m$^2$ kg$^{-1}$ s$^{-1}$)',
-         'name':'pot_vort', 'cmap':'viridis', 'lat':rg.lat_lr, 'lon':rg.lon_lr}
+         'name':'pot_vort', 'cmap':'viridis', 'lat':rg.lat_lr, 'lon':rg.lon_lr, 'mt':maketable}
     sigmaref = ham.Get_Prange(input,grid,output,args,xtype='lat')
     ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice)
     # ham.potential_vort_vert(input,grid,output,sigmaref)
@@ -175,10 +177,10 @@ if 'stream' in pview: # RD: needs some work!
     #      'cmap':'viridis', 'lat':rg.lat, 'lon':rg.lon}
     sigmaref = ham.Get_Prange(input,grid,output,args,xtype='lat')
     # ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice,csp=[0])
-    ham.streamf_moc_plot(input,grid,output,rg,sigmaref)
+    ham.streamf_moc_plot(input,grid,output,rg,sigmaref,mt=maketable)
 if 'hseq' in pview:
     z = {'value':(rg.del_hseq/(rg.Rho*input.Gravit))[:,:,1:,:], 'label':r'$(dP/dr + \rho g)/(\rho g)$','name':'hseq',
-         'cmap':'magma', 'lat': rg.lat, 'lon': rg.lon}
+         'cmap':'magma', 'lat': rg.lat, 'lon': rg.lon, 'mt':maketable}
     sigmaref = ham.Get_Prange(input,grid,output,args,xtype='lat')
     ham.vertical_lat(input,grid,output,rg,sigmaref[1:],z,slice=args.slice,csp=[0])
 
@@ -189,44 +191,44 @@ if 'Tulev' in pview:
     # PR_LV - Pressure level (Pa)
     PR_LV = np.float(args.pressure_lev[0])*100
     z = {'value':rg.Temperature, 'label':r'Temperature (K)', 'name':'temperature-uv',
-            'cmap':'magma', 'lat':rg.lat, 'lon':rg.lon}
+            'cmap':'magma', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable}
     ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True)
 if 'ulev' in pview:
     PR_LV = np.float(args.pressure_lev[0])*100
     z = {'value':rg.U, 'label':r'Zonal Velocity (m s$^{-1}$)', 'name':'u',
-        'cmap':'viridis', 'lat':rg.lat, 'lon':rg.lon}
+        'cmap':'viridis', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable}
     ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True)
     z = {'value':rg.V, 'label':r'Meridional Velocity (m s$^{-1}$)', 'name':'v',
-        'cmap':'viridis', 'lat':rg.lat, 'lon':rg.lon}
+        'cmap':'viridis', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable}
     ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True)
 if 'PVlev' in pview:
     PR_LV = np.float(args.pressure_lev[0])*100
     z = {'value':rg.PV, 'label':r'Potential Vorticity (K m$^2$ kg$^{-1}$ s$^{-1}$)',
-        'name':'pot_vort', 'cmap':'viridis', 'lat':rg.lat_lr, 'lon':rg.lon_lr}
+        'name':'pot_vort', 'cmap':'viridis', 'lat':rg.lat_lr, 'lon':rg.lon_lr, 'mt':maketable}
     ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True)
     # ham.potential_vort_lev(input,grid,output,PR_LV)
 if 'RVlev' in pview:
     PR_LV = np.float(args.pressure_lev[0])*100
     z = {'value':rg.RV[0], 'label':r'Relative Vorticity (s$^{-1}$)',
-        'name':'rela_vort', 'cmap':'viridis', 'lat':rg.lat_lr, 'lon':rg.lon_lr}
+        'name':'rela_vort', 'cmap':'viridis', 'lat':rg.lat_lr, 'lon':rg.lon_lr, 'mt':maketable}
     ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True)
     # ham.rela_vort_lev(input,grid,output,PR_LV)
 if 'tracer' in pview:
     PR_LV = np.float(args.pressure_lev[0])*100
     z = {'value':np.log10(rg.ch4), 'label':r'Log(mixing ratio)',
-        'name':'chem-ch4-uv1', 'cmap':'magma', 'lat':rg.lat, 'lon':rg.lon}
+        'name':'chem-ch4-uv1', 'cmap':'magma', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable}
     ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True)
     z = {'value':np.log10(rg.co), 'label':r'Log(mixing ratio)',
-        'name':'chem-co-uv1', 'cmap':'magma', 'lat':rg.lat, 'lon':rg.lon}
+        'name':'chem-co-uv1', 'cmap':'magma', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable}
     ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True)
     z = {'value':np.log10(rg.h2o), 'label':r'Log(mixing ratio)',
-        'name':'chem-h2o-uv1', 'cmap':'magma', 'lat':rg.lat, 'lon':rg.lon}
+        'name':'chem-h2o-uv1', 'cmap':'magma', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable}
     ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True)
     z = {'value':np.log10(rg.co2), 'label':r'Log(mixing ratio)',
-        'name':'chem-co2-uv1', 'cmap':'magma', 'lat':rg.lat, 'lon':rg.lon}
+        'name':'chem-co2-uv1', 'cmap':'magma', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable}
     ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True)
     z = {'value':np.log10(rg.nh3), 'label':r'Log(mixing ratio)',
-        'name':'chem-nh3-uv1', 'cmap':'magma', 'lat':rg.lat, 'lon':rg.lon}
+        'name':'chem-nh3-uv1', 'cmap':'magma', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable}
     ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True)
 # if 'insol' in pview:
 #     z = {'value':rg.insol}
