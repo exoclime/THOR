@@ -629,8 +629,8 @@ __global__ void Density_Pressure_Eqs_Poles(double *pressure_d,
             // Updates pressure
             // p                         = P_Ref * pow(Rd * aux / P_Ref, Cp / Cv);
             pressure_d[id * nv + lev] = p - pressurek_d[id * nv + lev]
-                                        + (diffpr_d[id * nv + lev] + diffprv_d[id * nv + lev]) * dt;
-            // + profx_dP_d[id * nv + lev] * dt;
+                                        + (diffpr_d[id * nv + lev] + diffprv_d[id * nv + lev]) * dt
+                                        + profx_dP_d[id * nv + lev] * dt;
             // if (isnan(pressure_d[id * nv + lev])) {
             //     printf("(id, lev) = (%d, %d)", id, lev);
             // }
