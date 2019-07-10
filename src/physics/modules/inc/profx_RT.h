@@ -149,7 +149,6 @@ __device__ void radcsw(double *phtemp,
                        double *fsw_up_d,
                        double *fsw_dn_d,
                        double *Altitudeh_d,
-                       double *Rho_d,
                        double  incflx,
                        double  alb,
                        double  tausw,
@@ -163,7 +162,7 @@ __device__ void radcsw(double *phtemp,
     //  Calculate upward, downward, and net flux.
     //  Downward Directed Radiation
 
-    double gocp;
+    // double gocp;
     double tau      = (tausw / ps0) * (phtemp[id * (nv + 1) + nv]);
     insol_d[id]     = incflx * pow(r_orb, -2) * coszrs;
     double flux_top = insol_d[id] * (1.0 - alb);
@@ -181,19 +180,20 @@ __device__ void radcsw(double *phtemp,
 
     // Update temperature rates.
     for (int lev = 0; lev < nv; lev++) {
-        double dtemp2;
-        dtemp2 = -1 / Cp
-                 * ((fsw_up_d[id * (nv + 1) + lev] - fsw_dn_d[id * (nv + 1) + lev])
-                    - (fsw_up_d[id * (nv + 1) + lev + 1] - fsw_dn_d[id * (nv + 1) + lev + 1]))
-                 / (Rho_d[id * nv + lev] * (Altitudeh_d[lev] - Altitudeh_d[lev + 1]));
-        gocp = gravit / Cp;
+        // double dtemp2;
         dtemp[id * nv + lev] =
-            gocp
+            -1 / Cp
             * ((fsw_up_d[id * (nv + 1) + lev] - fsw_dn_d[id * (nv + 1) + lev])
                - (fsw_up_d[id * (nv + 1) + lev + 1] - fsw_dn_d[id * (nv + 1) + lev + 1]))
-            / (phtemp[id * (nv + 1) + lev] - phtemp[id * (nv + 1) + lev + 1]);
+            / ((Altitudeh_d[lev] - Altitudeh_d[lev + 1]));
+        // gocp = gravit / Cp;
+        // dtemp[id * nv + lev] =
+        //     gocp
+        //     * ((fsw_up_d[id * (nv + 1) + lev] - fsw_dn_d[id * (nv + 1) + lev])
+        //        - (fsw_up_d[id * (nv + 1) + lev + 1] - fsw_dn_d[id * (nv + 1) + lev + 1]))
+        //     / (phtemp[id * (nv + 1) + lev] - phtemp[id * (nv + 1) + lev + 1]);
 
-        printf("%d %e\n", lev, (dtemp2 - dtemp[id * nv + lev]) / dtemp2);
+        // printf("%d %e\n", lev, (dtemp2 - dtemp[id * nv + lev]) / dtemp2);
     }
 }
 
@@ -247,7 +247,6 @@ __device__ void radclw(double *phtemp,
                        double *flw_up_d,
                        double *flw_dn_d,
                        double *Altitudeh_d,
-                       double *Rho_d,
                        double  diff_ang,
                        double  tlow,
                        double  Cp,
@@ -257,7 +256,7 @@ __device__ void radclw(double *phtemp,
                        int     id,
                        int     nv) {
 
-    double gocp = gravit / Cp;
+    // double gocp = gravit / Cp;
     double tb, tl, tt;
     double bb, bl, bt;
 
@@ -324,18 +323,18 @@ __device__ void radclw(double *phtemp,
     }
 
     for (int lev = 0; lev < nv; lev++) {
-        double dtemp2;
-        dtemp2 = dtemp[id * nv + lev]
-                 - 1 / Cp
-                       * ((flw_up_d[id * (nv + 1) + lev] - flw_dn_d[id * (nv + 1) + lev])
-                          - (flw_up_d[id * (nv + 1) + lev + 1] - flw_dn_d[id * (nv + 1) + lev + 1]))
-                       / (Rho_d[id * nv + lev] * (Altitudeh_d[lev] - Altitudeh_d[lev + 1]));
         dtemp[id * nv + lev] =
             dtemp[id * nv + lev]
-            + gocp
+            - 1 / Cp
                   * ((flw_up_d[id * (nv + 1) + lev] - flw_dn_d[id * (nv + 1) + lev])
                      - (flw_up_d[id * (nv + 1) + lev + 1] - flw_dn_d[id * (nv + 1) + lev + 1]))
-                  / (phtemp[id * (nv + 1) + lev] - phtemp[id * (nv + 1) + lev + 1]);
+                  / ((Altitudeh_d[lev] - Altitudeh_d[lev + 1]));
+        // dtemp[id * nv + lev] =
+        //     dtemp[id * nv + lev]
+        //     + gocp
+        //           * ((flw_up_d[id * (nv + 1) + lev] - flw_dn_d[id * (nv + 1) + lev])
+        //              - (flw_up_d[id * (nv + 1) + lev + 1] - flw_dn_d[id * (nv + 1) + lev + 1]))
+        //           / (phtemp[id * (nv + 1) + lev] - phtemp[id * (nv + 1) + lev + 1]);
     }
 }
 
@@ -512,7 +511,6 @@ __global__ void rtm_dual_band(double *pressure_d,
                    fsw_up_d,
                    fsw_dn_d,
                    Altitudeh_d,
-                   Rho_d,
                    incflx,
                    alb,
                    tausw,
@@ -546,7 +544,6 @@ __global__ void rtm_dual_band(double *pressure_d,
                flw_up_d,
                flw_dn_d,
                Altitudeh_d,
-               Rho_d,
                diff_ang,
                tlow,
                Cp,
@@ -567,11 +564,11 @@ __global__ void rtm_dual_band(double *pressure_d,
             // temperature_d[id * nv + lev] = ttemp[id * nv + lev] + dtemp[id * nv + lev] * timestep;
             // if (temperature_d[id * nv + lev] < 0)
             //     temperature_d[id * nv + lev] = 0;
-            if (ttemp[id * nv + lev] + dtemp[id * nv + lev] * timestep < 0) {
+            if (pressure_d[id * nv + lev] + Rd * dtemp[id * nv + lev] * timestep < 0) {
                 //trying to prevent too much cooling resulting in negative pressure in dyn core
-                dtemp[id * nv + lev] = -ttemp[id * nv + lev] / timestep;
+                dtemp[id * nv + lev] = -pressure_d[id * nv + lev] / timestep;
             }
-            profx_dP_d[id * nv + lev] = Rho_d[id * nv + lev] * Rd * dtemp[id * nv + lev];
+            profx_dP_d[id * nv + lev] = Rd * dtemp[id * nv + lev];
         }
     }
 }

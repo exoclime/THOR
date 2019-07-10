@@ -81,7 +81,8 @@ __global__ void Compute_Slow_Modes(double *SlowMh_d,
                                    bool    DeepModel,
                                    bool    NonHydro,
                                    double *profx_dMh_d,
-                                   double *profx_dWh_d) {
+                                   double *profx_dWh_d,
+                                   double *profx_dP_d) {
 
     int x = threadIdx.x;
     int y = threadIdx.y;
@@ -367,7 +368,7 @@ __global__ void Compute_Slow_Modes(double *SlowMh_d,
 
     Slowpressure_d[id * nv + lev] =
         (Rd / Cv) * (-nflxp_s[iri] - gtil_d[id * nv + lev] - dwhdz + vgp) + diffpr_d[id * nv + lev]
-        + diffprv_d[id * nv + lev];
+        + diffprv_d[id * nv + lev] + profx_dP_d[id * nv + lev];
 
     // if (diffprv_d[id * nv + lev] > 0) {
     //     printf("hi!\n"); //
@@ -411,7 +412,8 @@ __global__ void Compute_Slow_Modes_Poles(double *SlowMh_d,
                                          bool    DeepModel,
                                          bool    NonHydro,
                                          double *profx_dMh_d,
-                                         double *profx_dWh_d) {
+                                         double *profx_dWh_d,
+                                         double *profx_dP_d) {
 
     int id = blockIdx.x * blockDim.x + threadIdx.x;
     id += num - 2; // Poles
@@ -630,7 +632,7 @@ __global__ void Compute_Slow_Modes_Poles(double *SlowMh_d,
 
             Slowpressure_d[id * nv + lev] =
                 (Rd / Cv) * (-nflxp_p - gtil_d[id * nv + lev] - dwhdz + vgp)
-                + diffpr_d[id * nv + lev] + diffprv_d[id * nv + lev];
+                + diffpr_d[id * nv + lev] + diffprv_d[id * nv + lev] + profx_dP_d[id * nv + lev];
 
             if (lev < nv - 1) {
                 pressurel = pressure_p[0];
