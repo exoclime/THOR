@@ -348,7 +348,10 @@ class rg_out:
             self.lat[:,t-ntsi+1] = lati
             self.lon[:,t-ntsi+1] = loni
             self.PV[:,:,:,t-ntsi+1] = PVi
-            self.RV[:,:,:,:,t-ntsi+1] = RVi
+            try:
+                self.RV[:,:,:,:,t-ntsi+1] = RVi
+            except:
+                import pdb; pdb.set_trace()
             self.lat_lr[:,t-ntsi+1] = lati_lr
             self.lon_lr[:,t-ntsi+1] = loni_lr
             # self.streamf[:,:,:,t-ntsi+1] = streamfi
@@ -1585,10 +1588,10 @@ def streamf_moc_plot(input,grid,output,rg,sigmaref,save=True,axis=False,wind_vec
 
     # Contour plot
     if isinstance(axis,axes.SubplotBase):
-        C = axis.contourf(rg.lat[:,0],rg.Pressure[prange[0],0]/1e5,sf[:,prange[0]].T,100,cmap = 'viridis')
+        C = axis.contourf(rg.lat[:,0],rg.Pressure[prange[0],0]/1e5,sf[:,prange[0]].T,40,cmap = 'viridis')
         ax = axis
     elif axis == False:
-        C = plt.contourf(rg.lat[:,0],rg.Pressure[prange[0],0]/1e5,sf[:,prange[0]].T,100,cmap = 'viridis')
+        C = plt.contourf(rg.lat[:,0],rg.Pressure[prange[0],0]/1e5,sf[:,prange[0]].T,40,cmap = 'viridis')
         ax = plt.gca()
     else:
         raise IOError("'axis = {}' but {} is not an axes.SubplotBase instance".format(axis,axis))

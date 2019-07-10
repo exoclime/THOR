@@ -414,7 +414,9 @@ __global__ void rtm_dual_band(double *pressure_d,
                               bool    surface,
                               double  Csurf,
                               double *Tsurface_d,
-                              double *surf_flux_d) {
+                              double *surf_flux_d,
+                              double *profx_dP_d,
+                              double  Rd) {
 
 
     //
@@ -562,9 +564,14 @@ __global__ void rtm_dual_band(double *pressure_d,
         }
 
         for (int lev = 0; lev < nv; lev++) {
-            temperature_d[id * nv + lev] = ttemp[id * nv + lev] + dtemp[id * nv + lev] * timestep;
-            if (temperature_d[id * nv + lev] < 0)
-                temperature_d[id * nv + lev] = 0;
+            // temperature_d[id * nv + lev] = ttemp[id * nv + lev] + dtemp[id * nv + lev] * timestep;
+            // if (temperature_d[id * nv + lev] < 0)
+            //     temperature_d[id * nv + lev] = 0;
+            if (ttemp[id * nv + lev] + dtemp[id * nv + lev] * timestep < 0) {
+                //trying to prevent too much cooling resulting in negative pressure in dyn core
+                dtemp[id * nv + lev] = -ttemp[id * nv + lev] / timestep;
+            }
+            profx_dP_d[id * nv + lev] = Rho_d[id * nv + lev] * Rd * dtemp[id * nv + lev];
         }
     }
 }

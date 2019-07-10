@@ -240,7 +240,9 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                                  surface,
                                  Csurf,
                                  Tsurface_d,
-                                 surf_flux_d);
+                                 surf_flux_d,
+                                 esp.profx_dP_d,
+                                 sim.Rd);
 
     if (nstep * time_step < (2 * M_PI / mean_motion)) {
         // stationary orbit/obliquity

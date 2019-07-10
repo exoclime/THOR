@@ -148,7 +148,10 @@ __global__ void sponge_layer(double *M_d,
                              int     nlat,
                              int     num,
                              int     nv,
-                             bool    temp_sponge) {
+                             bool    temp_sponge,
+                             double *profx_dMh_d,
+                             double *profx_dWh_d,
+                             double *profx_dW_d) {
     //
     //  Description:
     //
@@ -253,8 +256,8 @@ __global__ void sponge_layer(double *M_d,
             }
 
             // calculate change in speed and convert to xyz
-            du = -kv * (u - vbu) * dt;
-            dv = -kv * (v - vbv) * dt;
+            du = -kv * (u - vbu); // * dt;
+            dv = -kv * (v - vbv); // * dt;
 
             vx = du * (-sin(lon)) + dv * (-sin(lonlat_d[id * 2 + 1]) * cos(lon));
 
@@ -263,13 +266,20 @@ __global__ void sponge_layer(double *M_d,
             vz = dv * (cos(lonlat_d[id * 2 + 1]));
 
             // update the momentum variables
-            M_d[id * nv * 3 + lev * 3 + 0] += vx * rho;
-            M_d[id * nv * 3 + lev * 3 + 1] += vy * rho;
-            M_d[id * nv * 3 + lev * 3 + 2] += vz * rho;
+            // M_d[id * nv * 3 + lev * 3 + 0] += vx * rho * dt;
+            // M_d[id * nv * 3 + lev * 3 + 1] += vy * rho * dt;
+            // M_d[id * nv * 3 + lev * 3 + 2] += vz * rho * dt;
+            profx_dMh_d[id * nv * 3 + lev * 3 + 0] += vx * rho; //drag rate... (not total change)
+            profx_dMh_d[id * nv * 3 + lev * 3 + 1] += vy * rho;
+            profx_dMh_d[id * nv * 3 + lev * 3 + 2] += vz * rho;
 
             // same for vertical speed
-            dw = -kv * (w - vbw) * dt;
-            W_d[id * nv + lev] += dw * rho;
+            dw = -kv * (w - vbw); // * dt;
+            // dw = -kv * (w); // * dt;
+
+            profx_dW_d[id * nv + lev] += dw * rho;
+            // dw = -kv * (w)*dt; //what happens if i damp to zero ??
+            // W_d[id * nv + lev] += dw * rho * dt;
 
             if (temp_sponge) {
                 double temperature, dT, kvT;
@@ -298,10 +308,15 @@ __global__ void sponge_layer(double *M_d,
             intt = (xi - xip) / (xim - xip);
             intl = (xi - xim) / (xip - xim);
 
-            wl = W_d[id * nv + lev - 1];
-            wt = W_d[id * nv + lev];
+            // wl = W_d[id * nv + lev - 1];
+            // wt = W_d[id * nv + lev];
+            //
+            // Wh_d[id * (nv + 1) + lev] = wl * intt + wt * intl;
 
-            Wh_d[id * (nv + 1) + lev] = wl * intt + wt * intl;
+            wl = profx_dW_d[id * nv + lev - 1];
+            wt = profx_dW_d[id * nv + lev];
+
+            profx_dWh_d[id * (nv + 1) + lev] = wl * intt + wt * intl;
         }
     }
 }

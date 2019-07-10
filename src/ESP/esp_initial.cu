@@ -267,6 +267,11 @@ __host__ void ESP::alloc_data(bool conservation) {
     cudaMalloc((void **)&diffv_d1, 6 * nv * point_num * sizeof(double));
     cudaMalloc((void **)&diffv_d2, 6 * nv * point_num * sizeof(double));
 
+    cudaMalloc((void **)&profx_dP_d, nv * point_num * sizeof(double));
+    cudaMalloc((void **)&profx_dMh_d, 3 * nv * point_num * sizeof(double));
+    cudaMalloc((void **)&profx_dWh_d, nvi * point_num * sizeof(double));
+    cudaMalloc((void **)&profx_dW_d, nv * point_num * sizeof(double));
+
     //  Extras-nan
     cudaMalloc((void **)&check_d, sizeof(bool));
 
@@ -341,25 +346,25 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
             for (int lev = 0; lev < nv; lev++) {
                 pressure_h[i * nv + lev] = sim.P_Ref * exp(-Altitude_h[lev] / Ha);
-                if (core_benchmark == DEEP_HOT_JUPITER) {
-                    double Ptil = 0.0;
-                    if (pressure_h[i * nv + lev] >= 1e5) {
-                        Ptil = log10(pressure_h[i * nv + lev] / 100000);
-                    }
-                    temperature_h[i * nv + lev] =
-                        1696.6986 + 132.2318 * Ptil - 174.30459 * Ptil * Ptil
-                        + 12.579612 * Ptil * Ptil * Ptil + 59.513639 * Ptil * Ptil * Ptil * Ptil
-                        + 9.6706522 * Ptil * Ptil * Ptil * Ptil * Ptil
-                        - 4.1136048 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
-                        - 1.0632301 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
-                        + 0.064400203 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
-                        + 0.035974396 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
-                        + 0.0025740066 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
-                              * Ptil * Ptil;
-                }
-                else {
-                    temperature_h[i * nv + lev] = sim.Tmean;
-                }
+                // if (core_benchmark == DEEP_HOT_JUPITER) {
+                //     double Ptil = 0.0;
+                //     if (pressure_h[i * nv + lev] >= 1e5) {
+                //         Ptil = log10(pressure_h[i * nv + lev] / 100000);
+                //     }
+                //     temperature_h[i * nv + lev] =
+                //         1696.6986 + 132.2318 * Ptil - 174.30459 * Ptil * Ptil
+                //         + 12.579612 * Ptil * Ptil * Ptil + 59.513639 * Ptil * Ptil * Ptil * Ptil
+                //         + 9.6706522 * Ptil * Ptil * Ptil * Ptil * Ptil
+                //         - 4.1136048 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
+                //         - 1.0632301 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
+                //         + 0.064400203 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
+                //         + 0.035974396 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
+                //         + 0.0025740066 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
+                //               * Ptil * Ptil;
+                // }
+                // else {
+                temperature_h[i * nv + lev] = sim.Tmean;
+                // }
             }
 
             for (int lev = 0; lev < nv; lev++) {
