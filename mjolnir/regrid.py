@@ -20,15 +20,20 @@ first = time.time()
 #    type of horizontal interpolation to use:
 #        gd or GD = scipy.interpolate.griddata (fastest, but noisy)
 #        sh or SH = spherical harmonics from pySHTools (slower, but very smooth)
-#        spl or SPL = scipy.interpolate.SmoothSphereBivariateSpline (slow and
-#                produces weird artifacts near poles--if you can figure out how
-#                to make this work better, please let me know!)
+#        spl or SPL = scipy.interpolate.SmoothSphereBivariateSpline (currently not working:
+#                     very fussy about smoothing factor and often produces artifacts near poles.
+#                     if you've some idea how to fix, please let me know!)
 ###########################################################################
 
+
+#things to add:
+# lmax
+# rotation of grid (for tidally locked planets, for example)
+# force overwrite
 parser = argparse.ArgumentParser()
 parser.add_argument('resultsf',metavar='nview',nargs='*',help='Results directory')
 parser.add_argument("-s","--simulation_ID",nargs=1,default=['auto'],help='Name of simulation (e.g., planet name)')
-parser.add_argument("-t","--type",nargs=1,default=['gd'],help='Horizontal interpolation type')
+parser.add_argument("-t","--type",nargs=1,default=['gd'],choices=['gd','GD','sh','SH'],help='Horizontal interpolation type')
 parser.add_argument("-vc","--vcoord",nargs=1,default=['pressure'],help='Vertical coordinate to use (pressure or height)')
 parser.add_argument("-pmin","--pressure_min",nargs=1,default=['default'],help='Lowest pressure value in vertical interpolation (vc=pressure only)')
 parser.add_argument("-i","--initial_file",nargs=1,default=[10],type=int,help='Initial file id number (integer)')
@@ -62,4 +67,6 @@ else:
     raise ValueError('%s not a valid vcoord. Valid options are "pressure" or "height"'%args.vcoord[0])
 
 ham.regrid(resultsf,simulation_ID,ntsi,nts,pressure_vert=use_p,type=args.type[0],pressure_min=args.pressure_min[0])
-exit()
+
+last = time.time()
+print(last-first)

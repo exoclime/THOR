@@ -52,17 +52,21 @@ parser.add_argument("-slay","--split_layer",nargs=1,default=['no_split'],help='S
 parser.add_argument("-coord","--coordinate_sys",nargs=1,default=['icoh'],help='For KE spectrum, use either icoh grid or llp grid')
 parser.add_argument("-ladj","--lmax_adjust",nargs=1,default=[0],help='For KE spectrum, icoh grid, adjust number of wave numbers to fit')
 parser.add_argument("-slice","--slice",nargs='+',default=[0,360],help='Plot a long/lat slice or average over all values', type =float)
-parser.add_argument("-mt","--maketable",nargs=1,default=[False],type=bool,help='Print a table in text file of plot data')
+parser.add_argument("-mt","--maketable",action='store_true',help='Print a table in text file of plot data')
+parser.add_argument("-no-log","--no_pressure_log",action='store_true',help='Switch off log coordinates in pressure (vertical)')
 args = parser.parse_args()
 pview = args.pview
 
-maketable = args.maketable[0]
+maketable = args.maketable
+plog = True
+if args.no_pressure_log:
+    plog = False
 valid = ['uver','wver','wprof','Tver','Tulev','PTver','ulev','PVver','PVlev',
             'TP','RVlev','cons','stream','pause','tracer','PTP','regrid','KE',
-            'SR','uprof','cfl','hseq','hsprof','bvprof','fluxprof']
+            'SR','uprof','cfl','hseq','hsprof','bvprof','fluxprof','Tsurf','insol']
 
 rg_needed = ['Tver','uver','wver','Tulev','PTver','ulev','PVver','PVlev',
-            'RVlev','stream','tracer','hseq']  #these types need regrid
+            'RVlev','stream','tracer','Tsurf','insol']  #these types need regrid
 
 openrg = 0
 if 'all' in pview:
@@ -129,6 +133,7 @@ if openrg == 1:
 if 'pause' in pview:
     import pdb; pdb.set_trace()
 
+
 #########
 # Plots #
 #########
@@ -136,21 +141,21 @@ if 'pause' in pview:
 #--- Vertical plot types-------------------------------
 if 'uver' in pview:
     z = {'value':rg.U, 'label':r'Velocity (m s$^{-1}$)', 'name':'u',
-         'cmap':'viridis', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable}
+         'cmap':'viridis', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable, 'plog':plog}
     sigmaref = ham.Get_Prange(input,grid,output,args,xtype='lat')
     # Averaged zonal winds (latitude vs pressure)
     #ham.u(input,grid,output,rg,sigmaref,slice=args.slice[0])
     ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice)
 if 'wver' in pview:
     z = {'value':rg.W, 'label':r'Velocity (m s$^{-1}$)', 'name':'w',
-         'cmap':'viridis', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable}
+         'cmap':'viridis', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable, 'plog':plog}
     sigmaref = ham.Get_Prange(input,grid,output,args,xtype='lat')
     # Averaged vertical winds (latitude vs pressure)
     #ham.w_ver(input,grid,output,rg,sigmaref)
     ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice)
 if 'Tver' in pview:
     z = {'value':rg.Temperature, 'label':r'Temperature (K)', 'name':'temperature',
-         'cmap':'magma', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable}
+         'cmap':'magma', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable, 'plog':plog}
     sigmaref = ham.Get_Prange(input,grid,output,args,xtype='lat')
     # Averaged temperature (latitude vs pressure)
     #ham.temperature(input,grid,output,rg,sigmaref)
@@ -159,14 +164,14 @@ if 'PTver' in pview:
     kappa_ad = input.Rd/input.Cp  # adiabatic coefficient
     pt = rg.Temperature*(rg.Pressure/input.P_Ref)**(-kappa_ad)
     z = {'value':pt, 'label':r'Potential Temperature (K)', 'name':'potential_temp',
-         'cmap':'magma', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable}
+         'cmap':'plasma', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable, 'plog':plog}
     sigmaref = ham.Get_Prange(input,grid,output,args,xtype='lat')
     # Averaged potential temperature (latitude vs pressure)
     ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice)
 if 'PVver' in pview:
     # sigmaref = np.arange(1,0,)
     z = {'value':rg.PV, 'label':r'Potential Vorticity (K m$^2$ kg$^{-1}$ s$^{-1}$)',
-         'name':'pot_vort', 'cmap':'viridis', 'lat':rg.lat_lr, 'lon':rg.lon_lr, 'mt':maketable}
+         'name':'pot_vort', 'cmap':'viridis', 'lat':rg.lat_lr, 'lon':rg.lon_lr, 'mt':maketable, 'plog':plog}
     sigmaref = ham.Get_Prange(input,grid,output,args,xtype='lat')
     ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice)
     # ham.potential_vort_vert(input,grid,output,sigmaref)
@@ -178,12 +183,6 @@ if 'stream' in pview: # RD: needs some work!
     sigmaref = ham.Get_Prange(input,grid,output,args,xtype='lat')
     # ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice,csp=[0])
     ham.streamf_moc_plot(input,grid,output,rg,sigmaref,mt=maketable)
-if 'hseq' in pview:
-    z = {'value':(rg.del_hseq/(rg.Rho*input.Gravit))[:,:,1:,:], 'label':r'$(dP/dr + \rho g)/(\rho g)$','name':'hseq',
-         'cmap':'magma', 'lat': rg.lat, 'lon': rg.lon, 'mt':maketable}
-    sigmaref = ham.Get_Prange(input,grid,output,args,xtype='lat')
-    ham.vertical_lat(input,grid,output,rg,sigmaref[1:],z,slice=args.slice,csp=[0])
-
 
 #--- Horizontal plot types-------------------------------
 if 'Tulev' in pview:
@@ -230,9 +229,18 @@ if 'tracer' in pview:
     z = {'value':np.log10(rg.nh3), 'label':r'Log(mixing ratio)',
         'name':'chem-nh3-uv1', 'cmap':'magma', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable}
     ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True)
-# if 'insol' in pview:
-#     z = {'value':rg.insol}
-
+if 'insol' in pview:
+    PR_LV = np.max(output.Pressure) # not important here
+    z = {'value':rg.insol, 'label':r'Insolation (W m$^{-2}$)', 'name':'insol',
+        'cmap':'magma', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable}
+    ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True)
+if 'Tsurf' in pview:
+    if not hasattr(rg,"Tsurface"):
+        raise ValueError("'Tsurface' not available in regrid file")
+    PR_LV = np.max(output.Pressure) # not important here
+    z = {'value':rg.Tsurface, 'label':r'Surface Temperature (K)', 'name':'Tsurf',
+        'cmap':'magma', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable}
+    ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True)
 
 #--- Pressure profile types-------------------------------
 if 'TP' in pview:

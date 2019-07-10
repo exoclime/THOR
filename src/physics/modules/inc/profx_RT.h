@@ -146,8 +146,10 @@ __device__ void radcsw(double *phtemp,
                        double  r_orb,
                        double *dtemp,
                        double *tau_d,
-                       double *fnet_up_d,
-                       double *fnet_dn_d,
+                       double *fsw_up_d,
+                       double *fsw_dn_d,
+                       double *Altitudeh_d,
+                       double *Rho_d,
                        double  incflx,
                        double  alb,
                        double  tausw,
@@ -167,24 +169,31 @@ __device__ void radcsw(double *phtemp,
     double flux_top = insol_d[id] * (1.0 - alb);
 
     // Extra layer to avoid over heating at the top.
-    fnet_dn_d[id * (nv + 1) + nv] = flux_top * exp(-(1.0 / coszrs) * tau);
+    fsw_dn_d[id * (nv + 1) + nv] = flux_top * exp(-(1.0 / coszrs) * tau);
 
     // Normal integration
     for (int lev = nv; lev >= 1; lev--)
-        fnet_dn_d[id * (nv + 1) + lev - 1] =
-            fnet_dn_d[id * (nv + 1) + lev]
+        fsw_dn_d[id * (nv + 1) + lev - 1] =
+            fsw_dn_d[id * (nv + 1) + lev]
             * exp(-(1.0 / coszrs) * tau_d[id * nv * 2 + (lev - 1) * 2]);
     for (int lev = 0; lev <= nv; lev++)
-        fnet_up_d[id * (nv + 1) + lev] = 0.0;
+        fsw_up_d[id * (nv + 1) + lev] = 0.0;
 
     // Update temperature rates.
     for (int lev = 0; lev < nv; lev++) {
+        double dtemp2;
+        dtemp2 = -1 / Cp
+                 * ((fsw_up_d[id * (nv + 1) + lev] - fsw_dn_d[id * (nv + 1) + lev])
+                    - (fsw_up_d[id * (nv + 1) + lev + 1] - fsw_dn_d[id * (nv + 1) + lev + 1]))
+                 / (Rho_d[id * nv + lev] * (Altitudeh_d[lev] - Altitudeh_d[lev + 1]));
         gocp = gravit / Cp;
         dtemp[id * nv + lev] =
             gocp
-            * ((fnet_up_d[id * (nv + 1) + lev] - fnet_dn_d[id * (nv + 1) + lev])
-               - (fnet_up_d[id * (nv + 1) + lev + 1] - fnet_dn_d[id * (nv + 1) + lev + 1]))
+            * ((fsw_up_d[id * (nv + 1) + lev] - fsw_dn_d[id * (nv + 1) + lev])
+               - (fsw_up_d[id * (nv + 1) + lev + 1] - fsw_dn_d[id * (nv + 1) + lev + 1]))
             / (phtemp[id * (nv + 1) + lev] - phtemp[id * (nv + 1) + lev + 1]);
+
+        printf("%d %e\n", lev, (dtemp2 - dtemp[id * nv + lev]) / dtemp2);
     }
 }
 
@@ -235,8 +244,10 @@ __device__ void radclw(double *phtemp,
                        double *thtemp,
                        double *dtemp,
                        double *tau_d,
-                       double *fnet_up_d,
-                       double *fnet_dn_d,
+                       double *flw_up_d,
+                       double *flw_dn_d,
+                       double *Altitudeh_d,
+                       double *Rho_d,
                        double  diff_ang,
                        double  tlow,
                        double  Cp,
@@ -256,7 +267,7 @@ __device__ void radclw(double *phtemp,
     //  Calculate upward, downward, and net flux.
     //  Downward Directed Radiation
     //
-    fnet_dn_d[id * (nv + 1) + nv] = 0.0; // Upper boundary
+    flw_dn_d[id * (nv + 1) + nv] = 0.0; // Upper boundary
     for (int lev = nv - 1; lev >= 0; lev--) {
         double ed = 0.0;
         if (tau_d[id * nv * 2 + 2 * lev + 1] < 0.0)
@@ -272,9 +283,9 @@ __device__ void radclw(double *phtemp,
 
         ed = source_func_lin(bb, bl, bt, tau_d[id * nv * 2 + 2 * lev + 1], diff_ang);
 
-        fnet_dn_d[id * (nv + 1) + lev] =
+        flw_dn_d[id * (nv + 1) + lev] =
             ed
-            + fnet_dn_d[id * (nv + 1) + lev + 1]
+            + flw_dn_d[id * (nv + 1) + lev + 1]
                   * exp(-(1. / diff_ang) * tau_d[id * nv * 2 + 2 * lev + 1]);
     }
     //
@@ -283,11 +294,11 @@ __device__ void radclw(double *phtemp,
     if (surface == true) {
         tlow = Tsurface;
     }
-    fnet_up_d[id * (nv + 1) + 0] = bc * tlow * tlow * tlow * tlow; // Lower boundary;
+    flw_up_d[id * (nv + 1) + 0] = bc * tlow * tlow * tlow * tlow; // Lower boundary;
     if (surface == false) {
-        if (fnet_up_d[id * (nv + 1) + 0] < fnet_dn_d[id * (nv + 1) + 0])
+        if (flw_up_d[id * (nv + 1) + 0] < flw_dn_d[id * (nv + 1) + 0])
             // reflecting boundary
-            fnet_up_d[id * (nv + 1) + 0] = fnet_dn_d[id * (nv + 1) + 0];
+            flw_up_d[id * (nv + 1) + 0] = flw_dn_d[id * (nv + 1) + 0];
     }
     for (int lev = 1; lev <= nv; lev++) {
 
@@ -306,18 +317,24 @@ __device__ void radclw(double *phtemp,
 
         eu = source_func_lin(bt, bl, bb, tau_d[id * nv * 2 + 2 * (lev - 1) + 1], diff_ang);
 
-        fnet_up_d[id * (nv + 1) + lev] =
+        flw_up_d[id * (nv + 1) + lev] =
             eu
-            + fnet_up_d[id * (nv + 1) + lev - 1]
+            + flw_up_d[id * (nv + 1) + lev - 1]
                   * exp(-(1. / diff_ang) * tau_d[id * nv * 2 + 2 * (lev - 1) + 1]);
     }
 
     for (int lev = 0; lev < nv; lev++) {
+        double dtemp2;
+        dtemp2 = dtemp[id * nv + lev]
+                 - 1 / Cp
+                       * ((flw_up_d[id * (nv + 1) + lev] - flw_dn_d[id * (nv + 1) + lev])
+                          - (flw_up_d[id * (nv + 1) + lev + 1] - flw_dn_d[id * (nv + 1) + lev + 1]))
+                       / (Rho_d[id * nv + lev] * (Altitudeh_d[lev] - Altitudeh_d[lev + 1]));
         dtemp[id * nv + lev] =
             dtemp[id * nv + lev]
             + gocp
-                  * ((fnet_up_d[id * (nv + 1) + lev] - fnet_dn_d[id * (nv + 1) + lev])
-                     - (fnet_up_d[id * (nv + 1) + lev + 1] - fnet_dn_d[id * (nv + 1) + lev + 1]))
+                  * ((flw_up_d[id * (nv + 1) + lev] - flw_dn_d[id * (nv + 1) + lev])
+                     - (flw_up_d[id * (nv + 1) + lev + 1] - flw_dn_d[id * (nv + 1) + lev + 1]))
                   / (phtemp[id * (nv + 1) + lev] - phtemp[id * (nv + 1) + lev + 1]);
     }
 }
@@ -351,8 +368,10 @@ __device__ void computetau(double *tau_d,
 __global__ void rtm_dual_band(double *pressure_d,
                               double *Rho_d,
                               double *temperature_d,
-                              double *fnet_up_d,
-                              double *fnet_dn_d,
+                              double *flw_up_d,
+                              double *flw_dn_d,
+                              double *fsw_up_d,
+                              double *fsw_dn_d,
                               double *tau_d,
                               double  gravit,
                               double  Cp,
@@ -488,8 +507,10 @@ __global__ void rtm_dual_band(double *pressure_d,
                    r_orb,
                    dtemp,
                    tau_d,
-                   fnet_up_d,
-                   fnet_dn_d,
+                   fsw_up_d,
+                   fsw_dn_d,
+                   Altitudeh_d,
+                   Rho_d,
                    incflx,
                    alb,
                    tausw,
@@ -505,21 +526,25 @@ __global__ void rtm_dual_band(double *pressure_d,
         }
 
         if (surface == true) {
-            surf_flux_d[id] = fnet_dn_d[id * nvi + 0] - fnet_up_d[id * nvi + 0];
+            surf_flux_d[id] = fsw_dn_d[id * nvi + 0] - fsw_up_d[id * nvi + 0];
         }
 
-        for (int lev = 0; lev <= nv; lev++)
-            fnet_up_d[id * nvi + lev] = 0.0;
-        for (int lev = 0; lev <= nv; lev++)
-            fnet_dn_d[id * nvi + lev] = 0.0;
+        // for (int lev = 0; lev <= nv; lev++) {
+        //     fnet_up_d[id * nvi + lev] = 0.0;
+        // }
+        // for (int lev = 0; lev <= nv; lev++) {
+        //     fnet_dn_d[id * nvi + lev] = 0.0;
+        // }
 
         radclw(phtemp,
                ttemp,
                thtemp,
                dtemp,
                tau_d,
-               fnet_up_d,
-               fnet_dn_d,
+               flw_up_d,
+               flw_dn_d,
+               Altitudeh_d,
+               Rho_d,
                diff_ang,
                tlow,
                Cp,
@@ -530,7 +555,7 @@ __global__ void rtm_dual_band(double *pressure_d,
                nv);
 
         if (surface == true) {
-            surf_flux_d[id] += fnet_dn_d[id * nvi + 0] - fnet_up_d[id * nvi + 0];
+            surf_flux_d[id] += flw_dn_d[id * nvi + 0] - flw_up_d[id * nvi + 0];
             Tsurface_d[id] += surf_flux_d[id] * timestep / Csurf;
             if (Tsurface_d[id] < 0)
                 Tsurface_d[id] = 0;

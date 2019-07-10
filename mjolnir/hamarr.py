@@ -63,6 +63,10 @@ class input:
                 self.albedo = openh5['albedo'][...]
                 self.tausw = openh5['tausw'][...]
                 self.taulw = openh5['taulw'][...]
+                if 'surface' in openh5.keys():
+                    self.surface = openh5['surface'][...]
+                else:
+                    self.surface = 0
         if 'vulcan' in openh5.keys():
             self.chemistry = openh5['vulcan'][...]
         if 'chemistry' in openh5.keys():
@@ -121,6 +125,7 @@ class output:
         self.ConvData = np.zeros(nts-ntsi+1)
         self.EntData = np.zeros(nts-ntsi+1)
         self.Insol = np.zeros((grid.point_num,nts-ntsi+1))
+        self.Tsurface = np.zeros((grid.point_num,nts-ntsi+1))
 
         self.ch4 = np.zeros((grid.point_num,grid.nv,nts-ntsi+1))
         self.co = np.zeros((grid.point_num,grid.nv,nts-ntsi+1))
@@ -130,8 +135,8 @@ class output:
 
         self.tau_sw = np.zeros((grid.point_num,grid.nv,nts-ntsi+1))
         self.tau_lw = np.zeros((grid.point_num,grid.nv,nts-ntsi+1))
-        self.fnet_up = np.zeros((grid.point_num,grid.nvi,nts-ntsi+1))
-        self.fnet_dn = np.zeros((grid.point_num,grid.nvi,nts-ntsi+1))
+        self.flw_up = np.zeros((grid.point_num,grid.nvi,nts-ntsi+1))
+        self.flw_dn = np.zeros((grid.point_num,grid.nvi,nts-ntsi+1))
 
         # Read model results
         for t in np.arange(ntsi-1,nts,stride):
@@ -175,8 +180,14 @@ class output:
                 traceri = openh5['tracer'][...]
             if 'tau' in openh5.keys():
                 taui = openh5['tau'][...]
-                fupi = openh5['fnet_up'][...]
-                fdni = openh5['fnet_dn'][...]
+                if 'fnet_up' in openh5.keys(): #old version of LW output
+                    fupi = openh5['fnet_up'][...]
+                    fdni = openh5['fnet_dn'][...]
+                else:
+                    fupi = openh5['flw_up'][...]
+                    fdni = openh5['flw_dn'][...]
+            if 'Tsurface' in openh5.keys():
+                self.Tsurface[:,t-ntsi+1] = openh5['Tsurface'][...]
             openh5.close()
 
             self.Rho[:,:,t-ntsi+1] = np.reshape(Rhoi,(grid.point_num,grid.nv))
@@ -206,8 +217,8 @@ class output:
             if 'taui' in locals():
                 self.tau_sw[:,:,t-ntsi+1] = np.reshape(taui[::2],(grid.point_num,grid.nv))
                 self.tau_lw[:,:,t-ntsi+1] = np.reshape(taui[1::2],(grid.point_num,grid.nv))
-                self.fnet_dn[:,:,t-ntsi+1] = np.reshape(fdni,(grid.point_num,grid.nvi))
-                self.fnet_up[:,:,t-ntsi+1] = np.reshape(fupi,(grid.point_num,grid.nvi))
+                self.flw_dn[:,:,t-ntsi+1] = np.reshape(fdni,(grid.point_num,grid.nvi))
+                self.flw_up[:,:,t-ntsi+1] = np.reshape(fupi,(grid.point_num,grid.nvi))
 
 class rg_out:
     def __init__(self,resultsf,simID,ntsi,nts,input,output,grid,pressure_vert=True):
@@ -215,6 +226,9 @@ class rg_out:
         if "core_benchmark" in dir(input):
             if input.core_benchmark[0] == 0: # need to switch to 'radiative_tranfer' flag
                 RT = 1
+                surf = 0
+                if input.surface[0]:
+                    surf = 1
 
         chem = 0
         if hasattr(input,"chemistry"):
@@ -244,7 +258,6 @@ class rg_out:
             Ui = openh5['U'][...]
             Vi = openh5['V'][...]
             Wi = openh5['W'][...]
-            # del_hseqi = openh5['del_hseq'][...]
             if pressure_vert == True:
                 Prei = openh5['Pressure'][...]
             else:
@@ -256,8 +269,15 @@ class rg_out:
             if RT == 1:
                 tau_swi = openh5['tau_sw'][...]
                 tau_lwi = openh5['tau_lw'][...]
-                fnet_upi = openh5['fnet_up'][...]
-                fnet_dni = openh5['fnet_dn'][...]
+                if 'fnet_up' in openh5.keys():
+                    flw_upi = openh5['fnet_up'][...]
+                    flw_dni = openh5['fnet_dn'][...]
+                else:
+                    flw_upi = openh5['flw_up'][...]
+                    flw_dni = openh5['flw_dn'][...]
+                insoli = openh5['insol'][...]
+                if 'Tsurface' in openh5.keys():
+                    Tsurfi = openh5['Tsurface'][...]
 
             if chem == 1:
                 ch4i = openh5['ch4'][...]
@@ -303,8 +323,11 @@ class rg_out:
                 if RT == 1:
                     self.tau_sw = np.zeros(np.shape(tau_swi)+(nts-ntsi+1,))
                     self.tau_lw = np.zeros(np.shape(tau_lwi)+(nts-ntsi+1,))
-                    self.fnet_up = np.zeros(np.shape(fnet_upi)+(nts-ntsi+1,))
-                    self.fnet_dn = np.zeros(np.shape(fnet_dni)+(nts-ntsi+1,))
+                    self.flw_up = np.zeros(np.shape(flw_upi)+(nts-ntsi+1,))
+                    self.flw_dn = np.zeros(np.shape(flw_dni)+(nts-ntsi+1,))
+                    self.insol = np.zeros(np.shape(insoli)+(nts-ntsi+1,))
+                    if surf:
+                        self.Tsurface = np.zeros(np.shape(Tsurfi)+(nts-ntsi+1,))
                 if chem == 1:
                     self.ch4 = np.zeros(np.shape(ch4i)+(nts-ntsi+1,))
                     self.co = np.zeros(np.shape(coi)+(nts-ntsi+1,))
@@ -333,8 +356,11 @@ class rg_out:
             if RT == 1:
                 self.tau_sw[:,:,:,t-ntsi+1] = tau_swi
                 self.tau_lw[:,:,:,t-ntsi+1] = tau_lwi
-                self.fnet_up[:,:,:,t-ntsi+1] = fnet_upi
-                self.fnet_dn[:,:,:,t-ntsi+1] = fnet_dni
+                self.flw_up[:,:,:,t-ntsi+1] = flw_upi
+                self.flw_dn[:,:,:,t-ntsi+1] = flw_dni
+                self.insol[:,:,t-ntsi+1] = insoli
+                if surf:
+                    self.Tsurface[:,:,t-ntsi+1] = Tsurfi
             if chem == 1:
                 self.ch4[:,:,:,t-ntsi+1] = ch4i
                 self.co[:,:,:,t-ntsi+1] = coi
@@ -507,6 +533,7 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pscale='log',overwrite=False,comp=4,p
         print('Vertical coordinate = pressure')
     else:
         print('Vertical coordinate = height')
+        nlev = len(grid.Altitude)
     #figure out pressure grid
     if pressure_min == 'default':
         pmin = np.min(output.Pressure)
@@ -542,15 +569,18 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pscale='log',overwrite=False,comp=4,p
     Temp_icoh = output.Pressure/(input.Rd*output.Rho)
     interpx = (grid.Altitude-grid.Altitudeh[:-1])/(grid.Altitudeh[1:]-grid.Altitudeh[:-1])
     # on even height grid, interpolation is excessive, but wth?
-    Wh_icoh = output.Wh[:,:-1,:] + (output.Wh[:,1:,:]-output.Wh[:,:-1,:])*interpx[None,:,None]
+    W_icoh = output.Wh[:,:-1,:] + (output.Wh[:,1:,:]-output.Wh[:,:-1,:])*interpx[None,:,None]
     del_hseq = np.gradient(output.Pressure,grid.Altitude,axis=1) + output.Rho*input.Gravit
 
     RT = 0
     if hasattr(input,"core_benchmark"):
         if input.core_benchmark[0] == 0: # need to switch to 'radiative_tranfer' flag
             RT = 1
-            fnet_up_icoh = output.fnet_up[:,:-1,:]+(output.fnet_up[:,1:,:]-output.fnet_up[:,:-1,:])*interpx[None,:,None]
-            fnet_dn_icoh = output.fnet_dn[:,:-1,:]+(output.fnet_dn[:,1:,:]-output.fnet_dn[:,:-1,:])*interpx[None,:,None]
+            flw_up_icoh = output.flw_up[:,:-1,:]+(output.flw_up[:,1:,:]-output.flw_up[:,:-1,:])*interpx[None,:,None]
+            flw_dn_icoh = output.flw_dn[:,:-1,:]+(output.flw_dn[:,1:,:]-output.flw_dn[:,:-1,:])*interpx[None,:,None]
+            surf = 0
+            if input.surface[0]:
+                surf = 1
 
     chem = 0
     if hasattr(input,"chemistry"):
@@ -582,7 +612,7 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pscale='log',overwrite=False,comp=4,p
 
             Mh_icop = np.zeros((3,grid.point_num,d_sig))
 
-            Wh_icop = np.zeros((grid.point_num,d_sig))
+            W_icop = np.zeros((grid.point_num,d_sig))
 
             U_llp = np.zeros((d_lon[0],d_lon[1],d_sig))
             V_llp = np.zeros((d_lon[0],d_lon[1],d_sig))
@@ -614,13 +644,15 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pscale='log',overwrite=False,comp=4,p
                 tau_lw_icop = np.zeros((grid.point_num,d_sig))
                 tau_lw_llp = np.zeros((d_lon[0],d_lon[1],d_sig))
 
-                fnet_up_icop = np.zeros((grid.point_num,d_sig))
-                fnet_up_llp = np.zeros((d_lon[0],d_lon[1],d_sig))
+                flw_up_icop = np.zeros((grid.point_num,d_sig))
+                flw_up_llp = np.zeros((d_lon[0],d_lon[1],d_sig))
 
-                fnet_dn_icop = np.zeros((grid.point_num,d_sig))
-                fnet_dn_llp = np.zeros((d_lon[0],d_lon[1],d_sig))
+                flw_dn_icop = np.zeros((grid.point_num,d_sig))
+                flw_dn_llp = np.zeros((d_lon[0],d_lon[1],d_sig))
 
                 insol_ll = np.zeros((d_lon[0],d_lon[1]))
+                if surf == 1:
+                    Tsurf_ll = np.zeros((d_lon[0],d_lon[1]))
 
                 if type == 'sh' or type == 'SH':
                     tau_sw_coeff = np.zeros((d_sig,2,lmax+1,lmax+1))
@@ -629,14 +661,18 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pscale='log',overwrite=False,comp=4,p
                     tau_lw_coeff = np.zeros((d_sig,2,lmax+1,lmax+1))
                     tau_lw_chi2 = np.zeros(d_sig)
 
-                    fnet_up_coeff = np.zeros((d_sig,2,lmax+1,lmax+1))
-                    fnet_up_chi2 = np.zeros(d_sig)
+                    flw_up_coeff = np.zeros((d_sig,2,lmax+1,lmax+1))
+                    flw_up_chi2 = np.zeros(d_sig)
 
-                    fnet_dn_coeff = np.zeros((d_sig,2,lmax+1,lmax+1))
-                    fnet_dn_chi2 = np.zeros(d_sig)
+                    flw_dn_coeff = np.zeros((d_sig,2,lmax+1,lmax+1))
+                    flw_dn_chi2 = np.zeros(d_sig)
 
                     insol_coeff = np.zeros((d_sig,2,lmax+1,lmax+1))
                     insol_chi2 = np.zeros(d_sig)
+
+                    if surf == 1:
+                        Tsurf_coeff = np.zeros((d_sig,2,lmax+1,lmax+1))
+                        Tsurf_chi2 = np.zeros(d_sig)
 
             if chem == 1:
                 ch4_icop = np.zeros((grid.point_num,d_sig))
@@ -679,13 +715,14 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pscale='log',overwrite=False,comp=4,p
                     Mh_icop[0,i,:] = interp.pchip_interpolate(sigma[::-1],output.Mh[0,i,::-1,t-ntsi],Pref[::-1])[::-1]
                     Mh_icop[1,i,:] = interp.pchip_interpolate(sigma[::-1],output.Mh[1,i,::-1,t-ntsi],Pref[::-1])[::-1]
                     Mh_icop[2,i,:] = interp.pchip_interpolate(sigma[::-1],output.Mh[2,i,::-1,t-ntsi],Pref[::-1])[::-1]
-                    Wh_icop[i,:] = interp.pchip_interpolate(sigma[::-1],Wh_icoh[i,::-1,t-ntsi],Pref[::-1])[::-1]
+                    W_icop[i,:] = interp.pchip_interpolate(sigma[::-1],W_icoh[i,::-1,t-ntsi],Pref[::-1])[::-1]
                     # del_hseq_icop[i,:] = interp.pchip_interpolate(sigma[::-1],del_hseq[i,::-1,t-ntsi],Pref[::-1])[::-1]
                     if RT == 1:
                         tau_sw_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.tau_sw[i,::-1,t-ntsi],Pref[::-1])[::-1]
                         tau_lw_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.tau_lw[i,::-1,t-ntsi],Pref[::-1])[::-1]
-                        fnet_up_icop[i,:] = interp.pchip_interpolate(sigma[::-1],fnet_up_icoh[i,::-1,t-ntsi],Pref[::-1])[::-1]
-                        fnet_dn_icop[i,:] = interp.pchip_interpolate(sigma[::-1],fnet_dn_icoh[i,::-1,t-ntsi],Pref[::-1])[::-1]
+                        flw_up_icop[i,:] = interp.pchip_interpolate(sigma[::-1],flw_up_icoh[i,::-1,t-ntsi],Pref[::-1])[::-1]
+                        flw_dn_icop[i,:] = interp.pchip_interpolate(sigma[::-1],flw_dn_icoh[i,::-1,t-ntsi],Pref[::-1])[::-1]
+
                     if chem == 1:
                         ch4_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.ch4[i,::-1,t-ntsi],Pref[::-1])[::-1]
                         co_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.co[i,::-1,t-ntsi],Pref[::-1])[::-1]
@@ -696,13 +733,13 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pscale='log',overwrite=False,comp=4,p
                 Temp_icop[:,:] = Temp_icoh[:,:,t-ntsi]
                 Rho_icop[:,:] = output.Rho[:,:,t-ntsi]
                 Mh_icop[:,:,:] = output.Mh[:,:,:,t-ntsi]
-                Wh_icop[:,:] = Wh_icoh[:,:,t-ntsi]
+                W_icop[:,:] = W_icoh[:,:,t-ntsi]
                 # del_hseq_icop[:,:] = del_hseq[:,:,t-ntsi]
                 if RT == 1:
                     tau_sw_icop[:,:] = output.tau_sw[:,:,t-ntsi]
                     tau_lw_icop[:,:] = output.tau_lw[:,:,t-ntsi]
-                    fnet_up_icop[:,:] = fnet_up_icoh[:,:,t-ntsi]
-                    fnet_dn_icop[:,:] = fnet_dn_icoh[:,:,t-ntsi]
+                    flw_up_icop[:,:] = flw_up_icoh[:,:,t-ntsi]
+                    flw_dn_icop[:,:] = flw_dn_icoh[:,:,t-ntsi]
                 if chem == 1:
                     ch4_icop[:,:] = output.ch4[:,:,t-ntsi]
                     co_icop[:,:] = output.co[:,:,t-ntsi]
@@ -724,14 +761,17 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pscale='log',overwrite=False,comp=4,p
                     Rho_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,Rho_icop[:,lev],(loni,lati),method='nearest')
                     U_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,U_icop[:,lev],(loni,lati),method='nearest')
                     V_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,V_icop[:,lev],(loni,lati),method='nearest')
-                    W_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,Wh_icop[:,lev]/Rho_icop[:,lev],(loni,lati),method='nearest')
+                    W_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,W_icop[:,lev]/Rho_icop[:,lev],(loni,lati),method='nearest')
                     # del_hseq_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,del_hseq_icop[:,lev],(loni,lati),method='nearest')
                     if RT == 1:
                         tau_sw_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,tau_sw_icop[:,lev],(loni,lati),method='nearest')
                         tau_lw_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,tau_lw_icop[:,lev],(loni,lati),method='nearest')
-                        fnet_up_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,fnet_up_icop[:,lev],(loni,lati),method='nearest')
-                        fnet_dn_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,fnet_dn_icop[:,lev],(loni,lati),method='nearest')
-                        insol_ll[:,:] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,output.Insol[:,t-ntsi],(loni,lati),method='nearest')
+                        flw_up_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,flw_up_icop[:,lev],(loni,lati),method='nearest')
+                        flw_dn_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,flw_dn_icop[:,lev],(loni,lati),method='nearest')
+                        if lev == 0:
+                            insol_ll[:,:] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,output.Insol[:,t-ntsi],(loni,lati),method='nearest')
+                            if surf == 1:
+                                Tsurf_ll[:,:] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,output.Tsurface[:,t-ntsi],(loni,lati),method='nearest')
                     if chem == 1:
                         ch4_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,ch4_icop[:,lev],(loni,lati),method='nearest')
                         co_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,co_icop[:,lev],(loni,lati),method='nearest')
@@ -756,12 +796,17 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pscale='log',overwrite=False,comp=4,p
                         tau_sw_llp[:,:,lev] = np.real(chairs.expand.MakeGridDH(tau_sw_coeff[lev,:,:,:],sampling=2))
                         tau_lw_coeff[lev,:,:,:], tau_lw_chi2[lev] = chairs.expand.SHExpandLSQ(tau_lw_icop[:,lev],grid.lat*180/np.pi,grid.lon*180/np.pi,lmax)
                         tau_lw_llp[:,:,lev] = np.real(chairs.expand.MakeGridDH(tau_lw_coeff[lev,:,:,:],sampling=2))
-                        fnet_up_coeff[lev,:,:,:], fnet_up_chi2[lev] = chairs.expand.SHExpandLSQ(fnet_up_icop[:,lev],grid.lat*180/np.pi,grid.lon*180/np.pi,lmax)
-                        fnet_up_llp[:,:,lev] = np.real(chairs.expand.MakeGridDH(fnet_up_coeff[lev,:,:,:],sampling=2))
-                        fnet_dn_coeff[lev,:,:,:], fnet_dn_chi2[lev] = chairs.expand.SHExpandLSQ(fnet_dn_icop[:,lev],grid.lat*180/np.pi,grid.lon*180/np.pi,lmax)
-                        fnet_dn_llp[:,:,lev] = np.real(chairs.expand.MakeGridDH(fnet_dn_coeff[lev,:,:,:],sampling=2))
-                        insol_coeff[lev,:,:,:], insol_chi2[lev] = chairs.expand.SHExpandLSQ(output.Insol[:,t-ntsi],grid.lat*180/np.pi,grid.lon*180/np.pi,lmax)
-                        insol_llp[:,:,lev] = np.real(chairs.expand.MakeGridDH(insol_coeff[lev,:,:,:],sampling=2))
+                        flw_up_coeff[lev,:,:,:], flw_up_chi2[lev] = chairs.expand.SHExpandLSQ(flw_up_icop[:,lev],grid.lat*180/np.pi,grid.lon*180/np.pi,lmax)
+                        flw_up_llp[:,:,lev] = np.real(chairs.expand.MakeGridDH(flw_up_coeff[lev,:,:,:],sampling=2))
+                        flw_dn_coeff[lev,:,:,:], flw_dn_chi2[lev] = chairs.expand.SHExpandLSQ(flw_dn_icop[:,lev],grid.lat*180/np.pi,grid.lon*180/np.pi,lmax)
+                        flw_dn_llp[:,:,lev] = np.real(chairs.expand.MakeGridDH(flw_dn_coeff[lev,:,:,:],sampling=2))
+                        if lev == 0:
+                            insol_coeff[lev,:,:,:], insol_chi2[lev] = chairs.expand.SHExpandLSQ(output.Insol[:,t-ntsi],grid.lat*180/np.pi,grid.lon*180/np.pi,lmax)
+                            insol_ll[:,:,lev] = np.real(chairs.expand.MakeGridDH(insol_coeff[lev,:,:,:],sampling=2))
+                            if surf == 1:
+                                Tsurf_coeff[lev,:,:,:], Tsurf_chi2[lev] = chairs.expand.SHExpandLSQ(output.Tsurface[:,t-ntsi],grid.lat*180/np.pi,grid.lon*180/np.pi,lmax)
+                                Tsurf_ll[:,:,lev] = np.real(chairs.expand.MakeGridDH(Tsurf_coeff[lev,:,:,:],sampling=2))
+
                     if chem == 1:
                         ch4_coeff[lev,:,:,:], ch4_chi2[lev] = chairs.expand.SHExpandLSQ(ch4_icop[:,lev],grid.lat*180/np.pi,grid.lon*180/np.pi,lmax)
                         ch4_llp[:,:,lev] = np.real(chairs.expand.MakeGridDH(ch4_coeff[lev,:,:,:],sampling=2))
@@ -782,23 +827,27 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pscale='log',overwrite=False,comp=4,p
                     Temp_llp[:,:,lev] = f(np.pi/2-lat_range[::-1]*np.pi/180,lon_range*np.pi/180)
                     f = interp.SmoothSphereBivariateSpline(theta,grid.lon,Rho_icop[:,lev],s=3.5)
                     Rho_llp[:,:,lev] = f(np.pi/2-lat_range[::-1]*np.pi/180,lon_range*np.pi/180)
-                    f = interp.SmoothSphereBivariateSpline(theta,grid.lon,U_icop[:,lev],s=3.5)
+                    f = interp.SmoothSphereBivariateSpline(theta,grid.lon,U_icop[:,lev],s=5)
                     U_llp[:,:,lev] = f(np.pi/2-lat_range[::-1]*np.pi/180,lon_range*np.pi/180)
-                    f = interp.SmoothSphereBivariateSpline(theta,grid.lon,V_icop[:,lev],s=3.5)
+                    f = interp.SmoothSphereBivariateSpline(theta,grid.lon,V_icop[:,lev],s=5)
                     V_llp[:,:,lev] = f(np.pi/2-lat_range[::-1]*np.pi/180,lon_range*np.pi/180)
-                    f = interp.SmoothSphereBivariateSpline(theta,grid.lon,W_icop[:,lev],s=3.5)
+                    f = interp.SmoothSphereBivariateSpline(theta,grid.lon,W_icop[:,lev],s=5)
                     W_llp[:,:,lev] = f(np.pi/2-lat_range[::-1]*np.pi/180,lon_range*np.pi/180)
                     if RT == 1:
                         f = interp.SmoothSphereBivariateSpline(theta,grid.lon,tau_sw_icop[:,lev],s=3.5)
                         tau_sw_llp[:,:,lev] = f(np.pi/2-lat_range[::-1]*np.pi/180,lon_range*np.pi/180)
                         f = interp.SmoothSphereBivariateSpline(theta,grid.lon,tau_lw_icop[:,lev],s=3.5)
                         tau_lw_llp[:,:,lev] = f(np.pi/2-lat_range[::-1]*np.pi/180,lon_range*np.pi/180)
-                        f = interp.SmoothSphereBivariateSpline(theta,grid.lon,fnet_up_icop[:,lev],s=3.5)
-                        fnet_up_llp[:,:,lev] = f(np.pi/2-lat_range[::-1]*np.pi/180,lon_range*np.pi/180)
-                        f = interp.SmoothSphereBivariateSpline(theta,grid.lon,fnet_dn_icop[:,lev],s=3.5)
-                        fnet_dn_llp[:,:,lev] = f(np.pi/2-lat_range[::-1]*np.pi/180,lon_range*np.pi/180)
-                        f = interp.SmoothSphereBivariateSpline(theta,grid.lon,output.Insol[:,t-ntsi],s=3.5)
-                        insol_llp[:,:,lev] = f(np.pi/2-lat_range[::-1]*np.pi/180,lon_range*np.pi/180)
+                        f = interp.SmoothSphereBivariateSpline(theta,grid.lon,flw_up_icop[:,lev],s=3.5)
+                        flw_up_llp[:,:,lev] = f(np.pi/2-lat_range[::-1]*np.pi/180,lon_range*np.pi/180)
+                        f = interp.SmoothSphereBivariateSpline(theta,grid.lon,flw_dn_icop[:,lev],s=3.5)
+                        flw_dn_llp[:,:,lev] = f(np.pi/2-lat_range[::-1]*np.pi/180,lon_range*np.pi/180)
+                        if lev == 0:
+                            f = interp.SmoothSphereBivariateSpline(theta,grid.lon,output.Insol[:,t-ntsi],s=3.5)
+                            insol_llp[:,:,lev] = f(np.pi/2-lat_range[::-1]*np.pi/180,lon_range*np.pi/180)
+                            if surf == 1:
+                                f = interp.SmoothSphereBivariateSpline(theta,grid.lon,output.Tsurface[:,t-ntsi],s=3.5)
+                                Tsurf_llp[:,:,lev] = f(np.pi/2-lat_range[::-1]*np.pi/180,lon_range*np.pi/180)
                     if chem == 1:
                         f = interp.SmoothSphereBivariateSpline(theta,grid.lon,ch4_icop[:,lev],s=3.5)
                         ch4_llp[:,:,lev] = f(np.pi/2-lat_range[::-1]*np.pi/180,lon_range*np.pi/180)
@@ -847,20 +896,26 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pscale='log',overwrite=False,comp=4,p
             if RT == 1:
                 tau_sw = openh5.create_dataset("tau_sw",data=tau_sw_llp,compression='gzip',compression_opts=comp)
                 tau_lw = openh5.create_dataset("tau_lw",data=tau_lw_llp,compression='gzip',compression_opts=comp)
-                fnet_up = openh5.create_dataset("fnet_up",data=fnet_up_llp,compression='gzip',compression_opts=comp)
-                fnet_dn = openh5.create_dataset("fnet_dn",data=fnet_dn_llp,compression='gzip',compression_opts=comp)
+                flw_up = openh5.create_dataset("flw_up",data=flw_up_llp,compression='gzip',compression_opts=comp)
+                flw_dn = openh5.create_dataset("flw_dn",data=flw_dn_llp,compression='gzip',compression_opts=comp)
                 insol = openh5.create_dataset("insol",data=insol_ll,compression='gzip',compression_opts=comp)
+                if surf == 1:
+                    Tsurf = openh5.create_dataset("Tsurface",data=Tsurf_ll,compression='gzip',compression_opts=comp)
+
                 if type == 'sh' or type == 'SH':
                     tauswcoeff = openh5.create_dataset("tau_sw_coeff",data=tau_sw_coeff,compression='gzip',compression_opts=comp)
                     tauswchi2 = openh5.create_dataset("tau_sw_chi2",data=tau_sw_chi2,compression='gzip',compression_opts=comp)
                     taulwcoeff = openh5.create_dataset("tau_lw_coeff",data=tau_lw_coeff,compression='gzip',compression_opts=comp)
                     taulwchi2 = openh5.create_dataset("tau_lw_chi2",data=tau_lw_chi2,compression='gzip',compression_opts=comp)
-                    fnetupcoeff = openh5.create_dataset("fnet_up_coeff",data=fnet_up_coeff,compression='gzip',compression_opts=comp)
-                    fnetupchi2 = openh5.create_dataset("fnet_up_chi2",data=fnet_up_chi2,compression='gzip',compression_opts=comp)
-                    fnetdncoeff = openh5.create_dataset("fnet_dn_coeff",data=fnet_dn_coeff,compression='gzip',compression_opts=comp)
-                    fnetdnchi2 = openh5.create_dataset("fnet_dn_chi2",data=fnet_dn_chi2,compression='gzip',compression_opts=comp)
+                    fnetupcoeff = openh5.create_dataset("flw_up_coeff",data=flw_up_coeff,compression='gzip',compression_opts=comp)
+                    fnetupchi2 = openh5.create_dataset("flw_up_chi2",data=flw_up_chi2,compression='gzip',compression_opts=comp)
+                    fnetdncoeff = openh5.create_dataset("flw_dn_coeff",data=flw_dn_coeff,compression='gzip',compression_opts=comp)
+                    fnetdnchi2 = openh5.create_dataset("flw_dn_chi2",data=flw_dn_chi2,compression='gzip',compression_opts=comp)
                     insolcoeff = openh5.create_dataset("insol_coeff",data=insol_coeff,compression='gzip',compression_opts=comp)
                     insolchi2 = openh5.create_dataset("insol_chi2",data=insol_chi2,compression='gzip',compression_opts=comp)
+                    if surf == 1:
+                        Tsurfcoeff = openh5.create_dataset("Tsurf_coeff",data=Tsurf_coeff,compression='gzip',compression_opts=comp)
+                        Tsurfchi2 = openh5.create_dataset("Tsurf_chi2",data=Tsurf_chi2,compression='gzip',compression_opts=comp)
 
             if chem == 1:
                 ch4 = openh5.create_dataset("ch4",data=ch4_llp,compression='gzip',compression_opts=comp)
@@ -1114,7 +1169,6 @@ def vertical_lat(input,grid,output,rg,sigmaref,z,slice=[0,360],save=True,axis=Fa
 
     # need to set desired pressure range (major PITA!)
     prange = np.where(np.logical_and(rg.Pressure>=np.min(Pref),rg.Pressure<=np.max(Pref)))
-
     # Contour plot
     if isinstance(axis,axes.SubplotBase):
         C = axis.contourf(latp*180/np.pi,rg.Pressure[prange[0],0]/1e5,Zonallt[:,prange[0]].T,40,cmap=z['cmap'])
@@ -1150,16 +1204,17 @@ def vertical_lat(input,grid,output,rg,sigmaref,z,slice=[0,360],save=True,axis=Fa
         cc.set_edgecolor("face") #fixes a stupid bug in matplotlib 2.0
     #ax.invert_yaxis()
     # plt.quiver(latq.ravel(),preq.ravel()/1e5,Vq/np.max(Vq),Wq/np.max(Wq),color='0.5')
-    if np.max(Pref)/np.min(Pref) > 100:
+    if z['plog'] == True:
         ax.set_yscale("log")
     ax.set_xlabel('Latitude (deg)')
     ax.set_ylabel('Pressure (bar)')
     ax.plot(latp*180/np.pi,np.zeros_like(latp)+np.max(output.Pressure[:,grid.nv-1,:])/1e5,'r--')
     #    plt.plot(latp*180/np.pi,np.zeros_like(latp)+np.max(output.Pressure[:,grid.nv-1,:])/1e5,'r--')
-    if np.min(rg.Pressure[prange[0],0]) < np.max(output.Pressure[:,grid.nv-1,:]):
-        ax.set_ylim(np.max(rg.Pressure[prange[0],0])/1e5,np.min(rg.Pressure[prange[0],0])/1e5)
-    else:
-        ax.set_ylim(np.max(rg.Pressure[prange[0],0])/1e5,np.max(output.Pressure[:,grid.nv-1,:])/1e5)
+    # if np.min(rg.Pressure[prange[0],0]) < np.max(output.Pressure[:,grid.nv-1,:]):
+    #     ax.set_ylim(np.max(rg.Pressure[prange[0],0])/1e5,np.min(rg.Pressure[prange[0],0])/1e5)
+    # else:
+    #     ax.set_ylim(np.max(rg.Pressure[prange[0],0])/1e5,np.max(output.Pressure[:,grid.nv-1,:])/1e5)
+    ax.set_ylim(np.max(rg.Pressure[prange[0],0])/1e5,np.min(Pref)/1e5)
 
     if ax.get_ylim()[1] > ax.get_ylim()[0]:
         ax.invert_yaxis()
@@ -1212,9 +1267,19 @@ def horizontal_lev(input,grid,output,rg,Plev,z,save=True,axis=False,wind_vectors
             above = np.where(rg.Pressure==np.min(rg.Pressure[rg.Pressure>Plev]))[0][0]
             below = np.where(rg.Pressure==np.max(rg.Pressure[rg.Pressure<Plev]))[0][0]
 
-        zlev[:,:,t] = (z['value'][:,:,below,t]*(rg.Pressure[above,t] - Plev)\
-            + z['value'][:,:,above,t]*(Plev - rg.Pressure[below,t]))\
-            / (rg.Pressure[above,t]-rg.Pressure[below,t])
+        if len(np.shape(z['value'])) == 4:
+            # single level of a 3D field
+            zlev[:,:,t] = (z['value'][:,:,below,t]*(rg.Pressure[above,t] - Plev)\
+                + z['value'][:,:,above,t]*(Plev - rg.Pressure[below,t]))\
+                / (rg.Pressure[above,t]-rg.Pressure[below,t])
+            title = 'Time = %#.3f-%#.3f days, Plev = %#.3f bar'%(output.time[0],output.time[-1],Plev/1e5)
+            fname = '%s_lev%#.3fmbar_i%d_l%d'%(z['name'],Plev/100,output.ntsi,output.nts)
+        elif len(np.shape(z['value'])) == 3:
+            # 2D field, only one level available (e.g., insolation or surface temp)
+            zlev[:,:,t] = z['value'][:,:,t]
+            title = 'Time = %#.3f-%#.3f days'%(output.time[0],output.time[-1])
+            fname = '%s_i%d_l%d'%(z['name'],output.ntsi,output.nts)
+            wind_vectors = False
 
         if wind_vectors == True:
             Uii[:,:,t] = (rg.U[:,:,below,t]*(rg.Pressure[above,t] - Plev)\
@@ -1262,7 +1327,7 @@ def horizontal_lev(input,grid,output,rg,Plev,z,save=True,axis=False,wind_vectors
     ax.set_ylabel('Latitude (deg)')
     ax.set_xlabel('Longitude (deg)')
 
-    ax.set_title('Time = %#.3f-%#.3f days, Plev = %#.3f bar'%(output.time[0],output.time[-1],Plev/1e5))
+    ax.set_title(title)
 
     if wind_vectors == True:
         d_z = np.shape(Uiii)
@@ -1282,15 +1347,15 @@ def horizontal_lev(input,grid,output,rg,Plev,z,save=True,axis=False,wind_vectors
         os.mkdir(input.resultsf+'/figures')
     plt.tight_layout()
     if save == True:
-        plt.savefig(input.resultsf+'/figures/%s_lev%#.3fmbar_i%d_l%d.pdf'%(z['name'],Plev/100,output.ntsi,output.nts))
+        plt.savefig(input.resultsf+'/figures/'+fname+'.pdf')
         plt.close()
     if z['mt'] == True:
-        fname = '%s_lev%#.3fmbar_i%d_l%d.dat'%(z['name'],Plev/100,output.ntsi,output.nts)
+        dname = fname+'.dat'
         if z['name'] == 'temperature-uv':
             zname = 'temperature'
         else:
             zname = z['name']
-        maketable(lonp,latp,zlevt.T,'Longitude(d)','Latitude(d)',zname,input.resultsf,fname)
+        maketable(lonp,latp,zlevt.T,'Longitude(d)','Latitude(d)',zname,input.resultsf,dname)
 
 def w_prof(input,grid,output):
     tsp = output.nts-output.ntsi+1
