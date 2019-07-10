@@ -145,7 +145,6 @@ def edit_init_file(config_set):
 
     #--------winds-------------------------------
     if 'wind_prof' in config_set:
-        import pdb; pdb.set_trace()
         grid_file = output_dir+'/esp_initial_grid.h5'
         if os.path.exists(grid_file):
             gridh5 = h5py.File(grid_file)

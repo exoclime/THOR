@@ -7,7 +7,7 @@ config_version = 1
 
 #-- Time stepping and output options -----------------------------------------#
 # number of steps
-num_steps = 1000
+num_steps = 345600
 
 # length of timesteps in seconds
 timestep = 600
