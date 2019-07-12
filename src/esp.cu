@@ -259,6 +259,8 @@ int main(int argc, char** argv) {
     config_reader.append_config_var("shrink_sponge", shrink_sponge, shrink_sponge_default);
     config_reader.append_config_var("t_shrink", t_shrink, t_shrink_default);
 
+    config_reader.append_config_var("output_mean", sim.output_mean, output_mean_default);
+
     // Initial conditions
     // rest supersedes initial condition entry,
     // but if initial condition set from  command line, it overrides
@@ -675,7 +677,8 @@ int main(int argc, char** argv) {
           sim.conservation,    // compute conservation values
           core_benchmark,      // benchmark test type
           logwriter,           // Log writer
-          max_count);
+          max_count,
+          sim.output_mean);
 
 
     USE_BENCHMARK();
@@ -880,6 +883,10 @@ int main(int argc, char** argv) {
             X.copy_conservation_to_host();
         }
 
+        if (sim.output_mean == true) {
+            X.copy_mean_to_host();
+        }
+
         X.output(0, // file index
                  sim);
 
@@ -901,6 +908,7 @@ int main(int argc, char** argv) {
     //
     //  Main loop. nstep is the current step of the integration and nsmax the maximum
     //  number of steps in the integration.
+    int n_since_output = 1; //how many steps have passed since last output
     for (int nstep = step_idx; nstep <= nsmax; ++nstep) {
 
         // compute simulation time
@@ -935,6 +943,9 @@ int main(int argc, char** argv) {
                                           X.GlobalEnt_h);
         }
 
+        if (sim.output_mean == true)
+            X.update_mean_outputs(n_since_output);
+
         //
         //      Prints output every nout steps
         if (nstep % n_out == 0 || caught_signal != ESIG_NOSIG) {
@@ -943,12 +954,17 @@ int main(int argc, char** argv) {
             if (sim.conservation == true)
                 X.copy_conservation_to_host();
 
+            if (sim.output_mean == true) {
+                X.copy_mean_to_host();
+            }
+
             X.output(output_file_idx, sim);
 
             // increment output file index
             output_file_idx++;
 
-            file_output = true;
+            file_output    = true;
+            n_since_output = 0;
         }
 
 
@@ -998,6 +1014,7 @@ int main(int argc, char** argv) {
             //exit loop and application after save on SIGTERM or SIGINT
             break;
         }
+        n_since_output++;
     }
     //
     //  Prints the duration of the integration.

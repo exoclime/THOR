@@ -107,6 +107,13 @@ public:
     double *Mh_h;
     double *W_h;
     double *Wh_h;
+
+    // average quantities over output interval
+    double *Rho_mean_h;
+    double *pressure_mean_h;
+    double *Mh_mean_h;
+    double *Wh_mean_h;
+
     //
     // double *Kdhz_h;
     // double *Kdh4_h;
@@ -166,6 +173,12 @@ public:
 
     double *Rho_d;
     double *pressure_d;
+
+    // average quantities over output interval
+    double *Rho_mean_d;
+    double *pressure_mean_d;
+    double *Mh_mean_d;
+    double *Wh_mean_d;
 
     double *Adv_d;
 
@@ -289,11 +302,12 @@ public:
         bool            conservation,
         benchmark_types core_benchmark_,
         log_writer &    logwriter_,
-        int             max_count_);
+        int             max_count_,
+        bool            output_mean);
 
     ~ESP();
 
-    void alloc_data(bool);
+    void alloc_data(bool, bool);
 
     bool initial_values(const std::string &initial_conditions_filename,
                         const bool &       continue_sim,
@@ -328,6 +342,9 @@ public:
     void copy_to_host();
     void copy_conservation_to_host();
     void copy_global_to_host();
+    void copy_mean_to_host();
+
+    void update_mean_outputs(int);
 
     /// crash reporting utilities ///////////
     std::string index_to_location_scalar(int i, int first) {

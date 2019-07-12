@@ -87,6 +87,8 @@ public:
     bool NonHydro;     // Turn on/off non-hydrostatic.
     bool conservation; // calc/output conservation quantities
 
+    bool output_mean;
+
     int  conv_adj;
     bool gcm_off;
 

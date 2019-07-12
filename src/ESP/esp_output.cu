@@ -90,6 +90,17 @@ __host__ void ESP::copy_to_host() {
     cudaMemcpy(Mh_h, Mh_d, 3 * point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
 }
 
+__host__ void ESP::copy_mean_to_host() {
+    //
+    //  Description: Transfer mean of diagnostics from the device to the host.
+    //
+    cudaMemcpy(Rho_mean_h, Rho_mean_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+    cudaMemcpy(Wh_mean_h, Wh_mean_d, point_num * nvi * sizeof(double), cudaMemcpyDeviceToHost);
+    cudaMemcpy(
+        pressure_mean_h, pressure_mean_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+    cudaMemcpy(Mh_mean_h, Mh_mean_d, 3 * point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+}
+
 __host__ void ESP::output(int                    fidx, // Index of output file
                           const SimulationSetup& sim) {
 
@@ -174,6 +185,10 @@ __host__ void ESP::output(int                    fidx, // Index of output file
         //      NonHydro option
         s.append_value(
             sim.NonHydro ? 1.0 : 0.0, "/NonHydro", "-", "Using Non Hydrostatic parameter");
+
+        //      output_mean option
+        s.append_value(
+            sim.output_mean ? 1.0 : 0.0, "/output_mean", "-", "outputting mean quantities");
 
         //      DivDampP option
         s.append_value(sim.DivDampP ? 1.0 : 0.0, "/DivDampP", "-", "Using Divergence-damping");
@@ -273,6 +288,21 @@ __host__ void ESP::output(int                    fidx, // Index of output file
 
         //  GlobalAMz (total angular momentum in y direction over entire planet)
         s.append_value(GlobalAMz_h, "/GlobalAMz", "kg m^2/s", "Global AngMomZ");
+    }
+
+    if (sim.output_mean == true) {
+        //  Rho
+        s.append_table(Rho_mean_h, nv * point_num, "/Rho_mean", "kg/m^3", "Mean Density");
+
+        //  Pressure
+        s.append_table(pressure_mean_h, nv * point_num, "/Pressure_mean", "Pa", "Mean Pressure");
+
+        //  Mh
+        s.append_table(
+            Mh_mean_h, nv * point_num * 3, "/Mh_mean", "kg m/s", "Mean Horizontal Momentum");
+
+        //  Wh
+        s.append_table(Wh_mean_h, nvi * point_num, "/Wh_mean", "kg m/s", "Mean Vertical Momentum");
     }
 
     if (phy_modules_execute)
