@@ -74,8 +74,29 @@ class input:
 
         openh5.close()
 
+def LatLong2Cart(lat,lon):
+    x = np.cos(lat)*np.cos(lon)
+    y = np.cos(lat)*np.sin(lon)
+    z = np.sin(lat)
+    return x, y, z
+
+def Cart2LatLong(x,y,z):
+    lon = np.arctan2(y,x)
+    lat = np.arctan2(z,np.sqrt(x**2+y**2))
+    return lat, lon
+
+def Rot_y(theta,x,y,z):
+    xnew = np.cos(theta)*x + np.sin(theta)*z
+    znew = -np.sin(theta)*x + np.cos(theta)*z
+    return xnew, y, znew
+
+def Rot_z(phi,x,y,z):
+    xnew = np.cos(phi)*x - np.sin(phi)*y
+    ynew = np.sin(phi)*x + np.cos(phi)*y
+    return xnew, ynew, z
+
 class grid:
-    def __init__(self,resultsf,simID):
+    def __init__(self,resultsf,simID,rotation=False,theta_y=0,theta_z=0):
         fileh5 = resultsf+'/esp_output_grid_'+simID+'.h5'
         if os.path.exists(fileh5):
             openh5 = h5py.File(fileh5)
@@ -97,7 +118,12 @@ class grid:
         self.nvi = self.nv+1
         self.lon = (self.lonlat[::2])%(2*np.pi)
         self.lat = self.lonlat[1::2]
-
+        if rotation == True:
+            xtmp, ytmp, ztmp = LatLong2Cart(self.lat, self.lon)
+            xtmp1, ytmp1, ztmp1 = Rot_z(theta_z,xtmp,ytmp,ztmp)
+            xtmp2, ytmp2, ztmp2 = Rot_y(theta_y,xtmp1,ytmp1,ztmp1)
+            self.lat, self.lon = Cart2LatLong(xtmp2,ytmp2,ztmp2)
+            self.lon = self.lon%(2*np.pi)
 
 class output:
     def __init__(self,resultsf,simID,ntsi,nts,grid,stride=1):
@@ -221,7 +247,7 @@ class output:
                 self.flw_up[:,:,t-ntsi+1] = np.reshape(fupi,(grid.point_num,grid.nvi))
 
 class rg_out:
-    def __init__(self,resultsf,simID,ntsi,nts,input,output,grid,pressure_vert=True):
+    def __init__(self,resultsf,simID,ntsi,nts,input,output,grid,pressure_vert=True,rotation=False):
         RT = 0
         if "core_benchmark" in dir(input):
             if input.core_benchmark[0] == 0: # need to switch to 'radiative_tranfer' flag
@@ -238,9 +264,12 @@ class rg_out:
         # Read model results
         for t in np.arange(ntsi-1,nts):
             if pressure_vert == True:
-                fileh5 = resultsf+'/regrid_'+simID+'_'+np.str(t+1)+'.h5'
+                fileh5 = resultsf+'/regrid_'+simID+'_'+np.str(t+1)
             else:
-                fileh5 = resultsf+'/regrid_height_'+simID+'_'+np.str(t+1)+'.h5'
+                fileh5 = resultsf+'/regrid_height_'+simID+'_'+np.str(t+1)
+            if rotation == True:
+                fileh5 += '_rot'
+            fileh5 += '.h5'
             if os.path.exists(fileh5):
                 openh5 = h5py.File(fileh5)
             else:
@@ -373,12 +402,13 @@ class rg_out:
 
 
 class GetOutput:
-    def __init__(self,resultsf,simID,ntsi,nts,stride=1,openrg=0,pressure_vert=True):
+    def __init__(self,resultsf,simID,ntsi,nts,stride=1,openrg=0,pressure_vert=True,rotation=False,theta_y=0,theta_z=0):
         self.input = input(resultsf,simID)
-        self.grid = grid(resultsf,simID)
+        self.grid = grid(resultsf,simID,rotation=rotation,theta_y=theta_y,theta_z=theta_z)
         self.output = output(resultsf,simID,ntsi,nts,self.grid,stride=stride)
         if openrg == 1:
-            self.rg = rg_out(resultsf,simID,ntsi,nts,self.input,self.output,self.grid,pressure_vert=pressure_vert)
+            self.rg = rg_out(resultsf,simID,ntsi,nts,self.input,self.output,self.grid,pressure_vert=pressure_vert,
+                                rotation=rotation)
 
 def calc_RV_PV(grid,output,input,lons,lats,sigma,t_ind,fileh5,comp=4,pressure_vert=True,type='gd'):
     #Calculates relative and potential vorticity on height levels, then interpolates to pressure.
@@ -523,9 +553,10 @@ def calc_RV_PV(grid,output,input,lons,lats,sigma,t_ind,fileh5,comp=4,pressure_ve
     Lonlr = openh5.create_dataset("Lon_lowres",data=lon_range,compression='gzip',compression_opts=comp)
     openh5.close()
 
-def regrid(resultsf,simID,ntsi,nts,nlev=40,pscale='log',overwrite=False,comp=4,pressure_vert=True,type='gd',pressure_min='default'):
+def regrid(resultsf,simID,ntsi,nts,nlev=40,pscale='log',overwrite=False,comp=4,
+            pressure_vert=True,type='gd',pressure_min='default',rotation=False,theta_z=0,theta_y=0,lmax_set='grid'):
     # runs over files and converts ico-height grid to lat-lon-pr grid
-    outall = GetOutput(resultsf,simID,ntsi,nts)
+    outall = GetOutput(resultsf,simID,ntsi,nts,rotation=rotation,theta_z=theta_z,theta_y=theta_y)
     input = outall.input
     grid = outall.grid
     output = outall.output
@@ -556,7 +587,13 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pscale='log',overwrite=False,comp=4,p
     d_sig = np.size(sigmaref)
     Pref = input.P_Ref*sigmaref[:,0]
     if type == 'sh' or type == 'SH':
-        lmax = np.int(np.sqrt(grid.point_num)*0.5)
+        if lmax_set == 'grid':
+            lmax = np.int(np.sqrt(grid.point_num)*0.5)
+        elif isinstance(lmax_set,int):
+            lmax = lmax_set
+        else:
+            raise ValueError("Invalid value of lmax in regrid")
+        pdb.set_trace()
         n = 2*lmax+2
         lat_range = np.arange(90,-90,-180/n)
         lon_range = np.arange(0,360,180/n)
@@ -594,9 +631,13 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pscale='log',overwrite=False,comp=4,p
         #check for exising h5 files
         proceed = 0
         if pressure_vert == True:
-            fileh5 = resultsf+'/regrid_'+simID+'_'+np.str(t)+'.h5'
+            fileh5 = resultsf+'/regrid_'+simID+'_'+np.str(t)
         else:
-            fileh5 = resultsf+'/regrid_height_'+simID+'_'+np.str(t)+'.h5'
+            fileh5 = resultsf+'/regrid_height_'+simID+'_'+np.str(t)
+        if rotation == True:
+            print('Applied rotation (theta_z,theta_y) = (%f,%f) to grid\n'%(theta_z*180/np.pi,theta_y*180/np.pi))
+            fileh5 += '_rot'
+        fileh5 += '.h5'
         if os.path.exists(fileh5):
             if overwrite == True:
                 proceed = 1
