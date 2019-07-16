@@ -91,7 +91,8 @@ __host__ ESP::ESP(int *           point_local_,
                   bool            conservation,
                   benchmark_types core_benchmark_,
                   log_writer &    logwriter_,
-                  int             max_count_) :
+                  int             max_count_,
+                  bool            output_mean) :
     nl_region(nl_region_),
     nr(nr_),
     point_num(point_num_),
@@ -142,10 +143,10 @@ __host__ ESP::ESP(int *           point_local_,
 
     //
     //  Allocate Data
-    alloc_data(conservation);
+    alloc_data(conservation, output_mean);
 }
 
-__host__ void ESP::alloc_data(bool conservation) {
+__host__ void ESP::alloc_data(bool conservation, bool output_mean) {
 
     //
     //  Description:
@@ -160,6 +161,13 @@ __host__ void ESP::alloc_data(bool conservation) {
     Mh_h          = (double *)malloc(nv * point_num * 3 * sizeof(double));
     W_h           = (double *)malloc(nv * point_num * sizeof(double));
     Wh_h          = (double *)malloc(nvi * point_num * sizeof(double));
+
+    if (output_mean == true) {
+        Rho_mean_h      = (double *)malloc(nv * point_num * sizeof(double));
+        pressure_mean_h = (double *)malloc(nv * point_num * sizeof(double));
+        Mh_mean_h       = (double *)malloc(nv * point_num * 3 * sizeof(double));
+        Wh_mean_h       = (double *)malloc(nvi * point_num * sizeof(double));
+    }
 
     if (conservation == true) {
         Etotal_h  = (double *)malloc(nv * point_num * sizeof(double));
@@ -199,6 +207,14 @@ __host__ void ESP::alloc_data(bool conservation) {
     cudaMalloc((void **)&Rho_d, nv * point_num * sizeof(double));
     cudaMalloc((void **)&pressure_d, nv * point_num * sizeof(double));
     cudaMalloc((void **)&pressureh_d, (nv + 1) * point_num * sizeof(double));
+
+    if (output_mean == true) {
+        // Average quantities over output interval
+        cudaMalloc((void **)&Mh_mean_d, nv * point_num * 3 * sizeof(double));
+        cudaMalloc((void **)&Wh_mean_d, nvi * point_num * sizeof(double));
+        cudaMalloc((void **)&Rho_mean_d, nv * point_num * sizeof(double));
+        cudaMalloc((void **)&pressure_mean_d, nv * point_num * sizeof(double));
+    }
 
     //  Temperature
     cudaMalloc((void **)&temperature_d, nv * point_num * sizeof(double));
@@ -266,6 +282,11 @@ __host__ void ESP::alloc_data(bool conservation) {
     cudaMalloc((void **)&diffrv_d, nv * point_num * sizeof(double));
     cudaMalloc((void **)&diffv_d1, 6 * nv * point_num * sizeof(double));
     cudaMalloc((void **)&diffv_d2, 6 * nv * point_num * sizeof(double));
+
+    cudaMalloc((void **)&profx_dP_d, nv * point_num * sizeof(double));
+    cudaMalloc((void **)&profx_dMh_d, 3 * nv * point_num * sizeof(double));
+    cudaMalloc((void **)&profx_dWh_d, nvi * point_num * sizeof(double));
+    cudaMalloc((void **)&profx_dW_d, nv * point_num * sizeof(double));
 
     //  Extras-nan
     cudaMalloc((void **)&check_d, sizeof(bool));
@@ -341,25 +362,25 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
             for (int lev = 0; lev < nv; lev++) {
                 pressure_h[i * nv + lev] = sim.P_Ref * exp(-Altitude_h[lev] / Ha);
-                if (core_benchmark == DEEP_HOT_JUPITER) {
-                    double Ptil = 0.0;
-                    if (pressure_h[i * nv + lev] >= 1e5) {
-                        Ptil = log10(pressure_h[i * nv + lev] / 100000);
-                    }
-                    temperature_h[i * nv + lev] =
-                        1696.6986 + 132.2318 * Ptil - 174.30459 * Ptil * Ptil
-                        + 12.579612 * Ptil * Ptil * Ptil + 59.513639 * Ptil * Ptil * Ptil * Ptil
-                        + 9.6706522 * Ptil * Ptil * Ptil * Ptil * Ptil
-                        - 4.1136048 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
-                        - 1.0632301 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
-                        + 0.064400203 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
-                        + 0.035974396 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
-                        + 0.0025740066 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
-                              * Ptil * Ptil;
-                }
-                else {
-                    temperature_h[i * nv + lev] = sim.Tmean;
-                }
+                // if (core_benchmark == DEEP_HOT_JUPITER) {
+                //     double Ptil = 0.0;
+                //     if (pressure_h[i * nv + lev] >= 1e5) {
+                //         Ptil = log10(pressure_h[i * nv + lev] / 100000);
+                //     }
+                //     temperature_h[i * nv + lev] =
+                //         1696.6986 + 132.2318 * Ptil - 174.30459 * Ptil * Ptil
+                //         + 12.579612 * Ptil * Ptil * Ptil + 59.513639 * Ptil * Ptil * Ptil * Ptil
+                //         + 9.6706522 * Ptil * Ptil * Ptil * Ptil * Ptil
+                //         - 4.1136048 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
+                //         - 1.0632301 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
+                //         + 0.064400203 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
+                //         + 0.035974396 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
+                //         + 0.0025740066 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
+                //               * Ptil * Ptil;
+                // }
+                // else {
+                temperature_h[i * nv + lev] = sim.Tmean;
+                // }
             }
 
             for (int lev = 0; lev < nv; lev++) {
@@ -646,6 +667,14 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
     cudaMemcpy(Kdh4_d, Kdh4_h, nv * sizeof(double), cudaMemcpyHostToDevice);
     cudaMemcpy(Kdvz_d, Kdvz_h, nv * sizeof(double), cudaMemcpyHostToDevice);
     cudaMemcpy(Kdv6_d, Kdv6_h, nv * sizeof(double), cudaMemcpyHostToDevice);
+
+    if (sim.output_mean == true) {
+        cudaMemcpy(Mh_mean_d, Mh_h, point_num * nv * 3 * sizeof(double), cudaMemcpyHostToDevice);
+        cudaMemcpy(
+            pressure_mean_d, pressure_h, point_num * nv * sizeof(double), cudaMemcpyHostToDevice);
+        cudaMemcpy(Wh_mean_d, Wh_h, point_num * nvi * sizeof(double), cudaMemcpyHostToDevice);
+        cudaMemcpy(Rho_mean_d, Rho_h, point_num * nv * sizeof(double), cudaMemcpyHostToDevice);
+    }
 
     if (sim.SpongeLayer == true)
         cudaMemcpy(zonal_mean_tab_d,

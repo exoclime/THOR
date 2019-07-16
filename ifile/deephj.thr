@@ -77,7 +77,7 @@ DivDampP =    true
 Diffc = 0.02
 
 # Strength of divergence damping
-DivDampc = 0.02
+DivDampc = 0.03
 #########################################################
 
 

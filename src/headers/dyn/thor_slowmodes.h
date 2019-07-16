@@ -79,7 +79,10 @@ __global__ void Compute_Slow_Modes(double *SlowMh_d,
                                    int *   maps_d,
                                    int     nl_region,
                                    bool    DeepModel,
-                                   bool    NonHydro) {
+                                   bool    NonHydro,
+                                   double *profx_dMh_d,
+                                   double *profx_dWh_d,
+                                   double *profx_dP_d) {
 
     int x = threadIdx.x;
     int y = threadIdx.y;
@@ -303,13 +306,16 @@ __global__ void Compute_Slow_Modes(double *SlowMh_d,
 
     SlowMh_d[id * 3 * nv + lev * 3 + 0] =
         -(nflxv_s[iri * 3 + 0] - dpr * funcx) - advx + DivM_d[id * 3 * nv + lev * 3 + 0]
-        + diffmh_d[id * 3 * nv + lev * 3 + 0] + diffmv_d[id * 3 * nv + lev * 3 + 0];
+        + diffmh_d[id * 3 * nv + lev * 3 + 0] + diffmv_d[id * 3 * nv + lev * 3 + 0]
+        + profx_dMh_d[id * 3 * nv + lev * 3 + 0];
     SlowMh_d[id * 3 * nv + lev * 3 + 1] =
         -(nflxv_s[iri * 3 + 1] - dpr * funcy) - advy + DivM_d[id * 3 * nv + lev * 3 + 1]
-        + diffmh_d[id * 3 * nv + lev * 3 + 1] + diffmv_d[id * 3 * nv + lev * 3 + 1];
+        + diffmh_d[id * 3 * nv + lev * 3 + 1] + diffmv_d[id * 3 * nv + lev * 3 + 1]
+        + profx_dMh_d[id * 3 * nv + lev * 3 + 1];
     SlowMh_d[id * 3 * nv + lev * 3 + 2] =
         -(nflxv_s[iri * 3 + 2] - dpr * funcz) - advz + DivM_d[id * 3 * nv + lev * 3 + 2]
-        + diffmh_d[id * 3 * nv + lev * 3 + 2] + diffmv_d[id * 3 * nv + lev * 3 + 2];
+        + diffmh_d[id * 3 * nv + lev * 3 + 2] + diffmv_d[id * 3 * nv + lev * 3 + 2]
+        + profx_dMh_d[id * 3 * nv + lev * 3 + 2];
 
     // Wh
     if (lev == 0) {
@@ -345,6 +351,7 @@ __global__ void Compute_Slow_Modes(double *SlowMh_d,
         dz   = alt - altl;
         dpdz = (pressure_s[ir] - pressurel) / dz;
         swr += dpdz;
+        swr -= profx_dWh_d[id * (nv + 1) + lev];
 
         SlowWh_d[id * (nv + 1) + lev] = -swr;
     }
@@ -361,7 +368,7 @@ __global__ void Compute_Slow_Modes(double *SlowMh_d,
 
     Slowpressure_d[id * nv + lev] =
         (Rd / Cv) * (-nflxp_s[iri] - gtil_d[id * nv + lev] - dwhdz + vgp) + diffpr_d[id * nv + lev]
-        + diffprv_d[id * nv + lev];
+        + diffprv_d[id * nv + lev] + profx_dP_d[id * nv + lev];
 
     // if (diffprv_d[id * nv + lev] > 0) {
     //     printf("hi!\n"); //
@@ -403,7 +410,10 @@ __global__ void Compute_Slow_Modes_Poles(double *SlowMh_d,
                                          int     nv,
                                          int     num,
                                          bool    DeepModel,
-                                         bool    NonHydro) {
+                                         bool    NonHydro,
+                                         double *profx_dMh_d,
+                                         double *profx_dWh_d,
+                                         double *profx_dP_d) {
 
     int id = blockIdx.x * blockDim.x + threadIdx.x;
     id += num - 2; // Poles
@@ -565,13 +575,17 @@ __global__ void Compute_Slow_Modes_Poles(double *SlowMh_d,
 
             SlowMh_d[id * 3 * nv + lev * 3 + 0] =
                 -(nflxv_p[0] - dpr * func_r_p[0]) - advx + DivM_d[id * 3 * nv + lev * 3 + 0]
-                + diffmh_d[id * 3 * nv + lev * 3 + 0] + diffmv_d[id * 3 * nv + lev * 3 + 0];
+                + diffmh_d[id * 3 * nv + lev * 3 + 0] + diffmv_d[id * 3 * nv + lev * 3 + 0]
+                + profx_dMh_d[id * 3 * nv + lev * 3 + 0];
             SlowMh_d[id * 3 * nv + lev * 3 + 1] =
                 -(nflxv_p[1] - dpr * func_r_p[1]) - advy + DivM_d[id * 3 * nv + lev * 3 + 1]
-                + diffmh_d[id * 3 * nv + lev * 3 + 1] + diffmv_d[id * 3 * nv + lev * 3 + 1];
+                + diffmh_d[id * 3 * nv + lev * 3 + 1] + diffmv_d[id * 3 * nv + lev * 3 + 1]
+                + profx_dMh_d[id * 3 * nv + lev * 3 + 1];
             SlowMh_d[id * 3 * nv + lev * 3 + 2] =
                 -(nflxv_p[2] - dpr * func_r_p[2]) - advz + DivM_d[id * 3 * nv + lev * 3 + 2]
-                + diffmh_d[id * 3 * nv + lev * 3 + 2] + diffmv_d[id * 3 * nv + lev * 3 + 2];
+                + diffmh_d[id * 3 * nv + lev * 3 + 2] + diffmv_d[id * 3 * nv + lev * 3 + 2]
+                + profx_dMh_d[id * 3 * nv + lev * 3 + 2];
+
             // Wh
             if (lev == 0) {
                 SlowWh_d[id * (nv + 1)]      = 0.0;
@@ -601,6 +615,7 @@ __global__ void Compute_Slow_Modes_Poles(double *SlowMh_d,
                 dz   = alt - altl;
                 dpdz = (pressure_p[0] - pressurel) / dz;
                 swr  = swr + dpdz;
+                swr -= profx_dWh_d[id * (nv + 1) + lev];
 
                 SlowWh_d[id * (nv + 1) + lev] = -swr;
             }
@@ -617,7 +632,7 @@ __global__ void Compute_Slow_Modes_Poles(double *SlowMh_d,
 
             Slowpressure_d[id * nv + lev] =
                 (Rd / Cv) * (-nflxp_p - gtil_d[id * nv + lev] - dwhdz + vgp)
-                + diffpr_d[id * nv + lev] + diffprv_d[id * nv + lev];
+                + diffpr_d[id * nv + lev] + diffprv_d[id * nv + lev] + profx_dP_d[id * nv + lev];
 
             if (lev < nv - 1) {
                 pressurel = pressure_p[0];

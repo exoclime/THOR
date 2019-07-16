@@ -85,6 +85,8 @@ def gen_h5_files(config_set):
                                     output_dir+'/esp_initial.h5'))
         os.system('mv {} {}'.format(output_dir+'/esp_output_planet_'+config_parser['config']['simulation_ID']+'.h5',
                                     output_dir+'/esp_initial_planet.h5'))
+        os.system('mv {} {}'.format(output_dir+'/esp_output_grid_'+config_parser['config']['simulation_ID']+'.h5',
+                                    output_dir+'/esp_initial_grid.h5'))
         os.system('rm {}'.format(output_dir+'/esp_*'+config_parser['config']['simulation_ID']+'*'))
         # add some grid etc settings for the editing step
         config_set['simulation_ID'] = config_parser['config']['simulation_ID']
@@ -112,7 +114,7 @@ def edit_init_file(config_set):
         print("Initial h5 file {} not found!".format(init_file))
         exit(-1)
 
-    #--------vertical------------------------------
+    #--------vertical T/P-----------------------------
     nv = np.int(config_set['vlevel'])
     glev = np.int(config_set['glevel'])
     point_num = 2+10*2**(2*glev)
@@ -141,4 +143,35 @@ def edit_init_file(config_set):
         for key in vert_out.keys():
             openh5[key][i*nv:i*nv+nv] = vert_out[key]
 
+    #--------winds-------------------------------
+    if 'wind_prof' in config_set:
+        # experimental!!
+        import pdb; pdb.set_trace()
+        grid_file = output_dir+'/esp_initial_grid.h5'
+        if os.path.exists(grid_file):
+            gridh5 = h5py.File(grid_file)
+        else:
+            print("Grid h5 file {} not found!".format(grid_file))
+            exit(-1)
+        lats, alts = np.meshgrid(gridh5['lonlat'][1::2],gridh5['Altitude'])
+        lons, alts = np.meshgrid(gridh5['lonlat'][::2],gridh5['Altitude'])
+        u, v, w = config_set['wind_prof'](lats,alts,config_set['uscale'],np.float(config_set['Top_altitude']))
+        Mx = np.reshape((u * (-np.sin(lons)) + v * (-np.sin(lats) * np.cos(lons))).T,(point_num*nv))*openh5['Rho']
+        My = np.reshape((u * (np.cos(lons)) + v * (-np.sin(lats) * np.sin(lons))).T,(point_num*nv))*openh5['Rho']
+        Mz = np.reshape((v * (np.cos(lons))).T,(point_num*nv)) * openh5['Rho']
+        # W = w * openh5['Rho']
+        openh5['Mh'][::3] = Mx
+        openh5['Mh'][1::3] = My
+        openh5['Mh'][2::3] = Mz
+        gridh5.close()
+
     openh5.close()
+
+def deep_hj_winds(lat,alt,uscale,htop):
+    #creates a zonal wind profile similar to hot jupiter
+    #experimenting with initializing thor this way
+    #pass the lat and height of grid points, peak wind (uscale) and top altitude
+    u = uscale*np.cos(lat*3)*np.exp(-(np.abs(lat))**2/(np.pi/4)**2)*np.exp(-(alt-htop)**2/(htop/3)**2)
+    v = np.zeros_like(u)
+    w = np.zeros_like(u)
+    return u, v, w

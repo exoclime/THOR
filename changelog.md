@@ -28,3 +28,9 @@
  * changed name of 'diff_fac' input parameter to 'diff_ang' to be more consistent ('diff_ang' = 1/diffusivity factor)
  * fixed incompatibility with recent versions (> 1.10.1) of hdf5 libraries
  * updated behavior of NonHydro = false and DeepModel = false model options to be consistent with White+ 2005
+ * smoothed temperature forcing of deep hj test (still is not extremely reliable, however)
+ * added numerous features to Mjolnir python code, including a separate regrid script that takes additional arguments
+ * added option to output mean values of main diagnostics over an output interval
+ * moved sponge layer from profx (end of time step) to dynamical core (slow modes), which allows damping to work more effectively
+ * moved heating from RT into dynamical core (fast modes and slow modes)
+ * added output of sw flux in RT module, which was missing before

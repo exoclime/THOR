@@ -87,9 +87,12 @@ void radiative_transfer::print_config() {
 bool radiative_transfer::initialise_memory(const ESP &              esp,
                                            device_RK_array_manager &phy_modules_core_arrays) {
     //  Rad Transfer
-    cudaMalloc((void **)&fnet_up_d, esp.nvi * esp.point_num * sizeof(double));
-    cudaMalloc((void **)&fnet_dn_d, esp.nvi * esp.point_num * sizeof(double));
+    cudaMalloc((void **)&flw_up_d, esp.nvi * esp.point_num * sizeof(double));
+    cudaMalloc((void **)&flw_dn_d, esp.nvi * esp.point_num * sizeof(double));
     cudaMalloc((void **)&tau_d, esp.nv * esp.point_num * 2 * sizeof(double));
+
+    cudaMalloc((void **)&fsw_up_d, esp.nvi * esp.point_num * sizeof(double));
+    cudaMalloc((void **)&fsw_dn_d, esp.nvi * esp.point_num * sizeof(double));
 
     cudaMalloc((void **)&phtemp, esp.nvi * esp.point_num * sizeof(double));
     cudaMalloc((void **)&thtemp, esp.nvi * esp.point_num * sizeof(double));
@@ -101,9 +104,12 @@ bool radiative_transfer::initialise_memory(const ESP &              esp,
     insol_ann_h = (double *)malloc(esp.point_num * sizeof(double));
     cudaMalloc((void **)&insol_ann_d, esp.point_num * sizeof(double));
 
-    fnet_up_h = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
-    fnet_dn_h = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
-    tau_h     = (double *)malloc(esp.nv * esp.point_num * 2 * sizeof(double));
+    flw_up_h = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
+    flw_dn_h = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
+    tau_h    = (double *)malloc(esp.nv * esp.point_num * 2 * sizeof(double));
+
+    fsw_up_h = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
+    fsw_dn_h = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
 
     cudaMalloc((void **)&surf_flux_d, esp.point_num * sizeof(double));
     cudaMalloc((void **)&Tsurface_d, esp.point_num * sizeof(double));
@@ -114,14 +120,20 @@ bool radiative_transfer::initialise_memory(const ESP &              esp,
 
 
 bool radiative_transfer::free_memory() {
-    cudaFree(fnet_up_d);
-    cudaFree(fnet_dn_d);
+    cudaFree(flw_up_d);
+    cudaFree(flw_dn_d);
+    cudaFree(fsw_up_d);
+    cudaFree(fsw_dn_d);
     cudaFree(tau_d);
 
     cudaFree(phtemp);
     cudaFree(thtemp);
     cudaFree(ttemp);
     cudaFree(dtemp);
+    cudaFree(Tsurface_d);
+    cudaFree(insol_d);
+    cudaFree(insol_ann_d);
+    cudaFree(surf_flux_d);
 
     return true;
 }
@@ -182,8 +194,10 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                                  //rtm_dual_band <<< 1,1 >>> (pressure_d         ,
                                  esp.Rho_d,
                                  esp.temperature_d,
-                                 fnet_up_d,
-                                 fnet_dn_d,
+                                 flw_up_d,
+                                 flw_dn_d,
+                                 fsw_up_d,
+                                 fsw_dn_d,
                                  tau_d,
                                  sim.Gravit,
                                  sim.Cp,
@@ -226,7 +240,9 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                                  surface,
                                  Csurf,
                                  Tsurface_d,
-                                 surf_flux_d);
+                                 surf_flux_d,
+                                 esp.profx_dP_d,
+                                 sim.Rd);
 
     if (nstep * time_step < (2 * M_PI / mean_motion)) {
         // stationary orbit/obliquity
@@ -286,17 +302,30 @@ bool radiative_transfer::store(const ESP &esp, storage &s) {
                    "insolation (annual/orbit averaged)");
 
     cudaMemcpy(
-        fnet_up_h, fnet_up_d, esp.nvi * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
-    s.append_table(fnet_up_h, esp.nvi * esp.point_num, "/fnet_up", "W m^-2", "upward flux");
+        flw_up_h, flw_up_d, esp.nvi * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
+    s.append_table(flw_up_h, esp.nvi * esp.point_num, "/flw_up", "W m^-2", "upward flux (LW)");
 
     cudaMemcpy(
-        fnet_dn_h, fnet_dn_d, esp.nvi * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
-    s.append_table(fnet_dn_h, esp.nvi * esp.point_num, "/fnet_dn", "W m^-2", "downward flux");
+        fsw_up_h, flw_up_d, esp.nvi * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
+    s.append_table(fsw_up_h, esp.nvi * esp.point_num, "/fsw_up", "W m^-2", "upward flux (SW)");
+
+    cudaMemcpy(
+        flw_dn_h, flw_dn_d, esp.nvi * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
+    s.append_table(flw_dn_h, esp.nvi * esp.point_num, "/flw_dn", "W m^-2", "downward flux (LW)");
+
+    cudaMemcpy(
+        fsw_dn_h, fsw_dn_d, esp.nvi * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
+    s.append_table(fsw_dn_h, esp.nvi * esp.point_num, "/fsw_dn", "W m^-2", "downward flux (SW)");
 
     cudaMemcpy(tau_h, tau_d, esp.nv * esp.point_num * 2 * sizeof(double), cudaMemcpyDeviceToHost);
-    s.append_table(
-        tau_h, esp.nv * esp.point_num * 2, "/tau", " ", "optical depth across each layer");
+    s.append_table(tau_h,
+                   esp.nv * esp.point_num * 2,
+                   "/tau",
+                   " ",
+                   "optical depth across each layer (not total optical depth)");
 
+    cudaMemcpy(Tsurface_h, Tsurface_d, esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
+    s.append_table(Tsurface_h, esp.point_num, "/Tsurface", "K", "surface temperature");
     return true;
 }
 
