@@ -247,7 +247,7 @@ class output:
                 self.flw_up[:,:,t-ntsi+1] = np.reshape(fupi,(grid.point_num,grid.nvi))
 
 class rg_out:
-    def __init__(self,resultsf,simID,ntsi,nts,input,output,grid,pressure_vert=True,rotation=False):
+    def __init__(self,resultsf,simID,ntsi,nts,input,output,grid,pressure_vert=True):
         RT = 0
         if "core_benchmark" in dir(input):
             if input.core_benchmark[0] == 0: # need to switch to 'radiative_tranfer' flag
@@ -267,8 +267,6 @@ class rg_out:
                 fileh5 = resultsf+'/regrid_'+simID+'_'+np.str(t+1)
             else:
                 fileh5 = resultsf+'/regrid_height_'+simID+'_'+np.str(t+1)
-            if rotation == True:
-                fileh5 += '_rot'
             fileh5 += '.h5'
             if os.path.exists(fileh5):
                 openh5 = h5py.File(fileh5)
@@ -407,8 +405,7 @@ class GetOutput:
         self.grid = grid(resultsf,simID,rotation=rotation,theta_y=theta_y,theta_z=theta_z)
         self.output = output(resultsf,simID,ntsi,nts,self.grid,stride=stride)
         if openrg == 1:
-            self.rg = rg_out(resultsf,simID,ntsi,nts,self.input,self.output,self.grid,pressure_vert=pressure_vert,
-                                rotation=rotation)
+            self.rg = rg_out(resultsf,simID,ntsi,nts,self.input,self.output,self.grid,pressure_vert=pressure_vert)
 
 def calc_RV_PV(grid,output,input,lons,lats,sigma,t_ind,fileh5,comp=4,pressure_vert=True,type='gd'):
     #Calculates relative and potential vorticity on height levels, then interpolates to pressure.
@@ -593,7 +590,6 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pscale='log',overwrite=False,comp=4,
             lmax = lmax_set
         else:
             raise ValueError("Invalid value of lmax in regrid")
-        pdb.set_trace()
         n = 2*lmax+2
         lat_range = np.arange(90,-90,-180/n)
         lon_range = np.arange(0,360,180/n)
@@ -636,7 +632,7 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pscale='log',overwrite=False,comp=4,
             fileh5 = resultsf+'/regrid_height_'+simID+'_'+np.str(t)
         if rotation == True:
             print('Applied rotation (theta_z,theta_y) = (%f,%f) to grid\n'%(theta_z*180/np.pi,theta_y*180/np.pi))
-            fileh5 += '_rot'
+            # fileh5 += '_rot'
         fileh5 += '.h5'
         if os.path.exists(fileh5):
             if overwrite == True:
@@ -711,12 +707,12 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pscale='log',overwrite=False,comp=4,
                     flw_dn_coeff = np.zeros((d_sig,2,lmax+1,lmax+1))
                     flw_dn_chi2 = np.zeros(d_sig)
 
-                    insol_coeff = np.zeros((d_sig,2,lmax+1,lmax+1))
-                    insol_chi2 = np.zeros(d_sig)
+                    insol_coeff = np.zeros((1,2,lmax+1,lmax+1))
+                    insol_chi2 = np.zeros(1)
 
                     if surf == 1:
-                        Tsurf_coeff = np.zeros((d_sig,2,lmax+1,lmax+1))
-                        Tsurf_chi2 = np.zeros(d_sig)
+                        Tsurf_coeff = np.zeros((1,2,lmax+1,lmax+1))
+                        Tsurf_chi2 = np.zeros(1)
 
             if chem == 1:
                 ch4_icop = np.zeros((grid.point_num,d_sig))
@@ -846,10 +842,10 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pscale='log',overwrite=False,comp=4,
                         flw_dn_llp[:,:,lev] = np.real(chairs.expand.MakeGridDH(flw_dn_coeff[lev,:,:,:],sampling=2))
                         if lev == 0:
                             insol_coeff[lev,:,:,:], insol_chi2[lev] = chairs.expand.SHExpandLSQ(output.Insol[:,t-ntsi],grid.lat*180/np.pi,grid.lon*180/np.pi,lmax)
-                            insol_ll[:,:,lev] = np.real(chairs.expand.MakeGridDH(insol_coeff[lev,:,:,:],sampling=2))
+                            insol_ll[:,:] = np.real(chairs.expand.MakeGridDH(insol_coeff[lev,:,:,:],sampling=2))
                             if surf == 1:
                                 Tsurf_coeff[lev,:,:,:], Tsurf_chi2[lev] = chairs.expand.SHExpandLSQ(output.Tsurface[:,t-ntsi],grid.lat*180/np.pi,grid.lon*180/np.pi,lmax)
-                                Tsurf_ll[:,:,lev] = np.real(chairs.expand.MakeGridDH(Tsurf_coeff[lev,:,:,:],sampling=2))
+                                Tsurf_ll[:,:] = np.real(chairs.expand.MakeGridDH(Tsurf_coeff[lev,:,:,:],sampling=2))
 
                     if chem == 1:
                         ch4_coeff[lev,:,:,:], ch4_chi2[lev] = chairs.expand.SHExpandLSQ(ch4_icop[:,lev],grid.lat*180/np.pi,grid.lon*180/np.pi,lmax)
@@ -862,7 +858,6 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pscale='log',overwrite=False,comp=4,
                         h2o_llp[:,:,lev] = np.real(chairs.expand.MakeGridDH(h2o_coeff[lev,:,:,:],sampling=2))
                         nh3_coeff[lev,:,:,:], nh3_chi2[lev] = chairs.expand.SHExpandLSQ(nh3_icop[:,lev],grid.lat*180/np.pi,grid.lon*180/np.pi,lmax)
                         nh3_llp[:,:,lev] = np.real(chairs.expand.MakeGridDH(nh3_coeff[lev,:,:,:],sampling=2))
-
                 elif type == 'spl' or type == 'SPL':
                     if lev == 0:
                         print('Using "SmoothSphereBivariateSpline" for horizontal interpolation')
