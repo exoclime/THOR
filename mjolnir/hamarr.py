@@ -63,6 +63,10 @@ class input:
                 self.albedo = openh5['albedo'][...]
                 self.tausw = openh5['tausw'][...]
                 self.taulw = openh5['taulw'][...]
+                if 'surface' in openh5.keys():
+                    self.surface = openh5['surface'][...]
+                else:
+                    self.surface = 0
         if 'vulcan' in openh5.keys():
             self.chemistry = openh5['vulcan'][...]
         if 'chemistry' in openh5.keys():
@@ -70,8 +74,29 @@ class input:
 
         openh5.close()
 
+def LatLong2Cart(lat,lon):
+    x = np.cos(lat)*np.cos(lon)
+    y = np.cos(lat)*np.sin(lon)
+    z = np.sin(lat)
+    return x, y, z
+
+def Cart2LatLong(x,y,z):
+    lon = np.arctan2(y,x)
+    lat = np.arctan2(z,np.sqrt(x**2+y**2))
+    return lat, lon
+
+def Rot_y(theta,x,y,z):
+    xnew = np.cos(theta)*x + np.sin(theta)*z
+    znew = -np.sin(theta)*x + np.cos(theta)*z
+    return xnew, y, znew
+
+def Rot_z(phi,x,y,z):
+    xnew = np.cos(phi)*x - np.sin(phi)*y
+    ynew = np.sin(phi)*x + np.cos(phi)*y
+    return xnew, ynew, z
+
 class grid:
-    def __init__(self,resultsf,simID):
+    def __init__(self,resultsf,simID,rotation=False,theta_y=0,theta_z=0):
         fileh5 = resultsf+'/esp_output_grid_'+simID+'.h5'
         if os.path.exists(fileh5):
             openh5 = h5py.File(fileh5)
@@ -93,7 +118,12 @@ class grid:
         self.nvi = self.nv+1
         self.lon = (self.lonlat[::2])%(2*np.pi)
         self.lat = self.lonlat[1::2]
-
+        if rotation == True:
+            xtmp, ytmp, ztmp = LatLong2Cart(self.lat, self.lon)
+            xtmp1, ytmp1, ztmp1 = Rot_z(theta_z,xtmp,ytmp,ztmp)
+            xtmp2, ytmp2, ztmp2 = Rot_y(theta_y,xtmp1,ytmp1,ztmp1)
+            self.lat, self.lon = Cart2LatLong(xtmp2,ytmp2,ztmp2)
+            self.lon = self.lon%(2*np.pi)
 
 class output:
     def __init__(self,resultsf,simID,ntsi,nts,grid,stride=1):
@@ -121,6 +151,7 @@ class output:
         self.ConvData = np.zeros(nts-ntsi+1)
         self.EntData = np.zeros(nts-ntsi+1)
         self.Insol = np.zeros((grid.point_num,nts-ntsi+1))
+        self.Tsurface = np.zeros((grid.point_num,nts-ntsi+1))
 
         self.ch4 = np.zeros((grid.point_num,grid.nv,nts-ntsi+1))
         self.co = np.zeros((grid.point_num,grid.nv,nts-ntsi+1))
@@ -130,8 +161,8 @@ class output:
 
         self.tau_sw = np.zeros((grid.point_num,grid.nv,nts-ntsi+1))
         self.tau_lw = np.zeros((grid.point_num,grid.nv,nts-ntsi+1))
-        self.fnet_up = np.zeros((grid.point_num,grid.nvi,nts-ntsi+1))
-        self.fnet_dn = np.zeros((grid.point_num,grid.nvi,nts-ntsi+1))
+        self.flw_up = np.zeros((grid.point_num,grid.nvi,nts-ntsi+1))
+        self.flw_dn = np.zeros((grid.point_num,grid.nvi,nts-ntsi+1))
 
         # Read model results
         for t in np.arange(ntsi-1,nts,stride):
@@ -175,8 +206,14 @@ class output:
                 traceri = openh5['tracer'][...]
             if 'tau' in openh5.keys():
                 taui = openh5['tau'][...]
-                fupi = openh5['fnet_up'][...]
-                fdni = openh5['fnet_dn'][...]
+                if 'fnet_up' in openh5.keys(): #old version of LW output
+                    fupi = openh5['fnet_up'][...]
+                    fdni = openh5['fnet_dn'][...]
+                else:
+                    fupi = openh5['flw_up'][...]
+                    fdni = openh5['flw_dn'][...]
+            if 'Tsurface' in openh5.keys():
+                self.Tsurface[:,t-ntsi+1] = openh5['Tsurface'][...]
             openh5.close()
 
             self.Rho[:,:,t-ntsi+1] = np.reshape(Rhoi,(grid.point_num,grid.nv))
@@ -206,15 +243,18 @@ class output:
             if 'taui' in locals():
                 self.tau_sw[:,:,t-ntsi+1] = np.reshape(taui[::2],(grid.point_num,grid.nv))
                 self.tau_lw[:,:,t-ntsi+1] = np.reshape(taui[1::2],(grid.point_num,grid.nv))
-                self.fnet_dn[:,:,t-ntsi+1] = np.reshape(fdni,(grid.point_num,grid.nvi))
-                self.fnet_up[:,:,t-ntsi+1] = np.reshape(fupi,(grid.point_num,grid.nvi))
+                self.flw_dn[:,:,t-ntsi+1] = np.reshape(fdni,(grid.point_num,grid.nvi))
+                self.flw_up[:,:,t-ntsi+1] = np.reshape(fupi,(grid.point_num,grid.nvi))
 
 class rg_out:
-    def __init__(self,resultsf,simID,ntsi,nts,input,output,grid,pressure_vert=True):
+    def __init__(self,resultsf,simID,ntsi,nts,input,output,grid,pressure_vert=True,rotation=False):
         RT = 0
         if "core_benchmark" in dir(input):
             if input.core_benchmark[0] == 0: # need to switch to 'radiative_tranfer' flag
                 RT = 1
+                surf = 0
+                if input.surface[0]:
+                    surf = 1
 
         chem = 0
         if hasattr(input,"chemistry"):
@@ -224,9 +264,12 @@ class rg_out:
         # Read model results
         for t in np.arange(ntsi-1,nts):
             if pressure_vert == True:
-                fileh5 = resultsf+'/regrid_'+simID+'_'+np.str(t+1)+'.h5'
+                fileh5 = resultsf+'/regrid_'+simID+'_'+np.str(t+1)
             else:
-                fileh5 = resultsf+'/regrid_height_'+simID+'_'+np.str(t+1)+'.h5'
+                fileh5 = resultsf+'/regrid_height_'+simID+'_'+np.str(t+1)
+            if rotation == True:
+                fileh5 += '_rot'
+            fileh5 += '.h5'
             if os.path.exists(fileh5):
                 openh5 = h5py.File(fileh5)
             else:
@@ -244,7 +287,6 @@ class rg_out:
             Ui = openh5['U'][...]
             Vi = openh5['V'][...]
             Wi = openh5['W'][...]
-            # del_hseqi = openh5['del_hseq'][...]
             if pressure_vert == True:
                 Prei = openh5['Pressure'][...]
             else:
@@ -256,8 +298,15 @@ class rg_out:
             if RT == 1:
                 tau_swi = openh5['tau_sw'][...]
                 tau_lwi = openh5['tau_lw'][...]
-                fnet_upi = openh5['fnet_up'][...]
-                fnet_dni = openh5['fnet_dn'][...]
+                if 'fnet_up' in openh5.keys():
+                    flw_upi = openh5['fnet_up'][...]
+                    flw_dni = openh5['fnet_dn'][...]
+                else:
+                    flw_upi = openh5['flw_up'][...]
+                    flw_dni = openh5['flw_dn'][...]
+                insoli = openh5['insol'][...]
+                if 'Tsurface' in openh5.keys():
+                    Tsurfi = openh5['Tsurface'][...]
 
             if chem == 1:
                 ch4i = openh5['ch4'][...]
@@ -303,8 +352,11 @@ class rg_out:
                 if RT == 1:
                     self.tau_sw = np.zeros(np.shape(tau_swi)+(nts-ntsi+1,))
                     self.tau_lw = np.zeros(np.shape(tau_lwi)+(nts-ntsi+1,))
-                    self.fnet_up = np.zeros(np.shape(fnet_upi)+(nts-ntsi+1,))
-                    self.fnet_dn = np.zeros(np.shape(fnet_dni)+(nts-ntsi+1,))
+                    self.flw_up = np.zeros(np.shape(flw_upi)+(nts-ntsi+1,))
+                    self.flw_dn = np.zeros(np.shape(flw_dni)+(nts-ntsi+1,))
+                    self.insol = np.zeros(np.shape(insoli)+(nts-ntsi+1,))
+                    if surf:
+                        self.Tsurface = np.zeros(np.shape(Tsurfi)+(nts-ntsi+1,))
                 if chem == 1:
                     self.ch4 = np.zeros(np.shape(ch4i)+(nts-ntsi+1,))
                     self.co = np.zeros(np.shape(coi)+(nts-ntsi+1,))
@@ -325,7 +377,10 @@ class rg_out:
             self.lat[:,t-ntsi+1] = lati
             self.lon[:,t-ntsi+1] = loni
             self.PV[:,:,:,t-ntsi+1] = PVi
-            self.RV[:,:,:,:,t-ntsi+1] = RVi
+            try:
+                self.RV[:,:,:,:,t-ntsi+1] = RVi
+            except:
+                import pdb; pdb.set_trace()
             self.lat_lr[:,t-ntsi+1] = lati_lr
             self.lon_lr[:,t-ntsi+1] = loni_lr
             # self.streamf[:,:,:,t-ntsi+1] = streamfi
@@ -333,8 +388,11 @@ class rg_out:
             if RT == 1:
                 self.tau_sw[:,:,:,t-ntsi+1] = tau_swi
                 self.tau_lw[:,:,:,t-ntsi+1] = tau_lwi
-                self.fnet_up[:,:,:,t-ntsi+1] = fnet_upi
-                self.fnet_dn[:,:,:,t-ntsi+1] = fnet_dni
+                self.flw_up[:,:,:,t-ntsi+1] = flw_upi
+                self.flw_dn[:,:,:,t-ntsi+1] = flw_dni
+                self.insol[:,:,t-ntsi+1] = insoli
+                if surf:
+                    self.Tsurface[:,:,t-ntsi+1] = Tsurfi
             if chem == 1:
                 self.ch4[:,:,:,t-ntsi+1] = ch4i
                 self.co[:,:,:,t-ntsi+1] = coi
@@ -344,24 +402,30 @@ class rg_out:
 
 
 class GetOutput:
-    def __init__(self,resultsf,simID,ntsi,nts,stride=1,openrg=0,pressure_vert=True):
+    def __init__(self,resultsf,simID,ntsi,nts,stride=1,openrg=0,pressure_vert=True,rotation=False,theta_y=0,theta_z=0):
         self.input = input(resultsf,simID)
-        self.grid = grid(resultsf,simID)
+        self.grid = grid(resultsf,simID,rotation=rotation,theta_y=theta_y,theta_z=theta_z)
         self.output = output(resultsf,simID,ntsi,nts,self.grid,stride=stride)
         if openrg == 1:
-            self.rg = rg_out(resultsf,simID,ntsi,nts,self.input,self.output,self.grid,pressure_vert=pressure_vert)
+            self.rg = rg_out(resultsf,simID,ntsi,nts,self.input,self.output,self.grid,pressure_vert=pressure_vert,
+                                rotation=rotation)
 
-def calc_RV_PV(grid,output,input,lons,lats,sigma,t_ind,fileh5,comp=4,pressure_vert=True):
+def calc_RV_PV(grid,output,input,lons,lats,sigma,t_ind,fileh5,comp=4,pressure_vert=True,type='gd'):
     #Calculates relative and potential vorticity on height levels, then interpolates to pressure.
     #It is easiest to calculate these on a lat-lon-altitude grid since conversion
     #to pressure requires transformation of vertical velocity and computing 3D curls
     #at the grid level would require heavy interpolation and invocation of stokes thm
     ang_res = 4.0/2**(input.glevel-4)
     # first interpolate to near thor grid resolution
-
-    lat_range_tmp = np.arange(-90,90+ang_res,ang_res)
-    lat_range = (lat_range_tmp[:-1]+lat_range_tmp[1:])/2
-    lon_range = np.arange(0,360,ang_res)
+    if type == 'sh' or type == 'SH':
+        lmax = np.int(np.sqrt(grid.point_num)*0.5)
+        n = 2*lmax+2
+        lat_range = np.arange(90,-90,-180/n)
+        lon_range = np.arange(0,360,180/n)
+    else:
+        lat_range_tmp = np.arange(-90,90+ang_res,ang_res)
+        lat_range = (lat_range_tmp[:-1]+lat_range_tmp[1:])/2
+        lon_range = np.arange(0,360,ang_res)
 
     loni, lati, alti = np.meshgrid(lon_range,lat_range,grid.Altitude)
     d_lon = np.shape(loni)
@@ -388,12 +452,40 @@ def calc_RV_PV(grid,output,input,lons,lats,sigma,t_ind,fileh5,comp=4,pressure_ve
 
     for lev in np.arange(len(grid.Altitude)):
         # interpolate onto lat-lon grid
-        pt_llz[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,pt[:,lev],(loni[:,:,lev],lati[:,:,lev]),method='nearest')
-        rho_llz[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,output.Rho[:,lev,t_ind],(loni[:,:,lev],lati[:,:,lev]),method='nearest')
-        p_llz[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,output.Pressure[:,lev,t_ind],(loni[:,:,lev],lati[:,:,lev]),method='nearest')
-        U_llz[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,U[:,lev],(loni[:,:,lev],lati[:,:,lev]),method='nearest')
-        V_llz[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,V[:,lev],(loni[:,:,lev],lati[:,:,lev]),method='nearest')
-        W_llz[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,W[:,lev],(loni[:,:,lev],lati[:,:,lev]),method='nearest')
+        if type == 'gd' or type == 'GD':
+            pt_llz[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,pt[:,lev],(loni[:,:,lev],lati[:,:,lev]),method='nearest')
+            rho_llz[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,output.Rho[:,lev,t_ind],(loni[:,:,lev],lati[:,:,lev]),method='nearest')
+            p_llz[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,output.Pressure[:,lev,t_ind],(loni[:,:,lev],lati[:,:,lev]),method='nearest')
+            U_llz[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,U[:,lev],(loni[:,:,lev],lati[:,:,lev]),method='nearest')
+            V_llz[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,V[:,lev],(loni[:,:,lev],lati[:,:,lev]),method='nearest')
+            W_llz[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,W[:,lev],(loni[:,:,lev],lati[:,:,lev]),method='nearest')
+        elif type == 'sh' or type == 'SH':
+            pt_coeff, pt_chi2 = chairs.expand.SHExpandLSQ(pt[:,lev],grid.lat*180/np.pi,grid.lon*180/np.pi,lmax)
+            pt_llz[:,:,lev] = np.real(chairs.expand.MakeGridDH(pt_coeff,sampling=2))
+            rho_coeff, rho_chi2 = chairs.expand.SHExpandLSQ(output.Rho[:,lev,t_ind],grid.lat*180/np.pi,grid.lon*180/np.pi,lmax)
+            rho_llz[:,:,lev] = np.real(chairs.expand.MakeGridDH(rho_coeff,sampling=2))
+            p_coeff, p_chi2 = chairs.expand.SHExpandLSQ(output.Pressure[:,lev,t_ind],grid.lat*180/np.pi,grid.lon*180/np.pi,lmax)
+            p_llz[:,:,lev] = np.real(chairs.expand.MakeGridDH(p_coeff,sampling=2))
+            U_coeff, U_chi2 = chairs.expand.SHExpandLSQ(U[:,lev],grid.lat*180/np.pi,grid.lon*180/np.pi,lmax)
+            U_llz[:,:,lev] = np.real(chairs.expand.MakeGridDH(U_coeff,sampling=2))
+            V_coeff, V_chi2 = chairs.expand.SHExpandLSQ(V[:,lev],grid.lat*180/np.pi,grid.lon*180/np.pi,lmax)
+            V_llz[:,:,lev] = np.real(chairs.expand.MakeGridDH(V_coeff,sampling=2))
+            W_coeff, W_chi2 = chairs.expand.SHExpandLSQ(W[:,lev],grid.lat*180/np.pi,grid.lon*180/np.pi,lmax)
+            W_llz[:,:,lev] = np.real(chairs.expand.MakeGridDH(W_coeff,sampling=2))
+        elif type == 'spl' or type == 'SPL':
+            theta = np.pi/2 - grid.lat
+            f = interp.SmoothSphereBivariateSpline(theta,grid.lon,pt[:,lev],s=3.5)
+            pt_llz[:,:,lev] = f(np.pi/2-lat_range[::-1]*np.pi/180,lon_range*np.pi/180)
+            f = interp.SmoothSphereBivariateSpline(theta,grid.lon,output.Rho[:,lev,t_ind],s=3.5)
+            rho_llz[:,:,lev] = f(np.pi/2-lat_range[::-1]*np.pi/180,lon_range*np.pi/180)
+            f = interp.SmoothSphereBivariateSpline(theta,grid.lon,output.Pressure[:,lev,t_ind],s=3.5)
+            p_llz[:,:,lev] = f(np.pi/2-lat_range[::-1]*np.pi/180,lon_range*np.pi/180)
+            f = interp.SmoothSphereBivariateSpline(theta,grid.lon,U[:,lev],s=3.5)
+            U_llz[:,:,lev] = f(np.pi/2-lat_range[::-1]*np.pi/180,lon_range*np.pi/180)
+            f = interp.SmoothSphereBivariateSpline(theta,grid.lon,V[:,lev],s=3.5)
+            V_llz[:,:,lev] = f(np.pi/2-lat_range[::-1]*np.pi/180,lon_range*np.pi/180)
+            f = interp.SmoothSphereBivariateSpline(theta,grid.lon,W[:,lev],s=3.5)
+            W_llz[:,:,lev] = f(np.pi/2-lat_range[::-1]*np.pi/180,lon_range*np.pi/180)
 
     # Compute gradient of potential temp
     dz = np.abs(grid.Altitude[1] - grid.Altitude[0])
@@ -461,17 +553,30 @@ def calc_RV_PV(grid,output,input,lons,lats,sigma,t_ind,fileh5,comp=4,pressure_ve
     Lonlr = openh5.create_dataset("Lon_lowres",data=lon_range,compression='gzip',compression_opts=comp)
     openh5.close()
 
-def regrid(resultsf,simID,ntsi,nts,nlev=40,pscale='log',overwrite=False,comp=4,pressure_vert=True):
+def regrid(resultsf,simID,ntsi,nts,nlev=40,pscale='log',overwrite=False,comp=4,
+            pressure_vert=True,type='gd',pressure_min='default',rotation=False,theta_z=0,theta_y=0,lmax_set='grid'):
     # runs over files and converts ico-height grid to lat-lon-pr grid
-    outall = GetOutput(resultsf,simID,ntsi,nts)
+    outall = GetOutput(resultsf,simID,ntsi,nts,rotation=rotation,theta_z=theta_z,theta_y=theta_y)
     input = outall.input
     grid = outall.grid
     output = outall.output
     res_deg = 4.0/2**(input.glevel-4)
 
     print('Regrid data in folder '+resultsf+'...\n')
+    if pressure_vert == True:
+        print('Vertical coordinate = pressure')
+    else:
+        print('Vertical coordinate = height')
+        nlev = len(grid.Altitude)
     #figure out pressure grid
-    pmin = np.min(output.Pressure)
+    if pressure_min == 'default':
+        pmin = np.min(output.Pressure)
+    else:
+        try:
+            pmin = np.float(pressure_min)
+        except:
+            raise ValueError('"pmin" option must be "default" or a float')
+
     if pscale == 'log':
         sigmaref = np.logspace(np.log10(input.P_Ref),np.log10(pmin),nlev)/input.P_Ref
     elif pscale == 'lin':
@@ -481,10 +586,22 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pscale='log',overwrite=False,comp=4,p
 
     d_sig = np.size(sigmaref)
     Pref = input.P_Ref*sigmaref[:,0]
-    lat_range_tmp = np.arange(-90,90+res_deg,res_deg)
-    # recenter so that there are an even number of latitude points
-    lat_range = (lat_range_tmp[:-1]+lat_range_tmp[1:])/2
-    lon_range = np.arange(0,360,res_deg)
+    if type == 'sh' or type == 'SH':
+        if lmax_set == 'grid':
+            lmax = np.int(np.sqrt(grid.point_num)*0.5)
+        elif isinstance(lmax_set,int):
+            lmax = lmax_set
+        else:
+            raise ValueError("Invalid value of lmax in regrid")
+        pdb.set_trace()
+        n = 2*lmax+2
+        lat_range = np.arange(90,-90,-180/n)
+        lon_range = np.arange(0,360,180/n)
+    else:
+        lat_range_tmp = np.arange(-90,90+res_deg,res_deg)
+        # recenter so that there are an even number of latitude points
+        lat_range = (lat_range_tmp[:-1]+lat_range_tmp[1:])/2
+        lon_range = np.arange(0,360,res_deg)
     loni, lati = np.meshgrid(lon_range,lat_range)
     d_lon = np.shape(loni)
     tsp = output.nts-output.ntsi+1
@@ -492,15 +609,18 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pscale='log',overwrite=False,comp=4,p
     Temp_icoh = output.Pressure/(input.Rd*output.Rho)
     interpx = (grid.Altitude-grid.Altitudeh[:-1])/(grid.Altitudeh[1:]-grid.Altitudeh[:-1])
     # on even height grid, interpolation is excessive, but wth?
-    Wh_icoh = output.Wh[:,:-1,:] + (output.Wh[:,1:,:]-output.Wh[:,:-1,:])*interpx[None,:,None]
+    W_icoh = output.Wh[:,:-1,:] + (output.Wh[:,1:,:]-output.Wh[:,:-1,:])*interpx[None,:,None]
     del_hseq = np.gradient(output.Pressure,grid.Altitude,axis=1) + output.Rho*input.Gravit
 
     RT = 0
     if hasattr(input,"core_benchmark"):
         if input.core_benchmark[0] == 0: # need to switch to 'radiative_tranfer' flag
             RT = 1
-            fnet_up_icoh = output.fnet_up[:,:-1,:]+(output.fnet_up[:,1:,:]-output.fnet_up[:,:-1,:])*interpx[None,:,None]
-            fnet_dn_icoh = output.fnet_dn[:,:-1,:]+(output.fnet_dn[:,1:,:]-output.fnet_dn[:,:-1,:])*interpx[None,:,None]
+            flw_up_icoh = output.flw_up[:,:-1,:]+(output.flw_up[:,1:,:]-output.flw_up[:,:-1,:])*interpx[None,:,None]
+            flw_dn_icoh = output.flw_dn[:,:-1,:]+(output.flw_dn[:,1:,:]-output.flw_dn[:,:-1,:])*interpx[None,:,None]
+            surf = 0
+            if input.surface[0]:
+                surf = 1
 
     chem = 0
     if hasattr(input,"chemistry"):
@@ -511,9 +631,13 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pscale='log',overwrite=False,comp=4,p
         #check for exising h5 files
         proceed = 0
         if pressure_vert == True:
-            fileh5 = resultsf+'/regrid_'+simID+'_'+np.str(t)+'.h5'
+            fileh5 = resultsf+'/regrid_'+simID+'_'+np.str(t)
         else:
-            fileh5 = resultsf+'/regrid_height_'+simID+'_'+np.str(t)+'.h5'
+            fileh5 = resultsf+'/regrid_height_'+simID+'_'+np.str(t)
+        if rotation == True:
+            print('Applied rotation (theta_z,theta_y) = (%f,%f) to grid\n'%(theta_z*180/np.pi,theta_y*180/np.pi))
+            fileh5 += '_rot'
+        fileh5 += '.h5'
         if os.path.exists(fileh5):
             if overwrite == True:
                 proceed = 1
@@ -532,14 +656,30 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pscale='log',overwrite=False,comp=4,p
 
             Mh_icop = np.zeros((3,grid.point_num,d_sig))
 
-            Wh_icop = np.zeros((grid.point_num,d_sig))
+            W_icop = np.zeros((grid.point_num,d_sig))
 
             U_llp = np.zeros((d_lon[0],d_lon[1],d_sig))
             V_llp = np.zeros((d_lon[0],d_lon[1],d_sig))
             W_llp = np.zeros((d_lon[0],d_lon[1],d_sig))
 
-            del_hseq_icop = np.zeros((grid.point_num,d_sig))
-            del_hseq_llp = np.zeros((d_lon[0],d_lon[1],d_sig))
+            # del_hseq_icop = np.zeros((grid.point_num,d_sig))
+            # del_hseq_llp = np.zeros((d_lon[0],d_lon[1],d_sig))
+
+            if type == 'sh' or type == 'SH':
+                Temp_coeff = np.zeros((d_sig,2,lmax+1,lmax+1))
+                Temp_chi2 = np.zeros(d_sig)
+
+                Rho_coeff = np.zeros((d_sig,2,lmax+1,lmax+1))
+                Rho_chi2 = np.zeros(d_sig)
+
+                U_coeff = np.zeros((d_sig,2,lmax+1,lmax+1))
+                U_chi2 = np.zeros(d_sig)
+
+                V_coeff = np.zeros((d_sig,2,lmax+1,lmax+1))
+                V_chi2 = np.zeros(d_sig)
+
+                W_coeff = np.zeros((d_sig,2,lmax+1,lmax+1))
+                W_chi2 = np.zeros(d_sig)
 
             if RT == 1:
                 tau_sw_icop = np.zeros((grid.point_num,d_sig))
@@ -548,14 +688,35 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pscale='log',overwrite=False,comp=4,p
                 tau_lw_icop = np.zeros((grid.point_num,d_sig))
                 tau_lw_llp = np.zeros((d_lon[0],d_lon[1],d_sig))
 
-                fnet_up_icop = np.zeros((grid.point_num,d_sig))
-                fnet_up_llp = np.zeros((d_lon[0],d_lon[1],d_sig))
+                flw_up_icop = np.zeros((grid.point_num,d_sig))
+                flw_up_llp = np.zeros((d_lon[0],d_lon[1],d_sig))
 
-                fnet_dn_icop = np.zeros((grid.point_num,d_sig))
-                fnet_dn_llp = np.zeros((d_lon[0],d_lon[1],d_sig))
+                flw_dn_icop = np.zeros((grid.point_num,d_sig))
+                flw_dn_llp = np.zeros((d_lon[0],d_lon[1],d_sig))
 
                 insol_ll = np.zeros((d_lon[0],d_lon[1]))
+                if surf == 1:
+                    Tsurf_ll = np.zeros((d_lon[0],d_lon[1]))
 
+                if type == 'sh' or type == 'SH':
+                    tau_sw_coeff = np.zeros((d_sig,2,lmax+1,lmax+1))
+                    tau_sw_chi2 = np.zeros(d_sig)
+
+                    tau_lw_coeff = np.zeros((d_sig,2,lmax+1,lmax+1))
+                    tau_lw_chi2 = np.zeros(d_sig)
+
+                    flw_up_coeff = np.zeros((d_sig,2,lmax+1,lmax+1))
+                    flw_up_chi2 = np.zeros(d_sig)
+
+                    flw_dn_coeff = np.zeros((d_sig,2,lmax+1,lmax+1))
+                    flw_dn_chi2 = np.zeros(d_sig)
+
+                    insol_coeff = np.zeros((d_sig,2,lmax+1,lmax+1))
+                    insol_chi2 = np.zeros(d_sig)
+
+                    if surf == 1:
+                        Tsurf_coeff = np.zeros((d_sig,2,lmax+1,lmax+1))
+                        Tsurf_chi2 = np.zeros(d_sig)
 
             if chem == 1:
                 ch4_icop = np.zeros((grid.point_num,d_sig))
@@ -573,6 +734,22 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pscale='log',overwrite=False,comp=4,p
                 nh3_icop = np.zeros((grid.point_num,d_sig))
                 nh3_llp = np.zeros((d_lon[0],d_lon[1],d_sig))
 
+                if type == 'sh' or type == 'SH':
+                    ch4_coeff = np.zeros((d_sig,2,lmax+1,lmax+1))
+                    ch4_chi2 = np.zeros(d_sig)
+
+                    co_coeff = np.zeros((d_sig,2,lmax+1,lmax+1))
+                    co_chi2 = np.zeros(d_sig)
+
+                    h2o_coeff = np.zeros((d_sig,2,lmax+1,lmax+1))
+                    h2o_chi2 = np.zeros(d_sig)
+
+                    co2_coeff = np.zeros((d_sig,2,lmax+1,lmax+1))
+                    co2_chi2 = np.zeros(d_sig)
+
+                    nh3_coeff = np.zeros((d_sig,2,lmax+1,lmax+1))
+                    nh3_chi2 = np.zeros(d_sig)
+
             if pressure_vert == True: # use pressure as vertical coordinate
                 for i in np.arange(grid.point_num):
                     #interp to pressure grid
@@ -582,13 +759,14 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pscale='log',overwrite=False,comp=4,p
                     Mh_icop[0,i,:] = interp.pchip_interpolate(sigma[::-1],output.Mh[0,i,::-1,t-ntsi],Pref[::-1])[::-1]
                     Mh_icop[1,i,:] = interp.pchip_interpolate(sigma[::-1],output.Mh[1,i,::-1,t-ntsi],Pref[::-1])[::-1]
                     Mh_icop[2,i,:] = interp.pchip_interpolate(sigma[::-1],output.Mh[2,i,::-1,t-ntsi],Pref[::-1])[::-1]
-                    Wh_icop[i,:] = interp.pchip_interpolate(sigma[::-1],Wh_icoh[i,::-1,t-ntsi],Pref[::-1])[::-1]
-                    del_hseq_icop[i,:] = interp.pchip_interpolate(sigma[::-1],del_hseq[i,::-1,t-ntsi],Pref[::-1])[::-1]
+                    W_icop[i,:] = interp.pchip_interpolate(sigma[::-1],W_icoh[i,::-1,t-ntsi],Pref[::-1])[::-1]
+                    # del_hseq_icop[i,:] = interp.pchip_interpolate(sigma[::-1],del_hseq[i,::-1,t-ntsi],Pref[::-1])[::-1]
                     if RT == 1:
                         tau_sw_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.tau_sw[i,::-1,t-ntsi],Pref[::-1])[::-1]
                         tau_lw_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.tau_lw[i,::-1,t-ntsi],Pref[::-1])[::-1]
-                        fnet_up_icop[i,:] = interp.pchip_interpolate(sigma[::-1],fnet_up_icoh[i,::-1,t-ntsi],Pref[::-1])[::-1]
-                        fnet_dn_icop[i,:] = interp.pchip_interpolate(sigma[::-1],fnet_dn_icoh[i,::-1,t-ntsi],Pref[::-1])[::-1]
+                        flw_up_icop[i,:] = interp.pchip_interpolate(sigma[::-1],flw_up_icoh[i,::-1,t-ntsi],Pref[::-1])[::-1]
+                        flw_dn_icop[i,:] = interp.pchip_interpolate(sigma[::-1],flw_dn_icoh[i,::-1,t-ntsi],Pref[::-1])[::-1]
+
                     if chem == 1:
                         ch4_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.ch4[i,::-1,t-ntsi],Pref[::-1])[::-1]
                         co_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.co[i,::-1,t-ntsi],Pref[::-1])[::-1]
@@ -599,13 +777,13 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pscale='log',overwrite=False,comp=4,p
                 Temp_icop[:,:] = Temp_icoh[:,:,t-ntsi]
                 Rho_icop[:,:] = output.Rho[:,:,t-ntsi]
                 Mh_icop[:,:,:] = output.Mh[:,:,:,t-ntsi]
-                Wh_icop[:,:] = Wh_icoh[:,:,t-ntsi]
-                del_hseq_icop[:,:] = del_hseq[:,:,t-ntsi]
+                W_icop[:,:] = W_icoh[:,:,t-ntsi]
+                # del_hseq_icop[:,:] = del_hseq[:,:,t-ntsi]
                 if RT == 1:
                     tau_sw_icop[:,:] = output.tau_sw[:,:,t-ntsi]
                     tau_lw_icop[:,:] = output.tau_lw[:,:,t-ntsi]
-                    fnet_up_icop[:,:] = fnet_up_icoh[:,:,t-ntsi]
-                    fnet_dn_icop[:,:] = fnet_dn_icoh[:,:,t-ntsi]
+                    flw_up_icop[:,:] = flw_up_icoh[:,:,t-ntsi]
+                    flw_dn_icop[:,:] = flw_dn_icoh[:,:,t-ntsi]
                 if chem == 1:
                     ch4_icop[:,:] = output.ch4[:,:,t-ntsi]
                     co_icop[:,:] = output.co[:,:,t-ntsi]
@@ -620,24 +798,113 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pscale='log',overwrite=False,comp=4,p
                       +Mh_icop[2]*np.cos(grid.lat[:,None]))/Rho_icop
 
             for lev in np.arange(d_sig):
-                Temp_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,Temp_icop[:,lev],(loni,lati),method='nearest')
-                Rho_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,Rho_icop[:,lev],(loni,lati),method='nearest')
-                U_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,U_icop[:,lev],(loni,lati),method='nearest')
-                V_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,V_icop[:,lev],(loni,lati),method='nearest')
-                W_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,Wh_icop[:,lev]/Rho_icop[:,lev],(loni,lati),method='nearest')
-                del_hseq_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,del_hseq_icop[:,lev],(loni,lati),method='nearest')
-                if RT == 1:
-                    tau_sw_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,tau_sw_icop[:,lev],(loni,lati),method='nearest')
-                    tau_lw_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,tau_lw_icop[:,lev],(loni,lati),method='nearest')
-                    fnet_up_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,fnet_up_icop[:,lev],(loni,lati),method='nearest')
-                    fnet_dn_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,fnet_dn_icop[:,lev],(loni,lati),method='nearest')
-                    insol_ll[:,:] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,output.Insol[:,t-ntsi],(loni,lati),method='nearest')
-                if chem == 1:
-                    ch4_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,ch4_icop[:,lev],(loni,lati),method='nearest')
-                    co_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,co_icop[:,lev],(loni,lati),method='nearest')
-                    h2o_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,h2o_icop[:,lev],(loni,lati),method='nearest')
-                    co2_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,co2_icop[:,lev],(loni,lati),method='nearest')
-                    nh3_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,nh3_icop[:,lev],(loni,lati),method='nearest')
+                if type == 'gd' or type == 'GD':
+                    if lev == 0:
+                        print('Using "griddata" for horizontal interpolation')
+                    Temp_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,Temp_icop[:,lev],(loni,lati),method='nearest')
+                    Rho_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,Rho_icop[:,lev],(loni,lati),method='nearest')
+                    U_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,U_icop[:,lev],(loni,lati),method='nearest')
+                    V_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,V_icop[:,lev],(loni,lati),method='nearest')
+                    W_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,W_icop[:,lev]/Rho_icop[:,lev],(loni,lati),method='nearest')
+                    # del_hseq_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,del_hseq_icop[:,lev],(loni,lati),method='nearest')
+                    if RT == 1:
+                        tau_sw_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,tau_sw_icop[:,lev],(loni,lati),method='nearest')
+                        tau_lw_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,tau_lw_icop[:,lev],(loni,lati),method='nearest')
+                        flw_up_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,flw_up_icop[:,lev],(loni,lati),method='nearest')
+                        flw_dn_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,flw_dn_icop[:,lev],(loni,lati),method='nearest')
+                        if lev == 0:
+                            insol_ll[:,:] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,output.Insol[:,t-ntsi],(loni,lati),method='nearest')
+                            if surf == 1:
+                                Tsurf_ll[:,:] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,output.Tsurface[:,t-ntsi],(loni,lati),method='nearest')
+                    if chem == 1:
+                        ch4_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,ch4_icop[:,lev],(loni,lati),method='nearest')
+                        co_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,co_icop[:,lev],(loni,lati),method='nearest')
+                        h2o_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,h2o_icop[:,lev],(loni,lati),method='nearest')
+                        co2_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,co2_icop[:,lev],(loni,lati),method='nearest')
+                        nh3_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,nh3_icop[:,lev],(loni,lati),method='nearest')
+                elif type == 'sh' or type == 'SH':
+                    if lev == 0:
+                        print('Using "SHExpandLSQ" for horizontal interpolation')
+                    Temp_coeff[lev,:,:,:], Temp_chi2[lev] = chairs.expand.SHExpandLSQ(Temp_icop[:,lev],grid.lat*180/np.pi,grid.lon*180/np.pi,lmax)
+                    Temp_llp[:,:,lev] = np.real(chairs.expand.MakeGridDH(Temp_coeff[lev,:,:,:],sampling=2))
+                    Rho_coeff[lev,:,:,:], Rho_chi2[lev] = chairs.expand.SHExpandLSQ(Rho_icop[:,lev],grid.lat*180/np.pi,grid.lon*180/np.pi,lmax)
+                    Rho_llp[:,:,lev] = np.real(chairs.expand.MakeGridDH(Rho_coeff[lev,:,:,:],sampling=2))
+                    U_coeff[lev,:,:,:], U_chi2[lev] = chairs.expand.SHExpandLSQ(U_icop[:,lev],grid.lat*180/np.pi,grid.lon*180/np.pi,lmax)
+                    U_llp[:,:,lev] = np.real(chairs.expand.MakeGridDH(U_coeff[lev,:,:,:],sampling=2))
+                    V_coeff[lev,:,:,:], V_chi2[lev] = chairs.expand.SHExpandLSQ(V_icop[:,lev],grid.lat*180/np.pi,grid.lon*180/np.pi,lmax)
+                    V_llp[:,:,lev] = np.real(chairs.expand.MakeGridDH(V_coeff[lev,:,:,:],sampling=2))
+                    W_coeff[lev,:,:,:], W_chi2[lev] = chairs.expand.SHExpandLSQ(W_icop[:,lev],grid.lat*180/np.pi,grid.lon*180/np.pi,lmax)
+                    W_llp[:,:,lev] = np.real(chairs.expand.MakeGridDH(W_coeff[lev,:,:,:],sampling=2))
+                    if RT == 1:
+                        tau_sw_coeff[lev,:,:,:], tau_sw_chi2[lev] = chairs.expand.SHExpandLSQ(tau_sw_icop[:,lev],grid.lat*180/np.pi,grid.lon*180/np.pi,lmax)
+                        tau_sw_llp[:,:,lev] = np.real(chairs.expand.MakeGridDH(tau_sw_coeff[lev,:,:,:],sampling=2))
+                        tau_lw_coeff[lev,:,:,:], tau_lw_chi2[lev] = chairs.expand.SHExpandLSQ(tau_lw_icop[:,lev],grid.lat*180/np.pi,grid.lon*180/np.pi,lmax)
+                        tau_lw_llp[:,:,lev] = np.real(chairs.expand.MakeGridDH(tau_lw_coeff[lev,:,:,:],sampling=2))
+                        flw_up_coeff[lev,:,:,:], flw_up_chi2[lev] = chairs.expand.SHExpandLSQ(flw_up_icop[:,lev],grid.lat*180/np.pi,grid.lon*180/np.pi,lmax)
+                        flw_up_llp[:,:,lev] = np.real(chairs.expand.MakeGridDH(flw_up_coeff[lev,:,:,:],sampling=2))
+                        flw_dn_coeff[lev,:,:,:], flw_dn_chi2[lev] = chairs.expand.SHExpandLSQ(flw_dn_icop[:,lev],grid.lat*180/np.pi,grid.lon*180/np.pi,lmax)
+                        flw_dn_llp[:,:,lev] = np.real(chairs.expand.MakeGridDH(flw_dn_coeff[lev,:,:,:],sampling=2))
+                        if lev == 0:
+                            insol_coeff[lev,:,:,:], insol_chi2[lev] = chairs.expand.SHExpandLSQ(output.Insol[:,t-ntsi],grid.lat*180/np.pi,grid.lon*180/np.pi,lmax)
+                            insol_ll[:,:,lev] = np.real(chairs.expand.MakeGridDH(insol_coeff[lev,:,:,:],sampling=2))
+                            if surf == 1:
+                                Tsurf_coeff[lev,:,:,:], Tsurf_chi2[lev] = chairs.expand.SHExpandLSQ(output.Tsurface[:,t-ntsi],grid.lat*180/np.pi,grid.lon*180/np.pi,lmax)
+                                Tsurf_ll[:,:,lev] = np.real(chairs.expand.MakeGridDH(Tsurf_coeff[lev,:,:,:],sampling=2))
+
+                    if chem == 1:
+                        ch4_coeff[lev,:,:,:], ch4_chi2[lev] = chairs.expand.SHExpandLSQ(ch4_icop[:,lev],grid.lat*180/np.pi,grid.lon*180/np.pi,lmax)
+                        ch4_llp[:,:,lev] = np.real(chairs.expand.MakeGridDH(ch4_coeff[lev,:,:,:],sampling=2))
+                        co_coeff[lev,:,:,:], co_chi2[lev] = chairs.expand.SHExpandLSQ(co_icop[:,lev],grid.lat*180/np.pi,grid.lon*180/np.pi,lmax)
+                        co_llp[:,:,lev] = np.real(chairs.expand.MakeGridDH(co_coeff[lev,:,:,:],sampling=2))
+                        co2_coeff[lev,:,:,:], co2_chi2[lev] = chairs.expand.SHExpandLSQ(co2_icop[:,lev],grid.lat*180/np.pi,grid.lon*180/np.pi,lmax)
+                        co2_llp[:,:,lev] = np.real(chairs.expand.MakeGridDH(co2_coeff[lev,:,:,:],sampling=2))
+                        h2o_coeff[lev,:,:,:], h2o_chi2[lev] = chairs.expand.SHExpandLSQ(h2o_icop[:,lev],grid.lat*180/np.pi,grid.lon*180/np.pi,lmax)
+                        h2o_llp[:,:,lev] = np.real(chairs.expand.MakeGridDH(h2o_coeff[lev,:,:,:],sampling=2))
+                        nh3_coeff[lev,:,:,:], nh3_chi2[lev] = chairs.expand.SHExpandLSQ(nh3_icop[:,lev],grid.lat*180/np.pi,grid.lon*180/np.pi,lmax)
+                        nh3_llp[:,:,lev] = np.real(chairs.expand.MakeGridDH(nh3_coeff[lev,:,:,:],sampling=2))
+
+                elif type == 'spl' or type == 'SPL':
+                    if lev == 0:
+                        print('Using "SmoothSphereBivariateSpline" for horizontal interpolation')
+                    theta = np.pi/2 - grid.lat
+                    f = interp.SmoothSphereBivariateSpline(theta,grid.lon,Temp_icop[:,lev],s=3.5)
+                    Temp_llp[:,:,lev] = f(np.pi/2-lat_range[::-1]*np.pi/180,lon_range*np.pi/180)
+                    f = interp.SmoothSphereBivariateSpline(theta,grid.lon,Rho_icop[:,lev],s=3.5)
+                    Rho_llp[:,:,lev] = f(np.pi/2-lat_range[::-1]*np.pi/180,lon_range*np.pi/180)
+                    f = interp.SmoothSphereBivariateSpline(theta,grid.lon,U_icop[:,lev],s=5)
+                    U_llp[:,:,lev] = f(np.pi/2-lat_range[::-1]*np.pi/180,lon_range*np.pi/180)
+                    f = interp.SmoothSphereBivariateSpline(theta,grid.lon,V_icop[:,lev],s=5)
+                    V_llp[:,:,lev] = f(np.pi/2-lat_range[::-1]*np.pi/180,lon_range*np.pi/180)
+                    f = interp.SmoothSphereBivariateSpline(theta,grid.lon,W_icop[:,lev],s=5)
+                    W_llp[:,:,lev] = f(np.pi/2-lat_range[::-1]*np.pi/180,lon_range*np.pi/180)
+                    if RT == 1:
+                        f = interp.SmoothSphereBivariateSpline(theta,grid.lon,tau_sw_icop[:,lev],s=3.5)
+                        tau_sw_llp[:,:,lev] = f(np.pi/2-lat_range[::-1]*np.pi/180,lon_range*np.pi/180)
+                        f = interp.SmoothSphereBivariateSpline(theta,grid.lon,tau_lw_icop[:,lev],s=3.5)
+                        tau_lw_llp[:,:,lev] = f(np.pi/2-lat_range[::-1]*np.pi/180,lon_range*np.pi/180)
+                        f = interp.SmoothSphereBivariateSpline(theta,grid.lon,flw_up_icop[:,lev],s=3.5)
+                        flw_up_llp[:,:,lev] = f(np.pi/2-lat_range[::-1]*np.pi/180,lon_range*np.pi/180)
+                        f = interp.SmoothSphereBivariateSpline(theta,grid.lon,flw_dn_icop[:,lev],s=3.5)
+                        flw_dn_llp[:,:,lev] = f(np.pi/2-lat_range[::-1]*np.pi/180,lon_range*np.pi/180)
+                        if lev == 0:
+                            f = interp.SmoothSphereBivariateSpline(theta,grid.lon,output.Insol[:,t-ntsi],s=3.5)
+                            insol_llp[:,:,lev] = f(np.pi/2-lat_range[::-1]*np.pi/180,lon_range*np.pi/180)
+                            if surf == 1:
+                                f = interp.SmoothSphereBivariateSpline(theta,grid.lon,output.Tsurface[:,t-ntsi],s=3.5)
+                                Tsurf_llp[:,:,lev] = f(np.pi/2-lat_range[::-1]*np.pi/180,lon_range*np.pi/180)
+                    if chem == 1:
+                        f = interp.SmoothSphereBivariateSpline(theta,grid.lon,ch4_icop[:,lev],s=3.5)
+                        ch4_llp[:,:,lev] = f(np.pi/2-lat_range[::-1]*np.pi/180,lon_range*np.pi/180)
+                        f = interp.SmoothSphereBivariateSpline(theta,grid.lon,co_icop[:,lev],s=3.5)
+                        co_llp[:,:,lev] = f(np.pi/2-lat_range[::-1]*np.pi/180,lon_range*np.pi/180)
+                        f = interp.SmoothSphereBivariateSpline(theta,grid.lon,co2_icop[:,lev],s=3.5)
+                        co2_llp[:,:,lev] = f(np.pi/2-lat_range[::-1]*np.pi/180,lon_range*np.pi/180)
+                        f = interp.SmoothSphereBivariateSpline(theta,grid.lon,h2o_icop[:,lev],s=3.5)
+                        h2o_llp[:,:,lev] = f(np.pi/2-lat_range[::-1]*np.pi/180,lon_range*np.pi/180)
+                        f = interp.SmoothSphereBivariateSpline(theta,grid.lon,nh3_icop[:,lev],s=3.5)
+                        nh3_llp[:,:,lev] = f(np.pi/2-lat_range[::-1]*np.pi/180,lon_range*np.pi/180)
+                else:
+                    raise ValueError('Invalid type for horizontal interpolation in regrid.\n Valid types are "gd"/"GD" (griddata),"sh"/"SH" (spherical harmonics), "spl"/"SPL" (spherical spline).')
 
             #create h5 files
             openh5 = h5py.File(fileh5,"w")
@@ -657,24 +924,65 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pscale='log',overwrite=False,comp=4,p
             U = openh5.create_dataset("U",data=U_llp,compression='gzip',compression_opts=comp)
             V = openh5.create_dataset("V",data=V_llp,compression='gzip',compression_opts=comp)
             W = openh5.create_dataset("W",data=W_llp,compression='gzip',compression_opts=comp)
-            del_hseqf = openh5.create_dataset("del_hseq",data=del_hseq_llp,compression='gzip',compression_opts=comp)
+            # del_hseqf = openh5.create_dataset("del_hseq",data=del_hseq_llp,compression='gzip',compression_opts=comp)
+            if type == 'sh' or type == 'SH':
+                Tcoeff = openh5.create_dataset("Temp_coeff",data=Temp_coeff,compression='gzip',compression_opts=comp)
+                Tchi2 = openh5.create_dataset("Temp_chi2",data=Temp_chi2,compression='gzip',compression_opts=comp)
+                Rhocoeff = openh5.create_dataset("Rho_coeff",data=Rho_coeff,compression='gzip',compression_opts=comp)
+                Rhochi2 = openh5.create_dataset("Rho_chi2",data=Rho_chi2,compression='gzip',compression_opts=comp)
+                Ucoeff = openh5.create_dataset("U_coeff",data=U_coeff,compression='gzip',compression_opts=comp)
+                Uchi2 = openh5.create_dataset("U_chi2",data=U_chi2,compression='gzip',compression_opts=comp)
+                Vcoeff = openh5.create_dataset("V_coeff",data=V_coeff,compression='gzip',compression_opts=comp)
+                Vchi2 = openh5.create_dataset("V_chi2",data=V_chi2,compression='gzip',compression_opts=comp)
+                Wcoeff = openh5.create_dataset("W_coeff",data=W_coeff,compression='gzip',compression_opts=comp)
+                Wchi2 = openh5.create_dataset("W_chi2",data=W_chi2,compression='gzip',compression_opts=comp)
+
             if RT == 1:
                 tau_sw = openh5.create_dataset("tau_sw",data=tau_sw_llp,compression='gzip',compression_opts=comp)
                 tau_lw = openh5.create_dataset("tau_lw",data=tau_lw_llp,compression='gzip',compression_opts=comp)
-                fnet_up = openh5.create_dataset("fnet_up",data=fnet_up_llp,compression='gzip',compression_opts=comp)
-                fnet_dn = openh5.create_dataset("fnet_dn",data=fnet_dn_llp,compression='gzip',compression_opts=comp)
+                flw_up = openh5.create_dataset("flw_up",data=flw_up_llp,compression='gzip',compression_opts=comp)
+                flw_dn = openh5.create_dataset("flw_dn",data=flw_dn_llp,compression='gzip',compression_opts=comp)
                 insol = openh5.create_dataset("insol",data=insol_ll,compression='gzip',compression_opts=comp)
+                if surf == 1:
+                    Tsurf = openh5.create_dataset("Tsurface",data=Tsurf_ll,compression='gzip',compression_opts=comp)
+
+                if type == 'sh' or type == 'SH':
+                    tauswcoeff = openh5.create_dataset("tau_sw_coeff",data=tau_sw_coeff,compression='gzip',compression_opts=comp)
+                    tauswchi2 = openh5.create_dataset("tau_sw_chi2",data=tau_sw_chi2,compression='gzip',compression_opts=comp)
+                    taulwcoeff = openh5.create_dataset("tau_lw_coeff",data=tau_lw_coeff,compression='gzip',compression_opts=comp)
+                    taulwchi2 = openh5.create_dataset("tau_lw_chi2",data=tau_lw_chi2,compression='gzip',compression_opts=comp)
+                    fnetupcoeff = openh5.create_dataset("flw_up_coeff",data=flw_up_coeff,compression='gzip',compression_opts=comp)
+                    fnetupchi2 = openh5.create_dataset("flw_up_chi2",data=flw_up_chi2,compression='gzip',compression_opts=comp)
+                    fnetdncoeff = openh5.create_dataset("flw_dn_coeff",data=flw_dn_coeff,compression='gzip',compression_opts=comp)
+                    fnetdnchi2 = openh5.create_dataset("flw_dn_chi2",data=flw_dn_chi2,compression='gzip',compression_opts=comp)
+                    insolcoeff = openh5.create_dataset("insol_coeff",data=insol_coeff,compression='gzip',compression_opts=comp)
+                    insolchi2 = openh5.create_dataset("insol_chi2",data=insol_chi2,compression='gzip',compression_opts=comp)
+                    if surf == 1:
+                        Tsurfcoeff = openh5.create_dataset("Tsurf_coeff",data=Tsurf_coeff,compression='gzip',compression_opts=comp)
+                        Tsurfchi2 = openh5.create_dataset("Tsurf_chi2",data=Tsurf_chi2,compression='gzip',compression_opts=comp)
+
             if chem == 1:
                 ch4 = openh5.create_dataset("ch4",data=ch4_llp,compression='gzip',compression_opts=comp)
                 co = openh5.create_dataset("co",data=co_llp,compression='gzip',compression_opts=comp)
                 h2o = openh5.create_dataset("h2o",data=h2o_llp,compression='gzip',compression_opts=comp)
                 co2 = openh5.create_dataset("co2",data=co2_llp,compression='gzip',compression_opts=comp)
                 nh3 = openh5.create_dataset("nh3",data=nh3_llp,compression='gzip',compression_opts=comp)
+                if type == 'sh' or type == 'SH':
+                    ch4coeff = openh5.create_dataset("ch4_coeff",data=ch4_coeff,compression='gzip',compression_opts=comp)
+                    ch4chi2 = openh5.create_dataset("ch4_chi2",data=ch4_chi2,compression='gzip',compression_opts=comp)
+                    cocoeff = openh5.create_dataset("co_coeff",data=co_coeff,compression='gzip',compression_opts=comp)
+                    cochi2 = openh5.create_dataset("co_chi2",data=co_chi2,compression='gzip',compression_opts=comp)
+                    co2coeff = openh5.create_dataset("co2_coeff",data=co2_coeff,compression='gzip',compression_opts=comp)
+                    co2chi2 = openh5.create_dataset("co2_chi2",data=co2_chi2,compression='gzip',compression_opts=comp)
+                    h2ocoeff = openh5.create_dataset("h2o_coeff",data=h2o_coeff,compression='gzip',compression_opts=comp)
+                    h2ochi2 = openh5.create_dataset("h2o_chi2",data=h2o_chi2,compression='gzip',compression_opts=comp)
+                    nh3coeff = openh5.create_dataset("nh3_coeff",data=nh3_coeff,compression='gzip',compression_opts=comp)
+                    nh3chi2 = openh5.create_dataset("nh3_chi2",data=nh3_chi2,compression='gzip',compression_opts=comp)
 
             openh5.close()
 
             ## calculate relative and potential vorticity and add to regrid file
-            calc_RV_PV(grid,output,input,lon_range,lat_range,Pref,t-ntsi,fileh5,pressure_vert)
+            calc_RV_PV(grid,output,input,lon_range,lat_range,Pref,t-ntsi,fileh5,pressure_vert,type=type)
             # calc_moc_streamf(grid,output,input,lon_range,lat_range,Pref,t-ntsi,fileh5,pressure_vert)
 
 
@@ -795,6 +1103,18 @@ def KE_spect(input,grid,output,sigmaref,coord = 'icoh',lmax_adjust = 0):
     plt.savefig(input.resultsf+'/figures/KEmap_lowest_%i_%s.pdf'%(output.ntsi,coord))
     plt.close()
 
+def maketable(x,y,z,xname,yname,zname,resultsf,fname):
+    #print 2D data from plot to file
+    if not os.path.exists(resultsf+'/tables'):
+        os.mkdir(resultsf+'/tables')
+    f = open(resultsf+'/tables/'+fname,'w')
+    f.write('# %s %s %s\n'%(xname,yname,zname))
+    pdb.set_trace()
+    for i in np.arange(len(x)):
+        for j in np.arange(len(y)):
+            f.write('%#.6e %#.6e %#.6e\n'%(x[i],y[j],z[i,j]))
+    f.close()
+
 def vertical_lat(input,grid,output,rg,sigmaref,z,slice=[0,360],save=True,axis=False,csp=500,wind_vectors=False):
     # generic pressure/latitude plot function
 
@@ -893,7 +1213,6 @@ def vertical_lat(input,grid,output,rg,sigmaref,z,slice=[0,360],save=True,axis=Fa
 
     # need to set desired pressure range (major PITA!)
     prange = np.where(np.logical_and(rg.Pressure>=np.min(Pref),rg.Pressure<=np.max(Pref)))
-
     # Contour plot
     if isinstance(axis,axes.SubplotBase):
         C = axis.contourf(latp*180/np.pi,rg.Pressure[prange[0],0]/1e5,Zonallt[:,prange[0]].T,40,cmap=z['cmap'])
@@ -929,16 +1248,17 @@ def vertical_lat(input,grid,output,rg,sigmaref,z,slice=[0,360],save=True,axis=Fa
         cc.set_edgecolor("face") #fixes a stupid bug in matplotlib 2.0
     #ax.invert_yaxis()
     # plt.quiver(latq.ravel(),preq.ravel()/1e5,Vq/np.max(Vq),Wq/np.max(Wq),color='0.5')
-    if np.max(Pref)/np.min(Pref) > 100:
+    if z['plog'] == True:
         ax.set_yscale("log")
     ax.set_xlabel('Latitude (deg)')
     ax.set_ylabel('Pressure (bar)')
     ax.plot(latp*180/np.pi,np.zeros_like(latp)+np.max(output.Pressure[:,grid.nv-1,:])/1e5,'r--')
     #    plt.plot(latp*180/np.pi,np.zeros_like(latp)+np.max(output.Pressure[:,grid.nv-1,:])/1e5,'r--')
-    if np.min(rg.Pressure[prange[0],0]) < np.max(output.Pressure[:,grid.nv-1,:]):
-        ax.set_ylim(np.max(rg.Pressure[prange[0],0])/1e5,np.min(rg.Pressure[prange[0],0])/1e5)
-    else:
-        ax.set_ylim(np.max(rg.Pressure[prange[0],0])/1e5,np.max(output.Pressure[:,grid.nv-1,:])/1e5)
+    # if np.min(rg.Pressure[prange[0],0]) < np.max(output.Pressure[:,grid.nv-1,:]):
+    #     ax.set_ylim(np.max(rg.Pressure[prange[0],0])/1e5,np.min(rg.Pressure[prange[0],0])/1e5)
+    # else:
+    #     ax.set_ylim(np.max(rg.Pressure[prange[0],0])/1e5,np.max(output.Pressure[:,grid.nv-1,:])/1e5)
+    ax.set_ylim(np.max(rg.Pressure[prange[0],0])/1e5,np.min(Pref)/1e5)
 
     if ax.get_ylim()[1] > ax.get_ylim()[0]:
         ax.invert_yaxis()
@@ -958,6 +1278,12 @@ def vertical_lat(input,grid,output,rg,sigmaref,z,slice=[0,360],save=True,axis=Fa
         else:
             plt.savefig(input.resultsf+'/figures/%s_ver_i%d_l%d_lon%#.2f.pdf'%(z['name'],output.ntsi,output.nts,slice[0]))
         plt.close()
+    if z['mt'] == True:
+        if len(slice)==2:
+            fname = '%s_ver_i%d_l%d_lon%#.2f-%#.2f.dat'%(z['name'],output.ntsi,output.nts,slice[0],slice[1])
+        else:
+            fname = '%s_ver_i%d_l%d_lon%#.2f.dat'%(z['name'],output.ntsi,output.nts,slice[0])
+        maketable(latp*180/np.pi,rg.Pressure[prange[0],0]/1e5,Zonallt[:,prange[0]],'Latitude(d)','Pressure(bar)',z['name'],input.resultsf,fname)
 
 def horizontal_lev(input,grid,output,rg,Plev,z,save=True,axis=False,wind_vectors=False):
     # Set the latitude-longitude grid.
@@ -985,9 +1311,19 @@ def horizontal_lev(input,grid,output,rg,Plev,z,save=True,axis=False,wind_vectors
             above = np.where(rg.Pressure==np.min(rg.Pressure[rg.Pressure>Plev]))[0][0]
             below = np.where(rg.Pressure==np.max(rg.Pressure[rg.Pressure<Plev]))[0][0]
 
-        zlev[:,:,t] = (z['value'][:,:,below,t]*(rg.Pressure[above,t] - Plev)\
-            + z['value'][:,:,above,t]*(Plev - rg.Pressure[below,t]))\
-            / (rg.Pressure[above,t]-rg.Pressure[below,t])
+        if len(np.shape(z['value'])) == 4:
+            # single level of a 3D field
+            zlev[:,:,t] = (z['value'][:,:,below,t]*(rg.Pressure[above,t] - Plev)\
+                + z['value'][:,:,above,t]*(Plev - rg.Pressure[below,t]))\
+                / (rg.Pressure[above,t]-rg.Pressure[below,t])
+            title = 'Time = %#.3f-%#.3f days, Plev = %#.3f bar'%(output.time[0],output.time[-1],Plev/1e5)
+            fname = '%s_lev%#.3fmbar_i%d_l%d'%(z['name'],Plev/100,output.ntsi,output.nts)
+        elif len(np.shape(z['value'])) == 3:
+            # 2D field, only one level available (e.g., insolation or surface temp)
+            zlev[:,:,t] = z['value'][:,:,t]
+            title = 'Time = %#.3f-%#.3f days'%(output.time[0],output.time[-1])
+            fname = '%s_i%d_l%d'%(z['name'],output.ntsi,output.nts)
+            wind_vectors = False
 
         if wind_vectors == True:
             Uii[:,:,t] = (rg.U[:,:,below,t]*(rg.Pressure[above,t] - Plev)\
@@ -1035,7 +1371,7 @@ def horizontal_lev(input,grid,output,rg,Plev,z,save=True,axis=False,wind_vectors
     ax.set_ylabel('Latitude (deg)')
     ax.set_xlabel('Longitude (deg)')
 
-    ax.set_title('Time = %#.3f-%#.3f days, Plev = %#.3f bar'%(output.time[0],output.time[-1],Plev/1e5))
+    ax.set_title(title)
 
     if wind_vectors == True:
         d_z = np.shape(Uiii)
@@ -1045,7 +1381,8 @@ def horizontal_lev(input,grid,output,rg,Plev,z,save=True,axis=False,wind_vectors
         lonq = loni[::spacing,::spacing].ravel()
         latq = lati[::spacing,::spacing].ravel()
         del Uiii, Viii
-        plt.quiver(lonq,latq,U,V,color='0.5')
+        q = plt.quiver(lonq,latq,U,V,color='0.5')
+        ax.quiverkey(q,X=0.85,Y=-0.1,U=np.max(np.sqrt(U**2+V**2)),label='%#.2f m/s'%np.max(np.sqrt(U**2+V**2)),labelpos='E')
 
     clb = plt.colorbar(C)
     clb.set_label(z['label'])
@@ -1054,8 +1391,15 @@ def horizontal_lev(input,grid,output,rg,Plev,z,save=True,axis=False,wind_vectors
         os.mkdir(input.resultsf+'/figures')
     plt.tight_layout()
     if save == True:
-        plt.savefig(input.resultsf+'/figures/%s_lev%#.3fmbar_i%d_l%d.pdf'%(z['name'],Plev/100,output.ntsi,output.nts))
+        plt.savefig(input.resultsf+'/figures/'+fname+'.pdf')
         plt.close()
+    if z['mt'] == True:
+        dname = fname+'.dat'
+        if z['name'] == 'temperature-uv':
+            zname = 'temperature'
+        else:
+            zname = z['name']
+        maketable(lonp,latp,zlevt.T,'Longitude(d)','Latitude(d)',zname,input.resultsf,dname)
 
 def w_prof(input,grid,output):
     tsp = output.nts-output.ntsi+1
@@ -1252,7 +1596,7 @@ def calc_moc_streamf(grid,output,input,lons,lats,Pref,t_ind,fileh5,comp=4,pressu
     stream = openh5.create_dataset("streamf",data=SF_llp,compression='gzip',compression_opts=comp)
     openh5.close()
 
-def streamf_moc_plot(input,grid,output,rg,sigmaref,save=True,axis=False,wind_vectors=False):
+def streamf_moc_plot(input,grid,output,rg,sigmaref,save=True,axis=False,wind_vectors=False,mt=False):
     # special plotting function for the mass streamfunction
 
     # Set the reference pressure
@@ -1285,10 +1629,10 @@ def streamf_moc_plot(input,grid,output,rg,sigmaref,save=True,axis=False,wind_vec
 
     # Contour plot
     if isinstance(axis,axes.SubplotBase):
-        C = axis.contourf(rg.lat[:,0],rg.Pressure[prange[0],0]/1e5,sf[:,prange[0]].T,100,cmap = 'viridis')
+        C = axis.contourf(rg.lat[:,0],rg.Pressure[prange[0],0]/1e5,sf[:,prange[0]].T,40,cmap = 'viridis')
         ax = axis
     elif axis == False:
-        C = plt.contourf(rg.lat[:,0],rg.Pressure[prange[0],0]/1e5,sf[:,prange[0]].T,100,cmap = 'viridis')
+        C = plt.contourf(rg.lat[:,0],rg.Pressure[prange[0],0]/1e5,sf[:,prange[0]].T,40,cmap = 'viridis')
         ax = plt.gca()
     else:
         raise IOError("'axis = {}' but {} is not an axes.SubplotBase instance".format(axis,axis))
@@ -1329,6 +1673,9 @@ def streamf_moc_plot(input,grid,output,rg,sigmaref,save=True,axis=False,wind_vec
     if save == True:
         plt.savefig(input.resultsf+'/figures/streamf_ver_i%d_l%d.pdf'%(output.ntsi,output.nts))
         plt.close()
+    if mt == True:
+        fname = 'streamf_ver_i%d_l%d.dat'%(output.ntsi,output.nts)
+        maketable(latp*180/np.pi,rg.Pressure[prange[0],0]/1e5,Zonallt[:,prange[0]],'Latitude(d)','Pressure(bar)','streamfunc',input.resultsf,fname)
 
 def potential_vort_lev(input,grid,output,sigmaref):
     # Set the reference pressure

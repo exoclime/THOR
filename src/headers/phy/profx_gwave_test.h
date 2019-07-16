@@ -55,7 +55,7 @@ void setup_gwave_TP(double *pressure_h,
                     int     lev) {
 
     // for now, assume N = 0.01 as in case 1 of T&S
-
+    // RD: i don't think i'm using this function (should prob remove it)
     double logP, T;
     double z = Altitude_h[lev];
 

@@ -122,14 +122,17 @@ private:
 
     double incflx;
     //  Arrays used in RT code
-    double *fnet_up_d;
-    double *fnet_dn_d;
+    double *fsw_up_d;
+    double *fsw_dn_d;
+    double *flw_up_d;
+    double *flw_dn_d;
     double *tau_d;
 
-    double *fnet_up_h;
-    double *fnet_dn_h;
     double *tau_h;
-
+    double *fsw_up_h;
+    double *fsw_dn_h;
+    double *flw_up_h;
+    double *flw_dn_h;
 
     // orbit/insolation properties
     bool   sync_rot       = true;     // is planet syncronously rotating?

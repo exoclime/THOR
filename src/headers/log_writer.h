@@ -18,7 +18,7 @@
 //
 //
 //
-// Description: Defines the main model's parameters
+// Description:
 //
 // Method: -
 //

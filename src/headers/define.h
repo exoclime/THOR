@@ -71,6 +71,7 @@
 #define NonHydro_default true     // Non-hydrostatic parameter
 #define DeepModel_default true    // Deep atmosphere
 #define SpongeLayer_default false // use sponge layer at top of model
+#define output_mean_default true  // output mean quantities
 
 // Initial conditions
 #define rest_default true                                 // Starting from rest

@@ -71,7 +71,7 @@ spring_beta = 1.15
 HyDiff  =    false
 
 # Divergence-damping
-DivDampP =    false
+DivDampP =    true
 
 # Strength of diffusion
 Diffc = 0.01
