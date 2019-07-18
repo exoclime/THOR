@@ -61,11 +61,11 @@ maketable = args.maketable
 plog = True
 if args.no_pressure_log:
     plog = False
-valid = ['uver','wver','wprof','Tver','Tulev','PTver','ulev','PVver','PVlev',
+valid = ['uver','vver','wver','wprof','Tver','Tulev','PTver','ulev','PVver','PVlev',
             'TP','RVlev','cons','stream','pause','tracer','PTP','regrid','KE',
             'SR','uprof','cfl','hseq','hsprof','bvprof','fluxprof','Tsurf','insol']
 
-rg_needed = ['Tver','uver','wver','Tulev','PTver','ulev','PVver','PVlev',
+rg_needed = ['Tver','uver','vver','wver','Tulev','PTver','ulev','PVver','PVlev',
             'RVlev','stream','tracer','Tsurf','insol']  #these types need regrid
 
 openrg = 0
@@ -141,6 +141,13 @@ if 'pause' in pview:
 #--- Vertical plot types-------------------------------
 if 'uver' in pview:
     z = {'value':rg.U, 'label':r'Velocity (m s$^{-1}$)', 'name':'u',
+         'cmap':'viridis', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable, 'plog':plog}
+    sigmaref = ham.Get_Prange(input,grid,output,args,xtype='lat')
+    # Averaged zonal winds (latitude vs pressure)
+    #ham.u(input,grid,output,rg,sigmaref,slice=args.slice[0])
+    ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice)
+if 'vver' in pview:
+    z = {'value':rg.V, 'label':r'Velocity (m s$^{-1}$)', 'name':'v',
          'cmap':'viridis', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable, 'plog':plog}
     sigmaref = ham.Get_Prange(input,grid,output,args,xtype='lat')
     # Averaged zonal winds (latitude vs pressure)
