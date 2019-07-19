@@ -1104,7 +1104,6 @@ def maketable(x,y,z,xname,yname,zname,resultsf,fname):
         os.mkdir(resultsf+'/tables')
     f = open(resultsf+'/tables/'+fname,'w')
     f.write('# %s %s %s\n'%(xname,yname,zname))
-    pdb.set_trace()
     for i in np.arange(len(x)):
         for j in np.arange(len(y)):
             f.write('%#.6e %#.6e %#.6e\n'%(x[i],y[j],z[i,j]))
@@ -1897,7 +1896,7 @@ def profile(input,grid,output,z,stride=50):
             P = output.Pressure[column,:,0]
             x = z['value'][column,:,0]
 
-        plt.semilogy(x,P/1e5,'k-',alpha= 0.5,lw=1)
+        plt.semilogy(x,P/1e5,'k-',alpha=0.5,lw=1)
         plt.plot(x[np.int(np.floor(grid.nv/2))],P[np.int(np.floor(grid.nv/2))]/100000,'r+',ms =5,alpha=0.5)
         plt.plot(x[np.int(np.floor(grid.nv*0.75))],P[np.int(np.floor(grid.nv*0.75))]/100000,'g+',ms =5,alpha=0.5)
 
