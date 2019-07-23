@@ -109,7 +109,6 @@ bool boundary_layer::phy_loop(ESP &                  esp,
     dim3 NB((esp.point_num / NTH) + 1, esp.nv, 1);
 
     rayleighHS<<<NB, NTH>>>(esp.Mh_d,
-                            esp.Wh_d,
                             esp.pressure_d,
                             esp.Rho_d,
                             esp.Altitude_d,
@@ -156,7 +155,6 @@ void boundary_layer::BLSetup(int bl_type, double surf_drag_, double bl_sigma_) {
 
 
 __global__ void rayleighHS(double *Mh_d,
-                           double *Wh_d,
                            double *pressure_d,
                            double *Rho_d,
                            double *Altitude_d,
@@ -194,6 +192,6 @@ __global__ void rayleighHS(double *Mh_d,
             Mh_d[id * 3 * nv + lev * 3 + k] =
                 Mh_d[id * 3 * nv + lev * 3 + k] / (1.0 + kv_hs * time_step);
 
-        Wh_d[id * (nv + 1) + lev + k] = Wh_d[id * (nv + 1) + lev + k] / (1.0 + kv_hs * time_step);
+        // Wh_d[id * (nv + 1) + lev + k] = Wh_d[id * (nv + 1) + lev + k] / (1.0 + kv_hs * time_step);
     }
 }

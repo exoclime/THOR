@@ -558,7 +558,7 @@ def calc_RV_PV(grid,output,input,lons,lats,sigma,t_ind,fileh5,comp=4,pressure_ve
     openh5.close()
 
 def regrid(resultsf,simID,ntsi,nts,nlev=40,pscale='log',overwrite=False,comp=4,
-            pressure_vert=True,type='gd',pressure_min='default',rotation=False,theta_z=0,theta_y=0,lmax_set='grid'):
+            pressure_vert=True,type='gd',vertical_top='default',rotation=False,theta_z=0,theta_y=0,lmax_set='grid'):
     # runs over files and converts ico-height grid to lat-lon-pr grid
     outall = GetOutput(resultsf,simID,ntsi,nts,rotation=rotation,theta_z=theta_z,theta_y=theta_y)
     input = outall.input
@@ -573,11 +573,11 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pscale='log',overwrite=False,comp=4,
         print('Vertical coordinate = height')
         nlev = len(grid.Altitude)
     #figure out pressure grid
-    if pressure_min == 'default':
+    if vertical_top == 'default':
         pmin = np.min(output.Pressure)
     else:
         try:
-            pmin = np.float(pressure_min)
+            pmin = np.float(vertical_top)
         except:
             raise ValueError('"pmin" option must be "default" or a float')
 
@@ -994,7 +994,7 @@ def Get_Prange(input,grid,output,args,xtype='lat',use_p=True):
         raise IOError("'slice' argument must be a list")
 
     if use_p:
-        if (args.pressure_min[0]=='default'):
+        if (args.vertical_top[0]=='default'):
             if xtype == 'lat':
                 if len(args.slice) == 2:
                     grid_mask = np.logical_and(grid.lon*180/np.pi>=args.slice[0],grid.lon*180/np.pi<=args.slice[1])
@@ -1011,19 +1011,18 @@ def Get_Prange(input,grid,output,args,xtype='lat',use_p=True):
                         grid_mask = np.argmin(np.abs(grid.lat*180/np.pi-0.5*(args.slice[0]+args.slice[1])))
                 elif len(args.slice) == 1:
                     grid_mask = np.argmin(np.abs(grid.lat*180/np.pi-args.slice[0]))
-            args.pressure_min[0] = np.max(output.Pressure[grid_mask,grid.nv-1,:])/100
+            args.vertical_top[0] = np.max(output.Pressure[grid_mask,grid.nv-1,:])/100
 
-        if np.max(input.P_Ref)/np.float(args.pressure_min[0]) > 1000:
-            sigmaref = np.logspace(np.log10(input.P_Ref),np.log10(np.float(args.pressure_min[0])*100),20)/input.P_Ref
+        if np.max(input.P_Ref)/np.float(args.vertical_top[0]) > 1000:
+            sigmaref = np.logspace(np.log10(input.P_Ref),np.log10(np.float(args.vertical_top[0])*100),20)/input.P_Ref
         else:
-            sigmaref = np.linspace(input.P_Ref,np.float(args.pressure_min[0])*100,20)/input.P_Ref
+            sigmaref = np.linspace(input.P_Ref,np.float(args.vertical_top[0])*100,20)/input.P_Ref
 
     else:
-        if (args.pressure_min[0]=='default'):
+        if (args.vertical_top[0]=='default'):
             sigmaref = grid.Altitude
         else:
-            import pdb; pdb.set_trace()
-            sigmaref = grid.Altitude[np.where(grid.Altitude<=np.float(args.pressure_min[0])*input.Top_altitude)[0]]
+            sigmaref = grid.Altitude[np.where(grid.Altitude<=np.float(args.vertical_top[0])*input.Top_altitude)[0]]
     return sigmaref
 
 

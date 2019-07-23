@@ -92,7 +92,6 @@ private:
 };
 
 __global__ void rayleighHS(double *Mh_d,
-                           double *Wh_d,
                            double *pressure_d,
                            double *Rho_d,
                            double *Altitude_d,

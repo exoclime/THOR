@@ -47,7 +47,7 @@ parser.add_argument("-s","--simulation_ID",nargs=1,default=['auto'],help='Name o
 parser.add_argument("-i","--initial_file",nargs=1,default=[10],type=int,help='Initial file id number (integer)')
 parser.add_argument("-l","--last_file",nargs=1,default=['init'],type=int,help='Last file id number (integer)')
 parser.add_argument("-p","--pressure_lev",nargs=1,default=[2.5e2],help='Pressure level to plot in temperature/velocity/vorticity field (mbar)')
-parser.add_argument("-pmin","--pressure_min",nargs=1,default=['default'],help='Lowest pressure value to plot in vertical plots')
+parser.add_argument("-vtop","--vertical_top",nargs=1,default=['default'],help='Location of top of plot (vertical type) in mbar (pressure) or fractional height (height)')
 parser.add_argument("-slay","--split_layer",nargs=1,default=['no_split'],help='Split conserved quantities into weather and deep layers at this pressure')
 parser.add_argument("-coord","--coordinate_sys",nargs=1,default=['icoh'],help='For KE spectrum, use either icoh grid or llp grid')
 parser.add_argument("-ladj","--lmax_adjust",nargs=1,default=[0],help='For KE spectrum, icoh grid, adjust number of wave numbers to fit')
@@ -192,14 +192,18 @@ if 'PVver' in pview:
     sigmaref = ham.Get_Prange(input,grid,output,args,xtype='lat',use_p=use_p)
     ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice,use_p=use_p)
     # ham.potential_vort_vert(input,grid,output,sigmaref)
-if 'stream' in pview: # RD: needs some work!
+if 'stream' in pview: # RD: needs some work! to adapt to height coordinate
     # strm = ham.calc_moc_streamf(input,grid,output)
     # strm = rg.streamf
     # z = {'value':strm, 'label':r'Eulerian streamfunction (kg s$^{-1}$)', 'name':'streamf2',
     #      'cmap':'viridis', 'lat':rg.lat, 'lon':rg.lon}
-    sigmaref = ham.Get_Prange(input,grid,output,args,xtype='lat')
-    # ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice,csp=[0])
-    ham.streamf_moc_plot(input,grid,output,rg,sigmaref,mt=maketable)
+    if use_p:
+        sigmaref = ham.Get_Prange(input,grid,output,args,xtype='lat')
+        # ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice,csp=[0])
+        ham.streamf_moc_plot(input,grid,output,rg,sigmaref,mt=maketable)
+    else:
+        raise ValueError("'stream' plot type requires -vc pressure")
+        # no reason to keep this way, just need to fix to use height
 if 'massf' in pview:
     if use_p == False:
         # mass flow rate (zonal average)
@@ -212,6 +216,7 @@ if 'massf' in pview:
         raise ValueError("'massf' plot type requires -vc height")
 
 #--- Horizontal plot types-------------------------------
+# need to be updated for height coordinates
 if 'Tulev' in pview:
     # Averaged temperature and wind field (longitude vs latitude)
     # PR_LV - Pressure level (Pa)
