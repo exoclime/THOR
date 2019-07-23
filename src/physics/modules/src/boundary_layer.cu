@@ -191,5 +191,7 @@ __global__ void rayleighHS(double *Mh_d,
         for (int k = 0; k < 3; k++)
             Mh_d[id * 3 * nv + lev * 3 + k] =
                 Mh_d[id * 3 * nv + lev * 3 + k] / (1.0 + kv_hs * time_step);
+
+        // Wh_d[id * (nv + 1) + lev + k] = Wh_d[id * (nv + 1) + lev + k] / (1.0 + kv_hs * time_step);
     }
 }
