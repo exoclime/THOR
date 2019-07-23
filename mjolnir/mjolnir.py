@@ -211,7 +211,7 @@ if 'massf' in pview:
         z = {'value':massfdl, 'label':r'Mass flow', 'name':'massf',
              'cmap':'magma', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable, 'plog':plog}
         sigmaref = ham.Get_Prange(input,grid,output,args,xtype='lat',use_p=use_p)
-        ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice,use_p=use_p)
+        ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice,use_p=use_p,csp=[0])
     else:
         raise ValueError("'massf' plot type requires -vc height")
 
