@@ -67,7 +67,7 @@ else:
 if args.overwrite:
     print('Warning! Overwriting existing regrid files!')
 
-ham.regrid(resultsf,simulation_ID,ntsi,nts,pressure_vert=use_p,type=args.type[0],pressure_min=args.pressure_min[0],
+ham.regrid(resultsf,simulation_ID,ntsi,nts,pressure_vert=use_p,type=args.type[0],vertical_top=args.pressure_min[0],
             rotation=args.rotation,theta_z=args.rotation_angles[0]*np.pi/180,theta_y = args.rotation_angles[1]*np.pi/180,
             overwrite=args.overwrite,lmax_set = args.lmax[0])
 
