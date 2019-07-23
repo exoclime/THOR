@@ -65,7 +65,7 @@ if args.no_pressure_log:
     plog = False
 valid = ['uver','vver','wver','wprof','Tver','Tulev','PTver','ulev','PVver','PVlev',
             'TP','RVlev','cons','stream','pause','tracer','PTP','regrid','KE',
-            'SR','uprof','cfl','hseq','hsprof','bvprof','fluxprof','Tsurf','insol','massf']
+            'SR','uprof','cfl','bvprof','fluxprof','Tsurf','insol','massf']
 
 rg_needed = ['Tver','uver','vver','wver','Tulev','PTver','ulev','PVver','PVlev',
             'RVlev','stream','tracer','Tsurf','insol','massf']  #these types need regrid
@@ -211,7 +211,7 @@ if 'massf' in pview:
         z = {'value':massfdl, 'label':r'Mass flow', 'name':'massf',
              'cmap':'magma', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable, 'plog':plog}
         sigmaref = ham.Get_Prange(input,grid,output,args,xtype='lat',use_p=use_p)
-        ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice,use_p=use_p)
+        ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice,use_p=use_p,csp=[0])
     else:
         raise ValueError("'massf' plot type requires -vc height")
 

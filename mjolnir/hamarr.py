@@ -1315,7 +1315,11 @@ def vertical_lat(input,grid,output,rg,sigmaref,z,slice=[0,360],save=True,axis=Fa
             fname = '%s_ver_i%d_l%d_lon%#.2f-%#.2f.dat'%(z['name'],output.ntsi,output.nts,slice[0],slice[1])
         else:
             fname = '%s_ver_i%d_l%d_lon%#.2f.dat'%(z['name'],output.ntsi,output.nts,slice[0])
-        maketable(latp*180/np.pi,rg.Pressure[prange[0],0]/1e5,Zonallt[:,prange[0]],'Latitude(d)','Pressure(bar)',z['name'],input.resultsf,fname)
+        if use_p:
+            maketable(latp*180/np.pi,rg.Pressure[prange[0],0]/1e5,Zonallt[:,prange[0]],'Latitude(d)','Pressure(bar)',z['name'],input.resultsf,fname)
+        else:
+            maketable(latp*180/np.pi,rg.Altitude[hrange[0],0],Zonallt[:,hrange[0]],'Latitude(d)','Altitude(m)',z['name'],input.resultsf,fname)
+
 
 def horizontal_lev(input,grid,output,rg,Plev,z,save=True,axis=False,wind_vectors=False):
     # Set the latitude-longitude grid.
