@@ -887,17 +887,6 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                                                            nvi,
                                                                            sim.DeepModel);
 
-            cudaError_t err = cudaGetLastError();
-
-
-            // Check device query
-            if (err != cudaSuccess) {
-                log::printf("[%s:%d] CUDA error check reports error: %s\n",
-                            __FILE__,
-                            __LINE__,
-                            cudaGetErrorString(err));
-            }
-
             //          Pressure and density equations.
             cudaDeviceSynchronize();
             BENCH_POINT_I_SS_PHY(current_step,
@@ -906,6 +895,16 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                  "Vertical_Eq",
                                  (),
                                  ("Whs_d", "Ws_d", "pressures_d", "h_d", "hh_d", "Rhos_d"));
+
+            cudaError_t err = cudaGetLastError();
+
+            // Check device query
+            if (err != cudaSuccess) {
+                log::printf("[%s:%d] CUDA error check reports error: %s\n",
+                            __FILE__,
+                            __LINE__,
+                            cudaGetErrorString(err));
+            }
 
             // update the physics modules in fast mode
             if (phy_modules_execute)

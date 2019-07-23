@@ -64,7 +64,7 @@ class input:
                 self.tausw = openh5['tausw'][...]
                 self.taulw = openh5['taulw'][...]
                 if 'surface' in openh5.keys():
-                    self.surface = openh5['surface'][...]
+                    self.surface = openh5['surface'][0]
                 else:
                     self.surface = 0
         if 'vulcan' in openh5.keys():
@@ -253,7 +253,7 @@ class rg_out:
             if input.core_benchmark[0] == 0: # need to switch to 'radiative_tranfer' flag
                 RT = 1
                 surf = 0
-                if input.surface[0]:
+                if input.surface:
                     surf = 1
 
         chem = 0
@@ -305,6 +305,8 @@ class rg_out:
                 insoli = openh5['insol'][...]
                 if 'Tsurface' in openh5.keys():
                     Tsurfi = openh5['Tsurface'][...]
+                else:
+                    surf = 0
 
             if chem == 1:
                 ch4i = openh5['ch4'][...]
@@ -316,7 +318,7 @@ class rg_out:
             if not 'PV' in openh5.keys():
                 calc_RV_PV(grid,output,input,loni,lati,Prei,t-ntsi+1,fileh5,pressure_vert=pressure_vert)
 
-            PVi = openh5['PV'][...]  #these are regridded at low resolution because they are a pita to calculate
+            PVi = openh5['PV'][...]
             RVi = openh5['RV'][...]
             lati_lr = openh5['Lat_lowres'][...]
             loni_lr = openh5['Lon_lowres'][...]
@@ -407,7 +409,7 @@ class GetOutput:
         if openrg == 1:
             self.rg = rg_out(resultsf,simID,ntsi,nts,self.input,self.output,self.grid,pressure_vert=pressure_vert)
 
-def calc_RV_PV(grid,output,input,lons,lats,sigma,t_ind,fileh5,comp=4,pressure_vert=True,type='gd'):
+def calc_RV_PV(grid,output,input,lons,lats,sigma,t_ind,fileh5,comp=4,pressure_vert=True,type='gd',lmax_set='grid'):
     #Calculates relative and potential vorticity on height levels, then interpolates to pressure.
     #It is easiest to calculate these on a lat-lon-altitude grid since conversion
     #to pressure requires transformation of vertical velocity and computing 3D curls
@@ -415,7 +417,12 @@ def calc_RV_PV(grid,output,input,lons,lats,sigma,t_ind,fileh5,comp=4,pressure_ve
     ang_res = 4.0/2**(input.glevel-4)
     # first interpolate to near thor grid resolution
     if type == 'sh' or type == 'SH':
-        lmax = np.int(np.sqrt(grid.point_num)*0.5)
+        if lmax_set == 'grid':
+            lmax = np.int(np.sqrt(grid.point_num)*0.5)
+        elif isinstance(lmax_set,int):
+            lmax = lmax_set
+        else:
+            raise ValueError("Invalid value of lmax in regrid")
         n = 2*lmax+2
         lat_range = np.arange(90,-90,-180/n)
         lon_range = np.arange(0,360,180/n)
@@ -615,7 +622,7 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pscale='log',overwrite=False,comp=4,
             flw_up_icoh = output.flw_up[:,:-1,:]+(output.flw_up[:,1:,:]-output.flw_up[:,:-1,:])*interpx[None,:,None]
             flw_dn_icoh = output.flw_dn[:,:-1,:]+(output.flw_dn[:,1:,:]-output.flw_dn[:,:-1,:])*interpx[None,:,None]
             surf = 0
-            if input.surface[0]:
+            if input.surface:
                 surf = 1
 
     chem = 0
@@ -977,39 +984,46 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pscale='log',overwrite=False,comp=4,
             openh5.close()
 
             ## calculate relative and potential vorticity and add to regrid file
-            calc_RV_PV(grid,output,input,lon_range,lat_range,Pref,t-ntsi,fileh5,pressure_vert,type=type)
+            calc_RV_PV(grid,output,input,lon_range,lat_range,Pref,t-ntsi,fileh5,pressure_vert,type=type,lmax_set=lmax_set)
             # calc_moc_streamf(grid,output,input,lon_range,lat_range,Pref,t-ntsi,fileh5,pressure_vert)
 
 
-def Get_Prange(input,grid,output,args,xtype='lat'):
+def Get_Prange(input,grid,output,args,xtype='lat',use_p=True):
     # Sigma (normalized pressure) values for the plotting
     if not isinstance(args.slice,list):
         raise IOError("'slice' argument must be a list")
 
-    if (args.pressure_min[0]=='default'):
-        if xtype == 'lat':
-            if len(args.slice) == 2:
-                grid_mask = np.logical_and(grid.lon*180/np.pi>=args.slice[0],grid.lon*180/np.pi<=args.slice[1])
-                if (grid_mask==False).all():
-                    #there were no grid points in the range
-                    grid_mask = np.argmin(np.abs(grid.lon*180/np.pi-0.5*(args.slice[0]+args.slice[1])))
-            elif len(args.slice) == 1:
-                grid_mask = np.argmin(np.abs(grid.lon*180/np.pi-args.slice[0]))
-        elif xtype == 'lon':
-            if len(args.slice) == 2:
-                grid_mask = np.logical_and(grid.lat*180/np.pi>=args.slice[0],grid.lat*180/np.pi<=args.slice[1])
-                if (grid_mask==False).all():
-                    #there were no grid points in the range
-                    grid_mask = np.argmin(np.abs(grid.lat*180/np.pi-0.5*(args.slice[0]+args.slice[1])))
-            elif len(args.slice) == 1:
-                grid_mask = np.argmin(np.abs(grid.lat*180/np.pi-args.slice[0]))
-        args.pressure_min[0] = np.max(output.Pressure[grid_mask,grid.nv-1,:])/100
+    if use_p:
+        if (args.pressure_min[0]=='default'):
+            if xtype == 'lat':
+                if len(args.slice) == 2:
+                    grid_mask = np.logical_and(grid.lon*180/np.pi>=args.slice[0],grid.lon*180/np.pi<=args.slice[1])
+                    if (grid_mask==False).all():
+                        #there were no grid points in the range
+                        grid_mask = np.argmin(np.abs(grid.lon*180/np.pi-0.5*(args.slice[0]+args.slice[1])))
+                elif len(args.slice) == 1:
+                    grid_mask = np.argmin(np.abs(grid.lon*180/np.pi-args.slice[0]))
+            elif xtype == 'lon':
+                if len(args.slice) == 2:
+                    grid_mask = np.logical_and(grid.lat*180/np.pi>=args.slice[0],grid.lat*180/np.pi<=args.slice[1])
+                    if (grid_mask==False).all():
+                        #there were no grid points in the range
+                        grid_mask = np.argmin(np.abs(grid.lat*180/np.pi-0.5*(args.slice[0]+args.slice[1])))
+                elif len(args.slice) == 1:
+                    grid_mask = np.argmin(np.abs(grid.lat*180/np.pi-args.slice[0]))
+            args.pressure_min[0] = np.max(output.Pressure[grid_mask,grid.nv-1,:])/100
 
-    if np.max(input.P_Ref)/np.float(args.pressure_min[0]) > 1000:
-        sigmaref = np.logspace(np.log10(input.P_Ref),np.log10(np.float(args.pressure_min[0])*100),20)/input.P_Ref
+        if np.max(input.P_Ref)/np.float(args.pressure_min[0]) > 1000:
+            sigmaref = np.logspace(np.log10(input.P_Ref),np.log10(np.float(args.pressure_min[0])*100),20)/input.P_Ref
+        else:
+            sigmaref = np.linspace(input.P_Ref,np.float(args.pressure_min[0])*100,20)/input.P_Ref
+
     else:
-        sigmaref = np.linspace(input.P_Ref,np.float(args.pressure_min[0])*100,20)/input.P_Ref
-
+        if (args.pressure_min[0]=='default'):
+            sigmaref = grid.Altitude
+        else:
+            import pdb; pdb.set_trace()
+            sigmaref = grid.Altitude[np.where(grid.Altitude<=np.float(args.pressure_min[0])*input.Top_altitude)[0]]
     return sigmaref
 
 
@@ -1109,11 +1123,14 @@ def maketable(x,y,z,xname,yname,zname,resultsf,fname):
             f.write('%#.6e %#.6e %#.6e\n'%(x[i],y[j],z[i,j]))
     f.close()
 
-def vertical_lat(input,grid,output,rg,sigmaref,z,slice=[0,360],save=True,axis=False,csp=500,wind_vectors=False):
+def vertical_lat(input,grid,output,rg,sigmaref,z,slice=[0,360],save=True,axis=False,csp=500,wind_vectors=False,use_p=True):
     # generic pressure/latitude plot function
 
     # Set the reference pressure
-    Pref = input.P_Ref*sigmaref
+    if use_p:
+        # sigmaref = normalize pressure units
+        Pref = input.P_Ref*sigmaref
+
     d_sig = np.size(sigmaref)
     tsp = output.nts-output.ntsi+1
 
@@ -1205,28 +1222,44 @@ def vertical_lat(input,grid,output,rg,sigmaref,z,slice=[0,360],save=True,axis=Fa
     # Latitude
     latp = lat[:,0]*np.pi/180
 
-    # need to set desired pressure range (major PITA!)
-    prange = np.where(np.logical_and(rg.Pressure>=np.min(Pref),rg.Pressure<=np.max(Pref)))
+    if use_p:
+        # need to set desired pressure range (major PITA!)
+        prange = np.where(np.logical_and(rg.Pressure[:,0]>=np.min(Pref),rg.Pressure[:,0]<=np.max(Pref)))
+        ycoord = rg.Pressure[prange[0],0]/1e5
+        zvals = Zonallt[:,prange[0]].T
+    else:
+        hrange = np.where(np.logical_and(rg.Altitude[:,0]>=np.min(sigmaref),rg.Altitude[:,0]<=np.max(sigmaref)))
+        ycoord = rg.Altitude[hrange[0],0]
+        zvals = Zonallt[:,hrange[0]].T
+
     # Contour plot
     if isinstance(axis,axes.SubplotBase):
-        C = axis.contourf(latp*180/np.pi,rg.Pressure[prange[0],0]/1e5,Zonallt[:,prange[0]].T,40,cmap=z['cmap'])
+        C = axis.contourf(latp*180/np.pi,ycoord,zvals,40,cmap=z['cmap'])
         ax = axis
     elif axis == False:
-        C = plt.contourf(latp*180/np.pi,rg.Pressure[prange[0],0]/1e5,Zonallt[:,prange[0]].T,40,cmap=z['cmap'])
+        C = plt.contourf(latp*180/np.pi,ycoord,zvals,40,cmap=z['cmap'])
         ax = plt.gca()
     else:
         raise IOError("'axis = {}' but {} is not an axes.SubplotBase instance".format(axis,axis))
 
     if wind_vectors == True:
         vspacing = np.int(np.shape(rg.lat)[0]/10)
-        wspacing = np.int(np.shape(rg.Pressure)[0]/10)
-        Vlt = Vlt[:,prange[0]]
-        Wlt = Wlt[:,prange[0]]
+        if use_p:
+            wspacing = np.int(np.shape(rg.Pressure)[0]/10)
+            Vlt = Vlt[:,prange[0]]
+            Wlt = Wlt[:,prange[0]]
+            yqcoord = rg.Pressure[::wspacing,0][prange[0]]
+        else:
+            wspacing = np.int(np.shape(rg.Altitude)[0]/10)
+            Vlt = Vlt[:,hrange[0]]
+            Wlt = Wlt[:,hrange[0]]
+            yqcoord = rg.Altitude[::wspacing,0][hrange[0]]
+
         Vq = Vlt[::vspacing,::wspacing].ravel()
         Wq = Wlt[::vspacing,::wspacing].ravel()
         #preq = rg.Pressure[:,0][::spacing,::spacing].ravel()
         #latq = lati[::spacing,::spacing].ravel()
-        latq, preq = np.meshgrid(rg.lat[::vspacing,0],rg.Pressure[::wspacing,0][prange[0]])
+        latq, preq = np.meshgrid(rg.lat[::vspacing,0],yqcoord)
         del Vlt, Wlt
         plt.quiver(latq.ravel(),preq.ravel()/1e5,Vq,Wq,color='0.5')
 
@@ -1235,8 +1268,12 @@ def vertical_lat(input,grid,output,rg,sigmaref,z,slice=[0,360],save=True,axis=Fa
     if isinstance(csp,list) or isinstance(csp,tuple):
         levp = csp
     else:
-        levp = np.arange(np.ceil(np.min(Zonallt[:,prange[0]])/csp)*csp,np.floor(np.max(Zonallt[:,prange[0]])/csp)*csp,csp)
-    c2 = ax.contour(latp*180/np.pi,rg.Pressure[prange[0],0]/1e5,Zonallt[:,prange[0]].T,levels=levp,colors='w',linewidths=1)
+        if use_p:
+            levp = np.arange(np.ceil(np.min(Zonallt[:,prange[0]])/csp)*csp,np.floor(np.max(Zonallt[:,prange[0]])/csp)*csp,csp)
+        else:
+            levp = np.arange(np.ceil(np.min(Zonallt[:,hrange[0]])/csp)*csp,np.floor(np.max(Zonallt[:,hrange[0]])/csp)*csp,csp)
+
+    c2 = ax.contour(latp*180/np.pi,ycoord,zvals,levels=levp,colors='w',linewidths=1)
     plt.clabel(c2,inline=1,fontsize=10)
     for cc in C.collections:
         cc.set_edgecolor("face") #fixes a stupid bug in matplotlib 2.0
@@ -1245,17 +1282,15 @@ def vertical_lat(input,grid,output,rg,sigmaref,z,slice=[0,360],save=True,axis=Fa
     if z['plog'] == True:
         ax.set_yscale("log")
     ax.set_xlabel('Latitude (deg)')
-    ax.set_ylabel('Pressure (bar)')
-    ax.plot(latp*180/np.pi,np.zeros_like(latp)+np.max(output.Pressure[:,grid.nv-1,:])/1e5,'r--')
-    #    plt.plot(latp*180/np.pi,np.zeros_like(latp)+np.max(output.Pressure[:,grid.nv-1,:])/1e5,'r--')
-    # if np.min(rg.Pressure[prange[0],0]) < np.max(output.Pressure[:,grid.nv-1,:]):
-    #     ax.set_ylim(np.max(rg.Pressure[prange[0],0])/1e5,np.min(rg.Pressure[prange[0],0])/1e5)
-    # else:
-    #     ax.set_ylim(np.max(rg.Pressure[prange[0],0])/1e5,np.max(output.Pressure[:,grid.nv-1,:])/1e5)
-    ax.set_ylim(np.max(rg.Pressure[prange[0],0])/1e5,np.min(Pref)/1e5)
+    if use_p:
+        ax.set_ylabel('Pressure (bar)')
+        ax.plot(latp*180/np.pi,np.zeros_like(latp)+np.max(output.Pressure[:,grid.nv-1,:])/1e5,'r--')
+        ax.set_ylim(np.max(rg.Pressure[prange[0],0])/1e5,np.min(Pref)/1e5)
 
-    if ax.get_ylim()[1] > ax.get_ylim()[0]:
-        ax.invert_yaxis()
+        if ax.get_ylim()[1] > ax.get_ylim()[0]:
+            ax.invert_yaxis()
+    else:
+        ax.set_ylabel('Altitude (m)')
 
     if len(slice) == 2:
         ax.set_title('Time = %#.3f-%#.3f days, Lon = (%#.3f,%#.3f)'%(output.time[0],output.time[-1],slice[0],slice[1]))
@@ -1265,6 +1300,10 @@ def vertical_lat(input,grid,output,rg,sigmaref,z,slice=[0,360],save=True,axis=Fa
     if not os.path.exists(input.resultsf+'/figures'):
         os.mkdir(input.resultsf+'/figures')
     plt.tight_layout()
+    if use_p:
+        z['name'] += '_p'
+    else:
+        z['name'] += '_h'
     if save == True:
         # save the plot to file designated by z
         if len(slice)==2:
@@ -1352,18 +1391,29 @@ def horizontal_lev(input,grid,output,rg,Plev,z,save=True,axis=False,wind_vectors
     latp = rg.lat[:,0]
 
     if isinstance(axis,axes.SubplotBase):
-        C = axis.contourf(lonp,latp,zlevt,50,cmap=z['cmap'])
+        if z['llswap']:
+            C = axis.contourf(latp,lonp,zlevt.T,50,cmap=z['cmap'])
+        else:
+            C = axis.contourf(lonp,latp,zlevt,50,cmap=z['cmap'])
         ax = axis
     elif axis == False:
-        C = plt.contourf(lonp,latp,zlevt,50,cmap=z['cmap'])
+        if z['llswap']:
+            C = plt.contourf(latp,lonp,zlevt.T,50,cmap=z['cmap'])
+        else:
+            C = plt.contourf(lonp,latp,zlevt,50,cmap=z['cmap'])
         ax = plt.gca()
     else:
         raise IOError("'axis = {}' but {} is not an axes.SubplotBase instance".format(axis,axis))
 
     for cc in C.collections:
         cc.set_edgecolor("face") #fixes a stupid bug in matplotlib 2.0
-    ax.set_ylabel('Latitude (deg)')
-    ax.set_xlabel('Longitude (deg)')
+
+    if z['llswap']:
+        ax.set_xlabel('Latitude (deg)')
+        ax.set_ylabel('Longitude (deg)')
+    else:
+        ax.set_ylabel('Latitude (deg)')
+        ax.set_xlabel('Longitude (deg)')
 
     ax.set_title(title)
 
@@ -1375,7 +1425,10 @@ def horizontal_lev(input,grid,output,rg,Plev,z,save=True,axis=False,wind_vectors
         lonq = loni[::spacing,::spacing].ravel()
         latq = lati[::spacing,::spacing].ravel()
         del Uiii, Viii
-        q = plt.quiver(lonq,latq,U,V,color='0.5')
+        if z['llswap']:
+            q = plt.quiver(latq,lonq,V,U,color='0.5')
+        else:
+            q = plt.quiver(lonq,latq,U,V,color='0.5')
         ax.quiverkey(q,X=0.85,Y=-0.1,U=np.max(np.sqrt(U**2+V**2)),label='%#.2f m/s'%np.max(np.sqrt(U**2+V**2)),labelpos='E')
 
     clb = plt.colorbar(C)
