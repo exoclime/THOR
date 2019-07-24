@@ -11,7 +11,7 @@ parser.add_argument('input_file',metavar='nview',nargs='*',help='Thor config fil
 parser.add_argument("-jn","--job_name",nargs=1,default=['default'],help='Job name for slurm scheduler')
 parser.add_argument("-n","--num_jobs",nargs=1,default=[2],type=int,help='Number of sequential jobs to run (integer)')
 args = parser.parse_args()
-initial_file = args.input_file
+initial_file = args.input_file[0]
 if args.job_name[0] == 'default':
     job_name = args.input_file
 else:
