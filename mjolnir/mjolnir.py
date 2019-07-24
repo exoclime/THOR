@@ -41,7 +41,7 @@ first = time.time()
 ###########################################################################
 
 parser = argparse.ArgumentParser()
-parser.add_argument('pview',metavar='nview',nargs='*',help='Type of plot to make (integer)')
+parser.add_argument('pview',metavar='nview',nargs='*',help='Type of plot to make')
 parser.add_argument("-f","--file",nargs=1,default=['results'],help='Results folder to use for plotting')
 parser.add_argument("-s","--simulation_ID",nargs=1,default=['auto'],help='Name of simulation (e.g., planet name)')
 parser.add_argument("-i","--initial_file",nargs=1,default=[10],type=int,help='Initial file id number (integer)')
