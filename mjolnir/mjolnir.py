@@ -200,7 +200,7 @@ if 'stream' in pview: # RD: needs some work! to adapt to height coordinate
     if use_p:
         sigmaref = ham.Get_Prange(input,grid,output,args,xtype='lat')
         # ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice,csp=[0])
-        ham.streamf_moc_plot(input,grid,output,rg,sigmaref,mt=maketable)
+        ham.streamf_moc_plot(input,grid,output,rg,sigmaref,mt=maketable,plog=plog)
     else:
         raise ValueError("'stream' plot type requires -vc pressure")
         # no reason to keep this way, just need to fix to use height
