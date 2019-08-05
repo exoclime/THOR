@@ -247,7 +247,7 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
     if (nstep * time_step < (2 * M_PI / mean_motion)) {
         // stationary orbit/obliquity
         // calculate annually average of insolation for the first orbit
-        annual_insol<<<NBRT, NTH>>>(insol_ann_d, insol_d, nstep);
+        annual_insol<<<NBRT, NTH>>>(insol_ann_d, insol_d, nstep, esp.point_num);
     }
     return true;
 }
@@ -306,7 +306,7 @@ bool radiative_transfer::store(const ESP &esp, storage &s) {
     s.append_table(flw_up_h, esp.nvi * esp.point_num, "/flw_up", "W m^-2", "upward flux (LW)");
 
     cudaMemcpy(
-        fsw_up_h, flw_up_d, esp.nvi * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
+        fsw_up_h, fsw_up_d, esp.nvi * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
     s.append_table(fsw_up_h, esp.nvi * esp.point_num, "/fsw_up", "W m^-2", "upward flux (SW)");
 
     cudaMemcpy(

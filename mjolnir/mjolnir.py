@@ -41,7 +41,7 @@ first = time.time()
 ###########################################################################
 
 parser = argparse.ArgumentParser()
-parser.add_argument('pview',metavar='nview',nargs='*',help='Type of plot to make (integer)')
+parser.add_argument('pview',metavar='nview',nargs='*',help='Type of plot to make')
 parser.add_argument("-f","--file",nargs=1,default=['results'],help='Results folder to use for plotting')
 parser.add_argument("-s","--simulation_ID",nargs=1,default=['auto'],help='Name of simulation (e.g., planet name)')
 parser.add_argument("-i","--initial_file",nargs=1,default=[10],type=int,help='Initial file id number (integer)')
@@ -200,7 +200,7 @@ if 'stream' in pview: # RD: needs some work! to adapt to height coordinate
     if use_p:
         sigmaref = ham.Get_Prange(input,grid,output,args,xtype='lat')
         # ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice,csp=[0])
-        ham.streamf_moc_plot(input,grid,output,rg,sigmaref,mt=maketable)
+        ham.streamf_moc_plot(input,grid,output,rg,sigmaref,mt=maketable,plog=plog)
     else:
         raise ValueError("'stream' plot type requires -vc pressure")
         # no reason to keep this way, just need to fix to use height

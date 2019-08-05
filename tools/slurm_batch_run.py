@@ -4,7 +4,19 @@ Queue multiple tasks for slurm in batch mode.
 
 import subprocess
 import re
+import argparse
 
+parser = argparse.ArgumentParser()
+parser.add_argument('input_file',metavar='nview',nargs='*',help='Thor config file to run')
+parser.add_argument("-jn","--job_name",nargs=1,default=['default'],help='Job name for slurm scheduler')
+parser.add_argument("-n","--num_jobs",nargs=1,default=[2],type=int,help='Number of sequential jobs to run (integer)')
+args = parser.parse_args()
+initial_file = args.input_file[0]
+if args.job_name[0] == 'default':
+    job_name = args.input_file
+else:
+    job_name = args.job_name[0]
+num_jobs = args.num_jobs[0]
 
 def start_esp(args, esp_command, esp_args, initial_file):
     batch_id_re = re.compile("Submitted batch job (\d+)\n")
@@ -34,8 +46,9 @@ def start_esp(args, esp_command, esp_args, initial_file):
 
 # Configure batch
 working_dir = "/path/to/thor/directory/"
-job_name = "myjobname"
-initial_file = "ifile/initialfile.thr"
+# job_name = "myjobname"
+# initial_file = "ifile/initialfile.thr"
+
 # Acceptable  time  formats  include  "minutes", "minutes:seconds",
 # "hours:minutes:seconds", "days-hours",
 # "days-hours:minutes" and "days-hours:minutes:seconds".
@@ -56,7 +69,7 @@ args = ['sbatch',
 esp_command = "bin/esp"
 esp_args = '-b'
 
-num_jobs = 10
+# num_jobs = 10
 
 # launch num_jobs slurm jobs with dependencies to the last job
 last_success = None
