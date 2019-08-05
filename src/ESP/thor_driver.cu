@@ -548,10 +548,11 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                         profx_dWh_d,
                                         profx_dW_d);
         }
-        BENCH_POINT_I(current_step,
-                      "phy_Sponge",
-                      (),
-                      ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"))
+        BENCH_POINT_I_S(current_step,
+                        rk,
+                        "phy_Sponge",
+                        (),
+                        ("Rhok_d", "pressurek_d", "Mhk_d", "Whk_d", "temperature_d", "Wk_d"))
 
         cudaDeviceSynchronize();
 

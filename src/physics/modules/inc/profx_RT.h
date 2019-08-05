@@ -134,11 +134,13 @@ calc_zenith(double *     lonlat_d, //latitude/longitude grid
     return coszrs; //zenith angle
 }
 
-__global__ void annual_insol(double *insol_ann_d, double *insol_d, int nstep) {
+__global__ void annual_insol(double *insol_ann_d, double *insol_d, int nstep, int num) {
 
     int id = blockIdx.x * blockDim.x + threadIdx.x;
 
-    insol_ann_d[id] = insol_ann_d[id] * (nstep - 1) / nstep + insol_d[id] / nstep;
+    if (id < num) {
+        insol_ann_d[id] = insol_ann_d[id] * (nstep - 1) / nstep + insol_d[id] / nstep;
+    }
 }
 
 __device__ void radcsw(double *phtemp,
@@ -502,6 +504,13 @@ __global__ void rtm_dual_band(double *pressure_d,
         }
         computetau(tau_d, phtemp, coszrs, tausw, taulw_lat, n_sw, n_lw, f_lw, ps0, id, nv);
 
+        for (int lev = 0; lev <= nv; lev++) {
+            fsw_up_d[id * nvi + lev] = 0.0;
+        }
+        for (int lev = 0; lev <= nv; lev++) {
+            fsw_dn_d[id * nvi + lev] = 0.0;
+        }
+
         if (coszrs > 0.0) {
             radcsw(phtemp,
                    coszrs,
@@ -529,12 +538,12 @@ __global__ void rtm_dual_band(double *pressure_d,
             surf_flux_d[id] = fsw_dn_d[id * nvi + 0] - fsw_up_d[id * nvi + 0];
         }
 
-        // for (int lev = 0; lev <= nv; lev++) {
-        //     fnet_up_d[id * nvi + lev] = 0.0;
-        // }
-        // for (int lev = 0; lev <= nv; lev++) {
-        //     fnet_dn_d[id * nvi + lev] = 0.0;
-        // }
+        for (int lev = 0; lev <= nv; lev++) {
+            flw_up_d[id * nvi + lev] = 0.0;
+        }
+        for (int lev = 0; lev <= nv; lev++) {
+            flw_dn_d[id * nvi + lev] = 0.0;
+        }
 
         radclw(phtemp,
                ttemp,
