@@ -34,3 +34,4 @@
  * moved sponge layer from profx (end of time step) to dynamical core (slow modes), which allows damping to work more effectively
  * moved heating from RT into dynamical core (fast modes and slow modes)
  * added output of sw flux in RT module, which was missing before
+ * fixed bugs in RT module, including an important one that led to spurious extra heating and cooling of surface

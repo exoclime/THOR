@@ -1646,7 +1646,7 @@ def calc_moc_streamf(grid,output,input,lons,lats,Pref,t_ind,fileh5,comp=4,pressu
     stream = openh5.create_dataset("streamf",data=SF_llp,compression='gzip',compression_opts=comp)
     openh5.close()
 
-def streamf_moc_plot(input,grid,output,rg,sigmaref,save=True,axis=False,wind_vectors=False,mt=False):
+def streamf_moc_plot(input,grid,output,rg,sigmaref,save=True,axis=False,wind_vectors=False,mt=False, plog=True):
     # special plotting function for the mass streamfunction
 
     # Set the reference pressure
@@ -1707,7 +1707,7 @@ def streamf_moc_plot(input,grid,output,rg,sigmaref,save=True,axis=False,wind_vec
     c2 = ax.contour(rg.lat[:,0],rg.Pressure[:,0]/1e5,sf.T,levels=[0.0],colors='w',linewidths=1)
     clb = plt.colorbar(C)
     clb.set_label(r'Eulerian streamfunction (kg s$^{-1}$)')
-    if np.max(Pref)/np.min(Pref) > 100.1:
+    if plog == True:
         ax.set_yscale("log")
     ax.set_xlabel('Latitude (deg)')
     ax.set_ylabel('Pressure (bar)')
