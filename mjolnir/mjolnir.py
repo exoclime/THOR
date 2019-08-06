@@ -46,7 +46,7 @@ parser.add_argument("-f","--file",nargs=1,default=['results'],help='Results fold
 parser.add_argument("-s","--simulation_ID",nargs=1,default=['auto'],help='Name of simulation (e.g., planet name)')
 parser.add_argument("-i","--initial_file",nargs=1,default=[10],type=int,help='Initial file id number (integer)')
 parser.add_argument("-l","--last_file",nargs=1,default=['init'],type=int,help='Last file id number (integer)')
-parser.add_argument("-p","--pressure_lev",nargs=1,default=[2.5e2],help='Pressure level to plot in temperature/velocity/vorticity field (mbar)')
+parser.add_argument("-lev","--horizontal_lev",nargs=1,default=[2.5e2],help='Horizonal level to plot in temperature/velocity/vorticity field (mbar or km)')
 parser.add_argument("-vtop","--vertical_top",nargs=1,default=['default'],help='Location of top of plot (vertical type) in mbar (pressure) or fractional height (height)')
 parser.add_argument("-slay","--split_layer",nargs=1,default=['no_split'],help='Split conserved quantities into weather and deep layers at this pressure')
 parser.add_argument("-coord","--coordinate_sys",nargs=1,default=['icoh'],help='For KE spectrum, use either icoh grid or llp grid')
@@ -220,17 +220,17 @@ if 'Tulev' in pview:
     # Averaged temperature and wind field (longitude vs latitude)
     # PR_LV - Pressure level (Pa)
     if use_p:
-        PR_LV = np.float(args.pressure_lev[0])*100
+        PR_LV = np.float(args.horizontal_lev[0])*100
     else:
-        PR_LV = np.float(args.pressure_lev[0])*1000
+        PR_LV = np.float(args.horizontal_lev[0])*1000
     z = {'value':rg.Temperature, 'label':r'Temperature (K)', 'name':'temperature-uv',
             'cmap':'magma', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable, 'llswap':args.latlonswap}
     ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True,use_p=use_p)
 if 'ulev' in pview:
     if use_p:
-        PR_LV = np.float(args.pressure_lev[0])*100
+        PR_LV = np.float(args.horizontal_lev[0])*100
     else:
-        PR_LV = np.float(args.pressure_lev[0])*1000
+        PR_LV = np.float(args.horizontal_lev[0])*1000
     z = {'value':rg.U, 'label':r'Zonal Velocity (m s$^{-1}$)', 'name':'u',
         'cmap':'viridis', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable, 'llswap':args.latlonswap}
     ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True,use_p=use_p)
@@ -239,27 +239,27 @@ if 'ulev' in pview:
     ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True,use_p=use_p)
 if 'PVlev' in pview:
     if use_p:
-        PR_LV = np.float(args.pressure_lev[0])*100
+        PR_LV = np.float(args.horizontal_lev[0])*100
     else:
-        PR_LV = np.float(args.pressure_lev[0])*1000
+        PR_LV = np.float(args.horizontal_lev[0])*1000
     z = {'value':rg.PV, 'label':r'Potential Vorticity (K m$^2$ kg$^{-1}$ s$^{-1}$)',
         'name':'pot_vort', 'cmap':'viridis', 'lat':rg.lat_lr, 'lon':rg.lon_lr, 'mt':maketable, 'llswap':args.latlonswap}
     ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True,use_p=use_p)
     # ham.potential_vort_lev(input,grid,output,PR_LV)
 if 'RVlev' in pview:
     if use_p:
-        PR_LV = np.float(args.pressure_lev[0])*100
+        PR_LV = np.float(args.horizontal_lev[0])*100
     else:
-        PR_LV = np.float(args.pressure_lev[0])*1000
+        PR_LV = np.float(args.horizontal_lev[0])*1000
     z = {'value':rg.RV[0], 'label':r'Relative Vorticity (s$^{-1}$)',
         'name':'rela_vort', 'cmap':'viridis', 'lat':rg.lat_lr, 'lon':rg.lon_lr, 'mt':maketable, 'llswap':args.latlonswap}
     ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True,use_p=use_p)
     # ham.rela_vort_lev(input,grid,output,PR_LV)
 if 'tracer' in pview:
     if use_p:
-        PR_LV = np.float(args.pressure_lev[0])*100
+        PR_LV = np.float(args.horizontal_lev[0])*100
     else:
-        PR_LV = np.float(args.pressure_lev[0])*1000
+        PR_LV = np.float(args.horizontal_lev[0])*1000
     z = {'value':np.log10(rg.ch4), 'label':r'Log(mixing ratio)',
         'name':'chem-ch4-uv1', 'cmap':'magma', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable, 'llswap':args.latlonswap}
     ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True,use_p=use_p)
@@ -345,7 +345,7 @@ if 'cons' in pview:  # RD: needs some work!
         split = np.float(args.split_layer[0])*100
     ham.conservation(input,grid,output,split)
 if 'KE' in pview:  # RD: needs some work!
-    PR_LV = np.float(args.pressure_lev[0])*100
+    PR_LV = np.float(args.horizontal_lev[0])*100 #not actually used here
     ham.KE_spect(input,grid,output,PR_LV,coord=args.coordinate_sys[0],lmax_adjust=args.lmax_adjust[0])
 if 'SR' in pview:
     ham.SRindex(input,grid,output)
