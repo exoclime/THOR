@@ -143,7 +143,6 @@ if openrg == 1:
 if 'pause' in pview:
     import pdb; pdb.set_trace()
 
-
 #########
 # Plots #
 #########
@@ -220,59 +219,74 @@ if 'massf' in pview:
 if 'Tulev' in pview:
     # Averaged temperature and wind field (longitude vs latitude)
     # PR_LV - Pressure level (Pa)
-    PR_LV = np.float(args.pressure_lev[0])*100
+    if use_p:
+        PR_LV = np.float(args.pressure_lev[0])*100
+    else:
+        PR_LV = np.float(args.pressure_lev[0])*1000
     z = {'value':rg.Temperature, 'label':r'Temperature (K)', 'name':'temperature-uv',
             'cmap':'magma', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable, 'llswap':args.latlonswap}
-    ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True)
+    ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True,use_p=use_p)
 if 'ulev' in pview:
-    PR_LV = np.float(args.pressure_lev[0])*100
+    if use_p:
+        PR_LV = np.float(args.pressure_lev[0])*100
+    else:
+        PR_LV = np.float(args.pressure_lev[0])*1000
     z = {'value':rg.U, 'label':r'Zonal Velocity (m s$^{-1}$)', 'name':'u',
         'cmap':'viridis', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable, 'llswap':args.latlonswap}
-    ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True)
+    ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True,use_p=use_p)
     z = {'value':rg.V, 'label':r'Meridional Velocity (m s$^{-1}$)', 'name':'v',
         'cmap':'viridis', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable, 'llswap':args.latlonswap}
-    ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True)
+    ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True,use_p=use_p)
 if 'PVlev' in pview:
-    PR_LV = np.float(args.pressure_lev[0])*100
+    if use_p:
+        PR_LV = np.float(args.pressure_lev[0])*100
+    else:
+        PR_LV = np.float(args.pressure_lev[0])*1000
     z = {'value':rg.PV, 'label':r'Potential Vorticity (K m$^2$ kg$^{-1}$ s$^{-1}$)',
         'name':'pot_vort', 'cmap':'viridis', 'lat':rg.lat_lr, 'lon':rg.lon_lr, 'mt':maketable, 'llswap':args.latlonswap}
-    ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True)
+    ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True,use_p=use_p)
     # ham.potential_vort_lev(input,grid,output,PR_LV)
 if 'RVlev' in pview:
-    PR_LV = np.float(args.pressure_lev[0])*100
+    if use_p:
+        PR_LV = np.float(args.pressure_lev[0])*100
+    else:
+        PR_LV = np.float(args.pressure_lev[0])*1000
     z = {'value':rg.RV[0], 'label':r'Relative Vorticity (s$^{-1}$)',
         'name':'rela_vort', 'cmap':'viridis', 'lat':rg.lat_lr, 'lon':rg.lon_lr, 'mt':maketable, 'llswap':args.latlonswap}
-    ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True)
+    ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True,use_p=use_p)
     # ham.rela_vort_lev(input,grid,output,PR_LV)
 if 'tracer' in pview:
-    PR_LV = np.float(args.pressure_lev[0])*100
+    if use_p:
+        PR_LV = np.float(args.pressure_lev[0])*100
+    else:
+        PR_LV = np.float(args.pressure_lev[0])*1000
     z = {'value':np.log10(rg.ch4), 'label':r'Log(mixing ratio)',
         'name':'chem-ch4-uv1', 'cmap':'magma', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable, 'llswap':args.latlonswap}
-    ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True)
+    ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True,use_p=use_p)
     z = {'value':np.log10(rg.co), 'label':r'Log(mixing ratio)',
         'name':'chem-co-uv1', 'cmap':'magma', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable, 'llswap':args.latlonswap}
-    ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True)
+    ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True,use_p=use_p)
     z = {'value':np.log10(rg.h2o), 'label':r'Log(mixing ratio)',
         'name':'chem-h2o-uv1', 'cmap':'magma', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable, 'llswap':args.latlonswap}
-    ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True)
+    ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True,use_p=use_p)
     z = {'value':np.log10(rg.co2), 'label':r'Log(mixing ratio)',
         'name':'chem-co2-uv1', 'cmap':'magma', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable, 'llswap':args.latlonswap}
-    ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True)
+    ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True,use_p=use_p)
     z = {'value':np.log10(rg.nh3), 'label':r'Log(mixing ratio)',
         'name':'chem-nh3-uv1', 'cmap':'magma', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable, 'llswap':args.latlonswap}
-    ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True)
+    ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True,use_p=use_p)
 if 'insol' in pview:
     PR_LV = np.max(output.Pressure) # not important here
     z = {'value':rg.insol, 'label':r'Insolation (W m$^{-2}$)', 'name':'insol',
         'cmap':'magma', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable, 'llswap':args.latlonswap}
-    ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True)
+    ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True,use_p=use_p)
 if 'Tsurf' in pview:
     if not hasattr(rg,"Tsurface"):
         raise ValueError("'Tsurface' not available in regrid file")
     PR_LV = np.max(output.Pressure) # not important here
     z = {'value':rg.Tsurface, 'label':r'Surface Temperature (K)', 'name':'Tsurf',
         'cmap':'magma', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable, 'llswap':args.latlonswap}
-    ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True)
+    ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True,use_p=use_p)
 
 #--- Pressure profile types-------------------------------
 if 'TP' in pview:
