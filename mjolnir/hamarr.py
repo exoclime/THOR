@@ -573,20 +573,21 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pscale='log',overwrite=False,comp=4,
         print('Vertical coordinate = height')
         nlev = len(grid.Altitude)
     #figure out pressure grid
-    if vertical_top == 'default':
-        pmin = np.min(output.Pressure)
-    else:
-        try:
-            pmin = np.float(vertical_top)
-        except:
-            raise ValueError('"pmin" option must be "default" or a float')
-
-    if pscale == 'log':
-        sigmaref = np.logspace(np.log10(input.P_Ref),np.log10(pmin),nlev)/input.P_Ref
-    elif pscale == 'lin':
-        sigmaref = np.linspace(input.P_Ref,pmin,nlev)/input.P_Ref
-    else:
-        raise IOError('invalid pressure scale entered! use "lin" or "log"')
+    # if vertical_top == 'default':
+    #     pmin = np.min(output.Pressure)
+    # else:
+    #     try:
+    #         pmin = np.float(vertical_top)
+    #     except:
+    #         raise ValueError('"pmin" option must be "default" or a float')
+    #
+    # if pscale == 'log':
+    #     sigmaref = np.logspace(np.log10(input.P_Ref),np.log10(pmin),nlev)/input.P_Ref
+    # elif pscale == 'lin':
+    #     sigmaref = np.linspace(input.P_Ref,pmin,nlev)/input.P_Ref
+    # else:
+    #     raise IOError('invalid pressure scale entered! use "lin" or "log"')
+    sigmaref = np.mean(output.Pressure,axis=0)/input.P_Ref
 
     d_sig = np.size(sigmaref)
     Pref = input.P_Ref*sigmaref[:,0]
@@ -624,6 +625,8 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pscale='log',overwrite=False,comp=4,
             surf = 0
             if input.surface:
                 surf = 1
+                extrap_low = (grid.Altitudeh[0]-grid.Altitude[1])/(grid.Altitude[0]-grid.Altitude[1])
+                Psurf = output.Pressure[:,1,:]+extrap_low*(output.Pressure[:,0,:]-output.Pressure[:,1,:])
 
     chem = 0
     if hasattr(input,"chemistry"):
@@ -764,11 +767,24 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pscale='log',overwrite=False,comp=4,
                     Mh_icop[2,i,:] = interp.pchip_interpolate(sigma[::-1],output.Mh[2,i,::-1,t-ntsi],Pref[::-1])[::-1]
                     W_icop[i,:] = interp.pchip_interpolate(sigma[::-1],W_icoh[i,::-1,t-ntsi],Pref[::-1])[::-1]
                     # del_hseq_icop[i,:] = interp.pchip_interpolate(sigma[::-1],del_hseq[i,::-1,t-ntsi],Pref[::-1])[::-1]
+                    if surf:
+                        #when isobars intersect the surface, make values below surface undefined
+                        Temp_icop[i,Pref>Psurf[i]] = np.nan
+                        Rho_icop[i,Pref>Psurf[i]] = np.nan
+                        Mh_icop[:,i,Pref>Psurf[i]] = np.nan
+                        W_icop[i,Pref>Psurf[i]] = np.nan
+
                     if RT == 1:
                         tau_sw_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.tau_sw[i,::-1,t-ntsi],Pref[::-1])[::-1]
                         tau_lw_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.tau_lw[i,::-1,t-ntsi],Pref[::-1])[::-1]
                         flw_up_icop[i,:] = interp.pchip_interpolate(sigma[::-1],flw_up_icoh[i,::-1,t-ntsi],Pref[::-1])[::-1]
                         flw_dn_icop[i,:] = interp.pchip_interpolate(sigma[::-1],flw_dn_icoh[i,::-1,t-ntsi],Pref[::-1])[::-1]
+                        if surf:
+                            #when isobars intersect the surface, make values below surface undefined
+                            tau_sw_icop[i,Pref>Psurf[i]] = np.nan
+                            tau_lw_icop[i,Pref>Psurf[i]] = np.nan
+                            flw_up_icop[i,Pref>Psurf[i]] = np.nan
+                            flw_dn_icop[i,Pref>Psurf[i]] = np.nan
 
                     if chem == 1:
                         ch4_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.ch4[i,::-1,t-ntsi],Pref[::-1])[::-1]
@@ -776,6 +792,14 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pscale='log',overwrite=False,comp=4,
                         h2o_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.h2o[i,::-1,t-ntsi],Pref[::-1])[::-1]
                         co2_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.co2[i,::-1,t-ntsi],Pref[::-1])[::-1]
                         nh3_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.nh3[i,::-1,t-ntsi],Pref[::-1])[::-1]
+                        if surf:
+                            #when isobars intersect the surface, make values below surface undefined
+                            ch4_icop[i,Pref>Psurf[i]] = np.nan
+                            co_icop[i,Pref>Psurf[i]] = np.nan
+                            h2o_icop[i,Pref>Psurf[i]] = np.nan
+                            co2_icop[i,Pref>Psurf[i]] = np.nan
+                            nh3_icop[i,Pref>Psurf[i]] = np.nan
+
             else:  # keep height at vertical coordinate (sometimes useful)
                 Temp_icop[:,:] = Temp_icoh[:,:,t-ntsi]
                 Rho_icop[:,:] = output.Rho[:,:,t-ntsi]
@@ -1014,9 +1038,9 @@ def Get_Prange(input,grid,output,args,xtype='lat',use_p=True):
             args.vertical_top[0] = np.max(output.Pressure[grid_mask,grid.nv-1,:])/100
 
         if np.max(input.P_Ref)/np.float(args.vertical_top[0]) > 1000:
-            sigmaref = np.logspace(np.log10(input.P_Ref),np.log10(np.float(args.vertical_top[0])*100),20)/input.P_Ref
+            sigmaref = np.logspace(np.log10(np.max(output.Pressure)),np.log10(np.float(args.vertical_top[0])*100),20)/input.P_Ref
         else:
-            sigmaref = np.linspace(input.P_Ref,np.float(args.vertical_top[0])*100,20)/input.P_Ref
+            sigmaref = np.linspace(np.max(output.Pressure),np.float(args.vertical_top[0])*100,20)/input.P_Ref
 
     else:
         if (args.vertical_top[0]=='default'):
@@ -1157,26 +1181,26 @@ def vertical_lat(input,grid,output,rg,sigmaref,z,slice=[0,360],save=True,axis=Fa
 
         # Averaging in time and longitude
         if tsp > 1:
-            Zonall = np.mean(z['value'][:,mask_ind[:,0],:,:],axis=1)
-            # Vl = np.mean(rg.V[:,:,:,:],axis=1)
-            # Wl = np.mean(rg.W[:,:,:,:],axis=1)
-            Zonallt = np.mean(Zonall[:,:,:],axis=2)
-            # Vlt = np.mean(Vl[:,:,:],axis=2)
-            # Wlt = np.mean(Wl[:,:,:],axis=2)
+            Zonall = np.nanmean(z['value'][:,mask_ind[:,0],:,:],axis=1)
+            # Vl = np.nanmean(rg.V[:,:,:,:],axis=1)
+            # Wl = np.nanmean(rg.W[:,:,:,:],axis=1)
+            Zonallt = np.nanmean(Zonall[:,:,:],axis=2)
+            # Vlt = np.nanmean(Vl[:,:,:],axis=2)
+            # Wlt = np.nanmean(Wl[:,:,:],axis=2)
             del Zonall
             if wind_vectors == True:
-                Vl = np.mean(rg.V[:,mask_ind[:,0],:,:],axis=1)
-                Wl = np.mean(rg.W[:,mask_ind[:,0],:,:],axis=1)
-                Vlt = np.mean(Vl[:,:,:],axis=2)
-                Wlt = np.mean(Wl[:,:,:],axis=2)
+                Vl = np.nanmean(rg.V[:,mask_ind[:,0],:,:],axis=1)
+                Wl = np.nanmean(rg.W[:,mask_ind[:,0],:,:],axis=1)
+                Vlt = np.nanmean(Vl[:,:,:],axis=2)
+                Wlt = np.nanmean(Wl[:,:,:],axis=2)
                 del Vl, Wl
         else:
-            Zonallt = np.mean(z['value'][:,:,:,0][:,mask_ind[:,0],:],axis=1)
-            # Vlt = np.mean(rg.V[:,:,:,0],axis=1)
-            # Wlt = np.mean(rg.W[:,:,:,0],axis=1)
+            Zonallt = np.nanmean(z['value'][:,:,:,0][:,mask_ind[:,0],:],axis=1)
+            # Vlt = np.nanmean(rg.V[:,:,:,0],axis=1)
+            # Wlt = np.nanmean(rg.W[:,:,:,0],axis=1)
             if wind_vectors == True:
-                Vlt = np.mean(rg.V[:,:,:,0][:,mask_ind[:,0],:],axis=1)
-                Wlt = np.mean(rg.W[:,:,:,0][:,mask_ind[:,0],:],axis=1)
+                Vlt = np.nanmean(rg.V[:,:,:,0][:,mask_ind[:,0],:],axis=1)
+                Wlt = np.nanmean(rg.W[:,:,:,0][:,mask_ind[:,0],:],axis=1)
 
     elif len(slice) == 1:
         if slice[0] in lon:
@@ -1200,11 +1224,11 @@ def vertical_lat(input,grid,output,rg,sigmaref,z,slice=[0,360],save=True,axis=Fa
 
         # Averaging in time
         if tsp > 1:
-            Zonallt = np.mean(Zonall[:,0,:,:],axis=2)
+            Zonallt = np.nanmean(Zonall[:,0,:,:],axis=2)
             del Zonall
             if wind_vectors == True:
-                Vlt = np.mean(Vl[:,0,:,:],axis=2)
-                Wlt = np.mean(Wl[:,0,:,:],axis=2)
+                Vlt = np.nanmean(Vl[:,0,:,:],axis=2)
+                Wlt = np.nanmean(Wl[:,0,:,:],axis=2)
                 del Vl, Wl
         else:
             Zonallt = Zonall[:,0,:,0]
@@ -1268,9 +1292,9 @@ def vertical_lat(input,grid,output,rg,sigmaref,z,slice=[0,360],save=True,axis=Fa
         levp = csp
     else:
         if use_p:
-            levp = np.arange(np.ceil(np.min(Zonallt[:,prange[0]])/csp)*csp,np.floor(np.max(Zonallt[:,prange[0]])/csp)*csp,csp)
+            levp = np.arange(np.ceil(np.nanmin(Zonallt[:,prange[0]])/csp)*csp,np.floor(np.nanmax(Zonallt[:,prange[0]])/csp)*csp,csp)
         else:
-            levp = np.arange(np.ceil(np.min(Zonallt[:,hrange[0]])/csp)*csp,np.floor(np.max(Zonallt[:,hrange[0]])/csp)*csp,csp)
+            levp = np.arange(np.ceil(np.nanmin(Zonallt[:,hrange[0]])/csp)*csp,np.floor(np.nanmax(Zonallt[:,hrange[0]])/csp)*csp,csp)
 
     c2 = ax.contour(latp*180/np.pi,ycoord,zvals,levels=levp,colors='w',linewidths=1)
     plt.clabel(c2,inline=1,fontsize=10)
@@ -1321,7 +1345,7 @@ def vertical_lat(input,grid,output,rg,sigmaref,z,slice=[0,360],save=True,axis=Fa
             maketable(latp*180/np.pi,rg.Altitude[hrange[0],0],Zonallt[:,hrange[0]],'Latitude(d)','Altitude(m)',z['name'],input.resultsf,fname)
 
 
-def horizontal_lev(input,grid,output,rg,Plev,z,save=True,axis=False,wind_vectors=False):
+def horizontal_lev(input,grid,output,rg,Plev,z,save=True,axis=False,wind_vectors=False,use_p=True):
     # Set the latitude-longitude grid.
     loni, lati = np.meshgrid(rg.lon[:,0],rg.lat[:,0])
 
@@ -1333,27 +1357,42 @@ def horizontal_lev(input,grid,output,rg,Plev,z,save=True,axis=False,wind_vectors
          Uii = np.zeros(np.shape(loni)+(tsp,))
          Vii = np.zeros(np.shape(loni)+(tsp,))
 
+    if use_p:
+        vcoord = rg.Pressure
+    else:
+        vcoord = rg.Altitude
+
     for t in np.arange(tsp):
         # interpolate
         # above is index of higher pressure bound (lower index)
         # below is index of lower pressure bound (higher index)
-        if np.size(rg.Pressure[rg.Pressure>Plev]) == 0:
-            above = np.where(rg.Pressure==np.max(rg.Pressure))[0][0]
-            below = above + 1
-        elif np.size(rg.Pressure[rg.Pressure<Plev]) == 0:
-            below = np.where(rg.Pressure==np.min(rg.Pressure))[0][0]
-            above = below - 1
+        if np.size(vcoord[vcoord>Plev]) == 0:
+            above = np.where(vcoord==np.max(vcoord))[0][0]
+            if use_p:
+                below = above + 1
+            else:
+                below = above - 1
+        elif np.size(vcoord[vcoord<Plev]) == 0:
+            below = np.where(vcoord==np.min(vcoord))[0][0]
+            if use_p:
+                above = below - 1
+            else:
+                above = below + 1
         else:
-            above = np.where(rg.Pressure==np.min(rg.Pressure[rg.Pressure>Plev]))[0][0]
-            below = np.where(rg.Pressure==np.max(rg.Pressure[rg.Pressure<Plev]))[0][0]
+            above = np.where(vcoord==np.min(vcoord[vcoord>Plev]))[0][0]
+            below = np.where(vcoord==np.max(vcoord[vcoord<Plev]))[0][0]
 
         if len(np.shape(z['value'])) == 4:
             # single level of a 3D field
-            zlev[:,:,t] = (z['value'][:,:,below,t]*(rg.Pressure[above,t] - Plev)\
-                + z['value'][:,:,above,t]*(Plev - rg.Pressure[below,t]))\
-                / (rg.Pressure[above,t]-rg.Pressure[below,t])
-            title = 'Time = %#.3f-%#.3f days, Plev = %#.3f bar'%(output.time[0],output.time[-1],Plev/1e5)
-            fname = '%s_lev%#.3fmbar_i%d_l%d'%(z['name'],Plev/100,output.ntsi,output.nts)
+            zlev[:,:,t] = (z['value'][:,:,below,t]*(vcoord[above,t] - Plev)\
+                + z['value'][:,:,above,t]*(Plev - vcoord[below,t]))\
+                / (vcoord[above,t]-vcoord[below,t])
+            if use_p:
+                title = 'Time = %#.3f-%#.3f days, Plev = %#.3f bar'%(output.time[0],output.time[-1],Plev/1e5)
+                fname = '%s_lev%#.3fmbar_i%d_l%d'%(z['name'],Plev/100,output.ntsi,output.nts)
+            else:
+                title = 'Time = %#.3f-%#.3f days, lev = %#.3f km'%(output.time[0],output.time[-1],Plev/1e3)
+                fname = '%s_lev%#.3fkm_i%d_l%d'%(z['name'],Plev/1000,output.ntsi,output.nts)
         elif len(np.shape(z['value'])) == 3:
             # 2D field, only one level available (e.g., insolation or surface temp)
             zlev[:,:,t] = z['value'][:,:,t]
@@ -1362,20 +1401,20 @@ def horizontal_lev(input,grid,output,rg,Plev,z,save=True,axis=False,wind_vectors
             wind_vectors = False
 
         if wind_vectors == True:
-            Uii[:,:,t] = (rg.U[:,:,below,t]*(rg.Pressure[above,t] - Plev)\
-                + rg.U[:,:,above,t]*(Plev - rg.Pressure[below,t]))\
-                / (rg.Pressure[above,t]-rg.Pressure[below,t])
-            Vii[:,:,t] = (rg.V[:,:,below,t]*(rg.Pressure[above,t] - Plev)\
-                + rg.V[:,:,above,t]*(Plev - rg.Pressure[below,t]))\
-                / (rg.Pressure[above,t]-rg.Pressure[below,t])
+            Uii[:,:,t] = (rg.U[:,:,below,t]*(vcoord[above,t] - Plev)\
+                + rg.U[:,:,above,t]*(Plev - vcoord[below,t]))\
+                / (vcoord[above,t]-vcoord[below,t])
+            Vii[:,:,t] = (rg.V[:,:,below,t]*(vcoord[above,t] - Plev)\
+                + rg.V[:,:,above,t]*(Plev - vcoord[below,t]))\
+                / (vcoord[above,t]-vcoord[below,t])
 
     # Averaging in time
     if tsp > 1:
-        zlevt = np.mean(zlev,axis=2)
+        zlevt = np.nanmean(zlev,axis=2)
         del zlev
         if wind_vectors == True:
-            Uiii = np.mean(Uii,axis=2)
-            Viii = np.mean(Vii,axis=2)
+            Uiii = np.nanmean(Uii,axis=2)
+            Viii = np.nanmean(Vii,axis=2)
             del Uii, Vii
     else:
         zlevt = zlev[:,:,0]
