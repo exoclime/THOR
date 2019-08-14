@@ -30,7 +30,7 @@ parser.add_argument('resultsf',metavar='nview',nargs='*',help='Results directory
 parser.add_argument("-s","--simulation_ID",nargs=1,default=['auto'],help='Name of simulation (e.g., planet name)')
 parser.add_argument("-t","--type",nargs=1,default=['gd'],choices=['gd','GD','sh','SH'],help='Horizontal interpolation type')
 parser.add_argument("-vc","--vcoord",nargs=1,default=['pressure'],help='Vertical coordinate to use (pressure or height)')
-parser.add_argument("-pmin","--pressure_min",nargs=1,default=['default'],help='Lowest pressure value in vertical interpolation (vc=pressure only)')
+parser.add_argument("-pgref","--pgrid_ref",nargs=1,default=['mean'],help='Determines how the pressure grid is set (mean=average over all specified files, first=first specified file, last=last specified file)')
 parser.add_argument("-i","--initial_file",nargs=1,default=[10],type=int,help='Initial file id number (integer)')
 parser.add_argument("-l","--last_file",nargs=1,default=['init'],type=int,help='Last file id number (integer)')
 parser.add_argument("-rot","--rotation",action='store_true',help='apply a set of rotations to grid (theta_z,theta_y) about (z,y)')
@@ -67,7 +67,7 @@ else:
 if args.overwrite:
     print('Warning! Overwriting existing regrid files!')
 
-ham.regrid(resultsf,simulation_ID,ntsi,nts,pressure_vert=use_p,type=args.type[0],vertical_top=args.pressure_min[0],
+ham.regrid(resultsf,simulation_ID,ntsi,nts,pressure_vert=use_p,type=args.type[0],pgrid_ref=args.pgrid_ref[0],
             rotation=args.rotation,theta_z=args.rotation_angles[0]*np.pi/180,theta_y = args.rotation_angles[1]*np.pi/180,
             overwrite=args.overwrite,lmax_set = args.lmax[0])
 

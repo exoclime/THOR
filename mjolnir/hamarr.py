@@ -557,7 +557,7 @@ def calc_RV_PV(grid,output,input,lons,lats,sigma,t_ind,fileh5,comp=4,pressure_ve
     Lonlr = openh5.create_dataset("Lon_lowres",data=lon_range,compression='gzip',compression_opts=comp)
     openh5.close()
 
-def regrid(resultsf,simID,ntsi,nts,nlev=40,pscale='log',overwrite=False,comp=4,
+def regrid(resultsf,simID,ntsi,nts,nlev=40,pgrid_ref='mean',overwrite=False,comp=4,
             pressure_vert=True,type='gd',vertical_top='default',rotation=False,theta_z=0,theta_y=0,lmax_set='grid'):
     # runs over files and converts ico-height grid to lat-lon-pr grid
     outall = GetOutput(resultsf,simID,ntsi,nts,rotation=rotation,theta_z=theta_z,theta_y=theta_y)
@@ -588,9 +588,16 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pscale='log',overwrite=False,comp=4,
     # else:
     #     raise IOError('invalid pressure scale entered! use "lin" or "log"')
     sigmaref = np.mean(output.Pressure,axis=0)/input.P_Ref
+    if pgrid_ref == 'mean':
+        Pref = input.P_Ref*np.mean(sigmaref,axis=1)
+    elif pgrid_ref == 'first':
+        Pref = input.P_Ref*sigmaref[:,0]
+    elif pgrid_ref == 'last':
+        Pref = input.P_Ref*sigmaref[:,-1]
+    else:
+        raise ValueError("Invalid value for pgrid_ref (valid = mean, first, or last)")
 
-    d_sig = np.size(sigmaref)
-    Pref = input.P_Ref*sigmaref[:,0]
+    d_sig = np.size(Pref)
     if type == 'sh' or type == 'SH':
         if lmax_set == 'grid':
             lmax = np.int(np.sqrt(grid.point_num)*0.5)
@@ -614,7 +621,7 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pscale='log',overwrite=False,comp=4,
     interpx = (grid.Altitude-grid.Altitudeh[:-1])/(grid.Altitudeh[1:]-grid.Altitudeh[:-1])
     # on even height grid, interpolation is excessive, but wth?
     W_icoh = output.Wh[:,:-1,:] + (output.Wh[:,1:,:]-output.Wh[:,:-1,:])*interpx[None,:,None]
-    del_hseq = np.gradient(output.Pressure,grid.Altitude,axis=1) + output.Rho*input.Gravit
+    # del_hseq = np.gradient(output.Pressure,grid.Altitude,axis=1) + output.Rho*input.Gravit
 
     RT = 0
     if hasattr(input,"core_benchmark"):
@@ -769,10 +776,10 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pscale='log',overwrite=False,comp=4,
                     # del_hseq_icop[i,:] = interp.pchip_interpolate(sigma[::-1],del_hseq[i,::-1,t-ntsi],Pref[::-1])[::-1]
                     if surf:
                         #when isobars intersect the surface, make values below surface undefined
-                        Temp_icop[i,Pref>Psurf[i]] = np.nan
-                        Rho_icop[i,Pref>Psurf[i]] = np.nan
-                        Mh_icop[:,i,Pref>Psurf[i]] = np.nan
-                        W_icop[i,Pref>Psurf[i]] = np.nan
+                        Temp_icop[i,Pref>Psurf[i,t-ntsi]] = np.nan
+                        Rho_icop[i,Pref>Psurf[i,t-ntsi]] = np.nan
+                        Mh_icop[:,i,Pref>Psurf[i,t-ntsi]] = np.nan
+                        W_icop[i,Pref>Psurf[i,t-ntsi]] = np.nan
 
                     if RT == 1:
                         tau_sw_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.tau_sw[i,::-1,t-ntsi],Pref[::-1])[::-1]
@@ -781,10 +788,10 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pscale='log',overwrite=False,comp=4,
                         flw_dn_icop[i,:] = interp.pchip_interpolate(sigma[::-1],flw_dn_icoh[i,::-1,t-ntsi],Pref[::-1])[::-1]
                         if surf:
                             #when isobars intersect the surface, make values below surface undefined
-                            tau_sw_icop[i,Pref>Psurf[i]] = np.nan
-                            tau_lw_icop[i,Pref>Psurf[i]] = np.nan
-                            flw_up_icop[i,Pref>Psurf[i]] = np.nan
-                            flw_dn_icop[i,Pref>Psurf[i]] = np.nan
+                            tau_sw_icop[i,Pref>Psurf[i,t-ntsi]] = np.nan
+                            tau_lw_icop[i,Pref>Psurf[i,t-ntsi]] = np.nan
+                            flw_up_icop[i,Pref>Psurf[i,t-ntsi]] = np.nan
+                            flw_dn_icop[i,Pref>Psurf[i,t-ntsi]] = np.nan
 
                     if chem == 1:
                         ch4_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.ch4[i,::-1,t-ntsi],Pref[::-1])[::-1]
@@ -794,11 +801,11 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pscale='log',overwrite=False,comp=4,
                         nh3_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.nh3[i,::-1,t-ntsi],Pref[::-1])[::-1]
                         if surf:
                             #when isobars intersect the surface, make values below surface undefined
-                            ch4_icop[i,Pref>Psurf[i]] = np.nan
-                            co_icop[i,Pref>Psurf[i]] = np.nan
-                            h2o_icop[i,Pref>Psurf[i]] = np.nan
-                            co2_icop[i,Pref>Psurf[i]] = np.nan
-                            nh3_icop[i,Pref>Psurf[i]] = np.nan
+                            ch4_icop[i,Pref>Psurf[i,t-ntsi]] = np.nan
+                            co_icop[i,Pref>Psurf[i,t-ntsi]] = np.nan
+                            h2o_icop[i,Pref>Psurf[i,t-ntsi]] = np.nan
+                            co2_icop[i,Pref>Psurf[i,t-ntsi]] = np.nan
+                            nh3_icop[i,Pref>Psurf[i,t-ntsi]] = np.nan
 
             else:  # keep height at vertical coordinate (sometimes useful)
                 Temp_icop[:,:] = Temp_icoh[:,:,t-ntsi]
