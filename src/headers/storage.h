@@ -76,9 +76,9 @@ public:
             try { // to determine if the dataset exists in the group
                 DataSet dataset = file->openDataSet(name);
                 return true;
-            } catch (DataSetIException error) {
+            } catch (DataSetIException & error) {
                 return false;
-            } catch (FileIException error) {
+            } catch (FileIException & error) {
                 return false;
             }
         }
@@ -171,25 +171,25 @@ void storage::append_table(T* data, const int& size, string name, string unit, s
             }
         } // end of try block
         // catch failure caused by the H5File operations
-        catch (FileIException error) {
+        catch (FileIException & error) {
             log::printf("FileIException: %s\t%d\t%d\n", name.c_str(), data, size);
 
             PRINT_EXCEPTION(error);
         }
         // catch failure caused by the DataSet operations
-        catch (DataSetIException error) {
+        catch (DataSetIException & error) {
             log::printf("DataSetIException: %s\t%d\t%d\n", name.c_str(), data, size);
 
             PRINT_EXCEPTION(error);
         }
         // catch failure caused by the DataSpace operations
-        catch (DataSpaceIException error) {
+        catch (DataSpaceIException & error) {
             log::printf("DataSpaceIException: %s\t%d\t%d\n", name.c_str(), data, size);
 
             PRINT_EXCEPTION(error);
         }
         // catch failure caused by the DataSpace operations
-        catch (DataTypeIException error) {
+        catch (DataTypeIException & error) {
             log::printf("DataTypeIException: %s\t%d\t%d\n", name.c_str(), data, size);
 
             PRINT_EXCEPTION(error);
@@ -250,28 +250,28 @@ bool storage::read_table(const string& name, std::unique_ptr<T[]>& data, int& si
 
         // end of try block
         // catch failure caused by the H5File operations
-        catch (FileIException error) {
+        catch (FileIException & error) {
             PRINT_EXCEPTION(error);
             data = nullptr;
 
             return false;
         }
         // catch failure caused by the DataSet operations
-        catch (DataSetIException error) {
+        catch (DataSetIException & error) {
             PRINT_EXCEPTION(error);
             data = nullptr;
 
             return false;
         }
         // catch failure caused by the DataSpace operations
-        catch (DataSpaceIException error) {
+        catch (DataSpaceIException & error) {
             PRINT_EXCEPTION(error);
             data = nullptr;
 
             return false;
         }
         // catch failure caused by the DataSpace operations
-        catch (DataTypeIException error) {
+        catch (DataTypeIException & error) {
             PRINT_EXCEPTION(error);
             data = nullptr;
             size = 0;
@@ -334,25 +334,25 @@ template<typename T> bool storage::read_table_to_ptr(const string& name, T* data
 
         // end of try block
         // catch failure caused by the H5File operations
-        catch (FileIException error) {
+        catch (FileIException & error) {
             PRINT_EXCEPTION(error);
 
             return false;
         }
         // catch failure caused by the DataSet operations
-        catch (DataSetIException error) {
+        catch (DataSetIException & error) {
             PRINT_EXCEPTION(error);
 
             return false;
         }
         // catch failure caused by the DataSpace operations
-        catch (DataSpaceIException error) {
+        catch (DataSpaceIException & error) {
             PRINT_EXCEPTION(error);
 
             return false;
         }
         // catch failure caused by the DataSpace operations
-        catch (DataTypeIException error) {
+        catch (DataTypeIException & error) {
             PRINT_EXCEPTION(error);
 
             return false;
