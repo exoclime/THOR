@@ -138,7 +138,10 @@ bool radiative_transfer::free_memory() {
     return true;
 }
 
-bool radiative_transfer::initial_conditions(const ESP &esp, const SimulationSetup &sim) {
+bool radiative_transfer::initial_conditions(const ESP &            esp,
+                                            const SimulationSetup &sim,
+                                            storage *              s) {
+
     RTSetup(Tstar_config,
             planet_star_dist_config,
             radius_star_config,
@@ -164,8 +167,26 @@ bool radiative_transfer::initial_conditions(const ESP &esp, const SimulationSetu
             Csurf_config,
             sim.Tmean,
             esp.point_num);
-    return true;
+
+    bool returnstatus = true;
+    int  id;
+    if (surface == true) {
+        if (s != nullptr) {
+            // load initialisation data from storage s
+            returnstatus &= (*s).read_table_to_ptr("/Tsurface", Tsurface_h, esp.point_num);
+        }
+        else {
+            for (id = 0; id < esp.point_num; id++) {
+                Tsurface_h[id] = sim.Tmean;
+            }
+            cudaMemset(surf_flux_d, 0, sizeof(double) * esp.point_num);
+        }
+        cudaMemcpy(Tsurface_d, Tsurface_h, esp.point_num * sizeof(double), cudaMemcpyHostToDevice);
+    }
+
+    return returnstatus;
 }
+
 
 bool radiative_transfer::phy_loop(ESP &                  esp,
                                   const SimulationSetup &sim,
@@ -428,14 +449,6 @@ void radiative_transfer::RTSetup(double Tstar_,
 
     surface = surface_;
     Csurf   = Csurf_;
-    int id;
-    if (surface == true) {
-        for (id = 0; id < point_num; id++) {
-            Tsurface_h[id] = Tmean;
-            cudaMemset(surf_flux_d, 0, sizeof(double) * point_num);
-        }
-    }
-    cudaMemcpy(Tsurface_d, Tsurface_h, point_num * sizeof(double), cudaMemcpyHostToDevice);
 }
 
 void radiative_transfer::update_spin_orbit(double time, double Omega) {

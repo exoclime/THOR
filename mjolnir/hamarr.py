@@ -648,7 +648,9 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pgrid_ref='mean',overwrite=False,comp
                     Pref = np.concatenate((np.array([np.mean(Psurf[:,0])]),Pref))
                 elif pgrid_ref == 'last':
                     Pref = np.concatenate((np.array([np.mean(Psurf[:,-1])]),Pref))
-
+        else:
+            surf = 0
+            
     d_sig = np.size(Pref)
 
     chem = 0

@@ -53,7 +53,7 @@ public:
     ~radiative_transfer();
 
     bool initialise_memory(const ESP &esp, device_RK_array_manager &phy_modules_core_arrays);
-    bool initial_conditions(const ESP &esp, const SimulationSetup &sim);
+    bool initial_conditions(const ESP &esp, const SimulationSetup &sim, storage *s);
 
     bool phy_loop(ESP &                  esp,
                   const SimulationSetup &sim,
