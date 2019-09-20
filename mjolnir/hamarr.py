@@ -650,7 +650,7 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pgrid_ref='mean',overwrite=False,comp
                     Pref = np.concatenate((np.array([np.mean(Psurf[:,-1])]),Pref))
         else:
             surf = 0
-            
+
     d_sig = np.size(Pref)
 
     chem = 0
@@ -849,24 +849,47 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pgrid_ref='mean',overwrite=False,comp
                       -Mh_icop[1]*np.sin(grid.lat[:,None])*np.sin(grid.lon[:,None])\
                       +Mh_icop[2]*np.cos(grid.lat[:,None]))/Rho_icop
 
+            # interp_fun = interp.NearestNDInterpolator(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,Temp_icop[:,0])
             for lev in np.arange(d_sig):
                 if type == 'gd' or type == 'GD':
                     if lev == 0:
                         print('Using "griddata" for horizontal interpolation')
+                    # interp_fun.values = Temp_icop[:,lev]
+                    # Temp_llp[:,:,lev] = interp_fun((loni,lati))
                     Temp_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,Temp_icop[:,lev],(loni,lati),method='nearest')
+                    # interp_fun.values = Rho_icop[:,lev]
+                    # Rho_llp[:,:,lev] = interp_fun((loni,lati))
                     Rho_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,Rho_icop[:,lev],(loni,lati),method='nearest')
+                    # interp_fun.values = U_icop[:,lev]
+                    # U_llp[:,:,lev] = interp_fun((loni,lati))
                     U_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,U_icop[:,lev],(loni,lati),method='nearest')
+                    # interp_fun.values = V_icop[:,lev]
+                    # V_llp[:,:,lev] = interp_fun((loni,lati))
                     V_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,V_icop[:,lev],(loni,lati),method='nearest')
+                    # interp_fun.values = W_icop[:,lev]
+                    # W_llp[:,:,lev] = interp_fun((loni,lati))
                     W_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,W_icop[:,lev]/Rho_icop[:,lev],(loni,lati),method='nearest')
                     # del_hseq_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,del_hseq_icop[:,lev],(loni,lati),method='nearest')
                     if RT == 1:
+                        # interp_fun.values = tau_sw_icop[:,lev]
+                        # tau_sw_llp[:,:,lev] = interp_fun((loni,lati))
                         tau_sw_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,tau_sw_icop[:,lev],(loni,lati),method='nearest')
+                        # interp_fun.values = tau_lw_icop[:,lev]
+                        # tau_lw_llp[:,:,lev] = interp_fun((loni,lati))
                         tau_lw_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,tau_lw_icop[:,lev],(loni,lati),method='nearest')
+                        # interp_fun.values = flw_up_icop[:,lev]
+                        # flw_up_llp[:,:,lev] = interp_fun((loni,lati))
                         flw_up_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,flw_up_icop[:,lev],(loni,lati),method='nearest')
+                        # interp_fun.values = flw_dn_icop[:,lev]
+                        # flw_dn_llp[:,:,lev] = interp_fun((loni,lati))
                         flw_dn_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,flw_dn_icop[:,lev],(loni,lati),method='nearest')
                         if lev == 0:
+                            # interp_fun.values = output.Insol[:,t-ntsi]
+                            # insol_ll[:,:] = interp_fun((loni,lati))
                             insol_ll[:,:] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,output.Insol[:,t-ntsi],(loni,lati),method='nearest')
                             if surf == 1:
+                                # interp_fun.values = output.Tsurface[:,t-ntsi]
+                                # Tsurf_ll[:,:] = interp_fun((loni,lati))
                                 Tsurf_ll[:,:] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,output.Tsurface[:,t-ntsi],(loni,lati),method='nearest')
                     if chem == 1:
                         ch4_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,ch4_icop[:,lev],(loni,lati),method='nearest')
@@ -1285,11 +1308,12 @@ def vertical_lat(input,grid,output,rg,sigmaref,z,slice=[0,360],save=True,axis=Fa
         zvals = Zonallt[:,hrange[0]].T
 
     # Contour plot
+    clevels = 40 # may want to make this adjustable
     if isinstance(axis,axes.SubplotBase):
-        C = axis.contourf(latp*180/np.pi,ycoord,zvals,40,cmap=z['cmap'])
+        C = axis.contourf(latp*180/np.pi,ycoord,zvals,clevels,cmap=z['cmap'])
         ax = axis
     elif axis == False:
-        C = plt.contourf(latp*180/np.pi,ycoord,zvals,40,cmap=z['cmap'])
+        C = plt.contourf(latp*180/np.pi,ycoord,zvals,clevels,cmap=z['cmap'])
         ax = plt.gca()
     else:
         raise IOError("'axis = {}' but {} is not an axes.SubplotBase instance".format(axis,axis))
@@ -1320,10 +1344,13 @@ def vertical_lat(input,grid,output,rg,sigmaref,z,slice=[0,360],save=True,axis=Fa
     if isinstance(csp,list) or isinstance(csp,tuple):
         levp = csp
     else:
-        if use_p:
-            levp = np.arange(np.ceil(np.nanmin(Zonallt[:,prange[0]])/csp)*csp,np.floor(np.nanmax(Zonallt[:,prange[0]])/csp)*csp,csp)
+        if csp == 'match':
+            levp = 40
         else:
-            levp = np.arange(np.ceil(np.nanmin(Zonallt[:,hrange[0]])/csp)*csp,np.floor(np.nanmax(Zonallt[:,hrange[0]])/csp)*csp,csp)
+            if use_p:
+                levp = np.arange(np.ceil(np.nanmin(Zonallt[:,prange[0]])/csp)*csp,np.floor(np.nanmax(Zonallt[:,prange[0]])/csp)*csp,csp)
+            else:
+                levp = np.arange(np.ceil(np.nanmin(Zonallt[:,hrange[0]])/csp)*csp,np.floor(np.nanmax(Zonallt[:,hrange[0]])/csp)*csp,csp)
 
     c2 = ax.contour(latp*180/np.pi,ycoord,zvals,levels=levp,colors='w',linewidths=1)
     plt.clabel(c2,inline=1,fontsize=10)
