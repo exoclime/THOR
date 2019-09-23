@@ -30,13 +30,14 @@ parser.add_argument('resultsf',metavar='nview',nargs='*',help='Results directory
 parser.add_argument("-s","--simulation_ID",nargs=1,default=['auto'],help='Name of simulation (e.g., planet name)')
 parser.add_argument("-t","--type",nargs=1,default=['gd'],choices=['gd','GD','sh','SH'],help='Horizontal interpolation type')
 parser.add_argument("-vc","--vcoord",nargs=1,default=['pressure'],help='Vertical coordinate to use (pressure or height)')
-parser.add_argument("-pmin","--pressure_min",nargs=1,default=['default'],help='Lowest pressure value in vertical interpolation (vc=pressure only)')
+parser.add_argument("-pgref","--pgrid_ref",nargs=1,default=['mean'],help='Determines how the pressure grid is set (mean=average over all specified files, first=first specified file, last=last specified file)')
 parser.add_argument("-i","--initial_file",nargs=1,default=[10],type=int,help='Initial file id number (integer)')
 parser.add_argument("-l","--last_file",nargs=1,default=['init'],type=int,help='Last file id number (integer)')
 parser.add_argument("-rot","--rotation",action='store_true',help='apply a set of rotations to grid (theta_z,theta_y) about (z,y)')
 parser.add_argument("-rot-ang","--rotation_angles",nargs='+',default=[0,0],help='values of rotation angles in degrees (theta_z,theta_y)', type =float)
 parser.add_argument("-w","--overwrite",action='store_true',help='force overwrite existing regrid files')
 parser.add_argument("-lmax","--lmax",nargs=1,default=['grid'],type=int, help = "Manually set lmax for sh/SH regrid type")
+parser.add_argument("-unmask","--unmask_surf",action='store_true',help='Unmask surface, ie., allow extrapolation below surface')
 args = parser.parse_args()
 resultsf = args.resultsf[0]
 ntsi     = args.initial_file[0]  # initial file id number
@@ -64,12 +65,17 @@ elif args.vcoord[0] == 'height':
 else:
     raise ValueError('%s not a valid vcoord. Valid options are "pressure" or "height"'%args.vcoord[0])
 
+if args.unmask_surf:
+    mask = False
+else:
+    mask = True
+
 if args.overwrite:
     print('Warning! Overwriting existing regrid files!')
 
-ham.regrid(resultsf,simulation_ID,ntsi,nts,pressure_vert=use_p,type=args.type[0],vertical_top=args.pressure_min[0],
+ham.regrid(resultsf,simulation_ID,ntsi,nts,pressure_vert=use_p,type=args.type[0],pgrid_ref=args.pgrid_ref[0],
             rotation=args.rotation,theta_z=args.rotation_angles[0]*np.pi/180,theta_y = args.rotation_angles[1]*np.pi/180,
-            overwrite=args.overwrite,lmax_set = args.lmax[0])
+            overwrite=args.overwrite,lmax_set = args.lmax[0],mask_surf=mask)
 
 last = time.time()
 print(last-first)

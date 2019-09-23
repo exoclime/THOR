@@ -151,28 +151,28 @@ if 'pause' in pview:
 if 'uver' in pview:
     z = {'value':rg.U, 'label':r'Velocity (m s$^{-1}$)', 'name':'u',
          'cmap':'viridis', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable, 'plog':plog}
-    sigmaref = ham.Get_Prange(input,grid,output,args,xtype='lat',use_p=use_p)
+    sigmaref = ham.Get_Prange(input,grid,rg,args,xtype='lat',use_p=use_p)
     # Averaged zonal winds (latitude vs pressure)
     #ham.u(input,grid,output,rg,sigmaref,slice=args.slice[0])
     ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice,use_p=use_p)
 if 'vver' in pview:
     z = {'value':rg.V, 'label':r'Velocity (m s$^{-1}$)', 'name':'v',
          'cmap':'viridis', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable, 'plog':plog}
-    sigmaref = ham.Get_Prange(input,grid,output,args,xtype='lat',use_p=use_p)
+    sigmaref = ham.Get_Prange(input,grid,rg,args,xtype='lat',use_p=use_p)
     # Averaged zonal winds (latitude vs pressure)
     #ham.u(input,grid,output,rg,sigmaref,slice=args.slice[0])
     ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice,use_p=use_p)
 if 'wver' in pview:
     z = {'value':rg.W, 'label':r'Velocity (m s$^{-1}$)', 'name':'w',
          'cmap':'viridis', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable, 'plog':plog}
-    sigmaref = ham.Get_Prange(input,grid,output,args,xtype='lat',use_p=use_p)
+    sigmaref = ham.Get_Prange(input,grid,rg,args,xtype='lat',use_p=use_p)
     # Averaged vertical winds (latitude vs pressure)
     #ham.w_ver(input,grid,output,rg,sigmaref)
     ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice,use_p=use_p)
 if 'Tver' in pview:
     z = {'value':rg.Temperature, 'label':r'Temperature (K)', 'name':'temperature',
          'cmap':'magma', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable, 'plog':plog}
-    sigmaref = ham.Get_Prange(input,grid,output,args,xtype='lat',use_p=use_p)
+    sigmaref = ham.Get_Prange(input,grid,rg,args,xtype='lat',use_p=use_p)
     # Averaged temperature (latitude vs pressure)
     #ham.temperature(input,grid,output,rg,sigmaref)
     ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice,use_p=use_p)
@@ -181,14 +181,14 @@ if 'PTver' in pview:
     pt = rg.Temperature*(rg.Pressure/input.P_Ref)**(-kappa_ad)
     z = {'value':pt, 'label':r'Potential Temperature (K)', 'name':'potential_temp',
          'cmap':'plasma', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable, 'plog':plog}
-    sigmaref = ham.Get_Prange(input,grid,output,args,xtype='lat',use_p=use_p)
+    sigmaref = ham.Get_Prange(input,grid,rg,args,xtype='lat',use_p=use_p)
     # Averaged potential temperature (latitude vs pressure)
     ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice,use_p=use_p)
 if 'PVver' in pview:
     # sigmaref = np.arange(1,0,)
     z = {'value':rg.PV, 'label':r'Potential Vorticity (K m$^2$ kg$^{-1}$ s$^{-1}$)',
          'name':'pot_vort', 'cmap':'viridis', 'lat':rg.lat_lr, 'lon':rg.lon_lr, 'mt':maketable, 'plog':plog}
-    sigmaref = ham.Get_Prange(input,grid,output,args,xtype='lat',use_p=use_p)
+    sigmaref = ham.Get_Prange(input,grid,rg,args,xtype='lat',use_p=use_p)
     ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice,use_p=use_p)
     # ham.potential_vort_vert(input,grid,output,sigmaref)
 if 'stream' in pview: # RD: needs some work! to adapt to height coordinate
@@ -197,7 +197,7 @@ if 'stream' in pview: # RD: needs some work! to adapt to height coordinate
     # z = {'value':strm, 'label':r'Eulerian streamfunction (kg s$^{-1}$)', 'name':'streamf2',
     #      'cmap':'viridis', 'lat':rg.lat, 'lon':rg.lon}
     if use_p:
-        sigmaref = ham.Get_Prange(input,grid,output,args,xtype='lat')
+        sigmaref = ham.Get_Prange(input,grid,rg,args,xtype='lat')
         # ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice,csp=[0])
         ham.streamf_moc_plot(input,grid,output,rg,sigmaref,mt=maketable,plog=plog)
     else:
@@ -209,7 +209,7 @@ if 'massf' in pview:
         massfdl = (input.A+rg.Altitude[None,None,:,:])*np.cos(rg.lat[:,None,None,:]*np.pi/180)/(2*np.pi)*rg.Rho*rg.V
         z = {'value':massfdl, 'label':r'Mass flow', 'name':'massf',
              'cmap':'magma', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable, 'plog':plog}
-        sigmaref = ham.Get_Prange(input,grid,output,args,xtype='lat',use_p=use_p)
+        sigmaref = ham.Get_Prange(input,grid,rg,args,xtype='lat',use_p=use_p)
         ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice,use_p=use_p,csp=[0])
     else:
         raise ValueError("'massf' plot type requires -vc height")
@@ -349,6 +349,8 @@ if 'KE' in pview:  # RD: needs some work!
     ham.KE_spect(input,grid,output,PR_LV,coord=args.coordinate_sys[0],lmax_adjust=args.lmax_adjust[0])
 if 'SR' in pview:
     ham.SRindex(input,grid,output)
+if 'RTbalance' in pview:
+    ham.RTbalance(input,grid,output)
 
 last = time.time()
 print(last-first)

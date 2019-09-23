@@ -65,15 +65,15 @@ bool phy_modules_init_data(const ESP& esp, const SimulationSetup& sim, storage* 
     bool out = true;
     // initialise all the modules data
 
-    if (s != nullptr) {
-        // load initialisation data from storage s
-    }
+    // if (s != nullptr) {
+    //     // load initialisation data from storage s
+    // }
 
     if (radiative_transfer_enabled)
-        out &= rt.initial_conditions(esp, sim);
+        out &= rt.initial_conditions(esp, sim, s);
 
     if (boundary_layer_enabled)
-        out &= bl.initial_conditions(esp, sim);
+        out &= bl.initial_conditions(esp, sim, s);
 
     return out;
 }

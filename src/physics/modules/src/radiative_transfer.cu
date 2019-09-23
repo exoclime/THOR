@@ -82,6 +82,7 @@ void radiative_transfer::print_config() {
     // surface parameters
     log::printf("    Surface                     = %s.\n", surface_config ? "true" : "false");
     log::printf("    Surface Heat Capacity       = %f J/K/m^2.\n", Csurf_config);
+    log::printf("    1D mode                     = %s.\n", rt1Dmode_config ? "true" : "false");
 }
 
 bool radiative_transfer::initialise_memory(const ESP &              esp,
@@ -138,7 +139,10 @@ bool radiative_transfer::free_memory() {
     return true;
 }
 
-bool radiative_transfer::initial_conditions(const ESP &esp, const SimulationSetup &sim) {
+bool radiative_transfer::initial_conditions(const ESP &            esp,
+                                            const SimulationSetup &sim,
+                                            storage *              s) {
+
     RTSetup(Tstar_config,
             planet_star_dist_config,
             radius_star_config,
@@ -162,10 +166,32 @@ bool radiative_transfer::initial_conditions(const ESP &esp, const SimulationSetu
             sim.Omega,
             surface_config,
             Csurf_config,
+            rt1Dmode_config,
             sim.Tmean,
             esp.point_num);
-    return true;
+
+    // if (rt1Dmode) {
+    //     sim.gcm_off = true; //does not work... not sure why
+    // }
+    bool returnstatus = true;
+    int  id;
+    if (surface == true) {
+        if (s != nullptr) {
+            // load initialisation data from storage s
+            returnstatus &= (*s).read_table_to_ptr("/Tsurface", Tsurface_h, esp.point_num);
+        }
+        else {
+            for (id = 0; id < esp.point_num; id++) {
+                Tsurface_h[id] = sim.Tmean;
+            }
+            cudaMemset(surf_flux_d, 0, sizeof(double) * esp.point_num);
+        }
+        cudaMemcpy(Tsurface_d, Tsurface_h, esp.point_num * sizeof(double), cudaMemcpyHostToDevice);
+    }
+
+    return returnstatus;
 }
+
 
 bool radiative_transfer::phy_loop(ESP &                  esp,
                                   const SimulationSetup &sim,
@@ -242,7 +268,9 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                                  Tsurface_d,
                                  surf_flux_d,
                                  esp.profx_dP_d,
-                                 sim.Rd);
+                                 sim.Rd,
+                                 sim.gcm_off,
+                                 rt1Dmode);
 
     if (nstep * time_step < (2 * M_PI / mean_motion)) {
         // stationary orbit/obliquity
@@ -286,6 +314,7 @@ bool radiative_transfer::configure(config_file &config_reader) {
     config_reader.append_config_var("surface", surface_config, surface_config);
     config_reader.append_config_var("Csurf", Csurf_config, Csurf_config);
 
+    config_reader.append_config_var("rt1Dmode", rt1Dmode_config, rt1Dmode_config);
 
     return true;
 }
@@ -388,6 +417,7 @@ void radiative_transfer::RTSetup(double Tstar_,
                                  double Omega,
                                  bool   surface_,
                                  double Csurf_,
+                                 bool   rt1Dmode_,
                                  double Tmean,
                                  int    point_num) {
 
@@ -428,14 +458,8 @@ void radiative_transfer::RTSetup(double Tstar_,
 
     surface = surface_;
     Csurf   = Csurf_;
-    int id;
-    if (surface == true) {
-        for (id = 0; id < point_num; id++) {
-            Tsurface_h[id] = Tmean;
-            cudaMemset(surf_flux_d, 0, sizeof(double) * point_num);
-        }
-    }
-    cudaMemcpy(Tsurface_d, Tsurface_h, point_num * sizeof(double), cudaMemcpyHostToDevice);
+
+    rt1Dmode = rt1Dmode_;
 }
 
 void radiative_transfer::update_spin_orbit(double time, double Omega) {

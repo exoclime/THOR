@@ -53,7 +53,7 @@ public:
     ~radiative_transfer();
 
     bool initialise_memory(const ESP &esp, device_RK_array_manager &phy_modules_core_arrays);
-    bool initial_conditions(const ESP &esp, const SimulationSetup &sim);
+    bool initial_conditions(const ESP &esp, const SimulationSetup &sim, storage *s);
 
     bool phy_loop(ESP &                  esp,
                   const SimulationSetup &sim,
@@ -96,8 +96,9 @@ private:
     double alpha_i_config     = 0;        // initial right asc of host star (relative to long = 0)
     double longp_config       = 0;        // longitude of periastron (rad)
 
-    bool   surface_config = false; // use solid/liquid surface at altitude 0
-    double Csurf_config   = 1e7;   // heat capacity of surface (J K^-1 m^-2)
+    bool   surface_config  = false; // use solid/liquid surface at altitude 0
+    double Csurf_config    = 1e7;   // heat capacity of surface (J K^-1 m^-2)
+    bool   rt1Dmode_config = false; // 1D mode=all columns are irradiated identically
 
     // Rad trans
     double Tstar            = 4520;  // Star effective temperature [K]
@@ -114,6 +115,7 @@ private:
     double n_sw       = 1.0; // power law dependence for mixed/unmixed absorbers in SW
     double f_lw       = 0.5; // fraction of taulw in well-mixed absorber
 
+    bool    rt1Dmode;
     bool    surface;
     double  Csurf;
     double *surf_flux_d;
@@ -182,6 +184,7 @@ private:
                     double Omega,
                     bool   surface,
                     double Csurf,
+                    bool   rt1Dmode,
                     double Tmean,
                     int    point_num);
 

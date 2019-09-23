@@ -64,7 +64,7 @@ void iteration_timer::iteration(int          nstep,
 
     // number of steps since simulation start and to end of simulation
     long num_steps_elapsed = nstep - initial_num_steps + 1;
-    long num_steps_left    = max_steps - num_steps_elapsed;
+    long num_steps_left    = max_steps - (nstep + 1);
 
     // mean length of step
     mean_delta_per_step = sim_delta.count() / double(num_steps_elapsed);

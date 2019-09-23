@@ -74,7 +74,7 @@ bool boundary_layer::free_memory() {
     return true;
 }
 
-bool boundary_layer::initial_conditions(const ESP &esp, const SimulationSetup &sim) {
+bool boundary_layer::initial_conditions(const ESP &esp, const SimulationSetup &sim, storage *s) {
     bool config_OK = true;
 
     bl_type = RAYLEIGHHS;

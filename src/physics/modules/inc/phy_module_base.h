@@ -17,8 +17,8 @@ public:
 
 
     virtual bool initialise_memory(const ESP&               esp,
-                                   device_RK_array_manager& phy_modules_core_arrays) = 0;
-    virtual bool initial_conditions(const ESP& esp, const SimulationSetup& sim)      = 0;
+                                   device_RK_array_manager& phy_modules_core_arrays)        = 0;
+    virtual bool initial_conditions(const ESP& esp, const SimulationSetup& sim, storage* s) = 0;
 
     virtual bool dyn_core_loop_init(const ESP& esp) {
         return true;
