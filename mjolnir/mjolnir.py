@@ -183,7 +183,7 @@ if 'PTver' in pview:
          'cmap':'plasma', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable, 'plog':plog}
     sigmaref = ham.Get_Prange(input,grid,rg,args,xtype='lat',use_p=use_p)
     # Averaged potential temperature (latitude vs pressure)
-    ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice,use_p=use_p)
+    ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice,use_p=use_p,csp=5000)
 if 'PVver' in pview:
     # sigmaref = np.arange(1,0,)
     z = {'value':rg.PV, 'label':r'Potential Vorticity (K m$^2$ kg$^{-1}$ s$^{-1}$)',

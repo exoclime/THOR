@@ -63,7 +63,7 @@ void radiative_transfer::print_config() {
     log::printf("    Bond albedo                 = %f.\n", albedo_config);
     log::printf("    Shortwave Absorption coef   = %f.\n", tausw_config);
     log::printf("    Longwave Absorption coef    = %f.\n", taulw_config);
-    log::printf("    Using sin(lat) variation LW?      = %f.\n", latf_lw_config);
+    log::printf("    Using sin(lat) variation LW?      = %s.\n", latf_lw_config ? "true" : "false");
     log::printf("    Longwave Absorption coef (poles)  = %f.\n", taulw_pole_config);
     log::printf("    Power law index of unmixed LW abs = %f.\n", n_lw_config);
     log::printf("    Strength of mixed LW abs    = %f.\n", f_lw_config);
