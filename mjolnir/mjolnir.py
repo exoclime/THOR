@@ -63,11 +63,11 @@ maketable = args.maketable
 plog = True
 if args.no_pressure_log:
     plog = False
-valid = ['uver','vver','wver','wprof','Tver','Tulev','PTver','ulev','PVver','PVlev',
+valid = ['uver','ulonver','vver','wver','wlonver','wprof','Tver','Tlonver','Tulev','PTver','ulev','PVver','PVlev',
             'TP','RVlev','cons','stream','pause','tracer','PTP','regrid','KE',
             'SR','uprof','cfl','bvprof','fluxprof','Tsurf','insol','massf']
 
-rg_needed = ['Tver','uver','vver','wver','Tulev','PTver','ulev','PVver','PVlev',
+rg_needed = ['Tver','Tlonver','uver','ulonver','vver','wver','wlonver','Tulev','PTver','ulev','PVver','PVlev',
             'RVlev','stream','tracer','Tsurf','insol','massf']  #these types need regrid
 
 openrg = 0
@@ -154,7 +154,14 @@ if 'uver' in pview:
     sigmaref = ham.Get_Prange(input,grid,rg,args,xtype='lat',use_p=use_p)
     # Averaged zonal winds (latitude vs pressure)
     #ham.u(input,grid,output,rg,sigmaref,slice=args.slice[0])
-    ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice,use_p=use_p)
+    ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice,use_p=use_p,csp=1000)
+if 'ulonver' in pview:
+    z = {'value':rg.U, 'label':r'Velocity (m s$^{-1}$)', 'name':'u',
+         'cmap':'viridis', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable, 'plog':plog}
+    sigmaref = ham.Get_Prange(input,grid,rg,args,xtype='lat',use_p=use_p)
+    # Averaged zonal winds (latitude vs pressure)
+    #ham.u(input,grid,output,rg,sigmaref,slice=args.slice[0])
+    ham.vertical_lon(input,grid,output,rg,sigmaref,z,slice=args.slice,use_p=use_p,csp=1000)
 if 'vver' in pview:
     z = {'value':rg.V, 'label':r'Velocity (m s$^{-1}$)', 'name':'v',
          'cmap':'viridis', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable, 'plog':plog}
@@ -168,14 +175,28 @@ if 'wver' in pview:
     sigmaref = ham.Get_Prange(input,grid,rg,args,xtype='lat',use_p=use_p)
     # Averaged vertical winds (latitude vs pressure)
     #ham.w_ver(input,grid,output,rg,sigmaref)
-    ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice,use_p=use_p)
+    ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice,use_p=use_p,csp=1)
+if 'wlonver' in pview:
+    z = {'value':rg.W, 'label':r'Velocity (m s$^{-1}$)', 'name':'w',
+         'cmap':'viridis', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable, 'plog':plog}
+    sigmaref = ham.Get_Prange(input,grid,rg,args,xtype='lat',use_p=use_p)
+    # Averaged zonal winds (latitude vs pressure)
+    #ham.u(input,grid,output,rg,sigmaref,slice=args.slice[0])
+    ham.vertical_lon(input,grid,output,rg,sigmaref,z,slice=args.slice,use_p=use_p,csp=5)
 if 'Tver' in pview:
     z = {'value':rg.Temperature, 'label':r'Temperature (K)', 'name':'temperature',
          'cmap':'magma', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable, 'plog':plog}
     sigmaref = ham.Get_Prange(input,grid,rg,args,xtype='lat',use_p=use_p)
     # Averaged temperature (latitude vs pressure)
     #ham.temperature(input,grid,output,rg,sigmaref)
-    ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice,use_p=use_p)
+    ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice,use_p=use_p,csp=[0])
+if 'Tlonver' in pview:
+    z = {'value':rg.Temperature, 'label':r'Temperature (K)', 'name':'temperature',
+         'cmap':'magma', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable, 'plog':plog}
+    sigmaref = ham.Get_Prange(input,grid,rg,args,xtype='lat',use_p=use_p)
+    # Averaged temperature (latitude vs pressure)
+    #ham.temperature(input,grid,output,rg,sigmaref)
+    ham.vertical_lon(input,grid,output,rg,sigmaref,z,slice=args.slice,use_p=use_p,csp=[0])
 if 'PTver' in pview:
     kappa_ad = input.Rd/input.Cp  # adiabatic coefficient
     pt = rg.Temperature*(rg.Pressure/input.P_Ref)**(-kappa_ad)
