@@ -250,7 +250,7 @@ __device__ void radclw(double *phtemp,
                        double *flw_dn_d,
                        double *Altitudeh_d,
                        double  diff_ang,
-                       double  tlow,
+                       double  tint,
                        double  Cv,
                        double  gravit,
                        bool    surface,
@@ -292,14 +292,13 @@ __device__ void radclw(double *phtemp,
     //
     //  Upward Directed Radiation
     //
+    flw_up_d[id * (nv + 1) + 0] = bc * tint * tint * tint * tint; // Lower boundary;
     if (surface == true) {
-        tlow = Tsurface;
+        flw_up_d[id * (nv + 1) + 0] += bc * Tsurface * Tsurface * Tsurface * Tsurface;
     }
-    flw_up_d[id * (nv + 1) + 0] = bc * tlow * tlow * tlow * tlow; // Lower boundary;
-    if (surface == false) {
-        if (flw_up_d[id * (nv + 1) + 0] < flw_dn_d[id * (nv + 1) + 0])
-            // reflecting boundary
-            flw_up_d[id * (nv + 1) + 0] = flw_dn_d[id * (nv + 1) + 0];
+    else {
+        // reflecting boundary
+        flw_up_d[id * (nv + 1) + 0] += flw_dn_d[id * (nv + 1) + 0];
     }
     for (int lev = 1; lev <= nv; lev++) {
 
@@ -388,7 +387,7 @@ __global__ void rtm_dual_band(double *pressure_d,
                               double  planet_star_dist,
                               double  radius_star,
                               double  diff_ang,
-                              double  tlow,
+                              double  tint,
                               double  alb,
                               double  tausw,
                               double  taulw,
@@ -561,7 +560,7 @@ __global__ void rtm_dual_band(double *pressure_d,
                flw_dn_d,
                Altitudeh_d,
                diff_ang,
-               tlow,
+               tint,
                Cp - Rd,
                gravit,
                surface,

@@ -59,7 +59,8 @@ class input:
                     self.diff_ang = openh5['diff_fac'][...]
                 else:
                     self.diff_ang = openh5['diff_ang'][...]
-                self.Tlow = openh5['Tlow'][...]
+                if 'Tint' in openh5.keys():
+                    self.Tint = openh5['Tint'][...]
                 self.albedo = openh5['albedo'][...]
                 self.tausw = openh5['tausw'][...]
                 self.taulw = openh5['taulw'][...]
@@ -1223,13 +1224,12 @@ def vertical_lat(input,grid,output,rg,sigmaref,z,slice=[0,360],save=True,axis=Fa
             mask_ind = np.logical_or((lon-360)>=slice[0],lon<=slice[1])
         else:
             mask_ind = np.logical_and(lon>=slice[0],lon<=slice[1])
-        loni, lati = np.meshgrid(lon[mask_ind],lat)
-        d_lon = np.shape(loni)
+        # loni, lati = np.meshgrid(lon[mask_ind],lat)
+        # d_lon = np.shape(loni)
 
         ##################
         #    Averages    #
         ##################
-
         # Averaging in time and longitude
         if tsp > 1:
             Zonall = np.nanmean(z['value'][:,mask_ind[:,0],:,:],axis=1)
@@ -1309,10 +1309,12 @@ def vertical_lat(input,grid,output,rg,sigmaref,z,slice=[0,360],save=True,axis=Fa
 
     # Contour plot
     clevels = 40 # may want to make this adjustable
+    # clevels = np.linspace(280,500,40)
     if isinstance(axis,axes.SubplotBase):
         C = axis.contourf(latp*180/np.pi,ycoord,zvals,clevels,cmap=z['cmap'])
         ax = axis
     elif axis == False:
+        plt.figure(figsize=(5,4))
         C = plt.contourf(latp*180/np.pi,ycoord,zvals,clevels,cmap=z['cmap'])
         ax = plt.gca()
     else:
@@ -1353,7 +1355,7 @@ def vertical_lat(input,grid,output,rg,sigmaref,z,slice=[0,360],save=True,axis=Fa
                 levp = np.arange(np.ceil(np.nanmin(Zonallt[:,hrange[0]])/csp)*csp,np.floor(np.nanmax(Zonallt[:,hrange[0]])/csp)*csp,csp)
 
     c2 = ax.contour(latp*180/np.pi,ycoord,zvals,levels=levp,colors='w',linewidths=1)
-    plt.clabel(c2,inline=1,fontsize=10)
+    plt.clabel(c2,inline=False,fontsize=6,fmt='%d',use_clabeltext=True)
     for cc in C.collections:
         cc.set_edgecolor("face") #fixes a stupid bug in matplotlib 2.0
     #ax.invert_yaxis()
@@ -1363,7 +1365,7 @@ def vertical_lat(input,grid,output,rg,sigmaref,z,slice=[0,360],save=True,axis=Fa
     ax.set_xlabel('Latitude (deg)')
     if use_p:
         ax.set_ylabel('Pressure (bar)')
-        ax.plot(latp*180/np.pi,np.zeros_like(latp)+np.max(output.Pressure[:,grid.nv-1,:])/1e5,'r--')
+        # ax.plot(latp*180/np.pi,np.zeros_like(latp)+np.max(output.Pressure[:,grid.nv-1,:])/1e5,'r--')
         ax.set_ylim(np.max(rg.Pressure[prange[0],0])/1e5,np.min(Pref)/1e5)
 
         if ax.get_ylim()[1] > ax.get_ylim()[0]:
@@ -1372,9 +1374,9 @@ def vertical_lat(input,grid,output,rg,sigmaref,z,slice=[0,360],save=True,axis=Fa
         ax.set_ylabel('Altitude (m)')
 
     if len(slice) == 2:
-        ax.set_title('Time = %#.3f-%#.3f days, Lon = (%#.3f,%#.3f)'%(output.time[0],output.time[-1],slice[0],slice[1]))
+        ax.set_title('Time = %#.3f-%#.3f days, Lon = (%#.3f,%#.3f)'%(output.time[0],output.time[-1],slice[0],slice[1]),fontsize=10)
     else:
-        ax.set_title('Time = %#.3f-%#.3f days, Lon = (%#.3f,)'%(output.time[0],output.time[-1],slice[0]))
+        ax.set_title('Time = %#.3f-%#.3f days, Lon = (%#.3f,)'%(output.time[0],output.time[-1],slice[0]),fontsize=10)
 
     if not os.path.exists(input.resultsf+'/figures'):
         os.mkdir(input.resultsf+'/figures')
@@ -1399,6 +1401,213 @@ def vertical_lat(input,grid,output,rg,sigmaref,z,slice=[0,360],save=True,axis=Fa
             maketable(latp*180/np.pi,rg.Pressure[prange[0],0]/1e5,Zonallt[:,prange[0]],'Latitude(d)','Pressure(bar)',z['name'],input.resultsf,fname)
         else:
             maketable(latp*180/np.pi,rg.Altitude[hrange[0],0],Zonallt[:,hrange[0]],'Latitude(d)','Altitude(m)',z['name'],input.resultsf,fname)
+
+def vertical_lon(input,grid,output,rg,sigmaref,z,slice=[0,360],save=True,axis=False,csp=500,wind_vectors=False,use_p=True):
+    # generic pressure/longitude plot function
+
+    # Set the reference pressure
+    if use_p:
+        # sigmaref = normalize pressure units
+        Pref = input.P_Ref*sigmaref
+
+    d_sig = np.size(sigmaref)
+    tsp = output.nts-output.ntsi+1
+
+    if not isinstance(slice,list):
+        raise IOError("'slice' argument must be a list")
+
+    lat = z['lat']
+    lon = z['lon']
+    if len(slice) == 2:
+        # Set the latitude-longitude grid
+        if slice[1]-slice[0] > 180:
+            raise IOError("'slice' cannot exceed a range of 180 degrees")
+        if slice[1] < slice[0]:
+            raise IOError("'slice' values must be arranged (small, large) because I am too lazy to code it better")
+        # if slice[0] < 0:
+        #     mask_ind = np.logical_or((lon-360)>=slice[0],lon<=slice[1])
+        # else:
+        #     mask_ind = np.logical_and(lon>=slice[0],lon<=slice[1])
+        mask_ind = np.logical_and(lat>=slice[0],lat<=slice[1])
+        # loni, lati = np.meshgrid(lon,lat[mask_ind])
+        # d_lat = np.shape(lati)
+
+        ##################
+        #    Averages    #
+        ##################
+
+        # Averaging in time and latitude (weighted by a cosine(lat))
+        if tsp > 1:
+            Meridl = np.nanmean(z['value'][mask_ind[:,0],:,:,:]*np.cos(lat[mask_ind[:,0],0]*np.pi/180)[:,None,None,None],axis=0)
+            # Vl = np.nanmean(rg.V[:,:,:,:],axis=1)
+            # Wl = np.nanmean(rg.W[:,:,:,:],axis=1)
+            Meridlt = np.nanmean(Meridl[:,:,:],axis=2)
+            # Vlt = np.nanmean(Vl[:,:,:],axis=2)
+            # Wlt = np.nanmean(Wl[:,:,:],axis=2)
+            del Meridl
+            if wind_vectors == True:
+                Ul = np.nanmean(rg.U[mask_ind[:,0],:,:,:]*np.cos(lat[mask_ind[:,0],0]*np.pi/180)[:,None,None,None],axis=0)
+                Wl = np.nanmean(rg.W[mask_ind[:,0],:,:,:]*np.cos(lat[mask_ind[:,0],0]*np.pi/180)[:,None,None,None],axis=0)
+                Ult = np.nanmean(Ul[:,:,:],axis=2)
+                Wlt = np.nanmean(Wl[:,:,:],axis=2)
+                del Ul, Wl
+        else:
+            Meridlt = np.nanmean(z['value'][:,:,:,0][mask_ind[:,0],:,:]*np.cos(lat[mask_ind[:,0],0]*np.pi/180)[:,None,None],axis=0)
+            # Ult = np.nanmean(rg.V[:,:,:,0],axis=1)
+            # Wlt = np.nanmean(rg.W[:,:,:,0],axis=1)
+            if wind_vectors == True:
+                Ult = np.nanmean(rg.U[:,:,:,0][mask_ind[:,0],:,:]*np.cos(lat[mask_ind[:,0],0]*np.pi/180)[:,None,None],axis=0)
+                Wlt = np.nanmean(rg.W[:,:,:,0][mask_ind[:,0],:,:]*np.cos(lat[mask_ind[:,0],0]*np.pi/180)[:,None,None],axis=0)
+
+    elif len(slice) == 1:
+        if slice[0] in lat:
+            Meridl = z['value'][lat[:,0]==slice[0],:,:,:]
+            if wind_vectors == True:
+                Ul = rg.U[lat[:,0]==slice[0],:,:,:]
+                Wl = rg.W[lat[:,0]==slice[0],:,:,:]
+        else:
+            Meridl = np.zeros((1,len(lon),d_sig,tsp))
+            if wind_vectors == True:
+                Ul = np.zeros((1,len(lon),d_sig,tsp))
+                Wl = np.zeros((1,len(lon),d_sig,tsp))
+            # interpolate to slice given
+            for t in tsp:
+                for lev in np.arange(d_sig):
+                    Meridl[0,:,lev,tsp] = interp.griddata(np.vstack([lon,lat]).T,z['value'][:,:,lev,tsp],(lon,slice[0]))
+                    if wind_vectors == True:
+                        Ul[0,:,lev,tsp] = interp.griddata(np.vstack([lon,lat]).T,rg.U[:,:,lev,tsp],(lon,slice[0]))
+                        Wl[0,:,lev,tsp] = interp.griddata(np.vstack([lon,lat]).T,rg.W[:,:,lev,tsp],(lon,slice[0]))
+
+
+        # Averaging in time
+        if tsp > 1:
+            Meridlt = np.nanmean(Meridl[0,:,:,:],axis=2)
+            del Meridl
+            if wind_vectors == True:
+                Ult = np.nanmean(Ul[0,:,:,:],axis=2)
+                Wlt = np.nanmean(Wl[0,:,:,:],axis=2)
+                del Ul, Wl
+        else:
+            Meridlt = Meridl[0,:,:,0]
+            if wind_vectors == True:
+                Ult = Ul[0,:,:,0]
+                Wlt = Wl[0,:,:,0]
+
+    else:
+        raise IOError("'slice' must have 1 or 2 values")
+
+    #################
+    # Create figure #
+    #################
+    # Longitude
+    lonp = lon[:,0]*np.pi/180
+
+    if use_p:
+        # need to set desired pressure range (major PITA!)
+        # prange = np.where(np.logical_and(rg.Pressure[:,0]>=np.min(Pref),rg.Pressure[:,0]<=np.max(Pref)))
+        prange = np.where(rg.Pressure[:,0]>=np.min(Pref))
+        ycoord = rg.Pressure[prange[0],0]/1e5
+        zvals = Meridlt[:,prange[0]].T
+    else:
+        hrange = np.where(np.logical_and(rg.Altitude[:,0]>=np.min(sigmaref),rg.Altitude[:,0]<=np.max(sigmaref)))
+        ycoord = rg.Altitude[hrange[0],0]
+        zvals = Meridlt[:,hrange[0]].T
+
+    # Contour plot
+    clevels = 40 # may want to make this adjustable
+    # clevels = np.linspace(-20,26,47)
+    if isinstance(axis,axes.SubplotBase):
+        C = axis.contourf(lonp*180/np.pi,ycoord,zvals,clevels,cmap=z['cmap'])
+        ax = axis
+    elif axis == False:
+        plt.figure(figsize=(5,4))
+        C = plt.contourf(lonp*180/np.pi,ycoord,zvals,clevels,cmap=z['cmap'])
+        ax = plt.gca()
+    else:
+        raise IOError("'axis = {}' but {} is not an axes.SubplotBase instance".format(axis,axis))
+
+    if wind_vectors == True:
+        vspacing = np.int(np.shape(rg.lon)[0]/10)
+        if use_p:
+            wspacing = np.int(np.shape(rg.Pressure)[0]/10)
+            Ult = Ult[:,prange[0]]
+            Wlt = Wlt[:,prange[0]]
+            yqcoord = rg.Pressure[::wspacing,0][prange[0]]
+        else:
+            wspacing = np.int(np.shape(rg.Altitude)[0]/10)
+            Ult = Ult[:,hrange[0]]
+            Wlt = Wlt[:,hrange[0]]
+            yqcoord = rg.Altitude[::wspacing,0][hrange[0]]
+
+        Uq = Ult[::vspacing,::wspacing].ravel()
+        Wq = Wlt[::vspacing,::wspacing].ravel()
+        #preq = rg.Pressure[:,0][::spacing,::spacing].ravel()
+        #latq = lati[::spacing,::spacing].ravel()
+        lonq, preq = np.meshgrid(rg.lon[::vspacing,0],yqcoord)
+        del Ult, Wlt
+        plt.quiver(lonq.ravel(),preq.ravel()/1e5,Uq,Wq,color='0.5')
+
+    clb = plt.colorbar(C,extend='both',ax=ax)
+    clb.set_label(z['label'])
+    if isinstance(csp,list) or isinstance(csp,tuple):
+        levp = csp
+    else:
+        if csp == 'match':
+            levp = 40
+        else:
+            if use_p:
+                levp = np.arange(np.ceil(np.nanmin(Meridlt[:,prange[0]])/csp)*csp,np.floor(np.nanmax(Meridlt[:,prange[0]])/csp)*csp,csp)
+            else:
+                levp = np.arange(np.ceil(np.nanmin(Meridlt[:,hrange[0]])/csp)*csp,np.floor(np.nanmax(Meridlt[:,hrange[0]])/csp)*csp,csp)
+
+    c2 = ax.contour(lonp*180/np.pi,ycoord,zvals,levels=levp,colors='w',linewidths=1)
+    plt.clabel(c2,inline=False,fontsize=6,fmt='%d',use_clabeltext=True)
+    for cc in C.collections:
+        cc.set_edgecolor("face") #fixes a stupid bug in matplotlib 2.0
+    #ax.invert_yaxis()
+    # plt.quiver(latq.ravel(),preq.ravel()/1e5,Vq/np.max(Vq),Wq/np.max(Wq),color='0.5')
+    if z['plog'] == True:
+        ax.set_yscale("log")
+    ax.set_xlabel('Longitude (deg)')
+    if use_p:
+        ax.set_ylabel('Pressure (bar)')
+        # ax.plot(latp*180/np.pi,np.zeros_like(latp)+np.max(output.Pressure[:,grid.nv-1,:])/1e5,'r--')
+        ax.set_ylim(np.max(rg.Pressure[prange[0],0])/1e5,np.min(Pref)/1e5)
+
+        if ax.get_ylim()[1] > ax.get_ylim()[0]:
+            ax.invert_yaxis()
+    else:
+        ax.set_ylabel('Altitude (m)')
+
+    if len(slice) == 2:
+        ax.set_title('Time = %#.3f-%#.3f days, Lat = (%#.3f,%#.3f)'%(output.time[0],output.time[-1],slice[0],slice[1]),fontsize=10)
+    else:
+        ax.set_title('Time = %#.3f-%#.3f days, Lat = (%#.3f,)'%(output.time[0],output.time[-1],slice[0]),fontsize=10)
+
+    if not os.path.exists(input.resultsf+'/figures'):
+        os.mkdir(input.resultsf+'/figures')
+    plt.tight_layout()
+    if use_p:
+        z['name'] += '_p'
+    else:
+        z['name'] += '_h'
+    if save == True:
+        # save the plot to file designated by z
+        if len(slice)==2:
+            plt.savefig(input.resultsf+'/figures/%s_ver_i%d_l%d_lat%#.2f-%#.2f.pdf'%(z['name'],output.ntsi,output.nts,slice[0],slice[1]))
+        else:
+            plt.savefig(input.resultsf+'/figures/%s_ver_i%d_l%d_lat%#.2f.pdf'%(z['name'],output.ntsi,output.nts,slice[0]))
+        plt.close()
+    if z['mt'] == True:
+        if len(slice)==2:
+            fname = '%s_ver_i%d_l%d_lat%#.2f-%#.2f.dat'%(z['name'],output.ntsi,output.nts,slice[0],slice[1])
+        else:
+            fname = '%s_ver_i%d_l%d_lat%#.2f.dat'%(z['name'],output.ntsi,output.nts,slice[0])
+        if use_p:
+            maketable(lonp*180/np.pi,rg.Pressure[prange[0],0]/1e5,Meridlt[:,prange[0]],'Longitude(d)','Pressure(bar)',z['name'],input.resultsf,fname)
+        else:
+            maketable(lonp*180/np.pi,rg.Altitude[hrange[0],0],Meridlt[:,hrange[0]],'Longitude(d)','Altitude(m)',z['name'],input.resultsf,fname)
+
 
 
 def horizontal_lev(input,grid,output,rg,Plev,z,save=True,axis=False,wind_vectors=False,use_p=True):
@@ -1495,6 +1704,7 @@ def horizontal_lev(input,grid,output,rg,Plev,z,save=True,axis=False,wind_vectors
             C = axis.contourf(lonp,latp,zlevt,50,cmap=z['cmap'])
         ax = axis
     elif axis == False:
+        plt.figure(figsize=(5,4))
         if z['llswap']:
             C = plt.contourf(latp,lonp,zlevt.T,50,cmap=z['cmap'])
         else:
@@ -1741,7 +1951,7 @@ def calc_moc_streamf(grid,output,input,lons,lats,Pref,t_ind,fileh5,comp=4,pressu
     stream = openh5.create_dataset("streamf",data=SF_llp,compression='gzip',compression_opts=comp)
     openh5.close()
 
-def streamf_moc_plot(input,grid,output,rg,sigmaref,save=True,axis=False,wind_vectors=False,mt=False, plog=True):
+def streamf_moc_plot(input,grid,output,rg,sigmaref,save=True,axis=False,wind_vectors=False,mt=False,plog=True):
     # special plotting function for the mass streamfunction
 
     # Set the reference pressure
@@ -1770,13 +1980,16 @@ def streamf_moc_plot(input,grid,output,rg,sigmaref,save=True,axis=False,wind_vec
                 sf[ilat,-(ilev+1)] = np.trapz(arg[ilat,-1:-(ilev+2):-1],x=rg.Pressure[-1:-(ilev+2):-1][:,0])
 
     # need to set desired pressure range (major PITA!)
-    prange = np.where(np.logical_and(rg.Pressure>=np.min(Pref),rg.Pressure<=np.max(Pref)))
+    # prange = np.where(np.logical_and(rg.Pressure>=np.min(Pref),rg.Pressure<=np.max(Pref)))
+    prange = np.where(rg.Pressure[:,0]>=np.min(Pref))
+
 
     # Contour plot
     if isinstance(axis,axes.SubplotBase):
         C = axis.contourf(rg.lat[:,0],rg.Pressure[prange[0],0]/1e5,sf[:,prange[0]].T,40,cmap = 'viridis')
         ax = axis
     elif axis == False:
+        plt.figure(figsize=(5,4))
         C = plt.contourf(rg.lat[:,0],rg.Pressure[prange[0],0]/1e5,sf[:,prange[0]].T,40,cmap = 'viridis')
         ax = plt.gca()
     else:
@@ -1806,12 +2019,12 @@ def streamf_moc_plot(input,grid,output,rg,sigmaref,save=True,axis=False,wind_vec
         ax.set_yscale("log")
     ax.set_xlabel('Latitude (deg)')
     ax.set_ylabel('Pressure (bar)')
-    ax.plot(rg.lat[:,0],np.zeros_like(rg.lat[:,0])+np.max(output.Pressure[:,grid.nv-1,:])/1e5,'r--')
-    if np.min(rg.Pressure[prange[0],0]) < np.max(output.Pressure[:,grid.nv-1,:]):
-        ax.set_ylim(np.max(rg.Pressure[prange[0],0])/1e5,np.min(rg.Pressure[prange[0],0])/1e5)
-    else:
-        ax.set_ylim(np.max(rg.Pressure[prange[0],0])/1e5,np.max(output.Pressure[:,grid.nv-1,:])/1e5)
-    ax.set_title('Time = %#.3f-%#.3f days, Lon = (0,360)'%(output.time[0],output.time[-1]))
+    # ax.plot(rg.lat[:,0],np.zeros_like(rg.lat[:,0])+np.max(output.Pressure[:,grid.nv-1,:])/1e5,'r--')
+    # if np.min(rg.Pressure[prange[0],0]) < np.max(output.Pressure[:,grid.nv-1,:]):
+    ax.set_ylim(np.max(rg.Pressure[prange[0],0])/1e5,np.min(Pref)/1e5)
+    # else:
+    #     ax.set_ylim(np.max(rg.Pressure[prange[0],0])/1e5,np.max(output.Pressure[:,grid.nv-1,:])/1e5)
+    ax.set_title('Time = %#.1f-%#.1f days, Lon = (0,360)'%(output.time[0],output.time[-1]),fontsize=10)
     if not os.path.exists(input.resultsf+'/figures'):
         os.mkdir(input.resultsf+'/figures')
     plt.tight_layout()

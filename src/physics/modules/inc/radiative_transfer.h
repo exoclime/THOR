@@ -76,9 +76,8 @@ private:
     double planet_star_dist_config = 0.015; // Planet-star distance [au]
     double radius_star_config      = 0.667; // Star radius [Rsun]
     double diff_ang_config         = 0.5;   // Diffusivity angle (1 / diffusivity factor): 0.5-1.0
-    double Tlow_config =
-        970; // Lower boundary temperature: upward flux coming from the planet's interior
-    double albedo_config     = 0.18;   // Bond albedo
+    double Tint_config       = 0;    // temperature of upward flux coming from the planet's interior
+    double albedo_config     = 0.18; // Bond albedo
     double tausw_config      = 532.0;  // Absorption coefficient for the shortwaves
     double taulw_config      = 1064.0; // Absorption coefficient for the longwaves
     bool   latf_lw_config    = false;  // use sin^2(lat) dependence for lw opacity
@@ -105,10 +104,10 @@ private:
     double planet_star_dist = 0.015; // Planet-star distance [au]
     double radius_star      = 0.667; // Star radius [Rsun]
     double diff_ang         = 0.5;   // Diffusivity factor: 0.5-1.0
-    double Tlow = 970; // Lower boundary temperature: upward flux coming from the planet's interior
-    double albedo     = 0.18;   // Bond albedo
-    double tausw      = 532.0;  // Absorption coefficient for the shortwaves
-    double taulw      = 1064.0; // Absorption coefficient for the longwaves
+    double Tint   = 0; // Lower boundary temperature: upward flux coming from the planet's interior
+    double albedo = 0.18;   // Bond albedo
+    double tausw  = 532.0;  // Absorption coefficient for the shortwaves
+    double taulw  = 1064.0; // Absorption coefficient for the longwaves
     double taulw_pole = 1064.0;
     bool   latf_lw    = false;
     double n_lw       = 2.0; // power law dependence for unmixed absorbers in LW
@@ -165,7 +164,7 @@ private:
                     double planet_star_dist_,
                     double radius_star_,
                     double diff_ang_,
-                    double Tlow_,
+                    double Tint_,
                     double albedo_,
                     double tausw_,
                     double taulw_,
