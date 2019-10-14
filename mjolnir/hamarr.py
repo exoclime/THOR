@@ -59,7 +59,8 @@ class input:
                     self.diff_ang = openh5['diff_fac'][...]
                 else:
                     self.diff_ang = openh5['diff_ang'][...]
-                self.Tlow = openh5['Tlow'][...]
+                if 'Tint' in openh5.keys():
+                    self.Tint = openh5['Tint'][...]
                 self.albedo = openh5['albedo'][...]
                 self.tausw = openh5['tausw'][...]
                 self.taulw = openh5['taulw'][...]
