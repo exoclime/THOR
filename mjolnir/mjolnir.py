@@ -218,7 +218,7 @@ if 'stream' in pview: # RD: needs some work! to adapt to height coordinate
     # z = {'value':strm, 'label':r'Eulerian streamfunction (kg s$^{-1}$)', 'name':'streamf2',
     #      'cmap':'viridis', 'lat':rg.lat, 'lon':rg.lon}
     if use_p:
-        sigmaref = ham.Get_Prange(input,grid,rg,args,xtype='lat')
+        sigmaref = ham.Get_Prange(input,grid,rg,args,xtype='lat',use_p=use_p)
         # ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice,csp=[0])
         ham.streamf_moc_plot(input,grid,output,rg,sigmaref,mt=maketable,plog=plog)
     else:

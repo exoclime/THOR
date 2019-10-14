@@ -1308,6 +1308,7 @@ def vertical_lat(input,grid,output,rg,sigmaref,z,slice=[0,360],save=True,axis=Fa
 
     # Contour plot
     clevels = 40 # may want to make this adjustable
+    # clevels = np.linspace(280,500,40)
     if isinstance(axis,axes.SubplotBase):
         C = axis.contourf(latp*180/np.pi,ycoord,zvals,clevels,cmap=z['cmap'])
         ax = axis
@@ -1513,6 +1514,7 @@ def vertical_lon(input,grid,output,rg,sigmaref,z,slice=[0,360],save=True,axis=Fa
 
     # Contour plot
     clevels = 40 # may want to make this adjustable
+    # clevels = np.linspace(-20,26,47)
     if isinstance(axis,axes.SubplotBase):
         C = axis.contourf(lonp*180/np.pi,ycoord,zvals,clevels,cmap=z['cmap'])
         ax = axis
@@ -1977,7 +1979,9 @@ def streamf_moc_plot(input,grid,output,rg,sigmaref,save=True,axis=False,wind_vec
                 sf[ilat,-(ilev+1)] = np.trapz(arg[ilat,-1:-(ilev+2):-1],x=rg.Pressure[-1:-(ilev+2):-1][:,0])
 
     # need to set desired pressure range (major PITA!)
-    prange = np.where(np.logical_and(rg.Pressure>=np.min(Pref),rg.Pressure<=np.max(Pref)))
+    # prange = np.where(np.logical_and(rg.Pressure>=np.min(Pref),rg.Pressure<=np.max(Pref)))
+    prange = np.where(rg.Pressure[:,0]>=np.min(Pref))
+
 
     # Contour plot
     if isinstance(axis,axes.SubplotBase):
@@ -2015,10 +2019,10 @@ def streamf_moc_plot(input,grid,output,rg,sigmaref,save=True,axis=False,wind_vec
     ax.set_xlabel('Latitude (deg)')
     ax.set_ylabel('Pressure (bar)')
     # ax.plot(rg.lat[:,0],np.zeros_like(rg.lat[:,0])+np.max(output.Pressure[:,grid.nv-1,:])/1e5,'r--')
-    if np.min(rg.Pressure[prange[0],0]) < np.max(output.Pressure[:,grid.nv-1,:]):
-        ax.set_ylim(np.max(rg.Pressure[prange[0],0])/1e5,np.min(rg.Pressure[prange[0],0])/1e5)
-    else:
-        ax.set_ylim(np.max(rg.Pressure[prange[0],0])/1e5,np.max(output.Pressure[:,grid.nv-1,:])/1e5)
+    # if np.min(rg.Pressure[prange[0],0]) < np.max(output.Pressure[:,grid.nv-1,:]):
+    ax.set_ylim(np.max(rg.Pressure[prange[0],0])/1e5,np.min(Pref)/1e5)
+    # else:
+    #     ax.set_ylim(np.max(rg.Pressure[prange[0],0])/1e5,np.max(output.Pressure[:,grid.nv-1,:])/1e5)
     ax.set_title('Time = %#.1f-%#.1f days, Lon = (0,360)'%(output.time[0],output.time[-1]),fontsize=10)
     if not os.path.exists(input.resultsf+'/figures'):
         os.mkdir(input.resultsf+'/figures')
