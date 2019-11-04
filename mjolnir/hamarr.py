@@ -4,6 +4,7 @@ import matplotlib.colors as colors
 import matplotlib.axes as axes
 import matplotlib.cm as cm
 import scipy.interpolate as interp
+import scipy.ndimage as ndimage
 import os
 import h5py
 import time
@@ -1304,12 +1305,13 @@ def vertical_lat(input,grid,output,rg,sigmaref,z,slice=[0,360],save=True,axis=Fa
         zvals = Zonallt[:,prange[0]].T
     else:
         hrange = np.where(np.logical_and(rg.Altitude[:,0]>=np.min(sigmaref),rg.Altitude[:,0]<=np.max(sigmaref)))
-        ycoord = rg.Altitude[hrange[0],0]
+        ycoord = rg.Altitude[hrange[0],0]/1000
         zvals = Zonallt[:,hrange[0]].T
 
     # Contour plot
     clevels = 40 # may want to make this adjustable
-    # clevels = np.linspace(280,500,40)
+    # clevels = np.linspace(280,500,45)
+    # print(np.max(zvals))
     if isinstance(axis,axes.SubplotBase):
         C = axis.contourf(latp*180/np.pi,ycoord,zvals,clevels,cmap=z['cmap'])
         ax = axis
@@ -1371,7 +1373,7 @@ def vertical_lat(input,grid,output,rg,sigmaref,z,slice=[0,360],save=True,axis=Fa
         if ax.get_ylim()[1] > ax.get_ylim()[0]:
             ax.invert_yaxis()
     else:
-        ax.set_ylabel('Altitude (m)')
+        ax.set_ylabel('Altitude (km)')
 
     if len(slice) == 2:
         ax.set_title('Time = %#.3f-%#.3f days, Lon = (%#.3f,%#.3f)'%(output.time[0],output.time[-1],slice[0],slice[1]),fontsize=10)
@@ -1510,12 +1512,13 @@ def vertical_lon(input,grid,output,rg,sigmaref,z,slice=[0,360],save=True,axis=Fa
         zvals = Meridlt[:,prange[0]].T
     else:
         hrange = np.where(np.logical_and(rg.Altitude[:,0]>=np.min(sigmaref),rg.Altitude[:,0]<=np.max(sigmaref)))
-        ycoord = rg.Altitude[hrange[0],0]
+        ycoord = rg.Altitude[hrange[0],0]/1000
         zvals = Meridlt[:,hrange[0]].T
 
     # Contour plot
     clevels = 40 # may want to make this adjustable
-    # clevels = np.linspace(-20,26,47)
+    # clevels = np.linspace(-100,6400,66)
+    print(np.min(zvals),np.max(zvals))
     if isinstance(axis,axes.SubplotBase):
         C = axis.contourf(lonp*180/np.pi,ycoord,zvals,clevels,cmap=z['cmap'])
         ax = axis
@@ -1571,13 +1574,13 @@ def vertical_lon(input,grid,output,rg,sigmaref,z,slice=[0,360],save=True,axis=Fa
     ax.set_xlabel('Longitude (deg)')
     if use_p:
         ax.set_ylabel('Pressure (bar)')
-        # ax.plot(latp*180/np.pi,np.zeros_like(latp)+np.max(output.Pressure[:,grid.nv-1,:])/1e5,'r--')
+        ax.plot(lonp*180/np.pi,np.zeros_like(lonp)+np.max(output.Pressure[:,grid.nv-1,:])/1e5,'r--')
         ax.set_ylim(np.max(rg.Pressure[prange[0],0])/1e5,np.min(Pref)/1e5)
 
         if ax.get_ylim()[1] > ax.get_ylim()[0]:
             ax.invert_yaxis()
     else:
-        ax.set_ylabel('Altitude (m)')
+        ax.set_ylabel('Altitude (km)')
 
     if len(slice) == 2:
         ax.set_title('Time = %#.3f-%#.3f days, Lat = (%#.3f,%#.3f)'%(output.time[0],output.time[-1],slice[0],slice[1]),fontsize=10)
@@ -1689,6 +1692,8 @@ def horizontal_lev(input,grid,output,rg,Plev,z,save=True,axis=False,wind_vectors
             Viii = Vii[:,:,0]
             del Uii, Vii
 
+    # smoothing
+    zlevt = ndimage.gaussian_filter(zlevt,sigma=2,order=0)
 
     #################
     # Create Figure #
@@ -1697,18 +1702,20 @@ def horizontal_lev(input,grid,output,rg,Plev,z,save=True,axis=False,wind_vectors
     lonp = rg.lon[:,0]
     latp = rg.lat[:,0]
 
+    clevels = 50
+    # clevels = np.linspace(900,1470,58)
     if isinstance(axis,axes.SubplotBase):
         if z['llswap']:
-            C = axis.contourf(latp,lonp,zlevt.T,50,cmap=z['cmap'])
+            C = axis.contourf(latp,lonp,zlevt.T,clevels,cmap=z['cmap'])
         else:
-            C = axis.contourf(lonp,latp,zlevt,50,cmap=z['cmap'])
+            C = axis.contourf(lonp,latp,zlevt,clevels,cmap=z['cmap'])
         ax = axis
     elif axis == False:
         plt.figure(figsize=(5,4))
         if z['llswap']:
-            C = plt.contourf(latp,lonp,zlevt.T,50,cmap=z['cmap'])
+            C = plt.contourf(latp,lonp,zlevt.T,clevels,cmap=z['cmap'])
         else:
-            C = plt.contourf(lonp,latp,zlevt,50,cmap=z['cmap'])
+            C = plt.contourf(lonp,latp,zlevt,clevels,cmap=z['cmap'])
         ax = plt.gca()
     else:
         raise IOError("'axis = {}' but {} is not an axes.SubplotBase instance".format(axis,axis))
@@ -2631,7 +2638,7 @@ def conservation(input,grid,output,split):
 def SRindex(input,grid,output):
     tsp = output.nts-output.ntsi+1
     #total surface area
-    Atot = 4*np.pi*input.A**2
+    Atot = input.A**2
     solid_ang = grid.areasT/Atot
 
     U = (-output.Mh[0]*np.sin(grid.lon[:,None,None])+output.Mh[1]*np.cos(grid.lon[:,None,None]))/output.Rho

@@ -63,11 +63,11 @@ maketable = args.maketable
 plog = True
 if args.no_pressure_log:
     plog = False
-valid = ['uver','ulonver','vver','wver','wlonver','wprof','Tver','Tlonver','Tulev','PTver','ulev','PVver','PVlev',
+valid = ['uver','ulonver','vver','wver','wlonver','wprof','Tver','Tlonver','Tulev','PTver','PTlonver','ulev','PVver','PVlev',
             'TP','RVlev','cons','stream','pause','tracer','PTP','regrid','KE',
             'SR','uprof','cfl','bvprof','fluxprof','Tsurf','insol','massf']
 
-rg_needed = ['Tver','Tlonver','uver','ulonver','vver','wver','wlonver','Tulev','PTver','ulev','PVver','PVlev',
+rg_needed = ['Tver','Tlonver','uver','ulonver','vver','wver','wlonver','Tulev','PTver','PTlonver','ulev','PVver','PVlev',
             'RVlev','stream','tracer','Tsurf','insol','massf']  #these types need regrid
 
 openrg = 0
@@ -205,6 +205,14 @@ if 'PTver' in pview:
     sigmaref = ham.Get_Prange(input,grid,rg,args,xtype='lat',use_p=use_p)
     # Averaged potential temperature (latitude vs pressure)
     ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice,use_p=use_p,csp=5000)
+if 'PTlonver' in pview:
+    kappa_ad = input.Rd/input.Cp  # adiabatic coefficient
+    pt = rg.Temperature*(rg.Pressure/input.P_Ref)**(-kappa_ad)
+    z = {'value':pt, 'label':r'Potential Temperature (K)', 'name':'potential_temp',
+         'cmap':'plasma', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable, 'plog':plog}
+    sigmaref = ham.Get_Prange(input,grid,rg,args,xtype='lat',use_p=use_p)
+    # Averaged potential temperature (latitude vs pressure)
+    ham.vertical_lon(input,grid,output,rg,sigmaref,z,slice=args.slice,use_p=use_p,csp=5000)
 if 'PVver' in pview:
     # sigmaref = np.arange(1,0,)
     z = {'value':rg.PV, 'label':r'Potential Vorticity (K m$^2$ kg$^{-1}$ s$^{-1}$)',
