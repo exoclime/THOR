@@ -74,6 +74,12 @@
 #include "debug.h"
 #ifdef BENCHMARKING
 #    warning "Compiling with benchmarktest enabled"
+#    ifdef BENCH_POINT_COMPARE
+#        warning "Compare flag enabled"
+#    endif
+#    ifdef BENCH_POINT_WRITE
+#        warning "Write flag enabled"
+#    endif
 #endif
 
 #include <csignal>
@@ -82,11 +88,7 @@ using std::string;
 
 #include "log_writer.h"
 
-enum e_sig {
-    ESIG_NOSIG   = 0,
-    ESIG_SIGTERM = 1,
-    ESIG_SIGINT  = 2
-};
+enum e_sig { ESIG_NOSIG = 0, ESIG_SIGTERM = 1, ESIG_SIGINT = 2 };
 
 
 volatile sig_atomic_t caught_signal = ESIG_NOSIG;
@@ -160,8 +162,12 @@ int main(int argc, char** argv) {
     argparser.add_arg("g", "gpu_id", 0, "GPU_ID to run on");
     argparser.add_arg("o", "output_dir", string("results"), "results directory to store output");
 
-    argparser.add_arg("i", "initial", string("initialfilename"), "start from this initial condition instead of rest");
-    argparser.add_arg("c", "continue", string("continuefilename"), "continue simulation from this output file");
+    argparser.add_arg("i",
+                      "initial",
+                      string("initialfilename"),
+                      "start from this initial condition instead of rest");
+    argparser.add_arg(
+        "c", "continue", string("continuefilename"), "continue simulation from this output file");
     argparser.add_arg("N", "numsteps", 48000, "number of steps to run");
     argparser.add_arg("w", "overwrite", true, "Force overwrite of output file if they exist");
 
@@ -221,6 +227,9 @@ int main(int argc, char** argv) {
     config_reader.append_config_var("Top_altitude", sim.Top_altitude, sim.Top_altitude);
     config_reader.append_config_var("Diffc", sim.Diffc, sim.Diffc);
 
+    // ...and separate div damping
+    config_reader.append_config_var("DivDampc", sim.DivDampc, sim.DivDampc);
+
     // grid
     bool   spring_dynamics = true;
     int    glevel          = 4;
@@ -241,18 +250,22 @@ int main(int argc, char** argv) {
 
     int    nlat          = 20;
     double Rv_sponge     = 1e-4;
+    double RvT_sponge    = 1e-4;
     double ns_sponge     = 0.75;
     bool   shrink_sponge = false;
-    double t_shrink      = 500;
+    int    t_shrink      = 144000; // number of time steps after which shrink begins
 
     config_reader.append_config_var("NonHydro", sim.NonHydro, NonHydro_default);
     config_reader.append_config_var("DeepModel", sim.DeepModel, DeepModel_default);
     config_reader.append_config_var("SpongeLayer", sim.SpongeLayer, SpongeLayer_default);
     config_reader.append_config_var("nlat", nlat, nlat_default);
     config_reader.append_config_var("Rv_sponge", Rv_sponge, Rv_sponge_default);
+    config_reader.append_config_var("RvT_sponge", RvT_sponge, RvT_sponge_default);
     config_reader.append_config_var("ns_sponge", ns_sponge, ns_sponge_default);
     config_reader.append_config_var("shrink_sponge", shrink_sponge, shrink_sponge_default);
     config_reader.append_config_var("t_shrink", t_shrink, t_shrink_default);
+
+    config_reader.append_config_var("output_mean", sim.output_mean, output_mean_default);
 
     // Initial conditions
     // rest supersedes initial condition entry,
@@ -261,11 +274,13 @@ int main(int argc, char** argv) {
     config_reader.append_config_var("rest", sim.rest, rest_default);
 
     string initial_conditions = "initialfilename.h5";
-    config_reader.append_config_var("initial", initial_conditions, string(initial_conditions_default));
+    config_reader.append_config_var(
+        "initial", initial_conditions, string(initial_conditions_default));
 
     // Benchmark test
     string core_benchmark_str("HeldSuarez");
-    config_reader.append_config_var("core_benchmark", core_benchmark_str, string(core_benchmark_default));
+    config_reader.append_config_var(
+        "core_benchmark", core_benchmark_str, string(core_benchmark_default)); //
 
     config_reader.append_config_var("conv_adj", sim.conv_adj, conv_adj_default);
 
@@ -279,8 +294,6 @@ int main(int argc, char** argv) {
     config_reader.append_config_var("results_path", output_path, string(output_path_default));
 
     config_reader.append_config_var("gcm_off", sim.gcm_off, gcm_off_default);
-
-    config_reader.append_config_var("TPprof", sim.TPprof, TPprof_default);
 
     config_reader.append_config_var("conservation", sim.conservation, conservation_default);
     //*****************************************************************
@@ -340,20 +353,23 @@ int main(int argc, char** argv) {
         continue_sim = true;
 
         if (run_as_batch) {
-            log::printf("--continue and --batch options set, options are exclusive, must set only one\n");
+            log::printf(
+                "--continue and --batch options set, options are exclusive, must set only one\n");
 
             exit(-1);
         }
 
 
         if (initial_condition_arg_set) {
-            log::printf("--continue and --initial options set, options are exclusive, must set only one\n");
+            log::printf(
+                "--continue and --initial options set, options are exclusive, must set only one\n");
 
             exit(-1);
         }
 
         if (!path_exists(continue_filename)) {
-            log::printf("Continuation start condition file \"%s\" not found\n", continue_filename.c_str());
+            log::printf("Continuation start condition file \"%s\" not found\n",
+                        continue_filename.c_str());
             exit(-1);
         }
 
@@ -387,8 +403,6 @@ int main(int argc, char** argv) {
 
     config_OK &= check_greater("GPU_ID_N", GPU_ID_N, -1);
     config_OK &= check_greater("n_out", n_out, 0);
-
-    config_OK &= check_range("TPprof", sim.TPprof, -1, 2);
 
     if (simulation_ID.length() < 160) {
         sprintf(sim.simulation_ID, "%s", simulation_ID.c_str());
@@ -435,7 +449,8 @@ int main(int argc, char** argv) {
         config_OK &= true;
     }
     else {
-        log::printf("core_benchmark config item not recognised: [%s]\n", core_benchmark_str.c_str());
+        log::printf("core_benchmark config item not recognised: [%s]\n",
+                    core_benchmark_str.c_str());
         config_OK &= false;
     }
 
@@ -447,7 +462,7 @@ int main(int argc, char** argv) {
 
 
 #ifdef BENCHMARKING
-    string output_path_ref = (path(output_path) / string("ref")).to_string();
+    string output_path_ref = path(output_path).to_string();
 #    ifdef BENCH_POINT_COMPARE
     output_path = (path(output_path) / string("compare")).to_string();
 #    endif // BENCH_POINT_COMPARE
@@ -459,8 +474,7 @@ int main(int argc, char** argv) {
 
     // check output config directory
     if (!create_output_dir(output_path)) {
-        log::printf("Error creating output result directory: %s\n",
-                    output_path.c_str());
+        log::printf("Error creating output result directory: %s\n", output_path.c_str());
         exit(-1);
     }
 
@@ -468,7 +482,8 @@ int main(int argc, char** argv) {
     // Start logging to file
     printf("Opening log file.\n");
 
-    string log_file = (path(output_path) / (string("esp_log_") + sim.simulation_ID + string(".log"))).to_string();
+    string log_file =
+        (path(output_path) / (string("esp_log_") + sim.simulation_ID + string(".log"))).to_string();
 
     log::init_logger(log_file, continue_sim || run_as_batch);
 
@@ -499,9 +514,11 @@ int main(int argc, char** argv) {
         bool   has_last_file         = false;
 
         try {
-            has_last_file = logwriter.check_output_log(last_file_number, last_iteration_number, last_file);
+            has_last_file =
+                logwriter.check_output_log(last_file_number, last_iteration_number, last_file);
         } catch (const std::exception& e) {
-            log::printf("[%s:%d] error while checking output log: %s.\n", __FILE__, __LINE__, e.what());
+            log::printf(
+                "[%s:%d] error while checking output log: %s.\n", __FILE__, __LINE__, e.what());
             exit(-1);
         }
 
@@ -605,14 +622,17 @@ int main(int argc, char** argv) {
     // do we have the compute capabilities set at compile time
 
     if (device_major_minor_number < DEVICE_SM) {
-        log::printf("Found device with id %d does not have sufficent compute capabilities.\n", GPU_ID_N);
-        log::printf("Capabilities: %d (compiled with SM=%d).\n", device_major_minor_number, DEVICE_SM);
+        log::printf("Found device with id %d does not have sufficent compute capabilities.\n",
+                    GPU_ID_N);
+        log::printf(
+            "Capabilities: %d (compiled with SM=%d).\n", device_major_minor_number, DEVICE_SM);
         log::printf("Aborting.\n");
         exit(-1);
     }
     else if (device_major_minor_number > DEVICE_SM) {
         log::printf("Device has higher compute capability than used at compile time.\n");
-        log::printf("Capabilities: %d (compiled with SM=%d).\n", device_major_minor_number, DEVICE_SM);
+        log::printf(
+            "Capabilities: %d (compiled with SM=%d).\n", device_major_minor_number, DEVICE_SM);
     }
 
 
@@ -643,6 +663,7 @@ int main(int argc, char** argv) {
           Grid.areasTr,        // Areas of the triangles
           Grid.div,            // Divergence operator
           Grid.grad,           // Gradient operator
+          Grid.curlz,          // Curl operator (vertical component)
           Grid.func_r,         // Normalised vector
           Grid.nl_region,      // Number of points in one side of a rhombus
           Grid.nr,             // Number of rhombi
@@ -655,20 +676,37 @@ int main(int argc, char** argv) {
                                // mean wind
           Grid.zonal_mean_tab, // table of zonal means for sponge layer
           Rv_sponge,           // Maximum damping of sponge layer
+          RvT_sponge,          // Maximum damping of sponge layer (thermal component)
           ns_sponge,           // lowest level of sponge layer (fraction of model)
           t_shrink,            // time to shrink sponge layer
           Grid.point_num,      // Number of grid points
           sim.conservation,    // compute conservation values
           core_benchmark,      // benchmark test type
           logwriter,           // Log writer
-          max_count);
+          max_count,
+          sim.output_mean);
 
 
     USE_BENCHMARK();
 
     INIT_BENCHMARK(X, Grid, output_path_ref);
 
-    BENCH_POINT("0", "Grid", (), ("func_r", "areas", "areasTr", "areasT", "nvec", "nvecoa", "nvecti", "nvecte", "Altitude", "Altitudeh", "lonlat", "div", "grad"))
+    BENCH_POINT("0",
+                "Grid",
+                (),
+                ("func_r",
+                 "areas",
+                 "areasTr",
+                 "areasT",
+                 "nvec",
+                 "nvecoa",
+                 "nvecti",
+                 "nvecte",
+                 "Altitude",
+                 "Altitudeh",
+                 "lonlat",
+                 "div",
+                 "grad"))
 
     // esp output setup
     X.set_output_param(sim.simulation_ID, output_path);
@@ -680,24 +718,23 @@ int main(int argc, char** argv) {
     // Initial conditions
     int  output_file_idx = 0;
     int  step_idx        = 0;
-    bool load_initial    = X.initial_values(
-        initial_conditions,    // initial conditions if not
-                               // started from
-                               // rest
-        continue_sim,          // if we
-                               // specify
-                               // initial
-                               // conditions,
-                               // continue or
-                               // start at 0?
-        timestep,              // Time-step [s]
-        sim,                   // simulation parameters
-        step_idx,              // current step index
-        simulation_start_time, // output:
-                               // simulation start time
-        output_file_idx);      // output file
-                                  // read + 1, 0
-                                  // if nothing read
+    bool load_initial    = X.initial_values(initial_conditions,    // initial conditions if not
+                                                                // started from
+                                                                // rest
+                                         continue_sim,          // if we
+                                                                // specify
+                                                                // initial
+                                                                // conditions,
+                                                                // continue or
+                                                                // start at 0?
+                                         timestep,              // Time-step [s]
+                                         sim,                   // simulation parameters
+                                         step_idx,              // current step index
+                                         simulation_start_time, // output:
+                                                                // simulation start time
+                                         output_file_idx);      // output file
+                                                                   // read + 1, 0
+                                                                   // if nothing read
 
 
     if (!load_initial) {
@@ -766,7 +803,8 @@ int main(int argc, char** argv) {
     log::printf("   Glevel          = %d.\n", glevel);
     log::printf("   Spring dynamics = %d.\n", spring_dynamics);
     log::printf("   Beta            = %f.\n", spring_beta);
-    log::printf("   Resolution      = %f deg.\n", (180 / M_PI) * sqrt(2 * M_PI / 5) / pow(2, glevel));
+    log::printf("   Resolution      = %f deg.\n",
+                (180 / M_PI) * sqrt(2 * M_PI / 5) / pow(2, glevel));
     log::printf("   Vertical layers = %d.\n", Grid.nv);
     log::printf("   ********** \n");
     log::printf("   Split-Explicit / HE-VI \n");
@@ -777,7 +815,9 @@ int main(int argc, char** argv) {
 
     log::printf("    \n");
 
-    log::printf("   Running Core Benchmark test \"%s\" (%d).\n", core_benchmark_str.c_str(), int(core_benchmark));
+    log::printf("   Running Core Benchmark test \"%s\" (%d).\n",
+                core_benchmark_str.c_str(),
+                int(core_benchmark));
 
     log::printf("    \n");
 
@@ -849,6 +889,10 @@ int main(int argc, char** argv) {
             X.copy_conservation_to_host();
         }
 
+        if (sim.output_mean == true) {
+            X.copy_mean_to_host();
+        }
+
         X.output(0, // file index
                  sim);
 
@@ -870,25 +914,29 @@ int main(int argc, char** argv) {
     //
     //  Main loop. nstep is the current step of the integration and nsmax the maximum
     //  number of steps in the integration.
+    int n_since_output = 1; //how many steps have passed since last output
     for (int nstep = step_idx; nstep <= nsmax; ++nstep) {
-
         // compute simulation time
         simulation_time = simulation_start_time + (nstep - step_idx + 1) * timestep;
+
         // set simulation time and step number for simulation engine and output
         X.init_timestep(nstep,           // Time-step [s]
                         simulation_time, // Simulation time [s]
                         timestep);       // Large time step [s]
+
+        //
+        //     Physical Core Integration (ProfX)
+        X.ProfX(sim, n_out, shrink_sponge);
 
         if (!sim.gcm_off) {
             //
             //        Dynamical Core Integration (THOR)
             X.Thor(sim); // simulationt parameters
         }
+
         //
         //     Physical Core Integration (ProfX)
-        X.ProfX(sim,
-                n_out,
-                shrink_sponge);
+        // X.ProfX(sim, n_out, shrink_sponge);
 
         // compute simulation time
         simulation_time  = simulation_start_time + (nstep - step_idx + 1) * timestep;
@@ -906,24 +954,29 @@ int main(int argc, char** argv) {
                                           X.GlobalEnt_h);
         }
 
+        if (sim.output_mean == true)
+            X.update_mean_outputs(n_since_output);
+
         //
         //      Prints output every nout steps
-        if (nstep % n_out == 0
-            || caught_signal != ESIG_NOSIG) {
+        if (nstep % n_out == 0 || caught_signal != ESIG_NOSIG) {
             X.copy_to_host();
 
             if (sim.conservation == true)
                 X.copy_conservation_to_host();
 
-            X.output(output_file_idx,
-                     sim);
+            if (sim.output_mean == true) {
+                X.copy_mean_to_host();
+            }
+
+            X.output(output_file_idx, sim);
 
             // increment output file index
             output_file_idx++;
 
-            file_output = true;
+            file_output    = true;
+            n_since_output = 0;
         }
-
 
         // Timing information
         double      mean_delta_per_step = 0.0;
@@ -931,19 +984,15 @@ int main(int argc, char** argv) {
         double      time_left           = 0.0;
         std::time_t end_time;
 
-        ittimer.iteration(nstep,
-                          mean_delta_per_step,
-                          elapsed_time,
-                          time_left,
-                          end_time);
+        ittimer.iteration(nstep, mean_delta_per_step, elapsed_time, time_left, end_time);
         // format end time
         std::ostringstream end_time_str;
         char               str_time[256];
         std::strftime(str_time, sizeof(str_time), "%F %T", std::localtime(&end_time));
         end_time_str << str_time;
 
-
-        log::printf("\n Time step number = %d/%d || Time = %f days. \n\t Elapsed %s || Left: %s || Completion: %s. %s",
+        log::printf("\n Time step number = %d/%d || Time = %f days. \n\t Elapsed %s || Left: %s || "
+                    "Completion: %s. %s",
                     nstep,
                     nsmax,
                     simulation_time / 86400.,
@@ -974,11 +1023,13 @@ int main(int argc, char** argv) {
             //exit loop and application after save on SIGTERM or SIGINT
             break;
         }
+        n_since_output++;
     }
     //
     //  Prints the duration of the integration.
     long finishTime = clock();
-    log::printf("\n\n Integration time = %f seconds\n\n", double((finishTime - startTime)) / double(CLOCKS_PER_SEC));
+    log::printf("\n\n Integration time = %f seconds\n\n",
+                double((finishTime - startTime)) / double(CLOCKS_PER_SEC));
 
     //
     //  Checks for errors in the device.

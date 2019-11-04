@@ -155,7 +155,5 @@ inline __host__ __device__ double3 normalize(const double3 &a) {
 }
 
 inline __host__ __device__ double3 cross(const double3 &a, const double3 &b) {
-    return make_double3(a.y * b.z - a.z * b.y,
-                        a.z * b.x - a.x * b.z,
-                        a.x * b.y - a.y * b.x);
+    return make_double3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
 }

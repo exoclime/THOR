@@ -55,24 +55,22 @@ void setup_gwave_TP(double *pressure_h,
                     int     lev) {
 
     // for now, assume N = 0.01 as in case 1 of T&S
-
+    // RD: i don't think i'm using this function (should prob remove it)
     double logP, T;
     double z = Altitude_h[lev];
 
     // polyfits for p and T
-    logP = -4.30649701e-43 * pow(z, 10) + 6.96539355e-38 * pow(z, 9)
-           - 4.82105798e-33 * pow(z, 8) + 1.86013495e-28 * pow(z, 7)
-           - 4.37180502e-24 * pow(z, 6) + 6.42032008e-20 * pow(z, 5)
-           - 5.81443216e-16 * pow(z, 4) + 3.05991707e-12 * pow(z, 3)
-           - 8.91875000e-09 * pow(z, 2) - 4.07764528e-05 * z + 4.99994103;
+    logP = -4.30649701e-43 * pow(z, 10) + 6.96539355e-38 * pow(z, 9) - 4.82105798e-33 * pow(z, 8)
+           + 1.86013495e-28 * pow(z, 7) - 4.37180502e-24 * pow(z, 6) + 6.42032008e-20 * pow(z, 5)
+           - 5.81443216e-16 * pow(z, 4) + 3.05991707e-12 * pow(z, 3) - 8.91875000e-09 * pow(z, 2)
+           - 4.07764528e-05 * z + 4.99994103;
 
     pressure_h[id * nv + lev] = pow(10, logP);
 
-    T = 4.24534875e-43 * pow(z, 10) - 8.20325495e-38 * pow(z, 9)
-        + 6.66627493e-33 * pow(z, 8) - 2.97343975e-28 * pow(z, 7)
-        + 7.96256373e-24 * pow(z, 6) - 1.31454761e-19 * pow(z, 5)
-        + 1.32002272e-15 * pow(z, 4) - 7.75487103e-12 * pow(z, 3)
-        - 1.15941319e-08 * pow(z, 2) - 6.71406985e-03 * z + 3.00000267e+02;
+    T = 4.24534875e-43 * pow(z, 10) - 8.20325495e-38 * pow(z, 9) + 6.66627493e-33 * pow(z, 8)
+        - 2.97343975e-28 * pow(z, 7) + 7.96256373e-24 * pow(z, 6) - 1.31454761e-19 * pow(z, 5)
+        + 1.32002272e-15 * pow(z, 4) - 7.75487103e-12 * pow(z, 3) - 1.15941319e-08 * pow(z, 2)
+        - 6.71406985e-03 * z + 3.00000267e+02;
     temperature_h[id * nv + lev] = T;
 }
 
@@ -115,6 +113,6 @@ __global__ void gwave_test(double *pressure_d,
 
         pt += dpt * f * g; // apply perturbation to potential temperature
         temperature_d[id * nv + lev] = pt * pow(pressure_d[id * nv + lev] / P_Ref, kappa);
-        Rho_d[id * nv + lev]         = pressure_d[id * nv + lev] / (Rd * temperature_d[id * nv + lev]);
+        Rho_d[id * nv + lev] = pressure_d[id * nv + lev] / (Rd * temperature_d[id * nv + lev]);
     }
 }

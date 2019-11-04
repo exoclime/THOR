@@ -182,20 +182,15 @@ __global__ void Vertical_Eq(double *Whs_d,
                 Sdh   = Sdl * intt + Sd * intl;
 
                 if (!NonHydro) {
-                    C0 = (pow(deltat, 2.0) * dSpdz
-                          + pow(deltat, 2.0) * Gravit * Sdh
-                          + Gravit * deltat * rhohs
-                          + deltat * dPdz
-                          - deltat * Srh_d[id * nvi + lev])
-                         * (CRdd);
+                    C0 =
+                        (pow(deltat, 2.0) * dSpdz + pow(deltat, 2.0) * Gravit * Sdh
+                         + Gravit * deltat * rhohs + deltat * dPdz - deltat * Srh_d[id * nvi + lev])
+                        * (CRdd);
                 }
                 else {
-                    C0 = (-Whs_d[id * nvi + lev]
-                          + pow(deltat, 2.0) * dSpdz
-                          + pow(deltat, 2.0) * Gravit * Sdh
-                          + Gravit * deltat * rhohs
-                          + deltat * dPdz
-                          - deltat * Srh_d[id * nvi + lev])
+                    C0 = (-Whs_d[id * nvi + lev] + pow(deltat, 2.0) * dSpdz
+                          + pow(deltat, 2.0) * Gravit * Sdh + Gravit * deltat * rhohs
+                          + deltat * dPdz - deltat * Srh_d[id * nvi + lev])
                          * (CRdd);
                 }
 
@@ -265,20 +260,15 @@ __global__ void Vertical_Eq(double *Whs_d,
                 Sdh   = Sdl * intt + Sd * intl;
 
                 if (!NonHydro) {
-                    C0 = (pow(deltat, 2.0) * dSpdz
-                          + pow(deltat, 2.0) * Gravit * Sdh
-                          + Gravit * deltat * rhohs
-                          + deltat * dPdz
-                          - deltat * Srh_d[id * nvi + lev])
-                         * (CRdd);
+                    C0 =
+                        (pow(deltat, 2.0) * dSpdz + pow(deltat, 2.0) * Gravit * Sdh
+                         + Gravit * deltat * rhohs + deltat * dPdz - deltat * Srh_d[id * nvi + lev])
+                        * (CRdd);
                 }
                 else {
-                    C0 = (-Whs_d[id * nvi + lev]
-                          + pow(deltat, 2.0) * dSpdz
-                          + pow(deltat, 2.0) * Gravit * Sdh
-                          + Gravit * deltat * rhohs
-                          + deltat * dPdz
-                          - deltat * Srh_d[id * nvi + lev])
+                    C0 = (-Whs_d[id * nvi + lev] + pow(deltat, 2.0) * dSpdz
+                          + pow(deltat, 2.0) * Gravit * Sdh + Gravit * deltat * rhohs
+                          + deltat * dPdz - deltat * Srh_d[id * nvi + lev])
                          * (CRdd);
                 }
 
@@ -314,7 +304,8 @@ __global__ void Vertical_Eq(double *Whs_d,
             else {
                 t = 1.0 / (bb - cc[threadIdx.x * nvi + lev - 1] * aa);
                 cc[threadIdx.x * nvi + lev] *= t;
-                dd[threadIdx.x * nvi + lev] = (dd[threadIdx.x * nvi + lev] - dd[threadIdx.x * nvi + lev - 1] * aa) * t;
+                dd[threadIdx.x * nvi + lev] =
+                    (dd[threadIdx.x * nvi + lev] - dd[threadIdx.x * nvi + lev - 1] * aa) * t;
             }
         }
         Whs_d[id * nvi + nv]     = 0.0;
@@ -322,7 +313,8 @@ __global__ void Vertical_Eq(double *Whs_d,
         Whs_d[id * nvi + nv - 1] = dd[threadIdx.x * nvi + nv - 1];
         // Updates vertical momentum
         for (int lev = nvi - 2; lev > 0; lev--)
-            Whs_d[id * nvi + lev] = (-cc[threadIdx.x * nvi + lev] * Whs_d[id * nvi + lev + 1] + dd[threadIdx.x * nvi + lev]);
+            Whs_d[id * nvi + lev] = (-cc[threadIdx.x * nvi + lev] * Whs_d[id * nvi + lev + 1]
+                                     + dd[threadIdx.x * nvi + lev]);
 
         for (int lev = 0; lev < nv; lev++) {
 
@@ -458,9 +450,17 @@ __global__ void Prepare_Implicit_Vertical(double *Mh_d,
         div5 = div_d[id * 7 * 3 + 3 * 5 + k];
         div6 = div_d[id * 7 * 3 + 3 * 6 + k];
 
-        nflxr_s[iri] -= rscale * (div0 * v_s[ir * 3 + k] + div1 * v_s[pt1 * 3 + k] + div2 * v_s[pt2 * 3 + k] + div3 * v_s[pt3 * 3 + k] + div4 * v_s[pt4 * 3 + k] + div5 * v_s[pt5 * 3 + k] + div6 * v_s[pt6 * 3 + k]);
+        nflxr_s[iri] -=
+            rscale
+            * (div0 * v_s[ir * 3 + k] + div1 * v_s[pt1 * 3 + k] + div2 * v_s[pt2 * 3 + k]
+               + div3 * v_s[pt3 * 3 + k] + div4 * v_s[pt4 * 3 + k] + div5 * v_s[pt5 * 3 + k]
+               + div6 * v_s[pt6 * 3 + k]);
 
-        nflxp_s[iri] -= (RoC)*rscale * (div0 * v_s[ir * 3 + k] * h_s[ir] + div1 * v_s[pt1 * 3 + k] * h_s[pt1] + div2 * v_s[pt2 * 3 + k] * h_s[pt2] + div3 * v_s[pt3 * 3 + k] * h_s[pt3] + div4 * v_s[pt4 * 3 + k] * h_s[pt4] + div5 * v_s[pt5 * 3 + k] * h_s[pt5] + div6 * v_s[pt6 * 3 + k] * h_s[pt6]);
+        nflxp_s[iri] -= (RoC)*rscale
+                        * (div0 * v_s[ir * 3 + k] * h_s[ir] + div1 * v_s[pt1 * 3 + k] * h_s[pt1]
+                           + div2 * v_s[pt2 * 3 + k] * h_s[pt2] + div3 * v_s[pt3 * 3 + k] * h_s[pt3]
+                           + div4 * v_s[pt4 * 3 + k] * h_s[pt4] + div5 * v_s[pt5 * 3 + k] * h_s[pt5]
+                           + div6 * v_s[pt6 * 3 + k] * h_s[pt6]);
     }
 
     Sp_d[id * nv + lev] = nflxp_s[iri] + Slowpressure_d[id * nv + lev];
@@ -498,9 +498,11 @@ __global__ void Prepare_Implicit_Vertical_Poles(double *Mh_d,
     double alt, rscale;
     double Cv = Cp - Rd;
     if (id < num) {
-        for (int i = 0; i < 5; i++) local_p[i] = point_local_d[id * 6 + i];
+        for (int i = 0; i < 5; i++)
+            local_p[i] = point_local_d[id * 6 + i];
         for (int i = 0; i < 7; i++)
-            for (int k = 0; k < 3; k++) div_p[i * 3 + k] = div_d[id * 7 * 3 + i * 3 + k];
+            for (int k = 0; k < 3; k++)
+                div_p[i * 3 + k] = div_d[id * 7 * 3 + i * 3 + k];
 
         for (int lev = 0; lev < nv; lev++) {
             v_p[0] = Mh_d[id * 3 * nv + lev * 3 + 0];
@@ -527,9 +529,19 @@ __global__ void Prepare_Implicit_Vertical_Poles(double *Mh_d,
             nflxp_p = 0.0;
 
             for (int k = 0; k < 3; k++) {
-                nflxr_p -= rscale * (div_p[3 * 0 + k] * v_p[0 * 3 + k] + div_p[3 * 1 + k] * v_p[1 * 3 + k] + div_p[3 * 2 + k] * v_p[2 * 3 + k] + div_p[3 * 3 + k] * v_p[3 * 3 + k] + div_p[3 * 4 + k] * v_p[4 * 3 + k] + div_p[3 * 5 + k] * v_p[5 * 3 + k]);
+                nflxr_p -=
+                    rscale
+                    * (div_p[3 * 0 + k] * v_p[0 * 3 + k] + div_p[3 * 1 + k] * v_p[1 * 3 + k]
+                       + div_p[3 * 2 + k] * v_p[2 * 3 + k] + div_p[3 * 3 + k] * v_p[3 * 3 + k]
+                       + div_p[3 * 4 + k] * v_p[4 * 3 + k] + div_p[3 * 5 + k] * v_p[5 * 3 + k]);
 
-                nflxp_p -= (Rd / Cv) * rscale * (div_p[3 * 0 + k] * v_p[0 * 3 + k] * h_p[0] + div_p[3 * 1 + k] * v_p[1 * 3 + k] * h_p[1] + div_p[3 * 2 + k] * v_p[2 * 3 + k] * h_p[2] + div_p[3 * 3 + k] * v_p[3 * 3 + k] * h_p[3] + div_p[3 * 4 + k] * v_p[4 * 3 + k] * h_p[4] + div_p[3 * 5 + k] * v_p[5 * 3 + k] * h_p[5]);
+                nflxp_p -= (Rd / Cv) * rscale
+                           * (div_p[3 * 0 + k] * v_p[0 * 3 + k] * h_p[0]
+                              + div_p[3 * 1 + k] * v_p[1 * 3 + k] * h_p[1]
+                              + div_p[3 * 2 + k] * v_p[2 * 3 + k] * h_p[2]
+                              + div_p[3 * 3 + k] * v_p[3 * 3 + k] * h_p[3]
+                              + div_p[3 * 4 + k] * v_p[4 * 3 + k] * h_p[4]
+                              + div_p[3 * 5 + k] * v_p[5 * 3 + k] * h_p[5]);
             }
             Sp_d[id * nv + lev] = nflxp_p + Slowpressure_d[id * nv + lev];
             Sd_d[id * nv + lev] = nflxr_p + SlowRho_d[id * nv + lev];

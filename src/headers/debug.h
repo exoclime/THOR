@@ -55,9 +55,9 @@
 // write reference benchmark point
 // #define BENCH_POINT_WRITE
 // print out more debug info, by default, only print out failures
-//#define BENCH_PRINT_DEBUG
+// #define BENCH_PRINT_DEBUG
 // print out comparisaon statistics
-//#define BENCH_COMPARE_PRINT_STATISTICS
+// #define BENCH_COMPARE_PRINT_STATISTICS
 // use an epsilon value for fuzzy compare on relative value
 // #define BENCH_COMPARE_USE_EPSILON
 // #define BENCH_COMPARE_EPSILON_VALUE 1e-7
@@ -70,5 +70,3 @@
 // path to benchmark result directory
 #define BENCHMARK_DUMP_REF_PATH "results/ref/"
 #define BENCHMARK_DUMP_BASENAME "bindata_"
-
-

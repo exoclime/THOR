@@ -81,7 +81,10 @@ __global__ void CalcTotEnergy(double *Etotal_d,
         wz = W_d[id * nv + lev] * sin(lonlat_d[id * 2 + 1]);
 
         //kinetic energy density 0.5*rho*v^2
-        Ek = 0.5 * ((Mh_d[id * 3 * nv + lev * 3 + 0] + wx) * (Mh_d[id * 3 * nv + lev * 3 + 0] + wx) + (Mh_d[id * 3 * nv + lev * 3 + 1] + wy) * (Mh_d[id * 3 * nv + lev * 3 + 1] + wy) + (Mh_d[id * 3 * nv + lev * 3 + 2] + wz) * (Mh_d[id * 3 * nv + lev * 3 + 2] + wz))
+        Ek = 0.5
+             * ((Mh_d[id * 3 * nv + lev * 3 + 0] + wx) * (Mh_d[id * 3 * nv + lev * 3 + 0] + wx)
+                + (Mh_d[id * 3 * nv + lev * 3 + 1] + wy) * (Mh_d[id * 3 * nv + lev * 3 + 1] + wy)
+                + (Mh_d[id * 3 * nv + lev * 3 + 2] + wz) * (Mh_d[id * 3 * nv + lev * 3 + 2] + wz))
              / Rho_d[id * nv + lev];
 
         //internal energy rho*Cv*T
@@ -137,11 +140,14 @@ __global__ void CalcAngMom(double *AngMomx_d,
 
         //angular momentum r x p (total x and y over globe should ~ 0, z ~ const)
         AMx = ry * Mh_d[id * 3 * nv + lev * 3 + 2] - rz * Mh_d[id * 3 * nv + lev * 3 + 1]
-              - Rho_d[id * nv + lev] * Omega * r * rz * cos(lonlat_d[id * 2 + 1]) * cos(lonlat_d[id * 2]);
+              - Rho_d[id * nv + lev] * Omega * r * rz * cos(lonlat_d[id * 2 + 1])
+                    * cos(lonlat_d[id * 2]);
         AMy = -rx * Mh_d[id * 3 * nv + lev * 3 + 2] + rz * Mh_d[id * 3 * nv + lev * 3 + 0]
-              - Rho_d[id * nv + lev] * Omega * r * rz * cos(lonlat_d[id * 2 + 1]) * sin(lonlat_d[id * 2]);
+              - Rho_d[id * nv + lev] * Omega * r * rz * cos(lonlat_d[id * 2 + 1])
+                    * sin(lonlat_d[id * 2]);
         AMz = rx * Mh_d[id * 3 * nv + lev * 3 + 1] - ry * Mh_d[id * 3 * nv + lev * 3 + 0]
-              + Rho_d[id * nv + lev] * Omega * r * r * cos(lonlat_d[id * 2 + 1]) * cos(lonlat_d[id * 2 + 1]);
+              + Rho_d[id * nv + lev] * Omega * r * r * cos(lonlat_d[id * 2 + 1])
+                    * cos(lonlat_d[id * 2 + 1]);
         //AMx, AMy should go to zero when integrated over globe
         // (but in practice, are just much smaller than AMz)
 

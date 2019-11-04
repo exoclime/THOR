@@ -61,8 +61,8 @@
 ////////////////////////////////////////////////////////////////////////
 
 #include "grid.h"
-#include "vector_operations.h"
 #include "log_writer.h"
+#include "vector_operations.h"
 
 // some helper local functions
 inline double3 normproj(const double3 &v1, const double3 &v2) {
@@ -126,134 +126,73 @@ __host__ Icogrid::Icogrid(bool   sprd,        // Spring dynamics option
     //  Compute standard grid.
     point_xyz = (double *)malloc(3 * point_num * sizeof(double));
     pent_ind  = (int *)malloc(12 * sizeof(int));
-    sphere_ico(point_xyz,
-               glevel,
-               n_region,
-               nl_region,
-               nl2,
-               kxl,
-               nfaces,
-               pent_ind,
-               divide_face,
-               point_num);
+    sphere_ico(
+        point_xyz, glevel, n_region, nl_region, nl2, kxl, nfaces, pent_ind, divide_face, point_num);
 
     //  Finds the closest neighbors of each point.
     point_local = (int *)malloc(6 * point_num * sizeof(int));
-    neighbors_indx(point_local,
-                   point_xyz,
-                   pent_ind,
-                   point_num);
+    neighbors_indx(point_local, point_xyz, pent_ind, point_num);
 
     //  Reorder neighbors in the clockwise order.
-    reorder_neighbors_indx(point_local,
-                           point_xyz,
-                           pent_ind,
-                           point_num);
+    reorder_neighbors_indx(point_local, point_xyz, pent_ind, point_num);
 
     //  Generate halos.
     nh   = 10 * nfaces * 4 * nlhalo;
     halo = (int *)malloc(10 * nfaces * 4 * nlhalo * sizeof(int));
-    generate_halos(halo,
-                   point_local,
-                   n_region,
-                   divide_face);
+    generate_halos(halo, point_local, n_region, divide_face);
 
     //  Reorder neighbors consistent with the rhombi.
-    reorder_neighbors_indx_rhombi(point_local,
-                                  halo,
-                                  pent_ind,
-                                  nl_region,
-                                  nl2,
-                                  nr,
-                                  nlhalo,
-                                  point_num);
+    reorder_neighbors_indx_rhombi(
+        point_local, halo, pent_ind, nl_region, nl2, nr, nlhalo, point_num);
 
     //  Finds the closest neighbors at the pole.
-    neighbors_indx_pl(point_local,
-                      point_xyz,
-                      pent_ind,
-                      point_num);
+    neighbors_indx_pl(point_local, point_xyz, pent_ind, point_num);
 
     //  Reorder neighbors in the clockwise order at the pole.
-    reorder_neighbors_indx_pl(point_local,
-                              point_xyz,
-                              pent_ind,
-                              point_num);
+    reorder_neighbors_indx_pl(point_local, point_xyz, pent_ind, point_num);
 
     //  Produce rhombus' maps.
     maps = (int *)malloc((nl_region + 2) * (nl_region + 2) * nr * sizeof(int));
-    produce_maps(maps,
-                 halo,
-                 nr,
-                 nl_region);
+    produce_maps(maps, halo, nr, nl_region);
 
     //  Smooths the grid applying the spring dynamic method.
     if (sprd) {
         // Applies spring dynamics.
-        spring_dynamics(point_local,
-                        pent_ind,
-                        glevel,
-                        spring_beta,
-                        point_xyz,
-                        point_num);
+        spring_dynamics(point_local, pent_ind, glevel, spring_beta, point_xyz, point_num);
 
         //  Finds the q points.
         point_xyzq = (double *)malloc(6 * 3 * point_num * sizeof(double));
 
-        find_qpoints(point_local,
-                     point_xyzq,
-                     point_xyz,
-                     pent_ind,
-                     point_num);
+        find_qpoints(point_local, point_xyzq, point_xyz, pent_ind, point_num);
 
         // Fixes the position of the centroids.
-        relocate_centres(point_local,
-                         point_xyzq,
-                         point_xyz,
-                         pent_ind,
-                         point_num);
+        relocate_centres(point_local, point_xyzq, point_xyz, pent_ind, point_num);
     }
     else {
         //      Finds the q points.
         point_xyzq = (double *)malloc(6 * 3 * point_num * sizeof(double));
-        find_qpoints(point_local,
-                     point_xyzq,
-                     point_xyz,
-                     pent_ind,
-                     point_num);
+        find_qpoints(point_local, point_xyzq, point_xyz, pent_ind, point_num);
     }
 
     //  Recompute cartesians points for the new radius.
-    correct_xyz_points(A,
-                       point_xyzq,
-                       point_xyz,
-                       pent_ind,
-                       point_num);
+    correct_xyz_points(A, point_xyzq, point_xyz, pent_ind, point_num);
 
     //  Radial vectors with norm 1.
     func_r = (double *)malloc(3 * point_num * sizeof(double));
-    compute_func(func_r,
-                 point_xyz,
-                 point_num);
+    compute_func(func_r, point_xyz, point_num);
 
     //  Compute control areas.
     areas   = (double *)malloc(6 * 3 * point_num * sizeof(double));
     areasTr = (double *)malloc(6 * point_num * sizeof(double));
     areasT  = (double *)malloc(point_num * sizeof(double));
-    control_areas(areasT,
-                  areasTr,
-                  areas,
-                  point_local,
-                  point_xyzq,
-                  point_xyz,
-                  pent_ind,
-                  point_num);
+    control_areas(areasT, areasTr, areas, point_local, point_xyzq, point_xyz, pent_ind, point_num);
 
     //  Computes control vectors.
     nvec   = (double *)malloc(6 * 3 * point_num * sizeof(double));
     nvecoa = (double *)malloc(6 * 3 * point_num * sizeof(double));
     nvecti = (double *)malloc(6 * 3 * point_num * sizeof(double));
     nvecte = (double *)malloc(6 * 3 * point_num * sizeof(double));
+    mvec   = (double *)malloc(6 * 3 * point_num * sizeof(double));
     control_vec(nvec,
                 nvecoa,
                 nvecti,
@@ -263,48 +202,34 @@ __host__ Icogrid::Icogrid(bool   sprd,        // Spring dynamics option
                 point_xyzq,
                 point_local,
                 pent_ind,
-                point_num);
+                point_num,
+                mvec);
 
     //  Set the Altitudes
     Altitude  = (double *)malloc(nv * sizeof(double));
     Altitudeh = (double *)malloc(nvi * sizeof(double));
-    set_altitudes(Altitude,
-                  Altitudeh,
-                  Top_altitude,
-                  nv);
+    set_altitudes(Altitude, Altitudeh, Top_altitude, nv);
 
     //  Converting to spherical coordinates.
     lonlat = (double *)malloc(2 * point_num * sizeof(double));
-    cart2sphe(lonlat,
-              point_xyz,
-              point_num);
+    cart2sphe(lonlat, point_xyz, point_num);
 
     //  Computes the divergence operator.
     div = (double *)malloc(7 * 3 * point_num * sizeof(double));
-    div_operator(areasT,
-                 areas,
-                 div,
-                 nvec,
-                 pent_ind,
-                 point_num);
+    div_operator(areasT, areas, div, nvec, pent_ind, point_num);
 
     //  Computes the gradiente operator.
     grad = (double *)malloc(7 * 3 * point_num * sizeof(double));
-    gra_operator(areasT,
-                 areas,
-                 grad,
-                 nvec,
-                 pent_ind,
-                 point_num);
+    gra_operator(areasT, areas, grad, nvec, pent_ind, point_num);
+
+    //  Computes the vertical curl operator.
+    curlz = (double *)malloc(7 * 3 * point_num * sizeof(double));
+    curlz_operator(areasT, areas, curlz, mvec, pent_ind, point_num);
 
     //  Computes zonal mean for sponge layer operations
     if (sponge == true) {
         zonal_mean_tab = (int *)malloc(3 * point_num * sizeof(int));
-        zonal_mean_tab_f(zonal_mean_tab,
-                         lonlat,
-                         nlat,
-                         point_num,
-                         max_count);
+        zonal_mean_tab_f(zonal_mean_tab, lonlat, nlat, point_num, max_count);
     }
 
     log::printf(" GRID DONE!\n\n");
@@ -378,9 +303,8 @@ void Icogrid::sphere_ico(double *xyz_,
                            sin(M_PI / 2 - w));
     rhombi[2] = 4;
     //  6
-    xyzi[5]   = make_double3(cos(M_PI) * cos(M_PI / 2.0 - w),
-                           sin(M_PI) * cos(M_PI / 2.0 - w),
-                           sin(M_PI / 2.0 - w));
+    xyzi[5] = make_double3(
+        cos(M_PI) * cos(M_PI / 2.0 - w), sin(M_PI) * cos(M_PI / 2.0 - w), sin(M_PI / 2.0 - w));
     rhombi[3] = 5;
     //  7
     xyzi[6]   = make_double3(cos(-(3.0 / 5.0) * M_PI) * cos(M_PI / 2.0 - w),
@@ -388,9 +312,8 @@ void Icogrid::sphere_ico(double *xyz_,
                            sin(M_PI / 2.0 - w));
     rhombi[4] = 6;
     //  8
-    xyzi[7]   = make_double3(cos(0.0) * cos(w - M_PI / 2.0),
-                           sin(0.0) * cos(w - M_PI / 2.0),
-                           sin(w - M_PI / 2.0));
+    xyzi[7] = make_double3(
+        cos(0.0) * cos(w - M_PI / 2.0), sin(0.0) * cos(w - M_PI / 2.0), sin(w - M_PI / 2.0));
     rhombi[5] = 7;
     //  9
     xyzi[8]   = make_double3(cos(2.0 * M_PI / 5.0) * cos(w - M_PI / 2.0),
@@ -415,17 +338,16 @@ void Icogrid::sphere_ico(double *xyz_,
     //
     //  Standard grid points.
     //
-    int rhombi_points[10][4] = {
-        {2, 0, 7, 3},
-        {3, 0, 8, 4},
-        {4, 0, 9, 5},
-        {5, 0, 10, 6},
-        {6, 0, 11, 2},
-        {7, 3, 1, 8},
-        {8, 4, 1, 9},
-        {9, 5, 1, 10},
-        {10, 6, 1, 11},
-        {11, 2, 1, 7}};
+    int rhombi_points[10][4] = {{2, 0, 7, 3},
+                                {3, 0, 8, 4},
+                                {4, 0, 9, 5},
+                                {5, 0, 10, 6},
+                                {6, 0, 11, 2},
+                                {7, 3, 1, 8},
+                                {8, 4, 1, 9},
+                                {9, 5, 1, 10},
+                                {10, 6, 1, 11},
+                                {11, 2, 1, 7}};
 
     for (int faces = 0; faces < 10; faces++) {
         rhombi[faces]                                     = rhombi_points[faces][0];
@@ -477,8 +399,8 @@ void Icogrid::sphere_ico(double *xyz_,
                 indy1                                           = ind + ind_jump;
                 indx2                                           = ind - ind_jump;
                 indy2                                           = ind - ind_jump;
-                r_idx_1                                         = rhombi[indx1 * sizeip1 * 10 + indy1 * 10 + faces];
-                r_idx_2                                         = rhombi[indx2 * sizeip1 * 10 + indy2 * 10 + faces];
+                r_idx_1 = rhombi[indx1 * sizeip1 * 10 + indy1 * 10 + faces];
+                r_idx_2 = rhombi[indx2 * sizeip1 * 10 + indy2 * 10 + faces];
 
                 xyzi[count_points] = normalize((xyzi[r_idx_1] + xyzi[r_idx_2]) * 0.5);
 
@@ -491,8 +413,8 @@ void Icogrid::sphere_ico(double *xyz_,
                 indy1                                           = sizei;
                 indx2                                           = ind - ind_jump;
                 indy2                                           = sizei;
-                r_idx_1                                         = rhombi[indx1 * sizeip1 * 10 + indy1 * 10 + faces];
-                r_idx_2                                         = rhombi[indx2 * sizeip1 * 10 + indy2 * 10 + faces];
+                r_idx_1 = rhombi[indx1 * sizeip1 * 10 + indy1 * 10 + faces];
+                r_idx_2 = rhombi[indx2 * sizeip1 * 10 + indy2 * 10 + faces];
 
                 xyzi[count_points] = normalize((xyzi[r_idx_1] + xyzi[r_idx_2]) * 0.5);
 
@@ -541,25 +463,27 @@ void Icogrid::sphere_ico(double *xyz_,
 
                         count_points += 1;
 
-                        rhombi[(rindx - ind_jump) * sizeip1 * 10 + rindy * 10 + faces] = count_points;
-                        indx1                                                          = rindx - ind_jump;
-                        indy1                                                          = rindy - ind_jump;
-                        indx2                                                          = rindx - ind_jump;
-                        indy2                                                          = rindy + ind_jump;
-                        r_idx_1                                                        = rhombi[indx1 * sizeip1 * 10 + indy1 * 10 + faces];
-                        r_idx_2                                                        = rhombi[indx2 * sizeip1 * 10 + indy2 * 10 + faces];
+                        rhombi[(rindx - ind_jump) * sizeip1 * 10 + rindy * 10 + faces] =
+                            count_points;
+                        indx1   = rindx - ind_jump;
+                        indy1   = rindy - ind_jump;
+                        indx2   = rindx - ind_jump;
+                        indy2   = rindy + ind_jump;
+                        r_idx_1 = rhombi[indx1 * sizeip1 * 10 + indy1 * 10 + faces];
+                        r_idx_2 = rhombi[indx2 * sizeip1 * 10 + indy2 * 10 + faces];
 
                         xyzi[count_points] = normalize((xyzi[r_idx_1] + xyzi[r_idx_2]) * 0.5);
 
                         count_points += 1;
 
-                        rhombi[rindx * sizeip1 * 10 + (rindy + ind_jump) * 10 + faces] = count_points;
-                        indx1                                                          = rindx + ind_jump;
-                        indy1                                                          = rindy + ind_jump;
-                        indx2                                                          = rindx - ind_jump;
-                        indy2                                                          = rindy + ind_jump;
-                        r_idx_1                                                        = rhombi[indx1 * sizeip1 * 10 + indy1 * 10 + faces];
-                        r_idx_2                                                        = rhombi[indx2 * sizeip1 * 10 + indy2 * 10 + faces];
+                        rhombi[rindx * sizeip1 * 10 + (rindy + ind_jump) * 10 + faces] =
+                            count_points;
+                        indx1   = rindx + ind_jump;
+                        indy1   = rindy + ind_jump;
+                        indx2   = rindx - ind_jump;
+                        indy2   = rindy + ind_jump;
+                        r_idx_1 = rhombi[indx1 * sizeip1 * 10 + indy1 * 10 + faces];
+                        r_idx_2 = rhombi[indx2 * sizeip1 * 10 + indy2 * 10 + faces];
 
                         xyzi[count_points] = normalize((xyzi[r_idx_1] + xyzi[r_idx_2]) * 0.5);
 
@@ -595,11 +519,12 @@ void Icogrid::sphere_ico(double *xyz_,
                         xyzi[count_points] = normalize((xyzi[r_idx_1] + xyzi[r_idx_2]) * 0.5);
                         count_points += 1;
 
-                        rhombi[rindx * sizeip1 * 10 + (rindy - ind_jump) * 10 + faces] = count_points;
-                        indx1                                                          = rindx - ind_jump;
-                        indy1                                                          = rindy - ind_jump;
-                        indx2                                                          = rindx + ind_jump;
-                        indy2                                                          = rindy - ind_jump;
+                        rhombi[rindx * sizeip1 * 10 + (rindy - ind_jump) * 10 + faces] =
+                            count_points;
+                        indx1 = rindx - ind_jump;
+                        indy1 = rindy - ind_jump;
+                        indx2 = rindx + ind_jump;
+                        indy2 = rindy - ind_jump;
 
                         r_idx_1 = rhombi[indx1 * sizeip1 * 10 + indy1 * 10 + faces];
                         r_idx_2 = rhombi[indx2 * sizeip1 * 10 + indy2 * 10 + faces];
@@ -608,13 +533,14 @@ void Icogrid::sphere_ico(double *xyz_,
 
                         count_points += 1;
 
-                        rhombi[(rindx + ind_jump) * sizeip1 * 10 + rindy * 10 + faces] = count_points;
-                        indx1                                                          = rindx + ind_jump;
-                        indy1                                                          = rindy + ind_jump;
-                        indx2                                                          = rindx + ind_jump;
-                        indy2                                                          = rindy - ind_jump;
-                        r_idx_1                                                        = rhombi[indx1 * sizeip1 * 10 + indy1 * 10 + faces];
-                        r_idx_2                                                        = rhombi[indx2 * sizeip1 * 10 + indy2 * 10 + faces];
+                        rhombi[(rindx + ind_jump) * sizeip1 * 10 + rindy * 10 + faces] =
+                            count_points;
+                        indx1   = rindx + ind_jump;
+                        indy1   = rindy + ind_jump;
+                        indx2   = rindx + ind_jump;
+                        indy2   = rindy - ind_jump;
+                        r_idx_1 = rhombi[indx1 * sizeip1 * 10 + indy1 * 10 + faces];
+                        r_idx_2 = rhombi[indx2 * sizeip1 * 10 + indy2 * 10 + faces];
 
                         xyzi[count_points] = normalize((xyzi[r_idx_1] + xyzi[r_idx_2]) * 0.5);
 
@@ -641,8 +567,11 @@ void Icogrid::sphere_ico(double *xyz_,
             for (int ky = 0; ky < kxl; ky++)
                 for (int i = 0; i < nl_region; i++)
                     for (int j = 0; j < nl_region; j++) {
-                        int idx1 = fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + j * nl_region + i;
-                        int idx2 = rhomb[((ky * nl_region + j) * nli_region + kx * nl_region + i) * 10 + fc];
+                        int idx1 =
+                            fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + j * nl_region + i;
+                        int idx2 =
+                            rhomb[((ky * nl_region + j) * nli_region + kx * nl_region + i) * 10
+                                  + fc];
 
                         xyz[idx1] = xyzi[idx2];
                     }
@@ -655,7 +584,8 @@ void Icogrid::sphere_ico(double *xyz_,
     xyz[num - 1] = make_double3(0.0, 0.0, -1.0);
 
     //Pentagons' indexes
-    for (int faces = 0; faces < 10; faces++) pent_ind[faces] = faces * nfaces * nl2;
+    for (int faces = 0; faces < 10; faces++)
+        pent_ind[faces] = faces * nfaces * nl2;
     pent_ind[10] = num - 2;
     pent_ind[11] = num - 1;
 
@@ -664,10 +594,7 @@ void Icogrid::sphere_ico(double *xyz_,
     delete[] xyzi;
 }
 
-void Icogrid::neighbors_indx(int *   point_local,
-                             double *xyz,
-                             int *   pent_ind,
-                             int     point_num) {
+void Icogrid::neighbors_indx(int *point_local, double *xyz, int *pent_ind, int point_num) {
 
     //
     //  Description:
@@ -687,12 +614,15 @@ void Icogrid::neighbors_indx(int *   point_local,
     double *distance;
     distance = new double[point_num]();
 
-    for (int i = 0; i < 6 * point_num; i++) point_local[i] = -1;
+    for (int i = 0; i < 6 * point_num; i++)
+        point_local[i] = -1;
 
     //  Find neighbors.
     for (int i = 0; i < point_num; i++) {
         for (int j = 0; j < point_num; j++) {
-            distance[j] = sqrt(pow(xyz[0 + j * 3] - xyz[0 + i * 3], 2) + pow(xyz[1 + j * 3] - xyz[1 + i * 3], 2) + pow(xyz[2 + j * 3] - xyz[2 + i * 3], 2));
+            distance[j] = sqrt(pow(xyz[0 + j * 3] - xyz[0 + i * 3], 2)
+                               + pow(xyz[1 + j * 3] - xyz[1 + i * 3], 2)
+                               + pow(xyz[2 + j * 3] - xyz[2 + i * 3], 2));
         }
         for (int k = 0; k < 6; k++) { // Hexagons.
             small    = 2;
@@ -706,7 +636,9 @@ void Icogrid::neighbors_indx(int *   point_local,
                 }
                 else {
                     if (small >= distance[j] && distance[j] > 0) {
-                        if (point_local[i * 6 + 0] != j && point_local[i * 6 + 1] != j && point_local[i * 6 + 2] != j && point_local[i * 6 + 3] != j && point_local[i * 6 + 4] != j && point_local[i * 6 + 5] != j) {
+                        if (point_local[i * 6 + 0] != j && point_local[i * 6 + 1] != j
+                            && point_local[i * 6 + 2] != j && point_local[i * 6 + 3] != j
+                            && point_local[i * 6 + 4] != j && point_local[i * 6 + 5] != j) {
                             small    = distance[j];
                             position = j;
                         }
@@ -725,10 +657,7 @@ void Icogrid::neighbors_indx(int *   point_local,
     delete[] distance;
 }
 
-void Icogrid::neighbors_indx_pl(int *   point_local,
-                                double *xyz,
-                                int *   pent_ind,
-                                int     point_num) {
+void Icogrid::neighbors_indx_pl(int *point_local, double *xyz, int *pent_ind, int point_num) {
 
     //
     //  Description:
@@ -751,7 +680,9 @@ void Icogrid::neighbors_indx_pl(int *   point_local,
     //  Find neighbors.
     for (int i = point_num - 2; i < point_num; i++) {
         for (int j = 0; j < point_num; j++) {
-            distance[j] = sqrt(pow(xyz[0 + j * 3] - xyz[0 + i * 3], 2) + pow(xyz[1 + j * 3] - xyz[1 + i * 3], 2) + pow(xyz[2 + j * 3] - xyz[2 + i * 3], 2));
+            distance[j] = sqrt(pow(xyz[0 + j * 3] - xyz[0 + i * 3], 2)
+                               + pow(xyz[1 + j * 3] - xyz[1 + i * 3], 2)
+                               + pow(xyz[2 + j * 3] - xyz[2 + i * 3], 2));
         }
         for (int k = 0; k < 5; k++) {
             small    = 2;
@@ -765,7 +696,9 @@ void Icogrid::neighbors_indx_pl(int *   point_local,
                 }
                 else {
                     if (small >= distance[j] && distance[j] > 0) {
-                        if (point_local[i * 6 + 0] != j && point_local[i * 6 + 1] != j && point_local[i * 6 + 2] != j && point_local[i * 6 + 3] != j && point_local[i * 6 + 4] != j && point_local[i * 6 + 5] != j) {
+                        if (point_local[i * 6 + 0] != j && point_local[i * 6 + 1] != j
+                            && point_local[i * 6 + 2] != j && point_local[i * 6 + 3] != j
+                            && point_local[i * 6 + 4] != j && point_local[i * 6 + 5] != j) {
                             small    = distance[j];
                             position = j;
                         }
@@ -779,10 +712,7 @@ void Icogrid::neighbors_indx_pl(int *   point_local,
     delete[] distance;
 }
 
-void Icogrid::reorder_neighbors_indx(int *   point_local,
-                                     double *xyz,
-                                     int *   pent_ind,
-                                     int     point_num) {
+void Icogrid::reorder_neighbors_indx(int *point_local, double *xyz, int *pent_ind, int point_num) {
 
     //
     //  Description:
@@ -813,15 +743,18 @@ void Icogrid::reorder_neighbors_indx(int *   point_local,
     point_local_new = new int[point_num * 6];
 
     for (int i = 0; i < point_num; i++)
-        for (int j = 0; j < 6; j++) point_local_new[i * 6 + j] = point_local[i * 6 + j];
+        for (int j = 0; j < 6; j++)
+            point_local_new[i * 6 + j] = point_local[i * 6 + j];
 
     // Reorder indexes.
     for (int i = 0; i < point_num; i++) {
         geo = 6; // Hexagons.
         for (int k = 0; k < 12; k++)
-            if (i == pent_ind[k]) geo = 5; // Pentagons.
+            if (i == pent_ind[k])
+                geo = 5; // Pentagons.
         if (geo == 5) {
-            for (int j = 0; j < 6; j++) ang[j] = 0;
+            for (int j = 0; j < 6; j++)
+                ang[j] = 0;
             x1 = 0;
             y1 = 0;
             z1 = 0;
@@ -847,7 +780,8 @@ void Icogrid::reorder_neighbors_indx(int *   point_local,
                     ang[j] = acos((dx21 * dx31 + dy21 * dy31 + dz21 * dz31) / (n21 * n31));
                 }
                 else {
-                    ang[j] = 2.0 * M_PI - acos((dx21 * dx31 + dy21 * dy31 + dz21 * dz31) / (n21 * n31));
+                    ang[j] =
+                        2.0 * M_PI - acos((dx21 * dx31 + dy21 * dy31 + dz21 * dz31) / (n21 * n31));
                 }
             }
             for (int j = 0; j < 5; j++) {
@@ -864,7 +798,8 @@ void Icogrid::reorder_neighbors_indx(int *   point_local,
             }
         }
         else {
-            for (int j = 0; j < 6; j++) ang[j] = 0;
+            for (int j = 0; j < 6; j++)
+                ang[j] = 0;
             x1 = 0;
             y1 = 0;
             z1 = 0;
@@ -889,7 +824,8 @@ void Icogrid::reorder_neighbors_indx(int *   point_local,
                 if (dircn <= 0)
                     ang[j] = acos((dx21 * dx31 + dy21 * dy31 + dz21 * dz31) / (n21 * n31));
                 else
-                    ang[j] = 2.0 * M_PI - acos((dx21 * dx31 + dy21 * dy31 + dz21 * dz31) / (n21 * n31));
+                    ang[j] =
+                        2.0 * M_PI - acos((dx21 * dx31 + dy21 * dy31 + dz21 * dz31) / (n21 * n31));
             }
             for (int j = 0; j < 6; j++) {
                 for (int k = 5; k >= j; k--) {
@@ -907,7 +843,8 @@ void Icogrid::reorder_neighbors_indx(int *   point_local,
     }
 
     for (int i = 0; i < point_num; i++)
-        for (int j = 0; j < 6; j++) point_local[i * 6 + j] = point_local_new[i * 6 + j];
+        for (int j = 0; j < 6; j++)
+            point_local[i * 6 + j] = point_local_new[i * 6 + j];
 
     delete[] ang;
     delete[] point_local_new;
@@ -946,11 +883,13 @@ void Icogrid::reorder_neighbors_indx_pl(int *   point_local,
     point_local_new = new int[point_num * 6];
 
     for (int i = 0; i < point_num; i++)
-        for (int j = 0; j < 6; j++) point_local_new[i * 6 + j] = point_local[i * 6 + j];
+        for (int j = 0; j < 6; j++)
+            point_local_new[i * 6 + j] = point_local[i * 6 + j];
 
     // Reorder indexes.
     for (int i = point_num - 2; i < point_num; i++) {
-        for (int j = 0; j < 6; j++) ang[j] = 0;
+        for (int j = 0; j < 6; j++)
+            ang[j] = 0;
         x1 = 0;
         y1 = 0;
         z1 = 0;
@@ -994,16 +933,14 @@ void Icogrid::reorder_neighbors_indx_pl(int *   point_local,
     }
 
     for (int i = point_num - 2; i < point_num; i++)
-        for (int j = 0; j < 6; j++) point_local[i * 6 + j] = point_local_new[i * 6 + j];
+        for (int j = 0; j < 6; j++)
+            point_local[i * 6 + j] = point_local_new[i * 6 + j];
 
     delete[] ang;
     delete[] point_local_new;
 }
 
-void Icogrid::generate_halos(int *halo,
-                             int *point_local,
-                             int  n_region,
-                             int  divide_face) {
+void Icogrid::generate_halos(int *halo, int *point_local, int n_region, int divide_face) {
 
     //
     //  Description:
@@ -1040,7 +977,8 @@ void Icogrid::generate_halos(int *halo,
     int out_ind;
     int ind_nei = 0;
 
-    for (int i = 0; i < 10 * nfaces * 4 * (nl_region + 2); i++) halo[i] = -1;
+    for (int i = 0; i < 10 * nfaces * 4 * (nl_region + 2); i++)
+        halo[i] = -1;
 
     // Generate halos.
     for (int fc = 0; fc < 10; fc++) {
@@ -1049,9 +987,11 @@ void Icogrid::generate_halos(int *halo,
                 if (kx == 0 && ky == 0) { // First point is a pentagon
                     // Side 1
                     for (int i = 0; i < nl_region - 1; i++) {
-                        int j        = 0;
-                        index_value1 = fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + j * nl_region + i;
-                        index_value2 = fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + j * nl_region + i + 1;
+                        int j = 0;
+                        index_value1 =
+                            fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + j * nl_region + i;
+                        index_value2 =
+                            fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + j * nl_region + i + 1;
                         if (kx == 0 && ky == 0 && i == 0 && j == 0) {
                             for (int k = 0; k < 5; k++) {
                                 for (int kk = 0; kk < 6; kk++) {
@@ -1060,8 +1000,13 @@ void Icogrid::generate_halos(int *halo,
                                     if (v1 == v2) {
                                         out_ind = 0;
                                         for (int kkk = 0; kkk < nl2; kkk++)
-                                            if (v1 == fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + kkk) out_ind = 1;
-                                        if (out_ind == 0) halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + i] = v1;
+                                            if (v1
+                                                == fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2
+                                                       + kkk)
+                                                out_ind = 1;
+                                        if (out_ind == 0)
+                                            halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh
+                                                 + i] = v1;
                                     }
                                 }
                             }
@@ -1074,42 +1019,58 @@ void Icogrid::generate_halos(int *halo,
                                     if (v1 == v2) {
                                         out_ind = 0;
                                         for (int kkk = 0; kkk < nl2; kkk++)
-                                            if (v1 == fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + kkk) out_ind = 1;
-                                        if (out_ind == 0) halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + i] = v1;
+                                            if (v1
+                                                == fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2
+                                                       + kkk)
+                                                out_ind = 1;
+                                        if (out_ind == 0)
+                                            halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh
+                                                 + i] = v1;
                                     }
                                 }
                             }
                         }
                     }
-                    int i        = nl_region - 1;
-                    int j        = 0;
-                    index_value1 = fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + j * nl_region + i;
+                    int i = nl_region - 1;
+                    int j = 0;
+                    index_value1 =
+                        fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + j * nl_region + i;
                     for (int k = 0; k < 6; k++) {
                         v1 = point_local[index_value1 * 6 + k];
-                        if (v1 == halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + i - 1]) ind_nei = k;
+                        if (v1 == halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + i - 1])
+                            ind_nei = k;
                     }
                     if (ind_nei > 0)
-                        halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + i] = point_local[index_value1 * 6 + ind_nei - 1];
+                        halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + i] =
+                            point_local[index_value1 * 6 + ind_nei - 1];
                     else
-                        halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + i] = point_local[index_value1 * 6 + 5];
+                        halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + i] =
+                            point_local[index_value1 * 6 + 5];
 
                     //Side 2
-                    i            = nl_region - 1;
-                    j            = 0;
-                    index_value1 = fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + j * nl_region + i;
+                    i = nl_region - 1;
+                    j = 0;
+                    index_value1 =
+                        fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + j * nl_region + i;
                     for (int k = 0; k < 6; k++) {
                         v1 = point_local[index_value1 * 6 + k];
-                        if (v1 == halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + nl_region - 1]) ind_nei = k;
+                        if (v1
+                            == halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + nl_region - 1])
+                            ind_nei = k;
                     }
                     if (ind_nei > 0)
-                        halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + nl_region + 2] = point_local[index_value1 * 6 + ind_nei - 1];
+                        halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + nl_region + 2] =
+                            point_local[index_value1 * 6 + ind_nei - 1];
                     else
-                        halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + nl_region + 2] = point_local[index_value1 * 6 + 5];
+                        halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + nl_region + 2] =
+                            point_local[index_value1 * 6 + 5];
 
                     i = nl_region - 1;
                     for (int j = 0; j < nl_region - 1; j++) {
-                        index_value1 = fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + j * nl_region + i;
-                        index_value2 = fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + (j + 1) * nl_region + i;
+                        index_value1 =
+                            fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + j * nl_region + i;
+                        index_value2 =
+                            fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + (j + 1) * nl_region + i;
                         for (int k = 0; k < 6; k++) {
                             for (int kk = 0; kk < 6; kk++) {
                                 v1 = point_local[index_value1 * 6 + k];
@@ -1117,30 +1078,42 @@ void Icogrid::generate_halos(int *halo,
                                 if (v1 == v2) {
                                     int out_ind = 0;
                                     for (int kkk = 0; kkk < nl2; kkk++)
-                                        if (v1 == fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + kkk) out_ind = 1;
-                                    if (out_ind == 0) halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + (nl_region + 2) + j + 1] = v1;
+                                        if (v1
+                                            == fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + kkk)
+                                            out_ind = 1;
+                                    if (out_ind == 0)
+                                        halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh
+                                             + (nl_region + 2) + j + 1] = v1;
                                 }
                             }
                         }
                     }
 
                     // Side 3
-                    i            = nl_region - 1;
-                    j            = nl_region - 1;
-                    index_value1 = fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + j * nl_region + i;
+                    i = nl_region - 1;
+                    j = nl_region - 1;
+                    index_value1 =
+                        fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + j * nl_region + i;
                     for (int k = 0; k < 6; k++) {
                         v1 = point_local[index_value1 * 6 + k];
-                        if (v1 == halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + nl_region + 2 + nl_region - 1]) ind_nei = k;
+                        if (v1
+                            == halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + nl_region + 2
+                                    + nl_region - 1])
+                            ind_nei = k;
                     }
                     if (ind_nei > 0)
-                        halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + 2 * (nl_region + 2)] = point_local[index_value1 * 6 + ind_nei - 1];
+                        halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + 2 * (nl_region + 2)] =
+                            point_local[index_value1 * 6 + ind_nei - 1];
                     else
-                        halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + 2 * (nl_region + 2)] = point_local[index_value1 * 6 + 5];
+                        halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + 2 * (nl_region + 2)] =
+                            point_local[index_value1 * 6 + 5];
 
                     for (int i = 0; i < nl_region - 1; i++) {
                         j            = nl_region - 1;
-                        index_value1 = fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + j * nl_region + nl_region - i - 1;
-                        index_value2 = fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + j * nl_region + nl_region - i - 2;
+                        index_value1 = fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + j * nl_region
+                                       + nl_region - i - 1;
+                        index_value2 = fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + j * nl_region
+                                       + nl_region - i - 2;
                         for (int k = 0; k < 6; k++) {
                             for (int kk = 0; kk < 6; kk++) {
                                 v1 = point_local[index_value1 * 6 + k];
@@ -1149,42 +1122,60 @@ void Icogrid::generate_halos(int *halo,
                                 if (v1 == v2) {
                                     int out_ind = 0;
                                     for (int kkk = 0; kkk < nl2; kkk++)
-                                        if (v1 == fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + kkk) out_ind = 1;
-                                    if (out_ind == 0) halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + 2 * (nl_region + 2) + i + 1] = v1;
+                                        if (v1
+                                            == fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + kkk)
+                                            out_ind = 1;
+                                    if (out_ind == 0)
+                                        halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh
+                                             + 2 * (nl_region + 2) + i + 1] = v1;
                                 }
                             }
                         }
                     }
 
-                    i            = 0;
-                    j            = nl_region - 1;
-                    index_value1 = fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + j * nl_region + i;
+                    i = 0;
+                    j = nl_region - 1;
+                    index_value1 =
+                        fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + j * nl_region + i;
                     for (int k = 0; k < 6; k++) {
                         v1 = point_local[index_value1 * 6 + k];
-                        if (v1 == halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + 2 * (nl_region + 2) + nl_region - 1]) ind_nei = k;
+                        if (v1
+                            == halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh
+                                    + 2 * (nl_region + 2) + nl_region - 1])
+                            ind_nei = k;
                     }
                     if (ind_nei > 0)
-                        halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + 2 * (nl_region + 2) + nl_region] = point_local[index_value1 * 6 + ind_nei - 1];
+                        halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + 2 * (nl_region + 2)
+                             + nl_region] = point_local[index_value1 * 6 + ind_nei - 1];
                     else
-                        halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + 2 * (nl_region + 2) + nl_region] = point_local[index_value1 * 6 + 5];
+                        halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + 2 * (nl_region + 2)
+                             + nl_region] = point_local[index_value1 * 6 + 5];
 
                     // Side 4
-                    i            = 0;
-                    j            = nl_region - 1;
-                    index_value1 = fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + j * nl_region + i;
+                    i = 0;
+                    j = nl_region - 1;
+                    index_value1 =
+                        fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + j * nl_region + i;
                     for (int k = 0; k < 6; k++) {
                         v1 = point_local[index_value1 * 6 + k];
-                        if (v1 == halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + 2 * (nl_region + 2) + nl_region]) ind_nei = k;
+                        if (v1
+                            == halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh
+                                    + 2 * (nl_region + 2) + nl_region])
+                            ind_nei = k;
                     }
                     if (ind_nei > 0)
-                        halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + 3 * (nl_region + 2)] = point_local[index_value1 * 6 + ind_nei - 1];
+                        halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + 3 * (nl_region + 2)] =
+                            point_local[index_value1 * 6 + ind_nei - 1];
                     else
-                        halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + 3 * (nl_region + 2)] = point_local[index_value1 * 6 + 5];
+                        halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + 3 * (nl_region + 2)] =
+                            point_local[index_value1 * 6 + 5];
 
                     i = 0;
                     for (int j = 0; j < nl_region - 1; j++) {
-                        index_value1 = fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + (nl_region - j - 1) * nl_region;
-                        index_value2 = fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + (nl_region - j - 2) * nl_region;
+                        index_value1 = fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2
+                                       + (nl_region - j - 1) * nl_region;
+                        index_value2 = fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2
+                                       + (nl_region - j - 2) * nl_region;
                         for (int k = 0; k < 6; k++) {
                             for (int kk = 0; kk < 6; kk++) {
                                 v1 = point_local[index_value1 * 6 + k];
@@ -1192,8 +1183,12 @@ void Icogrid::generate_halos(int *halo,
                                 if (v1 == v2) {
                                     out_ind = 0;
                                     for (int kkk = 0; kkk < nl2; kkk++)
-                                        if (v1 == fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + kkk) out_ind = 1;
-                                    if (out_ind == 0) halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + 3 * (nl_region + 2) + j + 1] = v1;
+                                        if (v1
+                                            == fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + kkk)
+                                            out_ind = 1;
+                                    if (out_ind == 0)
+                                        halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh
+                                             + 3 * (nl_region + 2) + j + 1] = v1;
                                 }
                             }
                         }
@@ -1201,9 +1196,11 @@ void Icogrid::generate_halos(int *halo,
                 }
                 else { //Hexagon
                     for (int i = 0; i < nl_region - 1; i++) {
-                        int j        = 0;
-                        index_value1 = fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + j * nl_region + i;
-                        index_value2 = fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + j * nl_region + i + 1;
+                        int j = 0;
+                        index_value1 =
+                            fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + j * nl_region + i;
+                        index_value2 =
+                            fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + j * nl_region + i + 1;
                         if (kx == 0 && ky == 0 && i == 0 && j == 0) {
                             for (int k = 0; k < 6; k++) {
                                 for (int kk = 0; kk < 6; kk++) {
@@ -1212,8 +1209,13 @@ void Icogrid::generate_halos(int *halo,
                                     if (v1 == v2) {
                                         int out_ind = 0;
                                         for (int kkk = 0; kkk < nl2; kkk++)
-                                            if (v1 == fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + kkk) out_ind = 1;
-                                        if (out_ind == 0) halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + i] = v1;
+                                            if (v1
+                                                == fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2
+                                                       + kkk)
+                                                out_ind = 1;
+                                        if (out_ind == 0)
+                                            halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh
+                                                 + i] = v1;
                                     }
                                 }
                             }
@@ -1226,42 +1228,58 @@ void Icogrid::generate_halos(int *halo,
                                     if (v1 == v2) {
                                         out_ind = 0;
                                         for (int kkk = 0; kkk < nl2; kkk++)
-                                            if (v1 == fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + kkk) out_ind = 1;
-                                        if (out_ind == 0) halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + i] = v1;
+                                            if (v1
+                                                == fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2
+                                                       + kkk)
+                                                out_ind = 1;
+                                        if (out_ind == 0)
+                                            halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh
+                                                 + i] = v1;
                                     }
                                 }
                             }
                         }
                     }
-                    int i        = nl_region - 1;
-                    int j        = 0;
-                    index_value1 = fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + j * nl_region + i;
+                    int i = nl_region - 1;
+                    int j = 0;
+                    index_value1 =
+                        fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + j * nl_region + i;
                     for (int k = 0; k < 6; k++) {
                         v1 = point_local[index_value1 * 6 + k];
-                        if (v1 == halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + i - 1]) ind_nei = k;
+                        if (v1 == halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + i - 1])
+                            ind_nei = k;
                     }
                     if (ind_nei > 0)
-                        halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + i] = point_local[index_value1 * 6 + ind_nei - 1];
+                        halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + i] =
+                            point_local[index_value1 * 6 + ind_nei - 1];
                     else
-                        halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + i] = point_local[index_value1 * 6 + 5];
+                        halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + i] =
+                            point_local[index_value1 * 6 + 5];
 
                     //Side 2
-                    i            = nl_region - 1;
-                    j            = 0;
-                    index_value1 = fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + j * nl_region + i;
+                    i = nl_region - 1;
+                    j = 0;
+                    index_value1 =
+                        fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + j * nl_region + i;
                     for (int k = 0; k < 6; k++) {
                         v1 = point_local[index_value1 * 6 + k];
-                        if (v1 == halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + nl_region - 1]) ind_nei = k;
+                        if (v1
+                            == halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + nl_region - 1])
+                            ind_nei = k;
                     }
                     if (ind_nei > 0)
-                        halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + nl_region + 2] = point_local[index_value1 * 6 + ind_nei - 1];
+                        halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + nl_region + 2] =
+                            point_local[index_value1 * 6 + ind_nei - 1];
                     else
-                        halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + nl_region + 2] = point_local[index_value1 * 6 + 5];
+                        halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + nl_region + 2] =
+                            point_local[index_value1 * 6 + 5];
 
                     i = nl_region - 1;
                     for (int j = 0; j < nl_region - 1; j++) {
-                        index_value1 = fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + j * nl_region + i;
-                        index_value2 = fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + (j + 1) * nl_region + i;
+                        index_value1 =
+                            fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + j * nl_region + i;
+                        index_value2 =
+                            fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + (j + 1) * nl_region + i;
                         for (int k = 0; k < 6; k++) {
                             for (int kk = 0; kk < 6; kk++) {
                                 v1 = point_local[index_value1 * 6 + k];
@@ -1269,8 +1287,12 @@ void Icogrid::generate_halos(int *halo,
                                 if (v1 == v2) {
                                     out_ind = 0;
                                     for (int kkk = 0; kkk < nl2; kkk++)
-                                        if (v1 == fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + kkk) out_ind = 1;
-                                    if (out_ind == 0) halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + (nl_region + 2) + j + 1] = v1;
+                                        if (v1
+                                            == fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + kkk)
+                                            out_ind = 1;
+                                    if (out_ind == 0)
+                                        halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh
+                                             + (nl_region + 2) + j + 1] = v1;
                                 }
                             }
                         }
@@ -1278,22 +1300,30 @@ void Icogrid::generate_halos(int *halo,
 
                     // Side 3
 
-                    i            = nl_region - 1;
-                    j            = nl_region - 1;
-                    index_value1 = fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + j * nl_region + i;
+                    i = nl_region - 1;
+                    j = nl_region - 1;
+                    index_value1 =
+                        fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + j * nl_region + i;
                     for (int k = 0; k < 6; k++) {
                         v1 = point_local[index_value1 * 6 + k];
-                        if (v1 == halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + nl_region + 2 + nl_region - 1]) ind_nei = k;
+                        if (v1
+                            == halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + nl_region + 2
+                                    + nl_region - 1])
+                            ind_nei = k;
                     }
                     if (ind_nei > 0)
-                        halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + 2 * (nl_region + 2)] = point_local[index_value1 * 6 + ind_nei - 1];
+                        halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + 2 * (nl_region + 2)] =
+                            point_local[index_value1 * 6 + ind_nei - 1];
                     else
-                        halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + 2 * (nl_region + 2)] = point_local[index_value1 * 6 + 5];
+                        halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + 2 * (nl_region + 2)] =
+                            point_local[index_value1 * 6 + 5];
 
                     for (int i = 0; i < nl_region - 1; i++) {
                         j            = nl_region - 1;
-                        index_value1 = fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + j * nl_region + nl_region - i - 1;
-                        index_value2 = fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + j * nl_region + nl_region - i - 2;
+                        index_value1 = fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + j * nl_region
+                                       + nl_region - i - 1;
+                        index_value2 = fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + j * nl_region
+                                       + nl_region - i - 2;
                         for (int k = 0; k < 6; k++) {
                             for (int kk = 0; kk < 6; kk++) {
                                 v1 = point_local[index_value1 * 6 + k];
@@ -1301,42 +1331,60 @@ void Icogrid::generate_halos(int *halo,
                                 if (v1 == v2) {
                                     out_ind = 0;
                                     for (int kkk = 0; kkk < nl2; kkk++)
-                                        if (v1 == fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + kkk) out_ind = 1;
-                                    if (out_ind == 0) halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + 2 * (nl_region + 2) + i + 1] = v1;
+                                        if (v1
+                                            == fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + kkk)
+                                            out_ind = 1;
+                                    if (out_ind == 0)
+                                        halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh
+                                             + 2 * (nl_region + 2) + i + 1] = v1;
                                 }
                             }
                         }
                     }
 
-                    i            = 0;
-                    j            = nl_region - 1;
-                    index_value1 = fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + j * nl_region + i;
+                    i = 0;
+                    j = nl_region - 1;
+                    index_value1 =
+                        fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + j * nl_region + i;
                     for (int k = 0; k < 6; k++) {
                         v1 = point_local[index_value1 * 6 + k];
-                        if (v1 == halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + 2 * (nl_region + 2) + nl_region - 1]) ind_nei = k;
+                        if (v1
+                            == halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh
+                                    + 2 * (nl_region + 2) + nl_region - 1])
+                            ind_nei = k;
                     }
                     if (ind_nei > 0)
-                        halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + 2 * (nl_region + 2) + nl_region] = point_local[index_value1 * 6 + ind_nei - 1];
+                        halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + 2 * (nl_region + 2)
+                             + nl_region] = point_local[index_value1 * 6 + ind_nei - 1];
                     else
-                        halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + 2 * (nl_region + 2) + nl_region] = point_local[index_value1 * 6 + 5];
+                        halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + 2 * (nl_region + 2)
+                             + nl_region] = point_local[index_value1 * 6 + 5];
 
                     // Side 4
-                    i            = 0;
-                    j            = nl_region - 1;
-                    index_value1 = fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + j * nl_region + i;
+                    i = 0;
+                    j = nl_region - 1;
+                    index_value1 =
+                        fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + j * nl_region + i;
                     for (int k = 0; k < 6; k++) {
                         v1 = point_local[index_value1 * 6 + k];
-                        if (v1 == halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + 2 * (nl_region + 2) + nl_region]) ind_nei = k;
+                        if (v1
+                            == halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh
+                                    + 2 * (nl_region + 2) + nl_region])
+                            ind_nei = k;
                     }
                     if (ind_nei > 0)
-                        halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + 3 * (nl_region + 2)] = point_local[index_value1 * 6 + ind_nei - 1];
+                        halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + 3 * (nl_region + 2)] =
+                            point_local[index_value1 * 6 + ind_nei - 1];
                     else
-                        halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + 3 * (nl_region + 2)] = point_local[index_value1 * 6 + 5];
+                        halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + 3 * (nl_region + 2)] =
+                            point_local[index_value1 * 6 + 5];
 
                     i = 0;
                     for (int j = 0; j < nl_region - 1; j++) {
-                        index_value1 = fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + (nl_region - j - 1) * nl_region;
-                        index_value2 = fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + (nl_region - j - 2) * nl_region;
+                        index_value1 = fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2
+                                       + (nl_region - j - 1) * nl_region;
+                        index_value2 = fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2
+                                       + (nl_region - j - 2) * nl_region;
                         for (int k = 0; k < 6; k++) {
                             for (int kk = 0; kk < 6; kk++) {
                                 v1 = point_local[index_value1 * 6 + k];
@@ -1344,24 +1392,34 @@ void Icogrid::generate_halos(int *halo,
                                 if (v1 == v2) {
                                     out_ind = 0;
                                     for (int kkk = 0; kkk < nl2; kkk++)
-                                        if (v1 == fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + kkk) out_ind = 1;
-                                    if (out_ind == 0) halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + 3 * (nl_region + 2) + j + 1] = v1;
+                                        if (v1
+                                            == fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + kkk)
+                                            out_ind = 1;
+                                    if (out_ind == 0)
+                                        halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh
+                                             + 3 * (nl_region + 2) + j + 1] = v1;
                                 }
                             }
                         }
                     }
 
-                    i            = 0;
-                    j            = 0;
-                    index_value1 = fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + j * nl_region + i;
+                    i = 0;
+                    j = 0;
+                    index_value1 =
+                        fc * nfaces * nl2 + ky * kxl * nl2 + kx * nl2 + j * nl_region + i;
                     for (int k = 0; k < 6; k++) {
                         v1 = point_local[index_value1 * 6 + k];
-                        if (v1 == halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + 3 * (nl_region + 2) + nl_region - 1]) ind_nei = k;
+                        if (v1
+                            == halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh
+                                    + 3 * (nl_region + 2) + nl_region - 1])
+                            ind_nei = k;
                     }
                     if (ind_nei > 0)
-                        halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + 3 * (nl_region + 2) + nl_region] = point_local[index_value1 * 6 + ind_nei - 1];
+                        halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + 3 * (nl_region + 2)
+                             + nl_region] = point_local[index_value1 * 6 + ind_nei - 1];
                     else
-                        halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + 3 * (nl_region + 2) + nl_region] = point_local[index_value1 * 6 + 5];
+                        halo[fc * kxl * kxl * nh + ky * kxl * nh + kx * nh + 3 * (nl_region + 2)
+                             + nl_region] = point_local[index_value1 * 6 + 5];
                 }
             }
         }
@@ -1395,7 +1453,8 @@ void Icogrid::reorder_neighbors_indx_rhombi(int *point_local,
     int geo, np;
     int nh2 = nlhalo * 4;
     for (int i = 0; i < point_num; i++)
-        for (int j = 0; j < 6; j++) point_local[i * 6 + j] = -1;
+        for (int j = 0; j < 6; j++)
+            point_local[i * 6 + j] = -1;
 
     for (int i = 0; i < ni; i++) {
 
@@ -1403,7 +1462,8 @@ void Icogrid::reorder_neighbors_indx_rhombi(int *point_local,
         geo = 6; // Hexagons.
         np  = nl2 * i;
         for (int l = 0; l < 12; l++)
-            if (np == pent_ind[l]) geo = 5; // Pentagons.
+            if (np == pent_ind[l])
+                geo = 5; // Pentagons.
 
         // Find neibours.
         for (int j = 0; j < nl_region; j++) {
@@ -1431,7 +1491,8 @@ void Icogrid::reorder_neighbors_indx_rhombi(int *point_local,
                         if (j == 0)
                             point_local[np * 6 + 5] = -1;
                         else
-                            point_local[np * 6 + 5] = halo[i * nh2 + 3 * nlhalo + nl_region - j - 1];
+                            point_local[np * 6 + 5] =
+                                halo[i * nh2 + 3 * nlhalo + nl_region - j - 1];
                     }
                 }
                 else if (k == nl_region - 1) {
@@ -1494,10 +1555,7 @@ void Icogrid::reorder_neighbors_indx_rhombi(int *point_local,
 }
 
 
-void Icogrid::produce_maps(int *maps,
-                           int *halo,
-                           int  nr,
-                           int  nl_region) {
+void Icogrid::produce_maps(int *maps, int *halo, int nr, int nl_region) {
 
     //
     //  Description:
@@ -1533,7 +1591,8 @@ void Icogrid::produce_maps(int *maps,
         }
         //Side 3
         for (int i = 0; i < nl_region + 1; i++) {
-            maps[l * nl22 + (nl_region + 1) * (nl_region + 2) + i + 1] = halo[l * nh2 + 2 * nl2 + nl_region - i];
+            maps[l * nl22 + (nl_region + 1) * (nl_region + 2) + i + 1] =
+                halo[l * nh2 + 2 * nl2 + nl_region - i];
         }
         //Side 4
         for (int i = 0; i < nl_region; i++) {
@@ -1633,7 +1692,8 @@ void Icogrid::spring_dynamics(int *   point_local,
 
         for (int i = 0; i < point_num; i++) {
             // Calculate net forces in each point.
-            F_v_net = F_Nei[i * 6 + 0] + F_Nei[i * 6 + 1] + F_Nei[i * 6 + 2] + F_Nei[i * 6 + 3] + F_Nei[i * 6 + 4] + F_Nei[i * 6 + 5];
+            F_v_net = F_Nei[i * 6 + 0] + F_Nei[i * 6 + 1] + F_Nei[i * 6 + 2] + F_Nei[i * 6 + 3]
+                      + F_Nei[i * 6 + 4] + F_Nei[i * 6 + 5];
 
             // Used to check convergence.
             Fnet[i] = length(F_v_net) / lba;
@@ -1671,8 +1731,10 @@ void Icogrid::spring_dynamics(int *   point_local,
         // Check convergence.
         max_v = -1E-10;
         for (int i = 0; i < point_num; i++)
-            if (Fnet[i] > max_v) max_v = Fnet[i];
-        if (max_v < cond) break;
+            if (Fnet[i] > max_v)
+                max_v = Fnet[i];
+        if (max_v < cond)
+            break;
     }
 
     log::printf(" Done!\n\n");
@@ -1715,13 +1777,14 @@ void Icogrid::find_qpoints(int *   point_local,
     for (int i = 0; i < point_num; i++) {
         geo = 6; // Hexagons.
         for (int k = 0; k < 12; k++)
-            if (i == pent_ind[k]) geo = 5; // Pentagons.
+            if (i == pent_ind[k])
+                geo = 5; // Pentagons.
 
 
         for (int j = 0; j < geo - 1; j++) {
-            vc1              = normproj(xyz3[point_local[i * 6 + j]], xyz3[i]);
-            vc2              = normproj(xyz3[point_local[i * 6 + j + 1]], xyz3[point_local[i * 6 + j]]);
-            vc3              = normproj(xyz3[i], xyz3[point_local[i * 6 + j + 1]]);
+            vc1 = normproj(xyz3[point_local[i * 6 + j]], xyz3[i]);
+            vc2 = normproj(xyz3[point_local[i * 6 + j + 1]], xyz3[point_local[i * 6 + j]]);
+            vc3 = normproj(xyz3[i], xyz3[point_local[i * 6 + j + 1]]);
             xyzq3[i * 6 + j] = normalize(vc1 + vc2 + vc3);
         }
 
@@ -1770,7 +1833,8 @@ void Icogrid::relocate_centres(int *   point_local,
     for (int i = 0; i < point_num; i++) {
         geo = 6; // Hexagons.
         for (int k = 0; k < 12; k++)
-            if (i == pent_ind[k]) geo = 5; // Pentagons.
+            if (i == pent_ind[k])
+                geo = 5; // Pentagons.
 
         vgc = make_double3(0.0, 0.0, 0.0);
 
@@ -1785,10 +1849,7 @@ void Icogrid::relocate_centres(int *   point_local,
     }
 }
 
-void Icogrid::set_altitudes(double *Altitude,
-                            double *Altitudeh,
-                            double  Top_altitude,
-                            int     nv) {
+void Icogrid::set_altitudes(double *Altitude, double *Altitudeh, double Top_altitude, int nv) {
 
     //
     //  Description:
@@ -1804,14 +1865,14 @@ void Icogrid::set_altitudes(double *Altitude,
 
     double res_vert = Top_altitude / nv;
     Altitudeh[0]    = 0.0;
-    for (int lev = 0; lev < nv; lev++) Altitudeh[lev + 1] = Altitudeh[lev] + res_vert;
-    for (int lev = 0; lev < nv; lev++) Altitude[lev] = (Altitudeh[lev] + Altitudeh[lev + 1]) / 2.0;
+    for (int lev = 0; lev < nv; lev++)
+        Altitudeh[lev + 1] = Altitudeh[lev] + res_vert;
+    for (int lev = 0; lev < nv; lev++)
+        Altitude[lev] = (Altitudeh[lev] + Altitudeh[lev + 1]) / 2.0;
 }
 
 
-void Icogrid::cart2sphe(double *lonlat,
-                        double *xyz,
-                        int     point_num) {
+void Icogrid::cart2sphe(double *lonlat, double *xyz, int point_num) {
 
     //
     //  Description:
@@ -1825,7 +1886,8 @@ void Icogrid::cart2sphe(double *lonlat,
     //
     for (int i = 0; i < point_num; i++) {
         lonlat[i * 2 + 0] = atan2(xyz[i * 3 + 1], xyz[i * 3 + 0]);
-        lonlat[i * 2 + 1] = atan2(xyz[i * 3 + 2], sqrt(pow(xyz[i * 3 + 0], 2) + pow(xyz[i * 3 + 1], 2)));
+        lonlat[i * 2 + 1] =
+            atan2(xyz[i * 3 + 2], sqrt(pow(xyz[i * 3 + 0], 2) + pow(xyz[i * 3 + 1], 2)));
     }
 }
 
@@ -1858,7 +1920,8 @@ void Icogrid::correct_xyz_points(double  A,
     for (int i = 0; i < point_num; i++) {
         geo = 6; // Hexagons.
         for (int k = 0; k < 12; k++)
-            if (i == pent_ind[k]) geo = 5; // Pentagons.
+            if (i == pent_ind[k])
+                geo = 5; // Pentagons.
         if (geo == 5) {
             for (int j = 0; j < 5; j++) { // Pentagons.
                 xyzq3[i * 6 + j] = xyzq3[i * 6 + j] * A;
@@ -1890,8 +1953,10 @@ inline double comp_ang(const double3 &a, const double3 &b, const double3 &c) {
 
     double ang = dot(w1, w2) / (length(w1) * length(w2));
 
-    if (ang > 1) ang = 1;
-    if (ang < -1) ang = -1;
+    if (ang > 1)
+        ang = 1;
+    if (ang < -1)
+        ang = -1;
 
     return acos(ang);
 }
@@ -1936,7 +2001,8 @@ void Icogrid::control_areas(double *areasT,
     double areav;
 
 
-    for (int i = 0; i < point_num * 6 * 3; i++) areas[i] = 0.0;
+    for (int i = 0; i < point_num * 6 * 3; i++)
+        areas[i] = 0.0;
 
     for (int i = 0; i < point_num; i++) {
         //
@@ -1944,7 +2010,8 @@ void Icogrid::control_areas(double *areasT,
         //
         geo = 6; // Hexagons.
         for (int k = 0; k < 12; k++)
-            if (i == pent_ind[k]) geo = 5; // Pentagons.
+            if (i == pent_ind[k])
+                geo = 5; // Pentagons.
         if (geo == 5) {
             for (int j = 0; j < 5; j++) { //Pentagons
                 for (int k = 0; k < 3; k++) {
@@ -1987,11 +2054,11 @@ void Icogrid::control_areas(double *areasT,
                     ang[1] = comp_ang(b, a, c);
                     ang[2] = comp_ang(c, a, b);
 
-                    radius                        = length(a);
-                    areasq[i * 6 * 3 + j * 3 + k] = (ang[0] + ang[1] + ang[2] - M_PI) * pow(radius, 2);
+                    radius = length(a);
+                    areasq[i * 6 * 3 + j * 3 + k] =
+                        (ang[0] + ang[1] + ang[2] - M_PI) * pow(radius, 2);
                 }
-                areasTr[i * 6 + j] = areasq[(i * 6 + j) * 3 + 0]
-                                     + areasq[(i * 6 + j) * 3 + 1]
+                areasTr[i * 6 + j] = areasq[(i * 6 + j) * 3 + 0] + areasq[(i * 6 + j) * 3 + 1]
                                      + areasq[(i * 6 + j) * 3 + 2];
             }
             areasTr[i * 6 + 5] = 0.0;
@@ -2042,8 +2109,7 @@ void Icogrid::control_areas(double *areasT,
                     areasq[i * 6 * 3 + j * 3 + k] =
                         (ang[0] + ang[1] + ang[2] - M_PI) * pow(radius, 2);
                 }
-                areasTr[i * 6 + j] = areasq[(i * 6 + j) * 3 + 0]
-                                     + areasq[(i * 6 + j) * 3 + 1]
+                areasTr[i * 6 + j] = areasq[(i * 6 + j) * 3 + 0] + areasq[(i * 6 + j) * 3 + 1]
                                      + areasq[(i * 6 + j) * 3 + 2];
             }
         }
@@ -2057,7 +2123,8 @@ void Icogrid::control_areas(double *areasT,
 
         geo = 6; // Hexagons.
         for (int k = 0; k < 12; k++)
-            if (i == pent_ind[k]) geo = 5; // Pentagons.
+            if (i == pent_ind[k])
+                geo = 5; // Pentagons.
         for (int j = 0; j < 6; j++) {
             if (geo == 5 && j == 4) {
                 a = xyz3[i];
@@ -2100,7 +2167,8 @@ void Icogrid::control_vec(double *nvec,
                           double *xyzq,
                           int *   point_local,
                           int *   pent_ind,
-                          int     point_num) {
+                          int     point_num,
+                          double *mvec) {
 
     //
     //  Description:
@@ -2122,25 +2190,27 @@ void Icogrid::control_vec(double *nvec,
     double3 *nvecti3 = (double3 *)nvecti;
     double3 *nvecte3 = (double3 *)nvecte;
 
+    double3 *mvec3 = (double3 *)mvec;
+
     double3 *xyz3  = (double3 *)xyz;
     double3 *xyzq3 = (double3 *)xyzq;
 
     // Local variables.
     double vec_l, l;
-    double fac_nv;
+    double fac_nv, fac_mv;
 
     int geo;
 
     // Local arrays.
     double3 v1, v2;
-    double3 nv;
-
+    double3 nv, mv;
 
     for (int i = 0; i < point_num; i++) {
 
         geo = 6; // Hexagons.
         for (int k = 0; k < 12; k++)
-            if (i == pent_ind[k]) geo = 5; // Pentagons.
+            if (i == pent_ind[k])
+                geo = 5; // Pentagons.
 
         if (geo == 5) {
 
@@ -2167,9 +2237,15 @@ void Icogrid::control_vec(double *nvec,
                 nvec3[i * 6 + j] = nv * fac_nv;
 
                 nevcoa3[i * 6 + j] = nvec3[i * 6 + j] / areasT[i];
+
+                mv               = v1 - v2; //unnormalized vector parallel to cv edges
+                fac_mv           = l / length(mv);
+                mvec3[i * 6 + j] = mv * fac_mv; //now normalized and l is incorporated
             }
 
             nvec3[i * 6 + 5] = make_double3(0.0, 0.0, 0.0);
+
+            mvec3[i * 6 + 5] = make_double3(0.0, 0.0, 0.0);
 
             nevcoa3[i * 6 + 5] = make_double3(0.0, 0.0, 0.0);
         }
@@ -2197,6 +2273,10 @@ void Icogrid::control_vec(double *nvec,
                 nvec3[i * 6 + j] = nv * fac_nv;
 
                 nevcoa3[i * 6 + j] = nvec3[i * 6 + j] / areasT[i];
+
+                mv               = v1 - v2; //unnormalized vector parallel to cv edges
+                fac_mv           = l / length(mv);
+                mvec3[i * 6 + j] = mv * fac_mv; //now normalized and l is incorporated
             }
         }
 
@@ -2288,9 +2368,7 @@ void Icogrid::control_vec(double *nvec,
 }
 
 
-void Icogrid::compute_func(double *func_r,
-                           double *xyz,
-                           int     point_num) {
+void Icogrid::compute_func(double *func_r, double *xyz, int point_num) {
 
     //
     //  Description:
@@ -2335,12 +2413,7 @@ void Icogrid::div_operator(double *areasT,
     //
     // Local variables:
     int    geo;
-    double area1,
-        area2,
-        area3,
-        area4,
-        area5,
-        area6;
+    double area1, area2, area3, area4, area5, area6;
 
     double *areasq2;
 
@@ -2350,18 +2423,25 @@ void Icogrid::div_operator(double *areasT,
 
         geo = 6; // Hexagons.
         for (int k = 0; k < 12; k++)
-            if (i == pent_ind[k]) geo = 5; // Pentagons.
+            if (i == pent_ind[k])
+                geo = 5; // Pentagons.
 
-        area1 = areas[i * 6 * 3 + 0 * 3 + 0] + areas[i * 6 * 3 + 0 * 3 + 1] + areas[i * 6 * 3 + 0 * 3 + 2];
-        area2 = areas[i * 6 * 3 + 1 * 3 + 0] + areas[i * 6 * 3 + 1 * 3 + 1] + areas[i * 6 * 3 + 1 * 3 + 2];
-        area3 = areas[i * 6 * 3 + 2 * 3 + 0] + areas[i * 6 * 3 + 2 * 3 + 1] + areas[i * 6 * 3 + 2 * 3 + 2];
-        area4 = areas[i * 6 * 3 + 3 * 3 + 0] + areas[i * 6 * 3 + 3 * 3 + 1] + areas[i * 6 * 3 + 3 * 3 + 2];
-        area5 = areas[i * 6 * 3 + 4 * 3 + 0] + areas[i * 6 * 3 + 4 * 3 + 1] + areas[i * 6 * 3 + 4 * 3 + 2];
+        area1 = areas[i * 6 * 3 + 0 * 3 + 0] + areas[i * 6 * 3 + 0 * 3 + 1]
+                + areas[i * 6 * 3 + 0 * 3 + 2];
+        area2 = areas[i * 6 * 3 + 1 * 3 + 0] + areas[i * 6 * 3 + 1 * 3 + 1]
+                + areas[i * 6 * 3 + 1 * 3 + 2];
+        area3 = areas[i * 6 * 3 + 2 * 3 + 0] + areas[i * 6 * 3 + 2 * 3 + 1]
+                + areas[i * 6 * 3 + 2 * 3 + 2];
+        area4 = areas[i * 6 * 3 + 3 * 3 + 0] + areas[i * 6 * 3 + 3 * 3 + 1]
+                + areas[i * 6 * 3 + 3 * 3 + 2];
+        area5 = areas[i * 6 * 3 + 4 * 3 + 0] + areas[i * 6 * 3 + 4 * 3 + 1]
+                + areas[i * 6 * 3 + 4 * 3 + 2];
 
         if (geo == 5)
             area6 = 0;
         else
-            area6 = areas[i * 6 * 3 + 5 * 3 + 0] + areas[i * 6 * 3 + 5 * 3 + 1] + areas[i * 6 * 3 + 5 * 3 + 2];
+            area6 = areas[i * 6 * 3 + 5 * 3 + 0] + areas[i * 6 * 3 + 5 * 3 + 1]
+                    + areas[i * 6 * 3 + 5 * 3 + 2];
 
         for (int k = 0; k < 3; k++) {
             areasq2[i * 6 * 3 + 0 * 3 + k] = areas[i * 6 * 3 + 0 * 3 + k] / area1;
@@ -2380,42 +2460,292 @@ void Icogrid::div_operator(double *areasT,
 
         geo = 6; // Hexagons.
         for (int k = 0; k < 12; k++)
-            if (i == pent_ind[k]) geo = 5; // Pentagons.
+            if (i == pent_ind[k])
+                geo = 5; // Pentagons.
 
         for (int k = 0; k < 3; k++) {
             if (geo == 5) { //Pentagons.
-                div[i * 7 * 3 + 0 * 3 + k] = nvec[i * 6 * 3 + 0 * 3 + k] * (areasq2[i * 6 * 3 + 0 * 3 + 0] + areasq2[i * 6 * 3 + 1 * 3 + 0]) + nvec[i * 6 * 3 + 1 * 3 + k] * (areasq2[i * 6 * 3 + 1 * 3 + 0] + areasq2[i * 6 * 3 + 2 * 3 + 0]) + nvec[i * 6 * 3 + 2 * 3 + k] * (areasq2[i * 6 * 3 + 2 * 3 + 0] + areasq2[i * 6 * 3 + 3 * 3 + 0]) + nvec[i * 6 * 3 + 3 * 3 + k] * (areasq2[i * 6 * 3 + 3 * 3 + 0] + areasq2[i * 6 * 3 + 4 * 3 + 0]) + nvec[i * 6 * 3 + 4 * 3 + k] * (areasq2[i * 6 * 3 + 4 * 3 + 0] + areasq2[i * 6 * 3 + 0 * 3 + 0]);
+                div[i * 7 * 3 + 0 * 3 + k] =
+                    nvec[i * 6 * 3 + 0 * 3 + k]
+                        * (areasq2[i * 6 * 3 + 0 * 3 + 0] + areasq2[i * 6 * 3 + 1 * 3 + 0])
+                    + nvec[i * 6 * 3 + 1 * 3 + k]
+                          * (areasq2[i * 6 * 3 + 1 * 3 + 0] + areasq2[i * 6 * 3 + 2 * 3 + 0])
+                    + nvec[i * 6 * 3 + 2 * 3 + k]
+                          * (areasq2[i * 6 * 3 + 2 * 3 + 0] + areasq2[i * 6 * 3 + 3 * 3 + 0])
+                    + nvec[i * 6 * 3 + 3 * 3 + k]
+                          * (areasq2[i * 6 * 3 + 3 * 3 + 0] + areasq2[i * 6 * 3 + 4 * 3 + 0])
+                    + nvec[i * 6 * 3 + 4 * 3 + k]
+                          * (areasq2[i * 6 * 3 + 4 * 3 + 0] + areasq2[i * 6 * 3 + 0 * 3 + 0]);
 
-                div[i * 7 * 3 + 1 * 3 + k] = nvec[i * 6 * 3 + 4 * 3 + k] * (areasq2[i * 6 * 3 + 0 * 3 + 1] + areasq2[i * 6 * 3 + 4 * 3 + 2]) + nvec[i * 6 * 3 + 3 * 3 + k] * areasq2[i * 6 * 3 + 4 * 3 + 2] + nvec[i * 6 * 3 + 0 * 3 + k] * areasq2[i * 6 * 3 + 0 * 3 + 1];
+                div[i * 7 * 3 + 1 * 3 + k] =
+                    nvec[i * 6 * 3 + 4 * 3 + k]
+                        * (areasq2[i * 6 * 3 + 0 * 3 + 1] + areasq2[i * 6 * 3 + 4 * 3 + 2])
+                    + nvec[i * 6 * 3 + 3 * 3 + k] * areasq2[i * 6 * 3 + 4 * 3 + 2]
+                    + nvec[i * 6 * 3 + 0 * 3 + k] * areasq2[i * 6 * 3 + 0 * 3 + 1];
 
-                div[i * 7 * 3 + 2 * 3 + k] = nvec[i * 6 * 3 + 0 * 3 + k] * (areasq2[i * 6 * 3 + 1 * 3 + 1] + areasq2[i * 6 * 3 + 0 * 3 + 2]) + nvec[i * 6 * 3 + 4 * 3 + k] * areasq2[i * 6 * 3 + 0 * 3 + 2] + nvec[i * 6 * 3 + 1 * 3 + k] * areasq2[i * 6 * 3 + 1 * 3 + 1];
+                div[i * 7 * 3 + 2 * 3 + k] =
+                    nvec[i * 6 * 3 + 0 * 3 + k]
+                        * (areasq2[i * 6 * 3 + 1 * 3 + 1] + areasq2[i * 6 * 3 + 0 * 3 + 2])
+                    + nvec[i * 6 * 3 + 4 * 3 + k] * areasq2[i * 6 * 3 + 0 * 3 + 2]
+                    + nvec[i * 6 * 3 + 1 * 3 + k] * areasq2[i * 6 * 3 + 1 * 3 + 1];
 
-                div[i * 7 * 3 + 3 * 3 + k] = nvec[i * 6 * 3 + 1 * 3 + k] * (areasq2[i * 6 * 3 + 2 * 3 + 1] + areasq2[i * 6 * 3 + 1 * 3 + 2]) + nvec[i * 6 * 3 + 0 * 3 + k] * areasq2[i * 6 * 3 + 1 * 3 + 2] + nvec[i * 6 * 3 + 2 * 3 + k] * areasq2[i * 6 * 3 + 2 * 3 + 1];
+                div[i * 7 * 3 + 3 * 3 + k] =
+                    nvec[i * 6 * 3 + 1 * 3 + k]
+                        * (areasq2[i * 6 * 3 + 2 * 3 + 1] + areasq2[i * 6 * 3 + 1 * 3 + 2])
+                    + nvec[i * 6 * 3 + 0 * 3 + k] * areasq2[i * 6 * 3 + 1 * 3 + 2]
+                    + nvec[i * 6 * 3 + 2 * 3 + k] * areasq2[i * 6 * 3 + 2 * 3 + 1];
 
-                div[i * 7 * 3 + 4 * 3 + k] = nvec[i * 6 * 3 + 2 * 3 + k] * (areasq2[i * 6 * 3 + 3 * 3 + 1] + areasq2[i * 6 * 3 + 2 * 3 + 2]) + nvec[i * 6 * 3 + 1 * 3 + k] * areasq2[i * 6 * 3 + 2 * 3 + 2] + nvec[i * 6 * 3 + 3 * 3 + k] * areasq2[i * 6 * 3 + 3 * 3 + 1];
+                div[i * 7 * 3 + 4 * 3 + k] =
+                    nvec[i * 6 * 3 + 2 * 3 + k]
+                        * (areasq2[i * 6 * 3 + 3 * 3 + 1] + areasq2[i * 6 * 3 + 2 * 3 + 2])
+                    + nvec[i * 6 * 3 + 1 * 3 + k] * areasq2[i * 6 * 3 + 2 * 3 + 2]
+                    + nvec[i * 6 * 3 + 3 * 3 + k] * areasq2[i * 6 * 3 + 3 * 3 + 1];
 
-                div[i * 7 * 3 + 5 * 3 + k] = nvec[i * 6 * 3 + 3 * 3 + k] * (areasq2[i * 6 * 3 + 4 * 3 + 1] + areasq2[i * 6 * 3 + 3 * 3 + 2]) + nvec[i * 6 * 3 + 2 * 3 + k] * areasq2[i * 6 * 3 + 3 * 3 + 2] + nvec[i * 6 * 3 + 4 * 3 + k] * areasq2[i * 6 * 3 + 4 * 3 + 1];
+                div[i * 7 * 3 + 5 * 3 + k] =
+                    nvec[i * 6 * 3 + 3 * 3 + k]
+                        * (areasq2[i * 6 * 3 + 4 * 3 + 1] + areasq2[i * 6 * 3 + 3 * 3 + 2])
+                    + nvec[i * 6 * 3 + 2 * 3 + k] * areasq2[i * 6 * 3 + 3 * 3 + 2]
+                    + nvec[i * 6 * 3 + 4 * 3 + k] * areasq2[i * 6 * 3 + 4 * 3 + 1];
 
                 div[i * 7 * 3 + 6 * 3 + k] = 0.0;
             }
             else {
-                div[i * 7 * 3 + 0 * 3 + k] = nvec[i * 6 * 3 + 0 * 3 + k] * (areasq2[i * 6 * 3 + 0 * 3 + 0] + areasq2[i * 6 * 3 + 1 * 3 + 0]) + nvec[i * 6 * 3 + 1 * 3 + k] * (areasq2[i * 6 * 3 + 1 * 3 + 0] + areasq2[i * 6 * 3 + 2 * 3 + 0]) + nvec[i * 6 * 3 + 2 * 3 + k] * (areasq2[i * 6 * 3 + 2 * 3 + 0] + areasq2[i * 6 * 3 + 3 * 3 + 0]) + nvec[i * 6 * 3 + 3 * 3 + k] * (areasq2[i * 6 * 3 + 3 * 3 + 0] + areasq2[i * 6 * 3 + 4 * 3 + 0]) + nvec[i * 6 * 3 + 4 * 3 + k] * (areasq2[i * 6 * 3 + 4 * 3 + 0] + areasq2[i * 6 * 3 + 5 * 3 + 0]) + nvec[i * 6 * 3 + 5 * 3 + k] * (areasq2[i * 6 * 3 + 5 * 3 + 0] + areasq2[i * 6 * 3 + 0 * 3 + 0]);
+                div[i * 7 * 3 + 0 * 3 + k] =
+                    nvec[i * 6 * 3 + 0 * 3 + k]
+                        * (areasq2[i * 6 * 3 + 0 * 3 + 0] + areasq2[i * 6 * 3 + 1 * 3 + 0])
+                    + nvec[i * 6 * 3 + 1 * 3 + k]
+                          * (areasq2[i * 6 * 3 + 1 * 3 + 0] + areasq2[i * 6 * 3 + 2 * 3 + 0])
+                    + nvec[i * 6 * 3 + 2 * 3 + k]
+                          * (areasq2[i * 6 * 3 + 2 * 3 + 0] + areasq2[i * 6 * 3 + 3 * 3 + 0])
+                    + nvec[i * 6 * 3 + 3 * 3 + k]
+                          * (areasq2[i * 6 * 3 + 3 * 3 + 0] + areasq2[i * 6 * 3 + 4 * 3 + 0])
+                    + nvec[i * 6 * 3 + 4 * 3 + k]
+                          * (areasq2[i * 6 * 3 + 4 * 3 + 0] + areasq2[i * 6 * 3 + 5 * 3 + 0])
+                    + nvec[i * 6 * 3 + 5 * 3 + k]
+                          * (areasq2[i * 6 * 3 + 5 * 3 + 0] + areasq2[i * 6 * 3 + 0 * 3 + 0]);
 
-                div[i * 7 * 3 + 1 * 3 + k] = nvec[i * 6 * 3 + 5 * 3 + k] * (areasq2[i * 6 * 3 + 0 * 3 + 1] + areasq2[i * 6 * 3 + 5 * 3 + 2]) + nvec[i * 6 * 3 + 4 * 3 + k] * areasq2[i * 6 * 3 + 5 * 3 + 2] + nvec[i * 6 * 3 + 0 * 3 + k] * areasq2[i * 6 * 3 + 0 * 3 + 1];
+                div[i * 7 * 3 + 1 * 3 + k] =
+                    nvec[i * 6 * 3 + 5 * 3 + k]
+                        * (areasq2[i * 6 * 3 + 0 * 3 + 1] + areasq2[i * 6 * 3 + 5 * 3 + 2])
+                    + nvec[i * 6 * 3 + 4 * 3 + k] * areasq2[i * 6 * 3 + 5 * 3 + 2]
+                    + nvec[i * 6 * 3 + 0 * 3 + k] * areasq2[i * 6 * 3 + 0 * 3 + 1];
 
-                div[i * 7 * 3 + 2 * 3 + k] = nvec[i * 6 * 3 + 0 * 3 + k] * (areasq2[i * 6 * 3 + 1 * 3 + 1] + areasq2[i * 6 * 3 + 0 * 3 + 2]) + nvec[i * 6 * 3 + 5 * 3 + k] * areasq2[i * 6 * 3 + 0 * 3 + 2] + nvec[i * 6 * 3 + 1 * 3 + k] * areasq2[i * 6 * 3 + 1 * 3 + 1];
+                div[i * 7 * 3 + 2 * 3 + k] =
+                    nvec[i * 6 * 3 + 0 * 3 + k]
+                        * (areasq2[i * 6 * 3 + 1 * 3 + 1] + areasq2[i * 6 * 3 + 0 * 3 + 2])
+                    + nvec[i * 6 * 3 + 5 * 3 + k] * areasq2[i * 6 * 3 + 0 * 3 + 2]
+                    + nvec[i * 6 * 3 + 1 * 3 + k] * areasq2[i * 6 * 3 + 1 * 3 + 1];
 
-                div[i * 7 * 3 + 3 * 3 + k] = nvec[i * 6 * 3 + 1 * 3 + k] * (areasq2[i * 6 * 3 + 2 * 3 + 1] + areasq2[i * 6 * 3 + 1 * 3 + 2]) + nvec[i * 6 * 3 + 0 * 3 + k] * areasq2[i * 6 * 3 + 1 * 3 + 2] + nvec[i * 6 * 3 + 2 * 3 + k] * areasq2[i * 6 * 3 + 2 * 3 + 1];
+                div[i * 7 * 3 + 3 * 3 + k] =
+                    nvec[i * 6 * 3 + 1 * 3 + k]
+                        * (areasq2[i * 6 * 3 + 2 * 3 + 1] + areasq2[i * 6 * 3 + 1 * 3 + 2])
+                    + nvec[i * 6 * 3 + 0 * 3 + k] * areasq2[i * 6 * 3 + 1 * 3 + 2]
+                    + nvec[i * 6 * 3 + 2 * 3 + k] * areasq2[i * 6 * 3 + 2 * 3 + 1];
 
-                div[i * 7 * 3 + 4 * 3 + k] = nvec[i * 6 * 3 + 2 * 3 + k] * (areasq2[i * 6 * 3 + 3 * 3 + 1] + areasq2[i * 6 * 3 + 2 * 3 + 2]) + nvec[i * 6 * 3 + 1 * 3 + k] * areasq2[i * 6 * 3 + 2 * 3 + 2] + nvec[i * 6 * 3 + 3 * 3 + k] * areasq2[i * 6 * 3 + 3 * 3 + 1];
+                div[i * 7 * 3 + 4 * 3 + k] =
+                    nvec[i * 6 * 3 + 2 * 3 + k]
+                        * (areasq2[i * 6 * 3 + 3 * 3 + 1] + areasq2[i * 6 * 3 + 2 * 3 + 2])
+                    + nvec[i * 6 * 3 + 1 * 3 + k] * areasq2[i * 6 * 3 + 2 * 3 + 2]
+                    + nvec[i * 6 * 3 + 3 * 3 + k] * areasq2[i * 6 * 3 + 3 * 3 + 1];
 
-                div[i * 7 * 3 + 5 * 3 + k] = nvec[i * 6 * 3 + 3 * 3 + k] * (areasq2[i * 6 * 3 + 4 * 3 + 1] + areasq2[i * 6 * 3 + 3 * 3 + 2]) + nvec[i * 6 * 3 + 2 * 3 + k] * areasq2[i * 6 * 3 + 3 * 3 + 2] + nvec[i * 6 * 3 + 4 * 3 + k] * areasq2[i * 6 * 3 + 4 * 3 + 1];
+                div[i * 7 * 3 + 5 * 3 + k] =
+                    nvec[i * 6 * 3 + 3 * 3 + k]
+                        * (areasq2[i * 6 * 3 + 4 * 3 + 1] + areasq2[i * 6 * 3 + 3 * 3 + 2])
+                    + nvec[i * 6 * 3 + 2 * 3 + k] * areasq2[i * 6 * 3 + 3 * 3 + 2]
+                    + nvec[i * 6 * 3 + 4 * 3 + k] * areasq2[i * 6 * 3 + 4 * 3 + 1];
 
-                div[i * 7 * 3 + 6 * 3 + k] = nvec[i * 6 * 3 + 4 * 3 + k] * (areasq2[i * 6 * 3 + 5 * 3 + 1] + areasq2[i * 6 * 3 + 4 * 3 + 2]) + nvec[i * 6 * 3 + 3 * 3 + k] * areasq2[i * 6 * 3 + 4 * 3 + 2] + nvec[i * 6 * 3 + 5 * 3 + k] * areasq2[i * 6 * 3 + 5 * 3 + 1];
+                div[i * 7 * 3 + 6 * 3 + k] =
+                    nvec[i * 6 * 3 + 4 * 3 + k]
+                        * (areasq2[i * 6 * 3 + 5 * 3 + 1] + areasq2[i * 6 * 3 + 4 * 3 + 2])
+                    + nvec[i * 6 * 3 + 3 * 3 + k] * areasq2[i * 6 * 3 + 4 * 3 + 2]
+                    + nvec[i * 6 * 3 + 5 * 3 + k] * areasq2[i * 6 * 3 + 5 * 3 + 1];
             }
         }
         for (int j = 0; j < 7; j++)
-            for (int k = 0; k < 3; k++) div[i * 7 * 3 + j * 3 + k] = div[i * 7 * 3 + j * 3 + k] / (2.0 * areasT[i]);
+            for (int k = 0; k < 3; k++)
+                div[i * 7 * 3 + j * 3 + k] = div[i * 7 * 3 + j * 3 + k] / (2.0 * areasT[i]);
+    }
+    delete[] areasq2;
+}
+
+void Icogrid::curlz_operator(double *areasT,
+                             double *areas,
+                             double *curlz,
+                             double *mvec,
+                             int *   pent_ind,
+                             int     point_num) {
+
+    //
+    //  Description:
+    //
+    //  Computes the vertical curl operator from equation 10 of Tomita+ 2001
+    //  (There is probably no clean way of calculating the horizontal components,
+    //   which should be small in most situations)
+    //
+    //  This is currently not used by the code, it is only calculated and output
+    //  for convenience in post-processing (calculating vorticity, e.g.)
+    //
+    //  Input: - areas     - Sub-areas (alpha, beta and gamma).
+    //         - areasT    - Control volume area.
+    //         - mvec      - Vectors parallel to the edges of the control volume midway between vertices
+    //         - pent_ind  - Pentagon' indexes.
+    //         - point_num - Number of vertices.
+    //
+    //  Output: - curlz - vertical curl operator.
+    //
+    // Local variables:
+    int    geo;
+    double area1, area2, area3, area4, area5, area6;
+
+    double *areasq2;
+
+    areasq2 = new double[6 * 3 * point_num]();
+
+    for (int i = 0; i < point_num; i++) {
+
+        geo = 6; // Hexagons.
+        for (int k = 0; k < 12; k++)
+            if (i == pent_ind[k])
+                geo = 5; // Pentagons.
+
+        area1 = areas[i * 6 * 3 + 0 * 3 + 0] + areas[i * 6 * 3 + 0 * 3 + 1]
+                + areas[i * 6 * 3 + 0 * 3 + 2];
+        area2 = areas[i * 6 * 3 + 1 * 3 + 0] + areas[i * 6 * 3 + 1 * 3 + 1]
+                + areas[i * 6 * 3 + 1 * 3 + 2];
+        area3 = areas[i * 6 * 3 + 2 * 3 + 0] + areas[i * 6 * 3 + 2 * 3 + 1]
+                + areas[i * 6 * 3 + 2 * 3 + 2];
+        area4 = areas[i * 6 * 3 + 3 * 3 + 0] + areas[i * 6 * 3 + 3 * 3 + 1]
+                + areas[i * 6 * 3 + 3 * 3 + 2];
+        area5 = areas[i * 6 * 3 + 4 * 3 + 0] + areas[i * 6 * 3 + 4 * 3 + 1]
+                + areas[i * 6 * 3 + 4 * 3 + 2];
+
+        if (geo == 5)
+            area6 = 0;
+        else
+            area6 = areas[i * 6 * 3 + 5 * 3 + 0] + areas[i * 6 * 3 + 5 * 3 + 1]
+                    + areas[i * 6 * 3 + 5 * 3 + 2];
+
+        for (int k = 0; k < 3; k++) {
+            areasq2[i * 6 * 3 + 0 * 3 + k] = areas[i * 6 * 3 + 0 * 3 + k] / area1;
+            areasq2[i * 6 * 3 + 1 * 3 + k] = areas[i * 6 * 3 + 1 * 3 + k] / area2;
+            areasq2[i * 6 * 3 + 2 * 3 + k] = areas[i * 6 * 3 + 2 * 3 + k] / area3;
+            areasq2[i * 6 * 3 + 3 * 3 + k] = areas[i * 6 * 3 + 3 * 3 + k] / area4;
+            areasq2[i * 6 * 3 + 4 * 3 + k] = areas[i * 6 * 3 + 4 * 3 + k] / area5;
+            if (geo == 5)
+                areasq2[i * 6 * 3 + 5 * 3 + k] = 0;
+            else
+                areasq2[i * 6 * 3 + 5 * 3 + k] = areas[i * 6 * 3 + 5 * 3 + k] / area6;
+        }
+    }
+
+    for (int i = 0; i < point_num; i++) {
+
+        geo = 6; // Hexagons.
+        for (int k = 0; k < 12; k++)
+            if (i == pent_ind[k])
+                geo = 5; // Pentagons.
+
+        for (int k = 0; k < 3; k++) {
+            if (geo == 5) { //Pentagons.
+                curlz[i * 7 * 3 + 0 * 3 + k] =
+                    mvec[i * 6 * 3 + 0 * 3 + k]
+                        * (areasq2[i * 6 * 3 + 0 * 3 + 0] + areasq2[i * 6 * 3 + 1 * 3 + 0])
+                    + mvec[i * 6 * 3 + 1 * 3 + k]
+                          * (areasq2[i * 6 * 3 + 1 * 3 + 0] + areasq2[i * 6 * 3 + 2 * 3 + 0])
+                    + mvec[i * 6 * 3 + 2 * 3 + k]
+                          * (areasq2[i * 6 * 3 + 2 * 3 + 0] + areasq2[i * 6 * 3 + 3 * 3 + 0])
+                    + mvec[i * 6 * 3 + 3 * 3 + k]
+                          * (areasq2[i * 6 * 3 + 3 * 3 + 0] + areasq2[i * 6 * 3 + 4 * 3 + 0])
+                    + mvec[i * 6 * 3 + 4 * 3 + k]
+                          * (areasq2[i * 6 * 3 + 4 * 3 + 0] + areasq2[i * 6 * 3 + 0 * 3 + 0]);
+
+                curlz[i * 7 * 3 + 1 * 3 + k] =
+                    mvec[i * 6 * 3 + 4 * 3 + k]
+                        * (areasq2[i * 6 * 3 + 0 * 3 + 1] + areasq2[i * 6 * 3 + 4 * 3 + 2])
+                    + mvec[i * 6 * 3 + 3 * 3 + k] * areasq2[i * 6 * 3 + 4 * 3 + 2]
+                    + mvec[i * 6 * 3 + 0 * 3 + k] * areasq2[i * 6 * 3 + 0 * 3 + 1];
+
+                curlz[i * 7 * 3 + 2 * 3 + k] =
+                    mvec[i * 6 * 3 + 0 * 3 + k]
+                        * (areasq2[i * 6 * 3 + 1 * 3 + 1] + areasq2[i * 6 * 3 + 0 * 3 + 2])
+                    + mvec[i * 6 * 3 + 4 * 3 + k] * areasq2[i * 6 * 3 + 0 * 3 + 2]
+                    + mvec[i * 6 * 3 + 1 * 3 + k] * areasq2[i * 6 * 3 + 1 * 3 + 1];
+
+                curlz[i * 7 * 3 + 3 * 3 + k] =
+                    mvec[i * 6 * 3 + 1 * 3 + k]
+                        * (areasq2[i * 6 * 3 + 2 * 3 + 1] + areasq2[i * 6 * 3 + 1 * 3 + 2])
+                    + mvec[i * 6 * 3 + 0 * 3 + k] * areasq2[i * 6 * 3 + 1 * 3 + 2]
+                    + mvec[i * 6 * 3 + 2 * 3 + k] * areasq2[i * 6 * 3 + 2 * 3 + 1];
+
+                curlz[i * 7 * 3 + 4 * 3 + k] =
+                    mvec[i * 6 * 3 + 2 * 3 + k]
+                        * (areasq2[i * 6 * 3 + 3 * 3 + 1] + areasq2[i * 6 * 3 + 2 * 3 + 2])
+                    + mvec[i * 6 * 3 + 1 * 3 + k] * areasq2[i * 6 * 3 + 2 * 3 + 2]
+                    + mvec[i * 6 * 3 + 3 * 3 + k] * areasq2[i * 6 * 3 + 3 * 3 + 1];
+
+                curlz[i * 7 * 3 + 5 * 3 + k] =
+                    mvec[i * 6 * 3 + 3 * 3 + k]
+                        * (areasq2[i * 6 * 3 + 4 * 3 + 1] + areasq2[i * 6 * 3 + 3 * 3 + 2])
+                    + mvec[i * 6 * 3 + 2 * 3 + k] * areasq2[i * 6 * 3 + 3 * 3 + 2]
+                    + mvec[i * 6 * 3 + 4 * 3 + k] * areasq2[i * 6 * 3 + 4 * 3 + 1];
+
+                curlz[i * 7 * 3 + 6 * 3 + k] = 0.0;
+            }
+            else {
+                curlz[i * 7 * 3 + 0 * 3 + k] =
+                    mvec[i * 6 * 3 + 0 * 3 + k]
+                        * (areasq2[i * 6 * 3 + 0 * 3 + 0] + areasq2[i * 6 * 3 + 1 * 3 + 0])
+                    + mvec[i * 6 * 3 + 1 * 3 + k]
+                          * (areasq2[i * 6 * 3 + 1 * 3 + 0] + areasq2[i * 6 * 3 + 2 * 3 + 0])
+                    + mvec[i * 6 * 3 + 2 * 3 + k]
+                          * (areasq2[i * 6 * 3 + 2 * 3 + 0] + areasq2[i * 6 * 3 + 3 * 3 + 0])
+                    + mvec[i * 6 * 3 + 3 * 3 + k]
+                          * (areasq2[i * 6 * 3 + 3 * 3 + 0] + areasq2[i * 6 * 3 + 4 * 3 + 0])
+                    + mvec[i * 6 * 3 + 4 * 3 + k]
+                          * (areasq2[i * 6 * 3 + 4 * 3 + 0] + areasq2[i * 6 * 3 + 5 * 3 + 0])
+                    + mvec[i * 6 * 3 + 5 * 3 + k]
+                          * (areasq2[i * 6 * 3 + 5 * 3 + 0] + areasq2[i * 6 * 3 + 0 * 3 + 0]);
+
+                curlz[i * 7 * 3 + 1 * 3 + k] =
+                    mvec[i * 6 * 3 + 5 * 3 + k]
+                        * (areasq2[i * 6 * 3 + 0 * 3 + 1] + areasq2[i * 6 * 3 + 5 * 3 + 2])
+                    + mvec[i * 6 * 3 + 4 * 3 + k] * areasq2[i * 6 * 3 + 5 * 3 + 2]
+                    + mvec[i * 6 * 3 + 0 * 3 + k] * areasq2[i * 6 * 3 + 0 * 3 + 1];
+
+                curlz[i * 7 * 3 + 2 * 3 + k] =
+                    mvec[i * 6 * 3 + 0 * 3 + k]
+                        * (areasq2[i * 6 * 3 + 1 * 3 + 1] + areasq2[i * 6 * 3 + 0 * 3 + 2])
+                    + mvec[i * 6 * 3 + 5 * 3 + k] * areasq2[i * 6 * 3 + 0 * 3 + 2]
+                    + mvec[i * 6 * 3 + 1 * 3 + k] * areasq2[i * 6 * 3 + 1 * 3 + 1];
+
+                curlz[i * 7 * 3 + 3 * 3 + k] =
+                    mvec[i * 6 * 3 + 1 * 3 + k]
+                        * (areasq2[i * 6 * 3 + 2 * 3 + 1] + areasq2[i * 6 * 3 + 1 * 3 + 2])
+                    + mvec[i * 6 * 3 + 0 * 3 + k] * areasq2[i * 6 * 3 + 1 * 3 + 2]
+                    + mvec[i * 6 * 3 + 2 * 3 + k] * areasq2[i * 6 * 3 + 2 * 3 + 1];
+
+                curlz[i * 7 * 3 + 4 * 3 + k] =
+                    mvec[i * 6 * 3 + 2 * 3 + k]
+                        * (areasq2[i * 6 * 3 + 3 * 3 + 1] + areasq2[i * 6 * 3 + 2 * 3 + 2])
+                    + mvec[i * 6 * 3 + 1 * 3 + k] * areasq2[i * 6 * 3 + 2 * 3 + 2]
+                    + mvec[i * 6 * 3 + 3 * 3 + k] * areasq2[i * 6 * 3 + 3 * 3 + 1];
+
+                curlz[i * 7 * 3 + 5 * 3 + k] =
+                    mvec[i * 6 * 3 + 3 * 3 + k]
+                        * (areasq2[i * 6 * 3 + 4 * 3 + 1] + areasq2[i * 6 * 3 + 3 * 3 + 2])
+                    + mvec[i * 6 * 3 + 2 * 3 + k] * areasq2[i * 6 * 3 + 3 * 3 + 2]
+                    + mvec[i * 6 * 3 + 4 * 3 + k] * areasq2[i * 6 * 3 + 4 * 3 + 1];
+
+                curlz[i * 7 * 3 + 6 * 3 + k] =
+                    mvec[i * 6 * 3 + 4 * 3 + k]
+                        * (areasq2[i * 6 * 3 + 5 * 3 + 1] + areasq2[i * 6 * 3 + 4 * 3 + 2])
+                    + mvec[i * 6 * 3 + 3 * 3 + k] * areasq2[i * 6 * 3 + 4 * 3 + 2]
+                    + mvec[i * 6 * 3 + 5 * 3 + k] * areasq2[i * 6 * 3 + 5 * 3 + 1];
+            }
+        }
+        for (int j = 0; j < 7; j++)
+            for (int k = 0; k < 3; k++)
+                curlz[i * 7 * 3 + j * 3 + k] = curlz[i * 7 * 3 + j * 3 + k] / (2.0 * areasT[i]);
     }
     delete[] areasq2;
 }
@@ -2441,12 +2771,7 @@ void Icogrid::gra_operator(double *areasT,
     //
     // Local variables:
     int    geo;
-    double area1,
-        area2,
-        area3,
-        area4,
-        area5,
-        area6;
+    double area1, area2, area3, area4, area5, area6;
 
     double *areasq2;
 
@@ -2456,18 +2781,25 @@ void Icogrid::gra_operator(double *areasT,
 
         geo = 6; // Hexagons.
         for (int k = 0; k < 12; k++)
-            if (i == pent_ind[k]) geo = 5; // Pentagons.
+            if (i == pent_ind[k])
+                geo = 5; // Pentagons.
 
-        area1 = areas[i * 6 * 3 + 0 * 3 + 0] + areas[i * 6 * 3 + 0 * 3 + 1] + areas[i * 6 * 3 + 0 * 3 + 2];
-        area2 = areas[i * 6 * 3 + 1 * 3 + 0] + areas[i * 6 * 3 + 1 * 3 + 1] + areas[i * 6 * 3 + 1 * 3 + 2];
-        area3 = areas[i * 6 * 3 + 2 * 3 + 0] + areas[i * 6 * 3 + 2 * 3 + 1] + areas[i * 6 * 3 + 2 * 3 + 2];
-        area4 = areas[i * 6 * 3 + 3 * 3 + 0] + areas[i * 6 * 3 + 3 * 3 + 1] + areas[i * 6 * 3 + 3 * 3 + 2];
-        area5 = areas[i * 6 * 3 + 4 * 3 + 0] + areas[i * 6 * 3 + 4 * 3 + 1] + areas[i * 6 * 3 + 4 * 3 + 2];
+        area1 = areas[i * 6 * 3 + 0 * 3 + 0] + areas[i * 6 * 3 + 0 * 3 + 1]
+                + areas[i * 6 * 3 + 0 * 3 + 2];
+        area2 = areas[i * 6 * 3 + 1 * 3 + 0] + areas[i * 6 * 3 + 1 * 3 + 1]
+                + areas[i * 6 * 3 + 1 * 3 + 2];
+        area3 = areas[i * 6 * 3 + 2 * 3 + 0] + areas[i * 6 * 3 + 2 * 3 + 1]
+                + areas[i * 6 * 3 + 2 * 3 + 2];
+        area4 = areas[i * 6 * 3 + 3 * 3 + 0] + areas[i * 6 * 3 + 3 * 3 + 1]
+                + areas[i * 6 * 3 + 3 * 3 + 2];
+        area5 = areas[i * 6 * 3 + 4 * 3 + 0] + areas[i * 6 * 3 + 4 * 3 + 1]
+                + areas[i * 6 * 3 + 4 * 3 + 2];
 
         if (geo == 5)
             area6 = 0;
         else
-            area6 = areas[i * 6 * 3 + 5 * 3 + 0] + areas[i * 6 * 3 + 5 * 3 + 1] + areas[i * 6 * 3 + 5 * 3 + 2];
+            area6 = areas[i * 6 * 3 + 5 * 3 + 0] + areas[i * 6 * 3 + 5 * 3 + 1]
+                    + areas[i * 6 * 3 + 5 * 3 + 2];
 
         for (int k = 0; k < 3; k++) {
             areasq2[i * 6 * 3 + 0 * 3 + k] = areas[i * 6 * 3 + 0 * 3 + k] / area1;
@@ -2487,43 +2819,121 @@ void Icogrid::gra_operator(double *areasT,
         geo = 6; // Hexagons.
 
         for (int k = 0; k < 12; k++)
-            if (i == pent_ind[k]) geo = 5; // Pentagons.
+            if (i == pent_ind[k])
+                geo = 5; // Pentagons.
         for (int k = 0; k < 3; k++) {
             if (geo == 5) { //Pentagons.
-                grad[i * 7 * 3 + 0 * 3 + k] = nvec[i * 6 * 3 + 0 * 3 + k] * (areasq2[i * 6 * 3 + 0 * 3 + 0] + areasq2[i * 6 * 3 + 1 * 3 + 0]) + nvec[i * 6 * 3 + 1 * 3 + k] * (areasq2[i * 6 * 3 + 1 * 3 + 0] + areasq2[i * 6 * 3 + 2 * 3 + 0]) + nvec[i * 6 * 3 + 2 * 3 + k] * (areasq2[i * 6 * 3 + 2 * 3 + 0] + areasq2[i * 6 * 3 + 3 * 3 + 0]) + nvec[i * 6 * 3 + 3 * 3 + k] * (areasq2[i * 6 * 3 + 3 * 3 + 0] + areasq2[i * 6 * 3 + 4 * 3 + 0]) + nvec[i * 6 * 3 + 4 * 3 + k] * (areasq2[i * 6 * 3 + 4 * 3 + 0] + areasq2[i * 6 * 3 + 0 * 3 + 0]);
-                grad[i * 7 * 3 + 0 * 3 + k] = grad[i * 7 * 3 + 0 * 3 + k] - 2 * (nvec[i * 6 * 3 + 0 * 3 + k] + nvec[i * 6 * 3 + 1 * 3 + k] + nvec[i * 6 * 3 + 2 * 3 + k] + nvec[i * 6 * 3 + 3 * 3 + k] + nvec[i * 6 * 3 + 4 * 3 + k]);
+                grad[i * 7 * 3 + 0 * 3 + k] =
+                    nvec[i * 6 * 3 + 0 * 3 + k]
+                        * (areasq2[i * 6 * 3 + 0 * 3 + 0] + areasq2[i * 6 * 3 + 1 * 3 + 0])
+                    + nvec[i * 6 * 3 + 1 * 3 + k]
+                          * (areasq2[i * 6 * 3 + 1 * 3 + 0] + areasq2[i * 6 * 3 + 2 * 3 + 0])
+                    + nvec[i * 6 * 3 + 2 * 3 + k]
+                          * (areasq2[i * 6 * 3 + 2 * 3 + 0] + areasq2[i * 6 * 3 + 3 * 3 + 0])
+                    + nvec[i * 6 * 3 + 3 * 3 + k]
+                          * (areasq2[i * 6 * 3 + 3 * 3 + 0] + areasq2[i * 6 * 3 + 4 * 3 + 0])
+                    + nvec[i * 6 * 3 + 4 * 3 + k]
+                          * (areasq2[i * 6 * 3 + 4 * 3 + 0] + areasq2[i * 6 * 3 + 0 * 3 + 0]);
+                grad[i * 7 * 3 + 0 * 3 + k] =
+                    grad[i * 7 * 3 + 0 * 3 + k]
+                    - 2
+                          * (nvec[i * 6 * 3 + 0 * 3 + k] + nvec[i * 6 * 3 + 1 * 3 + k]
+                             + nvec[i * 6 * 3 + 2 * 3 + k] + nvec[i * 6 * 3 + 3 * 3 + k]
+                             + nvec[i * 6 * 3 + 4 * 3 + k]);
 
-                grad[i * 7 * 3 + 1 * 3 + k] = nvec[i * 6 * 3 + 4 * 3 + k] * (areasq2[i * 6 * 3 + 0 * 3 + 1] + areasq2[i * 6 * 3 + 4 * 3 + 2]) + nvec[i * 6 * 3 + 3 * 3 + k] * areasq2[i * 6 * 3 + 4 * 3 + 2] + nvec[i * 6 * 3 + 0 * 3 + k] * areasq2[i * 6 * 3 + 0 * 3 + 1];
+                grad[i * 7 * 3 + 1 * 3 + k] =
+                    nvec[i * 6 * 3 + 4 * 3 + k]
+                        * (areasq2[i * 6 * 3 + 0 * 3 + 1] + areasq2[i * 6 * 3 + 4 * 3 + 2])
+                    + nvec[i * 6 * 3 + 3 * 3 + k] * areasq2[i * 6 * 3 + 4 * 3 + 2]
+                    + nvec[i * 6 * 3 + 0 * 3 + k] * areasq2[i * 6 * 3 + 0 * 3 + 1];
 
-                grad[i * 7 * 3 + 2 * 3 + k] = nvec[i * 6 * 3 + 0 * 3 + k] * (areasq2[i * 6 * 3 + 1 * 3 + 1] + areasq2[i * 6 * 3 + 0 * 3 + 2]) + nvec[i * 6 * 3 + 4 * 3 + k] * areasq2[i * 6 * 3 + 0 * 3 + 2] + nvec[i * 6 * 3 + 1 * 3 + k] * areasq2[i * 6 * 3 + 1 * 3 + 1];
+                grad[i * 7 * 3 + 2 * 3 + k] =
+                    nvec[i * 6 * 3 + 0 * 3 + k]
+                        * (areasq2[i * 6 * 3 + 1 * 3 + 1] + areasq2[i * 6 * 3 + 0 * 3 + 2])
+                    + nvec[i * 6 * 3 + 4 * 3 + k] * areasq2[i * 6 * 3 + 0 * 3 + 2]
+                    + nvec[i * 6 * 3 + 1 * 3 + k] * areasq2[i * 6 * 3 + 1 * 3 + 1];
 
-                grad[i * 7 * 3 + 3 * 3 + k] = nvec[i * 6 * 3 + 1 * 3 + k] * (areasq2[i * 6 * 3 + 2 * 3 + 1] + areasq2[i * 6 * 3 + 1 * 3 + 2]) + nvec[i * 6 * 3 + 0 * 3 + k] * areasq2[i * 6 * 3 + 1 * 3 + 2] + nvec[i * 6 * 3 + 2 * 3 + k] * areasq2[i * 6 * 3 + 2 * 3 + 1];
+                grad[i * 7 * 3 + 3 * 3 + k] =
+                    nvec[i * 6 * 3 + 1 * 3 + k]
+                        * (areasq2[i * 6 * 3 + 2 * 3 + 1] + areasq2[i * 6 * 3 + 1 * 3 + 2])
+                    + nvec[i * 6 * 3 + 0 * 3 + k] * areasq2[i * 6 * 3 + 1 * 3 + 2]
+                    + nvec[i * 6 * 3 + 2 * 3 + k] * areasq2[i * 6 * 3 + 2 * 3 + 1];
 
-                grad[i * 7 * 3 + 4 * 3 + k] = nvec[i * 6 * 3 + 2 * 3 + k] * (areasq2[i * 6 * 3 + 3 * 3 + 1] + areasq2[i * 6 * 3 + 2 * 3 + 2]) + nvec[i * 6 * 3 + 1 * 3 + k] * areasq2[i * 6 * 3 + 2 * 3 + 2] + nvec[i * 6 * 3 + 3 * 3 + k] * areasq2[i * 6 * 3 + 3 * 3 + 1];
+                grad[i * 7 * 3 + 4 * 3 + k] =
+                    nvec[i * 6 * 3 + 2 * 3 + k]
+                        * (areasq2[i * 6 * 3 + 3 * 3 + 1] + areasq2[i * 6 * 3 + 2 * 3 + 2])
+                    + nvec[i * 6 * 3 + 1 * 3 + k] * areasq2[i * 6 * 3 + 2 * 3 + 2]
+                    + nvec[i * 6 * 3 + 3 * 3 + k] * areasq2[i * 6 * 3 + 3 * 3 + 1];
 
-                grad[i * 7 * 3 + 5 * 3 + k] = nvec[i * 6 * 3 + 3 * 3 + k] * (areasq2[i * 6 * 3 + 4 * 3 + 1] + areasq2[i * 6 * 3 + 3 * 3 + 2]) + nvec[i * 6 * 3 + 2 * 3 + k] * areasq2[i * 6 * 3 + 3 * 3 + 2] + nvec[i * 6 * 3 + 4 * 3 + k] * areasq2[i * 6 * 3 + 4 * 3 + 1];
+                grad[i * 7 * 3 + 5 * 3 + k] =
+                    nvec[i * 6 * 3 + 3 * 3 + k]
+                        * (areasq2[i * 6 * 3 + 4 * 3 + 1] + areasq2[i * 6 * 3 + 3 * 3 + 2])
+                    + nvec[i * 6 * 3 + 2 * 3 + k] * areasq2[i * 6 * 3 + 3 * 3 + 2]
+                    + nvec[i * 6 * 3 + 4 * 3 + k] * areasq2[i * 6 * 3 + 4 * 3 + 1];
 
                 grad[i * 7 * 3 + 6 * 3 + k] = 0.0;
             }
             else {
-                grad[i * 7 * 3 + 0 * 3 + k] = nvec[i * 6 * 3 + 0 * 3 + k] * (areasq2[i * 6 * 3 + 0 * 3 + 0] + areasq2[i * 6 * 3 + 1 * 3 + 0]) + nvec[i * 6 * 3 + 1 * 3 + k] * (areasq2[i * 6 * 3 + 1 * 3 + 0] + areasq2[i * 6 * 3 + 2 * 3 + 0]) + nvec[i * 6 * 3 + 2 * 3 + k] * (areasq2[i * 6 * 3 + 2 * 3 + 0] + areasq2[i * 6 * 3 + 3 * 3 + 0]) + nvec[i * 6 * 3 + 3 * 3 + k] * (areasq2[i * 6 * 3 + 3 * 3 + 0] + areasq2[i * 6 * 3 + 4 * 3 + 0]) + nvec[i * 6 * 3 + 4 * 3 + k] * (areasq2[i * 6 * 3 + 4 * 3 + 0] + areasq2[i * 6 * 3 + 5 * 3 + 0]) + nvec[i * 6 * 3 + 5 * 3 + k] * (areasq2[i * 6 * 3 + 5 * 3 + 0] + areasq2[i * 6 * 3 + 0 * 3 + 0]);
-                grad[i * 7 * 3 + 0 * 3 + k] = grad[i * 7 * 3 + 0 * 3 + k] - 2 * (nvec[i * 6 * 3 + 0 * 3 + k] + nvec[i * 6 * 3 + 1 * 3 + k] + nvec[i * 6 * 3 + 2 * 3 + k] + nvec[i * 6 * 3 + 3 * 3 + k] + nvec[i * 6 * 3 + 4 * 3 + k] + nvec[i * 6 * 3 + 5 * 3 + k]);
+                grad[i * 7 * 3 + 0 * 3 + k] =
+                    nvec[i * 6 * 3 + 0 * 3 + k]
+                        * (areasq2[i * 6 * 3 + 0 * 3 + 0] + areasq2[i * 6 * 3 + 1 * 3 + 0])
+                    + nvec[i * 6 * 3 + 1 * 3 + k]
+                          * (areasq2[i * 6 * 3 + 1 * 3 + 0] + areasq2[i * 6 * 3 + 2 * 3 + 0])
+                    + nvec[i * 6 * 3 + 2 * 3 + k]
+                          * (areasq2[i * 6 * 3 + 2 * 3 + 0] + areasq2[i * 6 * 3 + 3 * 3 + 0])
+                    + nvec[i * 6 * 3 + 3 * 3 + k]
+                          * (areasq2[i * 6 * 3 + 3 * 3 + 0] + areasq2[i * 6 * 3 + 4 * 3 + 0])
+                    + nvec[i * 6 * 3 + 4 * 3 + k]
+                          * (areasq2[i * 6 * 3 + 4 * 3 + 0] + areasq2[i * 6 * 3 + 5 * 3 + 0])
+                    + nvec[i * 6 * 3 + 5 * 3 + k]
+                          * (areasq2[i * 6 * 3 + 5 * 3 + 0] + areasq2[i * 6 * 3 + 0 * 3 + 0]);
+                grad[i * 7 * 3 + 0 * 3 + k] =
+                    grad[i * 7 * 3 + 0 * 3 + k]
+                    - 2
+                          * (nvec[i * 6 * 3 + 0 * 3 + k] + nvec[i * 6 * 3 + 1 * 3 + k]
+                             + nvec[i * 6 * 3 + 2 * 3 + k] + nvec[i * 6 * 3 + 3 * 3 + k]
+                             + nvec[i * 6 * 3 + 4 * 3 + k] + nvec[i * 6 * 3 + 5 * 3 + k]);
 
-                grad[i * 7 * 3 + 1 * 3 + k] = nvec[i * 6 * 3 + 5 * 3 + k] * (areasq2[i * 6 * 3 + 0 * 3 + 1] + areasq2[i * 6 * 3 + 5 * 3 + 2]) + nvec[i * 6 * 3 + 4 * 3 + k] * areasq2[i * 6 * 3 + 5 * 3 + 2] + nvec[i * 6 * 3 + 0 * 3 + k] * areasq2[i * 6 * 3 + 0 * 3 + 1];
+                grad[i * 7 * 3 + 1 * 3 + k] =
+                    nvec[i * 6 * 3 + 5 * 3 + k]
+                        * (areasq2[i * 6 * 3 + 0 * 3 + 1] + areasq2[i * 6 * 3 + 5 * 3 + 2])
+                    + nvec[i * 6 * 3 + 4 * 3 + k] * areasq2[i * 6 * 3 + 5 * 3 + 2]
+                    + nvec[i * 6 * 3 + 0 * 3 + k] * areasq2[i * 6 * 3 + 0 * 3 + 1];
 
-                grad[i * 7 * 3 + 2 * 3 + k] = nvec[i * 6 * 3 + 0 * 3 + k] * (areasq2[i * 6 * 3 + 1 * 3 + 1] + areasq2[i * 6 * 3 + 0 * 3 + 2]) + nvec[i * 6 * 3 + 5 * 3 + k] * areasq2[i * 6 * 3 + 0 * 3 + 2] + nvec[i * 6 * 3 + 1 * 3 + k] * areasq2[i * 6 * 3 + 1 * 3 + 1];
+                grad[i * 7 * 3 + 2 * 3 + k] =
+                    nvec[i * 6 * 3 + 0 * 3 + k]
+                        * (areasq2[i * 6 * 3 + 1 * 3 + 1] + areasq2[i * 6 * 3 + 0 * 3 + 2])
+                    + nvec[i * 6 * 3 + 5 * 3 + k] * areasq2[i * 6 * 3 + 0 * 3 + 2]
+                    + nvec[i * 6 * 3 + 1 * 3 + k] * areasq2[i * 6 * 3 + 1 * 3 + 1];
 
-                grad[i * 7 * 3 + 3 * 3 + k] = nvec[i * 6 * 3 + 1 * 3 + k] * (areasq2[i * 6 * 3 + 2 * 3 + 1] + areasq2[i * 6 * 3 + 1 * 3 + 2]) + nvec[i * 6 * 3 + 0 * 3 + k] * areasq2[i * 6 * 3 + 1 * 3 + 2] + nvec[i * 6 * 3 + 2 * 3 + k] * areasq2[i * 6 * 3 + 2 * 3 + 1];
+                grad[i * 7 * 3 + 3 * 3 + k] =
+                    nvec[i * 6 * 3 + 1 * 3 + k]
+                        * (areasq2[i * 6 * 3 + 2 * 3 + 1] + areasq2[i * 6 * 3 + 1 * 3 + 2])
+                    + nvec[i * 6 * 3 + 0 * 3 + k] * areasq2[i * 6 * 3 + 1 * 3 + 2]
+                    + nvec[i * 6 * 3 + 2 * 3 + k] * areasq2[i * 6 * 3 + 2 * 3 + 1];
 
-                grad[i * 7 * 3 + 4 * 3 + k] = nvec[i * 6 * 3 + 2 * 3 + k] * (areasq2[i * 6 * 3 + 3 * 3 + 1] + areasq2[i * 6 * 3 + 2 * 3 + 2]) + nvec[i * 6 * 3 + 1 * 3 + k] * areasq2[i * 6 * 3 + 2 * 3 + 2] + nvec[i * 6 * 3 + 3 * 3 + k] * areasq2[i * 6 * 3 + 3 * 3 + 1];
+                grad[i * 7 * 3 + 4 * 3 + k] =
+                    nvec[i * 6 * 3 + 2 * 3 + k]
+                        * (areasq2[i * 6 * 3 + 3 * 3 + 1] + areasq2[i * 6 * 3 + 2 * 3 + 2])
+                    + nvec[i * 6 * 3 + 1 * 3 + k] * areasq2[i * 6 * 3 + 2 * 3 + 2]
+                    + nvec[i * 6 * 3 + 3 * 3 + k] * areasq2[i * 6 * 3 + 3 * 3 + 1];
 
-                grad[i * 7 * 3 + 5 * 3 + k] = nvec[i * 6 * 3 + 3 * 3 + k] * (areasq2[i * 6 * 3 + 4 * 3 + 1] + areasq2[i * 6 * 3 + 3 * 3 + 2]) + nvec[i * 6 * 3 + 2 * 3 + k] * areasq2[i * 6 * 3 + 3 * 3 + 2] + nvec[i * 6 * 3 + 4 * 3 + k] * areasq2[i * 6 * 3 + 4 * 3 + 1];
+                grad[i * 7 * 3 + 5 * 3 + k] =
+                    nvec[i * 6 * 3 + 3 * 3 + k]
+                        * (areasq2[i * 6 * 3 + 4 * 3 + 1] + areasq2[i * 6 * 3 + 3 * 3 + 2])
+                    + nvec[i * 6 * 3 + 2 * 3 + k] * areasq2[i * 6 * 3 + 3 * 3 + 2]
+                    + nvec[i * 6 * 3 + 4 * 3 + k] * areasq2[i * 6 * 3 + 4 * 3 + 1];
 
-                grad[i * 7 * 3 + 6 * 3 + k] = nvec[i * 6 * 3 + 4 * 3 + k] * (areasq2[i * 6 * 3 + 5 * 3 + 1] + areasq2[i * 6 * 3 + 4 * 3 + 2]) + nvec[i * 6 * 3 + 3 * 3 + k] * areasq2[i * 6 * 3 + 4 * 3 + 2] + nvec[i * 6 * 3 + 5 * 3 + k] * areasq2[i * 6 * 3 + 5 * 3 + 1];
+                grad[i * 7 * 3 + 6 * 3 + k] =
+                    nvec[i * 6 * 3 + 4 * 3 + k]
+                        * (areasq2[i * 6 * 3 + 5 * 3 + 1] + areasq2[i * 6 * 3 + 4 * 3 + 2])
+                    + nvec[i * 6 * 3 + 3 * 3 + k] * areasq2[i * 6 * 3 + 4 * 3 + 2]
+                    + nvec[i * 6 * 3 + 5 * 3 + k] * areasq2[i * 6 * 3 + 5 * 3 + 1];
             }
         }
         for (int j = 0; j < 7; j++)
-            for (int k = 0; k < 3; k++) grad[i * 7 * 3 + j * 3 + k] = grad[i * 7 * 3 + j * 3 + k] / (2.0 * areasT[i]);
+            for (int k = 0; k < 3; k++)
+                grad[i * 7 * 3 + j * 3 + k] = grad[i * 7 * 3 + j * 3 + k] / (2.0 * areasT[i]);
     }
     delete[] areasq2;
 }
@@ -2555,11 +2965,14 @@ void Icogrid::zonal_mean_tab_f(int *   zonal_mean_tab,
     lat_array = new double[nlat + 1]();
 
     for (int i = 0; i < point_num; i++)
-        for (int k = 0; k < 2; k++) zonal_mean_tab[i * 3 + k] = 0;
+        for (int k = 0; k < 2; k++)
+            zonal_mean_tab[i * 3 + k] = 0;
 
-    for (int j = 0; j < nlat; j++) count_num[j] = 0;
+    for (int j = 0; j < nlat; j++)
+        count_num[j] = 0;
     lat_array[0] = -M_PI / 2.0;
-    for (int j = 1; j < nlat + 1; j++) lat_array[j] = lat_array[j - 1] + des_lat;
+    for (int j = 1; j < nlat + 1; j++)
+        lat_array[j] = lat_array[j - 1] + des_lat;
     for (int i = 0; i < point_num; i++) {
         for (int j = 0; j < nlat; j++) {
             if (lonlat[i * 2 + 1] >= lat_array[j] && lonlat[i * 2 + 1] < lat_array[j + 1]) {
@@ -2579,7 +2992,8 @@ void Icogrid::zonal_mean_tab_f(int *   zonal_mean_tab,
         int ind                   = zonal_mean_tab[i * 3];
         zonal_mean_tab[i * 3 + 1] = count_num[ind];
         // log::printf("ind, count = %d, %d\n", ind, count_num[ind]);
-        if (count_num[ind] > *max_count) *max_count = count_num[ind];
+        if (count_num[ind] > *max_count)
+            *max_count = count_num[ind];
     }
     *max_count = pow(2, ceil(log(*max_count) / log(2)));
 

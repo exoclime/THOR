@@ -45,6 +45,7 @@
 //
 ////////////////////////////////////////////////////////////////////////
 #include "kernel_halo_helpers.h"
+#define REALLY_SMALL 1e-300
 
 template<int NX, int NY>
 __global__ void Momentum_Eq(double *M_d,
@@ -129,12 +130,25 @@ __global__ void Momentum_Eq(double *M_d,
         rscale = 1.0;
 
     for (int k = 0; k < 3; k++) {
-        nflxv_s[iri * 3 + k] = rscale * (grad_d[id * 7 * 3 + 3 * 0 + k] * pressure_s[ir] + grad_d[id * 7 * 3 + 3 * 1 + k] * pressure_s[pt1] + grad_d[id * 7 * 3 + 3 * 2 + k] * pressure_s[pt2] + grad_d[id * 7 * 3 + 3 * 3 + k] * pressure_s[pt3] + grad_d[id * 7 * 3 + 3 * 4 + k] * pressure_s[pt4] + grad_d[id * 7 * 3 + 3 * 5 + k] * pressure_s[pt5] + grad_d[id * 7 * 3 + 3 * 6 + k] * pressure_s[pt6]);
+        nflxv_s[iri * 3 + k] = rscale
+                               * (grad_d[id * 7 * 3 + 3 * 0 + k] * pressure_s[ir]
+                                  + grad_d[id * 7 * 3 + 3 * 1 + k] * pressure_s[pt1]
+                                  + grad_d[id * 7 * 3 + 3 * 2 + k] * pressure_s[pt2]
+                                  + grad_d[id * 7 * 3 + 3 * 3 + k] * pressure_s[pt3]
+                                  + grad_d[id * 7 * 3 + 3 * 4 + k] * pressure_s[pt4]
+                                  + grad_d[id * 7 * 3 + 3 * 5 + k] * pressure_s[pt5]
+                                  + grad_d[id * 7 * 3 + 3 * 6 + k] * pressure_s[pt6]);
     }
 
-    Mx = (-nflxv_s[iri * 3 + 0] + SlowMh_d[id * 3 * nv + lev * 3 + 0] + DivM_d[id * 3 * nv + lev * 3 + 0]) * dt;
-    My = (-nflxv_s[iri * 3 + 1] + SlowMh_d[id * 3 * nv + lev * 3 + 1] + DivM_d[id * 3 * nv + lev * 3 + 1]) * dt;
-    Mz = (-nflxv_s[iri * 3 + 2] + SlowMh_d[id * 3 * nv + lev * 3 + 2] + DivM_d[id * 3 * nv + lev * 3 + 2]) * dt;
+    Mx = (-nflxv_s[iri * 3 + 0] + SlowMh_d[id * 3 * nv + lev * 3 + 0]
+          + DivM_d[id * 3 * nv + lev * 3 + 0])
+         * dt;
+    My = (-nflxv_s[iri * 3 + 1] + SlowMh_d[id * 3 * nv + lev * 3 + 1]
+          + DivM_d[id * 3 * nv + lev * 3 + 1])
+         * dt;
+    Mz = (-nflxv_s[iri * 3 + 2] + SlowMh_d[id * 3 * nv + lev * 3 + 2]
+          + DivM_d[id * 3 * nv + lev * 3 + 2])
+         * dt;
 
     vr = Mx * funcx + My * funcy + Mz * funcz;
 
@@ -177,17 +191,20 @@ __global__ void Momentum_Eq_Poles(double *M_d,
     double Mx, My, Mz;
 
     if (id < num) {
-        for (int i = 0; i < 5; i++) local_p[i] = point_local_d[id * 6 + i];
+        for (int i = 0; i < 5; i++)
+            local_p[i] = point_local_d[id * 6 + i];
         func_r_p[0] = func_r_d[id * 3 + 0];
         func_r_p[1] = func_r_d[id * 3 + 1];
         func_r_p[2] = func_r_d[id * 3 + 2];
         for (int i = 0; i < 7; i++)
-            for (int k = 0; k < 3; k++) grad_p[i * 3 + k] = grad_d[id * 7 * 3 + i * 3 + k];
+            for (int k = 0; k < 3; k++)
+                grad_p[i * 3 + k] = grad_d[id * 7 * 3 + i * 3 + k];
 
         for (int lev = 0; lev < nv; lev++) {
 
             pressure_p[0] = pressure_d[id * nv + lev];
-            for (int i = 1; i < 6; i++) pressure_p[i] = pressure_d[local_p[i - 1] * nv + lev];
+            for (int i = 1; i < 6; i++)
+                pressure_p[i] = pressure_d[local_p[i - 1] * nv + lev];
 
             alt = Altitude_d[lev];
 
@@ -197,12 +214,25 @@ __global__ void Momentum_Eq_Poles(double *M_d,
                 rscale = 1.0;
 
             for (int k = 0; k < 3; k++) {
-                nflxv_p[k] = rscale * (grad_p[3 * 0 + k] * pressure_p[0] + grad_p[3 * 1 + k] * pressure_p[1] + grad_p[3 * 2 + k] * pressure_p[2] + grad_p[3 * 3 + k] * pressure_p[3] + grad_p[3 * 4 + k] * pressure_p[4] + grad_p[3 * 5 + k] * pressure_p[5]);
+                // clang-format off
+                nflxv_p[k] = rscale * (grad_p[3 * 0 + k] * pressure_p[0]
+                                     + grad_p[3 * 1 + k] * pressure_p[1]
+                                     + grad_p[3 * 2 + k] * pressure_p[2]
+                                     + grad_p[3 * 3 + k] * pressure_p[3]
+                                     + grad_p[3 * 4 + k] * pressure_p[4]
+                                     + grad_p[3 * 5 + k] * pressure_p[5]);
+                // clang-format on
             }
 
-            Mx = (-nflxv_p[0] + SlowMh_d[id * 3 * nv + lev * 3 + 0] + DivM_d[id * 3 * nv + lev * 3 + 0]) * dt;
-            My = (-nflxv_p[1] + SlowMh_d[id * 3 * nv + lev * 3 + 1] + DivM_d[id * 3 * nv + lev * 3 + 1]) * dt;
-            Mz = (-nflxv_p[2] + SlowMh_d[id * 3 * nv + lev * 3 + 2] + DivM_d[id * 3 * nv + lev * 3 + 2]) * dt;
+            Mx = (-nflxv_p[0] + SlowMh_d[id * 3 * nv + lev * 3 + 0]
+                  + DivM_d[id * 3 * nv + lev * 3 + 0])
+                 * dt;
+            My = (-nflxv_p[1] + SlowMh_d[id * 3 * nv + lev * 3 + 1]
+                  + DivM_d[id * 3 * nv + lev * 3 + 1])
+                 * dt;
+            Mz = (-nflxv_p[2] + SlowMh_d[id * 3 * nv + lev * 3 + 2]
+                  + DivM_d[id * 3 * nv + lev * 3 + 2])
+                 * dt;
 
             vr = Mx * func_r_p[0] + My * func_r_p[1] + Mz * func_r_p[2];
 
@@ -230,7 +260,9 @@ __global__ void Density_Pressure_Eqs(double *pressure_d,
                                      double *pt_d,
                                      double *pth_d,
                                      double *SlowRho_d,
+                                     double *profx_dP_d,
                                      double *diffpr_d,
+                                     double *diffprv_d,
                                      double *div_d,
                                      double *Altitude_d,
                                      double *Altitudeh_d,
@@ -364,9 +396,23 @@ __global__ void Density_Pressure_Eqs(double *pressure_d,
         div5 = div_d[id * 7 * 3 + 3 * 5 + k];
         div6 = div_d[id * 7 * 3 + 3 * 6 + k];
 
-        nflxr_s[iri] += rscale * (div0 * v_s[ir * 3 + k] + div1 * v_s[pt1 * 3 + k] + div2 * v_s[pt2 * 3 + k] + div3 * v_s[pt3 * 3 + k] + div4 * v_s[pt4 * 3 + k] + div5 * v_s[pt5 * 3 + k] + div6 * v_s[pt6 * 3 + k]);
+        // clang-format off
+        nflxr_s[iri] += rscale * (div0 * v_s[ir * 3 + k]
+                                + div1 * v_s[pt1 * 3 + k]
+                                + div2 * v_s[pt2 * 3 + k]
+                                + div3 * v_s[pt3 * 3 + k]
+                                + div4 * v_s[pt4 * 3 + k]
+                                + div5 * v_s[pt5 * 3 + k]
+                                + div6 * v_s[pt6 * 3 + k]);
 
-        nflxpt_s[iri] += rscale * (div0 * v1_s[ir * 3 + k] * pt_s[ir] + div1 * v1_s[pt1 * 3 + k] * pt_s[pt1] + div2 * v1_s[pt2 * 3 + k] * pt_s[pt2] + div3 * v1_s[pt3 * 3 + k] * pt_s[pt3] + div4 * v1_s[pt4 * 3 + k] * pt_s[pt4] + div5 * v1_s[pt5 * 3 + k] * pt_s[pt5] + div6 * v1_s[pt6 * 3 + k] * pt_s[pt6]);
+        nflxpt_s[iri] += rscale * (div0 * v1_s[ir * 3 + k] * pt_s[ir]
+                                 + div1 * v1_s[pt1 * 3 + k] * pt_s[pt1]
+                                 + div2 * v1_s[pt2 * 3 + k] * pt_s[pt2]
+                                 + div3 * v1_s[pt3 * 3 + k] * pt_s[pt3]
+                                 + div4 * v1_s[pt4 * 3 + k] * pt_s[pt4]
+                                 + div5 * v1_s[pt5 * 3 + k] * pt_s[pt5]
+                                 + div6 * v1_s[pt6 * 3 + k] * pt_s[pt6]);
+        // clang-format on
     }
 
     if (lev == 0) {
@@ -394,23 +440,38 @@ __global__ void Density_Pressure_Eqs(double *pressure_d,
     r   = Rhok_d[id * nv + lev] + Rho_d[id * nv + lev];
 
     double pt;
-    pt = (P_Ref / (Rd * r)) * pow((pressure_d[id * nv + lev] + pressurek_d[id * nv + lev]) / P_Ref, Cv / Cp);
+    pt = (P_Ref / (Rd * r))
+         * pow((pressure_d[id * nv + lev] + pressurek_d[id * nv + lev]) / P_Ref, Cv / Cp);
 
     aux += pt * r;
     // aux += pt_s[ir]*r;
 
+
     // printf("***** (pt_small - pt_large) = %g \n*******",(pt-pt_s[ir]));
     // Updates pressure
-    p                         = P_Ref * pow(Rd * aux / P_Ref, Cp / Cv);
-    pressure_d[id * nv + lev] = p - pressurek_d[id * nv + lev] + diffpr_d[id * nv + lev] * dt;
+    // if (aux >= 0) {
+    p = P_Ref * pow(Rd * aux / P_Ref, Cp / Cv); //
+    // }
+    // else {
+    //     p = 0;
+    // }
+    // if (p < -1 * (diffpr_d[id * nv + lev] + diffprv_d[id * nv + lev])) {
+    //     p = -1 * (diffpr_d[id * nv + lev] + diffprv_d[id * nv + lev]);
+    // }
+    pressure_d[id * nv + lev] = p - pressurek_d[id * nv + lev]
+                                + (diffpr_d[id * nv + lev] + diffprv_d[id * nv + lev]) * dt
+                                + profx_dP_d[id * nv + lev] * dt;
 
     // Updates density
     nflxr_s[iri] += dwdz;
     Rho_d[id * nv + lev] += (SlowRho_d[id * nv + lev] - nflxr_s[iri]) * dt;
     // if (isnan(pressure_d[id * nv + lev])) {
-    //   printf("(id, lev) = (%d, %d)",id,lev);
+    //     printf("(id, lev) = (%d, %d)", id, lev); //
     // }
+
+    // calc hs balance here and output...?
 }
+
 
 template<int NN>
 __global__ void Density_Pressure_Eqs_Poles(double *pressure_d,
@@ -424,7 +485,9 @@ __global__ void Density_Pressure_Eqs_Poles(double *pressure_d,
                                            double *pt_d,
                                            double *pth_d,
                                            double *SlowRho_d,
+                                           double *profx_dP_d,
                                            double *diffpr_d,
+                                           double *diffprv_d,
                                            double *div_d,
                                            double *Altitude_d,
                                            double *Altitudeh_d,
@@ -461,9 +524,11 @@ __global__ void Density_Pressure_Eqs_Poles(double *pressure_d,
     double Cv = Cp - Rd;
 
     if (id < num) {
-        for (int i = 0; i < 5; i++) local_p[i] = point_local_d[id * 6 + i];
+        for (int i = 0; i < 5; i++)
+            local_p[i] = point_local_d[id * 6 + i];
         for (int i = 0; i < 7; i++)
-            for (int k = 0; k < 3; k++) div_p[i * 3 + k] = div_d[id * 7 * 3 + i * 3 + k];
+            for (int k = 0; k < 3; k++)
+                div_p[i * 3 + k] = div_d[id * 7 * 3 + i * 3 + k];
 
         for (int lev = 0; lev < nv; lev++) {
             v_p[0]  = Mh_d[id * 3 * nv + lev * 3 + 0];
@@ -477,10 +542,13 @@ __global__ void Density_Pressure_Eqs_Poles(double *pressure_d,
                 v_p[i * 3 + 0]  = Mh_d[local_p[i - 1] * 3 * nv + lev * 3 + 0];
                 v_p[i * 3 + 1]  = Mh_d[local_p[i - 1] * 3 * nv + lev * 3 + 1];
                 v_p[i * 3 + 2]  = Mh_d[local_p[i - 1] * 3 * nv + lev * 3 + 2];
-                v1_p[i * 3 + 0] = Mh_d[local_p[i - 1] * 3 * nv + lev * 3 + 0] + Mhk_d[local_p[i - 1] * 3 * nv + lev * 3 + 0];
-                v1_p[i * 3 + 1] = Mh_d[local_p[i - 1] * 3 * nv + lev * 3 + 1] + Mhk_d[local_p[i - 1] * 3 * nv + lev * 3 + 1];
-                v1_p[i * 3 + 2] = Mh_d[local_p[i - 1] * 3 * nv + lev * 3 + 2] + Mhk_d[local_p[i - 1] * 3 * nv + lev * 3 + 2];
-                pt_p[i]         = pt_d[local_p[i - 1] * nv + lev];
+                v1_p[i * 3 + 0] = Mh_d[local_p[i - 1] * 3 * nv + lev * 3 + 0]
+                                  + Mhk_d[local_p[i - 1] * 3 * nv + lev * 3 + 0];
+                v1_p[i * 3 + 1] = Mh_d[local_p[i - 1] * 3 * nv + lev * 3 + 1]
+                                  + Mhk_d[local_p[i - 1] * 3 * nv + lev * 3 + 1];
+                v1_p[i * 3 + 2] = Mh_d[local_p[i - 1] * 3 * nv + lev * 3 + 2]
+                                  + Mhk_d[local_p[i - 1] * 3 * nv + lev * 3 + 2];
+                pt_p[i] = pt_d[local_p[i - 1] * nv + lev];
             }
 
             if (lev == 0) {
@@ -507,9 +575,22 @@ __global__ void Density_Pressure_Eqs_Poles(double *pressure_d,
             nflxpt_p = 0.0;
 
             for (int k = 0; k < 3; k++) {
-                nflxr_p += rscale * (div_p[3 * 0 + k] * v_p[0 * 3 + k] + div_p[3 * 1 + k] * v_p[1 * 3 + k] + div_p[3 * 2 + k] * v_p[2 * 3 + k] + div_p[3 * 3 + k] * v_p[3 * 3 + k] + div_p[3 * 4 + k] * v_p[4 * 3 + k] + div_p[3 * 5 + k] * v_p[5 * 3 + k]);
+                // clang-format off
+                nflxr_p += rscale * (div_p[3 * 0 + k] * v_p[0 * 3 + k]
+                                  + div_p[3 * 1 + k] * v_p[1 * 3 + k]
+                                  + div_p[3 * 2 + k] * v_p[2 * 3 + k]
+                                  + div_p[3 * 3 + k] * v_p[3 * 3 + k]
+                                  + div_p[3 * 4 + k] * v_p[4 * 3 + k]
+                                  + div_p[3 * 5 + k] * v_p[5 * 3 + k]);
 
-                nflxpt_p += rscale * (div_p[3 * 0 + k] * v1_p[0 * 3 + k] * pt_p[0] + div_p[3 * 1 + k] * v1_p[1 * 3 + k] * pt_p[1] + div_p[3 * 2 + k] * v1_p[2 * 3 + k] * pt_p[2] + div_p[3 * 3 + k] * v1_p[3 * 3 + k] * pt_p[3] + div_p[3 * 4 + k] * v1_p[4 * 3 + k] * pt_p[4] + div_p[3 * 5 + k] * v1_p[5 * 3 + k] * pt_p[5]);
+                nflxpt_p += rscale
+                              * (div_p[3 * 0 + k] * v1_p[0 * 3 + k] * pt_p[0]
+                               + div_p[3 * 1 + k] * v1_p[1 * 3 + k] * pt_p[1]
+                               + div_p[3 * 2 + k] * v1_p[2 * 3 + k] * pt_p[2]
+                               + div_p[3 * 3 + k] * v1_p[3 * 3 + k] * pt_p[3]
+                               + div_p[3 * 4 + k] * v1_p[4 * 3 + k] * pt_p[4]
+                               + div_p[3 * 5 + k] * v1_p[5 * 3 + k] * pt_p[5]);
+                // clang-format on
             }
 
             if (lev == 0) {
@@ -528,17 +609,31 @@ __global__ void Density_Pressure_Eqs_Poles(double *pressure_d,
             aux = -(nflxpt_p + dwptdz) * dt;
             r   = Rhok_d[id * nv + lev] + Rho_d[id * nv + lev];
 
-            double pt;
-            pt = (P_Ref / (Rd * r)) * pow((pressure_d[id * nv + lev] + pressurek_d[id * nv + lev]) / P_Ref, Cv / Cp);
+            double pt, ptmp;
+            ptmp = pressure_d[id * nv + lev];
+            pt   = (P_Ref / (Rd * r)) * pow((ptmp + pressurek_d[id * nv + lev]) / P_Ref, Cv / Cp);
 
             aux += pt * r;
 
             // aux += pt_d[id * nv + lev] * r;
+            // if (aux >= 0) {
+            p = P_Ref * pow(Rd * aux / P_Ref, Cp / Cv); //
+            // }
+            // else {
+            //     p = 0;
+            // }
+            // if (p < -1 * (diffpr_d[id * nv + lev] + diffprv_d[id * nv + lev])) {
+            //     p = -1 * (diffpr_d[id * nv + lev] + diffprv_d[id * nv + lev]);
+            // }
 
             // Updates pressure
-            p                         = P_Ref * pow(Rd * aux / P_Ref, Cp / Cv);
-            pressure_d[id * nv + lev] = p - pressurek_d[id * nv + lev] + diffpr_d[id * nv + lev] * dt;
-
+            // p                         = P_Ref * pow(Rd * aux / P_Ref, Cp / Cv);
+            pressure_d[id * nv + lev] = p - pressurek_d[id * nv + lev]
+                                        + (diffpr_d[id * nv + lev] + diffprv_d[id * nv + lev]) * dt
+                                        + profx_dP_d[id * nv + lev] * dt;
+            // if (isnan(pressure_d[id * nv + lev])) {
+            //     printf("(id, lev) = (%d, %d)", id, lev);
+            // }
             // Updates density
             nflxr_p += dwdz;
             Rho_d[id * nv + lev] += (SlowRho_d[id * nv + lev] - nflxr_p) * dt;

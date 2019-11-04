@@ -76,21 +76,23 @@ public:
     double P_Ref;
     double Top_altitude;
     double Diffc;
+    double DivDampc;
 
     // Sim
-    bool SpongeLayer; // Use sponge layer?
+    bool SpongeLayer;        // Use sponge layer?
+    bool TempSponge = false; // include thermal term in sponge layer?
     bool DeepModel;
     bool HyDiff;       // Turn on/off hyper-diffusion.
     bool DivDampP;     // Turn on/off divergence damping.
     bool NonHydro;     // Turn on/off non-hydrostatic.
     bool conservation; // calc/output conservation quantities
 
+    bool output_mean;
+
     int  conv_adj;
     bool gcm_off;
 
     bool rest;
-    int TPprof;
-    
 
     SimulationSetup();
 };

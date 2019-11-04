@@ -54,6 +54,8 @@
 
 #include <fstream>
 #include <iostream>
+#include <sstream>
+
 
 #include "define.h"
 #include "log_writer.h"
@@ -95,6 +97,7 @@ public:
 
     double *div_h;
     double *grad_h;
+    double *curlz_h;
 
     double *func_r_h;
 
@@ -105,13 +108,23 @@ public:
     double *W_h;
     double *Wh_h;
 
-    double *Kdhz_h;
-    double *Kdh4_h;
+    // average quantities over output interval
+    double *Rho_mean_h;
+    double *pressure_mean_h;
+    double *Mh_mean_h;
+    double *Wh_mean_h;
+
+    //
+    // double *Kdhz_h;
+    // double *Kdh4_h;
+    // double *Kdvz_h;
+    // double *Kdv6_h;
 
     bool check_h;
 
     int *  zonal_mean_tab_h;
     double Rv_sponge;
+    double RvT_sponge;
     double ns_sponge;
     double t_shrink;
 
@@ -161,6 +174,12 @@ public:
     double *Rho_d;
     double *pressure_d;
 
+    // average quantities over output interval
+    double *Rho_mean_d;
+    double *pressure_mean_d;
+    double *Mh_mean_d;
+    double *Wh_mean_d;
+
     double *Adv_d;
 
     double *SlowMh_d;
@@ -192,6 +211,8 @@ public:
 
     double *Kdhz_d;
     double *Kdh4_d;
+    double *Kdvz_d;
+    double *Kdv6_d;
 
     double *DivM_d;
     double *diffpr_d;
@@ -199,9 +220,22 @@ public:
     double *diffw_d;
     double *diffrh_d;
 
+    double *diffprv_d;
+    double *diffmv_d;
+    double *diffwv_d;
+    double *diffrv_d;
+
     double *diff_d;
+    double *diffv_d1;
+    double *diffv_d2;
     double *divg_Mh_d;
     bool *  check_d;
+
+    double *profx_dP_d;
+    double *profx_dMh_d;
+    double *profx_dWh_d;
+    double *profx_dW_d;
+
 
     double *vbar_d;
     double *vbar_h;
@@ -211,6 +245,10 @@ public:
     double *wtmp_h;
     double *vtmp;
     double *wtmp;
+    double *Tbar_d;
+    double *Tbar_h;
+    double *Ttmp;
+    double *Ttmp_h;
     int *   zonal_mean_tab_d;
     int     max_count;   // max number of points in latitude rings
     double *pressureh_d; // midpoint pressure used in dry conv adj
@@ -245,6 +283,7 @@ public:
         double *        areasTr_,
         double *        div_,
         double *        grad_,
+        double *        curlz_,
         double *        func_r_,
         int             nl_region_,
         int             nr_,
@@ -256,17 +295,19 @@ public:
         int             nlat_,
         int *           zonal_mean_tab,
         double          Rv_sponge_,
+        double          RvT_sponge_,
         double          ns_sponge_,
         double          t_shrink_,
         int             point_num_,
         bool            conservation,
         benchmark_types core_benchmark_,
         log_writer &    logwriter_,
-        int             max_count_);
+        int             max_count_,
+        bool            output_mean);
 
     ~ESP();
 
-    void alloc_data(bool);
+    void alloc_data(bool, bool);
 
     bool initial_values(const std::string &initial_conditions_filename,
                         const bool &       continue_sim,
@@ -276,9 +317,7 @@ public:
                         double &           simulation_start_time,
                         int &              output_file_idx);
 
-    void init_timestep(int    nstep,
-                       double simtime,
-                       double timestep_) {
+    void init_timestep(int nstep, double simtime, double timestep_) {
         current_step    = nstep;
         simulation_time = simtime;
         timestep        = timestep_;
@@ -296,14 +335,159 @@ public:
                 const SimulationSetup &sim); // planet parameters)
 
 
-    void set_output_param(const std::string &sim_id_,
-                          const std::string &output_dir_);
+    void set_output_param(const std::string &sim_id_, const std::string &output_dir_);
 
     void conservation(const SimulationSetup &sim);
 
     void copy_to_host();
     void copy_conservation_to_host();
     void copy_global_to_host();
+    void copy_mean_to_host();
+
+    void update_mean_outputs(int);
+
+    /// crash reporting utilities ///////////
+    std::string index_to_location_scalar(int i, int first) {
+        int idx, lev;
+        lev = i % nv;
+        idx = (i - lev) / nv;
+
+        std::ostringstream string_stream;
+        if (first == 1) {
+            string_stream << "RawIdx\tGridIdx\tLev\tLat\tLong\tAlt" << std::endl;
+        }
+        string_stream << i << "\t" << idx << "\t" << lev << "\t"
+                      << lonlat_h[idx * 2 + 1] * 180 / M_PI << "\t"
+                      << lonlat_h[idx * 2] * 180 / M_PI << "\t" << Altitude_h[lev];
+        return string_stream.str();
+    }
+
+    std::string index_to_location_scalar_mid(int i, int first) {
+        int idx, lev;
+        lev = i % nvi;
+        idx = (i - lev) / nvi;
+
+        std::ostringstream string_stream;
+        if (first == 1) {
+            string_stream << "RawIdx\tGridIdx\tLev\tLat\tLong\tAlt" << std::endl;
+        }
+        string_stream << i << "\t" << idx << "\t" << lev << "\t"
+                      << lonlat_h[idx * 2 + 1] * 180 / M_PI << "\t"
+                      << lonlat_h[idx * 2] * 180 / M_PI << "\t" << Altitudeh_h[lev];
+        return string_stream.str();
+    }
+
+    std::string index_to_location_vector(int i, int first) {
+        int idx, lev, xyz;
+        xyz = i % 3;
+        lev = ((i - xyz) / 3) % nv;
+        idx = (i - 3 * lev - xyz) / nv / 3;
+
+        std::ostringstream string_stream;
+        if (first == 1) {
+            string_stream << "RawIdx\tGridIdx\tLev\tXYZ\tLat\tLong\tAlt" << std::endl;
+        }
+        string_stream << i << "\t" << idx << "\t" << lev << "\t" << xyz << "\t"
+                      << lonlat_h[idx * 2 + 1] * 180 / M_PI << "\t"
+                      << lonlat_h[idx * 2] * 180 / M_PI << "\t" << Altitude_h[lev];
+        return string_stream.str();
+    }
+
+    std::string dummy(int i, int first) {
+        //placeholder function to fill the build definitions in binary_test.cpp
+        std::ostringstream string_stream;
+        string_stream << 0;
+        return string_stream.str();
+    }
+
+    std::string index_to_location_1xn(int i, int first) {
+        int idx = i;
+
+        std::ostringstream string_stream;
+        if (first == 1) {
+            string_stream << "RawIdx\tGridIdx\tLat\tLong" << std::endl;
+        }
+        string_stream << i << "\t" << idx << "\t" << lonlat_h[idx * 2 + 1] * 180 / M_PI << "\t"
+                      << lonlat_h[idx * 2] * 180 / M_PI;
+        return string_stream.str();
+    }
+
+    std::string index_to_location_2xn(int i, int first) {
+        int idx, ll;
+        ll  = i % 2;
+        idx = (i - ll) / 2;
+
+        std::ostringstream string_stream;
+        if (first == 1) {
+            string_stream << "RawIdx\tGridIdx\tLat?\tLat\tLong" << std::endl;
+        }
+        string_stream << i << "\t" << idx << "\t" << ll << "\t"
+                      << lonlat_h[idx * 2 + 1] * 180 / M_PI << "\t"
+                      << lonlat_h[idx * 2] * 180 / M_PI;
+        return string_stream.str();
+    }
+
+    std::string index_to_location_3xn(int i, int first) {
+        int idx, xyz;
+        xyz = i % 3;
+        idx = (i - xyz) / 3;
+
+        std::ostringstream string_stream;
+        if (first == 1) {
+            string_stream << "RawIdx\tGridIdx\tXYZ\tLat\tLong" << std::endl;
+        }
+        string_stream << i << "\t" << idx << "\t" << xyz << "\t"
+                      << lonlat_h[idx * 2 + 1] * 180 / M_PI << "\t"
+                      << lonlat_h[idx * 2] * 180 / M_PI;
+        return string_stream.str();
+    }
+
+    std::string index_to_location_6xn(int i, int first) {
+        int idx, side;
+        side = i % 6;
+        idx  = (i - side) / 6;
+
+        std::ostringstream string_stream;
+        if (first == 1) {
+            string_stream << "RawIdx\tGridIdx\tSide\tLat\tLong" << std::endl;
+        }
+        string_stream << i << "\t" << idx << "\t" << side << "\t"
+                      << lonlat_h[idx * 2 + 1] * 180 / M_PI << "\t"
+                      << lonlat_h[idx * 2] * 180 / M_PI;
+        return string_stream.str();
+    }
+
+    std::string index_to_location_3x6xn(int i, int first) {
+        int idx, xyz, side;
+        xyz  = i % 3;
+        side = ((i - xyz) / 3) % 6;
+        idx  = (i - 3 * side - xyz) / 6 / 3;
+
+        std::ostringstream string_stream;
+        if (first == 1) {
+            string_stream << "RawIdx\tGridIdx\tXYZ\tSide\tLat\tLong" << std::endl;
+        }
+        string_stream << i << "\t" << idx << "\t" << xyz << "\t" << side << "\t"
+                      << lonlat_h[idx * 2 + 1] * 180 / M_PI << "\t"
+                      << lonlat_h[idx * 2] * 180 / M_PI;
+        return string_stream.str();
+    }
+
+    std::string index_to_location_3x7xn(int i, int first) {
+        int idx, xyz, side;
+        xyz  = i % 3;
+        side = ((i - xyz) / 3) % 7;
+        idx  = (i - 3 * side - xyz) / 7 / 3;
+
+        std::ostringstream string_stream;
+        if (first == 1) {
+            string_stream << "RawIdx\tGridIdx\tXYZ\tVertex\tLat\tLong" << std::endl;
+        }
+        string_stream << i << "\t" << idx << "\t" << xyz << "\t" << side << "\t"
+                      << lonlat_h[idx * 2 + 1] * 180 / M_PI << "\t"
+                      << lonlat_h[idx * 2] * 180 / M_PI;
+        return string_stream.str();
+    }
 
 private:
     // store if we run benchmarks

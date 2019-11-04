@@ -86,8 +86,9 @@ __global__ void held_suarez(double *Mh_d,
         double kv_hs, kt_hs;
         ////////////
         //      Calculates surface pressure
-        psm1 = pressure_d[id * nv + 1] - Rho_d[id * nv + 0] * Gravit * (-Altitude_d[0] - Altitude_d[1]);
-        ps   = 0.5 * (pressure_d[id * nv + 0] + psm1);
+        psm1 = pressure_d[id * nv + 1]
+               - Rho_d[id * nv + 0] * Gravit * (-Altitude_d[0] - Altitude_d[1]);
+        ps = 0.5 * (pressure_d[id * nv + 0] + psm1);
 
         pre = pressure_d[id * nv + lev];
 
@@ -95,7 +96,9 @@ __global__ void held_suarez(double *Mh_d,
         sigma0 = (pre / p0);
 
         //      Equilibrium temperature.
-        Teq_hs = max(200.0, (315.0 - dTy * pow(sin(lat), 2.0) - dthetaz * log(sigma0) * pow(cos(lat), 2.0)) * pow(sigma0, kappa));
+        Teq_hs = max(200.0,
+                     (315.0 - dTy * pow(sin(lat), 2.0) - dthetaz * log(sigma0) * pow(cos(lat), 2.0))
+                         * pow(sigma0, kappa));
 
         //      Temperature forcing constant.
         kt_hs = ka + (ks - ka) * max(0.0, (sigma - sigmab) / (1.0 - sigmab)) * pow(cos(lat), 4.0);
@@ -104,8 +107,10 @@ __global__ void held_suarez(double *Mh_d,
         kv_hs = kf * max(0.0, (sigma - sigmab) / (1.0 - sigmab));
 
         //      Update momenta
-        for (int k = 0; k < 3; k++) Mh_d[id * 3 * nv + lev * 3 + k] = Mh_d[id * 3 * nv + lev * 3 + k] / (1.0 + kv_hs * time_step);
-        ;
+        for (int k = 0; k < 3; k++)
+            Mh_d[id * 3 * nv + lev * 3 + k] =
+                Mh_d[id * 3 * nv + lev * 3 + k] / (1.0 + kv_hs * time_step);
+
         //      Update temperature
         temperature_d[id * nv + lev] -= kt_hs * time_step * (temperature_d[id * nv + lev] - Teq_hs);
     }

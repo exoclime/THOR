@@ -14,7 +14,7 @@ timestep = 300
 
 # output
 # output every n steps
-n_out = 100
+n_out = 7200
 
 
 # output directory (relative to current working directory)
@@ -74,6 +74,9 @@ DivDampP =    true
 
 # Strength of diffusion
 Diffc = 0.015
+
+# Strength of divergence damping
+DivDampc = 0.015
 #########################################################
 conservation = true
 
@@ -104,6 +107,8 @@ core_benchmark = NoBenchmark
 # This is useful for testing/debugging physics modules
 gcm_off = false
 
+# use convective adjustment scheme
+conv_adj = 1
 
 #-- Sponge layer (Rayleigh drag) ---------------------------------------------#
 # use sponge layer (Rayleigh drag) at top of atmosphere?
@@ -116,7 +121,7 @@ nlat = 20
 ns_sponge = 0.75
 
 # strength of sponge layer (1/damping time)
-Rv_sponge = 1e-3
+Rv_sponge = 1e-4
 
 # shrink sponge by half after some time (experimental)
 #shrink_sponge = true
@@ -141,7 +146,7 @@ radius_star = 0.667
 albedo = 0.18
 
 # grey opt. depth of thermal wavelengths (at ref pressure)
-taulw = 1064
+taulw = 2128
 
 # grey opt. depth of incoming stellar flux (at ref pressure)
 tausw = 532
@@ -150,7 +155,24 @@ tausw = 532
 Tlow = 970
 
 # diffusivity factor
-diff_fac = 0.5
+diff_ang = 0.5
+
+# add sin(lat)^2 dependence to tau lw (advanced)
+latf_lw = false
+# opt depth at poles (lw)
+taulw_pole = 1.5
+
+# include surface heating
+surface = false
+# heat capacity of surface
+Csurf = 1e7
+
+# power law index of unmixed absorbers (lw and sw)
+n_lw = 2
+n_sw = 1
+# strength of unmixed absorbers in lw
+f_lw = 0.5
+
 #########################################################
 
 ## insolation (orbit + spin-state) parameters ###########
@@ -177,6 +199,17 @@ sync_rot = true
 #longp = 0
 #########################################################
 
+#-- Boundary layer options (core_benchmark = NoBenchmark) --------------------#
+boundary_layer = false
+
+# type of boundary layer drag
+bl_type = RayleighHS
+
+# strength of drag
+#surf_drag = 1.157407e-5
+
+# boundary layer sigma (drag exist at this % of surface pressure and above)
+#bl_sigma = 0.7
 
 #-- Device options -----------------------------------------------------------#
 # GPU ID number

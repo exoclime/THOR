@@ -58,9 +58,10 @@
 // Sponge layer
 #define nlat_default 20             // Number of latitude rings for mean zonal wind (sponge layer)
 #define Rv_sponge_default 1e-4      // Maximum damping (top of model)
+#define RvT_sponge_default 1e-4     // Maximum damping (top of model)
 #define ns_sponge_default 0.75      // Lowest level of sponge layer
 #define shrink_sponge_default false // shrink sponge layer after some time
-#define t_shrink_default 500.0      // shrink sponge after this many days
+#define t_shrink_default 144000     // shrink sponge after this many time steps
 
 // Diffusion
 #define HyDiff_default true   // Hyper-diffusion
@@ -70,6 +71,7 @@
 #define NonHydro_default true     // Non-hydrostatic parameter
 #define DeepModel_default true    // Deep atmosphere
 #define SpongeLayer_default false // use sponge layer at top of model
+#define output_mean_default true  // output mean quantities
 
 // Initial conditions
 #define rest_default true                                 // Starting from rest
@@ -92,7 +94,6 @@
 #define output_path_default "results" // Output directory
 
 #define gcm_off_default false //turns off fluid dynamical core for debugging physics
-#define TPprof_default 0      //initial TP profile (0 = isothermal, 1 = guillot)
 
 #define conservation_default false //output energy, mass, angular momentum, etc
 

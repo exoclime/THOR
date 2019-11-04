@@ -43,7 +43,7 @@
 #include "iteration_timer.h"
 
 
-iteration_timer::iteration_timer(int initial_num_steps_, int max_steps_):
+iteration_timer::iteration_timer(int initial_num_steps_, int max_steps_) :
     max_steps(max_steps_),
     initial_num_steps(initial_num_steps_)
 
@@ -64,16 +64,18 @@ void iteration_timer::iteration(int          nstep,
 
     // number of steps since simulation start and to end of simulation
     long num_steps_elapsed = nstep - initial_num_steps + 1;
-    long num_steps_left    = max_steps - num_steps_elapsed;
+    long num_steps_left    = max_steps - (nstep + 1);
 
     // mean length of step
     mean_delta_per_step = sim_delta.count() / double(num_steps_elapsed);
 
     // time left to end of simulation
-    std::chrono::duration<double, std::ratio<1L, 1L>> time_left(double(num_steps_left) * mean_delta_per_step);
+    std::chrono::duration<double, std::ratio<1L, 1L>> time_left(double(num_steps_left)
+                                                                * mean_delta_per_step);
 
     // estimated time of simulation
-    std::chrono::system_clock::time_point sim_end = end_step + std::chrono::duration_cast<std::chrono::microseconds>(time_left);
+    std::chrono::system_clock::time_point sim_end =
+        end_step + std::chrono::duration_cast<std::chrono::microseconds>(time_left);
     // format output
     end_time = std::chrono::system_clock::to_time_t(sim_end);
 
