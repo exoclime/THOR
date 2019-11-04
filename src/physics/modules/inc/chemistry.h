@@ -52,11 +52,9 @@ public:
     chemistry();
     ~chemistry();
 
-    bool initialise_memory(const ESP &              esp,
-                           device_RK_array_manager &phy_modules_core_arrays);
+    bool initialise_memory(const ESP &esp, device_RK_array_manager &phy_modules_core_arrays);
 
-    bool initial_conditions(const ESP &            esp,
-                            const SimulationSetup &sim);
+    bool initial_conditions(const ESP &esp, const SimulationSetup &sim, storage *s);
 
     bool dyn_core_loop_init(const ESP &esp);
 
@@ -77,8 +75,7 @@ public:
                   int                    nstep, // Step number
                   double                 time_step);            // Time-step [s]
 
-    bool store(const ESP &esp,
-               storage &  s);
+    bool store(const ESP &esp, storage &s);
 
     bool store_init(storage &s);
 

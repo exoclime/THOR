@@ -87,7 +87,7 @@ bool phy_modules_init_data(const ESP& esp, const SimulationSetup& sim, storage* 
         out &= bl.initial_conditions(esp, sim, s);
 
     if (chemistry_enabled)
-        out &= chem.initial_conditions(esp, sim);
+        out &= chem.initial_conditions(esp, sim, s);
     return out;
 }
 

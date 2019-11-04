@@ -111,7 +111,7 @@ $(BUILDDIR)/${OUTPUTDIR}/phy_modules.o: phy_modules.cu phy_modules.h phy_module_
 libphy_modules.a: $(BUILDDIR)/${OUTPUTDIR}/chemistry.o $(BUILDDIR)/${OUTPUTDIR}/radiative_transfer.o $(BUILDDIR)/${OUTPUTDIR}/boundary_layer.o $(BUILDDIR)/${OUTPUTDIR}/phy_modules.o | $(BUILDDIR)
 	@echo $(YELLOW)creating $@ $(END)
 	@echo $(GREEN)Linking Modules into static lib $(END)
-	ar rcs $@ $(BUILDDIR)/${OUTPUTDIR}/phy_modules.o $(BUILDDIR)/${OUTPUTDIR}/radiative_transfer.o $(BUILDDIR)/${OUTPUTDIR}/boundary_layer.o $(BUILDDIR)/chemistry.o 
+	ar rcs $@ $(BUILDDIR)/${OUTPUTDIR}/phy_modules.o $(BUILDDIR)/${OUTPUTDIR}/radiative_transfer.o $(BUILDDIR)/${OUTPUTDIR}/boundary_layer.o $(BUILDDIR)/${OUTPUTDIR}/chemistry.o
 
 #######################################################################
 # Cleanup

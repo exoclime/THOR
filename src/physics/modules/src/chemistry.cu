@@ -61,7 +61,7 @@ chemistry::~chemistry() {
 void chemistry::print_config() {
     log::printf("  Chemistry module\n");
     log::printf("    chem_time_filename: %s.\n", chem_time_filename.c_str());
-    log::printf("    fEQ_filename: %s.\n", fEQ_filename.c_str());    
+    log::printf("    fEQ_filename: %s.\n", fEQ_filename.c_str());
 }
 
 bool chemistry::initialise_memory(const ESP &              esp,
@@ -115,18 +115,17 @@ bool chemistry::initialise_memory(const ESP &              esp,
     phy_modules_core_arrays.register_array(tracers_d, tracerk_d, tracer_d, ntr);
 
 #ifdef BENCHMARKING
-    std::map<std::string, output_def> defs =
-        {
-            {"tracer_d", {tracer_d, esp.nv * esp.point_num * ntr, "RK tracer", "ti", true}},
-            {"tracers_d", {tracers_d, esp.nv * esp.point_num * ntr, "RK tracers", "ts", true}},
-            {"tracerk_d", {tracerk_d, esp.nv * esp.point_num * ntr, "RK tracerk", "tk", true}},
-            {"difftr_d", {difftr_d, esp.nv * esp.point_num * ntr, "Diffusion Tr", "dftr", true}}
-        };
+    std::map<std::string, output_def> defs = {
+        {"tracer_d", {tracer_d, esp.nv * esp.point_num * ntr, "RK tracer", "ti", true}},
+        {"tracers_d", {tracers_d, esp.nv * esp.point_num * ntr, "RK tracers", "ts", true}},
+        {"tracerk_d", {tracerk_d, esp.nv * esp.point_num * ntr, "RK tracerk", "tk", true}},
+        {"difftr_d", {difftr_d, esp.nv * esp.point_num * ntr, "Diffusion Tr", "dftr", true}}};
 
     std::vector<std::string> output_vars = {"tracer_d", "tracers_d", "tracerk_d", "difftr_d"};
 
 
-    binary_test::get_instance().register_phy_modules_variables(defs, std::vector<std::string>(), output_vars);
+    binary_test::get_instance().register_phy_modules_variables(
+        defs, std::vector<std::string>(), output_vars);
 
 #endif // BENCHMARING
     return true;
@@ -175,8 +174,7 @@ bool chemistry::free_memory() {
     return true;
 }
 
-bool chemistry::initial_conditions(const ESP &            esp,
-                                   const SimulationSetup &sim) {
+bool chemistry::initial_conditions(const ESP &esp, const SimulationSetup &sim, storage *s) {
     // Input for chemistry
     FILE * infile1;
     int    NT = 55;
@@ -184,21 +182,18 @@ bool chemistry::initial_conditions(const ESP &            esp,
     double dummy;
 
 
-
-    
     log::printf("Chemistry: Loading fEQ file: %s.\n", fEQ_filename.c_str());
-    if (!path_exists(fEQ_filename))
-    {
+    if (!path_exists(fEQ_filename)) {
         log::printf("\nfEQ input file %s does not exist.\n", fEQ_filename.c_str());
         exit(EXIT_FAILURE);
     }
-    
+
     infile1 = fopen(fEQ_filename.c_str(), "r");
     if (infile1 == NULL) {
         log::printf("\nUnable to open fEQ input file %s.\n", fEQ_filename.c_str());
         return false;
     }
-    
+
     for (int i = 0; i < NT; i++) {
         for (int j = 0; j < NP; j++) {
             if (fscanf(infile1,
@@ -217,22 +212,21 @@ bool chemistry::initial_conditions(const ESP &            esp,
             }
         }
     }
-    
+
     fclose(infile1);
 
     log::printf("Chemistry: Loading chem time file: %s.\n", chem_time_filename.c_str());
-    if (!path_exists(chem_time_filename))
-    {
+    if (!path_exists(chem_time_filename)) {
         log::printf("\nchem time input file %s does not exist.\n", chem_time_filename.c_str());
         exit(EXIT_FAILURE);
     }
-    
+
     infile1 = fopen(chem_time_filename.c_str(), "r");
     if (infile1 == NULL) {
         log::printf("\nUnable to open chem time input file %s.\n", chem_time_filename.c_str());
         exit(EXIT_FAILURE);
     }
-    
+
     for (int i = 0; i < NT; i++) {
         for (int j = 0; j < NP; j++) {
             if (fscanf(infile1,
@@ -255,49 +249,53 @@ bool chemistry::initial_conditions(const ESP &            esp,
         }
     }
 
-    for (int j = 0; j < NP; j++) P_che_h[j] = log(P_che_h[j]);
+    for (int j = 0; j < NP; j++)
+        P_che_h[j] = log(P_che_h[j]);
     fclose(infile1);
 
 
     for (int lev = 0; lev < esp.nv; lev++) {
         for (int i = 0; i < esp.point_num; i++) {
             // CH4
-            tracer_h[i * esp.nv * ntr + lev * ntr + 0] = Compute_tracer_host(
-                                                             ch4eq_h,
-                                                             P_che_h,
-                                                             T_che_h,
-                                                             esp.temperature_h[i * esp.nv + lev],
-                                                             esp.pressure_h[i * esp.nv + lev])
-                                                         * esp.Rho_h[i * esp.nv + lev];
+            tracer_h[i * esp.nv * ntr + lev * ntr + 0] =
+                Compute_tracer_host(ch4eq_h,
+                                    P_che_h,
+                                    T_che_h,
+                                    esp.temperature_h[i * esp.nv + lev],
+                                    esp.pressure_h[i * esp.nv + lev])
+                * esp.Rho_h[i * esp.nv + lev];
             // CO
-            tracer_h[i * esp.nv * ntr + lev * ntr + 1] = Compute_tracer_host(
-                                                             coeq_h,
-                                                             P_che_h,
-                                                             T_che_h,
-                                                             esp.temperature_h[i * esp.nv + lev],
-                                                             esp.pressure_h[i * esp.nv + lev])
-                                                         * esp.Rho_h[i * esp.nv + lev];
+            tracer_h[i * esp.nv * ntr + lev * ntr + 1] =
+                Compute_tracer_host(coeq_h,
+                                    P_che_h,
+                                    T_che_h,
+                                    esp.temperature_h[i * esp.nv + lev],
+                                    esp.pressure_h[i * esp.nv + lev])
+                * esp.Rho_h[i * esp.nv + lev];
             // H2O
-            tracer_h[i * esp.nv * ntr + lev * ntr + 2] = Compute_tracer_host(h2oeq_h,
-                                                                             P_che_h,
-                                                                             T_che_h,
-                                                                             esp.temperature_h[i * esp.nv + lev],
-                                                                             esp.pressure_h[i * esp.nv + lev])
-                                                         * esp.Rho_h[i * esp.nv + lev];
+            tracer_h[i * esp.nv * ntr + lev * ntr + 2] =
+                Compute_tracer_host(h2oeq_h,
+                                    P_che_h,
+                                    T_che_h,
+                                    esp.temperature_h[i * esp.nv + lev],
+                                    esp.pressure_h[i * esp.nv + lev])
+                * esp.Rho_h[i * esp.nv + lev];
             // CO2
-            tracer_h[i * esp.nv * ntr + lev * ntr + 3] = Compute_tracer_host(co2eq_h,
-                                                                             P_che_h,
-                                                                             T_che_h,
-                                                                             esp.temperature_h[i * esp.nv + lev],
-                                                                             esp.pressure_h[i * esp.nv + lev])
-                                                         * esp.Rho_h[i * esp.nv + lev];
+            tracer_h[i * esp.nv * ntr + lev * ntr + 3] =
+                Compute_tracer_host(co2eq_h,
+                                    P_che_h,
+                                    T_che_h,
+                                    esp.temperature_h[i * esp.nv + lev],
+                                    esp.pressure_h[i * esp.nv + lev])
+                * esp.Rho_h[i * esp.nv + lev];
             // NH3
-            tracer_h[i * esp.nv * ntr + lev * ntr + 4] = Compute_tracer_host(nh3eq_h,
-                                                                             P_che_h,
-                                                                             T_che_h,
-                                                                             esp.temperature_h[i * esp.nv + lev],
-                                                                             esp.pressure_h[i * esp.nv + lev])
-                                                         * esp.Rho_h[i * esp.nv + lev];
+            tracer_h[i * esp.nv * ntr + lev * ntr + 4] =
+                Compute_tracer_host(nh3eq_h,
+                                    P_che_h,
+                                    T_che_h,
+                                    esp.temperature_h[i * esp.nv + lev],
+                                    esp.pressure_h[i * esp.nv + lev])
+                * esp.Rho_h[i * esp.nv + lev];
         }
     }
 
@@ -317,7 +315,8 @@ bool chemistry::initial_conditions(const ESP &            esp,
     cudaMemcpy(P_che_d, P_che_h, 135 * sizeof(double), cudaMemcpyHostToDevice);
     cudaMemcpy(T_che_d, T_che_h, 55 * sizeof(double), cudaMemcpyHostToDevice);
 
-    cudaMemcpy(tracer_d, tracer_h, esp.point_num * esp.nv * ntr * sizeof(double), cudaMemcpyHostToDevice);
+    cudaMemcpy(
+        tracer_d, tracer_h, esp.point_num * esp.nv * ntr * sizeof(double), cudaMemcpyHostToDevice);
     cudaMemset(tracers_d, 0, sizeof(double) * esp.nv * esp.point_num * ntr);
     cudaMemset(tracerk_d, 0, sizeof(double) * esp.nv * esp.point_num * ntr);
 
@@ -326,7 +325,11 @@ bool chemistry::initial_conditions(const ESP &            esp,
 }
 
 bool chemistry::dyn_core_loop_init(const ESP &esp) {
-    cudaMemcpy(tracerk_d, tracer_d, esp.point_num * esp.nv * ntr * sizeof(double), cudaMemcpyDeviceToDevice);
+
+    cudaMemcpy(tracerk_d,
+               tracer_d,
+               esp.point_num * esp.nv * ntr * sizeof(double),
+               cudaMemcpyDeviceToDevice);
 
     cudaMemset(tracers_d, 0, sizeof(double) * esp.point_num * esp.nv * ntr);
 
@@ -336,12 +339,12 @@ bool chemistry::dyn_core_loop_init(const ESP &esp) {
 bool chemistry::dyn_core_loop_slow_modes(const ESP &            esp,
                                          const SimulationSetup &sim,
                                          int                    nstep, // Step number
-                                         double                 time_step) {           // Time-step [s]
-    const int LN = 16;                                                 // Size of the inner region side.
-    dim3      NT(esp.nl_region, esp.nl_region, 1);                     // Number of threads in a block.
-    dim3      NBPT(2, 1, ntr);                                         // Number of blocks. (POLES)
-    dim3      NBTR(esp.nr, esp.nv, ntr);                               // Number of blocks in the diffusion routine for tracers.
-    dim3      NBTRP(2, esp.nv, ntr);                                   // Number of blocks in the diffusion routine for tracers. (POLES)
+                                         double                 time_step) {
+    const int LN = 16;                             // Size of the inner region side.
+    dim3      NT(esp.nl_region, esp.nl_region, 1); // Number of threads in a block.
+    dim3      NBPT(2, 1, ntr);                     // Number of blocks. (POLES)
+    dim3      NBTR(esp.nr, esp.nv, ntr); // Number of blocks in the diffusion routine for tracers.
+    dim3 NBTRP(2, esp.nv, ntr); // Number of blocks in the diffusion routine for tracers. (POLES)
 
     if (sim.HyDiff) {
         // Tracers
@@ -426,12 +429,12 @@ bool chemistry::dyn_core_loop_slow_modes(const ESP &            esp,
 bool chemistry::dyn_core_loop_fast_modes(const ESP &            esp,
                                          const SimulationSetup &sim,
                                          int                    nstep, // Step number
-                                         double                 times) {               // Time-step [s]
-    const int LN = 16;                                                 // Size of the inner region side.
-    dim3      NT(esp.nl_region, esp.nl_region, 1);                     // Number of threads in a block.
-    dim3      NBPT(2, 1, ntr);                                         // Number of blocks. (POLES)
-    dim3      NBTR(esp.nr, esp.nv, ntr);                               // Number of blocks in the diffusion routine for tracers.
-    dim3      NBTRP(2, esp.nv, ntr);                                   // Number of blocks in the diffusion routine for tracers. (POLES)
+                                         double                 times) {
+    const int LN = 16;                             // Size of the inner region side.
+    dim3      NT(esp.nl_region, esp.nl_region, 1); // Number of threads in a block.
+    dim3      NBPT(2, 1, ntr);                     // Number of blocks. (POLES)
+    dim3      NBTR(esp.nr, esp.nv, ntr); // Number of blocks in the diffusion routine for tracers.
+    dim3 NBTRP(2, esp.nv, ntr); // Number of blocks in the diffusion routine for tracers. (POLES)
 
 
     //
@@ -481,7 +484,10 @@ bool chemistry::dyn_core_loop_fast_modes(const ESP &            esp,
 
 
 bool chemistry::dyn_core_loop_end(const ESP &esp) {
-    cudaMemcpy(tracer_d, tracerk_d, esp.point_num * esp.nv * ntr * sizeof(double), cudaMemcpyDeviceToDevice);
+    cudaMemcpy(tracer_d,
+               tracerk_d,
+               esp.point_num * esp.nv * ntr * sizeof(double),
+               cudaMemcpyDeviceToDevice);
 
 
     return true;
@@ -491,7 +497,7 @@ bool chemistry::dyn_core_loop_end(const ESP &esp) {
 bool chemistry::phy_loop(ESP &                  esp,
                          const SimulationSetup &sim,
                          int                    nstep, // Step number
-                         double                 time_step) {           // Time-step [s]
+                         double                 time_step) {
     const int NTH = 256;
     dim3      NBTR((esp.point_num / NTH) + 1, esp.nv, ntr);
 
@@ -545,19 +551,16 @@ bool chemistry::phy_loop(ESP &                  esp,
 
 bool chemistry::configure(config_file &config_reader) {
 
-    config_reader.append_config_var("chem_time_file", chem_time_filename, std::string("NoFilename.txt"));
+    config_reader.append_config_var(
+        "chem_time_file", chem_time_filename, std::string("NoFilename.txt"));
     config_reader.append_config_var("chem_fEQ_file", fEQ_filename, std::string("NoFilename.txt"));
     return true;
 }
 
-bool chemistry::store(const ESP &esp,
-                      storage &  s) {
-    cudaMemcpy(tracer_h, tracer_d, esp.point_num * esp.nv * ntr * sizeof(double), cudaMemcpyDeviceToHost);
-    s.append_table(tracer_h,
-                   esp.nv * esp.point_num * ntr,
-                   "/tracer",
-                   " ",
-                   "Volume mixing ratio");
+bool chemistry::store(const ESP &esp, storage &s) {
+    cudaMemcpy(
+        tracer_h, tracer_d, esp.point_num * esp.nv * ntr * sizeof(double), cudaMemcpyDeviceToHost);
+    s.append_table(tracer_h, esp.nv * esp.point_num * ntr, "/tracer", " ", "Volume mixing ratio");
 
     return true;
 }
