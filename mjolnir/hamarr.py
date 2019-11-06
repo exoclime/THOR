@@ -418,6 +418,41 @@ class GetOutput:
         if openrg == 1:
             self.rg = rg_out(resultsf,simID,ntsi,nts,self.input,self.output,self.grid,pressure_vert=pressure_vert)
 
+def define_Pgrid(resultsf,simID,ntsi,nts,stride,overwrite=False):
+    # first we need the grid size
+    fileh5 = resultsf+'/esp_output_grid_'+simID+'.h5'
+    if os.path.exists(fileh5):
+        openh5 = h5py.File(fileh5)
+    else:
+        raise IOError(fileh5+' not found!')
+    nv = np.int(openh5['nv'][0])
+    point_num = np.int(openh5['point_num'][0])
+    openh5.close()
+
+    # now we'll loop over all the files to get the pressure_mean
+    num_out = np.int((nts-ntsi)/stride) + 1
+    pressure_mean = np.zeros((point_num,nv,num_out))
+    for i in np.arange(num_out):
+        t = ntsi + stride*i
+        fileh5 = resultsf+'/esp_output_'+simID+'_'+np.str(t)+'.h5'
+        if os.path.exists(fileh5):
+            openh5 = h5py.File(fileh5)
+        else:
+            raise IOError(fileh5+' not found!')
+
+        pressure_mean[:,:,i] = np.reshape(openh5['Pressure_mean'][...],(point_num,nv))
+        openh5.close()
+
+    pgrid = np.mean(np.mean(pressure_mean,axis=0),axis=1)
+    pfile = 'pgrid_%d_%d_%d.txt'%(ntsi,nts,stride)
+    if not os.path.exists(resultsf+'/'+pfile) or overwrite==True:
+        f = open(resultsf+'/'+pfile,'w')
+        for j in np.arange(len(pgrid)):
+            f.write('%d %#.6e\n'%(j,pgrid[j]))
+        f.close()
+    else:
+        raise IOError(pfile+' already exists in this directory!')
+
 def calc_RV_PV(grid,output,input,lons,lats,sigma,t_ind,fileh5,comp=4,pressure_vert=True,type='gd',lmax_set='grid'):
     #Calculates relative and potential vorticity on height levels, then interpolates to pressure.
     #It is easiest to calculate these on a lat-lon-altitude grid since conversion
