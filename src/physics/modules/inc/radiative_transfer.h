@@ -53,7 +53,7 @@ public:
     ~radiative_transfer();
 
     bool initialise_memory(const ESP &esp, device_RK_array_manager &phy_modules_core_arrays);
-    bool initial_conditions(const ESP &esp, const SimulationSetup &sim);
+    bool initial_conditions(const ESP &esp, const SimulationSetup &sim, storage *s);
 
     bool phy_loop(ESP &                  esp,
                   const SimulationSetup &sim,
@@ -76,9 +76,8 @@ private:
     double planet_star_dist_config = 0.015; // Planet-star distance [au]
     double radius_star_config      = 0.667; // Star radius [Rsun]
     double diff_ang_config         = 0.5;   // Diffusivity angle (1 / diffusivity factor): 0.5-1.0
-    double Tlow_config =
-        970; // Lower boundary temperature: upward flux coming from the planet's interior
-    double albedo_config     = 0.18;   // Bond albedo
+    double Tint_config       = 0;    // temperature of upward flux coming from the planet's interior
+    double albedo_config     = 0.18; // Bond albedo
     double tausw_config      = 532.0;  // Absorption coefficient for the shortwaves
     double taulw_config      = 1064.0; // Absorption coefficient for the longwaves
     bool   latf_lw_config    = false;  // use sin^2(lat) dependence for lw opacity
@@ -96,24 +95,26 @@ private:
     double alpha_i_config     = 0;        // initial right asc of host star (relative to long = 0)
     double longp_config       = 0;        // longitude of periastron (rad)
 
-    bool   surface_config = false; // use solid/liquid surface at altitude 0
-    double Csurf_config   = 1e7;   // heat capacity of surface (J K^-1 m^-2)
+    bool   surface_config  = false; // use solid/liquid surface at altitude 0
+    double Csurf_config    = 1e7;   // heat capacity of surface (J K^-1 m^-2)
+    bool   rt1Dmode_config = false; // 1D mode=all columns are irradiated identically
 
     // Rad trans
     double Tstar            = 4520;  // Star effective temperature [K]
     double planet_star_dist = 0.015; // Planet-star distance [au]
     double radius_star      = 0.667; // Star radius [Rsun]
     double diff_ang         = 0.5;   // Diffusivity factor: 0.5-1.0
-    double Tlow = 970; // Lower boundary temperature: upward flux coming from the planet's interior
-    double albedo     = 0.18;   // Bond albedo
-    double tausw      = 532.0;  // Absorption coefficient for the shortwaves
-    double taulw      = 1064.0; // Absorption coefficient for the longwaves
+    double Tint   = 0; // Lower boundary temperature: upward flux coming from the planet's interior
+    double albedo = 0.18;   // Bond albedo
+    double tausw  = 532.0;  // Absorption coefficient for the shortwaves
+    double taulw  = 1064.0; // Absorption coefficient for the longwaves
     double taulw_pole = 1064.0;
     bool   latf_lw    = false;
     double n_lw       = 2.0; // power law dependence for unmixed absorbers in LW
     double n_sw       = 1.0; // power law dependence for mixed/unmixed absorbers in SW
     double f_lw       = 0.5; // fraction of taulw in well-mixed absorber
 
+    bool    rt1Dmode;
     bool    surface;
     double  Csurf;
     double *surf_flux_d;
@@ -163,7 +164,7 @@ private:
                     double planet_star_dist_,
                     double radius_star_,
                     double diff_ang_,
-                    double Tlow_,
+                    double Tint_,
                     double albedo_,
                     double tausw_,
                     double taulw_,
@@ -182,6 +183,7 @@ private:
                     double Omega,
                     bool   surface,
                     double Csurf,
+                    bool   rt1Dmode,
                     double Tmean,
                     int    point_num);
 

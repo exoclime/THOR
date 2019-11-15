@@ -16,7 +16,7 @@
 //     <http://www.gnu.org/licenses/>.
 // ==============================================================================
 //
-// Timer helper to measure tome for iterations, elapsed time and time remaining
+// Timer helper to measure time for iterations, elapsed time and time remaining
 //
 
 //

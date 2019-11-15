@@ -916,22 +916,27 @@ int main(int argc, char** argv) {
     //  number of steps in the integration.
     int n_since_output = 1; //how many steps have passed since last output
     for (int nstep = step_idx; nstep <= nsmax; ++nstep) {
-
         // compute simulation time
         simulation_time = simulation_start_time + (nstep - step_idx + 1) * timestep;
+
         // set simulation time and step number for simulation engine and output
         X.init_timestep(nstep,           // Time-step [s]
                         simulation_time, // Simulation time [s]
                         timestep);       // Large time step [s]
+
+        //
+        //     Physical Core Integration (ProfX)
+        X.ProfX(sim, n_out, shrink_sponge);
 
         if (!sim.gcm_off) {
             //
             //        Dynamical Core Integration (THOR)
             X.Thor(sim); // simulationt parameters
         }
+
         //
         //     Physical Core Integration (ProfX)
-        X.ProfX(sim, n_out, shrink_sponge);
+        // X.ProfX(sim, n_out, shrink_sponge);
 
         // compute simulation time
         simulation_time  = simulation_start_time + (nstep - step_idx + 1) * timestep;
@@ -973,7 +978,6 @@ int main(int argc, char** argv) {
             n_since_output = 0;
         }
 
-
         // Timing information
         double      mean_delta_per_step = 0.0;
         double      elapsed_time        = 0.0;
@@ -986,7 +990,6 @@ int main(int argc, char** argv) {
         char               str_time[256];
         std::strftime(str_time, sizeof(str_time), "%F %T", std::localtime(&end_time));
         end_time_str << str_time;
-
 
         log::printf("\n Time step number = %d/%d || Time = %f days. \n\t Elapsed %s || Left: %s || "
                     "Completion: %s. %s",

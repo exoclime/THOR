@@ -319,6 +319,7 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
                       (),
                       ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"))
 
+    // here is where we call all "external" physics modules
     if (phy_modules_execute) {
         cudaDeviceSynchronize();
         phy_modules_phy_loop(*this,

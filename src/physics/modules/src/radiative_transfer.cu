@@ -59,11 +59,11 @@ void radiative_transfer::print_config() {
     log::printf("    Orbital distance            = %f au.\n", planet_star_dist_config);
     log::printf("    Radius of host star         = %f R_sun.\n", radius_star_config);
     log::printf("    1.0/Diffusivity factor      = %f.\n", diff_ang_config);
-    log::printf("    Lower boundary temperature  = %f K.\n", Tlow_config);
+    log::printf("    Internal flux temperature   = %f K.\n", Tint_config);
     log::printf("    Bond albedo                 = %f.\n", albedo_config);
     log::printf("    Shortwave Absorption coef   = %f.\n", tausw_config);
     log::printf("    Longwave Absorption coef    = %f.\n", taulw_config);
-    log::printf("    Using sin(lat) variation LW?      = %f.\n", latf_lw_config);
+    log::printf("    Using sin(lat) variation LW?      = %s.\n", latf_lw_config ? "true" : "false");
     log::printf("    Longwave Absorption coef (poles)  = %f.\n", taulw_pole_config);
     log::printf("    Power law index of unmixed LW abs = %f.\n", n_lw_config);
     log::printf("    Strength of mixed LW abs    = %f.\n", f_lw_config);
@@ -82,6 +82,7 @@ void radiative_transfer::print_config() {
     // surface parameters
     log::printf("    Surface                     = %s.\n", surface_config ? "true" : "false");
     log::printf("    Surface Heat Capacity       = %f J/K/m^2.\n", Csurf_config);
+    log::printf("    1D mode                     = %s.\n", rt1Dmode_config ? "true" : "false");
 }
 
 bool radiative_transfer::initialise_memory(const ESP &              esp,
@@ -138,12 +139,15 @@ bool radiative_transfer::free_memory() {
     return true;
 }
 
-bool radiative_transfer::initial_conditions(const ESP &esp, const SimulationSetup &sim) {
+bool radiative_transfer::initial_conditions(const ESP &            esp,
+                                            const SimulationSetup &sim,
+                                            storage *              s) {
+
     RTSetup(Tstar_config,
             planet_star_dist_config,
             radius_star_config,
             diff_ang_config,
-            Tlow_config,
+            Tint_config,
             albedo_config,
             tausw_config,
             taulw_config,
@@ -162,10 +166,32 @@ bool radiative_transfer::initial_conditions(const ESP &esp, const SimulationSetu
             sim.Omega,
             surface_config,
             Csurf_config,
+            rt1Dmode_config,
             sim.Tmean,
             esp.point_num);
-    return true;
+
+    // if (rt1Dmode) {
+    //     sim.gcm_off = true; //does not work... not sure why
+    // }
+    bool returnstatus = true;
+    int  id;
+    if (surface == true) {
+        if (s != nullptr) {
+            // load initialisation data from storage s
+            returnstatus &= (*s).read_table_to_ptr("/Tsurface", Tsurface_h, esp.point_num);
+        }
+        else {
+            for (id = 0; id < esp.point_num; id++) {
+                Tsurface_h[id] = sim.Tmean;
+            }
+            cudaMemset(surf_flux_d, 0, sizeof(double) * esp.point_num);
+        }
+        cudaMemcpy(Tsurface_d, Tsurface_h, esp.point_num * sizeof(double), cudaMemcpyHostToDevice);
+    }
+
+    return returnstatus;
 }
+
 
 bool radiative_transfer::phy_loop(ESP &                  esp,
                                   const SimulationSetup &sim,
@@ -213,7 +239,7 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                                  planet_star_dist,
                                  radius_star,
                                  diff_ang,
-                                 Tlow,
+                                 Tint,
                                  albedo,
                                  tausw,
                                  taulw,
@@ -242,7 +268,9 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                                  Tsurface_d,
                                  surf_flux_d,
                                  esp.profx_dP_d,
-                                 sim.Rd);
+                                 sim.Rd,
+                                 sim.gcm_off,
+                                 rt1Dmode);
 
     if (nstep * time_step < (2 * M_PI / mean_motion)) {
         // stationary orbit/obliquity
@@ -259,7 +287,7 @@ bool radiative_transfer::configure(config_file &config_reader) {
         "planet_star_dist", planet_star_dist_config, planet_star_dist_config);
     config_reader.append_config_var("radius_star", radius_star_config, radius_star_config);
     config_reader.append_config_var("diff_ang", diff_ang_config, diff_ang_config);
-    config_reader.append_config_var("Tlow", Tlow_config, Tlow_config);
+    config_reader.append_config_var("Tint", Tint_config, Tint_config);
     config_reader.append_config_var("albedo", albedo_config, albedo_config);
     config_reader.append_config_var("tausw", tausw_config, tausw_config);
     config_reader.append_config_var("taulw", taulw_config, taulw_config);
@@ -286,6 +314,7 @@ bool radiative_transfer::configure(config_file &config_reader) {
     config_reader.append_config_var("surface", surface_config, surface_config);
     config_reader.append_config_var("Csurf", Csurf_config, Csurf_config);
 
+    config_reader.append_config_var("rt1Dmode", rt1Dmode_config, rt1Dmode_config);
 
     return true;
 }
@@ -331,7 +360,7 @@ bool radiative_transfer::store(const ESP &esp, storage &s) {
 
 bool radiative_transfer::store_init(storage &s) {
     s.append_value(Tstar, "/Tstar", "K", "Temperature of host star");
-    s.append_value(Tlow, "/Tlow", "K", "Temperature of interior heat flux");
+    s.append_value(Tint, "/Tint", "K", "Temperature of interior heat flux");
     s.append_value(planet_star_dist / 149597870.7,
                    "/planet_star_dist",
                    "au",
@@ -369,7 +398,7 @@ void radiative_transfer::RTSetup(double Tstar_,
                                  double planet_star_dist_,
                                  double radius_star_,
                                  double diff_ang_,
-                                 double Tlow_,
+                                 double Tint_,
                                  double albedo_,
                                  double tausw_,
                                  double taulw_,
@@ -388,6 +417,7 @@ void radiative_transfer::RTSetup(double Tstar_,
                                  double Omega,
                                  bool   surface_,
                                  double Csurf_,
+                                 bool   rt1Dmode_,
                                  double Tmean,
                                  int    point_num) {
 
@@ -397,7 +427,7 @@ void radiative_transfer::RTSetup(double Tstar_,
     planet_star_dist = planet_star_dist_ * 149597870.7; //conv to km
     radius_star      = radius_star_ * 695508;           //conv to km
     diff_ang         = diff_ang_;
-    Tlow             = Tlow_;
+    Tint             = Tint_;
     albedo           = albedo_;
     tausw            = tausw_;
     taulw            = taulw_;
@@ -428,14 +458,8 @@ void radiative_transfer::RTSetup(double Tstar_,
 
     surface = surface_;
     Csurf   = Csurf_;
-    int id;
-    if (surface == true) {
-        for (id = 0; id < point_num; id++) {
-            Tsurface_h[id] = Tmean;
-            cudaMemset(surf_flux_d, 0, sizeof(double) * point_num);
-        }
-    }
-    cudaMemcpy(Tsurface_d, Tsurface_h, point_num * sizeof(double), cudaMemcpyHostToDevice);
+
+    rt1Dmode = rt1Dmode_;
 }
 
 void radiative_transfer::update_spin_orbit(double time, double Omega) {
