@@ -1576,7 +1576,7 @@ def vertical_lon(input,grid,output,rg,sigmaref,z,slice=[0,360],save=True,axis=Fa
     # Contour plot
     clevels = 40 # may want to make this adjustable
     # clevels = np.linspace(-100,6400,66)
-    print(np.min(zvals),np.max(zvals))
+    # print(np.min(zvals),np.max(zvals))
     if isinstance(axis,axes.SubplotBase):
         C = axis.contourf(lonp*180/np.pi,ycoord,zvals,clevels,cmap=z['cmap'])
         ax = axis
