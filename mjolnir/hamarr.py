@@ -253,7 +253,7 @@ class output:
                 self.fsw_dn[:,:,t-ntsi+1] = np.reshape(sdni,(grid.point_num,grid.nvi))
 
 class rg_out:
-    def __init__(self,resultsf,simID,ntsi,nts,input,output,grid,pressure_vert=True):
+    def __init__(self,resultsf,simID,ntsi,nts,input,output,grid,pressure_vert=True,pgrid_ref='auto'):
         RT = 0
         if "core_benchmark" in dir(input):
             if input.core_benchmark[0] == 0: # need to switch to 'radiative_tranfer' flag
@@ -278,7 +278,7 @@ class rg_out:
                 openh5 = h5py.File(fileh5)
             else:
                 print(fileh5+' not found, regridding now with default settings...')
-                regrid(resultsf,simID,ntsi,nts,pressure_vert=pressure_vert)
+                regrid(resultsf,simID,ntsi,nts,pressure_vert=pressure_vert,pgrid_ref=pgrid_ref)
                 openh5 = h5py.File(fileh5)
 
             # if not 'del_hseq' in openh5.keys():
@@ -411,12 +411,13 @@ class rg_out:
 
 
 class GetOutput:
-    def __init__(self,resultsf,simID,ntsi,nts,stride=1,openrg=0,pressure_vert=True,rotation=False,theta_y=0,theta_z=0):
+    def __init__(self,resultsf,simID,ntsi,nts,stride=1,openrg=0,pressure_vert=True,rotation=False,theta_y=0,theta_z=0,pgrid_ref='auto'):
         self.input = input(resultsf,simID)
         self.grid = grid(resultsf,simID,rotation=rotation,theta_y=theta_y,theta_z=theta_z)
         self.output = output(resultsf,simID,ntsi,nts,self.grid,stride=stride)
         if openrg == 1:
-            self.rg = rg_out(resultsf,simID,ntsi,nts,self.input,self.output,self.grid,pressure_vert=pressure_vert)
+            self.rg = rg_out(resultsf,simID,ntsi,nts,self.input,self.output,self.grid,
+                                pressure_vert=pressure_vert,pgrid_ref=pgrid_ref)
 
 def define_Pgrid(resultsf,simID,ntsi,nts,stride,overwrite=False):
     # first we need the grid size
@@ -427,6 +428,17 @@ def define_Pgrid(resultsf,simID,ntsi,nts,stride,overwrite=False):
         raise IOError(fileh5+' not found!')
     nv = np.int(openh5['nv'][0])
     point_num = np.int(openh5['point_num'][0])
+    Altitude = openh5['Altitude'][...]
+    Altitudeh = openh5['Altitudeh'][...]
+    openh5.close()
+
+    # we also need to know if we included a surface
+    fileh5 = resultsf+'/esp_output_planet_'+simID+'.h5'
+    if os.path.exists(fileh5):
+        openh5 = h5py.File(fileh5)
+    else:
+        raise IOError(fileh5+' not found!')
+    surf = openh5['surface'][0]
     openh5.close()
 
     # now we'll loop over all the files to get the pressure_mean
@@ -444,6 +456,12 @@ def define_Pgrid(resultsf,simID,ntsi,nts,stride,overwrite=False):
         openh5.close()
 
     pgrid = np.mean(np.mean(pressure_mean,axis=0),axis=1)
+    if surf == 1:
+        extrap_low = (Altitudeh[0]-Altitude[1])/(Altitude[0]-Altitude[1])
+        Psurf = pressure_mean[:,1,:]+extrap_low*(pressure_mean[:,0,:]-pressure_mean[:,1,:])
+        Psurf_mean = np.mean(np.mean(Psurf,axis=0),axis=0)
+        pgrid = np.concatenate((np.array([Psurf_mean]),pgrid))
+
     pfile = 'pgrid_%d_%d_%d.txt'%(ntsi,nts,stride)
     if not os.path.exists(resultsf+'/'+pfile) or overwrite==True:
         f = open(resultsf+'/'+pfile,'w')
@@ -601,11 +619,11 @@ def calc_RV_PV(grid,output,input,lons,lats,sigma,t_ind,fileh5,comp=4,pressure_ve
     Lonlr = openh5.create_dataset("Lon_lowres",data=lon_range,compression='gzip',compression_opts=comp)
     openh5.close()
 
-def regrid(resultsf,simID,ntsi,nts,nlev=40,pgrid_ref='mean',overwrite=False,comp=4,
+def regrid(resultsf,simID,ntsi,nts,nlev=40,pgrid_ref='auto',overwrite=False,comp=4,
             pressure_vert=True,type='gd',vertical_top='default',rotation=False,theta_z=0,theta_y=0,
             lmax_set='grid',mask_surf=True):
     # runs over files and converts ico-height grid to lat-lon-pr grid
-    outall = GetOutput(resultsf,simID,ntsi,nts,rotation=rotation,theta_z=theta_z,theta_y=theta_y)
+    outall = GetOutput(resultsf,simID,ntsi,ntsi,rotation=rotation,theta_z=theta_z,theta_y=theta_y)
     input = outall.input
     grid = outall.grid
     output = outall.output
@@ -613,34 +631,35 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pgrid_ref='mean',overwrite=False,comp
 
     print('Regrid data in folder '+resultsf+'...\n')
     if pressure_vert == True:
-        print('Vertical coordinate = pressure')
+        if pgrid_ref == 'auto':
+            try:
+                files_found = spr.check_output('ls '+resultsf+'/pgrid_*.txt',shell=True).split()
+            except:
+                raise IOError('No pgrid file found in "%s/", please run "pgrid -i <first> -l <last> %s"'%(resultsf,resultsf))
+            if len(files_found) > 1:
+                raise IOError('Multiple pgrid files found in "%s/", please specify with -pgrid flag'%resultsf)
+            else:
+                pgrid_file = files_found[0].decode()
+        else:
+            if os.path.exists(resultsf+'/'+pgrid_ref):
+                pgrid_file = resultsf+'/'+ pgrid_ref
+            else:
+                raise IOError('pgrid file %s not found!'%(resultsf+'/'+pgrid_ref))
+        print('Vertical coordinate = pressure from file %s'%pgrid_file)
+        Pref = np.loadtxt(pgrid_file,unpack=True,usecols=1)
+        # sigmaref = np.mean(output.Pressure,axis=0)/input.P_Ref
+        # if pgrid_ref == 'mean':
+        #     Pref = input.P_Ref*np.mean(sigmaref,axis=1)
+        # elif pgrid_ref == 'first':
+        #     Pref = input.P_Ref*sigmaref[:,0]
+        # elif pgrid_ref == 'last':
+        #     Pref = input.P_Ref*sigmaref[:,-1]
+        # else:
+        #     raise ValueError("Invalid value for pgrid_ref (valid = mean, first, or last)")
     else:
         print('Vertical coordinate = height')
         nlev = len(grid.Altitude)
-    #figure out pressure grid
-    # if vertical_top == 'default':
-    #     pmin = np.min(output.Pressure)
-    # else:
-    #     try:
-    #         pmin = np.float(vertical_top)
-    #     except:
-    #         raise ValueError('"pmin" option must be "default" or a float')
-    #
-    # if pscale == 'log':
-    #     sigmaref = np.logspace(np.log10(input.P_Ref),np.log10(pmin),nlev)/input.P_Ref
-    # elif pscale == 'lin':
-    #     sigmaref = np.linspace(input.P_Ref,pmin,nlev)/input.P_Ref
-    # else:
-    #     raise IOError('invalid pressure scale entered! use "lin" or "log"')
-    sigmaref = np.mean(output.Pressure,axis=0)/input.P_Ref
-    if pgrid_ref == 'mean':
-        Pref = input.P_Ref*np.mean(sigmaref,axis=1)
-    elif pgrid_ref == 'first':
-        Pref = input.P_Ref*sigmaref[:,0]
-    elif pgrid_ref == 'last':
-        Pref = input.P_Ref*sigmaref[:,-1]
-    else:
-        raise ValueError("Invalid value for pgrid_ref (valid = mean, first, or last)")
+        Pref = np.zeros(nlev)
 
     if type == 'sh' or type == 'SH':
         if lmax_set == 'grid':
@@ -659,32 +678,24 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pgrid_ref='mean',overwrite=False,comp
         lon_range = np.arange(0,360,res_deg)
     loni, lati = np.meshgrid(lon_range,lat_range)
     d_lon = np.shape(loni)
-    tsp = output.nts-output.ntsi+1
-
-    Temp_icoh = output.Pressure/(input.Rd*output.Rho)
-    interpx = (grid.Altitude-grid.Altitudeh[:-1])/(grid.Altitudeh[1:]-grid.Altitudeh[:-1])
-    # on even height grid, interpolation is excessive, but wth?
-    W_icoh = output.Wh[:,:-1,:] + (output.Wh[:,1:,:]-output.Wh[:,:-1,:])*interpx[None,:,None]
-    # del_hseq = np.gradient(output.Pressure,grid.Altitude,axis=1) + output.Rho*input.Gravit
+    tsp = nts-ntsi+1
 
     RT = 0
     if hasattr(input,"core_benchmark"):
         if input.core_benchmark[0] == 0: # need to switch to 'radiative_tranfer' flag
             RT = 1
-            flw_up_icoh = output.flw_up[:,:-1,:]+(output.flw_up[:,1:,:]-output.flw_up[:,:-1,:])*interpx[None,:,None]
-            flw_dn_icoh = output.flw_dn[:,:-1,:]+(output.flw_dn[:,1:,:]-output.flw_dn[:,:-1,:])*interpx[None,:,None]
             surf = 0
             if input.surface:
                 surf = 1
-                extrap_low = (grid.Altitudeh[0]-grid.Altitude[1])/(grid.Altitude[0]-grid.Altitude[1])
-                Psurf = output.Pressure[:,1,:]+extrap_low*(output.Pressure[:,0,:]-output.Pressure[:,1,:])
+                # extrap_low = (grid.Altitudeh[0]-grid.Altitude[1])/(grid.Altitude[0]-grid.Altitude[1])
+                # Psurf = output.Pressure[:,1,:]+extrap_low*(output.Pressure[:,0,:]-output.Pressure[:,1,:])
 
-                if pgrid_ref == 'mean':
-                    Pref = np.concatenate((np.array([np.mean(Psurf)]),Pref))
-                elif pgrid_ref == 'first':
-                    Pref = np.concatenate((np.array([np.mean(Psurf[:,0])]),Pref))
-                elif pgrid_ref == 'last':
-                    Pref = np.concatenate((np.array([np.mean(Psurf[:,-1])]),Pref))
+                # if pgrid_ref == 'mean':
+                #     Pref = np.concatenate((np.array([np.mean(Psurf)]),Pref))
+                # elif pgrid_ref == 'first':
+                #     Pref = np.concatenate((np.array([np.mean(Psurf[:,0])]),Pref))
+                # elif pgrid_ref == 'last':
+                #     Pref = np.concatenate((np.array([np.mean(Psurf[:,-1])]),Pref))
         else:
             surf = 0
 
@@ -715,6 +726,18 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pgrid_ref='mean',overwrite=False,comp
             proceed = 1
 
         if proceed == 1:
+            outall = GetOutput(resultsf,simID,t,t,rotation=rotation,theta_z=theta_z,theta_y=theta_y)
+            output = outall.output
+
+            Temp_icoh = output.Pressure/(input.Rd*output.Rho)
+            interpx = (grid.Altitude-grid.Altitudeh[:-1])/(grid.Altitudeh[1:]-grid.Altitudeh[:-1])
+            # on even height grid, interpolation is excessive, but wth?
+            W_icoh = output.Wh[:,:-1,:] + (output.Wh[:,1:,:]-output.Wh[:,:-1,:])*interpx[None,:,None]
+            # del_hseq = np.gradient(output.Pressure,grid.Altitude,axis=1) + output.Rho*input.Gravit
+            if RT == 1:
+                flw_up_icoh = output.flw_up[:,:-1,:]+(output.flw_up[:,1:,:]-output.flw_up[:,:-1,:])*interpx[None,:,None]
+                flw_dn_icoh = output.flw_dn[:,:-1,:]+(output.flw_dn[:,1:,:]-output.flw_dn[:,:-1,:])*interpx[None,:,None]
+
             print('Regridding time = %d...'%t)
             Temp_icop = np.zeros((grid.point_num,d_sig))
             Temp_llp = np.zeros((d_lon[0],d_lon[1],d_sig))
@@ -821,64 +844,64 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pgrid_ref='mean',overwrite=False,comp
             if pressure_vert == True: # use pressure as vertical coordinate
                 for i in np.arange(grid.point_num):
                     #interp to pressure grid
-                    sigma = output.Pressure[i,:,t-ntsi]
-                    Temp_icop[i,:] = interp.pchip_interpolate(sigma[::-1],Temp_icoh[i,::-1,t-ntsi],Pref[::-1])[::-1]
-                    Rho_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.Rho[i,::-1,t-ntsi],Pref[::-1])[::-1]
-                    Mh_icop[0,i,:] = interp.pchip_interpolate(sigma[::-1],output.Mh[0,i,::-1,t-ntsi],Pref[::-1])[::-1]
-                    Mh_icop[1,i,:] = interp.pchip_interpolate(sigma[::-1],output.Mh[1,i,::-1,t-ntsi],Pref[::-1])[::-1]
-                    Mh_icop[2,i,:] = interp.pchip_interpolate(sigma[::-1],output.Mh[2,i,::-1,t-ntsi],Pref[::-1])[::-1]
-                    W_icop[i,:] = interp.pchip_interpolate(sigma[::-1],W_icoh[i,::-1,t-ntsi],Pref[::-1])[::-1]
-                    # del_hseq_icop[i,:] = interp.pchip_interpolate(sigma[::-1],del_hseq[i,::-1,t-ntsi],Pref[::-1])[::-1]
+                    sigma = output.Pressure[i,:,0]
+                    Temp_icop[i,:] = interp.pchip_interpolate(sigma[::-1],Temp_icoh[i,::-1,0],Pref[::-1])[::-1]
+                    Rho_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.Rho[i,::-1,0],Pref[::-1])[::-1]
+                    Mh_icop[0,i,:] = interp.pchip_interpolate(sigma[::-1],output.Mh[0,i,::-1,0],Pref[::-1])[::-1]
+                    Mh_icop[1,i,:] = interp.pchip_interpolate(sigma[::-1],output.Mh[1,i,::-1,0],Pref[::-1])[::-1]
+                    Mh_icop[2,i,:] = interp.pchip_interpolate(sigma[::-1],output.Mh[2,i,::-1,0],Pref[::-1])[::-1]
+                    W_icop[i,:] = interp.pchip_interpolate(sigma[::-1],W_icoh[i,::-1,0],Pref[::-1])[::-1]
+                    # del_hseq_icop[i,:] = interp.pchip_interpolate(sigma[::-1],del_hseq[i,::-1,0],Pref[::-1])[::-1]
                     if surf and mask_surf:
                         #when isobars intersect the surface, make values below surface undefined
-                        Temp_icop[i,Pref>Psurf[i,t-ntsi]] = np.nan
-                        Rho_icop[i,Pref>Psurf[i,t-ntsi]] = np.nan
-                        Mh_icop[:,i,Pref>Psurf[i,t-ntsi]] = np.nan
-                        W_icop[i,Pref>Psurf[i,t-ntsi]] = np.nan
+                        Temp_icop[i,Pref>Psurf[i,0]] = np.nan
+                        Rho_icop[i,Pref>Psurf[i,0]] = np.nan
+                        Mh_icop[:,i,Pref>Psurf[i,0]] = np.nan
+                        W_icop[i,Pref>Psurf[i,0]] = np.nan
 
                     if RT == 1:
-                        tau_sw_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.tau_sw[i,::-1,t-ntsi],Pref[::-1])[::-1]
-                        tau_lw_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.tau_lw[i,::-1,t-ntsi],Pref[::-1])[::-1]
-                        flw_up_icop[i,:] = interp.pchip_interpolate(sigma[::-1],flw_up_icoh[i,::-1,t-ntsi],Pref[::-1])[::-1]
-                        flw_dn_icop[i,:] = interp.pchip_interpolate(sigma[::-1],flw_dn_icoh[i,::-1,t-ntsi],Pref[::-1])[::-1]
+                        tau_sw_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.tau_sw[i,::-1,0],Pref[::-1])[::-1]
+                        tau_lw_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.tau_lw[i,::-1,0],Pref[::-1])[::-1]
+                        flw_up_icop[i,:] = interp.pchip_interpolate(sigma[::-1],flw_up_icoh[i,::-1,0],Pref[::-1])[::-1]
+                        flw_dn_icop[i,:] = interp.pchip_interpolate(sigma[::-1],flw_dn_icoh[i,::-1,0],Pref[::-1])[::-1]
                         if surf and mask_surf:
                             #when isobars intersect the surface, make values below surface undefined
-                            tau_sw_icop[i,Pref>Psurf[i,t-ntsi]] = np.nan
-                            tau_lw_icop[i,Pref>Psurf[i,t-ntsi]] = np.nan
-                            flw_up_icop[i,Pref>Psurf[i,t-ntsi]] = np.nan
-                            flw_dn_icop[i,Pref>Psurf[i,t-ntsi]] = np.nan
+                            tau_sw_icop[i,Pref>Psurf[i,0]] = np.nan
+                            tau_lw_icop[i,Pref>Psurf[i,0]] = np.nan
+                            flw_up_icop[i,Pref>Psurf[i,0]] = np.nan
+                            flw_dn_icop[i,Pref>Psurf[i,0]] = np.nan
 
                     if chem == 1:
-                        ch4_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.ch4[i,::-1,t-ntsi],Pref[::-1])[::-1]
-                        co_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.co[i,::-1,t-ntsi],Pref[::-1])[::-1]
-                        h2o_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.h2o[i,::-1,t-ntsi],Pref[::-1])[::-1]
-                        co2_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.co2[i,::-1,t-ntsi],Pref[::-1])[::-1]
-                        nh3_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.nh3[i,::-1,t-ntsi],Pref[::-1])[::-1]
+                        ch4_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.ch4[i,::-1,0],Pref[::-1])[::-1]
+                        co_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.co[i,::-1,0],Pref[::-1])[::-1]
+                        h2o_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.h2o[i,::-1,0],Pref[::-1])[::-1]
+                        co2_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.co2[i,::-1,0],Pref[::-1])[::-1]
+                        nh3_icop[i,:] = interp.pchip_interpolate(sigma[::-1],output.nh3[i,::-1,0],Pref[::-1])[::-1]
                         if surf and mask_surf:
                             #when isobars intersect the surface, make values below surface undefined
-                            ch4_icop[i,Pref>Psurf[i,t-ntsi]] = np.nan
-                            co_icop[i,Pref>Psurf[i,t-ntsi]] = np.nan
-                            h2o_icop[i,Pref>Psurf[i,t-ntsi]] = np.nan
-                            co2_icop[i,Pref>Psurf[i,t-ntsi]] = np.nan
-                            nh3_icop[i,Pref>Psurf[i,t-ntsi]] = np.nan
+                            ch4_icop[i,Pref>Psurf[i,0]] = np.nan
+                            co_icop[i,Pref>Psurf[i,0]] = np.nan
+                            h2o_icop[i,Pref>Psurf[i,0]] = np.nan
+                            co2_icop[i,Pref>Psurf[i,0]] = np.nan
+                            nh3_icop[i,Pref>Psurf[i,0]] = np.nan
 
             else:  # keep height at vertical coordinate (sometimes useful)
-                Temp_icop[:,:] = Temp_icoh[:,:,t-ntsi]
-                Rho_icop[:,:] = output.Rho[:,:,t-ntsi]
-                Mh_icop[:,:,:] = output.Mh[:,:,:,t-ntsi]
-                W_icop[:,:] = W_icoh[:,:,t-ntsi]
-                # del_hseq_icop[:,:] = del_hseq[:,:,t-ntsi]
+                Temp_icop[:,:] = Temp_icoh[:,:,0]
+                Rho_icop[:,:] = output.Rho[:,:,0]
+                Mh_icop[:,:,:] = output.Mh[:,:,:,0]
+                W_icop[:,:] = W_icoh[:,:,0]
+                # del_hseq_icop[:,:] = del_hseq[:,:,0]
                 if RT == 1:
-                    tau_sw_icop[:,:] = output.tau_sw[:,:,t-ntsi]
-                    tau_lw_icop[:,:] = output.tau_lw[:,:,t-ntsi]
-                    flw_up_icop[:,:] = flw_up_icoh[:,:,t-ntsi]
-                    flw_dn_icop[:,:] = flw_dn_icoh[:,:,t-ntsi]
+                    tau_sw_icop[:,:] = output.tau_sw[:,:,0]
+                    tau_lw_icop[:,:] = output.tau_lw[:,:,0]
+                    flw_up_icop[:,:] = flw_up_icoh[:,:,0]
+                    flw_dn_icop[:,:] = flw_dn_icoh[:,:,0]
                 if chem == 1:
-                    ch4_icop[:,:] = output.ch4[:,:,t-ntsi]
-                    co_icop[:,:] = output.co[:,:,t-ntsi]
-                    h2o_icop[:,:] = output.h2o[:,:,t-ntsi]
-                    co2_icop[:,:] = output.co2[:,:,t-ntsi]
-                    nh3_icop[:,:] = output.nh3[:,:,t-ntsi]
+                    ch4_icop[:,:] = output.ch4[:,:,0]
+                    co_icop[:,:] = output.co[:,:,0]
+                    h2o_icop[:,:] = output.h2o[:,:,0]
+                    co2_icop[:,:] = output.co2[:,:,0]
+                    nh3_icop[:,:] = output.nh3[:,:,0]
 
             # Convert icosahedral grid into lon-lat grid
             U_icop = (-Mh_icop[0]*np.sin(grid.lon[:,None])+Mh_icop[1]*np.cos(grid.lon[:,None]))/Rho_icop
@@ -921,13 +944,13 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pgrid_ref='mean',overwrite=False,comp
                         # flw_dn_llp[:,:,lev] = interp_fun((loni,lati))
                         flw_dn_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,flw_dn_icop[:,lev],(loni,lati),method='nearest')
                         if lev == 0:
-                            # interp_fun.values = output.Insol[:,t-ntsi]
+                            # interp_fun.values = output.Insol[:,0]
                             # insol_ll[:,:] = interp_fun((loni,lati))
-                            insol_ll[:,:] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,output.Insol[:,t-ntsi],(loni,lati),method='nearest')
+                            insol_ll[:,:] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,output.Insol[:,0],(loni,lati),method='nearest')
                             if surf == 1:
-                                # interp_fun.values = output.Tsurface[:,t-ntsi]
+                                # interp_fun.values = output.Tsurface[:,0]
                                 # Tsurf_ll[:,:] = interp_fun((loni,lati))
-                                Tsurf_ll[:,:] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,output.Tsurface[:,t-ntsi],(loni,lati),method='nearest')
+                                Tsurf_ll[:,:] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,output.Tsurface[:,0],(loni,lati),method='nearest')
                     if chem == 1:
                         ch4_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,ch4_icop[:,lev],(loni,lati),method='nearest')
                         co_llp[:,:,lev] = interp.griddata(np.vstack([grid.lon*180/np.pi,grid.lat*180/np.pi]).T,co_icop[:,lev],(loni,lati),method='nearest')
@@ -957,10 +980,10 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pgrid_ref='mean',overwrite=False,comp
                         flw_dn_coeff[lev,:,:,:], flw_dn_chi2[lev] = chairs.expand.SHExpandLSQ(flw_dn_icop[:,lev],grid.lat*180/np.pi,grid.lon*180/np.pi,lmax)
                         flw_dn_llp[:,:,lev] = np.real(chairs.expand.MakeGridDH(flw_dn_coeff[lev,:,:,:],sampling=2))
                         if lev == 0:
-                            insol_coeff[lev,:,:,:], insol_chi2[lev] = chairs.expand.SHExpandLSQ(output.Insol[:,t-ntsi],grid.lat*180/np.pi,grid.lon*180/np.pi,lmax)
+                            insol_coeff[lev,:,:,:], insol_chi2[lev] = chairs.expand.SHExpandLSQ(output.Insol[:,0],grid.lat*180/np.pi,grid.lon*180/np.pi,lmax)
                             insol_ll[:,:] = np.real(chairs.expand.MakeGridDH(insol_coeff[lev,:,:,:],sampling=2))
                             if surf == 1:
-                                Tsurf_coeff[lev,:,:,:], Tsurf_chi2[lev] = chairs.expand.SHExpandLSQ(output.Tsurface[:,t-ntsi],grid.lat*180/np.pi,grid.lon*180/np.pi,lmax)
+                                Tsurf_coeff[lev,:,:,:], Tsurf_chi2[lev] = chairs.expand.SHExpandLSQ(output.Tsurface[:,0],grid.lat*180/np.pi,grid.lon*180/np.pi,lmax)
                                 Tsurf_ll[:,:] = np.real(chairs.expand.MakeGridDH(Tsurf_coeff[lev,:,:,:],sampling=2))
 
                     if chem == 1:
@@ -998,10 +1021,10 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pgrid_ref='mean',overwrite=False,comp
                         f = interp.SmoothSphereBivariateSpline(theta,grid.lon,flw_dn_icop[:,lev],s=3.5)
                         flw_dn_llp[:,:,lev] = f(np.pi/2-lat_range[::-1]*np.pi/180,lon_range*np.pi/180)
                         if lev == 0:
-                            f = interp.SmoothSphereBivariateSpline(theta,grid.lon,output.Insol[:,t-ntsi],s=3.5)
+                            f = interp.SmoothSphereBivariateSpline(theta,grid.lon,output.Insol[:,0],s=3.5)
                             insol_llp[:,:,lev] = f(np.pi/2-lat_range[::-1]*np.pi/180,lon_range*np.pi/180)
                             if surf == 1:
-                                f = interp.SmoothSphereBivariateSpline(theta,grid.lon,output.Tsurface[:,t-ntsi],s=3.5)
+                                f = interp.SmoothSphereBivariateSpline(theta,grid.lon,output.Tsurface[:,0],s=3.5)
                                 Tsurf_llp[:,:,lev] = f(np.pi/2-lat_range[::-1]*np.pi/180,lon_range*np.pi/180)
                     if chem == 1:
                         f = interp.SmoothSphereBivariateSpline(theta,grid.lon,ch4_icop[:,lev],s=3.5)
@@ -1093,8 +1116,8 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pgrid_ref='mean',overwrite=False,comp
             openh5.close()
 
             ## calculate relative and potential vorticity and add to regrid file
-            calc_RV_PV(grid,output,input,lon_range,lat_range,Pref,t-ntsi,fileh5,pressure_vert,type=type,lmax_set=lmax_set)
-            # calc_moc_streamf(grid,output,input,lon_range,lat_range,Pref,t-ntsi,fileh5,pressure_vert)
+            calc_RV_PV(grid,output,input,lon_range,lat_range,Pref,0,fileh5,pressure_vert,type=type,lmax_set=lmax_set)
+            # calc_moc_streamf(grid,output,input,lon_range,lat_range,Pref,0,fileh5,pressure_vert)
 
 
 def Get_Prange(input,grid,rg,args,xtype='lat',use_p=True):

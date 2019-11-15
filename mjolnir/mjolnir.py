@@ -56,6 +56,7 @@ parser.add_argument("-mt","--maketable",action='store_true',help='Print a table 
 parser.add_argument("-no-log","--no_pressure_log",action='store_true',help='Switch off log coordinates in pressure (vertical)')
 parser.add_argument("-llswap","--latlonswap",action='store_true',help='Swap latitude and longitude axes (horizontal plots)')
 parser.add_argument("-vc","--vcoord",nargs=1,default=['pressure'],help='Vertical coordinate to use (pressure or height)')
+parser.add_argument("-pgrid","--pgrid_ref",nargs=1,default=['auto'],help='Reference file for pressure grid')
 args = parser.parse_args()
 pview = args.pview
 
@@ -109,10 +110,11 @@ else:
 
 # regrid function is a special case and interrupts the other stuff
 if 'regrid' in pview:
-    ham.regrid(resultsf,simulation_ID,ntsi,nts,pressure_vert=use_p)
+    ham.regrid(resultsf,simulation_ID,ntsi,nts,pressure_vert=use_p,pgrid_ref=args.pgrid_ref[0])
     exit()
 
-outall = ham.GetOutput(resultsf,simulation_ID,ntsi,nts,openrg=openrg,pressure_vert=use_p)
+outall = ham.GetOutput(resultsf,simulation_ID,ntsi,nts,openrg=openrg,
+                        pressure_vert=use_p,pgrid_ref=args.pgrid_ref[0])
 
 ##########
 # Planet #

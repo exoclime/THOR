@@ -27,7 +27,7 @@ parser.add_argument('resultsf',metavar='nview',nargs='*',help='Results directory
 parser.add_argument("-s","--simulation_ID",nargs=1,default=['auto'],help='Name of simulation (e.g., planet name)')
 parser.add_argument("-i","--initial_file",nargs=1,default=[10],type=int,help='Initial file id number (integer)')
 parser.add_argument("-l","--last_file",nargs=1,default=['init'],type=int,help='Last file id number (integer)')
-parser.add_argument("-stride","--stride",nargs=1,default=['init'],type=int,help='Stride (cadence) of files to use to set grid')
+parser.add_argument("-stride","--stride",nargs=1,default=[1],type=int,help='Stride (cadence) of files to use to set grid')
 parser.add_argument("-w","--overwrite",action='store_true',help='force overwrite existing pgrid file')
 args = parser.parse_args()
 resultsf = args.resultsf[0]
