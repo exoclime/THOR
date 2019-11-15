@@ -30,7 +30,7 @@ parser.add_argument('resultsf',metavar='nview',nargs='*',help='Results directory
 parser.add_argument("-s","--simulation_ID",nargs=1,default=['auto'],help='Name of simulation (e.g., planet name)')
 parser.add_argument("-t","--type",nargs=1,default=['gd'],choices=['gd','GD','sh','SH'],help='Horizontal interpolation type')
 parser.add_argument("-vc","--vcoord",nargs=1,default=['pressure'],help='Vertical coordinate to use (pressure or height)')
-parser.add_argument("-pgref","--pgrid_ref",nargs=1,default=['mean'],help='Determines how the pressure grid is set (mean=average over all specified files, first=first specified file, last=last specified file)')
+parser.add_argument("-pgrid","--pgrid_ref",nargs=1,default=['auto'],help='Reference file for pressure grid')
 parser.add_argument("-i","--initial_file",nargs=1,default=[10],type=int,help='Initial file id number (integer)')
 parser.add_argument("-l","--last_file",nargs=1,default=['init'],type=int,help='Last file id number (integer)')
 parser.add_argument("-rot","--rotation",action='store_true',help='apply a set of rotations to grid (theta_z,theta_y) about (z,y)')

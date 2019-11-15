@@ -35,3 +35,7 @@
  * moved heating from RT into dynamical core (fast modes and slow modes)
  * added output of sw flux in RT module, which was missing before
  * fixed bugs in RT module, including an important one that led to spurious extra heating and cooling of surface
+ * deprecated Tlow in favor of Tint, which is treated as an additional flux rather than a boundary condition
+ * corrected heat capacity in RT calculation, as appropriate for updating pressure rather than temperature
+ * added pgrid utility to mjolnir/regrid, which must be used to determine a fixed pressure grid to use for interpolation before doing regrid operation (this ensures that all regrid files are utilizing the same pressure grid)
+ * changed regrid to open only one file at a time to prevent overloading memory
