@@ -73,7 +73,12 @@ __global__ void CalcTotEnergy(double *Etotal_d,
         double zup, zlow, Vol;
         zup  = Altitudeh_d[lev + 1] + A;
         zlow = Altitudeh_d[lev] + A;
-        Vol  = areasT[id] / pow(A, 2) * (pow(zup, 3) - pow(zlow, 3)) / 3;
+        if (DeepModel) {
+            Vol = areasT[id] / pow(A, 2) * (pow(zup, 3) - pow(zlow, 3)) / 3;
+        }
+        else {
+            Vol = areasT[id] * (zup - zlow);
+        }
 
         //calc cartesian values of vertical wind
         wx = W_d[id * nv + lev] * cos(lonlat_d[id * 2 + 1]) * cos(lonlat_d[id * 2]);
@@ -130,7 +135,12 @@ __global__ void CalcAngMom(double *AngMomx_d,
         double zup, zlow, Vol;
         zup  = Altitudeh_d[lev + 1] + A;
         zlow = Altitudeh_d[lev] + A;
-        Vol  = areasT[id] / pow(A, 2) * (pow(zup, 3) - pow(zlow, 3)) / 3;
+        if (DeepModel) {
+            Vol = areasT[id] / pow(A, 2) * (pow(zup, 3) - pow(zlow, 3)) / 3;
+        }
+        else {
+            Vol = areasT[id] * (zup - zlow);
+        }
 
         //radius vector
         r  = (A + Altitude_d[lev]);
@@ -177,7 +187,12 @@ __global__ void CalcMass(double *Mass_d,
         double zup, zlow, Vol;
         zup  = Altitudeh_d[lev + 1] + A;
         zlow = Altitudeh_d[lev] + A;
-        Vol  = areasT[id] / pow(A, 2) * (pow(zup, 3) - pow(zlow, 3)) / 3;
+        if (DeepModel) {
+            Vol = areasT[id] / pow(A, 2) * (pow(zup, 3) - pow(zlow, 3)) / 3;
+        }
+        else {
+            Vol = areasT[id] * (zup - zlow);
+        }
 
         //mass in control volume = density*volume
         Mass_d[id * nv + lev] = Rho_d[id * nv + lev] * Vol;
@@ -213,7 +228,12 @@ __global__ void CalcEntropy(double *Entropy_d,
         double zup, zlow, Vol;
         zup  = Altitudeh_d[lev + 1] + A;
         zlow = Altitudeh_d[lev] + A;
-        Vol  = areasT[id] / pow(A, 2) * (pow(zup, 3) - pow(zlow, 3)) / 3;
+        if (DeepModel) {
+            Vol = areasT[id] / pow(A, 2) * (pow(zup, 3) - pow(zlow, 3)) / 3;
+        }
+        else {
+            Vol = areasT[id] * (zup - zlow);
+        }
 
         //total energy in the control volume
         Entropy_d[id * nv + lev] = Sdens * Vol;
