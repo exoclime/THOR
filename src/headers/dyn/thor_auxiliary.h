@@ -64,8 +64,8 @@ __global__ void Compute_Temperature_H_Pt_Geff(double *temperature_d,
                                               double *Wh_d,
                                               double  P_Ref,
                                               double  Gravit,
-                                              double  Cp,
-                                              double  Rd,
+                                              double *Cp_d,
+                                              double *Rd_d,
                                               double *Altitude_d,
                                               double *Altitudeh_d,
                                               int     num,
@@ -87,8 +87,8 @@ __global__ void Compute_Temperature_H_Pt_Geff(double *temperature_d,
     double pressure, h, hl, pt, ptl, pl, pp, dpdz;
     double gtilh, gtilht;
     double dz, dp_dz;
-    double Cv    = Cp - Rd;
-    double CvoCp = Cv / Cp;
+    double Cv;
+    double CvoCp;
 
     double xi, xim, xip;
     double intt, intl;
@@ -96,6 +96,8 @@ __global__ void Compute_Temperature_H_Pt_Geff(double *temperature_d,
 
     if (id < num) {
         for (int lev = 0; lev < nv + 1; lev++) {
+            Cv    = Cp_d[id * nv + lev] - Rd_d[id * nv + lev];
+            CvoCp = Cv / Cp_d[id * nv + lev];
             if (lev < nv) {
                 if (lev > 0) {
                     pl   = pressure;
@@ -107,25 +109,25 @@ __global__ void Compute_Temperature_H_Pt_Geff(double *temperature_d,
 
                 pressure    = pressure_d[id * nv + lev];
                 rho         = Rho_d[id * nv + lev];
-                temperature = pressure / (Rd * rho);
+                temperature = pressure / (Rd_d[id * nv + lev] * rho);
 
                 alt   = Altitude_d[lev];
                 alth  = Altitudeh_d[lev];
                 altht = Altitudeh_d[lev + 1];
                 h     = Cv * temperature + pressure / rho;
-                pt    = (P_Ref / (Rd * rho)) * pow(pressure / P_Ref, CvoCp);
+                pt    = (P_Ref / (Rd_d[id * nv + lev] * rho)) * pow(pressure / P_Ref, CvoCp);
 
                 temperature_d[id * nv + lev] = temperature;
                 h_d[id * nv + lev]           = h;
                 pt_d[id * nv + lev]          = pt;
             }
-            if (lev == 0) {
+            if (lev == 0) { // not sure about use of Rd in extrapolation
                 hh_d[id * (nv + 1) + 0] = h;
 
                 pl   = pressure_d[id * nv + 1] - rho * Gravit * (-alt - Altitude_d[1]);
-                rhoh = 0.5 * (pressure + pl) / (Rd * temperature);
-                pth_d[id * (nv + 1)] =
-                    (P_Ref / (Rd * rhoh)) * pow(0.5 * (pressure + pl) / P_Ref, CvoCp);
+                rhoh = 0.5 * (pressure + pl) / (Rd_d[id * nv + lev] * temperature);
+                pth_d[id * (nv + 1)] = (P_Ref / (Rd_d[id * nv + lev] * rhoh))
+                                       * pow(0.5 * (pressure + pl) / P_Ref, CvoCp);
 
                 gtilh_d[id * (nv + 1)] = 0.0;
                 gtilh                  = 0.0;

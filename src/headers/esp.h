@@ -142,6 +142,10 @@ public:
     double *Entropy_h;   //entropy in control volume
     double  GlobalEnt_h; //entropy over entire atmosphere
 
+    // ultra-hot jupiter quantities
+    double *Rd_h; //local value of gas constant
+    double *Cp_h; //local value of heat capacity
+
     ///////////////////////////
     //  Device
     int *point_local_d;
@@ -266,6 +270,10 @@ public:
     double *GlobalAMz_d;
     double *Entropy_d; // entropy in control volume
     double *GlobalEnt_d;
+
+    // ultra-hot jupiter quantities
+    double *Rd_d; //local value of gas constant
+    double *Cp_d; //local value of heat capacity
 
     ///////////////////////////
 

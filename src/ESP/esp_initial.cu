@@ -178,6 +178,10 @@ __host__ void ESP::alloc_data(bool conservation, bool output_mean) {
         Entropy_h = (double *)malloc(nv * point_num * sizeof(double));
     }
 
+    // ultra-hot jupiter stuff
+    Rd_h = (double *)malloc(nv * point_num * sizeof(double));
+    Cp_h = (double *)malloc(nv * point_num * sizeof(double));
+
     //  Allocate data in device
     //  Grid
     cudaMalloc((void **)&point_local_d, 6 * point_num * sizeof(int));
@@ -215,6 +219,10 @@ __host__ void ESP::alloc_data(bool conservation, bool output_mean) {
         cudaMalloc((void **)&Rho_mean_d, nv * point_num * sizeof(double));
         cudaMalloc((void **)&pressure_mean_d, nv * point_num * sizeof(double));
     }
+
+    // ultra hot
+    cudaMalloc((void **)&Rd_d, nv * point_num * sizeof(double));
+    cudaMalloc((void **)&Cp_d, nv * point_num * sizeof(double));
 
     //  Temperature
     cudaMalloc((void **)&temperature_d, nv * point_num * sizeof(double));
@@ -381,6 +389,9 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 // else {
                 temperature_h[i * nv + lev] = sim.Tmean;
                 // }
+                Rd_h[i * nv + lev] =
+                    sim.Rd; //constant value for now, just to get code structures working
+                Cp_h[i * nv + lev] = sim.Cp; // same as above
             }
 
             for (int lev = 0; lev < nv; lev++) {
@@ -682,6 +693,9 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                    3 * point_num * sizeof(int),
                    cudaMemcpyHostToDevice);
 
+    cudaMemcpy(Rd_d, Rd_h, point_num * nv * sizeof(double), cudaMemcpyHostToDevice);
+    cudaMemcpy(Cp_d, Cp_h, point_num * nv * sizeof(double), cudaMemcpyHostToDevice);
+
     //  Initialize arrays
     cudaMemset(Adv_d, 0, sizeof(double) * 3 * point_num * nv);
     cudaMemset(v_d, 0, sizeof(double) * nv * point_num * 3);
@@ -886,6 +900,13 @@ __host__ ESP::~ESP() {
     cudaFree(vtmp);
     cudaFree(wtmp);
     cudaFree(Ttmp);
+
+    // ultra hot
+    free(Rd_h);
+    free(Cp_h);
+
+    cudaFree(Rd_d);
+    cudaFree(Cp_d);
 
 
     if (phy_modules_execute)

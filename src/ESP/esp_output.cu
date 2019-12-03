@@ -88,6 +88,8 @@ __host__ void ESP::copy_to_host() {
     cudaMemcpy(Wh_h, Wh_d, point_num * nvi * sizeof(double), cudaMemcpyDeviceToHost);
     cudaMemcpy(pressure_h, pressure_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
     cudaMemcpy(Mh_h, Mh_d, 3 * point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+    cudaMemcpy(Rd_h, Rd_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+    cudaMemcpy(Cp_h, Cp_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
 }
 
 __host__ void ESP::copy_mean_to_host() {
@@ -304,6 +306,10 @@ __host__ void ESP::output(int                    fidx, // Index of output file
         //  Wh
         s.append_table(Wh_mean_h, nvi * point_num, "/Wh_mean", "kg m/s", "Mean Vertical Momentum");
     }
+
+    s.append_table(Rd_h, nv * point_num, "/Rd", "J/K/kg", "Local gas constant");
+    s.append_table(Cp_h, nv * point_num, "/Cp", "J/K/kg", "Local heat capacity");
+
 
     if (phy_modules_execute)
         phy_modules_store(*this, s);
