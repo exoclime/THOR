@@ -187,7 +187,7 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
 
     //  Computes the initial temperature.
     Compute_temperature<<<NB, NTH>>>(
-        temperature_d, pt_d, pressure_d, Rho_d, sim.P_Ref, Rd_d, sim.Cp, point_num);
+        temperature_d, pt_d, pressure_d, Rho_d, sim.P_Ref, sim.Rd, sim.Cp, point_num);
 
     BENCH_POINT_I(
         current_step, "phy_T", (), ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"))
@@ -209,7 +209,7 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
                                     pt_d,          // Pot temperature [K]
                                     Rho_d,         // Density [m^3/kg]
                                     sim.Cp,        // Specific heat capacity [J/kg/K]
-                                    Rd_d,          // Gas constant [J/kg/K]
+                                    sim.Rd,        // Gas constant [J/kg/K]
                                     sim.Gravit,    // Gravity [m/s^2]
                                     Altitude_d,    // Altitudes of the layers
                                     Altitudeh_d,   // Altitudes of the interfaces
@@ -334,7 +334,7 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
                       ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"))
     //  Computes the new pressures.
     cudaDeviceSynchronize();
-    Compute_pressure<<<NB, NTH>>>(pressure_d, temperature_d, Rho_d, Rd_d, point_num);
+    Compute_pressure<<<NB, NTH>>>(pressure_d, temperature_d, Rho_d, sim.Rd, point_num);
 
     //always do this nan check so the code doesn't keep computing garbage
     check_h = false;
@@ -348,7 +348,7 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
 
 #ifdef BENCHMARKING
     // recompute temperature from pressure and density, to avoid rounding issues when comparing
-    Compute_temperature_only<<<NB, NTH>>>(temperature_d, pressure_d, Rho_d, Rd_d, point_num);
+    Compute_temperature_only<<<NB, NTH>>>(temperature_d, pressure_d, Rho_d, sim.Rd, point_num);
 #endif // BENCHMARKING
 
     BENCH_POINT_I(current_step,
@@ -396,7 +396,7 @@ void ESP::conservation(const SimulationSetup& sim) {
                                temperature_d,
                                sim.Gravit,
                                sim.Cp,
-                               Rd_d,
+                               sim.Rd,
                                sim.A,
                                Altitude_d,
                                Altitudeh_d,
@@ -428,7 +428,7 @@ void ESP::conservation(const SimulationSetup& sim) {
                              pressure_d,
                              temperature_d,
                              sim.Cp,
-                             Rd_d,
+                             sim.Rd,
                              sim.A,
                              sim.P_Ref,
                              Altitude_d,

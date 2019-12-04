@@ -139,9 +139,9 @@ __global__ void Compute_Temperature_H_Pt_Geff(double *temperature_d,
                      - rho * Gravit * (2 * Altitudeh_d[nv] - alt - Altitude_d[nv - 2]);
                 if (pp < 0)
                     pp = 0;
-                rhoh = 0.5 * (pressure + pp) / (Rd * temperature);
-                pth_d[id * (nv + 1) + nv] =
-                    (P_Ref / (Rd * rhoh)) * pow(0.5 * (pressure + pp) / P_Ref, CvoCp);
+                rhoh = 0.5 * (pressure + pp) / (Rd_d[id * nv + lev - 1] * temperature);
+                pth_d[id * (nv + 1) + nv] = (P_Ref / (Rd_d[id * nv + lev - 1] * rhoh))
+                                            * pow(0.5 * (pressure + pp) / P_Ref, CvoCp);
 
                 gtilh_d[id * (nv + 1) + nv] = 0.0;
                 gtilht                      = 0.0;
@@ -195,7 +195,8 @@ __global__ void Compute_Temperature_H_Pt_Geff(double *temperature_d,
                 pl = pressure_d[id * nv + 1]
                      - Rho_d[id * nv + 0] * Gravit * (-Altitude_d[0] - Altitude_d[1]);
                 dpdz = (pressure_d[id * nv + 0] - pl) / dz;
-                rhoh = 0.5 * (pressure_d[id * nv + 0] + pl) / (Rd * temperature_d[id * nv + 0]);
+                rhoh = 0.5 * (pressure_d[id * nv + 0] + pl)
+                       / (Rd_d[id * nv + lev] * temperature_d[id * nv + 0]);
 
                 gtilh_d[id * (nv + 1) + 0] = -(1.0 / rhoh) * dpdz;
             }
@@ -208,7 +209,7 @@ __global__ void Compute_Temperature_H_Pt_Geff(double *temperature_d,
                 dpdz = (pp - pressure_d[id * nv + nv - 1]) / dz;
 
                 rhoh = 0.5 * (pressure_d[id * nv + nv - 1] + pp)
-                       / (Rd * temperature_d[id * nv + nv - 1]);
+                       / (Rd_d[id * nv + lev - 1] * temperature_d[id * nv + nv - 1]);
 
                 gtilh_d[id * (nv + 1) + nv] = -(1.0 / rhoh) * dpdz;
             }
