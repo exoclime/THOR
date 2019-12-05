@@ -69,7 +69,7 @@ __global__ void Diffusion_Op(double* diffmh_d,
                              double* K_d,
                              double* Altitude_d,
                              double  A,
-                             double  Rd,
+                             double* Rd_d,
                              int*    maps_d,
                              int     nl_region,
                              bool    laststep,
@@ -205,7 +205,7 @@ __global__ void Diffusion_Op(double* diffmh_d,
         if (var < 5)
             sdiff = -K_d[lev];
         else
-            sdiff = -K_d[lev] * Rd; // multiply by gas constant in temperature eqn
+            sdiff = -K_d[lev] * Rd_d[id * nv + lev]; // multiply by gas constant in temperature eqn
     }
 
     lap = 0.0;
@@ -374,7 +374,7 @@ __global__ void Diffusion_Op_Poles(double* diffmh_d,
                                    double* Altitude_d,
                                    double* Altitudeh_d,
                                    double  A,
-                                   double  Rd,
+                                   double* Rd_d,
                                    int*    local_d,
                                    int     num,
                                    bool    laststep,
@@ -434,7 +434,7 @@ __global__ void Diffusion_Op_Poles(double* diffmh_d,
         if (var < 5)
             sdiff = -K_d[lev];
         else
-            sdiff = -K_d[lev] * Rd;
+            sdiff = -K_d[lev] * Rd_d[id * nv + lev];
     }
 
     if (laststep) {

@@ -96,9 +96,9 @@ __global__ void Compute_Temperature_H_Pt_Geff(double *temperature_d,
 
     if (id < num) {
         for (int lev = 0; lev < nv + 1; lev++) {
-            Cv    = Cp_d[id * nv + lev] - Rd_d[id * nv + lev];
-            CvoCp = Cv / Cp_d[id * nv + lev];
             if (lev < nv) {
+                Cv    = Cp_d[id * nv + lev] - Rd_d[id * nv + lev];
+                CvoCp = Cv / Cp_d[id * nv + lev];
                 if (lev > 0) {
                     pl   = pressure;
                     rhol = rho;
@@ -133,6 +133,8 @@ __global__ void Compute_Temperature_H_Pt_Geff(double *temperature_d,
                 gtilh                  = 0.0;
             }
             else if (lev == nv) {
+                Cv                       = Cp_d[id * nv + lev - 1] - Rd_d[id * nv + lev - 1];
+                CvoCp                    = Cv / Cp_d[id * nv + lev - 1];
                 hh_d[id * (nv + 1) + nv] = h;
 
                 pp = pressure_d[id * nv + nv - 2]
