@@ -83,7 +83,7 @@ __global__ void Compute_Temperature_H_Pt_Geff(double *temperature_d,
     int id = blockIdx.x * blockDim.x + threadIdx.x;
 
     //  Local variables.
-    double temperature, rho, rhoh, rhol;
+    double temperature, rho, rhoh, rhol, rhop;
     double pressure, h, hl, pt, ptl, pl, pp, dpdz;
     double gtilh, gtilht;
     double dz, dp_dz;
@@ -91,7 +91,7 @@ __global__ void Compute_Temperature_H_Pt_Geff(double *temperature_d,
     double CvoCp;
 
     double xi, xim, xip;
-    double intt, intl;
+    double intt, intl, extr;
     double alt, altl, alth, altht;
 
     if (id < num) {
@@ -122,30 +122,55 @@ __global__ void Compute_Temperature_H_Pt_Geff(double *temperature_d,
                 pt_d[id * nv + lev]          = pt;
             }
             if (lev == 0) { // not sure about use of Rd in extrapolation
+                extr = (-alt - Altitude_d[lev + 1]) / (Altitude_d[lev + 1] - alt);
                 hh_d[id * (nv + 1) + 0] = h;
 
                 pl   = pressure_d[id * nv + 1] - rho * Gravit * (-alt - Altitude_d[1]);
-                rhoh = 0.5 * (pressure + pl) / (Rd_d[id * nv + lev] * temperature);
-                pth_d[id * (nv + 1)] = (P_Ref / (Rd_d[id * nv + lev] * rhoh))
-                                       * pow(0.5 * (pressure + pl) / P_Ref, CvoCp);
+                rhol = Rho_d[id * nv + 1] + (Rho_d[id * nv + 1] - rho) * extr;
+                // rhoh = 0.5 * (pressure + pl) / (Rd_d[id * nv + lev] * temperature);
+                rhoh = 0.5 * (rho + rhol);
 
-                gtilh_d[id * (nv + 1)] = 0.0;
-                gtilh                  = 0.0;
+                // pth_d[id * (nv + 1)] = (P_Ref / (Rd_d[id * nv + lev] * rhoh))
+                //                        * pow(0.5 * (pressure + pl) / P_Ref, CvoCp);
+
+                dz                         = 2.0 * Altitude_d[0];
+                dpdz                       = (pressure_d[id * nv + 0] - pl) / dz;
+                gtilh_d[id * (nv + 1) + 0] = -(1.0 / rhoh) * dpdz;
+                // gtilh_d[id * (nv + 1)] = 0.0;
+                gtilh = 0.0;
             }
             else if (lev == nv) {
-                Cv                       = Cp_d[id * nv + lev - 1] - Rd_d[id * nv + lev - 1];
-                CvoCp                    = Cv / Cp_d[id * nv + lev - 1];
+                extr  = (altht - Altitude_d[nv - 2]) / (Altitude_d[nv - 1] - Altitude_d[nv - 2]);
+                Cv    = Cp_d[id * nv + lev - 1] - Rd_d[id * nv + lev - 1];
+                CvoCp = Cv / Cp_d[id * nv + lev - 1];
                 hh_d[id * (nv + 1) + nv] = h;
 
                 pp = pressure_d[id * nv + nv - 2]
                      - rho * Gravit * (2 * Altitudeh_d[nv] - alt - Altitude_d[nv - 2]);
                 if (pp < 0)
                     pp = 0;
-                rhoh = 0.5 * (pressure + pp) / (Rd_d[id * nv + lev - 1] * temperature);
-                pth_d[id * (nv + 1) + nv] = (P_Ref / (Rd_d[id * nv + lev - 1] * rhoh))
-                                            * pow(0.5 * (pressure + pp) / P_Ref, CvoCp);
+                rhop = Rho_d[id * nv + nv - 2]
+                       + (Rho_d[id * nv + nv - 1] - Rho_d[id * nv + nv - 2]) * extr;
+                rhoh = 0.5 * (rho + rhop);
+                // rhoh = 0.5 * (pressure + pp) / (Rd_d[id * nv + lev - 1] * temperature);
+                // pth_d[id * (nv + 1) + nv] = (P_Ref / (Rd_d[id * nv + lev - 1] * rhoh))
+                //                             * pow(0.5 * (pressure + pp) / P_Ref, CvoCp);
+                pth_d[id * (nv + 1) + nv] =
+                    pt_d[id * nv + nv - 2]
+                    + (pt_d[id * nv + nv - 1] - pt_d[id * nv + nv - 2]) * extr;
+                pth_d[id * (nv + 1) + 0] = pt_d[id * nv + 1]
+                                           + (pt_d[id * nv + 1] - pt_d[id * nv + 0])
+                                                 * (Altitudeh_d[0] - Altitude_d[1])
+                                                 / (Altitude_d[1] - Altitude_d[0]);
 
-                gtilh_d[id * (nv + 1) + nv] = 0.0;
+                // gtilh_d[id * (nv + 1) + nv] = 0.0;
+                dz = 2.0 * (Altitudeh_d[nv] - Altitude_d[nv - 1]);
+                pp = pressure_d[id * nv + nv - 2]
+                     - Rho_d[id * nv + nv - 1] * Gravit
+                           * (2 * Altitudeh_d[nv] - Altitude_d[nv - 1] - Altitude_d[nv - 2]);
+                dpdz = (pp - pressure_d[id * nv + nv - 1]) / dz;
+
+                gtilh_d[id * (nv + 1) + nv] = -(1.0 / rhoh) * dpdz;
                 gtilht                      = 0.0;
 
                 xi  = alt;
@@ -174,8 +199,8 @@ __global__ void Compute_Temperature_H_Pt_Geff(double *temperature_d,
 
                 rhoh   = rhol * intt + rho * intl;
                 gtilht = -(Wh_d[id * (nv + 1) + lev] / rhoh) * dp_dz;
-
-                gtilh_d[id * (nv + 1) + lev] = gtilht;
+                // since gtil_d (cell centers) goes only into slow modes,
+                // we add velocity directly here
 
                 xi  = alt;
                 xim = alth;
@@ -184,53 +209,59 @@ __global__ void Compute_Temperature_H_Pt_Geff(double *temperature_d,
                 intt = (xi - xip) / (xim - xip);
                 intl = (xi - xim) / (xip - xim);
 
-
                 gtil_d[id * nv + lev - 1] = gtilh * intt + gtilht * intl;
                 gtilh                     = gtilht;
+
+                // gtilh_d[id * (nv + 1) + lev] = gtilht;
+                gtilh_d[id * (nv + 1) + lev] = -(1.0 / rhoh) * dp_dz;
+                // since gtilh_d (interfaces) is in the coefficients of the vertical
+                // equation, we don't want to include velocity
             }
         }
 
-
-        for (int lev = 0; lev < nv + 1; lev++) {
-            if (lev == 0) {
-                dz = 2.0 * Altitude_d[0];
-                pl = pressure_d[id * nv + 1]
-                     - Rho_d[id * nv + 0] * Gravit * (-Altitude_d[0] - Altitude_d[1]);
-                dpdz = (pressure_d[id * nv + 0] - pl) / dz;
-                rhoh = 0.5 * (pressure_d[id * nv + 0] + pl)
-                       / (Rd_d[id * nv + lev] * temperature_d[id * nv + 0]);
-
-                gtilh_d[id * (nv + 1) + 0] = -(1.0 / rhoh) * dpdz;
-            }
-            else if (lev == nv) {
-
-                dz = 2.0 * (Altitudeh_d[nv] - Altitude_d[nv - 1]);
-                pp = pressure_d[id * nv + nv - 2]
-                     - Rho_d[id * nv + nv - 1] * Gravit
-                           * (2 * Altitudeh_d[nv] - Altitude_d[nv - 1] - Altitude_d[nv - 2]);
-                dpdz = (pp - pressure_d[id * nv + nv - 1]) / dz;
-
-                rhoh = 0.5 * (pressure_d[id * nv + nv - 1] + pp)
-                       / (Rd_d[id * nv + lev - 1] * temperature_d[id * nv + nv - 1]);
-
-                gtilh_d[id * (nv + 1) + nv] = -(1.0 / rhoh) * dpdz;
-            }
-            else {
-                dz   = Altitude_d[lev] - Altitude_d[lev - 1];
-                dpdz = (pressure_d[id * nv + lev] - pressure_d[id * nv + lev - 1]) / dz;
-
-                xi  = Altitudeh_d[lev];
-                xim = Altitude_d[lev - 1];
-                xip = Altitude_d[lev];
-
-                intt = (xi - xip) / (xim - xip);
-                intl = (xi - xim) / (xip - xim);
-
-                rhoh = Rho_d[id * nv + lev - 1] * intt + Rho_d[id * nv + lev] * intl;
-
-                gtilh_d[id * (nv + 1) + lev] = -(1.0 / rhoh) * dpdz;
-            }
-        }
+        // RD: I think the loop below is unnecessary (I've moved calc of gtilh_d above)
+        // This change was binary compatible! :D
+        // for (int lev = 0; lev < nv + 1; lev++) {
+        //     if (lev == 0) {
+        //         dz = 2.0 * Altitude_d[0];
+        //         pl = pressure_d[id * nv + 1]
+        //              - Rho_d[id * nv + 0] * Gravit * (-Altitude_d[0] - Altitude_d[1]);
+        //         dpdz = (pressure_d[id * nv + 0] - pl) / dz;
+        //         rhoh = 0.5 * (pressure_d[id * nv + 0] + pl)
+        //                / (Rd_d[id * nv + lev] * temperature_d[id * nv + 0]);
+        //
+        //         // gtilh_d[id * (nv + 1) + 0] = -(1.0 / rhoh) * dpdz;
+        //     }
+        //     else if (lev == nv) {
+        //
+        //         dz = 2.0 * (Altitudeh_d[nv] - Altitude_d[nv - 1]);
+        //         pp = pressure_d[id * nv + nv - 2]
+        //              - Rho_d[id * nv + nv - 1] * Gravit
+        //                    * (2 * Altitudeh_d[nv] - Altitude_d[nv - 1] - Altitude_d[nv - 2]);
+        //         dpdz = (pp - pressure_d[id * nv + nv - 1]) / dz;
+        //
+        //         rhoh = 0.5 * (pressure_d[id * nv + nv - 1] + pp)
+        //                / (Rd_d[id * nv + lev - 1] * temperature_d[id * nv + nv - 1]);
+        //
+        //         // gtilh_d[id * (nv + 1) + nv] = -(1.0 / rhoh) * dpdz;
+        //     }
+        //     else {
+        //         dz   = Altitude_d[lev] - Altitude_d[lev - 1];
+        //         dpdz = (pressure_d[id * nv + lev] - pressure_d[id * nv + lev - 1]) / dz;
+        //
+        //         xi  = Altitudeh_d[lev];
+        //         xim = Altitude_d[lev - 1];
+        //         xip = Altitude_d[lev];
+        //
+        //         intt = (xi - xip) / (xim - xip);
+        //         intl = (xi - xim) / (xip - xim);
+        //
+        //         rhoh = Rho_d[id * nv + lev - 1] * intt + Rho_d[id * nv + lev] * intl;
+        //
+        //         // gtilh_d[id * (nv + 1) + lev] = -(1.0 / rhoh) * dpdz;
+        //
+        //     }
+        // }
     }
 }
 

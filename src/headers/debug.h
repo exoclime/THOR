@@ -46,12 +46,12 @@
 
 // benchmarking
 // if defined run benchmark functions?
-#define BENCHMARKING
+// #define BENCHMARKING
 
 // ***************************************
 // * binary comparison
 // compare benchmark point to references
-#define BENCH_POINT_COMPARE
+// #define BENCH_POINT_COMPARE
 // write reference benchmark point
 // #define BENCH_POINT_WRITE
 // print out more debug info, by default, only print out failures

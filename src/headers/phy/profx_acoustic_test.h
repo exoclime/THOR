@@ -65,7 +65,7 @@ __global__ void acoustic_test(double *pressure_d,
         double lon = lonlat_d[id * 2];
 
         vmode   = 1;         // vertical mode
-        dp      = 100;       // pressure perturbation (Pa)
+        dp      = 0.;        //100;       // pressure perturbation (Pa)
         R       = 1.0 / 3.0; // distance cutoff of perturbation
         lambda0 = 0;         //longitude of perturbation
         phi0    = 0;         //latitude of perturbation

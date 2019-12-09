@@ -266,8 +266,8 @@ __global__ void Density_Pressure_Eqs(double *pressure_d,
                                      double *div_d,
                                      double *Altitude_d,
                                      double *Altitudeh_d,
-                                     double  Cp,
-                                     double  Rd,
+                                     double *Cp_d,
+                                     double *Rd_d,
                                      double  A,
                                      double  P_Ref,
                                      double  dt,
@@ -300,7 +300,7 @@ __global__ void Density_Pressure_Eqs(double *pressure_d,
     double dwptdz;
     double aux, r, p;
     double altht, althl;
-    double Cv = Cp - Rd;
+    double Cv;
 
 
     int ir = 0; // index in region
@@ -317,6 +317,8 @@ __global__ void Density_Pressure_Eqs(double *pressure_d,
 
     bool load_halo = compute_mem_idx(maps_d, nhl, nhl2, ig, igh, ir, ir2, pent_ind);
     id             = ig;
+
+    Cv = Cp_d[id * nv + lev] - Rd_d[id * nv + lev];
 
     // Load shared memory
 
@@ -440,8 +442,9 @@ __global__ void Density_Pressure_Eqs(double *pressure_d,
     r   = Rhok_d[id * nv + lev] + Rho_d[id * nv + lev];
 
     double pt;
-    pt = (P_Ref / (Rd * r))
-         * pow((pressure_d[id * nv + lev] + pressurek_d[id * nv + lev]) / P_Ref, Cv / Cp);
+    pt = (P_Ref / (Rd_d[id * nv + lev] * r))
+         * pow((pressure_d[id * nv + lev] + pressurek_d[id * nv + lev]) / P_Ref,
+               Cv / Cp_d[id * nv + lev]);
 
     aux += pt * r;
     // aux += pt_s[ir]*r;
@@ -450,7 +453,7 @@ __global__ void Density_Pressure_Eqs(double *pressure_d,
     // printf("***** (pt_small - pt_large) = %g \n*******",(pt-pt_s[ir]));
     // Updates pressure
     // if (aux >= 0) {
-    p = P_Ref * pow(Rd * aux / P_Ref, Cp / Cv); //
+    p = P_Ref * pow(Rd_d[id * nv + lev] * aux / P_Ref, Cp_d[id * nv + lev] / Cv); //
     // }
     // else {
     //     p = 0;
@@ -491,8 +494,8 @@ __global__ void Density_Pressure_Eqs_Poles(double *pressure_d,
                                            double *div_d,
                                            double *Altitude_d,
                                            double *Altitudeh_d,
-                                           double  Cp,
-                                           double  Rd,
+                                           double *Cp_d,
+                                           double *Rd_d,
                                            double  A,
                                            double  P_Ref,
                                            double  dt,
@@ -521,7 +524,7 @@ __global__ void Density_Pressure_Eqs_Poles(double *pressure_d,
     double dwptdz;
     double aux, r, p;
     double altht, althl;
-    double Cv = Cp - Rd;
+    double Cv;
 
     if (id < num) {
         for (int i = 0; i < 5; i++)
@@ -531,6 +534,7 @@ __global__ void Density_Pressure_Eqs_Poles(double *pressure_d,
                 div_p[i * 3 + k] = div_d[id * 7 * 3 + i * 3 + k];
 
         for (int lev = 0; lev < nv; lev++) {
+            Cv      = Cp_d[id * nv + lev] - Rd_d[id * nv + lev];
             v_p[0]  = Mh_d[id * 3 * nv + lev * 3 + 0];
             v_p[1]  = Mh_d[id * 3 * nv + lev * 3 + 1];
             v_p[2]  = Mh_d[id * 3 * nv + lev * 3 + 2];
@@ -611,13 +615,13 @@ __global__ void Density_Pressure_Eqs_Poles(double *pressure_d,
 
             double pt, ptmp;
             ptmp = pressure_d[id * nv + lev];
-            pt   = (P_Ref / (Rd * r)) * pow((ptmp + pressurek_d[id * nv + lev]) / P_Ref, Cv / Cp);
+            pt   = (P_Ref / (Rd_d[id*nv+lev] * r)) * pow((ptmp + pressurek_d[id * nv + lev]) / P_Ref, Cv / Cp_d[id*nv+lev]);
 
             aux += pt * r;
 
             // aux += pt_d[id * nv + lev] * r;
             // if (aux >= 0) {
-            p = P_Ref * pow(Rd * aux / P_Ref, Cp / Cv); //
+            p = P_Ref * pow(Rd_d[id * nv + lev] * aux / P_Ref, Cp_d[id * nv + lev] / Cv); //
             // }
             // else {
             //     p = 0;

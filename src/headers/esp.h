@@ -145,6 +145,8 @@ public:
     // ultra-hot jupiter quantities
     double *Rd_h; //local value of gas constant
     double *Cp_h; //local value of heat capacity
+    double *GibbsT;
+    double *GibbsdG;
 
     ///////////////////////////
     //  Device
@@ -275,6 +277,7 @@ public:
     double *Rd_d; //local value of gas constant
     double *Cp_d; //local value of heat capacity
 
+
     ///////////////////////////
 
     //  Functions
@@ -331,6 +334,9 @@ public:
         timestep        = timestep_;
     };
 
+    bool read_in_gibbs_H();
+
+    double chi_H_equilibrium(double, double);
 
     void Thor(const SimulationSetup &sim);
 

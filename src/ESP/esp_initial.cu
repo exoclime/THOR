@@ -51,6 +51,7 @@
 #include "esp.h"
 #include "log_writer.h"
 #include "phy/profx_conservation.h"
+#include "phy/ultrahot_thermo.h"
 #include "phy/valkyrie_jet_steadystate.h"
 #include "storage.h"
 
@@ -361,6 +362,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
     //
     //
     //  Initial atmospheric conditions
+    bool read_gibbs = read_in_gibbs_H(); //ultrahot jup
+
     if (sim.rest) {
         double Ha = sim.Rd * sim.Tmean / sim.Gravit;
         for (int i = 0; i < point_num; i++) {
@@ -369,24 +372,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
             //
 
             for (int lev = 0; lev < nv; lev++) {
-                pressure_h[i * nv + lev] = sim.P_Ref * exp(-Altitude_h[lev] / Ha);
-                // if (core_benchmark == DEEP_HOT_JUPITER) {
-                //     double Ptil = 0.0;
-                //     if (pressure_h[i * nv + lev] >= 1e5) {
-                //         Ptil = log10(pressure_h[i * nv + lev] / 100000);
-                //     }
-                //     temperature_h[i * nv + lev] =
-                //         1696.6986 + 132.2318 * Ptil - 174.30459 * Ptil * Ptil
-                //         + 12.579612 * Ptil * Ptil * Ptil + 59.513639 * Ptil * Ptil * Ptil * Ptil
-                //         + 9.6706522 * Ptil * Ptil * Ptil * Ptil * Ptil
-                //         - 4.1136048 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
-                //         - 1.0632301 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
-                //         + 0.064400203 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
-                //         + 0.035974396 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
-                //         + 0.0025740066 * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil * Ptil
-                //               * Ptil * Ptil;
-                // }
-                // else {
+                pressure_h[i * nv + lev]    = sim.P_Ref * exp(-Altitude_h[lev] / Ha);
                 temperature_h[i * nv + lev] = sim.Tmean;
                 // }
                 Rd_h[i * nv + lev] =
@@ -451,7 +437,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
         }
 
         simulation_start_time = 0.0;
-    }
+    } //end if rest
     else {
         bool load_OK = true;
         // build planet filename
@@ -587,6 +573,11 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
             load_OK &= s.read_table_to_ptr("/Wh", Wh_h, point_num * nvi);
             log::printf("Reloaded %s: %d.\n", "/Wh", load_OK ? 1 : 0);
 
+            load_OK &= s.read_table_to_ptr("/Rd", Rd_h, point_num * nv);
+            log::printf("Reloaded %s: %d.\n", "/Rd", load_OK ? 1 : 0);
+
+            load_OK &= s.read_table_to_ptr("/Cp", Cp_h, point_num * nv);
+            log::printf("Reloaded %s: %d.\n", "/Cp", load_OK ? 1 : 0);
             //      Simulation start time
             load_OK &= s.read_value("/simulation_time", simulation_start_time);
             log::printf("Reloaded %s: %d.\n", "/simulation_time", load_OK ? 1 : 0);
@@ -603,7 +594,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
         for (int i = 0; i < point_num; i++)
             for (int lev = 0; lev < nv; lev++)
                 temperature_h[i * nv + lev] =
-                    pressure_h[i * nv + lev] / (sim.Rd * Rho_h[i * nv + lev]);
+                    pressure_h[i * nv + lev] / (Rd_h[i * nv + lev] * Rho_h[i * nv + lev]);
 
         for (int i = 0; i < point_num; i++) {
             for (int lev = 0; lev < nv; lev++) {
@@ -617,12 +608,13 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 W_h[i * nv + lev] = Wh_h[i * (nv + 1) + lev] * a + Wh_h[i * (nv + 1) + lev + 1] * b;
             }
         }
-    }
+    } //end if rest == false
 #ifdef BENCHMARKING
     // recompute temperature from pressure and density, to have correct rounding for binary comparison
     for (int i = 0; i < point_num; i++)
         for (int lev = 0; lev < nv; lev++)
-            temperature_h[i * nv + lev] = pressure_h[i * nv + lev] / (sim.Rd * Rho_h[i * nv + lev]);
+            temperature_h[i * nv + lev] =
+                pressure_h[i * nv + lev] / (Rd_h[i * nv + lev] * Rho_h[i * nv + lev]);
 #endif // BENCHMARKING
 
     //  Diffusion
