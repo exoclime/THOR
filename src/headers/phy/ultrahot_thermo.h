@@ -50,6 +50,7 @@
 #define RUNIV 8.3144621
 #define massH 1.67372e-27
 #define kBoltz 1.38064852e-23
+#define Navo 6.0221409e23
 
 __host__ bool ESP::read_in_gibbs_H() {
     FILE *infile;
@@ -140,9 +141,44 @@ __host__ double ESP::chi_H_equilibrium(double temperature, double pressure) {
     double n_H    = (-1.0 + sqrt(1 + 8 * kprime)) / (4 * kprime);
     double X_H    = 2 * n_H / (n_H + 1);
     double mmean  = 2 * massH - massH * X_H;
-    return massH / mmean * X_H;
+    return massH / mmean
+           * X_H; //hmm, in this simple case, chi_H = n_H... wonder if there's any reason to generalize
 }
 
 __host__ double Rd_from_chi_H(double chi_H) {
     return kBoltz * chi_H / massH + kBoltz * (1 - chi_H) / (2 * massH);
+}
+
+__host__ double heat_capacity_H2(double temperature) {
+    // heat capacity at constant pressure of molecular hydrogen from chase 1998 (nist database)
+    double A, B, C, D, E, t = temperature / 1000.0;
+
+    if (temperature < 1000) {
+        A = 33.066178;
+        B = -11.363417;
+        C = 11.432816;
+        D = -2.772874;
+        E = -0.158558;
+    }
+    else if (temperature >= 1000 && temperature < 2500) {
+        A = 18.563083;
+        B = 12.257357;
+        C = -2.859786;
+        D = 0.268238;
+        E = 1.977990;
+    }
+    else {
+        A = 43.423560;
+        B = -4.293079;
+        C = 1.272428;
+        D = -0.096876;
+        E = -20.533862;
+    }
+    return (A + B * t + C * pow(t, 2) + D * pow(t, 3) + E * pow(t, -2)) / (2 * massH * Navo);
+}
+
+__host__ double Cp_from_chi_H(double chi_H, double temperature) {
+    double cpH2 = heat_capacity_H2(temperature);
+    double cpH  = 20.78603 / (massH * Navo);
+    return cpH * chi_H + cpH2 * (1 - chi_H);
 }

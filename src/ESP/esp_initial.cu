@@ -362,28 +362,58 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
     //
     //
     //  Initial atmospheric conditions
-    bool read_gibbs = read_in_gibbs_H(); //ultrahot jup
+    bool   read_gibbs = read_in_gibbs_H(); //ultrahot jup
+    double chi_H, ptmp, eps = 1e-8, f, df, dz;
+    int    it, it_max = 100;
 
+    double Rd_L, P_L;
     if (sim.rest) {
-        double Ha = sim.Rd * sim.Tmean / sim.Gravit;
+        // double Ha = sim.Rd * sim.Tmean / sim.Gravit;
         for (int i = 0; i < point_num; i++) {
             //
             //          Initial conditions for an isothermal Atmosphere
             //
 
             for (int lev = 0; lev < nv; lev++) {
-                pressure_h[i * nv + lev]    = sim.P_Ref * exp(-Altitude_h[lev] / Ha);
+                if (lev == 0) {
+                    chi_H = chi_H_equilibrium(sim.Tmean, sim.P_Ref);
+                    P_L   = sim.P_Ref;
+                    Rd_L  = Rd_from_chi_H(chi_H);
+                    dz    = Altitude_h[0];
+                }
+                else {
+                    chi_H = chi_H_equilibrium(sim.Tmean, pressure_h[i * nv + lev - 1]);
+                    P_L   = pressure_h[i * nv + lev - 1];
+                    Rd_L  = Rd_h[i * nv + lev - 1];
+                    dz    = Altitude_h[lev] - Altitude_h[lev - 1];
+                }
+                pressure_h[i * nv + lev] = P_L;
+                Rd_h[i * nv + lev]       = Rd_L;
+                ptmp                     = pressure_h[i * nv + lev] + 2 * eps;
+
+                it = 0;
+                while (it < it_max && ptmp - pressure_h[i * nv + lev] > eps) {
+                    ptmp = pressure_h[i * nv + lev];
+                    f    = log(pressure_h[i * nv + lev] / P_L) / dz
+                        + sim.Gravit / (0.5 * (Rd_h[i * nv + lev] + Rd_L) * sim.Tmean);
+                    df                       = 1.0 / (pressure_h[i * nv + lev] * dz);
+                    pressure_h[i * nv + lev] = pressure_h[i * nv + lev] - f / df;
+                    chi_H              = chi_H_equilibrium(sim.Tmean, pressure_h[i * nv + lev]);
+                    Rd_h[i * nv + lev] = Rd_from_chi_H(chi_H);
+                    it++;
+                }
+                // pressure_h[i * nv + lev]    = sim.P_Ref * exp(-Altitude_h[lev] / Ha);
                 temperature_h[i * nv + lev] = sim.Tmean;
-                // }
-                Rd_h[i * nv + lev] =
-                    sim.Rd; //constant value for now, just to get code structures working
-                Cp_h[i * nv + lev] = sim.Cp; // same as above
+                // // }
+                // Rd_h[i * nv + lev] =
+                //     sim.Rd; //constant value for now, just to get code structures working
+                Cp_h[i * nv + lev] = Cp_from_chi_H(chi_H, temperature_h[i * nv + lev]);
             }
 
             for (int lev = 0; lev < nv; lev++) {
                 //              Density [kg/m3]
                 Rho_h[i * nv + lev] =
-                    pressure_h[i * nv + lev] / (temperature_h[i * nv + lev] * sim.Rd);
+                    pressure_h[i * nv + lev] / (temperature_h[i * nv + lev] * Rd_h[i * nv + lev]);
 
                 //              Momentum [kg/m3 m/s]
                 Mh_h[i * 3 * nv + 3 * lev + 0] = 0.0;
