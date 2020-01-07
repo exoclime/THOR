@@ -259,6 +259,7 @@ __global__ void Density_Pressure_Eqs(double *pressure_d,
                                      double *Whk_d,
                                      double *pt_d,
                                      double *pth_d,
+                                     double *pt_tau_d,
                                      double *SlowRho_d,
                                      double *profx_dP_d,
                                      double *diffpr_d,
@@ -441,10 +442,21 @@ __global__ void Density_Pressure_Eqs(double *pressure_d,
     aux = -(nflxpt_s[iri] + dwptdz) * dt;
     r   = Rhok_d[id * nv + lev] + Rho_d[id * nv + lev];
 
-    double pt;
+    double pt, pt_p;
     pt = (P_Ref / (Rd_d[id * nv + lev] * r))
          * pow((pressure_d[id * nv + lev] + pressurek_d[id * nv + lev]) / P_Ref,
                Cv / Cp_d[id * nv + lev]);
+    pt_p = pt_tau_d[id * nv + lev];
+
+    // if (pressure_d[id * nv + lev] != 0 || Rho_d[id * nv + lev] != 0) {
+    //     printf("p = %f, rho = %e \n", pressure_d[id * nv + lev], Rho_d[id * nv + lev]);
+    // }
+    // if (pt != pt_s[ir]) {
+    //     printf("pt_t = %f, pt_tau = %f\n", pt_s[ir], pt);
+    // }
+    if (id == 0) {
+        printf("pt(recalc) = %f, pt(prev) = %f\n", pt, pt_p);
+    }
 
     aux += pt * r;
     // aux += pt_s[ir]*r;
@@ -468,6 +480,7 @@ __global__ void Density_Pressure_Eqs(double *pressure_d,
     // Updates density
     nflxr_s[iri] += dwdz;
     Rho_d[id * nv + lev] += (SlowRho_d[id * nv + lev] - nflxr_s[iri]) * dt;
+    pt_tau_d[id * nv + lev] = aux / r;
     // if (isnan(pressure_d[id * nv + lev])) {
     //     printf("(id, lev) = (%d, %d)", id, lev); //
     // }
@@ -487,6 +500,7 @@ __global__ void Density_Pressure_Eqs_Poles(double *pressure_d,
                                            double *Whk_d,
                                            double *pt_d,
                                            double *pth_d,
+                                           double *pt_tau_d,
                                            double *SlowRho_d,
                                            double *profx_dP_d,
                                            double *diffpr_d,
@@ -613,9 +627,18 @@ __global__ void Density_Pressure_Eqs_Poles(double *pressure_d,
             aux = -(nflxpt_p + dwptdz) * dt;
             r   = Rhok_d[id * nv + lev] + Rho_d[id * nv + lev];
 
-            double pt, ptmp;
-            ptmp = pressure_d[id * nv + lev];
-            pt   = (P_Ref / (Rd_d[id*nv+lev] * r)) * pow((ptmp + pressurek_d[id * nv + lev]) / P_Ref, Cv / Cp_d[id*nv+lev]);
+            double pt; //, ptmp;
+            // ptmp = pressure_d[id * nv + lev];
+            // pt   = (P_Ref / (Rd_d[id * nv + lev] * r))
+            //      * pow((ptmp + pressurek_d[id * nv + lev]) / P_Ref, Cv / Cp_d[id * nv + lev]);
+            pt = pt_tau_d[id * nv + lev];
+
+            // if (pressure_d[id * nv + lev] != 0 || Rho_d[id * nv + lev] != 0) {
+            //     printf("p = %f, rho = %e \n", pressure_d[id * nv + lev], Rho_d[id * nv + lev]);
+            // }
+            // if (pt != pt_d[id * nv + lev]) {
+            //     printf("pt_t = %f, pt_tau = %f\n", pt_d[id * nv + lev], pt);
+            // }
 
             aux += pt * r;
 
@@ -641,6 +664,7 @@ __global__ void Density_Pressure_Eqs_Poles(double *pressure_d,
             // Updates density
             nflxr_p += dwdz;
             Rho_d[id * nv + lev] += (SlowRho_d[id * nv + lev] - nflxr_p) * dt;
+            pt_tau_d[id * nv + lev] = aux / r;
 
             if (lev != nv - 1) {
                 althl = altht;

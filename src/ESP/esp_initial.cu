@@ -231,6 +231,8 @@ __host__ void ESP::alloc_data(bool conservation, bool output_mean) {
     //  Potential temperature
     cudaMalloc((void **)&pt_d, nv * point_num * sizeof(double));
     cudaMalloc((void **)&pth_d, nvi * point_num * sizeof(double));
+    cudaMalloc((void **)&pt_tau_d, nv * point_num * sizeof(double));
+
 
     //  Entalphy
     cudaMalloc((void **)&h_d, nv * point_num * sizeof(double));
@@ -362,7 +364,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
     //
     //
     //  Initial atmospheric conditions
-    bool   read_gibbs = read_in_gibbs_H(); //ultrahot jup
+    bool   read_gibbs = read_in_gibbs_H(GibbsN); //ultrahot jup
     double chi_H, ptmp, eps = 1e-8, f, df, dz;
     int    it, it_max = 100;
 
@@ -376,16 +378,17 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
             for (int lev = 0; lev < nv; lev++) {
                 if (lev == 0) {
-                    chi_H = chi_H_equilibrium(sim.Tmean, sim.P_Ref);
+                    chi_H = chi_H_equilibrium(GibbsT, GibbsdG, GibbsN, sim.Tmean, sim.P_Ref);
                     P_L   = sim.P_Ref;
                     Rd_L  = Rd_from_chi_H(chi_H);
                     dz    = Altitude_h[0];
                 }
                 else {
-                    chi_H = chi_H_equilibrium(sim.Tmean, pressure_h[i * nv + lev - 1]);
-                    P_L   = pressure_h[i * nv + lev - 1];
-                    Rd_L  = Rd_h[i * nv + lev - 1];
-                    dz    = Altitude_h[lev] - Altitude_h[lev - 1];
+                    chi_H = chi_H_equilibrium(
+                        GibbsT, GibbsdG, GibbsN, sim.Tmean, pressure_h[i * nv + lev - 1]);
+                    P_L  = pressure_h[i * nv + lev - 1];
+                    Rd_L = Rd_h[i * nv + lev - 1];
+                    dz   = Altitude_h[lev] - Altitude_h[lev - 1];
                 }
                 pressure_h[i * nv + lev] = P_L;
                 Rd_h[i * nv + lev]       = Rd_L;
@@ -398,7 +401,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         + sim.Gravit / (0.5 * (Rd_h[i * nv + lev] + Rd_L) * sim.Tmean);
                     df                       = 1.0 / (pressure_h[i * nv + lev] * dz);
                     pressure_h[i * nv + lev] = pressure_h[i * nv + lev] - f / df;
-                    chi_H              = chi_H_equilibrium(sim.Tmean, pressure_h[i * nv + lev]);
+                    chi_H                    = chi_H_equilibrium(
+                        GibbsT, GibbsdG, GibbsN, sim.Tmean, pressure_h[i * nv + lev]);
                     Rd_h[i * nv + lev] = Rd_from_chi_H(chi_H);
                     it++;
                 }
@@ -717,12 +721,16 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
     cudaMemcpy(Rd_d, Rd_h, point_num * nv * sizeof(double), cudaMemcpyHostToDevice);
     cudaMemcpy(Cp_d, Cp_h, point_num * nv * sizeof(double), cudaMemcpyHostToDevice);
+    cudaMemcpy(GibbsT_d, GibbsT, GibbsN * sizeof(double), cudaMemcpyHostToDevice);
+    cudaMemcpy(GibbsdG_d, GibbsdG, GibbsN * sizeof(double), cudaMemcpyHostToDevice);
 
     //  Initialize arrays
     cudaMemset(Adv_d, 0, sizeof(double) * 3 * point_num * nv);
     cudaMemset(v_d, 0, sizeof(double) * nv * point_num * 3);
     cudaMemset(pt_d, 0, sizeof(double) * nv * point_num);
     cudaMemset(pth_d, 0, sizeof(double) * nvi * point_num);
+    cudaMemset(pt_tau_d, 0, sizeof(double) * nv * point_num);
+
     cudaMemset(SlowMh_d, 0, sizeof(double) * nv * point_num * 3);
     cudaMemset(SlowWh_d, 0, sizeof(double) * nvi * point_num);
     cudaMemset(SlowRho_d, 0, sizeof(double) * nv * point_num);
@@ -840,6 +848,7 @@ __host__ ESP::~ESP() {
     //  Potential temperature
     cudaFree(pt_d);
     cudaFree(pth_d);
+    cudaFree(pt_tau_d);
     //  Slow modes
     cudaFree(SlowMh_d);
     cudaFree(SlowWh_d);
@@ -926,10 +935,14 @@ __host__ ESP::~ESP() {
     // ultra hot
     free(Rd_h);
     free(Cp_h);
+    free(GibbsT);
+    free(GibbsdG);
 
     cudaFree(Rd_d);
     cudaFree(Cp_d);
 
+    cudaFree(GibbsT_d);
+    cudaFree(GibbsdG_d);
 
     if (phy_modules_execute)
         phy_modules_free_mem();

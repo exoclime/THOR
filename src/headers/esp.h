@@ -147,6 +147,7 @@ public:
     double *Cp_h; //local value of heat capacity
     double *GibbsT;
     double *GibbsdG;
+    int     GibbsN = 61;
 
     ///////////////////////////
     //  Device
@@ -208,6 +209,7 @@ public:
     double *v_d;
     double *pt_d;
     double *pth_d;
+    double *pt_tau_d; // value of pot. temp. at prev. iteration in inner loop
 
     double *gtil_d;
     double *gtilh_d;
@@ -276,7 +278,8 @@ public:
     // ultra-hot jupiter quantities
     double *Rd_d; //local value of gas constant
     double *Cp_d; //local value of heat capacity
-
+    double *GibbsT_d;
+    double *GibbsdG_d;
 
     ///////////////////////////
 
@@ -334,9 +337,9 @@ public:
         timestep        = timestep_;
     };
 
-    bool read_in_gibbs_H();
+    bool read_in_gibbs_H(int);
 
-    double chi_H_equilibrium(double, double);
+    // double chi_H_equilibrium(double, double);
 
     void Thor(const SimulationSetup &sim);
 

@@ -43,7 +43,9 @@
 // 1.0     16/08/2017 Released version  (JM)
 //
 ////////////////////////////////////////////////////////////////////////
+#pragma once
 
+#include "directories.h"
 #include <math.h>
 
 #define Gibbs_Filename "src/headers/phy/GibbsH.txt"
@@ -52,133 +54,52 @@
 #define kBoltz 1.38064852e-23
 #define Navo 6.0221409e23
 
-__host__ bool ESP::read_in_gibbs_H() {
-    FILE *infile;
-    int   nlines = 61; //lines in GibbsH file
+// bool ESP::read_in_gibbs_H(int GibbsN);
 
-    infile  = fopen(Gibbs_Filename, "r");
-    GibbsT  = (double *)malloc(nlines * sizeof(double));
-    GibbsdG = (double *)malloc(nlines * sizeof(double));
+__device__ __host__ double
+           linear_interpolation(double x1, double x2, double y1, double y2, double x);
 
-    if (!path_exists(Gibbs_Filename)) {
-        log::printf("\nGibbs H input file %s does not exist.\n", Gibbs_Filename);
-        exit(EXIT_FAILURE);
-    }
+__device__ __host__ int locate_min_i(double *array_d, int N, double val);
 
-    for (int i = 0; i < nlines; i++) {
-        if (fscanf(infile, "%lf %lf", &GibbsT[i], &GibbsdG[i]) != 2) {
-            log::printf("error parsing gibbs H file %s.\n", Gibbs_Filename);
-            fclose(infile);
-            return false;
-        }
-    }
+__device__ __host__ int locate_max_i(double *array_d, int N, double val);
 
-    fclose(infile);
-    return true;
-}
+// double kprime(double *T, double *dG, double temperature, double pressure);
 
-__host__ double linear_interpolation(double x1, double x2, double y1, double y2, double x) {
-    // calculates value of y at x on interval (x1, x2), given y1(x1), y2(x2)
-    return y1 + (y2 - y1) * (x - x1) / (x2 - x1);
-}
+__device__ __host__ double
+           chi_H_equilibrium(double *GibbsT, double *GibbsdG, int GibbsN, double temperature, double pressure);
 
-__host__ int locate_min_i(double *array_d, int N, double val) {
+__device__ __host__ double Rd_from_chi_H(double chi_H);
 
-    int id = -1;
-    if (val >= array_d[N - 1]) {
-        id = N - 2;
-    }
-    else if (val < array_d[0]) {
-        id = 0;
-    }
-    else {
-        for (int j = 1; j < N; j++) {
-            if (val >= array_d[j - 1] && val < array_d[j]) {
-                id = j - 1;
-                break;
-            }
-        }
-    }
-    return id;
-}
+__device__ __host__ double heat_capacity_H2(double temperature);
 
-__host__ int locate_max_i(double *array_d, int N, double val) {
+__device__ __host__ double Cp_from_chi_H(double chi_H, double temperature);
 
-    int id = -1;
-    if (val >= array_d[N - 1]) {
-        id = N - 1;
-    }
-    else if (val < array_d[0]) {
-        id = 1;
-    }
-    else {
-        for (int j = 1; j < N; j++) {
-            if (val >= array_d[j - 1] && val < array_d[j]) {
-                id = j;
-                break;
-            }
-        }
-    }
-    return id;
-}
+__device__ double linear_interpolation_device(double x1, double x2, double y1, double y2, double x);
 
-__host__ double kprime(double *T, double *dG, double temperature, double pressure) {
-    //calculates kprime from Equation 48 in Heng, Lyons, and Tsai 2016
-    int imin, imax;
-    imin         = locate_min_i(T, 61, temperature);
-    imax         = locate_max_i(T, 61, temperature);
-    double dGnew = linear_interpolation(T[imin], T[imax], dG[imin], dG[imax], temperature);
-    return pressure / 1e5 * exp(2000 * dGnew / RUNIV / temperature);
-}
+__device__ int locate_min_i_device(double *array_d, int N, double val);
 
-__host__ double ESP::chi_H_equilibrium(double temperature, double pressure) {
-    int imin, imax;
-    imin = locate_min_i(GibbsT, 61, temperature);
-    imax = locate_max_i(GibbsT, 61, temperature);
-    double dGnew =
-        linear_interpolation(GibbsT[imin], GibbsT[imax], GibbsdG[imin], GibbsdG[imax], temperature);
-    double kprime = pressure / 1e5 * exp(2000 * dGnew / RUNIV / temperature);
-    double n_H    = (-1.0 + sqrt(1 + 8 * kprime)) / (4 * kprime);
-    double X_H    = 2 * n_H / (n_H + 1);
-    double mmean  = 2 * massH - massH * X_H;
-    return massH / mmean
-           * X_H; //hmm, in this simple case, chi_H = n_H... wonder if there's any reason to generalize
-}
+__device__ int locate_max_i_device(double *array_d, int N, double val);
 
-__host__ double Rd_from_chi_H(double chi_H) {
-    return kBoltz * chi_H / massH + kBoltz * (1 - chi_H) / (2 * massH);
-}
+__device__ double chi_H_equilibrium_device(double *GibbsT,
+                                           double *GibbsdG,
+                                           int     GibbsN,
+                                           double  temperature,
+                                           double  pressure);
 
-__host__ double heat_capacity_H2(double temperature) {
-    // heat capacity at constant pressure of molecular hydrogen from chase 1998 (nist database)
-    double A, B, C, D, E, t = temperature / 1000.0;
+__device__ double Rd_from_chi_H_device(double chi_H);
 
-    if (temperature < 1000) {
-        A = 33.066178;
-        B = -11.363417;
-        C = 11.432816;
-        D = -2.772874;
-        E = -0.158558;
-    }
-    else if (temperature >= 1000 && temperature < 2500) {
-        A = 18.563083;
-        B = 12.257357;
-        C = -2.859786;
-        D = 0.268238;
-        E = 1.977990;
-    }
-    else {
-        A = 43.423560;
-        B = -4.293079;
-        C = 1.272428;
-        D = -0.096876;
-        E = -20.533862;
-    }
-    return (A + B * t + C * pow(t, 2) + D * pow(t, 3) + E * pow(t, -2)) / (2 * massH * Navo);
-}
+__device__ double heat_capacity_H2_device(double temperature);
 
-__host__ double Cp_from_chi_H(double chi_H, double temperature) {
-    double cpH2 = heat_capacity_H2(temperature);
-    double cpH  = 20.78603 / (massH * Navo);
-    return cpH * chi_H + cpH2 * (1 - chi_H);
-}
+__device__ double Cp_from_chi_H_device(double chi_H, double temperature);
+
+
+__global__ void update_temperature_Rd_Cp(double *temperature_d,
+                                         double *Rd_d,
+                                         double *Cp_d,
+                                         double *pressure_d,
+                                         double *Rho_d,
+                                         double *GibbsT_d,
+                                         double *GibbsdG_d,
+                                         int     GibbsN,
+                                         int     num,
+                                         bool *  error);

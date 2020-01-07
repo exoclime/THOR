@@ -59,6 +59,7 @@ __global__ void Compute_Temperature_H_Pt_Geff(double *temperature_d,
                                               double *hh_d,
                                               double *pt_d,
                                               double *pth_d,
+                                              double *pt_tau_d,
                                               double *gtil_d,
                                               double *gtilh_d,
                                               double *Wh_d,
@@ -109,7 +110,7 @@ __global__ void Compute_Temperature_H_Pt_Geff(double *temperature_d,
 
                 pressure    = pressure_d[id * nv + lev];
                 rho         = Rho_d[id * nv + lev];
-                temperature = pressure / (Rd_d[id * nv + lev] * rho);
+                temperature = temperature_d[id * nv + lev];
 
                 alt   = Altitude_d[lev];
                 alth  = Altitudeh_d[lev];
@@ -117,9 +118,10 @@ __global__ void Compute_Temperature_H_Pt_Geff(double *temperature_d,
                 h     = Cv * temperature + pressure / rho;
                 pt    = (P_Ref / (Rd_d[id * nv + lev] * rho)) * pow(pressure / P_Ref, CvoCp);
 
-                temperature_d[id * nv + lev] = temperature;
-                h_d[id * nv + lev]           = h;
-                pt_d[id * nv + lev]          = pt;
+                // temperature_d[id * nv + lev] = temperature;
+                h_d[id * nv + lev]      = h;
+                pt_d[id * nv + lev]     = pt;
+                pt_tau_d[id * nv + lev] = pt;
             }
             if (lev == 0) { // not sure about use of Rd in extrapolation
                 extr = (-alt - Altitude_d[lev + 1]) / (Altitude_d[lev + 1] - alt);

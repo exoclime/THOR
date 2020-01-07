@@ -58,6 +58,7 @@
 #include "dyn/thor_vertical_int.h" // Vertical momentum.
 #include "log_writer.h"
 #include "phy/profx_sponge.h"
+#include "phy/ultrahot_thermo.h"
 #include "reduction_add.h"
 
 #include "phy_modules.h"
@@ -80,6 +81,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
     dim3 NBALL((point_num / NTH) + 1, nv, 6); //Number of blocks to execute on all grid points
     dim3 NBALL0((point_num / NTH) + 1, 1, 6); //Number of blocks to execute on all grid points
     dim3 NBRT((point_num / NTH) + 1, 1, 1);
+    dim3 NBALL1((point_num / NTH) + 1, nv, 1); //Number of blocks to execute on all grid points
 
 
     //  Number of Small steps
@@ -199,6 +201,26 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
             ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d", "Adv_d", "v_d"))
 
         // Updates: temperature_d, h_d, hh_d, pt_d, pth_d, gtil_d, gtilh_d
+        check_h = false;
+        cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
+        update_temperature_Rd_Cp<<<NBALL1, NTH>>>(temperature_d,
+                                                  Rd_d,
+                                                  Cp_d,
+                                                  pressurek_d,
+                                                  Rhok_d,
+                                                  GibbsT_d,
+                                                  GibbsdG_d,
+                                                  GibbsN,
+                                                  point_num,
+                                                  check_d);
+
+        cudaDeviceSynchronize();
+        cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
+        if (check_h) {
+            log::printf("\n\n Ridder's method failed for T and Rd\n");
+            exit(EXIT_FAILURE);
+        }
+
         Compute_Temperature_H_Pt_Geff<<<(point_num / NTH) + 1, NTH>>>(temperature_d,
                                                                       pressurek_d,
                                                                       Rhok_d,
@@ -206,6 +228,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                                                       hh_d,
                                                                       pt_d,
                                                                       pth_d,
+                                                                      pt_tau_d,
                                                                       gtil_d,
                                                                       gtilh_d,
                                                                       Whk_d,
@@ -907,6 +930,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                             __FILE__,
                             __LINE__,
                             cudaGetErrorString(err));
+                exit(EXIT_FAILURE);
             }
 
             // update the physics modules in fast mode
@@ -932,6 +956,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                                      Whk_d,
                                                      pt_d,
                                                      pth_d,
+                                                     pt_tau_d,
                                                      SlowRho_d,
                                                      profx_dP_d,
                                                      diffpr_d,
@@ -962,6 +987,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                                     Whk_d,
                                                     pt_d,
                                                     pth_d,
+                                                    pt_tau_d,
                                                     SlowRho_d,
                                                     profx_dP_d,
                                                     diffpr_d,
