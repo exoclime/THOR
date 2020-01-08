@@ -454,9 +454,9 @@ __global__ void Density_Pressure_Eqs(double *pressure_d,
     // if (pt != pt_s[ir]) {
     //     printf("pt_t = %f, pt_tau = %f\n", pt_s[ir], pt);
     // }
-    if (id == 0) {
-        printf("pt(recalc) = %f, pt(prev) = %f\n", pt, pt_p);
-    }
+    // if (id == 0) {
+    //     printf("pt(recalc) = %f, pt(prev) = %f\n", pt, pt_p);
+    // }
 
     aux += pt * r;
     // aux += pt_s[ir]*r;
@@ -629,9 +629,9 @@ __global__ void Density_Pressure_Eqs_Poles(double *pressure_d,
 
             double pt; //, ptmp;
             // ptmp = pressure_d[id * nv + lev];
-            // pt   = (P_Ref / (Rd_d[id * nv + lev] * r))
-            //      * pow((ptmp + pressurek_d[id * nv + lev]) / P_Ref, Cv / Cp_d[id * nv + lev]);
-            pt = pt_tau_d[id * nv + lev];
+            pt = (P_Ref / (Rd_d[id * nv + lev] * r))
+                 * pow((ptmp + pressurek_d[id * nv + lev]) / P_Ref, Cv / Cp_d[id * nv + lev]);
+            // pt = pt_tau_d[id * nv + lev];
 
             // if (pressure_d[id * nv + lev] != 0 || Rho_d[id * nv + lev] != 0) {
             //     printf("p = %f, rho = %e \n", pressure_d[id * nv + lev], Rho_d[id * nv + lev]);
