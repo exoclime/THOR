@@ -118,14 +118,37 @@ __host__ __device__ int locate_max_i(double *array_d, int N, double val) {
     return id;
 }
 
-// __host__ double kprime(double *T, double *dG, double temperature, double pressure) {
-//     //calculates kprime from Equation 48 in Heng, Lyons, and Tsai 2016
-//     int imin, imax;
-//     imin         = locate_min_i(T, 61, temperature);
-//     imax         = locate_max_i(T, 61, temperature);
-//     double dGnew = linear_interpolation(T[imin], T[imax], dG[imin], dG[imax], temperature);
-//     return pressure / 1e5 * exp(2000 * dGnew / RUNIV / temperature);
-// }
+__host__ double guillot_T(double pressure, double Teq, double P_Ref, double Gravit) {
+    // Guillot profile (temperature is a function of optical depth/pressure)
+    // Based on Equation 27 of Guillot 2010 and Equation 41 of Heng+ 2011b
+
+    //somehow need to set this up to use user-set RT params
+    double Tint    = 100, T4;
+    double tau_lw0 = 1998;
+    double fl      = 0.5;
+    double tau0    = fl * tau_lw0;
+    double k0      = tau0 * Gravit / P_Ref;
+    double eps     = 1.0 / fl;
+    double tau_sw  = tau0 * 0.5;
+    double ksw     = tau_sw * Gravit / P_Ref;
+    double x0      = P_Ref / Gravit;
+    double gamma0  = ksw / k0;
+    double mu      = 0.5;
+
+    double klw    = k0 * (1.0 + 2 * (eps - 1) * pressure / P_Ref);
+    double x      = pressure / Gravit;
+    double tau    = k0 * x;
+    double tau_lw = tau0 * pressure / P_Ref + (eps - 1) * tau0 * pow(pressure / P_Ref, 2);
+    double gamma  = ksw / klw;
+
+    T4 = 0.75 * pow(Tint, 4) * (2. / 3 + tau_lw)
+         + 3 * mu * pow(Teq, 4)
+               * (2. / 3 + gamma / (3 * mu) * exp(-gamma0 * tau / mu)
+                  + mu / gamma0 * (1.0 - exp(-gamma0 * tau / mu))
+                  + 2 * (eps - 1) * mu / (gamma0 * ksw * x0)
+                        * (mu - (mu + gamma0 * tau) * exp(-gamma0 * tau / mu)));
+    return pow(T4, 0.25);
+}
 
 __host__ __device__ double chi_H_equilibrium(double *GibbsT,
                                              double *GibbsdG,

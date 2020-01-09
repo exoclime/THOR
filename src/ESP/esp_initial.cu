@@ -368,7 +368,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
     double chi_H, ptmp, eps = 1e-8, f, df, dz;
     int    it, it_max = 100;
 
-    double Rd_L, P_L;
+    double Rd_L, P_L, T_L;
     if (sim.rest) {
         // double Ha = sim.Rd * sim.Tmean / sim.Gravit;
         for (int i = 0; i < point_num; i++) {
@@ -378,16 +378,22 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
             for (int lev = 0; lev < nv; lev++) {
                 if (lev == 0) {
-                    chi_H = chi_H_equilibrium(GibbsT, GibbsdG, GibbsN, sim.Tmean, sim.P_Ref);
-                    P_L   = sim.P_Ref;
-                    Rd_L  = Rd_from_chi_H(chi_H);
-                    dz    = Altitude_h[0];
+                    temperature_h[i * nv + lev] =
+                        guillot_T(sim.P_Ref, sim.Tmean, sim.P_Ref, sim.Gravit);
+                    chi_H = chi_H_equilibrium(
+                        GibbsT, GibbsdG, GibbsN, temperature_h[i * nv + lev], sim.P_Ref);
+                    P_L  = sim.P_Ref;
+                    Rd_L = Rd_from_chi_H(chi_H);
+                    T_L  = temperature_h[i * nv + lev];
+                    dz   = Altitude_h[0];
                 }
                 else {
-                    chi_H = chi_H_equilibrium(
+                    temperature_h[i * nv + lev] = temperature_h[i * nv + lev - 1];
+                    chi_H                       = chi_H_equilibrium(
                         GibbsT, GibbsdG, GibbsN, sim.Tmean, pressure_h[i * nv + lev - 1]);
                     P_L  = pressure_h[i * nv + lev - 1];
                     Rd_L = Rd_h[i * nv + lev - 1];
+                    T_L  = temperature_h[i * nv + lev - 1];
                     dz   = Altitude_h[lev] - Altitude_h[lev - 1];
                 }
                 pressure_h[i * nv + lev] = P_L;
@@ -398,16 +404,23 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 while (it < it_max && ptmp - pressure_h[i * nv + lev] > eps) {
                     ptmp = pressure_h[i * nv + lev];
                     f    = log(pressure_h[i * nv + lev] / P_L) / dz
-                        + sim.Gravit / (0.5 * (Rd_h[i * nv + lev] + Rd_L) * sim.Tmean);
+                        + sim.Gravit
+                              / (0.5
+                                 * (Rd_h[i * nv + lev] * temperature_h[i * nv + lev] + Rd_L * T_L));
                     df                       = 1.0 / (pressure_h[i * nv + lev] * dz);
                     pressure_h[i * nv + lev] = pressure_h[i * nv + lev] - f / df;
-                    chi_H                    = chi_H_equilibrium(
-                        GibbsT, GibbsdG, GibbsN, sim.Tmean, pressure_h[i * nv + lev]);
+                    temperature_h[i * nv + lev] =
+                        guillot_T(pressure_h[i * nv + lev], sim.Tmean, sim.P_Ref, sim.Gravit);
+                    chi_H              = chi_H_equilibrium(GibbsT,
+                                              GibbsdG,
+                                              GibbsN,
+                                              temperature_h[i * nv + lev],
+                                              pressure_h[i * nv + lev]);
                     Rd_h[i * nv + lev] = Rd_from_chi_H(chi_H);
                     it++;
                 }
                 // pressure_h[i * nv + lev]    = sim.P_Ref * exp(-Altitude_h[lev] / Ha);
-                temperature_h[i * nv + lev] = sim.Tmean;
+                // temperature_h[i * nv + lev] = sim.Tmean;
                 // // }
                 // Rd_h[i * nv + lev] =
                 //     sim.Rd; //constant value for now, just to get code structures working
