@@ -118,12 +118,12 @@ __host__ __device__ int locate_max_i(double *array_d, int N, double val) {
     return id;
 }
 
-__host__ double guillot_T(double pressure, double Teq, double P_Ref, double Gravit) {
+__host__ double guillot_T(double pressure, double mu, double Teq, double P_Ref, double Gravit) {
     // Guillot profile (temperature is a function of optical depth/pressure)
     // Based on Equation 27 of Guillot 2010 and Equation 41 of Heng+ 2011b
 
     //somehow need to set this up to use user-set RT params
-    double Tint    = 100, T4;
+    double Tint    = 800, T4;
     double tau_lw0 = 1998;
     double fl      = 0.5;
     double tau0    = fl * tau_lw0;
@@ -133,7 +133,7 @@ __host__ double guillot_T(double pressure, double Teq, double P_Ref, double Grav
     double ksw     = tau_sw * Gravit / P_Ref;
     double x0      = P_Ref / Gravit;
     double gamma0  = ksw / k0;
-    double mu      = 0.5;
+    //  double mu      = 0.5;
 
     double klw    = k0 * (1.0 + 2 * (eps - 1) * pressure / P_Ref);
     double x      = pressure / Gravit;

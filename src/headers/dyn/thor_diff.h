@@ -246,13 +246,23 @@ __global__ void Diffusion_Op(double* diffmh_d,
             pt3 = (y + 2) * nhl + x + 2;
         }
 
-        if (laststep)
-            vdiff = 0.5 * rscale * (2.0 * Rho_s[ir] + Rho_s[pt1] + 2.0 * Rho_s[pt2] + Rho_s[pt3])
-                    * o6 * sdiff;
+        if (laststep) {
+            if (var == 0) {
+                vdiff = 0.5 * rscale * sdiff;
+            }
+            else {
+                vdiff = 0.5 * rscale
+                        * (2.0 * Rho_s[ir] + Rho_s[pt1] + 2.0 * Rho_s[pt2] + Rho_s[pt3]) * o6
+                        * sdiff;
+            }
+        }
         else
             vdiff = 0.5 * rscale;
 
         if (j == 0) {
+            // lapi are the values 'a_s' the gradient will operate on and INCLUDE the
+            // correction terms from the gradient calculation, where the
+            // value at the center of the triangle is interpolated as 1/3*(a_s1+a_s2+a_s3)
             AT1  = rscale / areasTr_d[id * 6 + j];
             lap1 = o6 * (a_s[ir] + a_s[pt1]) - o3 * a_s[pt2];
             lap2 = o6 * (a_s[pt1] + a_s[pt2]) - o3 * a_s[ir];
@@ -264,6 +274,7 @@ __global__ void Diffusion_Op(double* diffmh_d,
         lap6 = o6 * (a_s[ir] + a_s[pt3]) - o3 * a_s[pt2];
 
         if (j == 0) {
+            // gradient calculation around triangle centered at two corners of control volume
             lapx1 =
                 (-lap1 * nvecti_d[id * 6 * 3 + j * 3 + 0] + lap2 * nvecte_d[id * 6 * 3 + j * 3 + 0]
                  + lap3 * nvecti_d[id * 6 * 3 + jp1 * 3 + 0])
@@ -295,6 +306,7 @@ __global__ void Diffusion_Op(double* diffmh_d,
                     * AT2;
         }
         else {
+            // gradient calculation at next two corners of control volume
             lapx1 = lapx2;
 
             lapx2 = (-lap4 * nvecti_d[id * 6 * 3 + jp1 * 3 + 0]
@@ -317,6 +329,7 @@ __global__ void Diffusion_Op(double* diffmh_d,
                     * AT2;
         }
 
+        // divergence of gradient (sum over j)
         lap += ((lapx1 + lapx2) * nvecoa_d[id * 6 * 3 + j * 3 + 0]
                 + (lapy1 + lapy2) * nvecoa_d[id * 6 * 3 + j * 3 + 1]
                 + (lapz1 + lapz2) * nvecoa_d[id * 6 * 3 + j * 3 + 2])
@@ -489,9 +502,15 @@ __global__ void Diffusion_Op_Poles(double* diffmh_d,
             kp1   = (k + 1) % 5;
             kp2   = (k + 2) % 5;
 
-            if (laststep)
-                vdiff = 0.5 * sdiff * rscale
-                        * (2.0 * Rho_p[0] + Rho_p[j] + 2.0 * Rho_p[jp1] + Rho_p[jp2]) * o6;
+            if (laststep) {
+                if (var == 0) {
+                    vdiff = 0.5 * sdiff * rscale;
+                }
+                else {
+                    vdiff = 0.5 * sdiff * rscale
+                            * (2.0 * Rho_p[0] + Rho_p[j] + 2.0 * Rho_p[jp1] + Rho_p[jp2]) * o6;
+                }
+            }
             else
                 vdiff = 0.5 * rscale;
 

@@ -321,7 +321,7 @@ if 'Tsurf' in pview:
 
 #--- Pressure profile types-------------------------------
 if 'TP' in pview:
-    z = {'value': output.Pressure/input.Rd/output.Rho, 'label':'Temperature (K)', 'name':'T' }
+    z = {'value': output.Pressure/output.Rd/output.Rho, 'label':'Temperature (K)', 'name':'T' }
     #ham.TPprof(input,grid,output,sigmaref,1902)
     ham.profile(input,grid,output,z)
 if 'PTP' in pview:

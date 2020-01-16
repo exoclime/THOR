@@ -168,6 +168,9 @@ class output:
         self.flw_dn = np.zeros((grid.point_num,grid.nvi,nts-ntsi+1))
         self.fsw_dn = np.zeros((grid.point_num,grid.nvi,nts-ntsi+1))
 
+        self.Rd = np.zeros((grid.point_num,grid.nv,nts-ntsi+1))
+        self.Cp = np.zeros((grid.point_num,grid.nv,nts-ntsi+1))
+
         # Read model results
         for t in np.arange(ntsi-1,nts,stride):
             fileh5 = resultsf+'/esp_output_'+simID+'_'+np.str(t+1)+'.h5'
@@ -182,6 +185,9 @@ class output:
             Whi = openh5['Wh'][...]
             time = openh5['simulation_time'][0]/86400
             nstep = openh5['nstep'][0]
+
+            Rdi = openh5['Rd'][...]
+            Cpi = openh5['Cp'][...]
             if 'Etotal' in openh5.keys():
                 Etotali = openh5['Etotal'][...]
                 Massi = openh5['Mass'][...]
@@ -228,6 +234,9 @@ class output:
             self.Mh[1,:,:,t-ntsi+1] = np.reshape(Mhi[1::3],(grid.point_num,grid.nv))
             self.Mh[2,:,:,t-ntsi+1] = np.reshape(Mhi[2::3],(grid.point_num,grid.nv))
             self.Wh[:,:,t-ntsi+1] = np.reshape(Whi,(grid.point_num,grid.nvi))
+            self.Rd[:,:,t-ntsi+1] = np.reshape(Rdi,(grid.point_num,grid.nv))
+            self.Cp[:,:,t-ntsi+1] = np.reshape(Cpi,(grid.point_num,grid.nv))
+
             self.time[t-ntsi+1] = time
             self.nstep[t-ntsi+1] = nstep
             if 'Etotali' in locals():

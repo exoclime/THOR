@@ -177,9 +177,13 @@ __host__ void ESP::output(int                    fidx, // Index of output file
         //      CP
         s.append_value(sim.Cp, "/Cp", "J/(Kg K)", "Specific heat capacity");
         //      SpongeLayer option
-        s.append_value(sim.SpongeLayer ? 1.0 : 0.0, "/SpongeLayer", "-", "Using SpongeLayer?");
         s.append_value(
-            sim.TempSponge ? 1.0 : 0.0, "/TempSponge", "-", "Using thermal SpongeLayer?");
+            sim.RayleighSponge ? 1.0 : 0.0, "/RayleighSponge", "-", "Using Rayleigh SpongeLayer?");
+        s.append_value(
+            sim.RayleighSpongeT ? 1.0 : 0.0, "/RayleighSpongeT", "-", "Using thermal SpongeLayer?");
+
+        s.append_value(
+            sim.DiffSponge ? 1.0 : 0.0, "/DiffSponge", "-", "Using Diffusive SpongeLayer?");
 
         //      DeepModel option
         s.append_value(sim.DeepModel ? 1.0 : 0.0, "/DeepModel", "-", "Using Deep Model");
@@ -216,13 +220,20 @@ __host__ void ESP::output(int                    fidx, // Index of output file
         //      core_benchmark  option
         s.append_value(
             int(core_benchmark), "/core_benchmark", "-", "Using benchmark forcing or RT");
-        if (sim.SpongeLayer) {
+        if (sim.RayleighSponge) {
             //      nlat
-            s.append_value(nlat, "/nlat", "-", "number of lat rings for sponge layer");
+            s.append_value(
+                nlat_bins, "/nlat_bins", "-", "number of lat rings for Rayleigh sponge layer");
             //      ns
-            s.append_value(ns_sponge, "/ns_sponge", "-", "Bottom of sponge layer");
+            s.append_value(ns_ray_sponge, "/ns_ray_sponge", "-", "Bottom of rayleigh sponge layer");
             //      Rv
-            s.append_value(Rv_sponge, "/Rv_sponge", "1/s", "Strength of sponge layer");
+            s.append_value(Ruv_sponge,
+                           "/Ruv_sponge",
+                           "1/s",
+                           "Strength of Rayleigh sponge layer (uv components)");
+            //      Rv
+            s.append_value(
+                Rw_sponge, "/Rw_sponge", "1/s", "Strength of Rayleigh sponge layer (w component)");
         }
 
         // store module name in the description

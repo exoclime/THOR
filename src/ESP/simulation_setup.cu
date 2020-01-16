@@ -78,10 +78,12 @@ SimulationSetup::SimulationSetup() {
     HyDiff   = true;
     DivDampP = true;
 
-    NonHydro    = true;
-    DeepModel   = true;
-    SpongeLayer = false;
-    conv_adj    = 1;
+    NonHydro        = true;
+    DeepModel       = true;
+    RayleighSponge  = false;
+    RayleighSpongeT = false;
+    DiffSponge      = false;
+    conv_adj        = 1;
 
     gcm_off      = false;
     conservation = false;

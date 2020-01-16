@@ -74,7 +74,6 @@ public:
     const int    nvi;
     const int    nl_region;
     const int    nr;
-    const int    nlat;
     const int    glevel;
     const bool   spring_dynamics;
     const double spring_beta;
@@ -122,11 +121,23 @@ public:
 
     bool check_h;
 
-    int *  zonal_mean_tab_h;
-    double Rv_sponge;
-    double RvT_sponge;
-    double ns_sponge;
+    // sponge layer settings and variables
     double t_shrink;
+    // Rayleigh sponge
+    int *                 zonal_mean_tab_h;
+    double                Ruv_sponge;
+    double                Rw_sponge;
+    double                RT_sponge;
+    double                ns_ray_sponge;
+    const int             nlat_bins;
+    bool                  damp_uv_to_mean;
+    bool                  damp_w_to_mean;
+    raysp_calc_mode_types raysp_calc_mode;
+    // Diffusive sponge
+    double    Duv_sponge;
+    double    Dw_sponge;
+    double    ns_diff_sponge;
+    const int order_diff_sponge;
 
     //  energy, ang momentum and mass conservation
     double *Etotal_h;     //total energy (internal+kinetic+gravit) in control volume
@@ -285,39 +296,47 @@ public:
 
     //  Functions
     // Constructor, receives all grid parameters
-    ESP(int *           point_local_,
-        int *           maps_,
-        double *        lonlat_,
-        double *        Altitude_,
-        double *        Altitudeh_,
-        double *        nvecoa_,
-        double *        nvecti_,
-        double *        nvecte_,
-        double *        areasT_,
-        double *        areasTr_,
-        double *        div_,
-        double *        grad_,
-        double *        curlz_,
-        double *        func_r_,
-        int             nl_region_,
-        int             nr_,
-        int             nv_,
-        int             nvi_,
-        int             glevel_,
-        bool            spring_dynamics_,
-        double          spring_beta_,
-        int             nlat_,
-        int *           zonal_mean_tab,
-        double          Rv_sponge_,
-        double          RvT_sponge_,
-        double          ns_sponge_,
-        double          t_shrink_,
-        int             point_num_,
-        bool            conservation,
-        benchmark_types core_benchmark_,
-        log_writer &    logwriter_,
-        int             max_count_,
-        bool            output_mean);
+    ESP(int *                 point_local_,
+        int *                 maps_,
+        double *              lonlat_,
+        double *              Altitude_,
+        double *              Altitudeh_,
+        double *              nvecoa_,
+        double *              nvecti_,
+        double *              nvecte_,
+        double *              areasT_,
+        double *              areasTr_,
+        double *              div_,
+        double *              grad_,
+        double *              curlz_,
+        double *              func_r_,
+        int                   nl_region_,
+        int                   nr_,
+        int                   nv_,
+        int                   nvi_,
+        int                   glevel_,
+        bool                  spring_dynamics_,
+        double                spring_beta_,
+        int                   nlat_bins_,
+        int *                 zonal_mean_tab,
+        double                Ruv_sponge_,
+        double                Rw_sponge_,
+        double                RT_sponge_,
+        double                ns_ray_sponge_,
+        bool                  damp_uv_to_mean_,
+        bool                  damp_w_to_mean_,
+        double                Duv_sponge_,
+        double                Dw_sponge_,
+        double                ns_diff_sponge_,
+        int                   order_diff_sponge_,
+        double                t_shrink_,
+        int                   point_num_,
+        bool                  conservation,
+        benchmark_types       core_benchmark_,
+        log_writer &          logwriter_,
+        int                   max_count_,
+        bool                  output_mean,
+        init_PT_profile_types init_PT_profile_);
 
     ~ESP();
 
@@ -509,6 +528,8 @@ public:
 private:
     // store if we run benchmarks
     benchmark_types core_benchmark;
+
+    init_PT_profile_types init_PT_profile;
 
     // run physics modules
     bool phy_modules_execute;

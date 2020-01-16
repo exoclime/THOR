@@ -61,50 +61,62 @@
 // physical modules
 #include "phy_modules.h"
 
-__host__ ESP::ESP(int *           point_local_,
-                  int *           maps_,
-                  double *        lonlat_,
-                  double *        Altitude_,
-                  double *        Altitudeh_,
-                  double *        nvecoa_,
-                  double *        nvecti_,
-                  double *        nvecte_,
-                  double *        areasT_,
-                  double *        areasTr_,
-                  double *        div_,
-                  double *        grad_,
-                  double *        curlz_,
-                  double *        func_r_,
-                  int             nl_region_,
-                  int             nr_,
-                  int             nv_,
-                  int             nvi_,
-                  int             glevel_,
-                  bool            spring_dynamics_,
-                  double          spring_beta_,
-                  int             nlat_,
-                  int *           zonal_mean_tab,
-                  double          Rv_sponge_,
-                  double          RvT_sponge_,
-                  double          ns_sponge_,
-                  double          t_shrink_,
-                  int             point_num_,
-                  bool            conservation,
-                  benchmark_types core_benchmark_,
-                  log_writer &    logwriter_,
-                  int             max_count_,
-                  bool            output_mean) :
+__host__ ESP::ESP(int *                 point_local_,
+                  int *                 maps_,
+                  double *              lonlat_,
+                  double *              Altitude_,
+                  double *              Altitudeh_,
+                  double *              nvecoa_,
+                  double *              nvecti_,
+                  double *              nvecte_,
+                  double *              areasT_,
+                  double *              areasTr_,
+                  double *              div_,
+                  double *              grad_,
+                  double *              curlz_,
+                  double *              func_r_,
+                  int                   nl_region_,
+                  int                   nr_,
+                  int                   nv_,
+                  int                   nvi_,
+                  int                   glevel_,
+                  bool                  spring_dynamics_,
+                  double                spring_beta_,
+                  int                   nlat_bins_,
+                  int *                 zonal_mean_tab,
+                  double                Ruv_sponge_,
+                  double                Rw_sponge_,
+                  double                RT_sponge_,
+                  double                ns_ray_sponge_,
+                  bool                  damp_uv_to_mean_,
+                  bool                  damp_w_to_mean_,
+                  double                Duv_sponge_,
+                  double                Dw_sponge_,
+                  double                ns_diff_sponge_,
+                  int                   order_diff_sponge_,
+                  double                t_shrink_,
+                  int                   point_num_,
+                  bool                  conservation,
+                  benchmark_types       core_benchmark_,
+                  log_writer &          logwriter_,
+                  int                   max_count_,
+                  bool                  output_mean,
+                  init_PT_profile_types init_PT_profile_) :
     nl_region(nl_region_),
     nr(nr_),
     point_num(point_num_),
     nv(nv_),
     nvi(nvi_),
-    nlat(nlat_),
+    nlat_bins(nlat_bins_),
+    order_diff_sponge(order_diff_sponge_),
+    damp_uv_to_mean(damp_uv_to_mean_),
+    damp_w_to_mean(damp_w_to_mean_),
     glevel(glevel_),
     spring_dynamics(spring_dynamics_),
     spring_beta(spring_beta_),
     logwriter(logwriter_),
-    core_benchmark(core_benchmark_) {
+    core_benchmark(core_benchmark_),
+    init_PT_profile(init_PT_profile_) {
 
     point_local_h = point_local_;
     maps_h        = maps_;
@@ -128,11 +140,17 @@ __host__ ESP::ESP(int *           point_local_,
 
     zonal_mean_tab_h = zonal_mean_tab;
 
-    Rv_sponge  = Rv_sponge_;
-    RvT_sponge = RvT_sponge_;
-    ns_sponge  = ns_sponge_;
-    t_shrink   = t_shrink_;
-    max_count  = max_count_;
+    Ruv_sponge     = Ruv_sponge_;
+    Rw_sponge      = Rw_sponge_;
+    RT_sponge      = RT_sponge_;
+    ns_ray_sponge  = ns_ray_sponge_;
+    Duv_sponge     = Duv_sponge;
+    Dw_sponge      = Dw_sponge;
+    ns_diff_sponge = ns_diff_sponge;
+
+    t_shrink  = t_shrink_;
+    max_count = max_count_;
+
 
     // Set the physics module execute state for the rest of the lifetime of ESP object
     // only execute physics modules when no benchmarks are enabled
@@ -302,19 +320,19 @@ __host__ void ESP::alloc_data(bool conservation, bool output_mean) {
     //  Extras-nan
     cudaMalloc((void **)&check_d, sizeof(bool));
 
-    cudaMalloc((void **)&vbar_d, 3 * nv * nlat * sizeof(double));
+    cudaMalloc((void **)&vbar_d, 3 * nv * nlat_bins * sizeof(double));
     cudaMalloc((void **)&zonal_mean_tab_d, 3 * point_num * sizeof(int));
-    vbar_h = (double *)malloc(3 * nv * nlat * sizeof(double));
-    cudaMalloc((void **)&utmp, nv * nlat * max_count * sizeof(double));
-    cudaMalloc((void **)&vtmp, nv * nlat * max_count * sizeof(double));
-    cudaMalloc((void **)&wtmp, nv * nlat * max_count * sizeof(double));
-    utmp_h = (double *)malloc(nv * nlat * max_count * sizeof(double));
-    vtmp_h = (double *)malloc(nv * nlat * max_count * sizeof(double));
-    wtmp_h = (double *)malloc(nv * nlat * max_count * sizeof(double));
-    cudaMalloc((void **)&Tbar_d, nv * nlat * sizeof(double));
-    Tbar_h = (double *)malloc(nv * nlat * sizeof(double));
-    cudaMalloc((void **)&Ttmp, nv * nlat * max_count * sizeof(double));
-    Ttmp_h = (double *)malloc(nv * nlat * max_count * sizeof(double));
+    vbar_h = (double *)malloc(3 * nv * nlat_bins * sizeof(double));
+    cudaMalloc((void **)&utmp, nv * nlat_bins * max_count * sizeof(double));
+    cudaMalloc((void **)&vtmp, nv * nlat_bins * max_count * sizeof(double));
+    cudaMalloc((void **)&wtmp, nv * nlat_bins * max_count * sizeof(double));
+    utmp_h = (double *)malloc(nv * nlat_bins * max_count * sizeof(double));
+    vtmp_h = (double *)malloc(nv * nlat_bins * max_count * sizeof(double));
+    wtmp_h = (double *)malloc(nv * nlat_bins * max_count * sizeof(double));
+    cudaMalloc((void **)&Tbar_d, nv * nlat_bins * sizeof(double));
+    Tbar_h = (double *)malloc(nv * nlat_bins * sizeof(double));
+    cudaMalloc((void **)&Ttmp, nv * nlat_bins * max_count * sizeof(double));
+    Ttmp_h = (double *)malloc(nv * nlat_bins * max_count * sizeof(double));
 
     if (conservation == true) {
         //  Conservation quantities
@@ -365,7 +383,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
     //
     //  Initial atmospheric conditions
     bool   read_gibbs = read_in_gibbs_H(GibbsN); //ultrahot jup
-    double chi_H, ptmp, eps = 1e-8, f, df, dz;
+    double chi_H, ptmp, eps = 1e-8, f, df, dz, mu;
     int    it, it_max = 100;
 
     double Rd_L, P_L, T_L;
@@ -375,11 +393,16 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
             //
             //          Initial conditions for an isothermal Atmosphere
             //
+            // mu = cos(lonlat_h[i * 2 + 1]) * cos(lonlat_h[i * 2]);
+            // if (mu < 0)
+            //     mu = 0.0;
+            mu = 0.5;
 
             for (int lev = 0; lev < nv; lev++) {
                 if (lev == 0) {
                     temperature_h[i * nv + lev] =
-                        guillot_T(sim.P_Ref, sim.Tmean, sim.P_Ref, sim.Gravit);
+                        guillot_T(sim.P_Ref, mu, sim.Tmean, sim.P_Ref, sim.Gravit);
+                    // temperature_h[i * nv + lev] = sim.Tmean;
                     chi_H = chi_H_equilibrium(
                         GibbsT, GibbsdG, GibbsN, temperature_h[i * nv + lev], sim.P_Ref);
                     P_L  = sim.P_Ref;
@@ -410,7 +433,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                     df                       = 1.0 / (pressure_h[i * nv + lev] * dz);
                     pressure_h[i * nv + lev] = pressure_h[i * nv + lev] - f / df;
                     temperature_h[i * nv + lev] =
-                        guillot_T(pressure_h[i * nv + lev], sim.Tmean, sim.P_Ref, sim.Gravit);
+                        guillot_T(pressure_h[i * nv + lev], mu, sim.Tmean, sim.P_Ref, sim.Gravit);
+                    // temperature_h[i * nv + lev] = sim.Tmean;
                     chi_H              = chi_H_equilibrium(GibbsT,
                                               GibbsdG,
                                               GibbsN,
@@ -671,9 +695,18 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
     Kdh4_h = new double[nv]; // horizontal diffusion strength
     for (int lev = 0; lev < nv; lev++) {
         //      Diffusion constant.
+        // n = Altitude_h[lev] / sim.Top_altitude;
+        // if (n > ns_sponge) {
+        //     kv = Rv_sponge * pow(sin(0.5 * M_PI * (n - ns_sponge) / (1.0 - ns_sponge)), 2);
+        // }
+        // else {
+        //     kv = 0;
+        // }
         double dbar = sqrt(2 * M_PI / 5) * sim.A / (pow(2, glevel));
-        Kdh4_h[lev] = sim.Diffc * pow(dbar, 4.) / timestep_dyn;
-        Kdhz_h[lev] = sim.DivDampc * pow(dbar, 4.) / timestep_dyn;
+        Kdh4_h[lev] =
+            (sim.Diffc) * pow(dbar, 4.) / timestep_dyn; // * Altitude_h[lev]/sim.Top_altitude;
+        Kdhz_h[lev] =
+            (sim.DivDampc) * pow(dbar, 4.) / timestep_dyn; // * Altitude_h[lev]/sim.Top_altitude;
     }
 
     //  Diffusion
@@ -726,7 +759,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
         cudaMemcpy(Rho_mean_d, Rho_h, point_num * nv * sizeof(double), cudaMemcpyHostToDevice);
     }
 
-    if (sim.SpongeLayer == true)
+    if (sim.RayleighSponge == true)
         cudaMemcpy(zonal_mean_tab_d,
                    zonal_mean_tab_h,
                    3 * point_num * sizeof(int),

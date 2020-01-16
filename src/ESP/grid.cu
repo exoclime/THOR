@@ -218,7 +218,7 @@ __host__ Icogrid::Icogrid(bool   sprd,        // Spring dynamics option
     div = (double *)malloc(7 * 3 * point_num * sizeof(double));
     div_operator(areasT, areas, div, nvec, pent_ind, point_num);
 
-    //  Computes the gradiente operator.
+    //  Computes the gradient operator.
     grad = (double *)malloc(7 * 3 * point_num * sizeof(double));
     gra_operator(areasT, areas, grad, nvec, pent_ind, point_num);
 

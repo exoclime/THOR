@@ -74,7 +74,7 @@ __device__ __host__ double heat_capacity_H2(double temperature);
 
 __device__ __host__ double Cp_from_chi_H(double chi_H, double temperature);
 
-__host__ double guillot_T(double pressure, double Teq, double P_Ref, double Gravit);
+__host__ double guillot_T(double pressure, double mu, double Teq, double P_Ref, double Gravit);
 
 __device__ double linear_interpolation_device(double x1, double x2, double y1, double y2, double x);
 

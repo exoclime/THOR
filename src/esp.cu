@@ -247,25 +247,47 @@ int main(int argc, char** argv) {
     config_reader.append_config_var("DivDampP", sim.DivDampP, DivDampP_default);
 
     // Model options
-
-    int    nlat          = 20;
-    double Rv_sponge     = 1e-4;
-    double RvT_sponge    = 1e-4;
-    double ns_sponge     = 0.75;
-    bool   shrink_sponge = false;
-    int    t_shrink      = 144000; // number of time steps after which shrink begins
-
     config_reader.append_config_var("NonHydro", sim.NonHydro, NonHydro_default);
     config_reader.append_config_var("DeepModel", sim.DeepModel, DeepModel_default);
-    config_reader.append_config_var("SpongeLayer", sim.SpongeLayer, SpongeLayer_default);
-    config_reader.append_config_var("nlat", nlat, nlat_default);
-    config_reader.append_config_var("Rv_sponge", Rv_sponge, Rv_sponge_default);
-    config_reader.append_config_var("RvT_sponge", RvT_sponge, RvT_sponge_default);
-    config_reader.append_config_var("ns_sponge", ns_sponge, ns_sponge_default);
+    config_reader.append_config_var("output_mean", sim.output_mean, output_mean_default);
+
+    // top sponge layer options
+    int    nlat_bins;
+    double Ruv_sponge;
+    double Rw_sponge;
+    double RT_sponge;
+    double ns_ray_sponge;
+    bool   shrink_sponge;
+    int    t_shrink; // number of time steps after which shrink begins
+    bool   damp_uv_to_mean;
+    bool   damp_w_to_mean;
+    double Duv_sponge;
+    double Dw_sponge;
+    double ns_diff_sponge;
+    int    order_diff_sponge;
+    string raysp_calc_mode_str("imp");
+
+    config_reader.append_config_var("RayleighSponge", sim.RayleighSponge, RayleighSponge_default);
+    config_reader.append_config_var(
+        "RayleighSpongeT", sim.RayleighSpongeT, RayleighSpongeT_default);
+    config_reader.append_config_var("DiffSponge", sim.DiffSponge, DiffSponge_default);
     config_reader.append_config_var("shrink_sponge", shrink_sponge, shrink_sponge_default);
     config_reader.append_config_var("t_shrink", t_shrink, t_shrink_default);
 
-    config_reader.append_config_var("output_mean", sim.output_mean, output_mean_default);
+    config_reader.append_config_var(
+        "raysp_calc_mode", raysp_calc_mode_str, string(raysp_calc_mode_default));
+    config_reader.append_config_var("nlat_bins", nlat_bins, nlat_bins_default);
+    config_reader.append_config_var("Ruv_sponge", Ruv_sponge, Ruv_sponge_default);
+    config_reader.append_config_var("Rw_sponge", Rw_sponge, Rw_sponge_default);
+    config_reader.append_config_var("RT_sponge", RT_sponge, RT_sponge_default);
+    config_reader.append_config_var("ns_ray_sponge", ns_ray_sponge, ns_ray_sponge_default);
+    config_reader.append_config_var("damp_uv_to_mean", damp_uv_to_mean, damp_uv_to_mean_default);
+    config_reader.append_config_var("damp_w_to_mean", damp_w_to_mean, damp_w_to_mean_default);
+    config_reader.append_config_var("Duv_sponge", Duv_sponge, Duv_sponge_default);
+    config_reader.append_config_var("Dw_sponge", Dw_sponge, Dw_sponge_default);
+    config_reader.append_config_var("ns_diff_sponge", ns_diff_sponge, ns_diff_sponge_default);
+    config_reader.append_config_var(
+        "order_diff_sponge", order_diff_sponge, order_diff_sponge_default);
 
     // Initial conditions
     // rest supersedes initial condition entry,
@@ -296,6 +318,21 @@ int main(int argc, char** argv) {
     config_reader.append_config_var("gcm_off", sim.gcm_off, gcm_off_default);
 
     config_reader.append_config_var("conservation", sim.conservation, conservation_default);
+
+    // Init PT profile
+    string init_PT_profile_str("isothermal");
+    config_reader.append_config_var(
+        "init_PT_profile", init_PT_profile_str, string(init_PT_profile_default)); //
+
+    // ultrahot thermodynamics
+    string uh_thermo_str("none");
+    config_reader.append_config_var("ultrahot_thermo", uh_thermo_str, string(uh_thermo_default)); //
+
+    // ultrahot heating from H-H2 dissociation/recombination
+    string uh_heating_str("none");
+    config_reader.append_config_var(
+        "ultrahot_heating", uh_heating_str, string(uh_heating_default)); //
+
     //*****************************************************************
     // read configs for modules
     phy_modules_generate_config(config_reader);
@@ -454,6 +491,102 @@ int main(int argc, char** argv) {
         config_OK &= false;
     }
 
+    // check init pt profile string
+    init_PT_profile_types init_PT_profile = ISOTHERMAL;
+
+    if (init_PT_profile_str == "isothermal") {
+        init_PT_profile = ISOTHERMAL;
+        config_OK &= true;
+    }
+    else if (init_PT_profile_str == "guillot") {
+        init_PT_profile = GUILLOT;
+        config_OK &= true;
+    }
+    else {
+        log::printf("init_PT_profile config item not recognised: [%s]\n",
+                    init_PT_profile_str.c_str());
+        config_OK &= false;
+    }
+
+    // check ultrahot thermo string
+    uh_thermo_types ultrahot_thermo = NO_UH_THERMO;
+
+    if (uh_thermo_str == "none") {
+        ultrahot_thermo = NO_UH_THERMO;
+        config_OK &= true;
+    }
+    else if (uh_thermo_str == "vary_R_CP") {
+        ultrahot_thermo = VARY_R_CP;
+        config_OK &= true;
+    }
+    else if (uh_thermo_str == "full") {
+        ultrahot_thermo = FULL;
+        log::printf("ultrahot_thermo option 'full' not ready yet \n");
+        config_OK &= false;
+    }
+    else {
+        log::printf("ultrahot_thermo config item not recognised: [%s]\n", uh_thermo_str.c_str());
+        config_OK &= false;
+    }
+
+    // check ultrahot heating string
+    uh_heating_types ultrahot_heating = NO_UH_HEATING;
+
+    if (uh_heating_str == "none") {
+        ultrahot_heating = NO_UH_HEATING;
+        config_OK &= true;
+    }
+    else if (uh_heating_str == "pseudo_eql") {
+        ultrahot_heating = PSEUDO_EQL;
+        log::printf("ultrahot_heating option 'pseudo_eql' not ready yet \n");
+        config_OK &= false;
+    }
+    else if (uh_heating_str == "relax_chem") {
+        ultrahot_heating = RELAX_CHEM;
+        log::printf("ultrahot_heating option 'relax_chem' not ready yet \n");
+        config_OK &= false;
+    }
+    else {
+        log::printf("ultrahot_heating config item not recognised: [%s]\n", uh_heating_str.c_str());
+        config_OK &= false;
+    }
+
+    bool initialize_zonal_mean = false;
+    if (sim.RayleighSponge) {
+        raysp_calc_mode_types raysp_calc_mode = IMP;
+
+        if (raysp_calc_mode_str == "imp") {
+            raysp_calc_mode = IMP;
+            config_OK &= true;
+        }
+        else if (raysp_calc_mode_str == "exp1") {
+            raysp_calc_mode = EXP1;
+            config_OK &= true;
+        }
+        else if (raysp_calc_mode_str == "exp3") {
+            raysp_calc_mode = EXP3;
+            config_OK &= true;
+        }
+        else {
+            log::printf("raysp_calc_mode config item not recognised: [%s]\n",
+                        raysp_calc_mode_str.c_str());
+            config_OK &= false;
+        }
+
+        if (damp_uv_to_mean || damp_w_to_mean) {
+            initialize_zonal_mean = true;
+        }
+    }
+
+    if (sim.DiffSponge) {
+        if (order_diff_sponge == 2 || order_diff_sponge == 4) {
+            config_OK &= true;
+        }
+        else {
+            log::printf("order_diff_sponge config option can only be 2 or 4\n");
+            config_OK &= false;
+        }
+    }
 
     if (!config_OK) {
         log::printf("Error in configuration file\n");
@@ -640,14 +773,14 @@ int main(int argc, char** argv) {
     //
     //  Make the icosahedral grid
 
-    Icogrid Grid(spring_dynamics,  // Spring dynamics option
-                 spring_beta,      // Parameter beta for spring dynamics
-                 glevel,           // Horizontal resolution level
-                 vlevel,           // Number of vertical layers
-                 nlat,             // Number of lat rings for sponge layer
-                 sim.A,            // Planet radius
-                 sim.Top_altitude, // Top of the model's domain
-                 sim.SpongeLayer,  // Use sponge layer?
+    Icogrid Grid(spring_dynamics,       // Spring dynamics option
+                 spring_beta,           // Parameter beta for spring dynamics
+                 glevel,                // Horizontal resolution level
+                 vlevel,                // Number of vertical layers
+                 nlat_bins,             // Number of lat rings for sponge layer
+                 sim.A,                 // Planet radius
+                 sim.Top_altitude,      // Top of the model's domain
+                 initialize_zonal_mean, // Use zonal mean in rayleigh sponge layer?
                  &max_count);
 
     //  Define object X.
@@ -672,19 +805,27 @@ int main(int argc, char** argv) {
           glevel,              // Horizontal resolution level
           spring_dynamics,     // Spring dynamics option
           spring_beta,         // Parameter beta for spring dynamics
-          nlat,                // Number of latitude rings for zonal
+          nlat_bins,           // Number of latitude rings for zonal
                                // mean wind
           Grid.zonal_mean_tab, // table of zonal means for sponge layer
-          Rv_sponge,           // Maximum damping of sponge layer
-          RvT_sponge,          // Maximum damping of sponge layer (thermal component)
-          ns_sponge,           // lowest level of sponge layer (fraction of model)
-          t_shrink,            // time to shrink sponge layer
-          Grid.point_num,      // Number of grid points
-          sim.conservation,    // compute conservation values
-          core_benchmark,      // benchmark test type
-          logwriter,           // Log writer
+          Ruv_sponge,          // Maximum damping of sponge layer
+          Rw_sponge,           // Maximum damping of sponge layer
+          RT_sponge,
+          ns_ray_sponge, // lowest level of rayleigh sponge layer (fraction of model)
+          damp_uv_to_mean,
+          damp_w_to_mean,
+          Duv_sponge,
+          Dw_sponge,
+          ns_diff_sponge,
+          order_diff_sponge,
+          t_shrink,         // time to shrink sponge layer
+          Grid.point_num,   // Number of grid points
+          sim.conservation, // compute conservation values
+          core_benchmark,   // benchmark test type
+          logwriter,        // Log writer
           max_count,
-          sim.output_mean);
+          sim.output_mean,
+          init_PT_profile);
 
 
     USE_BENCHMARK();

@@ -56,10 +56,23 @@
 #define vlevel_default 32        // Number of vertical layers
 
 // Sponge layer
-#define nlat_default 20             // Number of latitude rings for mean zonal wind (sponge layer)
-#define Rv_sponge_default 1e-4      // Maximum damping (top of model)
-#define RvT_sponge_default 1e-4     // Maximum damping (top of model)
-#define ns_sponge_default 0.75      // Lowest level of sponge layer
+#define RayleighSponge_default false  // use sponge layer at top of model (rayleigh drag)
+#define RayleighSpongeT_default false // use T term in sponge layer (rayleigh drag)
+#define nlat_bins_default 20          // Number of latitude rings for mean zonal wind (sponge layer)
+#define Ruv_sponge_default 1e-4       // Maximum rayleigh damping (top of model)
+#define Rw_sponge_default 1e-4        // Maximum tayleigh damping (top of model)
+#define RT_sponge_default 1e-4        // Maximum damping (top of model)
+#define ns_ray_sponge_default 0.75    // Lowest level of sponge layer
+#define raysp_calc_mode_default "imp" // method for updating winds from rayleigh sponge
+#define damp_uv_to_mean_default true  // damps uv toward zonal mean (otherwise to zero)
+#define damp_w_to_mean_default true   // damps w toward zonal mean (otherwise to zero)
+
+#define DiffSponge_default false    // use diffusive sponge
+#define ns_diff_sponge_default 0.75 // Lowest level of sponge layer
+#define Duv_sponge_default 0.01     // Maximum diff damping (top of model)
+#define Dw_sponge_default 0.01      // Maximum diff damping (top of model)
+#define order_diff_sponge_default 2 // order of diffusive sponge
+
 #define shrink_sponge_default false // shrink sponge layer after some time
 #define t_shrink_default 144000     // shrink sponge after this many time steps
 
@@ -68,10 +81,9 @@
 #define DivDampP_default true // Divergence-damping
 
 // Model options
-#define NonHydro_default true     // Non-hydrostatic parameter
-#define DeepModel_default true    // Deep atmosphere
-#define SpongeLayer_default false // use sponge layer at top of model
-#define output_mean_default true  // output mean quantities
+#define NonHydro_default true    // Non-hydrostatic parameter
+#define DeepModel_default true   // Deep atmosphere
+#define output_mean_default true // output mean quantities
 
 // Initial conditions
 #define rest_default true                                 // Starting from rest
@@ -79,10 +91,6 @@
 
 // Benchmark test
 #define core_benchmark_default "HeldSuarez" // Held-Suarez test for Earth == "HeldSuarez"
-//  HS test for shallow hot Jupiter == "HSShallowHotJupiter"
-//  HS test for deep hot Jupiter == "HSDeepHotJupiter"
-//  HS test for tidally locked Earth == "HSTidallyLockedEarth"
-//  No HS test == "NoBenchmark"
 
 // GPU ID
 #define GPU_ID_N_default 0 // Set GPU ID number
@@ -99,6 +107,12 @@
 
 #define conv_adj_default 0 // use convective adjustment scheme
 
+#define init_PT_profile_default "isothermal"
+
+#define uh_thermo_default "none"
+
+#define uh_heating_default "none"
+
 enum benchmark_types {
     NO_BENCHMARK         = 0,
     HELD_SUAREZ          = 1,
@@ -109,3 +123,11 @@ enum benchmark_types {
     ACOUSTIC_TEST        = 6,
     GWAVE_TEST           = 7
 };
+
+enum init_PT_profile_types { ISOTHERMAL = 0, GUILLOT = 1 };
+
+enum uh_thermo_types { NO_UH_THERMO = 0, VARY_R_CP = 1, FULL = 2 };
+
+enum uh_heating_types { NO_UH_HEATING = 0, PSEUDO_EQL = 1, RELAX_CHEM = 2 };
+
+enum raysp_calc_mode_types { IMP = 0, EXP1 = 1, EXP3 = 2 };
