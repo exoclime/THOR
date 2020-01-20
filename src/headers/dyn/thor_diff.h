@@ -73,7 +73,10 @@ __global__ void Diffusion_Op(double* diffmh_d,
                              int*    maps_d,
                              int     nl_region,
                              bool    laststep,
-                             bool    DeepModel) {
+                             bool    DeepModel,
+                             bool    DiffSponge,
+                             int     order_diff_sponge,
+                             double* Kdh2_d) {
 
     int x = threadIdx.x;
     int y = threadIdx.y;
@@ -342,10 +345,20 @@ __global__ void Diffusion_Op(double* diffmh_d,
     if (laststep) {
         if (var == 0)
             diffrh_d[id * nv + lev] = lap;
-        if (var == 1)
+        if (var == 1) {
             diffmh_d[id * nv * 3 + lev * 3 + 0] = lap;
-        if (var == 2)
+            if (DiffSponge && order_diff_sponge == 2) {
+                diffmh_d[id * nv * 3 + lev * 3 + 0] +=
+                    Rho_d[id * nv + lev] * Kdh2_d[lev] * diff_d[id * nv * 6 + lev * 6 + var];
+            }
+        }
+        if (var == 2) {
             diffmh_d[id * nv * 3 + lev * 3 + 1] = lap;
+            if (DiffSponge && order_diff_sponge == 2) {
+                diffmh_d[id * nv * 3 + lev * 3 + 1] +=
+                    Rho_d[id * nv + lev] * Kdh2_d[lev] * diff_d[id * nv * 6 + lev * 6 + var];
+            }
+        }
         if (var == 3) { //zero out radial component
             // funcx = func_r_d[id * 3 + 0];
             // funcy = func_r_d[id * 3 + 1];
@@ -358,9 +371,18 @@ __global__ void Diffusion_Op(double* diffmh_d,
             // diffmh_d[id * nv * 3 + lev * 3 + 1] += -funcy * dmhr;
             // diffmh_d[id * nv * 3 + lev * 3 + 2] = dmhz - funcz * dmhr;
             diffmh_d[id * nv * 3 + lev * 3 + 2] = lap;
+            if (DiffSponge && order_diff_sponge == 2) {
+                diffmh_d[id * nv * 3 + lev * 3 + 2] +=
+                    Rho_d[id * nv + lev] * Kdh2_d[lev] * diff_d[id * nv * 6 + lev * 6 + var];
+            }
         }
-        if (var == 4)
+        if (var == 4) {
             diffw_d[id * nv + lev] = lap;
+            if (DiffSponge && order_diff_sponge == 2) {
+                diffw_d[id * nv + lev] +=
+                    Rho_d[id * nv + lev] * Kdh2_d[lev] * diff_d[id * nv * 6 + lev * 6 + var];
+            }
+        }
         if (var == 5)
             diffpr_d[id * nv + lev] = lap;
     }
@@ -391,7 +413,10 @@ __global__ void Diffusion_Op_Poles(double* diffmh_d,
                                    int*    local_d,
                                    int     num,
                                    bool    laststep,
-                                   bool    DeepModel) {
+                                   bool    DeepModel,
+                                   bool    DiffSponge,
+                                   int     order_diff_sponge,
+                                   double* Kdh2_d) {
 
     int id = blockIdx.x * blockDim.x + threadIdx.x;
     id += num - 2; // Poles
@@ -570,10 +595,20 @@ __global__ void Diffusion_Op_Poles(double* diffmh_d,
         if (laststep) {
             if (var == 0)
                 diffrh_d[id * nv + lev] = lap;
-            if (var == 1)
+            if (var == 1) {
                 diffmh_d[id * 3 * nv + lev * 3 + 0] = lap;
-            if (var == 2)
+                if (DiffSponge && order_diff_sponge == 2) {
+                    diffmh_d[id * nv * 3 + lev * 3 + 0] +=
+                        Rho_d[id * nv + lev] * Kdh2_d[lev] * diff_d[id * nv * 6 + lev * 6 + var];
+                }
+            }
+            if (var == 2) {
                 diffmh_d[id * 3 * nv + lev * 3 + 1] = lap;
+                if (DiffSponge && order_diff_sponge == 2) {
+                    diffmh_d[id * nv * 3 + lev * 3 + 1] +=
+                        Rho_d[id * nv + lev] * Kdh2_d[lev] * diff_d[id * nv * 6 + lev * 6 + var];
+                }
+            }
             if (var == 3) {
                 // funcx = func_r_d[id * 3 + 0];
                 // funcy = func_r_d[id * 3 + 1];
@@ -585,9 +620,18 @@ __global__ void Diffusion_Op_Poles(double* diffmh_d,
                 // diffmh_d[id * nv * 3 + lev * 3 + 1] += -funcy * dmhr;
                 // diffmh_d[id * nv * 3 + lev * 3 + 2] = dmhz - funcz * dmhr;
                 diffmh_d[id * 3 * nv + lev * 3 + 2] = lap;
+                if (DiffSponge && order_diff_sponge == 2) {
+                    diffmh_d[id * nv * 3 + lev * 3 + 2] +=
+                        Rho_d[id * nv + lev] * Kdh2_d[lev] * diff_d[id * nv * 6 + lev * 6 + var];
+                }
             }
-            if (var == 4)
+            if (var == 4) {
                 diffw_d[id * nv + lev] = lap;
+                if (DiffSponge && order_diff_sponge == 2) {
+                    diffw_d[id * nv + lev] +=
+                        Rho_d[id * nv + lev] * Kdh2_d[lev] * diff_d[id * nv * 6 + lev * 6 + var];
+                }
+            }
             if (var == 5)
                 diffpr_d[id * nv + lev] = lap;
         }

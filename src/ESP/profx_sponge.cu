@@ -47,17 +47,14 @@
 
 #include "phy/profx_sponge.h"
 
-__global__ void zonal_v(double *M_d,
-                        double *W_d,
-                        double *Rho_d,
-                        double *vbar_d,
-                        int *   zonal_mean_tab_d,
-                        double *lonlat_d,
-                        int     num,
-                        double *utmp,
-                        double *vtmp,
-                        double *wtmp,
-                        int     max_count) {
+__global__ void zonal_uv(double *M_d,
+                         double *Rho_d,
+                         int *   zonal_mean_tab_d,
+                         double *lonlat_d,
+                         int     num,
+                         double *utmp,
+                         double *vtmp,
+                         int     max_count) {
 
     int    id  = blockIdx.x * blockDim.x + threadIdx.x;
     int    nv  = gridDim.y;
@@ -85,6 +82,20 @@ __global__ void zonal_v(double *M_d,
             u / zonal_mean_tab_d[id * 3 + 1];
         vtmp[ind * nv * max_count + lev * max_count + zonal_mean_tab_d[id * 3 + 2]] =
             v / zonal_mean_tab_d[id * 3 + 1];
+    }
+}
+
+__global__ void
+zonal_w(double *W_d, double *Rho_d, int *zonal_mean_tab_d, int num, double *wtmp, int max_count) {
+
+    int id  = blockIdx.x * blockDim.x + threadIdx.x;
+    int nv  = gridDim.y;
+    int lev = blockIdx.y;
+
+    if (id < num) {
+        double rho = Rho_d[id * nv + lev];
+        int    ind = zonal_mean_tab_d[id * 3];
+
         wtmp[ind * nv * max_count + lev * max_count + zonal_mean_tab_d[id * 3 + 2]] =
             (W_d[id * nv + lev] / rho) / zonal_mean_tab_d[id * 3 + 1];
     }
@@ -97,7 +108,7 @@ __global__ void zonal_temp(double *pressure_d,
                            double *lonlat_d,
                            int     num,
                            double *Ttmp,
-                           double  Rd,
+                           double *Rd_d,
                            int     max_count) {
 
     //calculate zonal average temp for thermal sponge (aka Newtonian cooling)
@@ -110,7 +121,7 @@ __global__ void zonal_temp(double *pressure_d,
         double rho = Rho_d[id * nv + lev];
         int    ind = zonal_mean_tab_d[id * 3];
 
-        temperature = pressure_d[id * nv + lev] / Rd / rho;
+        temperature = pressure_d[id * nv + lev] / Rd_d[id * nv + lev] / rho;
 
         Ttmp[ind * nv * max_count + lev * max_count + zonal_mean_tab_d[id * 3 + 2]] =
             temperature / zonal_mean_tab_d[id * 3 + 1];
@@ -148,6 +159,7 @@ __global__ void sponge_layer(double *M_d,
                              double  nsi,
                              bool    damp_uv_to_mean,
                              bool    damp_w_to_mean,
+                             bool    implicit,
                              double  dt,
                              double *Rd_d,
                              int     nlat,
@@ -156,7 +168,8 @@ __global__ void sponge_layer(double *M_d,
                              bool    temp_sponge,
                              double *profx_dMh_d,
                              double *profx_dWh_d,
-                             double *profx_dW_d) {
+                             double *profx_dW_d,
+                             double *profx_dP_d) {
     //
     //  Description:
     //
@@ -171,7 +184,6 @@ __global__ void sponge_layer(double *M_d,
     double ns   = nsi;
     double ztop = Altitudeh_d[nv];
     double u, v, w;
-    double du, dv, dw;
     double vx, vy, vz;
     double rho;
     int    id = blockIdx.x * blockDim.x + threadIdx.x;
@@ -196,48 +208,93 @@ __global__ void sponge_layer(double *M_d,
             else
                 lon = lonlat_d[id * 2];
 
-            // retrieve zonal averages and interpolate if necessary
-            if (lat <= -M_PI / 2 + 0.5 * des_lat) {
-                //near poles, just use value in polar ring
-                vbu     = vbar_d[intlat * nv * 3 + lev * 3 + 0];
-                vbv     = vbar_d[intlat * nv * 3 + lev * 3 + 1];
-                vbw     = vbar_d[intlat * nv * 3 + lev * 3 + 2];
-                temp_av = Tbar_d[intlat * nv + lev];
-            }
-            else if (lat >= -M_PI / 2 + 0.5 * des_lat + des_lat * (nlat - 1)) {
-                //near poles, just use value in polar ring
-                vbu     = vbar_d[intlat * nv * 3 + lev * 3 + 0];
-                vbv     = vbar_d[intlat * nv * 3 + lev * 3 + 1];
-                vbw     = vbar_d[intlat * nv * 3 + lev * 3 + 2];
-                temp_av = Tbar_d[intlat * nv + lev];
-            }
-            else if (lat >= lat1 && lat < lat2) {
-                // interpolate between nearest rings to smooth over latitude
-                intt = (lat - lat2) / (lat1 - lat2);
-                intl = (lat - lat1) / (lat2 - lat1);
+            if (damp_uv_to_mean) {
+                // retrieve zonal averages and interpolate if necessary
+                if (lat <= -M_PI / 2 + 0.5 * des_lat) {
+                    //near poles, just use value in polar ring
+                    vbu = vbar_d[intlat * nv * 3 + lev * 3 + 0];
+                    vbv = vbar_d[intlat * nv * 3 + lev * 3 + 1];
+                }
+                else if (lat >= -M_PI / 2 + 0.5 * des_lat + des_lat * (nlat - 1)) {
+                    //near poles, just use value in polar ring
+                    vbu = vbar_d[intlat * nv * 3 + lev * 3 + 0];
+                    vbv = vbar_d[intlat * nv * 3 + lev * 3 + 1];
+                }
+                else if (lat >= lat1 && lat < lat2) {
+                    // interpolate between nearest rings to smooth over latitude
+                    intt = (lat - lat2) / (lat1 - lat2);
+                    intl = (lat - lat1) / (lat2 - lat1);
 
-                vbu = vbar_d[(intlat - 1) * nv * 3 + lev * 3 + 0] * intt
-                      + vbar_d[intlat * nv * 3 + lev * 3 + 0] * intl;
-                vbv = vbar_d[(intlat - 1) * nv * 3 + lev * 3 + 1] * intt
-                      + vbar_d[intlat * nv * 3 + lev * 3 + 1] * intl;
-                vbw = vbar_d[(intlat - 1) * nv * 3 + lev * 3 + 2] * intt
-                      + vbar_d[intlat * nv * 3 + lev * 3 + 2] * intl;
-                temp_av = Tbar_d[(intlat - 1) * nv + lev] * intt + Tbar_d[intlat * nv + lev] * intl;
-            }
-            else if (lat >= lat2 && lat < lat3) {
-                // interpolate between nearest rings to smooth over latitude
-                intt = (lat - lat3) / (lat2 - lat3);
-                intl = (lat - lat2) / (lat3 - lat2);
+                    vbu = vbar_d[(intlat - 1) * nv * 3 + lev * 3 + 0] * intt
+                          + vbar_d[intlat * nv * 3 + lev * 3 + 0] * intl;
+                    vbv = vbar_d[(intlat - 1) * nv * 3 + lev * 3 + 1] * intt
+                          + vbar_d[intlat * nv * 3 + lev * 3 + 1] * intl;
+                }
+                else if (lat >= lat2 && lat < lat3) {
+                    // interpolate between nearest rings to smooth over latitude
+                    intt = (lat - lat3) / (lat2 - lat3);
+                    intl = (lat - lat2) / (lat3 - lat2);
 
-                vbu = vbar_d[(intlat)*nv * 3 + lev * 3 + 0] * intt
-                      + vbar_d[(intlat + 1) * nv * 3 + lev * 3 + 0] * intl;
-                vbv = vbar_d[(intlat)*nv * 3 + lev * 3 + 1] * intt
-                      + vbar_d[(intlat + 1) * nv * 3 + lev * 3 + 1] * intl;
-                vbw = vbar_d[(intlat)*nv * 3 + lev * 3 + 2] * intt
-                      + vbar_d[(intlat + 1) * nv * 3 + lev * 3 + 2] * intl;
-                temp_av = Tbar_d[(intlat)*nv + lev] * intt + Tbar_d[(intlat + 1) * nv + lev] * intl;
+                    vbu = vbar_d[(intlat)*nv * 3 + lev * 3 + 0] * intt
+                          + vbar_d[(intlat + 1) * nv * 3 + lev * 3 + 0] * intl;
+                    vbv = vbar_d[(intlat)*nv * 3 + lev * 3 + 1] * intt
+                          + vbar_d[(intlat + 1) * nv * 3 + lev * 3 + 1] * intl;
+                }
             }
+            if (damp_w_to_mean) {
+                // retrieve zonal averages and interpolate if necessary
+                if (lat <= -M_PI / 2 + 0.5 * des_lat) {
+                    //near poles, just use value in polar ring
+                    vbw = vbar_d[intlat * nv * 3 + lev * 3 + 2];
+                }
+                else if (lat >= -M_PI / 2 + 0.5 * des_lat + des_lat * (nlat - 1)) {
+                    //near poles, just use value in polar ring
+                    vbw = vbar_d[intlat * nv * 3 + lev * 3 + 2];
+                }
+                else if (lat >= lat1 && lat < lat2) {
+                    // interpolate between nearest rings to smooth over latitude
+                    intt = (lat - lat2) / (lat1 - lat2);
+                    intl = (lat - lat1) / (lat2 - lat1);
 
+                    vbw = vbar_d[(intlat - 1) * nv * 3 + lev * 3 + 2] * intt
+                          + vbar_d[intlat * nv * 3 + lev * 3 + 2] * intl;
+                }
+                else if (lat >= lat2 && lat < lat3) {
+                    // interpolate between nearest rings to smooth over latitude
+                    intt = (lat - lat3) / (lat2 - lat3);
+                    intl = (lat - lat2) / (lat3 - lat2);
+
+                    vbw = vbar_d[(intlat)*nv * 3 + lev * 3 + 2] * intt
+                          + vbar_d[(intlat + 1) * nv * 3 + lev * 3 + 2] * intl;
+                }
+            }
+            if (temp_sponge) {
+                // retrieve zonal averages and interpolate if necessary
+                if (lat <= -M_PI / 2 + 0.5 * des_lat) {
+                    //near poles, just use value in polar ring
+                    temp_av = Tbar_d[intlat * nv + lev];
+                }
+                else if (lat >= -M_PI / 2 + 0.5 * des_lat + des_lat * (nlat - 1)) {
+                    //near poles, just use value in polar ring
+                    temp_av = Tbar_d[intlat * nv + lev];
+                }
+                else if (lat >= lat1 && lat < lat2) {
+                    // interpolate between nearest rings to smooth over latitude
+                    intt = (lat - lat2) / (lat1 - lat2);
+                    intl = (lat - lat1) / (lat2 - lat1);
+
+                    temp_av =
+                        Tbar_d[(intlat - 1) * nv + lev] * intt + Tbar_d[intlat * nv + lev] * intl;
+                }
+                else if (lat >= lat2 && lat < lat3) {
+                    // interpolate between nearest rings to smooth over latitude
+                    intt = (lat - lat3) / (lat2 - lat3);
+                    intl = (lat - lat2) / (lat3 - lat2);
+
+                    temp_av =
+                        Tbar_d[(intlat)*nv + lev] * intt + Tbar_d[(intlat + 1) * nv + lev] * intl;
+                }
+            }
             double kuv, kw;
 
             // calculate current winds
@@ -263,55 +320,64 @@ __global__ void sponge_layer(double *M_d,
                 kw  = 0.0;
             }
 
-            // calculate change in speed and convert to xyz
-            // du = -kv * (u - vbu); // * dt;
-            // dv = -kv * (v - vbv); // * dt;
-            //
-            // vx = du * (-sin(lon)) + dv * (-sin(lonlat_d[id * 2 + 1]) * cos(lon));
-            //
-            // vy = du * (cos(lon)) + dv * (-sin(lonlat_d[id * 2 + 1]) * sin(lon));
-            //
-            // vz = dv * (cos(lonlat_d[id * 2 + 1]));
-
-            // update the momentum variables
-            // M_d[id * nv * 3 + lev * 3 + 0] += vx * rho * dt;
-            // M_d[id * nv * 3 + lev * 3 + 1] += vy * rho * dt;
-            // M_d[id * nv * 3 + lev * 3 + 2] += vz * rho * dt;
-            // profx_dMh_d[id * nv * 3 + lev * 3 + 0] += vx * rho; //drag rate... (not total change)
-            // profx_dMh_d[id * nv * 3 + lev * 3 + 1] += vy * rho;
-            // profx_dMh_d[id * nv * 3 + lev * 3 + 2] += vz * rho;
-
-            // same for vertical speed
-            // dw = -kv * (w - vbw); // * dt;
-            // dw = -kv * (w); // * dt;
-            //
-            // profx_dW_d[id * nv + lev] += dw * rho;
-            // dw = -kv * (w)*dt; //what happens if i damp to zero ??
-            // W_d[id * nv + lev] += dw * rho * dt;
-
             //try implicit scheme
-            double unew, vnew, wnew;
-            if (damp_uv_to_mean) {
-                unew = (u / dt + kuv * vbu) / (1.0 / dt + kuv);
-                vnew = (v / dt + kuv * vbv) / (1.0 / dt + kuv);
+            if (implicit) {
+                double unew, vnew, wnew;
+                if (damp_uv_to_mean) {
+                    unew = (u / dt + kuv * vbu) / (1.0 / dt + kuv);
+                    vnew = (v / dt + kuv * vbv) / (1.0 / dt + kuv);
+                }
+                else {
+                    unew = (u / dt) / (1.0 / dt + kuv);
+                    vnew = (v / dt) / (1.0 / dt + kuv);
+                }
+                if (damp_w_to_mean) {
+                    wnew = (w / dt + kw * vbw) / (1.0 / dt + kw);
+                }
+                else {
+                    wnew = (w / dt) / (1.0 / dt + kw);
+                }
+                vx = unew * (-sin(lon)) + vnew * (-sin(lonlat_d[id * 2 + 1]) * cos(lon));
+                vy = unew * (cos(lon)) + vnew * (-sin(lonlat_d[id * 2 + 1]) * sin(lon));
+                vz = vnew * (cos(lonlat_d[id * 2 + 1]));
+                M_d[id * nv * 3 + lev * 3 + 0] = vx * rho;
+                M_d[id * nv * 3 + lev * 3 + 1] = vy * rho;
+                M_d[id * nv * 3 + lev * 3 + 2] = vz * rho;
+                W_d[id * nv + lev]             = wnew * rho;
             }
             else {
-                unew = (u / dt) / (1.0 / dt + kuv);
-                vnew = (v / dt) / (1.0 / dt + kuv);
+                double du, dv, dw;
+                // calculate change in speed and convert to xyz
+                if (damp_uv_to_mean) {
+                    du = -kuv * (u - vbu);
+                    dv = -kuv * (v - vbv);
+                }
+                else {
+                    du = -kuv * u;
+                    dv = -kuv * v;
+                }
+
+                vx = du * (-sin(lon)) + dv * (-sin(lonlat_d[id * 2 + 1]) * cos(lon));
+
+                vy = du * (cos(lon)) + dv * (-sin(lonlat_d[id * 2 + 1]) * sin(lon));
+
+                vz = dv * (cos(lonlat_d[id * 2 + 1]));
+
+                profx_dMh_d[id * nv * 3 + lev * 3 + 0] +=
+                    vx * rho; //drag rate... (not total change)
+                profx_dMh_d[id * nv * 3 + lev * 3 + 1] += vy * rho;
+                profx_dMh_d[id * nv * 3 + lev * 3 + 2] += vz * rho;
+
+                // same for vertical speed
+                if (damp_w_to_mean) {
+                    dw = -kw * (w - vbw);
+                }
+                else {
+                    dw = -kw * (w);
+                }
+
+                profx_dW_d[id * nv + lev] += dw * rho;
             }
-            if (damp_w_to_mean) {
-                wnew = (w / dt + kw * vbw) / (1.0 / dt + kw);
-            }
-            else {
-                wnew = (w / dt) / (1.0 / dt + kw);
-            }
-            vx = unew * (-sin(lon)) + vnew * (-sin(lonlat_d[id * 2 + 1]) * cos(lon));
-            vy = unew * (cos(lon)) + vnew * (-sin(lonlat_d[id * 2 + 1]) * sin(lon));
-            vz = vnew * (cos(lonlat_d[id * 2 + 1]));
-            M_d[id * nv * 3 + lev * 3 + 0] = vx * rho;
-            M_d[id * nv * 3 + lev * 3 + 1] = vy * rho;
-            M_d[id * nv * 3 + lev * 3 + 2] = vz * rho;
-            W_d[id * nv + lev]             = wnew * rho;
 
             if (temp_sponge) {
                 double temperature, dT, kvT;
@@ -324,8 +390,15 @@ __global__ void sponge_layer(double *M_d,
                 }
                 temperature =
                     pressure_d[id * nv + lev] / Rd_d[id * nv + lev] / Rho_d[id * nv + lev];
-                dT = -kvT * (temperature - temp_av) * dt;
-                pressure_d[id * nv + lev] += Rd_d[id * nv + lev] * Rho_d[id * nv + lev] * dT;
+                if (implicit) {
+                    pressure_d[id * nv + lev] = Rho_d[id * nv + lev] * Rd_d[id * nv + lev]
+                                                * (temperature / dt + kvT * temp_av)
+                                                / (1.0 / dt + kvT);
+                }
+                else {
+                    dT = -kvT * (temperature - temp_av);
+                    profx_dP_d[id * nv + lev] += Rd_d[id * nv + lev] * Rho_d[id * nv + lev] * dT;
+                }
             }
         }
         for (int lev = 1; lev < nv; lev++) {
@@ -342,16 +415,19 @@ __global__ void sponge_layer(double *M_d,
             intl = (xi - xim) / (xip - xim);
 
             // update velocity directly
-            wl = W_d[id * nv + lev - 1];
-            wt = W_d[id * nv + lev];
+            if (implicit) {
+                wl = W_d[id * nv + lev - 1];
+                wt = W_d[id * nv + lev];
 
-            Wh_d[id * (nv + 1) + lev] = wl * intt + wt * intl;
+                Wh_d[id * (nv + 1) + lev] = wl * intt + wt * intl;
+            }
+            else {
+                // send derivative to dynamical core
+                wl = profx_dW_d[id * nv + lev - 1];
+                wt = profx_dW_d[id * nv + lev];
 
-            // send derivative to dynamical core
-            // wl = profx_dW_d[id * nv + lev - 1];
-            // wt = profx_dW_d[id * nv + lev];
-            //
-            // profx_dWh_d[id * (nv + 1) + lev] = wl * intt + wt * intl;
+                profx_dWh_d[id * (nv + 1) + lev] = wl * intt + wt * intl;
+            }
         }
     }
 }

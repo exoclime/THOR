@@ -49,27 +49,27 @@ class input:
                 self.nlat = openh5['nlat'][...]
                 self.ns_sponge = openh5['ns_sponge'][...]
                 self.Rv_sponge = openh5['Rv_sponge'][...]
-            if 'hstest' in openh5.keys():
-                self.core_benchmark = openh5['hstest'][...]
+        if 'hstest' in openh5.keys():
+            self.core_benchmark = openh5['hstest'][...]
+        else:
+            self.core_benchmark = openh5['core_benchmark'][...]
+        if self.core_benchmark[0] == 0: # need to switch to rt flag
+            self.Tstar = openh5['Tstar'][...]
+            self.planet_star_dist = openh5['planet_star_dist'][...]
+            self.radius_star = openh5['radius_star'][...]
+            if 'diff_fac' in openh5.keys(): #called diff_fac in old versions
+                self.diff_ang = openh5['diff_fac'][...]
             else:
-                self.core_benchmark = openh5['core_benchmark'][...]
-            if self.core_benchmark[0] == 0: # need to switch to rt flag
-                self.Tstar = openh5['Tstar'][...]
-                self.planet_star_dist = openh5['planet_star_dist'][...]
-                self.radius_star = openh5['radius_star'][...]
-                if 'diff_fac' in openh5.keys(): #called diff_fac in old versions
-                    self.diff_ang = openh5['diff_fac'][...]
-                else:
-                    self.diff_ang = openh5['diff_ang'][...]
-                if 'Tint' in openh5.keys():
-                    self.Tint = openh5['Tint'][...]
-                self.albedo = openh5['albedo'][...]
-                self.tausw = openh5['tausw'][...]
-                self.taulw = openh5['taulw'][...]
-                if 'surface' in openh5.keys():
-                    self.surface = openh5['surface'][0]
-                else:
-                    self.surface = 0
+                self.diff_ang = openh5['diff_ang'][...]
+            if 'Tint' in openh5.keys():
+                self.Tint = openh5['Tint'][...]
+            self.albedo = openh5['albedo'][...]
+            self.tausw = openh5['tausw'][...]
+            self.taulw = openh5['taulw'][...]
+            if 'surface' in openh5.keys():
+                self.surface = openh5['surface'][0]
+            else:
+                self.surface = 0
         if 'vulcan' in openh5.keys():
             self.chemistry = openh5['vulcan'][...]
         if 'chemistry' in openh5.keys():

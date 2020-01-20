@@ -59,14 +59,14 @@ void radiative_transfer::print_config() {
     log::printf("    Orbital distance            = %f au.\n", planet_star_dist_config);
     log::printf("    Radius of host star         = %f R_sun.\n", radius_star_config);
     log::printf("    1.0/Diffusivity factor      = %f.\n", diff_ang_config);
-    log::printf("    Internal flux temperature   = %f K.\n", Tint_config);
+    // log::printf("    Internal flux temperature   = %f K.\n", Tint_config);
     log::printf("    Bond albedo                 = %f.\n", albedo_config);
-    log::printf("    Shortwave Absorption coef   = %f.\n", tausw_config);
-    log::printf("    Longwave Absorption coef    = %f.\n", taulw_config);
+    // log::printf("    Shortwave Absorption coef   = %f.\n", tausw_config);
+    // log::printf("    Longwave Absorption coef    = %f.\n", taulw_config);
     log::printf("    Using sin(lat) variation LW?      = %s.\n", latf_lw_config ? "true" : "false");
-    log::printf("    Longwave Absorption coef (poles)  = %f.\n", taulw_pole_config);
+    log::printf("    Longwave opacity (poles)  = %f.\n", kappa_lw_pole_config);
     log::printf("    Power law index of unmixed LW abs = %f.\n", n_lw_config);
-    log::printf("    Strength of mixed LW abs    = %f.\n", f_lw_config);
+    // log::printf("    Strength of mixed LW abs    = %f.\n", f_lw_config);
     log::printf("    Power law index of SW       = %f.\n", n_sw_config);
     log::printf("\n");
 
@@ -217,7 +217,6 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
     dim3 NBRT((esp.point_num / NTH) + 1, 1, 1);
 
     rtm_dual_band<<<NBRT, NTH>>>(esp.pressure_d,
-                                 //rtm_dual_band <<< 1,1 >>> (pressure_d         ,
                                  esp.Rho_d,
                                  esp.temperature_d,
                                  flw_up_d,
@@ -287,18 +286,18 @@ bool radiative_transfer::configure(config_file &config_reader) {
         "planet_star_dist", planet_star_dist_config, planet_star_dist_config);
     config_reader.append_config_var("radius_star", radius_star_config, radius_star_config);
     config_reader.append_config_var("diff_ang", diff_ang_config, diff_ang_config);
-    config_reader.append_config_var("Tint", Tint_config, Tint_config);
+    // config_reader.append_config_var("Tint", Tint_config, Tint_config);
     config_reader.append_config_var("albedo", albedo_config, albedo_config);
-    config_reader.append_config_var("tausw", tausw_config, tausw_config);
-    config_reader.append_config_var("taulw", taulw_config, taulw_config);
+    // config_reader.append_config_var("tausw", tausw_config, tausw_config);
+    // config_reader.append_config_var("taulw", taulw_config, taulw_config);
 
     // options for latitude dependence in longwave opacity
     config_reader.append_config_var("latf_lw", latf_lw_config, latf_lw_config);
-    config_reader.append_config_var("taulw_pole", taulw_pole_config, taulw_pole_config);
+    config_reader.append_config_var("kappa_lw_pole", kappa_lw_pole_config, kappa_lw_pole_config);
 
     config_reader.append_config_var("n_sw", n_sw_config, n_sw_config);
     config_reader.append_config_var("n_lw", n_lw_config, n_lw_config);
-    config_reader.append_config_var("f_lw", f_lw_config, f_lw_config);
+    // config_reader.append_config_var("f_lw", f_lw_config, f_lw_config);
 
 
     // orbit/insolation properties

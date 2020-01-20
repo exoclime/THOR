@@ -76,15 +76,15 @@ private:
     double planet_star_dist_config = 0.015; // Planet-star distance [au]
     double radius_star_config      = 0.667; // Star radius [Rsun]
     double diff_ang_config         = 0.5;   // Diffusivity angle (1 / diffusivity factor): 0.5-1.0
-    double Tint_config       = 0;    // temperature of upward flux coming from the planet's interior
-    double albedo_config     = 0.18; // Bond albedo
-    double tausw_config      = 532.0;  // Absorption coefficient for the shortwaves
-    double taulw_config      = 1064.0; // Absorption coefficient for the longwaves
-    bool   latf_lw_config    = false;  // use sin^2(lat) dependence for lw opacity
-    double taulw_pole_config = 1064.0; // Absorption coefficient for the longwave (poles)
-    double n_lw_config       = 2.0;    // power law dependence for unmixed absorbers in LW
-    double n_sw_config       = 1.0;    // power law dependence for mixed/unmixed absorbers in SW
-    double f_lw_config       = 0.5;    // fraction of taulw in well-mixed absorber
+    // double Tint_config       = 0;    // temperature of upward flux coming from the planet's interior
+    double albedo_config = 0.18; // Bond albedo
+    // double tausw_config      = 532.0;  // Absorption coefficient for the shortwaves
+    // double taulw_config      = 1064.0; // Absorption coefficient for the longwaves
+    bool   latf_lw_config       = false; // use sin^2(lat) dependence for lw opacity
+    double kappa_lw_pole_config = 0.002; // Absorption coefficient for the longwave (poles)
+    double n_lw_config          = 2.0;   // power law dependence for unmixed absorbers in LW
+    double n_sw_config          = 1.0;   // power law dependence for mixed/unmixed absorbers in SW
+    // double f_lw_config       = 0.5;    // fraction of taulw in well-mixed absorber
 
 
     bool   sync_rot_config    = true;     // is planet syncronously rotating?
@@ -104,15 +104,15 @@ private:
     double planet_star_dist = 0.015; // Planet-star distance [au]
     double radius_star      = 0.667; // Star radius [Rsun]
     double diff_ang         = 0.5;   // Diffusivity factor: 0.5-1.0
-    double Tint   = 0; // Lower boundary temperature: upward flux coming from the planet's interior
-    double albedo = 0.18;   // Bond albedo
-    double tausw  = 532.0;  // Absorption coefficient for the shortwaves
-    double taulw  = 1064.0; // Absorption coefficient for the longwaves
-    double taulw_pole = 1064.0;
-    bool   latf_lw    = false;
-    double n_lw       = 2.0; // power law dependence for unmixed absorbers in LW
-    double n_sw       = 1.0; // power law dependence for mixed/unmixed absorbers in SW
-    double f_lw       = 0.5; // fraction of taulw in well-mixed absorber
+    // double Tint   = 0; // Lower boundary temperature: upward flux coming from the planet's interior
+    double albedo = 0.18; // Bond albedo
+    // double tausw  = 532.0;  // Absorption coefficient for the shortwaves
+    // double taulw  = 1064.0; // Absorption coefficient for the longwaves
+    double kappa_lw_pole = 0.002;
+    bool   latf_lw       = false;
+    double n_lw          = 2.0; // power law dependence for unmixed absorbers in LW
+    double n_sw          = 1.0; // power law dependence for mixed/unmixed absorbers in SW
+    // double f_lw       = 0.5; // fraction of taulw in well-mixed absorber
 
     bool    rt1Dmode;
     bool    surface;

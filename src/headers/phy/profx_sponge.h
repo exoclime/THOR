@@ -45,17 +45,17 @@
 ////////////////////////////////////////////////////////////////////////
 #pragma once
 
-__global__ void zonal_v(double *M_d,
-                        double *W_d,
-                        double *Rho_d,
-                        double *vbar_d,
-                        int *   zonal_mean_tab_d,
-                        double *lonlat_d,
-                        int     num,
-                        double *utmp,
-                        double *vtmp,
-                        double *wtmp,
-                        int     max_count);
+__global__ void zonal_uv(double *M_d,
+                         double *Rho_d,
+                         int *   zonal_mean_tab_d,
+                         double *lonlat_d,
+                         int     num,
+                         double *utmp,
+                         double *vtmp,
+                         int     max_count);
+
+__global__ void
+zonal_w(double *W_d, double *Rho_d, int *zonal_mean_tab_d, int num, double *wtmp, int max_count);
 
 __global__ void zonal_temp(double *pressure_d,
                            double *Rho_d,
@@ -64,7 +64,7 @@ __global__ void zonal_temp(double *pressure_d,
                            double *lonlat_d,
                            int     num,
                            double *Ttmp,
-                           double  Rd,
+                           double *Rd_d,
                            int     max_count);
 
 void print_vbar(double *vbar_h, int nlat, int nv);
@@ -87,6 +87,7 @@ __global__ void sponge_layer(double *M_d,
                              double  nsi,
                              bool    damp_uv_to_mean,
                              bool    damp_w_to_mean,
+                             bool    implicit,
                              double  dt,
                              double *Rd_d,
                              int     nlat,
@@ -95,4 +96,5 @@ __global__ void sponge_layer(double *M_d,
                              bool    temp_sponge,
                              double *profx_dMh_d,
                              double *profx_dWh_d,
-                             double *profx_dW_d);
+                             double *profx_dW_d,
+                             double *profx_dP_d);

@@ -261,8 +261,7 @@ int main(int argc, char** argv) {
     int    t_shrink; // number of time steps after which shrink begins
     bool   damp_uv_to_mean;
     bool   damp_w_to_mean;
-    double Duv_sponge;
-    double Dw_sponge;
+    double Dv_sponge;
     double ns_diff_sponge;
     int    order_diff_sponge;
     string raysp_calc_mode_str("imp");
@@ -283,8 +282,7 @@ int main(int argc, char** argv) {
     config_reader.append_config_var("ns_ray_sponge", ns_ray_sponge, ns_ray_sponge_default);
     config_reader.append_config_var("damp_uv_to_mean", damp_uv_to_mean, damp_uv_to_mean_default);
     config_reader.append_config_var("damp_w_to_mean", damp_w_to_mean, damp_w_to_mean_default);
-    config_reader.append_config_var("Duv_sponge", Duv_sponge, Duv_sponge_default);
-    config_reader.append_config_var("Dw_sponge", Dw_sponge, Dw_sponge_default);
+    config_reader.append_config_var("Dv_sponge", Dv_sponge, Dv_sponge_default);
     config_reader.append_config_var("ns_diff_sponge", ns_diff_sponge, ns_diff_sponge_default);
     config_reader.append_config_var(
         "order_diff_sponge", order_diff_sponge, order_diff_sponge_default);
@@ -323,6 +321,12 @@ int main(int argc, char** argv) {
     string init_PT_profile_str("isothermal");
     config_reader.append_config_var(
         "init_PT_profile", init_PT_profile_str, string(init_PT_profile_default)); //
+    // additional settings for guillot profile (also borrowed by double gray RT)
+    double Tint = 100, kappa_lw = 0.002, kappa_sw = 0.001, f_lw = 0.5;
+    config_reader.append_config_var("Tint", Tint, Tint_default);
+    config_reader.append_config_var("kappa_lw", kappa_lw, kappa_lw_default);
+    config_reader.append_config_var("kappa_sw", kappa_sw, kappa_sw_default);
+    config_reader.append_config_var("f_lw", f_lw, f_lw_default);
 
     // ultrahot thermodynamics
     string uh_thermo_str("none");
@@ -551,9 +555,9 @@ int main(int argc, char** argv) {
         config_OK &= false;
     }
 
-    bool initialize_zonal_mean = false;
+    bool                  initialize_zonal_mean = false;
+    raysp_calc_mode_types raysp_calc_mode       = IMP;
     if (sim.RayleighSponge) {
-        raysp_calc_mode_types raysp_calc_mode = IMP;
 
         if (raysp_calc_mode_str == "imp") {
             raysp_calc_mode = IMP;
@@ -814,8 +818,8 @@ int main(int argc, char** argv) {
           ns_ray_sponge, // lowest level of rayleigh sponge layer (fraction of model)
           damp_uv_to_mean,
           damp_w_to_mean,
-          Duv_sponge,
-          Dw_sponge,
+          raysp_calc_mode,
+          Dv_sponge,
           ns_diff_sponge,
           order_diff_sponge,
           t_shrink,         // time to shrink sponge layer
@@ -825,7 +829,9 @@ int main(int argc, char** argv) {
           logwriter,        // Log writer
           max_count,
           sim.output_mean,
-          init_PT_profile);
+          init_PT_profile,
+          ultrahot_thermo,
+          ultrahot_heating);
 
 
     USE_BENCHMARK();

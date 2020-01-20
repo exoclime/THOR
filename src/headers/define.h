@@ -69,8 +69,7 @@
 
 #define DiffSponge_default false    // use diffusive sponge
 #define ns_diff_sponge_default 0.75 // Lowest level of sponge layer
-#define Duv_sponge_default 0.01     // Maximum diff damping (top of model)
-#define Dw_sponge_default 0.01      // Maximum diff damping (top of model)
+#define Dv_sponge_default 0.01      // Maximum diff damping (top of model)
 #define order_diff_sponge_default 2 // order of diffusive sponge
 
 #define shrink_sponge_default false // shrink sponge layer after some time
@@ -108,6 +107,10 @@
 #define conv_adj_default 0 // use convective adjustment scheme
 
 #define init_PT_profile_default "isothermal"
+#define kappa_lw_default 0.002 // m^2 kg^-1
+#define kappa_sw_default 0.001 // m^2 kg^-1
+#define Tint_default 100
+#define f_lw_default 0.5
 
 #define uh_thermo_default "none"
 

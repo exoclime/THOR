@@ -119,6 +119,12 @@ public:
     // double *Kdvz_h;
     // double *Kdv6_h;
 
+    // guillot profile set-up, also to be borrowed by double gray scheme
+    double Tinit;    // temperature of internal heat flux
+    double kappa_lw; //long wave opacity
+    double kappa_sw; //short wave opacity
+    double f_lw;     //fraction of lw optical depth due to well-mixed absorbers
+
     bool check_h;
 
     // sponge layer settings and variables
@@ -134,8 +140,7 @@ public:
     bool                  damp_w_to_mean;
     raysp_calc_mode_types raysp_calc_mode;
     // Diffusive sponge
-    double    Duv_sponge;
-    double    Dw_sponge;
+    double    Dv_sponge;
     double    ns_diff_sponge;
     const int order_diff_sponge;
 
@@ -233,6 +238,8 @@ public:
     double *Kdvz_d;
     double *Kdv6_d;
 
+    double *Kdh2_d;
+
     double *DivM_d;
     double *diffpr_d;
     double *diffmh_d;
@@ -325,8 +332,8 @@ public:
         double                ns_ray_sponge_,
         bool                  damp_uv_to_mean_,
         bool                  damp_w_to_mean_,
-        double                Duv_sponge_,
-        double                Dw_sponge_,
+        raysp_calc_mode_types raysp_calc_mode_,
+        double                Dv_sponge_,
         double                ns_diff_sponge_,
         int                   order_diff_sponge_,
         double                t_shrink_,
@@ -336,7 +343,13 @@ public:
         log_writer &          logwriter_,
         int                   max_count_,
         bool                  output_mean,
-        init_PT_profile_types init_PT_profile_);
+        init_PT_profile_types init_PT_profile_,
+        double                Tint_,
+        double                kappa_lw_,
+        double                kappa_sw_,
+        double                f_lw_,
+        uh_thermo_types       ultrahot_thermo_,
+        uh_heating_types      ultrahot_heating_);
 
     ~ESP();
 
@@ -530,6 +543,9 @@ private:
     benchmark_types core_benchmark;
 
     init_PT_profile_types init_PT_profile;
+
+    uh_thermo_types  ultrahot_thermo;
+    uh_heating_types ultrahot_heating;
 
     // run physics modules
     bool phy_modules_execute;

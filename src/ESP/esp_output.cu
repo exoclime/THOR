@@ -235,6 +235,17 @@ __host__ void ESP::output(int                    fidx, // Index of output file
             s.append_value(
                 Rw_sponge, "/Rw_sponge", "1/s", "Strength of Rayleigh sponge layer (w component)");
         }
+        // diff_sponge
+        if (sim.DiffSponge) {
+            //      order
+            s.append_value(
+                order_diff_sponge, "order_diff_sponge", "-", "Order of diffusive sponge");
+            //      ns
+            s.append_value(
+                ns_diff_sponge, "/ns_diff_sponge", "-", "Bottom of diffusive sponge layer");
+            //      Rv
+            s.append_value(Dv_sponge, "/Dv_sponge", "-", "Strength of diffusive sponge layer");
+        }
 
         // store module name in the description
         s.append_value(0.0, "/phy_module", "-", phy_modules_get_name());
