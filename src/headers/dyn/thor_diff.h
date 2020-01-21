@@ -250,14 +250,13 @@ __global__ void Diffusion_Op(double* diffmh_d,
         }
 
         if (laststep) {
-            if (var == 0) {
-                vdiff = 0.5 * rscale * sdiff;
-            }
-            else {
-                vdiff = 0.5 * rscale
-                        * (2.0 * Rho_s[ir] + Rho_s[pt1] + 2.0 * Rho_s[pt2] + Rho_s[pt3]) * o6
-                        * sdiff;
-            }
+            // if (var == 0) {
+            //     vdiff = 0.5 * rscale * sdiff;
+            // }
+            // else {
+            vdiff = 0.5 * rscale * (2.0 * Rho_s[ir] + Rho_s[pt1] + 2.0 * Rho_s[pt2] + Rho_s[pt3])
+                    * o6 * sdiff;
+            // }
         }
         else
             vdiff = 0.5 * rscale;
@@ -528,13 +527,13 @@ __global__ void Diffusion_Op_Poles(double* diffmh_d,
             kp2   = (k + 2) % 5;
 
             if (laststep) {
-                if (var == 0) {
-                    vdiff = 0.5 * sdiff * rscale;
-                }
-                else {
-                    vdiff = 0.5 * sdiff * rscale
-                            * (2.0 * Rho_p[0] + Rho_p[j] + 2.0 * Rho_p[jp1] + Rho_p[jp2]) * o6;
-                }
+                // if (var == 0) {
+                //     vdiff = 0.5 * sdiff * rscale;
+                // }
+                // else {
+                vdiff = 0.5 * sdiff * rscale
+                        * (2.0 * Rho_p[0] + Rho_p[j] + 2.0 * Rho_p[jp1] + Rho_p[jp2]) * o6;
+                // }
             }
             else
                 vdiff = 0.5 * rscale;
