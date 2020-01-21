@@ -830,6 +830,10 @@ int main(int argc, char** argv) {
           max_count,
           sim.output_mean,
           init_PT_profile,
+          Tint,
+          kappa_lw,
+          kappa_sw,
+          f_lw,
           ultrahot_thermo,
           ultrahot_heating);
 

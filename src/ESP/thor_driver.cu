@@ -201,24 +201,28 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
             ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d", "Adv_d", "v_d"))
 
         // Updates: temperature_d, h_d, hh_d, pt_d, pth_d, gtil_d, gtilh_d
-        check_h = false;
-        cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
-        update_temperature_Rd_Cp<<<NBALL1, NTH>>>(temperature_d,
-                                                  Rd_d,
-                                                  Cp_d,
-                                                  pressurek_d,
-                                                  Rhok_d,
-                                                  GibbsT_d,
-                                                  GibbsdG_d,
-                                                  GibbsN,
-                                                  point_num,
-                                                  check_d);
+        bool calcT = true;
+        if (ultrahot_thermo == VARY_R_CP) {
+            check_h = false;
+            cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
+            update_temperature_Rd_Cp<<<NBALL1, NTH>>>(temperature_d,
+                                                      Rd_d,
+                                                      Cp_d,
+                                                      pressurek_d,
+                                                      Rhok_d,
+                                                      GibbsT_d,
+                                                      GibbsdG_d,
+                                                      GibbsN,
+                                                      point_num,
+                                                      check_d);
 
-        cudaDeviceSynchronize();
-        cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
-        if (check_h) {
-            log::printf("\n\n Ridder's method failed for T and Rd\n");
-            exit(EXIT_FAILURE);
+            cudaDeviceSynchronize();
+            cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
+            if (check_h) {
+                log::printf("\n\n Ridder's method failed for T and Rd\n");
+                exit(EXIT_FAILURE);
+            }
+            calcT = false;
         }
 
         Compute_Temperature_H_Pt_Geff<<<(point_num / NTH) + 1, NTH>>>(temperature_d,
@@ -239,7 +243,8 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                                                       Altitude_d,
                                                                       Altitudeh_d,
                                                                       point_num,
-                                                                      nv);
+                                                                      nv,
+                                                                      calcT);
 
 
         //      Initializes slow terms.

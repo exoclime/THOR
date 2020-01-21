@@ -120,7 +120,7 @@ public:
     // double *Kdv6_h;
 
     // guillot profile set-up, also to be borrowed by double gray scheme
-    double Tinit;    // temperature of internal heat flux
+    double Tint;     // temperature of internal heat flux
     double kappa_lw; //long wave opacity
     double kappa_sw; //short wave opacity
     double f_lw;     //fraction of lw optical depth due to well-mixed absorbers

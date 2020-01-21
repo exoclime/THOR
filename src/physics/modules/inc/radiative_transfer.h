@@ -105,13 +105,14 @@ private:
     double radius_star      = 0.667; // Star radius [Rsun]
     double diff_ang         = 0.5;   // Diffusivity factor: 0.5-1.0
     // double Tint   = 0; // Lower boundary temperature: upward flux coming from the planet's interior
-    double albedo = 0.18; // Bond albedo
-    // double tausw  = 532.0;  // Absorption coefficient for the shortwaves
-    // double taulw  = 1064.0; // Absorption coefficient for the longwaves
-    double kappa_lw_pole = 0.002;
-    bool   latf_lw       = false;
-    double n_lw          = 2.0; // power law dependence for unmixed absorbers in LW
-    double n_sw          = 1.0; // power law dependence for mixed/unmixed absorbers in SW
+    double albedo = 0.18;   // Bond albedo
+    double tausw  = 532.0;  // Absorption coefficient for the shortwaves
+    double taulw  = 1064.0; // Absorption coefficient for the longwaves
+    double taulw_pole;
+    // double kappa_lw_pole = 0.002;
+    bool   latf_lw = false;
+    double n_lw    = 2.0; // power law dependence for unmixed absorbers in LW
+    double n_sw    = 1.0; // power law dependence for mixed/unmixed absorbers in SW
     // double f_lw       = 0.5; // fraction of taulw in well-mixed absorber
 
     bool    rt1Dmode;
@@ -164,15 +165,16 @@ private:
                     double planet_star_dist_,
                     double radius_star_,
                     double diff_ang_,
-                    double Tint_,
+                    double P_Ref,
+                    double Gravit,
                     double albedo_,
-                    double tausw_,
-                    double taulw_,
+                    double kappa_sw,
+                    double kappa_lw,
                     bool   latf_lw_,
-                    double taulw_pole_,
+                    double kappa_lw_pole,
                     double n_lw_,
                     double n_sw_,
-                    double f_lw_,
+                    double f_lw,
                     bool   sync_rot_,
                     double mean_motion_,
                     double true_long_i_,

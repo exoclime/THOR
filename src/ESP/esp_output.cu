@@ -247,6 +247,11 @@ __host__ void ESP::output(int                    fidx, // Index of output file
             s.append_value(Dv_sponge, "/Dv_sponge", "-", "Strength of diffusive sponge layer");
         }
 
+        s.append_value(Tint, "/Tint", "K", "Temperature of interior heat flux");
+        s.append_value(f_lw, "/f_lw", "-", "fraction of taulw in well-mixed absorber");
+        s.append_value(kappa_lw, "/kappa_lw", "-", "longwave opacity");
+        s.append_value(kappa_sw, "/kappa_sw", "-", "shortwave opacity");
+
         // store module name in the description
         s.append_value(0.0, "/phy_module", "-", phy_modules_get_name());
 

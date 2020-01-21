@@ -70,7 +70,8 @@ __global__ void Compute_Temperature_H_Pt_Geff(double *temperature_d,
                                               double *Altitude_d,
                                               double *Altitudeh_d,
                                               int     num,
-                                              int     nv) {
+                                              int     nv,
+                                              bool    calcT) {
 
     //
     //  Description: Computes temperature, internal energy, potential temperature and effective gravity.
@@ -108,9 +109,15 @@ __global__ void Compute_Temperature_H_Pt_Geff(double *temperature_d,
                     altl = alt;
                 }
 
-                pressure    = pressure_d[id * nv + lev];
-                rho         = Rho_d[id * nv + lev];
-                temperature = temperature_d[id * nv + lev];
+                pressure = pressure_d[id * nv + lev];
+                rho      = Rho_d[id * nv + lev];
+                if (calcT) {
+                    temperature                  = pressure / (rho * Rd_d[id * nv + lev]);
+                    temperature_d[id * nv + lev] = temperature;
+                }
+                else {
+                    temperature = temperature_d[id * nv + lev];
+                }
 
                 alt   = Altitude_d[lev];
                 alth  = Altitudeh_d[lev];
@@ -118,7 +125,6 @@ __global__ void Compute_Temperature_H_Pt_Geff(double *temperature_d,
                 h     = Cv * temperature + pressure / rho;
                 pt    = (P_Ref / (Rd_d[id * nv + lev] * rho)) * pow(pressure / P_Ref, CvoCp);
 
-                // temperature_d[id * nv + lev] = temperature;
                 h_d[id * nv + lev]      = h;
                 pt_d[id * nv + lev]     = pt;
                 pt_tau_d[id * nv + lev] = pt;

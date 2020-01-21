@@ -55,6 +55,7 @@
 #include "phy/profx_shallowHJ.h"
 #include "phy/profx_sponge.h"
 #include "phy/profx_tidalearth.h"
+#include "phy/ultrahot_thermo.h"
 
 #include "binary_test.h"
 #include "debug_helpers.h"
@@ -218,8 +219,31 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
 
 
     //  Computes the initial temperature.
+    bool      calcT = true;
+    if (ultrahot_thermo == VARY_R_CP) {
+        check_h = false;
+        cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
+        update_temperature_Rd_Cp<<<NB, NTH>>>(temperature_d,
+                                              Rd_d,
+                                              Cp_d,
+                                              pressure_d,
+                                              Rho_d,
+                                              GibbsT_d,
+                                              GibbsdG_d,
+                                              GibbsN,
+                                              point_num,
+                                              check_d);
+
+        cudaDeviceSynchronize();
+        cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
+        if (check_h) {
+            log::printf("\n\n Ridder's method failed for T and Rd\n");
+            exit(EXIT_FAILURE);
+        }
+        calcT = false;
+    }
     Compute_temperature<<<NB, NTH>>>(
-        temperature_d, pt_d, pressure_d, Rho_d, sim.P_Ref, Rd_d, Cp_d, point_num);
+        temperature_d, pt_d, pressure_d, Rho_d, sim.P_Ref, Rd_d, Cp_d, point_num, calcT);
 
     BENCH_POINT_I(
         current_step, "phy_T", (), ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"))

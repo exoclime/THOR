@@ -325,7 +325,8 @@ if 'TP' in pview:
     #ham.TPprof(input,grid,output,sigmaref,1902)
     ham.profile(input,grid,output,z)
 if 'PTP' in pview:
-    kappa_ad = input.Rd/input.Cp  # adiabatic coefficient
+    #kappa_ad = input.Rd/input.Cp  # adiabatic coefficient
+    kappa_ad = output.Rd/output.Cp
     T = output.Pressure/input.Rd/output.Rho
     pt = T*(output.Pressure/input.P_Ref)**(-kappa_ad)
     z = {'value': pt, 'label':'Potential Temperature (K)', 'name':'PT' }

@@ -109,7 +109,7 @@
 #define init_PT_profile_default "isothermal"
 #define kappa_lw_default 0.002 // m^2 kg^-1
 #define kappa_sw_default 0.001 // m^2 kg^-1
-#define Tint_default 100
+#define Tint_default 100.0
 #define f_lw_default 0.5
 
 #define uh_thermo_default "none"
