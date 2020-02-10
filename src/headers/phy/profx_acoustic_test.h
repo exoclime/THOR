@@ -59,16 +59,16 @@ __global__ void acoustic_test(double *pressure_d,
     int nv  = gridDim.y;
     int lev = blockIdx.y;
 
-    if (id < num) {
+    if (id == num) {
         double dp, R, lambda0, phi0, vmode, r, g, f;
         double lat = lonlat_d[id * 2 + 1];
         double lon = lonlat_d[id * 2];
 
         vmode   = 1;         // vertical mode
-        dp      = 0.;        //100;       // pressure perturbation (Pa)
+        dp      = 100;       // pressure perturbation (Pa)
         R       = 1.0 / 3.0; // distance cutoff of perturbation
-        lambda0 = 0;         //longitude of perturbation
-        phi0    = 0;         //latitude of perturbation
+        lambda0 = lon;       //longitude of perturbation
+        phi0    = lat;       //latitude of perturbation
         r       = acos(sin(phi0) * sin(lat) + cos(phi0) * cos(lat) * cos(lon - lambda0));
         g       = sin(vmode * M_PI * Altitude_d[lev] / Top_altitude);
         if (r < R) {

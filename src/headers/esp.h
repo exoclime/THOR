@@ -93,6 +93,7 @@ public:
     double *nvecte_h;
     double *areasT_h;
     double *areasTr_h;
+    double *areas_h;
 
     double *div_h;
     double *grad_h;
@@ -118,6 +119,11 @@ public:
     // double *Kdh4_h;
     // double *Kdvz_h;
     // double *Kdv6_h;
+
+    double *flux_vec;
+    double *boundary_flux_h;
+    double *boundary_flux_d;
+
 
     // guillot profile set-up, also to be borrowed by double gray scheme
     double Tint;     // temperature of internal heat flux
@@ -176,8 +182,9 @@ public:
     double *nvecoa_d;
     double *nvecti_d;
     double *nvecte_d;
-    double *areasT_d;
-    double *areasTr_d;
+    double *areasT_d;  //area of control volume (hexagon/pentagon)
+    double *areasTr_d; //area of (6/5) triangles in hexagon/pentagon
+    double *areas_d;   //area of sub-triangles (18 per hexagon, 15 per pentagon)
 
     double *lonlat_d;
 
@@ -313,6 +320,7 @@ public:
         double *              nvecte_,
         double *              areasT_,
         double *              areasTr_,
+        double *              areas_,
         double *              div_,
         double *              grad_,
         double *              curlz_,

@@ -160,6 +160,11 @@ __global__ void Momentum_Eq(double *M_d,
     M_d[id * nv * 3 + lev * 3 + 0] += Mx;
     M_d[id * nv * 3 + lev * 3 + 1] += My;
     M_d[id * nv * 3 + lev * 3 + 2] += Mz;
+
+    // haaack
+    // M_d[id * nv * 3 + lev * 3 + 0] = 0.0;
+    // M_d[id * nv * 3 + lev * 3 + 1] = 0.0;
+    // M_d[id * nv * 3 + lev * 3 + 2] = 0.0;
 }
 
 template<int NN>
@@ -244,6 +249,11 @@ __global__ void Momentum_Eq_Poles(double *M_d,
             M_d[id * nv * 3 + lev * 3 + 0] += Mx;
             M_d[id * nv * 3 + lev * 3 + 1] += My;
             M_d[id * nv * 3 + lev * 3 + 2] += Mz;
+
+            // haaack
+            // M_d[id * nv * 3 + lev * 3 + 0] = 0.0;
+            // M_d[id * nv * 3 + lev * 3 + 1] = 0.0;
+            // M_d[id * nv * 3 + lev * 3 + 2] = 0.0;
         }
     }
 }

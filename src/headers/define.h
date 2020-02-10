@@ -95,8 +95,11 @@
 #define GPU_ID_N_default 0 // Set GPU ID number
 
 // Output
-#define n_out_default 1000 // Print output every n_out steps
-
+#define n_out_default 1000                // Print output every n_out steps
+#define custom_global_n_out_default false // Print global diagnostics every n_out or global_n_out
+#define global_n_out_default 1000         // Print global diagnostics every global_n_out steps
+#define custom_log_n_out_default false    // Print log info every n_out steps or log_n_out
+#define log_n_out_default 1000            // Print log info every log_n_out steps
 
 #define output_path_default "results" // Output directory
 
@@ -104,7 +107,7 @@
 
 #define conservation_default false //output energy, mass, angular momentum, etc
 
-#define conv_adj_default 0 // use convective adjustment scheme
+#define conv_adj_default false // use convective adjustment scheme
 
 #define init_PT_profile_default "isothermal"
 #define kappa_lw_default 0.002 // m^2 kg^-1

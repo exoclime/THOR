@@ -45,6 +45,9 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
+#include <fstream>
+#include <iostream>
+
 #include "esp.h" // Global parameters.
 
 #include "binary_test.h"
@@ -83,6 +86,19 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
     dim3 NBRT((point_num / NTH) + 1, 1, 1);
     dim3 NBALL1((point_num / NTH) + 1, nv, 1); //Number of blocks to execute on all grid points
 
+    // cudaMemset(Mass_d, 0, point_num * nv * sizeof(double));
+    // cudaMemset(GlobalMass_d, 0, sizeof(double));
+    // CalcMassThor<<<NBALL1, NTH>>>(Mass_d,
+    //                               GlobalMass_d,
+    //                               Rho_d,
+    //                               sim.A,
+    //                               Altitudeh_d,
+    //                               lonlat_d,
+    //                               areasT_d,
+    //                               point_num,
+    //                               sim.DeepModel);
+    // GlobalMass_h = gpu_sum_on_device<1024>(Mass_d, point_num * nv);
+    // printf("Mtot_b = %.15e\n", GlobalMass_h);
 
     //  Number of Small steps
     double ns_totald = 6; // Maximum number of small steps in a large step (double ).
@@ -262,8 +278,32 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
         cudaMemset(Slowpressure_d, 0, sizeof(double) * point_num * nv);
         //
         //      Hyper-Diffusion.
+        // int    i, j, k;
+        // double sum1 = 0, sum2 = 0, sum3 = 0;
+        // double exact = 4 * M_PI * pow(sim.A, 2);
+        // for (i = 0; i < point_num; i++) {
+        //     sum1 += areasT_h[i];
+        //     if (i < point_num - 2) {
+        //         for (j = 0; j < 2; j++) {
+        //             sum2 += areasTr_h[i * 6 + j];
+        //             for (k = 0; k < 3; k++) {
+        //                 sum3 += areas_h[i * 6 * 3 + j * 3 + k];
+        //             }
+        //         }
+        //     }
+        // }
+
         if (sim.HyDiff) {
             cudaMemset(diff_d, 0, sizeof(double) * 6 * point_num * nv);
+            cudaMemset(diffrh_d, 0, sizeof(double) * point_num * nv);
+            cudaMemset(boundary_flux_d, 0, sizeof(double) * 6 * point_num * nv);
+            for (int id = 0; id < point_num; id++) {
+                for (int lev = 0; lev < nv; lev++) {
+                    for (int j = 0; j < 6; j++) {
+                        boundary_flux_h[id * nv * 6 + lev * 6 + j] = 0.0;
+                    }
+                }
+            }
             cudaDeviceSynchronize();
             //Updates: diffmh_d, diffw_d, diffrh_d, diffpr_d, diff_d
             Diffusion_Op<LN, LN><<<NBD, NT>>>(diffmh_d,
@@ -276,6 +316,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                               temperature_d,
                                               Wk_d,
                                               areasTr_d,
+                                              areas_d,
                                               nvecoa_d,
                                               nvecti_d,
                                               nvecte_d,
@@ -290,7 +331,9 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                               sim.DeepModel,
                                               sim.DiffSponge,
                                               order_diff_sponge,
-                                              Kdh2_d);
+                                              Kdh2_d,
+                                              boundary_flux_d);
+
             //Updates: diffmh_d, diffw_d, diffrh_d, diffpr_d, diff_d
             Diffusion_Op_Poles<5><<<NBDP, 1>>>(diffmh_d,
                                                diffw_d,
@@ -303,6 +346,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                                Wk_d,
                                                func_r_d,
                                                areasTr_d,
+                                               areas_d,
                                                nvecoa_d,
                                                nvecti_d,
                                                nvecte_d,
@@ -317,8 +361,46 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                                sim.DeepModel,
                                                sim.DiffSponge,
                                                order_diff_sponge,
-                                               Kdh2_d);
+                                               Kdh2_d,
+                                               boundary_flux_d);
             cudaDeviceSynchronize();
+            //here, add up diff_d*area over globe
+            // printf("***********rk = %d\n", rk);
+            // cudaMemcpy(boundary_flux_h,
+            //            boundary_flux_d,
+            //            6 * point_num * nv * sizeof(double),
+            //            cudaMemcpyDeviceToHost);
+            // cudaMemcpy(flux_vec, diffrh_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+            // // add_fluxes_h(flux_vec, areasT_h, point_num, nv);
+            // std::ofstream file1;
+            // char          fname1[256];
+            // sprintf(fname1, "diff_check_%d_%d_%d.txt", current_step, rk, 0);
+            // file1.open(fname1);
+            // file1 << std::setprecision(16);
+            // for (int id = 0; id < point_num; id++) {
+            //     for (int lev = 0; lev < nv; lev++) {
+            //         for (int j = 0; j < 6; j++) {
+            //             file1 << id << " " << lev << " " << point_local_h[id * 6 + j] << " "
+            //                   << boundary_flux_h[id * nv * 6 + lev * 6 + j] << " " << areasT_h[id]
+            //                   << " " << flux_vec[id * nv + lev] << " " << areasTr_h[id * 6 + j]
+            //                   << " " << lonlat_h[id * 2] * 180 / M_PI << " "
+            //                   << lonlat_h[id * 2 + 1] * 180 / M_PI << " "
+            //                   << nvecoa_h[id * 6 * 3 + j * 3 + 0] << " "
+            //                   << nvecoa_h[id * 6 * 3 + j * 3 + 1] << " "
+            //                   << nvecoa_h[id * 6 * 3 + j * 3 + 2] << " "
+            //                   << nvecti_h[id * 6 * 3 + j * 3 + 0] << " "
+            //                   << nvecti_h[id * 6 * 3 + j * 3 + 1] << " "
+            //                   << nvecti_h[id * 6 * 3 + j * 3 + 2] << " "
+            //                   << nvecte_h[id * 6 * 3 + j * 3 + 0] << " "
+            //                   << nvecte_h[id * 6 * 3 + j * 3 + 1] << " "
+            //                   << nvecte_h[id * 6 * 3 + j * 3 + 2] << "\n";
+            //         }
+            //     }
+            // }
+            // file1.close();
+
+            cudaMemset(diffrh_d, 0, sizeof(double) * point_num * nv);
+            cudaMemset(boundary_flux_d, 0, sizeof(double) * 6 * point_num * nv);
             //Updates: diffmh_d, diffw_d, diffrh_d, diffpr_d, diff_d
             Diffusion_Op<LN, LN><<<NBD, NT>>>(diffmh_d,
                                               diffw_d,
@@ -330,6 +412,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                               temperature_d,
                                               Wk_d,
                                               areasTr_d,
+                                              areas_d,
                                               nvecoa_d,
                                               nvecti_d,
                                               nvecte_d,
@@ -344,7 +427,8 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                               sim.DeepModel,
                                               sim.DiffSponge,
                                               order_diff_sponge,
-                                              Kdh2_d);
+                                              Kdh2_d,
+                                              boundary_flux_d);
             //Updates: diffmh_d, diffw_d, diffrh_d, diffpr_d, diff_d
             Diffusion_Op_Poles<5><<<NBDP, 1>>>(diffmh_d,
                                                diffw_d,
@@ -357,6 +441,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                                Wk_d,
                                                func_r_d,
                                                areasTr_d,
+                                               areas_d,
                                                nvecoa_d,
                                                nvecti_d,
                                                nvecte_d,
@@ -371,11 +456,49 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                                sim.DeepModel,
                                                sim.DiffSponge,
                                                order_diff_sponge,
-                                               Kdh2_d);
+                                               Kdh2_d,
+                                               boundary_flux_d);
 
-            cudaDeviceSynchronize();
+            // cudaDeviceSynchronize();
+            // //here, add up diffrh_d*area over globe
+            //
+            // cudaMemcpy(boundary_flux_h,
+            //            boundary_flux_d,
+            //            6 * point_num * nv * sizeof(double),
+            //            cudaMemcpyDeviceToHost);
+            // cudaMemcpy(flux_vec, diffrh_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+            // // add_fluxes_h(flux_vec, areasT_h, point_num, nv);
+            // std::ofstream file2;
+            // char          fname2[256];
+            // sprintf(fname2, "diff_check_%d_%d_%d.txt", current_step, rk, 1);
+            // file2.open(fname2);
+            // file2 << std::setprecision(16);
+            // for (int id = 0; id < point_num; id++) {
+            //     for (int lev = 0; lev < nv; lev++) {
+            //         for (int j = 0; j < 6; j++) {
+            //             file2 << id << " " << lev << " " << point_local_h[id * 6 + j] << " "
+            //                   << boundary_flux_h[id * nv * 6 + lev * 6 + j] << " " << areasT_h[id]
+            //                   << " " << flux_vec[id * nv + lev] << " " << areasTr_h[id * 6 + j]
+            //                   << " " << lonlat_h[id * 2] * 180 / M_PI << " "
+            //                   << lonlat_h[id * 2 + 1] * 180 / M_PI << " "
+            //                   << nvecoa_h[id * 6 * 3 + j * 3 + 0] << " "
+            //                   << nvecoa_h[id * 6 * 3 + j * 3 + 1] << " "
+            //                   << nvecoa_h[id * 6 * 3 + j * 3 + 2] << " "
+            //                   << nvecti_h[id * 6 * 3 + j * 3 + 0] << " "
+            //                   << nvecti_h[id * 6 * 3 + j * 3 + 1] << " "
+            //                   << nvecti_h[id * 6 * 3 + j * 3 + 2] << " "
+            //                   << nvecte_h[id * 6 * 3 + j * 3 + 0] << " "
+            //                   << nvecte_h[id * 6 * 3 + j * 3 + 1] << " "
+            //                   << nvecte_h[id * 6 * 3 + j * 3 + 2] << "\n";
+            //         }
+            //     }
+            // }
+            // file2.close();
 
             Correct_Horizontal<<<NBALL, NTH>>>(diffmh_d, diffmv_d, func_r_d, point_num);
+            //
+            // cudaMemcpy(flux_vec, diffrh_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+            // add_fluxes_h(flux_vec, areasT_h, point_num, nv);
         }
 
         if (phy_modules_execute)
@@ -727,6 +850,9 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                               profx_dP_d);
 
 
+        // cudaMemcpy(flux_vec, SlowRho_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+        // add_fluxes_h(flux_vec, areasT_h, point_num, nv);
+
         BENCH_POINT_I_S(current_step,
                         rk,
                         "Compute_Slow_Modes_Poles",
@@ -788,9 +914,37 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
 
         //
         //      SMALL-STEPS
-        // printf("\n << nlarge = %d <<<<<<<<<<<<\n",rk);
+        // printf("\n << nlarge = %d <<<<<<<<<<<<\n", rk);
+        // cudaMemset(GlobalMass_d, 0, sizeof(double));
+        // cudaMemset(Mass_d, 0, point_num * nv * sizeof(double));
+        // CalcMassThor<<<NBALL1, NTH>>>(Mass_d,
+        //                               GlobalMass_d,
+        //                               Rhok_d,
+        //                               sim.A,
+        //                               Altitudeh_d,
+        //                               lonlat_d,
+        //                               areasT_d,
+        //                               point_num,
+        //                               sim.DeepModel);
+        // GlobalMass_h = gpu_sum_on_device<1024>(Mass_d, point_num * nv);
+        // printf("Mtot_k = %.15e\n", GlobalMass_h);
+        //
+        // cudaMemset(Mass_d, 0, point_num * nv * sizeof(double));
+        // cudaMemset(GlobalMass_d, 0, sizeof(double));
+        // CalcMassThor<<<NBALL1, NTH>>>(Mass_d,
+        //                               GlobalMass_d,
+        //                               Rhos_d,
+        //                               sim.A,
+        //                               Altitudeh_d,
+        //                               lonlat_d,
+        //                               areasT_d,
+        //                               point_num,
+        //                               sim.DeepModel);
+        // GlobalMass_h = gpu_sum_on_device<1024>(Mass_d, point_num * nv);
+        // printf("Mtot_s = %.15e\n", GlobalMass_h);
+
         for (int ns = 0; ns < ns_it; ns++) {
-            // printf("// nsmall = %d //////////////////\n",ns);
+            // printf("// nsmall = %d //////////////////\n", ns);
             cudaMemset(DivM_d, 0, sizeof(double) * point_num * 3 * nv);
             cudaMemset(divg_Mh_d, 0, sizeof(double) * point_num * 3 * nv);
             if (sim.DivDampP) {
@@ -1073,6 +1227,20 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
 
             BENCH_POINT_I_SS(
                 current_step, rk, ns, "Density_Pressure_Eqs_Poles", (), ("pressures_d", "Rhos_d"))
+
+            // cudaDeviceSynchronize();
+            // cudaMemset(GlobalMass_d, 0, sizeof(double));
+            // CalcMassThor<<<NBALL1, NTH>>>(Mass_d,
+            //                               GlobalMass_d,
+            //                               Rhos_d,
+            //                               sim.A,
+            //                               Altitudeh_d,
+            //                               lonlat_d,
+            //                               areasT_d,
+            //                               point_num,
+            //                               sim.DeepModel);
+            // GlobalMass_h = gpu_sum_on_device<1024>(Mass_d, point_num * nv);
+            // printf("Mtot_s = %.15e\n", GlobalMass_h);
         }
         BENCH_POINT_I_S_PHY(
             current_step,
@@ -1097,6 +1265,29 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                                   Altitudeh_d,
                                                   point_num,
                                                   nv);
+        cudaDeviceSynchronize();
+        // cudaMemset(Rhos_d, 0, sizeof(double) * point_num * nv);
+        // cudaMemset(Mass_d, 0, point_num * nv * sizeof(double));
+        //
+        // cudaMemset(GlobalMass_d, 0, sizeof(double));
+        // GlobalMass_h = 0.0;
+        // CalcMassThor<<<NBALL1, NTH>>>(Mass_d,
+        //                               GlobalMass_d,
+        //                               Rhok_d,
+        //                               sim.A,
+        //                               Altitudeh_d,
+        //                               lonlat_d,
+        //                               areasT_d,
+        //                               point_num,
+        //                               sim.DeepModel);
+        // cudaMemcpy(flux_vec, Mass_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+        // for (int ii = 0; ii < point_num; ii++) {
+        //     for (int jj = 0; jj < nv; jj++) {
+        //         GlobalMass_h += flux_vec[ii * nv + jj];
+        //     }
+        // }
+        // GlobalMass_h = gpu_sum_on_device<1024>(Mass_d, point_num * nv);
+        // printf("Mtot_k = %.15e\n", GlobalMass_h);
 
         BENCH_POINT_I_S_PHY(
             current_step,
@@ -1116,6 +1307,22 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
     cudaMemcpy(W_d, Wk_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToDevice);
     cudaMemcpy(Rho_d, Rhok_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToDevice);
     cudaMemcpy(pressure_d, pressurek_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToDevice);
+
+    // cudaMemset(Rhos_d, 0, sizeof(double) * point_num * nv);
+    // cudaMemset(Mass_d, 0, point_num * nv * sizeof(double));
+    //
+    // cudaMemset(GlobalMass_d, 0, sizeof(double));
+    // CalcMassThor<<<NBALL1, NTH>>>(Mass_d,
+    //                               GlobalMass_d,
+    //                               Rho_d,
+    //                               sim.A,
+    //                               Altitudeh_d,
+    //                               lonlat_d,
+    //                               areasT_d,
+    //                               point_num,
+    //                               sim.DeepModel);
+    // GlobalMass_h = gpu_sum_on_device<1024>(Mass_d, point_num * nv);
+    // printf("Mtot_e = %.15e\n", GlobalMass_h);
 
     if (phy_modules_execute)
         phy_modules_dyn_core_loop_end(*this);

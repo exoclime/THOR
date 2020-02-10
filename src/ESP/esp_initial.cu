@@ -71,6 +71,7 @@ __host__ ESP::ESP(int *                 point_local_,
                   double *              nvecte_,
                   double *              areasT_,
                   double *              areasTr_,
+                  double *              areas_,
                   double *              div_,
                   double *              grad_,
                   double *              curlz_,
@@ -140,6 +141,7 @@ __host__ ESP::ESP(int *                 point_local_,
     nvecte_h  = nvecte_;
     areasTr_h = areasTr_;
     areasT_h  = areasT_;
+    areas_h   = areas_;
 
     div_h   = div_;
     grad_h  = grad_;
@@ -213,6 +215,10 @@ __host__ void ESP::alloc_data(bool conservation, bool output_mean) {
     Rd_h = (double *)malloc(nv * point_num * sizeof(double));
     Cp_h = (double *)malloc(nv * point_num * sizeof(double));
 
+    flux_vec        = (double *)malloc(nv * point_num * sizeof(double));
+    boundary_flux_h = (double *)malloc(6 * nv * point_num * sizeof(double));
+    cudaMalloc((void **)&boundary_flux_d, 6 * point_num * nv * sizeof(double));
+
     //  Allocate data in device
     //  Grid
     cudaMalloc((void **)&point_local_d, 6 * point_num * sizeof(int));
@@ -224,6 +230,7 @@ __host__ void ESP::alloc_data(bool conservation, bool output_mean) {
     cudaMalloc((void **)&nvecte_d, 6 * 3 * point_num * sizeof(double));
     cudaMalloc((void **)&areasT_d, point_num * sizeof(double));
     cudaMalloc((void **)&areasTr_d, 6 * point_num * sizeof(double));
+    cudaMalloc((void **)&areas_d, 3 * 6 * point_num * sizeof(double));
     cudaMalloc((void **)&func_r_d, 3 * point_num * sizeof(double));
     cudaMalloc((void **)&div_d, 7 * 3 * point_num * sizeof(double));
     cudaMalloc((void **)&grad_d, 7 * 3 * point_num * sizeof(double));
@@ -429,8 +436,15 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                             temperature_h[i * nv + lev] = sim.Tmean;
                         }
                         else {
-                            temperature_h[i * nv + lev] =
-                                guillot_T(sim.P_Ref, mu, sim.Tmean, sim.P_Ref, sim.Gravit);
+                            temperature_h[i * nv + lev] = guillot_T(sim.P_Ref,
+                                                                    mu,
+                                                                    sim.Tmean,
+                                                                    sim.P_Ref,
+                                                                    sim.Gravit,
+                                                                    Tint,
+                                                                    f_lw,
+                                                                    kappa_sw,
+                                                                    kappa_lw);
                         }
                         if (ultrahot_thermo != NO_UH_THERMO) {
                             chi_H = chi_H_equilibrium(
@@ -476,8 +490,15 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                             temperature_h[i * nv + lev] = sim.Tmean;
                         }
                         else {
-                            temperature_h[i * nv + lev] = guillot_T(
-                                pressure_h[i * nv + lev], mu, sim.Tmean, sim.P_Ref, sim.Gravit);
+                            temperature_h[i * nv + lev] = guillot_T(pressure_h[i * nv + lev],
+                                                                    mu,
+                                                                    sim.Tmean,
+                                                                    sim.P_Ref,
+                                                                    sim.Gravit,
+                                                                    Tint,
+                                                                    f_lw,
+                                                                    kappa_sw,
+                                                                    kappa_lw);
                         }
                         if (ultrahot_thermo != NO_UH_THERMO) {
                             chi_H              = chi_H_equilibrium(GibbsT,
@@ -712,10 +733,17 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
         }
 
 
-        for (int i = 0; i < point_num; i++)
-            for (int lev = 0; lev < nv; lev++)
+        for (int i = 0; i < point_num; i++) {
+            for (int lev = 0; lev < nv; lev++) {
+                //hack
+                // Rd_h[i * nv + lev] = sim.Rd;
+                // Cp_h[i * nv + lev] = sim.Cp;
+                ////
                 temperature_h[i * nv + lev] =
                     pressure_h[i * nv + lev] / (Rd_h[i * nv + lev] * Rho_h[i * nv + lev]);
+            }
+        }
+
 
         for (int i = 0; i < point_num; i++) {
             for (int lev = 0; lev < nv; lev++) {
@@ -797,6 +825,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
     cudaMemcpy(nvecte_d, nvecte_h, 6 * 3 * point_num * sizeof(double), cudaMemcpyHostToDevice);
     cudaMemcpy(areasTr_d, areasTr_h, 6 * point_num * sizeof(double), cudaMemcpyHostToDevice);
     cudaMemcpy(areasT_d, areasT_h, point_num * sizeof(double), cudaMemcpyHostToDevice);
+    cudaMemcpy(areas_d, areas_h, 3 * 6 * point_num * sizeof(double), cudaMemcpyHostToDevice);
     cudaMemcpy(lonlat_d, lonlat_h, 2 * point_num * sizeof(double), cudaMemcpyHostToDevice);
     cudaMemcpy(func_r_d, func_r_h, 3 * point_num * sizeof(double), cudaMemcpyHostToDevice);
     cudaMemcpy(
@@ -814,6 +843,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
     cudaMemcpy(Kdv6_d, Kdv6_h, nv * sizeof(double), cudaMemcpyHostToDevice);
 
     cudaMemcpy(Kdh2_d, Kdh2_h, nv * sizeof(double), cudaMemcpyHostToDevice);
+
 
     if (sim.output_mean == true) {
         cudaMemcpy(Mh_mean_d, Mh_h, point_num * nv * 3 * sizeof(double), cudaMemcpyHostToDevice);
@@ -876,6 +906,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
     cudaMemset(diffv_d1, 0, sizeof(double) * 6 * nv * point_num);
     cudaMemset(diffv_d2, 0, sizeof(double) * 6 * nv * point_num);
 
+    cudaMemset(boundary_flux_d, 0, sizeof(double) * 6 * nv * point_num);
+
     delete[] Kdh4_h;
     delete[] Kdhz_h;
     delete[] Kdv6_h;
@@ -927,6 +959,7 @@ __host__ ESP::~ESP() {
     cudaFree(nvecte_d);
     cudaFree(areasT_d);
     cudaFree(areasTr_d);
+    cudaFree(areas_d);
 
     //  Longitude-latitude
     cudaFree(lonlat_d);
@@ -1056,6 +1089,9 @@ __host__ ESP::~ESP() {
 
     cudaFree(GibbsT_d);
     cudaFree(GibbsdG_d);
+
+    cudaFree(boundary_flux_d);
+    free(boundary_flux_h);
 
     if (phy_modules_execute)
         phy_modules_free_mem();

@@ -339,10 +339,12 @@ __global__ void Vertical_Eq(double *Whs_d,
         Whs_d[id * nvi + nv]     = 0.0;
         Whs_d[id * nvi]          = 0.0;
         Whs_d[id * nvi + nv - 1] = dd[threadIdx.x * nvi + nv - 1];
+        // Whs_d[id * nvi + nv - 1] = 0.0;
         // Updates vertical momentum
         for (int lev = nvi - 2; lev > 0; lev--)
             Whs_d[id * nvi + lev] = (-cc[threadIdx.x * nvi + lev] * Whs_d[id * nvi + lev + 1]
                                      + dd[threadIdx.x * nvi + lev]);
+        // Whs_d[id * nvi + lev] = 0.0;
 
         for (int lev = 0; lev < nv; lev++) {
 

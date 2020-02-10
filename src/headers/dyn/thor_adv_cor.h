@@ -102,6 +102,9 @@ __global__ void Compute_Advec_Cori1(
     bool load_halo = compute_mem_idx(maps_d, nhl, nhl2, ig, igh, ir, ir2, pent_ind);
     id             = ig;
 
+    // if (Mh_d[ig * nv + lev].x != 0) {
+    //     printf("stop\n");
+    // }
 
     M_s[ir]        = Mh_d[ig * nv + lev];
     rho            = Rho_d[ig * nv + lev];
@@ -533,5 +536,8 @@ __global__ void Compute_Advec_Cori2(double* Adv_d,       //
                     vzt = v_d[id * 3 * nv + (lev + 2) * 3 + 2];
             }
         }
+        // if (id == 0) {
+        //     printf("Adv = %f\n", Adv_d[id * nv]);
+        // }
     }
 }

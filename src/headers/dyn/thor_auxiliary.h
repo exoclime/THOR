@@ -122,7 +122,7 @@ __global__ void Compute_Temperature_H_Pt_Geff(double *temperature_d,
                 alt   = Altitude_d[lev];
                 alth  = Altitudeh_d[lev];
                 altht = Altitudeh_d[lev + 1];
-                h     = Cv * temperature + pressure / rho;
+                h     = Cv * temperature + pressure / rho; //why not just Cp*T??
                 pt    = (P_Ref / (Rd_d[id * nv + lev] * rho)) * pow(pressure / P_Ref, CvoCp);
 
                 h_d[id * nv + lev]      = h;
@@ -148,9 +148,10 @@ __global__ void Compute_Temperature_H_Pt_Geff(double *temperature_d,
                 gtilh = 0.0;
             }
             else if (lev == nv) {
-                extr  = (altht - Altitude_d[nv - 2]) / (Altitude_d[nv - 1] - Altitude_d[nv - 2]);
-                Cv    = Cp_d[id * nv + lev - 1] - Rd_d[id * nv + lev - 1];
-                CvoCp = Cv / Cp_d[id * nv + lev - 1];
+                extr = (2 * Altitudeh_d[nv] - alt - Altitude_d[nv - 2])
+                       / (Altitude_d[nv - 1] - Altitude_d[nv - 2]);
+                Cv                       = Cp_d[id * nv + lev - 1] - Rd_d[id * nv + lev - 1];
+                CvoCp                    = Cv / Cp_d[id * nv + lev - 1];
                 hh_d[id * (nv + 1) + nv] = h;
 
                 pp = pressure_d[id * nv + nv - 2]
@@ -504,5 +505,53 @@ __global__ void isnan_check_thor(double *array, int width, int height, bool *che
                 *check = true;
             }
         idx += gridDim.x + blockDim.x;
+    }
+}
+
+void add_fluxes_h(double *flux, double *areasT, int point_num, int nv) {
+    int    i, lev;
+    double flux_tot = 0.0, flux_max;
+
+    for (lev = 0; lev < nv; lev++) {
+        flux_tot = 0.0;
+        flux_max = fabs(flux[0 * nv + lev]) * areasT[0];
+        for (i = 0; i < point_num; i++) {
+            flux_tot += flux[i * nv + lev] * areasT[i];
+            if (fabs(flux[i * nv + lev] * areasT[i]) > flux_max) {
+                flux_max = fabs(flux[i * nv + lev] * areasT[i]);
+            }
+        }
+        printf("lev = %d, flux_tot = %e, flux_max = %e\n", lev, flux_tot, flux_max);
+    }
+}
+
+__global__ void CalcMassThor(double *Mass_d,
+                             double *GlobalMass_d,
+                             double *Rho_d,
+                             double  A,
+                             double *Altitudeh_d,
+                             double *lonlat_d,
+                             double *areasT,
+                             int     num,
+                             bool    DeepModel) {
+
+    int id  = blockIdx.x * blockDim.x + threadIdx.x;
+    int nv  = gridDim.y;
+    int lev = blockIdx.y;
+
+    if (id < num) {
+        //calculate control volume
+        double zup, zlow, Vol;
+        zup  = Altitudeh_d[lev + 1] + A;
+        zlow = Altitudeh_d[lev] + A;
+        if (DeepModel) {
+            Vol = areasT[id] / pow(A, 2) * (pow(zup, 3) - pow(zlow, 3)) / 3;
+        }
+        else {
+            Vol = areasT[id] * (zup - zlow);
+        }
+
+        //mass in control volume = density*volume
+        Mass_d[id * nv + lev] = (Rho_d[id * nv + lev]) * Vol;
     }
 }

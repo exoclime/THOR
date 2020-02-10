@@ -422,6 +422,8 @@ __global__ void DivM_Op_Poles(double* DivM_d,
             dwdz2 = 0.0;
         }
         else {
+            // interpolates vertical velocity to middle of triangle
+            // currently uses mean but could be more accurate with tri-linear interp
             meanwl  = (wl_p[0] + wl_p[j] + wl_p[jp1]) * o3;
             meanwt  = (wt_p[0] + wt_p[j] + wt_p[jp1]) * o3;
             meanwl2 = (wl_p[0] + wl_p[j] + wl_p[jp2]) * o3;
@@ -431,6 +433,7 @@ __global__ void DivM_Op_Poles(double* DivM_d,
             dwdz2 = (meanwl2 - meanwt2) * dz;
         }
 
+        // set up terms of divergence at each corner of two triangles
         if (k == 0) {
             a01x = (a_p[0 * 3 + 0] + a_p[j * 3 + 0]);
             a01y = (a_p[0 * 3 + 1] + a_p[j * 3 + 1]);
@@ -452,6 +455,7 @@ __global__ void DivM_Op_Poles(double* DivM_d,
         a03z = (a_p[0 * 3 + 2] + a_p[jp2 * 3 + 2]);
         AT2  = 0.5 * rscale / (areasTr_p[kp1]);
 
+        // calculate divergence of two adjacent triangles
         if (k == 0) {
             lap1 = (-a01x * nvecti_p[k * 3 + 0] - a01y * nvecti_p[k * 3 + 1]
                     - a01z * nvecti_p[k * 3 + 2] + a12x * nvecte_p[k * 3 + 0]
@@ -477,6 +481,7 @@ __global__ void DivM_Op_Poles(double* DivM_d,
                     + a03z * nvecti_p[kp2 * 3 + 2])
                    * AT2;
         }
+        // gradient terms
         lapx += (lap1 + dwdz + lap2 + dwdz2) * nvecoa_p[k * 3 + 0] * AT0;
         lapy += (lap1 + dwdz + lap2 + dwdz2) * nvecoa_p[k * 3 + 1] * AT0;
         lapz += (lap1 + dwdz + lap2 + dwdz2) * nvecoa_p[k * 3 + 2] * AT0;

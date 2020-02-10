@@ -7,7 +7,7 @@ config_version = 1
 
 #-- Time stepping and output options -----------------------------------------#
 # number of steps
-num_steps = 97
+num_steps = 10
 
 # length of timesteps in seconds
 timestep = 1800
@@ -18,12 +18,13 @@ n_out = 1
 
 # output directory (relative to current working directory)
 # defaults to 'results'
-results_path = acoustic_test_divdonly
+results_path = simulations/earth_aw_sum_diff_flux
 
 # calculate and output quantities we hope to conserve
 # angular momentum, energy, mass, (entropy soon)
 conservation = true
 
+#  3.539813849773192e+18
 
 #-- Planetary parameters -----------------------------------------------------#
 # name of simulation for output files
@@ -55,7 +56,7 @@ P_ref = 100000.0
 Top_altitude = 10000.0
 
 # Horizontal resolution level.
-glevel = 5
+glevel = 4
 
 # Number of vertical layers
 vlevel = 20
@@ -68,10 +69,10 @@ spring_beta = 1.15
 
 ## diffusion ############################################
 # Hyper-diffusion
-HyDiff  =    false
+HyDiff  =  true
 
 # Divergence-damping
-DivDampP =    true
+DivDampP =   true
 
 # Strength of diffusion
 Diffc = 0.02
@@ -86,7 +87,7 @@ DivDampc = 0.02
 NonHydro = true
 
 # Deep atmosphere (scale quantities for altitude + radius)
-DeepModel = true
+DeepModel = false
 
 # Initial conditions
 rest = true
@@ -162,7 +163,7 @@ diff_ang = 0.5
 # add sin(lat)^2 dependence to tau lw (advanced)
 latf_lw = true
 # opt depth at poles (lw)
-taulw_pole = 1.5
+kappa_lw_pole = 1.5
 
 # include surface heating
 surface = true

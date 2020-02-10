@@ -209,7 +209,7 @@ __host__ void ESP::output(int                    fidx, // Index of output file
         s.append_value(sim.Tmean, "/Tmean", "K", "Mean atmospheric temperature");
 
         //      conv adj option
-        s.append_value(sim.conv_adj, "/conv_adj", "-", "Using convection adjustment");
+        s.append_value(sim.conv_adj ? 1.0 : 0.0, "/conv_adj", "-", "Using convection adjustment");
 
         //      GCM on/off option
         s.append_value(sim.gcm_off ? 1.0 : 0.0, "/gcm_off", "-", "GCM off");

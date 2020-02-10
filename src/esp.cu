@@ -317,6 +317,17 @@ int main(int argc, char** argv) {
 
     config_reader.append_config_var("conservation", sim.conservation, conservation_default);
 
+    bool custom_global_n_out;
+    config_reader.append_config_var(
+        "custom_global_n_out", custom_global_n_out, custom_global_n_out_default);
+    int global_n_out = n_out;
+    config_reader.append_config_var("global_n_out", global_n_out, global_n_out_default);
+
+    bool custom_log_n_out;
+    config_reader.append_config_var("custom_log_n_out", custom_log_n_out, custom_log_n_out_default);
+    int log_n_out = n_out;
+    config_reader.append_config_var("log_n_out", log_n_out, log_n_out_default);
+
     // Init PT profile
     string init_PT_profile_str("isothermal");
     config_reader.append_config_var(
@@ -798,6 +809,7 @@ int main(int argc, char** argv) {
           Grid.nvecte,         // Normal vectors for diffusion 3
           Grid.areasT,         // Areas of the main cells
           Grid.areasTr,        // Areas of the triangles
+          Grid.areas,          // Areas of the sub-triangles
           Grid.div,            // Divergence operator
           Grid.grad,           // Gradient operator
           Grid.curlz,          // Curl operator (vertical component)
@@ -1094,15 +1106,18 @@ int main(int argc, char** argv) {
         bool file_output = false;
 
         if (sim.conservation == true) {
-            X.conservation(sim);
-            logwriter.output_conservation(nstep,
-                                          simulation_time,
-                                          X.GlobalE_h,
-                                          X.GlobalMass_h,
-                                          X.GlobalAMx_h,
-                                          X.GlobalAMy_h,
-                                          X.GlobalAMz_h,
-                                          X.GlobalEnt_h);
+            if ((custom_global_n_out && nstep % global_n_out == 0)
+                || (custom_global_n_out == false && nstep % n_out == 0)) {
+                X.conservation(sim);
+                logwriter.output_conservation(nstep,
+                                              simulation_time,
+                                              X.GlobalE_h,
+                                              X.GlobalMass_h,
+                                              X.GlobalAMx_h,
+                                              X.GlobalAMy_h,
+                                              X.GlobalAMz_h,
+                                              X.GlobalEnt_h);
+            }
         }
 
         if (sim.output_mean == true)
@@ -1142,33 +1157,47 @@ int main(int argc, char** argv) {
         std::strftime(str_time, sizeof(str_time), "%F %T", std::localtime(&end_time));
         end_time_str << str_time;
 
-        log::printf("\n Time step number = %d/%d || Time = %f days. \n\t Elapsed %s || Left: %s || "
-                    "Completion: %s. %s",
-                    nstep,
-                    nsmax,
-                    simulation_time / 86400.,
-                    duration_to_str(elapsed_time).c_str(),
-                    duration_to_str(time_left).c_str(),
-                    end_time_str.str().c_str(),
-                    file_output ? "[saved output]" : "");
+        if ((custom_log_n_out && nstep % log_n_out == 0)
+            || (custom_log_n_out == false && nstep % n_out == 0)) {
+            log::printf(
+                "\n Time step number = %d/%d || Time = %f days. \n\t Elapsed %s || Left: %s || "
+                "Completion: %s. %s",
+                nstep,
+                nsmax,
+                simulation_time / 86400.,
+                duration_to_str(elapsed_time).c_str(),
+                duration_to_str(time_left).c_str(),
+                end_time_str.str().c_str(),
+                file_output ? "[saved output]" : "");
 
-        // get memory statistics
-        size_t total_bytes;
-        size_t free_bytes;
-        get_cuda_mem_usage(total_bytes, free_bytes);
+            // get memory statistics
+            size_t total_bytes;
+            size_t free_bytes;
+            get_cuda_mem_usage(total_bytes, free_bytes);
 
-        // flush log output to file for security
-        log::flush();
+            // flush log output to file for security
+            log::flush();
 
-        logwriter.output_diagnostics(nstep,
-                                     simulation_time,
-                                     total_bytes,
-                                     free_bytes,
-                                     elapsed_time,
-                                     time_left,
-                                     mean_delta_per_step,
-                                     end_time);
-
+            logwriter.output_diagnostics(nstep,
+                                         simulation_time,
+                                         total_bytes,
+                                         free_bytes,
+                                         elapsed_time,
+                                         time_left,
+                                         mean_delta_per_step,
+                                         end_time);
+        }
+        else {
+            printf("\n Time step number = %d/%d || Time = %f days. \n\t Elapsed %s || Left: %s || "
+                   "Completion: %s. %s",
+                   nstep,
+                   nsmax,
+                   simulation_time / 86400.,
+                   duration_to_str(elapsed_time).c_str(),
+                   duration_to_str(time_left).c_str(),
+                   end_time_str.str().c_str(),
+                   file_output ? "[saved output]" : "");
+        }
 
         if (caught_signal != ESIG_NOSIG) {
             //exit loop and application after save on SIGTERM or SIGINT

@@ -92,7 +92,7 @@ public:
 
     bool output_mean;
 
-    int  conv_adj;
+    bool conv_adj;
     bool gcm_off;
 
     bool rest;

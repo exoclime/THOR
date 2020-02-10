@@ -129,7 +129,7 @@ class grid:
             self.lon = self.lon%(2*np.pi)
 
 class output:
-    def __init__(self,resultsf,simID,ntsi,nts,grid,stride=1):
+    def __init__(self,resultsf,simID,ntsi,nts,input,grid,stride=1):
         # Initialize arrays
         self.Rho = np.zeros((grid.point_num,grid.nv,nts-ntsi+1))
         self.Pressure = np.zeros((grid.point_num,grid.nv,nts-ntsi+1))
@@ -186,8 +186,13 @@ class output:
             time = openh5['simulation_time'][0]/86400
             nstep = openh5['nstep'][0]
 
-            Rdi = openh5['Rd'][...]
-            Cpi = openh5['Cp'][...]
+            if 'Rd' in openh5.keys():
+                Rdi = openh5['Rd'][...]
+                Cpi = openh5['Cp'][...]
+            else:
+                Rdi = np.zeros_like(Rhoi)+input.Rd
+                Cpi = np.zeros_like(Rhoi)+input.Cp
+
             if 'Etotal' in openh5.keys():
                 Etotali = openh5['Etotal'][...]
                 Massi = openh5['Mass'][...]
@@ -424,7 +429,7 @@ class GetOutput:
     def __init__(self,resultsf,simID,ntsi,nts,stride=1,openrg=0,pressure_vert=True,rotation=False,theta_y=0,theta_z=0,pgrid_ref='auto'):
         self.input = input(resultsf,simID)
         self.grid = grid(resultsf,simID,rotation=rotation,theta_y=theta_y,theta_z=theta_z)
-        self.output = output(resultsf,simID,ntsi,nts,self.grid,stride=stride)
+        self.output = output(resultsf,simID,ntsi,nts,self.input,self.grid,stride=stride)
         if openrg == 1:
             self.rg = rg_out(resultsf,simID,ntsi,nts,self.input,self.output,self.grid,
                                 pressure_vert=pressure_vert,pgrid_ref=pgrid_ref)
