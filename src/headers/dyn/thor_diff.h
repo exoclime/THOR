@@ -161,7 +161,7 @@ __global__ void Diffusion_Op(double* diffmh_d,
         else if (var == 4)
             a_s[ir] = W_d[id * nv + lev];
         else if (var == 5)
-            a_s[ir] = temperature_d[id * nv + lev];
+            a_s[ir] = Rd_d[id * nv + lev] * temperature_d[id * nv + lev];
     }
     // we want the velocities, not the momentum
     if (var >= 1 && var <= 4 && !laststep)
@@ -192,7 +192,7 @@ __global__ void Diffusion_Op(double* diffmh_d,
                 else if (var == 4)
                     a_s[ir2] = W_d[igh * nv + lev];
                 else if (var == 5)
-                    a_s[ir2] = temperature_d[igh * nv + lev];
+                    a_s[ir2] = Rd_d[igh * nv + lev] * temperature_d[igh * nv + lev];
             }
             if (var >= 1 && var <= 4 && !laststep)
                 a_s[ir2] = a_s[ir2] / Rho_s[ir2];
@@ -213,10 +213,10 @@ __global__ void Diffusion_Op(double* diffmh_d,
         rscale = 1.0;
 
     if (laststep) {
-        if (var < 5)
-            sdiff = -K_d[lev];
-        else
-            sdiff = -K_d[lev] * Rd_d[id * nv + lev]; // multiply by gas constant in temperature eqn
+        // if (var < 5)
+        sdiff = -K_d[lev];
+        // else
+        //     sdiff = -K_d[lev]; // multiply by gas constant in temperature eqn
     }
 
     lap = 0.0;
@@ -529,10 +529,10 @@ __global__ void Diffusion_Op_Poles(double* diffmh_d,
         Rho_p[i] = Rho_d[local_p[i - 1] * nv + lev];
 
     if (laststep) {
-        if (var < 5)
-            sdiff = -K_d[lev];
-        else
-            sdiff = -K_d[lev] * Rd_d[id * nv + lev];
+        // if (var < 5)
+        sdiff = -K_d[lev];
+        // else
+        //     sdiff = -K_d[lev];
     }
 
     if (laststep) {
@@ -573,9 +573,9 @@ __global__ void Diffusion_Op_Poles(double* diffmh_d,
                 a_p[i] = W_d[local_p[i - 1] * nv + lev] / Rho_p[i];
         }
         if (var == 5) {
-            a_p[0] = temperature_d[id * nv + lev];
+            a_p[0] = Rd_d[id * nv + lev] * temperature_d[id * nv + lev];
             for (int i = 1; i < 6; i++)
-                a_p[i] = temperature_d[local_p[i - 1] * nv + lev];
+                a_p[i] = Rd_d[local_p[i - 1] * nv + lev] * temperature_d[local_p[i - 1] * nv + lev];
         }
     }
 
