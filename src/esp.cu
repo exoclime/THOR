@@ -348,6 +348,10 @@ int main(int argc, char** argv) {
     config_reader.append_config_var(
         "ultrahot_heating", uh_heating_str, string(uh_heating_default)); //
 
+    string thermo_equation_str("entropy");
+    config_reader.append_config_var(
+        "thermo_equation", thermo_equation_str, string(thermo_equation_default));
+
     //*****************************************************************
     // read configs for modules
     phy_modules_generate_config(config_reader);
@@ -520,6 +524,22 @@ int main(int argc, char** argv) {
     else {
         log::printf("init_PT_profile config item not recognised: [%s]\n",
                     init_PT_profile_str.c_str());
+        config_OK &= false;
+    }
+
+    thermo_equation_types thermo_equation = ENTROPY;
+
+    if (thermo_equation_str == "entropy") {
+        thermo_equation = ENTROPY;
+        config_OK &= true;
+    }
+    else if (thermo_equation_str == "energy") {
+        thermo_equation = ENERGY;
+        config_OK &= true;
+    }
+    else {
+        log::printf("thermo_equation config item not recognised: [%s]\n",
+                    thermo_equation_str.c_str());
         config_OK &= false;
     }
 
@@ -847,7 +867,8 @@ int main(int argc, char** argv) {
           kappa_sw,
           f_lw,
           ultrahot_thermo,
-          ultrahot_heating);
+          ultrahot_heating,
+          thermo_equation);
 
 
     USE_BENCHMARK();

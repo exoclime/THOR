@@ -702,8 +702,8 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pgrid_ref='auto',overwrite=False,comp
             surf = 0
             if input.surface:
                 surf = 1
-                # extrap_low = (grid.Altitudeh[0]-grid.Altitude[1])/(grid.Altitude[0]-grid.Altitude[1])
-                # Psurf = output.Pressure[:,1,:]+extrap_low*(output.Pressure[:,0,:]-output.Pressure[:,1,:])
+                extrap_low = (grid.Altitudeh[0]-grid.Altitude[1])/(grid.Altitude[0]-grid.Altitude[1])
+                Psurf = output.Pressure[:,1,:]+extrap_low*(output.Pressure[:,0,:]-output.Pressure[:,1,:])
 
                 # if pgrid_ref == 'mean':
                 #     Pref = np.concatenate((np.array([np.mean(Psurf)]),Pref))

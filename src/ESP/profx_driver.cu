@@ -76,7 +76,7 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
     dim3      NB((point_num / NTH) + 1, nv, 1);
     dim3      NBRT((point_num / NTH) + 1, 1, 1);
 
-    cudaMemset(profx_dP_d, 0, sizeof(double) * point_num * nv);
+    cudaMemset(profx_Qheat_d, 0, sizeof(double) * point_num * nv);
     cudaMemset(profx_dMh_d, 0, sizeof(double) * 3 * point_num * nv);
     cudaMemset(profx_dWh_d, 0, sizeof(double) * point_num * nvi);
     cudaMemset(profx_dW_d, 0, sizeof(double) * point_num * nv);
@@ -209,7 +209,7 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
                                     profx_dMh_d,
                                     profx_dWh_d,
                                     profx_dW_d,
-                                    profx_dP_d);
+                                    profx_Qheat_d);
 
         BENCH_POINT_I(current_step,
                       "phy_Sponge",
@@ -334,7 +334,7 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
                             pressure_d,
                             Rho_d,
                             temperature_d,
-                            profx_dP_d,
+                            profx_Qheat_d,
                             sim.Gravit,
                             sim.Cp,
                             sim.Rd,

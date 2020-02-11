@@ -169,7 +169,7 @@ __global__ void sponge_layer(double *M_d,
                              double *profx_dMh_d,
                              double *profx_dWh_d,
                              double *profx_dW_d,
-                             double *profx_dP_d) {
+                             double *profx_Qheat_d) {
     //
     //  Description:
     //
@@ -397,7 +397,7 @@ __global__ void sponge_layer(double *M_d,
                 }
                 else {
                     dT = -kvT * (temperature - temp_av);
-                    profx_dP_d[id * nv + lev] += Rd_d[id * nv + lev] * Rho_d[id * nv + lev] * dT;
+                    profx_Qheat_d[id * nv + lev] += Rd_d[id * nv + lev] * Rho_d[id * nv + lev] * dT;
                 }
             }
         }

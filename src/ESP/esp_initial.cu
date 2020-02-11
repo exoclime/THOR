@@ -108,7 +108,8 @@ __host__ ESP::ESP(int *                 point_local_,
                   double                kappa_sw_,
                   double                f_lw_,
                   uh_thermo_types       ultrahot_thermo_,
-                  uh_heating_types      ultrahot_heating_) :
+                  uh_heating_types      ultrahot_heating_,
+                  thermo_equation_types thermo_equation_) :
     nl_region(nl_region_),
     nr(nr_),
     point_num(point_num_),
@@ -126,7 +127,8 @@ __host__ ESP::ESP(int *                 point_local_,
     init_PT_profile(init_PT_profile_),
     raysp_calc_mode(raysp_calc_mode_),
     ultrahot_thermo(ultrahot_thermo_),
-    ultrahot_heating(ultrahot_heating_) {
+    ultrahot_heating(ultrahot_heating_),
+    thermo_equation(thermo_equation_) {
 
     point_local_h = point_local_;
     maps_h        = maps_;
@@ -268,8 +270,13 @@ __host__ void ESP::alloc_data(bool conservation, bool output_mean) {
     //  Potential temperature
     cudaMalloc((void **)&pt_d, nv * point_num * sizeof(double));
     cudaMalloc((void **)&pth_d, nvi * point_num * sizeof(double));
-    cudaMalloc((void **)&pt_tau_d, nv * point_num * sizeof(double));
 
+    //  Energy (for thermo_equation = energy)
+    cudaMalloc((void **)&epotential_d, nv * point_num * sizeof(double));
+    cudaMalloc((void **)&epotentialh_d, nvi * point_num * sizeof(double));
+    cudaMalloc((void **)&ekinetic_d, nv * point_num * sizeof(double));
+    cudaMalloc((void **)&ekinetich_d, nvi * point_num * sizeof(double));
+    cudaMalloc((void **)&Etotal_tau_d, nv * point_num * sizeof(double));
 
     //  Entalphy
     cudaMalloc((void **)&h_d, nv * point_num * sizeof(double));
@@ -334,7 +341,7 @@ __host__ void ESP::alloc_data(bool conservation, bool output_mean) {
     cudaMalloc((void **)&diffv_d1, 6 * nv * point_num * sizeof(double));
     cudaMalloc((void **)&diffv_d2, 6 * nv * point_num * sizeof(double));
 
-    cudaMalloc((void **)&profx_dP_d, nv * point_num * sizeof(double));
+    cudaMalloc((void **)&profx_Qheat_d, nv * point_num * sizeof(double));
     cudaMalloc((void **)&profx_dMh_d, 3 * nv * point_num * sizeof(double));
     cudaMalloc((void **)&profx_dWh_d, nvi * point_num * sizeof(double));
     cudaMalloc((void **)&profx_dW_d, nv * point_num * sizeof(double));
@@ -869,7 +876,12 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
     cudaMemset(v_d, 0, sizeof(double) * nv * point_num * 3);
     cudaMemset(pt_d, 0, sizeof(double) * nv * point_num);
     cudaMemset(pth_d, 0, sizeof(double) * nvi * point_num);
-    cudaMemset(pt_tau_d, 0, sizeof(double) * nv * point_num);
+    // cudaMemset(pt_tau_d, 0, sizeof(double) * nv * point_num);
+    cudaMemset(epotential_d, 0, sizeof(double) * nv * point_num);
+    cudaMemset(epotentialh_d, 0, sizeof(double) * nvi * point_num);
+    cudaMemset(ekinetic_d, 0, sizeof(double) * nv * point_num);
+    cudaMemset(ekinetich_d, 0, sizeof(double) * nvi * point_num);
+    cudaMemset(Etotal_tau_d, 0, sizeof(double) * nv * point_num);
 
     cudaMemset(SlowMh_d, 0, sizeof(double) * nv * point_num * 3);
     cudaMemset(SlowWh_d, 0, sizeof(double) * nvi * point_num);
@@ -992,7 +1004,6 @@ __host__ ESP::~ESP() {
     //  Potential temperature
     cudaFree(pt_d);
     cudaFree(pth_d);
-    cudaFree(pt_tau_d);
     //  Slow modes
     cudaFree(SlowMh_d);
     cudaFree(SlowWh_d);
@@ -1077,6 +1088,17 @@ __host__ ESP::~ESP() {
     cudaFree(vtmp);
     cudaFree(wtmp);
     cudaFree(Ttmp);
+
+    cudaFree(profx_Qheat_d);
+    cudaFree(profx_dMh_d);
+    cudaFree(profx_dWh_d);
+    cudaFree(profx_dW_d);
+
+    cudaFree(epotential_d);
+    cudaFree(epotentialh_d);
+    cudaFree(ekinetic_d);
+    cudaFree(ekinetich_d);
+    cudaFree(Etotal_tau_d);
 
     // ultra hot
     free(Rd_h);

@@ -82,7 +82,8 @@ __global__ void Compute_Slow_Modes(double *SlowMh_d,
                                    bool    NonHydro,
                                    double *profx_dMh_d,
                                    double *profx_dWh_d,
-                                   double *profx_dP_d) {
+                                   double *profx_Qheat_d,
+                                   bool    energy_equation) {
 
     int x = threadIdx.x;
     int y = threadIdx.y;
@@ -319,23 +320,18 @@ __global__ void Compute_Slow_Modes(double *SlowMh_d,
         intt = (xi - xip) / (xim - xip);
         intl = (xi - xim) / (xip - xim);
 
-        // if (NonHydro)
-        //     swr =
-        //         (-diffw_d[id * nv + lev - 1] - diffwv_d[id * nv + lev - 1] + advrl + rhol * Gravit)
-        //             * intt
-        //         + (-diffw_d[id * nv + lev] - diffwv_d[id * nv + lev] + advr + rho * Gravit) * intl;
-        // else {
         if (DeepModel) {
-            swr =
-                (-diffw_d[id * nv + lev - 1] - diffwv_d[id * nv + lev - 1] + advrl + rhol * Gravit)
-                    * intt
-                + (-diffw_d[id * nv + lev] - diffwv_d[id * nv + lev] + advr + rho * Gravit) * intl;
+            swr = (advrl + rhol * Gravit) * intt + (advr + rho * Gravit) * intl;
         }
         else {
-            swr = (-diffw_d[id * nv + lev - 1] - diffwv_d[id * nv + lev - 1] + rhol * Gravit) * intt
-                  + (-diffw_d[id * nv + lev] - diffwv_d[id * nv + lev] + rho * Gravit) * intl;
+            swr = (rhol * Gravit) * intt + (rho * Gravit) * intl;
         }
-        // }
+
+        if (NonHydro) {
+            swr += (-diffw_d[id * nv + lev - 1] - diffwv_d[id * nv + lev - 1]) * intt
+                   + (-diffw_d[id * nv + lev] - diffwv_d[id * nv + lev]) * intl;
+        }
+
 
         dz   = alt - altl;
         dpdz = (pressure_s[ir] - pressurel) / dz;
@@ -356,8 +352,16 @@ __global__ void Compute_Slow_Modes(double *SlowMh_d,
           + (nflxv_s[iri * 3 + 2] - dpr * funcz) * v_s[ir * 3 + 2] * r;
 
     Slowpressure_d[id * nv + lev] =
-        (Rd_d[id * nv + lev] / Cv) * (-nflxp_s[iri] - gtil_d[id * nv + lev] - dwhdz + vgp)
-        + diffpr_d[id * nv + lev] + diffprv_d[id * nv + lev] + profx_dP_d[id * nv + lev];
+        (Rd_d[id * nv + lev] / Cv)
+        * (-nflxp_s[iri] - gtil_d[id * nv + lev] - dwhdz + vgp + profx_Qheat_d[id * nv + lev]);
+
+    if (energy_equation) {
+        Slowpressure_d[id * nv + lev] +=
+            Rd_d[id * nv + lev] / Cv * (diffpr_d[id * nv + lev] + diffprv_d[id * nv + lev]);
+    }
+    else {
+        Slowpressure_d[id * nv + lev] += diffpr_d[id * nv + lev] + diffprv_d[id * nv + lev];
+    }
 }
 
 template<int NN>
@@ -398,7 +402,8 @@ __global__ void Compute_Slow_Modes_Poles(double *SlowMh_d,
                                          bool    NonHydro,
                                          double *profx_dMh_d,
                                          double *profx_dWh_d,
-                                         double *profx_dP_d) {
+                                         double *profx_Qheat_d,
+                                         bool    energy_equation) {
 
     int id = blockIdx.x * blockDim.x + threadIdx.x;
     id += num - 2; // Poles
@@ -583,19 +588,15 @@ __global__ void Compute_Slow_Modes_Poles(double *SlowMh_d,
 
                 intt = (xi - xip) / (xim - xip);
                 intl = (xi - xim) / (xip - xim);
-                if (DeepModel) //(NonHydro)
-                    swr = (-diffw_d[id * nv + lev - 1] - diffwv_d[id * nv + lev - 1] + advrl
-                           + rhol * Gravit)
-                              * intt
-                          + (-diffw_d[id * nv + lev] - diffwv_d[id * nv + lev] + advrt
-                             + rhot * Gravit)
-                                * intl;
+                if (DeepModel)
+                    swr = (advrl + rhol * Gravit) * intt + (advrt + rhot * Gravit) * intl;
                 else
-                    swr =
-                        (-diffw_d[id * nv + lev - 1] - diffwv_d[id * nv + lev - 1] + rhol * Gravit)
-                            * intt
-                        + (-diffw_d[id * nv + lev] - diffwv_d[id * nv + lev] + rhot * Gravit)
-                              * intl;
+                    swr = (rhol * Gravit) * intt + (rhot * Gravit) * intl;
+
+                if (NonHydro) {
+                    swr += (-diffw_d[id * nv + lev - 1] - diffwv_d[id * nv + lev - 1]) * intt
+                           + (-diffw_d[id * nv + lev] - diffwv_d[id * nv + lev]) * intl;
+                }
 
                 dz   = alt - altl;
                 dpdz = (pressure_p[0] - pressurel) / dz;
@@ -616,8 +617,17 @@ __global__ void Compute_Slow_Modes_Poles(double *SlowMh_d,
                   + (nflxv_p[2] - dpr * func_r_p[2]) * v_p[2] * r;
 
             Slowpressure_d[id * nv + lev] =
-                (Rd_d[id * nv + lev] / Cv) * (-nflxp_p - gtil_d[id * nv + lev] - dwhdz + vgp)
-                + diffpr_d[id * nv + lev] + diffprv_d[id * nv + lev] + profx_dP_d[id * nv + lev];
+                (Rd_d[id * nv + lev] / Cv)
+                * (-nflxp_p - gtil_d[id * nv + lev] - dwhdz + vgp + profx_Qheat_d[id * nv + lev]);
+
+            if (energy_equation) {
+                Slowpressure_d[id * nv + lev] +=
+                    (Rd_d[id * nv + lev] / Cv)
+                    * (diffpr_d[id * nv + lev] + diffprv_d[id * nv + lev]);
+            }
+            else {
+                Slowpressure_d[id * nv + lev] += diffpr_d[id * nv + lev] + diffprv_d[id * nv + lev];
+            }
 
             if (lev < nv - 1) {
                 pressurel = pressure_p[0];

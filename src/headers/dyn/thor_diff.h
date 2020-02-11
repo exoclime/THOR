@@ -71,6 +71,7 @@ __global__ void Diffusion_Op(double* diffmh_d,
                              double* Altitude_d,
                              double  A,
                              double* Rd_d,
+                             double* Cp_d,
                              int*    maps_d,
                              int     nl_region,
                              bool    laststep,
@@ -78,7 +79,8 @@ __global__ void Diffusion_Op(double* diffmh_d,
                              bool    DiffSponge,
                              int     order_diff_sponge,
                              double* Kdh2_d,
-                             double* boundary_flux_d) {
+                             double* boundary_flux_d,
+                             bool    energy_equation) {
 
     int x = threadIdx.x;
     int y = threadIdx.y;
@@ -160,8 +162,15 @@ __global__ void Diffusion_Op(double* diffmh_d,
             a_s[ir] = Mh_d[id * nv * 3 + lev * 3 + 2];
         else if (var == 4)
             a_s[ir] = W_d[id * nv + lev];
-        else if (var == 5)
-            a_s[ir] = Rd_d[id * nv + lev] * temperature_d[id * nv + lev];
+        else if (var == 5) {
+            if (energy_equation) {
+                a_s[ir] =
+                    (Cp_d[id * nv + lev] - Rd_d[id * nv + lev]) * temperature_d[id * nv + lev];
+            }
+            else {
+                a_s[ir] = Rd_d[id * nv + lev] * temperature_d[id * nv + lev];
+            }
+        }
     }
     // we want the velocities, not the momentum
     if (var >= 1 && var <= 4 && !laststep)
@@ -191,8 +200,15 @@ __global__ void Diffusion_Op(double* diffmh_d,
                     a_s[ir2] = Mh_d[igh * nv * 3 + lev * 3 + 2];
                 else if (var == 4)
                     a_s[ir2] = W_d[igh * nv + lev];
-                else if (var == 5)
-                    a_s[ir2] = Rd_d[igh * nv + lev] * temperature_d[igh * nv + lev];
+                else if (var == 5) {
+                    if (energy_equation) {
+                        a_s[ir2] = (Cp_d[igh * nv + lev] - Rd_d[igh * nv + lev])
+                                   * temperature_d[igh * nv + lev];
+                    }
+                    else {
+                        a_s[ir2] = Rd_d[igh * nv + lev] * temperature_d[igh * nv + lev];
+                    }
+                }
             }
             if (var >= 1 && var <= 4 && !laststep)
                 a_s[ir2] = a_s[ir2] / Rho_s[ir2];
@@ -466,6 +482,7 @@ __global__ void Diffusion_Op_Poles(double* diffmh_d,
                                    double* Altitudeh_d,
                                    double  A,
                                    double* Rd_d,
+                                   double* Cp_d,
                                    int*    local_d,
                                    int     num,
                                    bool    laststep,
@@ -473,7 +490,8 @@ __global__ void Diffusion_Op_Poles(double* diffmh_d,
                                    bool    DiffSponge,
                                    int     order_diff_sponge,
                                    double* Kdh2_d,
-                                   double* boundary_flux_d) {
+                                   double* boundary_flux_d,
+                                   bool    energy_equation) {
 
     int id = blockIdx.x * blockDim.x + threadIdx.x;
     id += num - 2; // Poles

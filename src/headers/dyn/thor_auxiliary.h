@@ -55,14 +55,20 @@ extern __constant__ int num_dynamical_arrays[1];
 __global__ void Compute_Temperature_H_Pt_Geff(double *temperature_d,
                                               double *pressure_d,
                                               double *Rho_d,
+                                              double *Mh_d,
                                               double *h_d,
                                               double *hh_d,
                                               double *pt_d,
                                               double *pth_d,
-                                              double *pt_tau_d,
                                               double *gtil_d,
                                               double *gtilh_d,
                                               double *Wh_d,
+                                              double *W_d,
+                                              double *epotential_d,
+                                              double *epotentialh_d,
+                                              double *ekinetic_d,
+                                              double *ekinetich_d,
+                                              double *Etotal_tau_d,
                                               double  P_Ref,
                                               double  Gravit,
                                               double *Cp_d,
@@ -71,7 +77,8 @@ __global__ void Compute_Temperature_H_Pt_Geff(double *temperature_d,
                                               double *Altitudeh_d,
                                               int     num,
                                               int     nv,
-                                              bool    calcT) {
+                                              bool    calcT,
+                                              bool    energy_equation) {
 
     //
     //  Description: Computes temperature, internal energy, potential temperature and effective gravity.
@@ -86,7 +93,7 @@ __global__ void Compute_Temperature_H_Pt_Geff(double *temperature_d,
 
     //  Local variables.
     double temperature, rho, rhoh, rhol, rhop;
-    double pressure, h, hl, pt, ptl, pl, pp, dpdz;
+    double pressure, h, hl, pt, ptl, pl, pp, dpdz, ep, epl, ek, ekl;
     double gtilh, gtilht;
     double dz, dp_dz;
     double Cv;
@@ -105,7 +112,13 @@ __global__ void Compute_Temperature_H_Pt_Geff(double *temperature_d,
                     pl   = pressure;
                     rhol = rho;
                     hl   = h;
-                    ptl  = pt;
+                    if (energy_equation) {
+                        epl = ep;
+                        ekl = ek;
+                    }
+                    else {
+                        ptl = pt;
+                    }
                     altl = alt;
                 }
 
@@ -119,15 +132,30 @@ __global__ void Compute_Temperature_H_Pt_Geff(double *temperature_d,
                     temperature = temperature_d[id * nv + lev];
                 }
 
-                alt   = Altitude_d[lev];
-                alth  = Altitudeh_d[lev];
-                altht = Altitudeh_d[lev + 1];
-                h     = Cv * temperature + pressure / rho; //why not just Cp*T??
-                pt    = (P_Ref / (Rd_d[id * nv + lev] * rho)) * pow(pressure / P_Ref, CvoCp);
+                alt                = Altitude_d[lev];
+                alth               = Altitudeh_d[lev];
+                altht              = Altitudeh_d[lev + 1];
+                h                  = Cv * temperature + pressure / rho; //why not just Cp*T??
+                h_d[id * nv + lev] = h;
 
-                h_d[id * nv + lev]      = h;
-                pt_d[id * nv + lev]     = pt;
-                pt_tau_d[id * nv + lev] = pt;
+                if (energy_equation) {
+                    //calculate energies needed later for total energy equation
+                    ep                          = Gravit * Altitude_d[lev];
+                    epotential_d[id * nv + lev] = ep;
+                    ek                          = 0.5
+                         * (Mh_d[id * nv * 3 + lev * 3 + 0] * Mh_d[id * nv * 3 + lev * 3 + 0]
+                            + Mh_d[id * nv * 3 + lev * 3 + 1] * Mh_d[id * nv * 3 + lev * 3 + 1]
+                            + Mh_d[id * nv * 3 + lev * 3 + 2] * Mh_d[id * nv * 3 + lev * 3 + 2]
+                            + W_d[id * nv + lev] * W_d[id * nv + lev])
+                         / (Rho_d[id * nv + lev] * Rho_d[id * nv + lev]);
+                    ekinetic_d[id * nv + lev]   = ek;
+                    Etotal_tau_d[id * nv + lev] = ep + ek + Cv / Rd_d[id * nv + lev] * pressure;
+                }
+                else {
+                    pt = (P_Ref / (Rd_d[id * nv + lev] * rho)) * pow(pressure / P_Ref, CvoCp);
+                    pt_d[id * nv + lev] = pt;
+                }
+                // pt_tau_d[id * nv + lev] = pt;
             }
             if (lev == 0) { // not sure about use of Rd in extrapolation
                 extr = (-alt - Altitude_d[lev + 1]) / (Altitude_d[lev + 1] - alt);
@@ -164,14 +192,27 @@ __global__ void Compute_Temperature_H_Pt_Geff(double *temperature_d,
                 // rhoh = 0.5 * (pressure + pp) / (Rd_d[id * nv + lev - 1] * temperature);
                 // pth_d[id * (nv + 1) + nv] = (P_Ref / (Rd_d[id * nv + lev - 1] * rhoh))
                 //                             * pow(0.5 * (pressure + pp) / P_Ref, CvoCp);
-                pth_d[id * (nv + 1) + nv] =
-                    pt_d[id * nv + nv - 2]
-                    + (pt_d[id * nv + nv - 1] - pt_d[id * nv + nv - 2]) * extr;
-                pth_d[id * (nv + 1) + 0] = pt_d[id * nv + 1]
-                                           + (pt_d[id * nv + 1] - pt_d[id * nv + 0])
-                                                 * (Altitudeh_d[0] - Altitude_d[1])
-                                                 / (Altitude_d[1] - Altitude_d[0]);
 
+                if (energy_equation) {
+                    epotentialh_d[id * (nv + 1) + nv] = Gravit * Altitudeh_d[nv];
+                    epotentialh_d[id * (nv + 1) + nv] = Gravit * Altitudeh_d[0];
+                    ekinetich_d[id * (nv + 1) + nv] =
+                        ekinetic_d[id * nv + nv - 2]
+                        + (ekinetic_d[id * nv + nv - 1] - ekinetic_d[id * nv + nv - 2]) * extr;
+                    ekinetich_d[id * (nv + 1) + 0] =
+                        ekinetic_d[id * nv + 1]
+                        + (ekinetic_d[id * nv + 1] - ekinetic_d[id * nv + 0])
+                              * (Altitudeh_d[0] - Altitude_d[1]) / (Altitude_d[1] - Altitude_d[0]);
+                }
+                else {
+                    pth_d[id * (nv + 1) + nv] =
+                        pt_d[id * nv + nv - 2]
+                        + (pt_d[id * nv + nv - 1] - pt_d[id * nv + nv - 2]) * extr;
+                    pth_d[id * (nv + 1) + 0] = pt_d[id * nv + 1]
+                                               + (pt_d[id * nv + 1] - pt_d[id * nv + 0])
+                                                     * (Altitudeh_d[0] - Altitude_d[1])
+                                                     / (Altitude_d[1] - Altitude_d[0]);
+                }
                 // gtilh_d[id * (nv + 1) + nv] = 0.0;
                 dz = 2.0 * (Altitudeh_d[nv] - Altitude_d[nv - 1]);
                 pp = pressure_d[id * nv + nv - 2]
@@ -192,7 +233,6 @@ __global__ void Compute_Temperature_H_Pt_Geff(double *temperature_d,
                 gtil_d[id * nv + nv - 1] = gtilh * intt + gtilht * intl;
             }
             else {
-
                 dz    = alt - altl;
                 dp_dz = (pressure - pl) / dz;
 
@@ -203,9 +243,15 @@ __global__ void Compute_Temperature_H_Pt_Geff(double *temperature_d,
                 intt = (xi - xip) / (xim - xip);
                 intl = (xi - xim) / (xip - xim);
 
-                hh_d[id * (nv + 1) + lev]  = hl * intt + h * intl;
-                pth_d[id * (nv + 1) + lev] = ptl * intt + pt * intl;
+                hh_d[id * (nv + 1) + lev] = hl * intt + h * intl;
 
+                if (energy_equation) {
+                    epotentialh_d[id * (nv + 1) + lev] = epl * intt + ep * intl;
+                    ekinetich_d[id * (nv + 1) + lev]   = ekl * intt + ek * intl;
+                }
+                else {
+                    pth_d[id * (nv + 1) + lev] = ptl * intt + pt * intl;
+                }
                 rhoh   = rhol * intt + rho * intl;
                 gtilht = -(Wh_d[id * (nv + 1) + lev] / rhoh) * dp_dz;
                 // since gtil_d (cell centers) goes only into slow modes,

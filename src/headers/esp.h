@@ -232,7 +232,12 @@ public:
     double *v_d;
     double *pt_d;
     double *pth_d;
-    double *pt_tau_d; // value of pot. temp. at prev. iteration in inner loop
+    // double *pt_tau_d; // value of pot. temp. at prev. iteration in inner loop (not used x_x bad idea!)
+    double *Etotal_tau_d;
+    double *epotential_d;
+    double *epotentialh_d;
+    double *ekinetic_d;
+    double *ekinetich_d;
 
     double *gtil_d;
     double *gtilh_d;
@@ -264,7 +269,7 @@ public:
     double *divg_Mh_d;
     bool *  check_d;
 
-    double *profx_dP_d;
+    double *profx_Qheat_d;
     double *profx_dMh_d;
     double *profx_dWh_d;
     double *profx_dW_d;
@@ -357,7 +362,8 @@ public:
         double                kappa_sw_,
         double                f_lw_,
         uh_thermo_types       ultrahot_thermo_,
-        uh_heating_types      ultrahot_heating_);
+        uh_heating_types      ultrahot_heating_,
+        thermo_equation_types thermo_equation_);
 
     ~ESP();
 
@@ -554,6 +560,8 @@ private:
 
     uh_thermo_types  ultrahot_thermo;
     uh_heating_types ultrahot_heating;
+
+    thermo_equation_types thermo_equation;
 
     // run physics modules
     bool phy_modules_execute;
