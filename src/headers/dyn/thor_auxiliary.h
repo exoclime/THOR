@@ -148,8 +148,9 @@ __global__ void Compute_Temperature_H_Pt_Geff(double *temperature_d,
                             + Mh_d[id * nv * 3 + lev * 3 + 2] * Mh_d[id * nv * 3 + lev * 3 + 2]
                             + W_d[id * nv + lev] * W_d[id * nv + lev])
                          / (Rho_d[id * nv + lev] * Rho_d[id * nv + lev]);
-                    ekinetic_d[id * nv + lev]   = ek;
-                    Etotal_tau_d[id * nv + lev] = ep + ek + Cv / Rd_d[id * nv + lev] * pressure;
+                    ekinetic_d[id * nv + lev] = ek;
+                    Etotal_tau_d[id * nv + lev] =
+                        Rho_d[id * nv + lev] * (ep + ek) + Cv / Rd_d[id * nv + lev] * pressure;
                 }
                 else {
                     pt = (P_Ref / (Rd_d[id * nv + lev] * rho)) * pow(pressure / P_Ref, CvoCp);
@@ -195,7 +196,7 @@ __global__ void Compute_Temperature_H_Pt_Geff(double *temperature_d,
 
                 if (energy_equation) {
                     epotentialh_d[id * (nv + 1) + nv] = Gravit * Altitudeh_d[nv];
-                    epotentialh_d[id * (nv + 1) + nv] = Gravit * Altitudeh_d[0];
+                    epotentialh_d[id * (nv + 1) + 0]  = Gravit * Altitudeh_d[0];
                     ekinetich_d[id * (nv + 1) + nv] =
                         ekinetic_d[id * nv + nv - 2]
                         + (ekinetic_d[id * nv + nv - 1] - ekinetic_d[id * nv + nv - 2]) * extr;
@@ -274,6 +275,7 @@ __global__ void Compute_Temperature_H_Pt_Geff(double *temperature_d,
             }
         }
 
+        // printf("stop");
         // RD: I think the loop below is unnecessary (I've moved calc of gtilh_d above)
         // This change was binary compatible! :D
         // for (int lev = 0; lev < nv + 1; lev++) {

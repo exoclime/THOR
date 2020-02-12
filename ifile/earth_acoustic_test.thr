@@ -7,7 +7,7 @@ config_version = 1
 
 #-- Time stepping and output options -----------------------------------------#
 # number of steps
-num_steps = 10
+num_steps = 97
 
 # length of timesteps in seconds
 timestep = 1800
@@ -18,7 +18,7 @@ n_out = 1
 
 # output directory (relative to current working directory)
 # defaults to 'results'
-results_path = simulations/earth_aw_sum_diff_flux
+results_path = simulations/earth_aw_energy_eqn
 
 # calculate and output quantities we hope to conserve
 # angular momentum, energy, mass, (entropy soon)
@@ -110,8 +110,9 @@ core_benchmark = AcousticTest
 gcm_off = false
 
 # enable convective adjustment scheme
-conv_adj = 0
+conv_adj = true
 
+thermo_equation = energy
 
 #-- Sponge layer (Rayleigh drag) ---------------------------------------------#
 # use sponge layer (Rayleigh drag) at top of atmosphere?

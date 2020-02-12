@@ -1027,6 +1027,12 @@ int main(int argc, char** argv) {
     log::printf("   Output directory = %s \n", output_path.c_str());
     log::printf("   Start output numbering at %d.\n", output_file_idx);
 
+    // make a copy of config file (is there a better way to do this?)
+    std::ifstream source(config_filename);
+    char          dest_name[256];
+    sprintf(dest_name, "%s/config_copy.%d", output_path.c_str(), output_file_idx);
+    std::ofstream destin(dest_name);
+    destin << source.rdbuf();
 
     // We'll start writnig data to file and running main loop,
     // setup signal handlers to handle gracefully termination and interrupt

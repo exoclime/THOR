@@ -490,7 +490,7 @@ __global__ void Density_Pressure_Eqs(double *pressure_d,
     // Updates density
     nflxr_s[iri] += dwdz;
     Rho_d[id * nv + lev] +=
-        (SlowRho_d[id * nv + lev] - nflxr_s[iri]) * dt; //density at time tau+dtau
+        (SlowRho_d[id * nv + lev] - nflxr_s[iri]) * dt; //density deviation at time tau+dtau
 
     // back to thermo equation
     if (energy_equation) {
@@ -508,11 +508,11 @@ __global__ void Density_Pressure_Eqs(double *pressure_d,
             / (Altitudeh_d[lev + 1] - Altitudeh_d[lev]);
 
         //new potential + kinetic energy using newest momenta and density
-        Epot_kin = Rho_d[id * nv + lev] * Gravit * Altitude_d[lev]
+        Epot_kin = (Rho_d[id * nv + lev] + Rhok_d[id * nv + lev]) * Gravit * Altitude_d[lev]
                    + 0.5
                          * (pow(v1_s[ir * 3 + 0], 2) + pow(v1_s[ir * 3 + 1], 2)
                             + pow(v1_s[ir * 3 + 2], 2) + pow(w, 2))
-                         / Rho_d[id * nv + lev];
+                         / (Rho_d[id * nv + lev] + Rhok_d[id * nv + lev]);
         //pressure perturbation
         pressure_d[id * nv + lev] =
             Rd_d[id * nv + lev] / Cv * (aux - Epot_kin) - pressurek_d[id * nv + lev];
@@ -752,11 +752,11 @@ __global__ void Density_Pressure_Eqs_Poles(double *pressure_d,
                     / (Altitudeh_d[lev + 1] - Altitudeh_d[lev]);
 
                 //new potential + kinetic energy using newest momenta and density
-                Epot_kin = Rho_d[id * nv + lev] * Gravit * Altitude_d[lev]
+                Epot_kin = (Rho_d[id * nv + lev] + Rhok_d[id * nv + lev]) * Gravit * Altitude_d[lev]
                            + 0.5
                                  * (pow(v1_p[0 * 3 + 0], 2) + pow(v1_p[0 * 3 + 1], 2)
                                     + pow(v1_p[0 * 3 + 2], 2) + pow(w, 2))
-                                 / Rho_d[id * nv + lev];
+                                 / (Rho_d[id * nv + lev] + Rhok_d[id * nv + lev]);
                 //pressure perturbation
                 pressure_d[id * nv + lev] =
                     Rd_d[id * nv + lev] / Cv * (aux - Epot_kin) - pressurek_d[id * nv + lev];
