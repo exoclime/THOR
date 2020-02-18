@@ -141,7 +141,6 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
             if (current_step * timestep >= t_shrink * timestep) {
                 double shrink_scale = timestep * 1000;
                 Rv_fac = exp(-(current_step * timestep - t_shrink * timestep) / shrink_scale);
-                // printf("%d, %f\n", current_step, Rv_fac);
             }
         }
 

@@ -407,6 +407,8 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                                boundary_flux_d,
                                                energy_equation);
 
+            cudaDeviceSynchronize();
+
             Correct_Horizontal<<<NBALL, NTH>>>(diffmh_d, diffmv_d, func_r_d, point_num);
         }
 
@@ -593,6 +595,13 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                 }
             }
             double Rv_fac = 1;
+            if (shrink_sponge == true) {
+                if (current_step * timestep >= t_shrink * timestep) {
+                    double shrink_scale = timestep * 1000;
+                    Rv_fac = exp(-(current_step * timestep - t_shrink * timestep) / shrink_scale);
+                }
+            }
+
 
             sponge_layer<<<NBRT, NTH>>>(Mhk_d,
                                         Rhok_d,

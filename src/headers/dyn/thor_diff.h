@@ -543,9 +543,18 @@ __global__ void Diffusion_Op_Poles(double* diffmh_d,
                 a_p[i] = W_d[local_p[i - 1] * nv + lev] / Rho_p[i];
         }
         if (var == 5) {
-            a_p[0] = Rd_d[id * nv + lev] * temperature_d[id * nv + lev];
-            for (int i = 1; i < 6; i++)
-                a_p[i] = Rd_d[local_p[i - 1] * nv + lev] * temperature_d[local_p[i - 1] * nv + lev];
+            if (energy_equation) {
+                a_p[0] = (Cp_d[id * nv + lev] - Rd_d[id * nv + lev]) * temperature_d[id * nv + lev];
+                for (int i = 1; i < 6; i++)
+                    a_p[i] = (Cp_d[local_p[i - 1] * nv + lev] - Rd_d[local_p[i - 1] * nv + lev])
+                             * temperature_d[local_p[i - 1] * nv + lev];
+            }
+            else {
+                a_p[0] = Rd_d[id * nv + lev] * temperature_d[id * nv + lev];
+                for (int i = 1; i < 6; i++)
+                    a_p[i] =
+                        Rd_d[local_p[i - 1] * nv + lev] * temperature_d[local_p[i - 1] * nv + lev];
+            }
         }
     }
 

@@ -1775,7 +1775,6 @@ void Icogrid::find_qpoints(int *   point_local,
     double3 sum2;
 
     int geo;
-    // int check = 0;
 
     for (int i = 0; i < point_num; i++) {
         geo = 6; // Hexagons.
@@ -1785,21 +1784,11 @@ void Icogrid::find_qpoints(int *   point_local,
 
 
         for (int j = 0; j < geo - 1; j++) {
-            vc1 = normproj(xyz3[point_local[i * 6 + j]], xyz3[i]);
-            vc2 = normproj(xyz3[point_local[i * 6 + j + 1]], xyz3[point_local[i * 6 + j]]);
-            vc3 = normproj(xyz3[i], xyz3[point_local[i * 6 + j + 1]]);
-            // sum1 = vc1 + vc2 + vc3;
+            vc1  = normproj(xyz3[point_local[i * 6 + j]], xyz3[i]);
+            vc2  = normproj(xyz3[point_local[i * 6 + j + 1]], xyz3[point_local[i * 6 + j]]);
+            vc3  = normproj(xyz3[i], xyz3[point_local[i * 6 + j + 1]]);
             sum2 = sort_add3(vc1, vc2, vc3);
-            // if ((i == 1008) && (j == 0)) {
-            //     printf("1008, tri %d, sum1 = (%.16e, %.16e, %.16e)\n", j, sum1.x, sum1.y, sum1.z);
-            //     printf("1008, tri %d, sum2 = (%.16e, %.16e, %.16e)\n", j, sum2.x, sum2.y, sum2.z);
-            // }
-            // if ((fabs(sum1.x - sum2.x) > 1e-12) || (fabs(sum1.y - sum2.y) > 1e-12)
-            //     || (fabs(sum1.z - sum2.z) > 1e-12)) {
-            //     printf("%d, tri %d, sum1 = (%.16e, %.16e, %.16e)\n", i, j, sum1.x, sum1.y, sum1.z);
-            //     printf("%d, tri %d, sum1 = (%.16e, %.16e, %.16e)\n", i, j, sum2.x, sum2.y, sum2.z);
-            //     check = 1;
-            // }
+
             xyzq3[i * 6 + j] = normalize(sum2);
         }
 
@@ -1807,30 +1796,12 @@ void Icogrid::find_qpoints(int *   point_local,
         vc2 = normproj(xyz3[point_local[i * 6 + 0]], xyz3[point_local[i * 6 + geo - 1]]);
         vc3 = normproj(xyz3[i], xyz3[point_local[i * 6 + 0]]);
 
-        // sum1 = vc1 + vc2 + vc3;
         sum2 = sort_add3(vc1, vc2, vc3);
-        // if ((fabs(sum1.x - sum2.x) > 1e-12) || (fabs(sum1.y - sum2.y) > 1e-12)
-        //     || (fabs(sum1.z - sum2.z) > 1e-12)) {
-        //     printf(
-        //         "%d, tri %d, sum1 = (%.16e, %.16e, %.16e)\n", i, geo - 1, sum1.x, sum1.y, sum1.z);
-        //     printf(
-        //         "%d, tri %d, sum1 = (%.16e, %.16e, %.16e)\n", i, geo - 1, sum2.x, sum2.y, sum2.z);
-        //     check = 1;
-        // }
-        // if ((i == 2560)) {
-        //     printf("2560, tri %d, sum1 = (%.16e, %.16e, %.16e)\n", 4, sum1.x, sum1.y, sum1.z);
-        //     printf("2560, tri %d, sum2 = (%.16e, %.16e, %.16e)\n", 4, sum2.x, sum2.y, sum2.z);
-        // }
+
         xyzq3[i * 6 + geo - 1] = normalize(sum2);
         if (geo == 5)
             xyzq3[i * 6 + 5] = make_double3(0.0, 0.0, 0.0);
     }
-    // if (check == 1) {
-    //     printf("Failed! xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n");
-    // }
-    // else {
-    //     printf("All OK! xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n");
-    // }
 }
 
 
@@ -2206,28 +2177,16 @@ void Icogrid::control_areas(double *areasT,
         area_tot_T += areasT[i];
     }
 
-    // double area_tot_T2, area_tot_Tr2, area_tot_subTr2;
-    // area_tot_T2     = 0.0; // surface area summed over control volumes
-    // area_tot_Tr2    = 0.0; // surface area summed over triangles
-    // area_tot_subTr2 = 0.0; // surface area summed over sub-triangles
-
+    //normalize areas to get exact area of sphere
     for (int i = 0; i < point_num; i++) {
         areasT[i] *= area_tot_exact / area_tot_T;
-        // area_tot_T2 += areasT[i];
         for (int j = 0; j < 6; j++) {
             areasTr[i * 6 + j] *= area_tot_exact / area_tot_Tr;
-            // if (i < point_num - 2 && j < 2) {
-            //     area_tot_Tr2 += areasTr[i * 6 + j];
-            // }
             for (int k = 0; k < 3; k++) {
                 areas[i * 6 * 3 + j * 3 + k] *= area_tot_exact / area_tot_subTr;
-                // if (i < point_num - 2 && j < 2) {
-                //     area_tot_subTr2 += areas[i * 6 * 3 + j * 3 + k];
-                // }
             }
         }
     }
-    // printf("stop");
 }
 
 
