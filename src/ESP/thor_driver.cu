@@ -550,6 +550,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                         Whk_d,
                                         Kdhz_d,
                                         areasTr_d,
+                                        areas_d,
                                         nvecoa_d,
                                         nvecti_d,
                                         nvecte_d,
@@ -568,6 +569,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                          Whk_d,
                                          Kdhz_d,
                                          areasTr_d,
+                                         areas_d,
                                          nvecoa_d,
                                          nvecti_d,
                                          nvecte_d,
@@ -588,6 +590,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                         Whk_d,
                                         Kdhz_d,
                                         areasTr_d,
+                                        areas_d,
                                         nvecoa_d,
                                         nvecti_d,
                                         nvecte_d,
@@ -606,6 +609,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                          Whk_d,
                                          Kdhz_d,
                                          areasTr_d,
+                                         areas_d,
                                          nvecoa_d,
                                          nvecti_d,
                                          nvecte_d,
@@ -672,37 +676,16 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                 }
 
                 if (damp_uv_to_mean && damp_w_to_mean) {
-                    int ilat, lev;
-                    for (ilat = 0; ilat < nlat_bins; ilat++) {
-                        for (lev = 0; lev < nv; lev++) {
-                            vbar_h[ilat * nv * 3 + lev * 3 + 0] = gpu_sum_on_device<1024>(
-                                &(utmp[ilat * nv * max_count + lev * max_count]), max_count);
-                            vbar_h[ilat * nv * 3 + lev * 3 + 1] = gpu_sum_on_device<1024>(
-                                &(vtmp[ilat * nv * max_count + lev * max_count]), max_count);
-                            vbar_h[ilat * nv * 3 + lev * 3 + 2] = gpu_sum_on_device<1024>(
-                                &(wtmp[ilat * nv * max_count + lev * max_count]), max_count);
-                        }
-                    }
+                    gpu_sum_on_device_sponge<1024>(utmp, max_count, vbar_h, nv, nlat_bins, 0);
+                    gpu_sum_on_device_sponge<1024>(vtmp, max_count, vbar_h, nv, nlat_bins, 1);
+                    gpu_sum_on_device_sponge<1024>(wtmp, max_count, vbar_h, nv, nlat_bins, 2);
                 }
                 else if (damp_uv_to_mean) {
-                    int ilat, lev;
-                    for (ilat = 0; ilat < nlat_bins; ilat++) {
-                        for (lev = 0; lev < nv; lev++) {
-                            vbar_h[ilat * nv * 3 + lev * 3 + 0] = gpu_sum_on_device<1024>(
-                                &(utmp[ilat * nv * max_count + lev * max_count]), max_count);
-                            vbar_h[ilat * nv * 3 + lev * 3 + 1] = gpu_sum_on_device<1024>(
-                                &(vtmp[ilat * nv * max_count + lev * max_count]), max_count);
-                        }
-                    }
+                    gpu_sum_on_device_sponge<1024>(utmp, max_count, vbar_h, nv, nlat_bins, 0);
+                    gpu_sum_on_device_sponge<1024>(vtmp, max_count, vbar_h, nv, nlat_bins, 1);
                 }
                 else if (damp_w_to_mean) {
-                    int ilat, lev;
-                    for (ilat = 0; ilat < nlat_bins; ilat++) {
-                        for (lev = 0; lev < nv; lev++) {
-                            vbar_h[ilat * nv * 3 + lev * 3 + 2] = gpu_sum_on_device<1024>(
-                                &(wtmp[ilat * nv * max_count + lev * max_count]), max_count);
-                        }
-                    }
+                    gpu_sum_on_device_sponge<1024>(wtmp, max_count, vbar_h, nv, nlat_bins, 2);
                 }
                 if (damp_uv_to_mean || damp_w_to_mean) {
                     cudaMemset(vbar_d, 0, sizeof(double) * 3 * nlat_bins * nv);
@@ -977,6 +960,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                             Whs_d,
                                             Kdhz_d,
                                             areasTr_d,
+                                            areas_d,
                                             nvecoa_d,
                                             nvecti_d,
                                             nvecte_d,
@@ -995,6 +979,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                              Whs_d,
                                              Kdhz_d,
                                              areasTr_d,
+                                             areas_d,
                                              nvecoa_d,
                                              nvecti_d,
                                              nvecte_d,
@@ -1015,6 +1000,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                             Whs_d,
                                             Kdhz_d,
                                             areasTr_d,
+                                            areas_d,
                                             nvecoa_d,
                                             nvecti_d,
                                             nvecte_d,
@@ -1033,6 +1019,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                              Whs_d,
                                              Kdhz_d,
                                              areasTr_d,
+                                             areas_d,
                                              nvecoa_d,
                                              nvecti_d,
                                              nvecte_d,

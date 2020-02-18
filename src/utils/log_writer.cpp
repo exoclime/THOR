@@ -180,7 +180,6 @@ int log_writer::prepare_conservation_file(bool append) {
         conservation_output_file.open(o.to_string(), std::ofstream::out);
 
         // output file header
-        conservation_output_file << std::setprecision(16);
         conservation_output_file << "#"
                                  << "current_step"
                                  << "\t"
@@ -198,6 +197,8 @@ int log_writer::prepare_conservation_file(bool append) {
                                  << "\t"
                                  << "GlobalEnt_h" << std::endl;
     }
+
+    conservation_output_file << std::setprecision(16);
 
 
     return 0;
@@ -232,6 +233,7 @@ int log_writer::prepare_diagnostics_file(bool append) {
     o /= ("esp_diagnostics_" + simulation_ID + ".txt");
     //log::printf("Output conservation file to %s\n", o.to_string().c_str());
 
+
     // Open for write
     if (append) {
         // write and append, open at end of file
@@ -242,7 +244,6 @@ int log_writer::prepare_diagnostics_file(bool append) {
         diagnostics_output_file.open(o.to_string(), std::ofstream::out);
 
         // output file header
-        diagnostics_output_file << std::setprecision(16);
         diagnostics_output_file << "#"
                                 << "current_step"
                                 << "\t"
@@ -260,6 +261,8 @@ int log_writer::prepare_diagnostics_file(bool append) {
                                 << "\t"
                                 << "end_time" << std::endl;
     }
+
+    diagnostics_output_file << std::setprecision(16);
 
 
     return 0;

@@ -81,6 +81,7 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
     cudaMemset(profx_dWh_d, 0, sizeof(double) * point_num * nvi);
     cudaMemset(profx_dW_d, 0, sizeof(double) * point_num * nv);
 
+    double*   vbar_new = new double[nlat_bins * nv * 3];
 
     if (sim.RayleighSponge == true && raysp_calc_mode == IMP) {
         dim3 NBT((point_num / NTH) + 1, nv, 1);
@@ -109,37 +110,16 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
         }
 
         if (damp_uv_to_mean && damp_w_to_mean) {
-            int ilat, lev;
-            for (ilat = 0; ilat < nlat_bins; ilat++) {
-                for (lev = 0; lev < nv; lev++) {
-                    vbar_h[ilat * nv * 3 + lev * 3 + 0] = gpu_sum_on_device<1024>(
-                        &(utmp[ilat * nv * max_count + lev * max_count]), max_count);
-                    vbar_h[ilat * nv * 3 + lev * 3 + 1] = gpu_sum_on_device<1024>(
-                        &(vtmp[ilat * nv * max_count + lev * max_count]), max_count);
-                    vbar_h[ilat * nv * 3 + lev * 3 + 2] = gpu_sum_on_device<1024>(
-                        &(wtmp[ilat * nv * max_count + lev * max_count]), max_count);
-                }
-            }
+            gpu_sum_on_device_sponge<1024>(utmp, max_count, vbar_h, nv, nlat_bins, 0);
+            gpu_sum_on_device_sponge<1024>(vtmp, max_count, vbar_h, nv, nlat_bins, 1);
+            gpu_sum_on_device_sponge<1024>(wtmp, max_count, vbar_h, nv, nlat_bins, 2);
         }
         else if (damp_uv_to_mean) {
-            int ilat, lev;
-            for (ilat = 0; ilat < nlat_bins; ilat++) {
-                for (lev = 0; lev < nv; lev++) {
-                    vbar_h[ilat * nv * 3 + lev * 3 + 0] = gpu_sum_on_device<1024>(
-                        &(utmp[ilat * nv * max_count + lev * max_count]), max_count);
-                    vbar_h[ilat * nv * 3 + lev * 3 + 1] = gpu_sum_on_device<1024>(
-                        &(vtmp[ilat * nv * max_count + lev * max_count]), max_count);
-                }
-            }
+            gpu_sum_on_device_sponge<1024>(utmp, max_count, vbar_h, nv, nlat_bins, 0);
+            gpu_sum_on_device_sponge<1024>(vtmp, max_count, vbar_h, nv, nlat_bins, 1);
         }
         else if (damp_w_to_mean) {
-            int ilat, lev;
-            for (ilat = 0; ilat < nlat_bins; ilat++) {
-                for (lev = 0; lev < nv; lev++) {
-                    vbar_h[ilat * nv * 3 + lev * 3 + 2] = gpu_sum_on_device<1024>(
-                        &(wtmp[ilat * nv * max_count + lev * max_count]), max_count);
-                }
-            }
+            gpu_sum_on_device_sponge<1024>(wtmp, max_count, vbar_h, nv, nlat_bins, 2);
         }
         if (damp_uv_to_mean || damp_w_to_mean) {
             cudaMemset(vbar_d, 0, sizeof(double) * 3 * nlat_bins * nv);
