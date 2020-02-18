@@ -83,7 +83,7 @@ SimulationSetup::SimulationSetup() {
     RayleighSponge  = false;
     RayleighSpongeT = false;
     DiffSponge      = false;
-    conv_adj        = 1;
+    conv_adj        = true;
 
     gcm_off      = false;
     conservation = false;

@@ -307,15 +307,15 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
 
         if (sim.HyDiff) {
             cudaMemset(diff_d, 0, sizeof(double) * 6 * point_num * nv);
-            cudaMemset(diffrh_d, 0, sizeof(double) * point_num * nv);
-            cudaMemset(boundary_flux_d, 0, sizeof(double) * 6 * point_num * nv);
-            for (int id = 0; id < point_num; id++) {
-                for (int lev = 0; lev < nv; lev++) {
-                    for (int j = 0; j < 6; j++) {
-                        boundary_flux_h[id * nv * 6 + lev * 6 + j] = 0.0;
-                    }
-                }
-            }
+            // cudaMemset(diffrh_d, 0, sizeof(double) * point_num * nv);
+            // cudaMemset(boundary_flux_d, 0, sizeof(double) * 6 * point_num * nv);
+            // for (int id = 0; id < point_num; id++) {
+            //     for (int lev = 0; lev < nv; lev++) {
+            //         for (int j = 0; j < 6; j++) {
+            //             boundary_flux_h[id * nv * 6 + lev * 6 + j] = 0.0;
+            //         }
+            //     }
+            // }
             cudaDeviceSynchronize();
             //Updates: diffmh_d, diffw_d, diffrh_d, diffpr_d, diff_d
             Diffusion_Op<LN, LN><<<NBD, NT>>>(diffmh_d,
