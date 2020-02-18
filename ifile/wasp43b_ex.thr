@@ -16,10 +16,25 @@ timestep = 300
 # output every n steps
 n_out = 7200
 
+# write to log file at a different cadence from n_out
+custom_log_n_out = false
+# how often to write to log file (if above = true)
+log_n_out = 1000
 
 # output directory (relative to current working directory)
 # defaults to 'results'
 results_path = wasp43b_example
+
+# output global diagnostics (energy, mass, momentum, entropy)
+conservation = true
+
+# output global diagnostics (to text file) at a different cadence from n_out
+custom_global_n_out = false
+# how often to output global diag to text (if above = true)
+global_n_out = 1000
+
+# output time mean quantities (averaged over interval between outputs)
+output_mean = true
 
 
 #-- Planetary parameters -----------------------------------------------------#
@@ -47,6 +62,15 @@ Tmean = 1800.0
 # Reference surface pressure [Pa]
 P_ref = 10000000.0
 
+# initial temperature-pressure profile (isothermal or guillot)
+# if isothermal: T = Tmean
+# if guillot: equations 27 (Guillot 2010)
+#    with Teq = Tmean and mu* = 0.5
+#    also uses the gray RT params Tint, kappa_lw, kappa_sw, f_lw
+#    includes the collision-induced absorption approx. from Heng+ 2011
+#    this can be omitted by setting f_lw = 1
+init_PT_profile = isothermal
+
 
 #-- Grid options -------------------------------------------------------------#
 # Altitude of the top of the model domain [m]
@@ -64,7 +88,6 @@ spring_dynamics = true
 # Parameter beta for spring dynamics
 spring_beta = 1.15
 
-
 ## diffusion ############################################
 # Hyper-diffusion
 HyDiff  =    true
@@ -78,7 +101,7 @@ Diffc = 0.015
 # Strength of divergence damping
 DivDampc = 0.015
 #########################################################
-conservation = true
+
 
 #-- Model options ------------------------------------------------------------#
 # Non-hydrostatic parameter
@@ -107,8 +130,9 @@ core_benchmark = NoBenchmark
 # This is useful for testing/debugging physics modules
 gcm_off = false
 
-# use convective adjustment scheme
-conv_adj = 1
+# use (dry) convective adjustment scheme
+conv_adj = true
+
 
 #-- Sponge layer (Rayleigh drag) ---------------------------------------------#
 # use sponge layer (Rayleigh drag) at top of atmosphere?
@@ -129,7 +153,7 @@ Rv_sponge = 1e-4
 # when to shrink sponge (days)
 #t_shrink = 1
 
-#-- Radiative transfer options (core_benchmark = 0) --------------------------#
+#-- Radiative transfer (gray) options (core_benchmark = 0) -------------------#
 ## RT parameters #######################################
 radiative_transfer = true
 
@@ -145,33 +169,43 @@ radius_star = 0.667
 # bond albedo of planet
 albedo = 0.18
 
-# grey opt. depth of thermal wavelengths (at ref pressure)
-taulw = 2128
+# diff_ang = 1/(diffusivity factor) for lw radiation
+diff_ang = 0.5
 
-# grey opt. depth of incoming stellar flux (at ref pressure)
-tausw = 532
+# power law index of unmixed absorbers (lw and sw)
+# tau_lw = f_lw * (kappa_lw/g) * P/P_ref
+#          + (1-f_lw) * (kappa_lw/g) * (P/P_ref)^n_lw
+# n_lw = 2 approximations collision-induced absorption
+# n_lw = 4 approximations water-vapor in Earth troposph.
+n_lw = 2
+
+# tau_sw = (kappa_sw/g) * (P/P_ref)^n_sw
+n_sw = 1
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# These params are also used if init_PT_profile = guillot
+# grey opacity of thermal wavelengths
+kappa_lw = 0.0025
+
+# grey opacity of incoming stellar flux
+kappa_sw = 0.00125
+
+# strength of unmixed absorbers in lw
+f_lw = 0.5
 
 # temperature of internal heat flux (bottom boundary) (K)
-Tlow = 970
-
-# diffusivity factor
-diff_ang = 0.5
+Tint = 100
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 # add sin(lat)^2 dependence to tau lw (advanced)
 latf_lw = false
 # opt depth at poles (lw)
-taulw_pole = 1.5
+kappa_lw_pole = 0.0025
 
 # include surface heating
 surface = false
 # heat capacity of surface
 Csurf = 1e7
-
-# power law index of unmixed absorbers (lw and sw)
-n_lw = 2
-n_sw = 1
-# strength of unmixed absorbers in lw
-f_lw = 0.5
 
 #########################################################
 
@@ -198,6 +232,9 @@ sync_rot = true
 # (stupid Earth convention applies)
 #longp = 0
 #########################################################
+
+# run gray RT code without GCM, every column identical zenith angle (experimental!)
+rt1Dmode = false
 
 #-- Boundary layer options (core_benchmark = NoBenchmark) --------------------#
 boundary_layer = false
