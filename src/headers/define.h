@@ -136,7 +136,7 @@ enum init_PT_profile_types { ISOTHERMAL = 0, GUILLOT = 1 };
 
 enum uh_thermo_types { NO_UH_THERMO = 0, VARY_R_CP = 1, FULL = 2 };
 
-enum uh_heating_types { NO_UH_HEATING = 0, PSEUDO_EQL = 1, RELAX_CHEM = 2 };
+enum uh_heating_types { NO_UH_HEATING = 0, QUASI_EQL = 1, RELAX_CHEM = 2 };
 
 enum raysp_calc_mode_types { IMP = 0, EXP1 = 1, EXP3 = 2 };
 

@@ -494,7 +494,8 @@ int main(int argc, char** argv) {
     }
     else if (core_benchmark_str == "JetSteady") {
         core_benchmark = JET_STEADY;
-        config_OK &= true;
+        log::printf("core_benchmark 'JetSteady' not fully implemented yet\n",
+        config_OK &= false;
     }
     else if (core_benchmark_str == "AcousticTest") {
         core_benchmark = ACOUSTIC_TEST;
@@ -552,7 +553,8 @@ int main(int argc, char** argv) {
     }
     else if (uh_thermo_str == "vary_R_CP") {
         ultrahot_thermo = VARY_R_CP;
-        config_OK &= true;
+        log::printf("ultrahot_thermo option 'vary_R_CP' not ready yet \n");
+        config_OK &= false;
     }
     else if (uh_thermo_str == "full") {
         ultrahot_thermo = FULL;
@@ -571,9 +573,9 @@ int main(int argc, char** argv) {
         ultrahot_heating = NO_UH_HEATING;
         config_OK &= true;
     }
-    else if (uh_heating_str == "pseudo_eql") {
-        ultrahot_heating = PSEUDO_EQL;
-        log::printf("ultrahot_heating option 'pseudo_eql' not ready yet \n");
+    else if (uh_heating_str == "quasi_eql") {
+        ultrahot_heating = QUASI_EQL;
+        log::printf("ultrahot_heating option 'quasi_eql' not ready yet \n");
         config_OK &= false;
     }
     else if (uh_heating_str == "relax_chem") {
