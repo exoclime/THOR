@@ -26,7 +26,7 @@ log_n_out = 1000
 results_path = acoustic_test_divdonly
 
 # output global diagnostics (energy, mass, momentum, entropy)
-conservation = true
+globdiag = true
 
 # output global diagnostics (to text file) at a different cadence from n_out
 custom_global_n_out = false

@@ -48,8 +48,8 @@
 #include "phy/dry_conv_adj.h"
 #include "phy/profx_acoustic_test.h"
 #include "phy/profx_auxiliary.h"
-#include "phy/profx_conservation.h"
 #include "phy/profx_deepHJ.h"
+#include "phy/profx_globdiag.h"
 #include "phy/profx_gwave_test.h"
 #include "phy/profx_held_suarez.h"
 #include "phy/profx_shallowHJ.h"
@@ -65,7 +65,7 @@
 #include "reduction_add.h"
 
 __host__ void ESP::ProfX(const SimulationSetup& sim,
-                         int                    n_out, // output step (triggers conservation calc)
+                         int                    n_out, // output step (triggers globdiag calc)
                          bool                   shrink_sponge) {         // Shrink sponge after some time
     USE_BENCHMARK()
     //
@@ -396,7 +396,7 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
     //
 }
 
-void ESP::conservation(const SimulationSetup& sim) {
+void ESP::globdiag(const SimulationSetup& sim) {
     //
     //  Number of threads per block.
     const int NTH = 256;
@@ -474,7 +474,7 @@ void ESP::conservation(const SimulationSetup& sim) {
                              point_num,
                              sim.DeepModel);
 
-    // run conservation on device
+    // run globdiag on device
     // compute globals
     GlobalE_h    = gpu_sum_on_device<1024>(Etotal_d, point_num * nv);
     GlobalMass_h = gpu_sum_on_device<1024>(Mass_d, point_num * nv);

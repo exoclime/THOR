@@ -315,7 +315,7 @@ int main(int argc, char** argv) {
 
     config_reader.append_config_var("gcm_off", sim.gcm_off, gcm_off_default);
 
-    config_reader.append_config_var("conservation", sim.conservation, conservation_default);
+    config_reader.append_config_var("globdiag", sim.globdiag, globdiag_default);
 
     bool custom_global_n_out;
     config_reader.append_config_var(
@@ -494,7 +494,7 @@ int main(int argc, char** argv) {
     }
     else if (core_benchmark_str == "JetSteady") {
         core_benchmark = JET_STEADY;
-        log::printf("core_benchmark 'JetSteady' not fully implemented yet\n",
+        log::printf("core_benchmark 'JetSteady' not fully implemented yet\n");
         config_OK &= false;
     }
     else if (core_benchmark_str == "AcousticTest") {
@@ -710,7 +710,7 @@ int main(int argc, char** argv) {
                 initial_conditions = o.to_string();
 
                 logwriter.open_output_log_for_write(true /*open in append mode */);
-                logwriter.prepare_conservation_file(true);
+                logwriter.prepare_globdiag_file(true);
                 logwriter.prepare_diagnostics_file(true);
             }
             else {
@@ -722,14 +722,14 @@ int main(int argc, char** argv) {
             log::printf("No batch file found, initialise simulation.\n");
             // we don't have an output file, start from scratch, reinitialising outputs
             logwriter.open_output_log_for_write(false /*open in non append mode */);
-            logwriter.prepare_conservation_file(false);
+            logwriter.prepare_globdiag_file(false);
             logwriter.prepare_diagnostics_file(false);
         }
     }
     else {
         log::printf("Opening result output file.\n");
         logwriter.open_output_log_for_write(continue_sim /*open in append mode */);
-        logwriter.prepare_conservation_file(continue_sim);
+        logwriter.prepare_globdiag_file(continue_sim);
         logwriter.prepare_diagnostics_file(continue_sim);
     }
 
@@ -856,11 +856,11 @@ int main(int argc, char** argv) {
           Dv_sponge,
           ns_diff_sponge,
           order_diff_sponge,
-          t_shrink,         // time to shrink sponge layer
-          Grid.point_num,   // Number of grid points
-          sim.conservation, // compute conservation values
-          core_benchmark,   // benchmark test type
-          logwriter,        // Log writer
+          t_shrink,       // time to shrink sponge layer
+          Grid.point_num, // Number of grid points
+          sim.globdiag,   // compute globdiag values
+          core_benchmark, // benchmark test type
+          logwriter,      // Log writer
           max_count,
           sim.output_mean,
           init_PT_profile,
@@ -1065,20 +1065,20 @@ int main(int argc, char** argv) {
         X.copy_to_host();
         X.init_timestep(0, simulation_time, timestep);
 
-        if (sim.conservation == true) {
-            X.conservation(sim);
+        if (sim.globdiag == true) {
+            X.globdiag(sim);
 
 
-            logwriter.output_conservation(0,
-                                          simulation_time,
-                                          X.GlobalE_h,
-                                          X.GlobalMass_h,
-                                          X.GlobalAMx_h,
-                                          X.GlobalAMy_h,
-                                          X.GlobalAMz_h,
-                                          X.GlobalEnt_h);
+            logwriter.output_globdiag(0,
+                                      simulation_time,
+                                      X.GlobalE_h,
+                                      X.GlobalMass_h,
+                                      X.GlobalAMx_h,
+                                      X.GlobalAMy_h,
+                                      X.GlobalAMz_h,
+                                      X.GlobalEnt_h);
 
-            X.copy_conservation_to_host();
+            X.copy_globdiag_to_host();
         }
 
         if (sim.output_mean == true) {
@@ -1134,18 +1134,18 @@ int main(int argc, char** argv) {
         simulation_time  = simulation_start_time + (nstep - step_idx + 1) * timestep;
         bool file_output = false;
 
-        if (sim.conservation == true) {
+        if (sim.globdiag == true) {
             if ((custom_global_n_out && nstep % global_n_out == 0)
                 || (custom_global_n_out == false && nstep % n_out == 0)) {
-                X.conservation(sim);
-                logwriter.output_conservation(nstep,
-                                              simulation_time,
-                                              X.GlobalE_h,
-                                              X.GlobalMass_h,
-                                              X.GlobalAMx_h,
-                                              X.GlobalAMy_h,
-                                              X.GlobalAMz_h,
-                                              X.GlobalEnt_h);
+                X.globdiag(sim);
+                logwriter.output_globdiag(nstep,
+                                          simulation_time,
+                                          X.GlobalE_h,
+                                          X.GlobalMass_h,
+                                          X.GlobalAMx_h,
+                                          X.GlobalAMy_h,
+                                          X.GlobalAMz_h,
+                                          X.GlobalEnt_h);
             }
         }
 
@@ -1157,8 +1157,8 @@ int main(int argc, char** argv) {
         if (nstep % n_out == 0 || caught_signal != ESIG_NOSIG) {
             X.copy_to_host();
 
-            if (sim.conservation == true)
-                X.copy_conservation_to_host();
+            if (sim.globdiag == true)
+                X.copy_globdiag_to_host();
 
             if (sim.output_mean == true) {
                 X.copy_mean_to_host();

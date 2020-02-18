@@ -26,7 +26,7 @@ n_out = 3456
 results_path = shallowhj_results
 
 # output global diagnostics (energy, mass, momentum, entropy)
-conservation = true
+globdiag = true
 
 # output global diagnostics (to text file) at a different cadence from n_out
 custom_global_n_out = false

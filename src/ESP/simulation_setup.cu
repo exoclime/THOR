@@ -85,8 +85,8 @@ SimulationSetup::SimulationSetup() {
     DiffSponge      = false;
     conv_adj        = true;
 
-    gcm_off      = false;
-    conservation = false;
+    gcm_off  = false;
+    globdiag = false;
 
     rest = true;
 }

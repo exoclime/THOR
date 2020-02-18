@@ -40,7 +40,7 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
-#include "phy/profx_conservation.h"
+#include "phy/profx_globdiag.h"
 
 __global__ void CalcTotEnergy(double *Etotal_d,
                               double *GlobalE_d,

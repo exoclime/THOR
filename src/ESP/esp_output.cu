@@ -61,7 +61,7 @@
 #include <fstream>
 #include <stdexcept>
 
-__host__ void ESP::copy_conservation_to_host() {
+__host__ void ESP::copy_globdiag_to_host() {
     cudaMemcpy(Etotal_h, Etotal_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
     cudaMemcpy(Entropy_h, Entropy_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
     cudaMemcpy(Mass_h, Mass_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
@@ -71,7 +71,7 @@ __host__ void ESP::copy_conservation_to_host() {
 }
 
 __host__ void ESP::copy_global_to_host() {
-    // Transfer global conservation values to host
+    // Transfer global globdiag values to host
     cudaMemcpy(&GlobalE_h, GlobalE_d, sizeof(double), cudaMemcpyDeviceToHost);
     cudaMemcpy(&GlobalEnt_h, GlobalEnt_d, sizeof(double), cudaMemcpyDeviceToHost);
     cudaMemcpy(&GlobalMass_h, GlobalMass_d, sizeof(double), cudaMemcpyDeviceToHost);
@@ -283,7 +283,7 @@ __host__ void ESP::output(int                    fidx, // Index of output file
     //  Wh
     s.append_table(Wh_h, nvi * point_num, "/Wh", "kg m/s", "Vertical Momentum");
 
-    if (sim.conservation == true) {
+    if (sim.globdiag == true) {
         //  Etotal at each point
         s.append_table(Etotal_h, nv * point_num, "/Etotal", "kg m^2/s^2", "Total Energy");
 

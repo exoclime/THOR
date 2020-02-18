@@ -150,7 +150,7 @@ public:
     double    ns_diff_sponge;
     const int order_diff_sponge;
 
-    //  energy, ang momentum and mass conservation
+    //  energy, ang momentum and mass globdiag
     double *Etotal_h;     //total energy (internal+kinetic+gravit) in control volume
     double  GlobalE_h;    //total energy over entire atmosphere
     double *Mass_h;       //mass in control volume
@@ -291,7 +291,7 @@ public:
     int     max_count;   // max number of points in latitude rings
     double *pressureh_d; // midpoint pressure used in dry conv adj
 
-    //  energy, ang momentum and mass conservation
+    //  energy, ang momentum and mass globdiag
     double *Etotal_d;     //total energy (internal+kinetic+gravit) in control volume
     double *GlobalE_d;    //total energy over entire atmosphere
     double *Mass_d;       //mass in control volume
@@ -351,7 +351,7 @@ public:
         int                   order_diff_sponge_,
         double                t_shrink_,
         int                   point_num_,
-        bool                  conservation,
+        bool                  globdiag,
         benchmark_types       core_benchmark_,
         log_writer &          logwriter_,
         int                   max_count_,
@@ -390,7 +390,7 @@ public:
     void Thor(const SimulationSetup &sim);
 
     void ProfX(const SimulationSetup &sim,
-               int                    n_out, // output step (triggers conservation calc)
+               int                    n_out, // output step (triggers globdiag calc)
                bool                   shrink_sponge);          // Shrink sponge after some time
 
 
@@ -400,10 +400,10 @@ public:
 
     void set_output_param(const std::string &sim_id_, const std::string &output_dir_);
 
-    void conservation(const SimulationSetup &sim);
+    void globdiag(const SimulationSetup &sim);
 
     void copy_to_host();
-    void copy_conservation_to_host();
+    void copy_globdiag_to_host();
     void copy_global_to_host();
     void copy_mean_to_host();
 

@@ -105,7 +105,7 @@
 
 #define gcm_off_default false //turns off fluid dynamical core for debugging physics
 
-#define conservation_default false //output energy, mass, angular momentum, etc
+#define globdiag_default false //output energy, mass, angular momentum, etc
 
 #define conv_adj_default false // use convective adjustment scheme
 

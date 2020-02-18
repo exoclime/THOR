@@ -50,7 +50,7 @@
 #include "directories.h"
 #include "esp.h"
 #include "log_writer.h"
-#include "phy/profx_conservation.h"
+#include "phy/profx_globdiag.h"
 #include "phy/ultrahot_thermo.h"
 #include "phy/valkyrie_jet_steadystate.h"
 #include "storage.h"
@@ -97,7 +97,7 @@ __host__ ESP::ESP(int *                 point_local_,
                   int                   order_diff_sponge_,
                   double                t_shrink_,
                   int                   point_num_,
-                  bool                  conservation,
+                  bool                  globdiag,
                   benchmark_types       core_benchmark_,
                   log_writer &          logwriter_,
                   int                   max_count_,
@@ -178,10 +178,10 @@ __host__ ESP::ESP(int *                 point_local_,
 
     //
     //  Allocate Data
-    alloc_data(conservation, output_mean);
+    alloc_data(globdiag, output_mean);
 }
 
-__host__ void ESP::alloc_data(bool conservation, bool output_mean) {
+__host__ void ESP::alloc_data(bool globdiag, bool output_mean) {
 
     //
     //  Description:
@@ -204,7 +204,7 @@ __host__ void ESP::alloc_data(bool conservation, bool output_mean) {
         Wh_mean_h       = (double *)malloc(nvi * point_num * sizeof(double));
     }
 
-    if (conservation == true) {
+    if (globdiag == true) {
         Etotal_h  = (double *)malloc(nv * point_num * sizeof(double));
         Mass_h    = (double *)malloc(nv * point_num * sizeof(double));
         AngMomx_h = (double *)malloc(nv * point_num * sizeof(double));
@@ -363,8 +363,8 @@ __host__ void ESP::alloc_data(bool conservation, bool output_mean) {
     cudaMalloc((void **)&Ttmp, nv * nlat_bins * max_count * sizeof(double));
     Ttmp_h = (double *)malloc(nv * nlat_bins * max_count * sizeof(double));
 
-    if (conservation == true) {
-        //  Conservation quantities
+    if (globdiag == true) {
+        //  globdiag quantities
         cudaMalloc((void **)&Etotal_d, nv * point_num * sizeof(double));
         cudaMalloc((void **)&Entropy_d, nv * point_num * sizeof(double));
         cudaMalloc((void **)&Mass_d, nv * point_num * sizeof(double));
@@ -1048,7 +1048,7 @@ __host__ ESP::~ESP() {
     cudaFree(diffv_d1);
     cudaFree(diffv_d2);
 
-    //  Conservation quantities
+    //  globdiag quantities
     cudaFree(Etotal_d);
     cudaFree(Entropy_d);
     cudaFree(Mass_d);
