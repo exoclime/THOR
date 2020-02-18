@@ -18,13 +18,12 @@ n_out = 1
 
 # output directory (relative to current working directory)
 # defaults to 'results'
-results_path = simulations/earth_aw_energy_eqn
+results_path = acoustic_test_divdonly
 
 # calculate and output quantities we hope to conserve
 # angular momentum, energy, mass, (entropy soon)
 conservation = true
 
-#  3.539813849773192e+18
 
 #-- Planetary parameters -----------------------------------------------------#
 # name of simulation for output files
@@ -56,7 +55,7 @@ P_ref = 100000.0
 Top_altitude = 10000.0
 
 # Horizontal resolution level.
-glevel = 4
+glevel = 5
 
 # Number of vertical layers
 vlevel = 20
@@ -69,7 +68,7 @@ spring_beta = 1.15
 
 ## diffusion ############################################
 # Hyper-diffusion
-HyDiff  =  true
+HyDiff  =  false
 
 # Divergence-damping
 DivDampP =   true
@@ -87,7 +86,7 @@ DivDampc = 0.02
 NonHydro = true
 
 # Deep atmosphere (scale quantities for altitude + radius)
-DeepModel = false
+DeepModel = true
 
 # Initial conditions
 rest = true
@@ -111,8 +110,6 @@ gcm_off = false
 
 # enable convective adjustment scheme
 conv_adj = true
-
-thermo_equation = energy
 
 #-- Sponge layer (Rayleigh drag) ---------------------------------------------#
 # use sponge layer (Rayleigh drag) at top of atmosphere?

@@ -112,44 +112,44 @@ int main() {
     std::uniform_real_distribution<> dis(0.0, 1.0);
 
 
-    // double lin_sum = 0.0;
-    // printf("Generating test data\n");
-    //
-    // for (int i = 0; i < size; i++) {
-    //     s[i] = dis(gen);
-    //     //s[i] = 1.0;
-    //
-    //     lin_sum += s[i];
-    // }
-    //
-    //
-    // printf("Computing sum over %ld elements\n", size);
-    //
-    // printf("Linear sum: %32.15f\n", lin_sum);
-    //
-    // bool overall_result = true;
-    //
-    // printf("\n");
-    // printf("Test BLOCK_SIZE = 512\n");
-    // printf("\n");
-    // overall_result &= cpu_gpu_test<512>(s, size);
-    //
-    // printf("\n");
-    // printf("Test BLOCK_SIZE = 1024\n");
-    // printf("\n");
-    // overall_result &= cpu_gpu_test<1024>(s, size);
-    //
-    // //bool result = abs(output_val - output_ref) < epsilon;
-    //
-    //
-    // if (overall_result)
-    //     cout << "reduce sum compare SUCCESS" << endl;
-    // else {
-    //     cout << "reduce sum compare FAIL" << endl;
-    // }
-    //
-    //
-    // delete[] s;
+    double lin_sum = 0.0;
+    printf("Generating test data\n");
+
+    for (int i = 0; i < size; i++) {
+        s[i] = dis(gen);
+        //s[i] = 1.0;
+
+        lin_sum += s[i];
+    }
+
+
+    printf("Computing sum over %ld elements\n", size);
+
+    printf("Linear sum: %32.15f\n", lin_sum);
+
+    bool overall_result = true;
+
+    printf("\n");
+    printf("Test BLOCK_SIZE = 512\n");
+    printf("\n");
+    overall_result &= cpu_gpu_test<512>(s, size);
+
+    printf("\n");
+    printf("Test BLOCK_SIZE = 1024\n");
+    printf("\n");
+    overall_result &= cpu_gpu_test<1024>(s, size);
+
+    //bool result = abs(output_val - output_ref) < epsilon;
+
+
+    if (overall_result)
+        cout << "reduce sum compare SUCCESS" << endl;
+    else {
+        cout << "reduce sum compare FAIL" << endl;
+    }
+
+
+    delete[] s;
 
 
     // testing for sponge layer optimization

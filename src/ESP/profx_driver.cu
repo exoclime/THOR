@@ -81,8 +81,6 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
     cudaMemset(profx_dWh_d, 0, sizeof(double) * point_num * nvi);
     cudaMemset(profx_dW_d, 0, sizeof(double) * point_num * nv);
 
-    double*   vbar_new = new double[nlat_bins * nv * 3];
-
     if (sim.RayleighSponge == true && raysp_calc_mode == IMP) {
         dim3 NBT((point_num / NTH) + 1, nv, 1);
 
@@ -94,6 +92,7 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
 
             cudaDeviceSynchronize();
 
+            // I think I don't need the step below or utmp_h at all
             cudaMemcpy(
                 utmp_h, utmp, max_count * nlat_bins * nv * sizeof(double), cudaMemcpyDeviceToHost);
             cudaMemcpy(
