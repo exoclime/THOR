@@ -104,8 +104,6 @@ __global__ void Vertical_Eq(double *Whs_d,
     double hp, h, hm;
     double gp, g, gm;
     double whl, wht;
-    // double GCoRref = Gravit * Cv / Rd;
-    // double CRddref = Cv / (Rd * deltat * deltat);
     double GCoRl, GCoRu, GCoR;
     double CRddl, CRddu, CRdd;
     double or2;

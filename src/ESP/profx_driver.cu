@@ -77,9 +77,6 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
     dim3      NBRT((point_num / NTH) + 1, 1, 1);
 
     cudaMemset(profx_Qheat_d, 0, sizeof(double) * point_num * nv);
-    cudaMemset(profx_dMh_d, 0, sizeof(double) * 3 * point_num * nv);
-    cudaMemset(profx_dWh_d, 0, sizeof(double) * point_num * nvi);
-    cudaMemset(profx_dW_d, 0, sizeof(double) * point_num * nv);
 
     if (sim.RayleighSponge == true && raysp_calc_mode == IMP) {
         dim3 NBT((point_num / NTH) + 1, nv, 1);
@@ -91,21 +88,12 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
                 Mh_d, Rho_d, zonal_mean_tab_d, lonlat_d, point_num, utmp, vtmp, max_count);
 
             cudaDeviceSynchronize();
-
-            // I think I don't need the step below or utmp_h at all
-            cudaMemcpy(
-                utmp_h, utmp, max_count * nlat_bins * nv * sizeof(double), cudaMemcpyDeviceToHost);
-            cudaMemcpy(
-                vtmp_h, vtmp, max_count * nlat_bins * nv * sizeof(double), cudaMemcpyDeviceToHost);
         }
         if (damp_w_to_mean) {
             cudaMemset(wtmp, 0, sizeof(double) * nlat_bins * nv * max_count);
             zonal_w<<<NB, NTH>>>(W_d, Rho_d, zonal_mean_tab_d, point_num, wtmp, max_count);
 
             cudaDeviceSynchronize();
-
-            cudaMemcpy(
-                wtmp_h, wtmp, max_count * nlat_bins * nv * sizeof(double), cudaMemcpyDeviceToHost);
         }
 
         if (damp_uv_to_mean && damp_w_to_mean) {
@@ -137,9 +125,6 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
                                     max_count);
 
             cudaDeviceSynchronize();
-
-            cudaMemcpy(
-                Ttmp_h, Ttmp, max_count * nlat_bins * nv * sizeof(double), cudaMemcpyDeviceToHost);
 
             int ilat, lev;
             for (ilat = 0; ilat < nlat_bins; ilat++) {

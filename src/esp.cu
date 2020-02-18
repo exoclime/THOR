@@ -190,7 +190,7 @@ int main(int argc, char** argv) {
 
     //*****************************************************************
     log::printf("\n Starting ESP!");
-    log::printf("\n\n version 2.0\n");
+    log::printf("\n\n version 2.3\n");
     log::printf(" Compiled on %s at %s.\n", __DATE__, __TIME__);
 
     log::printf(" build level: %s\n", BUILD_LEVEL);

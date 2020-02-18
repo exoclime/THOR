@@ -82,7 +82,6 @@ __global__ void DivM_Op(double* DivM_d,
     double a01x, a01y, a01z, a02x, a02y, a02z, a03x, a03y, a03z;
     double a12x, a12y, a12z, a23x, a23y, a23z;
     double meanwl, meanwt, meanwl2, meanwt2;
-    // double o3 = 1.0 / 3.0;
     double lapx, lapy, lapz, lapr;
     double lap1, lap2;
     double sdiff;
@@ -200,11 +199,6 @@ __global__ void DivM_Op(double* DivM_d,
         }
 
         if (!laststep) {
-            // meanwl  = (wl_s[ir] + wl_s[pt1] + wl_s[pt2]) * o3;
-            // meanwt  = (wt_s[ir] + wt_s[pt1] + wt_s[pt2]) * o3;
-            // meanwl2 = (wl_s[ir] + wl_s[pt2] + wl_s[pt3]) * o3;
-            // meanwt2 = (wt_s[ir] + wt_s[pt2] + wt_s[pt3]) * o3;
-
             // do tri-linear interpolation to get vertical mom. at corners
             meanwl = (areas_d[id * 6 * 3 + j * 3 + 0] * wl_s[ir]
                       + areas_d[id * 6 * 3 + j * 3 + 1] * wl_s[pt1]
@@ -352,7 +346,6 @@ __global__ void DivM_Op_Poles(double* DivM_d,
     double meanwl, meanwl2;
     double meanwt, meanwt2;
     double rscale;
-    // double o3 = 1.0 / 3.0;
     double lapx, lapy, lapz, lapr, lap1, lap2;
     double a01x, a01y, a01z, a02x, a02y, a02z, a03x, a03y, a03z;
     double a12x, a12y, a12z, a23x, a23y, a23z;
@@ -446,13 +439,6 @@ __global__ void DivM_Op_Poles(double* DivM_d,
             dwdz2 = 0.0;
         }
         else {
-            // interpolates vertical velocity to middle of triangle
-            // currently uses mean but could be more accurate with tri-linear interp
-            // meanwl  = (wl_p[0] + wl_p[j] + wl_p[jp1]) * o3;
-            // meanwt  = (wt_p[0] + wt_p[j] + wt_p[jp1]) * o3;
-            // meanwl2 = (wl_p[0] + wl_p[j] + wl_p[jp2]) * o3;
-            // meanwt2 = (wt_p[0] + wt_p[j] + wt_p[jp2]) * o3;
-
             // use tri-linear interpolation
             meanwl = (areas_p[k * 3 + 0] * wl_p[0] + areas_p[k * 3 + 1] * wl_p[j]
                       + areas_p[k * 3 + 1] * wl_p[jp1])

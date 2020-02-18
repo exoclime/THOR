@@ -160,11 +160,6 @@ __global__ void Momentum_Eq(double *M_d,
     M_d[id * nv * 3 + lev * 3 + 0] += Mx;
     M_d[id * nv * 3 + lev * 3 + 1] += My;
     M_d[id * nv * 3 + lev * 3 + 2] += Mz;
-
-    // haaack
-    // M_d[id * nv * 3 + lev * 3 + 0] = 0.0;
-    // M_d[id * nv * 3 + lev * 3 + 1] = 0.0;
-    // M_d[id * nv * 3 + lev * 3 + 2] = 0.0;
 }
 
 template<int NN>
@@ -249,11 +244,6 @@ __global__ void Momentum_Eq_Poles(double *M_d,
             M_d[id * nv * 3 + lev * 3 + 0] += Mx;
             M_d[id * nv * 3 + lev * 3 + 1] += My;
             M_d[id * nv * 3 + lev * 3 + 2] += Mz;
-
-            // haaack
-            // M_d[id * nv * 3 + lev * 3 + 0] = 0.0;
-            // M_d[id * nv * 3 + lev * 3 + 1] = 0.0;
-            // M_d[id * nv * 3 + lev * 3 + 2] = 0.0;
         }
     }
 }
@@ -498,7 +488,6 @@ __global__ void Density_Pressure_Eqs(double *pressure_d,
         aux += Etotal_tau_d[id * nv + lev]
                + (diffpr_d[id * nv + lev] + diffprv_d[id * nv + lev]) * dt
                + profx_Qheat_d[id * nv + lev] * dt; // new total energy
-        /// xxxxx need to change how heat is calculated!!
 
         Etotal_tau_d[id * nv + lev] = aux; //store Etotal for next small step
 
@@ -522,45 +511,15 @@ __global__ void Density_Pressure_Eqs(double *pressure_d,
         pt = (P_Ref / (Rd_d[id * nv + lev] * r))
              * pow((pressure_d[id * nv + lev] + pressurek_d[id * nv + lev]) / P_Ref,
                    Cv / Cp_d[id * nv + lev]);
-        // pt_p = pt_tau_d[id * nv + lev];
-
-        // if (pressure_d[id * nv + lev] != 0 || Rho_d[id * nv + lev] != 0) {
-        //     printf("p = %f, rho = %e \n", pressure_d[id * nv + lev], Rho_d[id * nv + lev]);
-        // }
-        // if (pt != pt_s[ir]) {
-        //     printf("pt_t = %f, pt_tau = %f\n", pt_s[ir], pt);
-        // }
-        // if (id == 0) {
-        //     printf("pt(recalc) = %f, pt(prev) = %f\n", pt, pt_p);
-        // }
 
         aux += pt * r;
-        // aux += pt_s[ir]*r;
 
-
-        // printf("***** (pt_small - pt_large) = %g \n*******",(pt-pt_s[ir]));
-        // Updates pressure
-        // if (aux >= 0) {
         p = P_Ref * pow(Rd_d[id * nv + lev] * aux / P_Ref, Cp_d[id * nv + lev] / Cv); //
-        // }
-        // else {
-        //     p = 0;
-        // }
-        // if (p < -1 * (diffpr_d[id * nv + lev] + diffprv_d[id * nv + lev])) {
-        //     p = -1 * (diffpr_d[id * nv + lev] + diffprv_d[id * nv + lev]);
-        // }
+
         pressure_d[id * nv + lev] = p - pressurek_d[id * nv + lev]
                                     + (diffpr_d[id * nv + lev] + diffprv_d[id * nv + lev]) * dt
                                     + Rd_d[id * nv + lev] / Cv * profx_Qheat_d[id * nv + lev] * dt;
     }
-
-
-    // pt_tau_d[id * nv + lev] = aux / r;
-    // if (isnan(pressure_d[id * nv + lev])) {
-    //     printf("(id, lev) = (%d, %d)", id, lev); //
-    // }
-
-    // calc hs balance here and output...?
 }
 
 
@@ -742,7 +701,6 @@ __global__ void Density_Pressure_Eqs_Poles(double *pressure_d,
                 aux += Etotal_tau_d[id * nv + lev]
                        + (diffpr_d[id * nv + lev] + diffprv_d[id * nv + lev]) * dt
                        + profx_Qheat_d[id * nv + lev] * dt; // new total energy
-                /// xxxxx need to change how heat is calculated!!
 
                 Etotal_tau_d[id * nv + lev] = aux; //store Etotal for next small step
 
@@ -766,37 +724,17 @@ __global__ void Density_Pressure_Eqs_Poles(double *pressure_d,
                 ptmp = pressure_d[id * nv + lev];
                 pt   = (P_Ref / (Rd_d[id * nv + lev] * r))
                      * pow((ptmp + pressurek_d[id * nv + lev]) / P_Ref, Cv / Cp_d[id * nv + lev]);
-                // pt = pt_tau_d[id * nv + lev];
-
-                // if (pressure_d[id * nv + lev] != 0 || Rho_d[id * nv + lev] != 0) {
-                //     printf("p = %f, rho = %e \n", pressure_d[id * nv + lev], Rho_d[id * nv + lev]);
-                // }
-                // if (pt != pt_d[id * nv + lev]) {
-                //     printf("pt_t = %f, pt_tau = %f\n", pt_d[id * nv + lev], pt);
-                // }
 
                 aux += pt * r;
 
-                // aux += pt_d[id * nv + lev] * r;
-                // if (aux >= 0) {
+
                 p = P_Ref * pow(Rd_d[id * nv + lev] * aux / P_Ref, Cp_d[id * nv + lev] / Cv); //
-                // }
-                // else {
-                //     p = 0;
-                // }
-                // if (p < -1 * (diffpr_d[id * nv + lev] + diffprv_d[id * nv + lev])) {
-                //     p = -1 * (diffpr_d[id * nv + lev] + diffprv_d[id * nv + lev]);
-                // }
 
                 // Updates pressure
-                // p                         = P_Ref * pow(Rd * aux / P_Ref, Cp / Cv);
                 pressure_d[id * nv + lev] =
                     p - pressurek_d[id * nv + lev]
                     + (diffpr_d[id * nv + lev] + diffprv_d[id * nv + lev]) * dt
                     + Rd_d[id * nv + lev] / Cv * profx_Qheat_d[id * nv + lev] * dt;
-                // if (isnan(pressure_d[id * nv + lev])) {
-                //     printf("(id, lev) = (%d, %d)", id, lev);
-                // }
             }
 
 
