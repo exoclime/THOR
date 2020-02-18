@@ -79,17 +79,20 @@ public:
     double DivDampc;
 
     // Sim
-    bool SpongeLayer;        // Use sponge layer?
-    bool TempSponge = false; // include thermal term in sponge layer?
     bool DeepModel;
     bool HyDiff;       // Turn on/off hyper-diffusion.
     bool DivDampP;     // Turn on/off divergence damping.
     bool NonHydro;     // Turn on/off non-hydrostatic.
-    bool conservation; // calc/output conservation quantities
+    bool globdiag;     // calc/output globdiag quantities
+
+    // top sponge layer master switches
+    bool RayleighSponge;  // Use sponge layer (rayleigh drag)?
+    bool RayleighSpongeT; // include thermal term in sponge layer?
+    bool DiffSponge;      // Diffusive sponge
 
     bool output_mean;
 
-    int  conv_adj;
+    bool conv_adj;
     bool gcm_off;
 
     bool rest;

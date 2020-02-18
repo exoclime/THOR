@@ -185,7 +185,8 @@ __host__ Icogrid::Icogrid(bool   sprd,        // Spring dynamics option
     areas   = (double *)malloc(6 * 3 * point_num * sizeof(double));
     areasTr = (double *)malloc(6 * point_num * sizeof(double));
     areasT  = (double *)malloc(point_num * sizeof(double));
-    control_areas(areasT, areasTr, areas, point_local, point_xyzq, point_xyz, pent_ind, point_num);
+    control_areas(
+        areasT, areasTr, areas, point_local, point_xyzq, point_xyz, pent_ind, point_num, A);
 
     //  Computes control vectors.
     nvec   = (double *)malloc(6 * 3 * point_num * sizeof(double));
@@ -218,7 +219,7 @@ __host__ Icogrid::Icogrid(bool   sprd,        // Spring dynamics option
     div = (double *)malloc(7 * 3 * point_num * sizeof(double));
     div_operator(areasT, areas, div, nvec, pent_ind, point_num);
 
-    //  Computes the gradiente operator.
+    //  Computes the gradient operator.
     grad = (double *)malloc(7 * 3 * point_num * sizeof(double));
     gra_operator(areasT, areas, grad, nvec, pent_ind, point_num);
 
@@ -1771,6 +1772,7 @@ void Icogrid::find_qpoints(int *   point_local,
     double3 *xyzq3 = (double3 *)xyzq;
 
     double3 vc1, vc2, vc3;
+    double3 sum2;
 
     int geo;
 
@@ -1782,17 +1784,21 @@ void Icogrid::find_qpoints(int *   point_local,
 
 
         for (int j = 0; j < geo - 1; j++) {
-            vc1 = normproj(xyz3[point_local[i * 6 + j]], xyz3[i]);
-            vc2 = normproj(xyz3[point_local[i * 6 + j + 1]], xyz3[point_local[i * 6 + j]]);
-            vc3 = normproj(xyz3[i], xyz3[point_local[i * 6 + j + 1]]);
-            xyzq3[i * 6 + j] = normalize(vc1 + vc2 + vc3);
+            vc1  = normproj(xyz3[point_local[i * 6 + j]], xyz3[i]);
+            vc2  = normproj(xyz3[point_local[i * 6 + j + 1]], xyz3[point_local[i * 6 + j]]);
+            vc3  = normproj(xyz3[i], xyz3[point_local[i * 6 + j + 1]]);
+            sum2 = sort_add3(vc1, vc2, vc3);
+
+            xyzq3[i * 6 + j] = normalize(sum2);
         }
 
         vc1 = normproj(xyz3[point_local[i * 6 + geo - 1]], xyz3[i]);
         vc2 = normproj(xyz3[point_local[i * 6 + 0]], xyz3[point_local[i * 6 + geo - 1]]);
         vc3 = normproj(xyz3[i], xyz3[point_local[i * 6 + 0]]);
 
-        xyzq3[i * 6 + geo - 1] = normalize(vc1 + vc2 + vc3);
+        sum2 = sort_add3(vc1, vc2, vc3);
+
+        xyzq3[i * 6 + geo - 1] = normalize(sum2);
         if (geo == 5)
             xyzq3[i * 6 + 5] = make_double3(0.0, 0.0, 0.0);
     }
@@ -1963,12 +1969,13 @@ inline double comp_ang(const double3 &a, const double3 &b, const double3 &c) {
 
 void Icogrid::control_areas(double *areasT,
                             double *areasTr,
-                            double *areasq,
+                            double *areas,
                             int *   point_local,
                             double *xyzq,
                             double *xyz,
                             int *   pent_ind,
-                            int     point_num) {
+                            int     point_num,
+                            double  A) {
 
     //
     //  Description:
@@ -1999,7 +2006,11 @@ void Icogrid::control_areas(double *areasT,
 
     double ang[3];
     double areav;
-
+    double area_tot_exact, area_tot_T, area_tot_Tr, area_tot_subTr;
+    area_tot_exact = 4 * M_PI * pow(A, 2.0); //exact surface area
+    area_tot_T     = 0.0;                    // surface area summed over control volumes
+    area_tot_Tr    = 0.0;                    // surface area summed over triangles
+    area_tot_subTr = 0.0;                    // surface area summed over sub-triangles
 
     for (int i = 0; i < point_num * 6 * 3; i++)
         areas[i] = 0.0;
@@ -2055,11 +2066,11 @@ void Icogrid::control_areas(double *areasT,
                     ang[2] = comp_ang(c, a, b);
 
                     radius = length(a);
-                    areasq[i * 6 * 3 + j * 3 + k] =
+                    areas[i * 6 * 3 + j * 3 + k] =
                         (ang[0] + ang[1] + ang[2] - M_PI) * pow(radius, 2);
                 }
-                areasTr[i * 6 + j] = areasq[(i * 6 + j) * 3 + 0] + areasq[(i * 6 + j) * 3 + 1]
-                                     + areasq[(i * 6 + j) * 3 + 2];
+                areasTr[i * 6 + j] = areas[(i * 6 + j) * 3 + 0] + areas[(i * 6 + j) * 3 + 1]
+                                     + areas[(i * 6 + j) * 3 + 2];
             }
             areasTr[i * 6 + 5] = 0.0;
         }
@@ -2106,11 +2117,20 @@ void Icogrid::control_areas(double *areasT,
                     ang[2] = comp_ang(c, a, b);
 
                     radius = length(a);
-                    areasq[i * 6 * 3 + j * 3 + k] =
+                    areas[i * 6 * 3 + j * 3 + k] =
                         (ang[0] + ang[1] + ang[2] - M_PI) * pow(radius, 2);
                 }
-                areasTr[i * 6 + j] = areasq[(i * 6 + j) * 3 + 0] + areasq[(i * 6 + j) * 3 + 1]
-                                     + areasq[(i * 6 + j) * 3 + 2];
+                areasTr[i * 6 + j] = areas[(i * 6 + j) * 3 + 0] + areas[(i * 6 + j) * 3 + 1]
+                                     + areas[(i * 6 + j) * 3 + 2];
+            }
+        }
+        if (i < point_num - 2) {
+            //sum over all areas (polar triangles will be counted with neighboring vertices)
+            for (int j = 0; j < 2; j++) {
+                //sum only two per vertex to prevent double/triple counting
+                area_tot_Tr += areasTr[i * 6 + j];
+                area_tot_subTr += (areas[i * 6 * 3 + j * 3 + 0] + areas[i * 6 * 3 + j * 3 + 1]
+                                   + areas[i * 6 * 3 + j * 3 + 2]);
             }
         }
     }
@@ -2154,12 +2174,24 @@ void Icogrid::control_areas(double *areasT,
 
             areasT[i] += areav;
         }
+        area_tot_T += areasT[i];
+    }
+
+    //normalize areas to get exact area of sphere
+    for (int i = 0; i < point_num; i++) {
+        areasT[i] *= area_tot_exact / area_tot_T;
+        for (int j = 0; j < 6; j++) {
+            areasTr[i * 6 + j] *= area_tot_exact / area_tot_Tr;
+            for (int k = 0; k < 3; k++) {
+                areas[i * 6 * 3 + j * 3 + k] *= area_tot_exact / area_tot_subTr;
+            }
+        }
     }
 }
 
 
 void Icogrid::control_vec(double *nvec,
-                          double *nevcoa,
+                          double *nvecoa,
                           double *nvecti,
                           double *nvecte,
                           double *areasT,
@@ -2186,7 +2218,7 @@ void Icogrid::control_vec(double *nvec,
     //          - nvecte - Vectors normal to the outward edges of the triangles.
     //
     double3 *nvec3   = (double3 *)nvec;
-    double3 *nevcoa3 = (double3 *)nevcoa;
+    double3 *nvecoa3 = (double3 *)nvecoa;
     double3 *nvecti3 = (double3 *)nvecti;
     double3 *nvecte3 = (double3 *)nvecte;
 
@@ -2236,7 +2268,7 @@ void Icogrid::control_vec(double *nvec,
 
                 nvec3[i * 6 + j] = nv * fac_nv;
 
-                nevcoa3[i * 6 + j] = nvec3[i * 6 + j] / areasT[i];
+                nvecoa3[i * 6 + j] = nvec3[i * 6 + j] / areasT[i];
 
                 mv               = v1 - v2; //unnormalized vector parallel to cv edges
                 fac_mv           = l / length(mv);
@@ -2247,7 +2279,7 @@ void Icogrid::control_vec(double *nvec,
 
             mvec3[i * 6 + 5] = make_double3(0.0, 0.0, 0.0);
 
-            nevcoa3[i * 6 + 5] = make_double3(0.0, 0.0, 0.0);
+            nvecoa3[i * 6 + 5] = make_double3(0.0, 0.0, 0.0);
         }
         else {
 
@@ -2272,7 +2304,7 @@ void Icogrid::control_vec(double *nvec,
 
                 nvec3[i * 6 + j] = nv * fac_nv;
 
-                nevcoa3[i * 6 + j] = nvec3[i * 6 + j] / areasT[i];
+                nvecoa3[i * 6 + j] = nvec3[i * 6 + j] / areasT[i];
 
                 mv               = v1 - v2; //unnormalized vector parallel to cv edges
                 fac_mv           = l / length(mv);
