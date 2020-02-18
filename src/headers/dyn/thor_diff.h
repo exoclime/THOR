@@ -99,7 +99,7 @@ __global__ void Diffusion_Op(double* diffmh_d,
     // double funcx, funcy, funcz;
     double AT1, AT2;
     // double o3 = 1.0 / 3.0;
-    double o6 = 1.0 / 6.0;
+    // double o6 = 1.0 / 6.0;
     double lap, lap1, lap2, lap3, lap4, lap5, lap6;
     double lapx1, lapx2, lapy1, lapy2, lapz1, lapz2;
     // double dmhz, dmhr;
@@ -275,14 +275,14 @@ __global__ void Diffusion_Op(double* diffmh_d,
         }
 
         if (laststep) {
-            if (var == 0) {
-                vdiff = 0.5 * rscale * sdiff;
-            }
-            else {
-                vdiff = 0.5 * rscale
-                        * (2.0 * Rho_s[ir] + Rho_s[pt1] + 2.0 * Rho_s[pt2] + Rho_s[pt3]) * o6
-                        * sdiff;
-            }
+            // if (var == 0) {
+            vdiff = 0.5 * rscale * sdiff;
+            // }
+            // else {
+            //     vdiff = 0.5 * rscale
+            //             * (2.0 * Rho_s[ir] + Rho_s[pt1] + 2.0 * Rho_s[pt2] + Rho_s[pt3]) * o6
+            //             * sdiff;
+            // }
         }
         else
             vdiff = 0.5 * rscale;
@@ -457,7 +457,7 @@ __global__ void Diffusion_Op_Poles(double* diffmh_d,
     double rscale;
     int    jp1, jp2;
     int    kp1, kp2;
-    double o6 = 1.0 / 6.0;
+    // double o6 = 1.0 / 6.0;
     double AT1, AT2;
     double lap, lap1, lap2, lap3, lap4, lap5, lap6;
     double lapx1, lapx2, lapy1, lapy2, lapz1, lapz2;
@@ -565,13 +565,13 @@ __global__ void Diffusion_Op_Poles(double* diffmh_d,
         kp2   = (k + 2) % 5;
 
         if (laststep) {
-            if (var == 0) {
-                vdiff = 0.5 * sdiff * rscale;
-            }
-            else {
-                vdiff = 0.5 * sdiff * rscale
-                        * (2.0 * Rho_p[0] + Rho_p[j] + 2.0 * Rho_p[jp1] + Rho_p[jp2]) * o6;
-            }
+            // if (var == 0) {
+            vdiff = 0.5 * sdiff * rscale;
+            // }
+            // else {
+            //     vdiff = 0.5 * sdiff * rscale
+            //             * (2.0 * Rho_p[0] + Rho_p[j] + 2.0 * Rho_p[jp1] + Rho_p[jp2]) * o6;
+            // }
         }
         else
             vdiff = 0.5 * rscale;
