@@ -62,6 +62,7 @@ __global__ void Diffusion_Op(double* diffmh_d,
                              double* temperature_d,
                              double* W_d,
                              double* areasTr_d,
+                             double* areas_d,
                              double* nvecoa_d,
                              double* nvecti_d,
                              double* nvecte_d,
@@ -69,11 +70,17 @@ __global__ void Diffusion_Op(double* diffmh_d,
                              double* K_d,
                              double* Altitude_d,
                              double  A,
-                             double  Rd,
+                             double* Rd_d,
+                             double* Cp_d,
                              int*    maps_d,
                              int     nl_region,
                              bool    laststep,
-                             bool    DeepModel) {
+                             bool    DeepModel,
+                             bool    DiffSponge,
+                             int     order_diff_sponge,
+                             double* Kdh2_d,
+                             double* boundary_flux_d,
+                             bool    energy_equation) {
 
     int x = threadIdx.x;
     int y = threadIdx.y;
@@ -88,11 +95,11 @@ __global__ void Diffusion_Op(double* diffmh_d,
 
     double alt;
     double rscale;
-    double sdiff, vdiff;
+    double sdiff, vdiff, astar;
     // double funcx, funcy, funcz;
     double AT1, AT2;
-    double o3 = 1.0 / 3.0;
-    double o6 = 1.0 / 6.0;
+    // double o3 = 1.0 / 3.0;
+    // double o6 = 1.0 / 6.0;
     double lap, lap1, lap2, lap3, lap4, lap5, lap6;
     double lapx1, lapx2, lapy1, lapy2, lapz1, lapz2;
     // double dmhz, dmhr;
@@ -132,17 +139,21 @@ __global__ void Diffusion_Op(double* diffmh_d,
             Rho_s[ir2] = Rho_d[igh * nv + lev];
         }
         else {
-
-
             Rho_s[ir2] = 0.0;
         }
     }
     __syncthreads();
     //////////////////////////////////////////////
     // These set the arguments that the Laplacian will operate on
-    if (laststep)
+    if (laststep) {
         // second time thru, arg is previous result
-        a_s[ir] = diff_d[id * nv * 6 + lev * 6 + var];
+        if (var == 0) {
+            a_s[ir] = diff_d[id * nv * 6 + lev * 6 + var];
+        }
+        else {
+            a_s[ir] = diff_d[id * nv * 6 + lev * 6 + var] * Rho_s[ir];
+        }
+    }
     else {
         // first time thru, arg is fluid property
         if (var == 0)
@@ -155,8 +166,15 @@ __global__ void Diffusion_Op(double* diffmh_d,
             a_s[ir] = Mh_d[id * nv * 3 + lev * 3 + 2];
         else if (var == 4)
             a_s[ir] = W_d[id * nv + lev];
-        else if (var == 5)
-            a_s[ir] = temperature_d[id * nv + lev];
+        else if (var == 5) {
+            if (energy_equation) {
+                a_s[ir] =
+                    (Cp_d[id * nv + lev] - Rd_d[id * nv + lev]) * temperature_d[id * nv + lev];
+            }
+            else {
+                a_s[ir] = Rd_d[id * nv + lev] * temperature_d[id * nv + lev];
+            }
+        }
     }
     // we want the velocities, not the momentum
     if (var >= 1 && var <= 4 && !laststep)
@@ -167,8 +185,14 @@ __global__ void Diffusion_Op(double* diffmh_d,
     ///////////////////////////////
     if (load_halo) {
         if (igh >= 0) {
-            if (laststep)
-                a_s[ir2] = diff_d[igh * nv * 6 + lev * 6 + var];
+            if (laststep) {
+                if (var == 0) {
+                    a_s[ir2] = diff_d[igh * nv * 6 + lev * 6 + var];
+                }
+                else {
+                    a_s[ir2] = diff_d[igh * nv * 6 + lev * 6 + var] * Rho_s[ir2];
+                }
+            }
             else {
                 if (var == 0)
                     a_s[ir2] = Rho_d[igh * nv + lev];
@@ -180,8 +204,15 @@ __global__ void Diffusion_Op(double* diffmh_d,
                     a_s[ir2] = Mh_d[igh * nv * 3 + lev * 3 + 2];
                 else if (var == 4)
                     a_s[ir2] = W_d[igh * nv + lev];
-                else if (var == 5)
-                    a_s[ir2] = temperature_d[igh * nv + lev];
+                else if (var == 5) {
+                    if (energy_equation) {
+                        a_s[ir2] = (Cp_d[igh * nv + lev] - Rd_d[igh * nv + lev])
+                                   * temperature_d[igh * nv + lev];
+                    }
+                    else {
+                        a_s[ir2] = Rd_d[igh * nv + lev] * temperature_d[igh * nv + lev];
+                    }
+                }
             }
             if (var >= 1 && var <= 4 && !laststep)
                 a_s[ir2] = a_s[ir2] / Rho_s[ir2];
@@ -202,10 +233,7 @@ __global__ void Diffusion_Op(double* diffmh_d,
         rscale = 1.0;
 
     if (laststep) {
-        if (var < 5)
-            sdiff = -K_d[lev];
-        else
-            sdiff = -K_d[lev] * Rd; // multiply by gas constant in temperature eqn
+        sdiff = -K_d[lev];
     }
 
     lap = 0.0;
@@ -246,24 +274,42 @@ __global__ void Diffusion_Op(double* diffmh_d,
             pt3 = (y + 2) * nhl + x + 2;
         }
 
-        if (laststep)
-            vdiff = 0.5 * rscale * (2.0 * Rho_s[ir] + Rho_s[pt1] + 2.0 * Rho_s[pt2] + Rho_s[pt3])
-                    * o6 * sdiff;
+        if (laststep) {
+            // if (var == 0) {
+            vdiff = 0.5 * rscale * sdiff;
+            // }
+            // else {
+            //     vdiff = 0.5 * rscale
+            //             * (2.0 * Rho_s[ir] + Rho_s[pt1] + 2.0 * Rho_s[pt2] + Rho_s[pt3]) * o6
+            //             * sdiff;
+            // }
+        }
         else
             vdiff = 0.5 * rscale;
 
         if (j == 0) {
-            AT1  = rscale / areasTr_d[id * 6 + j];
-            lap1 = o6 * (a_s[ir] + a_s[pt1]) - o3 * a_s[pt2];
-            lap2 = o6 * (a_s[pt1] + a_s[pt2]) - o3 * a_s[ir];
-            lap3 = o6 * (a_s[ir] + a_s[pt2]) - o3 * a_s[pt1];
+            // lapi are the values 'a_s' the gradient will operate on and INCLUDE the
+            // correction terms from the gradient calculation
+            AT1   = rscale / areasTr_d[id * 6 + j];
+            astar = (areas_d[id * 6 * 3 + j * 3 + 0] * a_s[ir]
+                     + areas_d[id * 6 * 3 + j * 3 + 1] * a_s[pt1]
+                     + areas_d[id * 6 * 3 + j * 3 + 2] * a_s[pt2])
+                    / areasTr_d[id * 6 + j];
+            lap1 = (0.5 * (a_s[pt1] + a_s[ir]) - astar);
+            lap2 = (0.5 * (a_s[pt1] + a_s[pt2]) - astar);
+            lap3 = (0.5 * (a_s[ir] + a_s[pt2]) - astar);
         }
-        AT2  = rscale / areasTr_d[id * 6 + jp1];
-        lap4 = o6 * (a_s[ir] + a_s[pt2]) - o3 * a_s[pt3];
-        lap5 = o6 * (a_s[pt2] + a_s[pt3]) - o3 * a_s[ir];
-        lap6 = o6 * (a_s[ir] + a_s[pt3]) - o3 * a_s[pt2];
+        AT2   = rscale / areasTr_d[id * 6 + jp1];
+        astar = (areas_d[id * 6 * 3 + jp1 * 3 + 0] * a_s[ir]
+                 + areas_d[id * 6 * 3 + jp1 * 3 + 1] * a_s[pt2]
+                 + areas_d[id * 6 * 3 + jp1 * 3 + 2] * a_s[pt3])
+                / areasTr_d[id * 6 + jp1];
+        lap4 = (0.5 * (a_s[ir] + a_s[pt2]) - astar);
+        lap5 = (0.5 * (a_s[pt2] + a_s[pt3]) - astar);
+        lap6 = (0.5 * (a_s[ir] + a_s[pt3]) - astar);
 
         if (j == 0) {
+            // gradient calculation around triangle centered at two corners of control volume
             lapx1 =
                 (-lap1 * nvecti_d[id * 6 * 3 + j * 3 + 0] + lap2 * nvecte_d[id * 6 * 3 + j * 3 + 0]
                  + lap3 * nvecti_d[id * 6 * 3 + jp1 * 3 + 0])
@@ -295,6 +341,7 @@ __global__ void Diffusion_Op(double* diffmh_d,
                     * AT2;
         }
         else {
+            // gradient calculation at next two corners of control volume
             lapx1 = lapx2;
 
             lapx2 = (-lap4 * nvecti_d[id * 6 * 3 + jp1 * 3 + 0]
@@ -317,6 +364,7 @@ __global__ void Diffusion_Op(double* diffmh_d,
                     * AT2;
         }
 
+        // divergence of gradient (sum over j)
         lap += ((lapx1 + lapx2) * nvecoa_d[id * 6 * 3 + j * 3 + 0]
                 + (lapy1 + lapy2) * nvecoa_d[id * 6 * 3 + j * 3 + 1]
                 + (lapz1 + lapz2) * nvecoa_d[id * 6 * 3 + j * 3 + 2])
@@ -327,32 +375,43 @@ __global__ void Diffusion_Op(double* diffmh_d,
     }
 
     if (laststep) {
-        if (var == 0)
+        if (var == 0) {
             diffrh_d[id * nv + lev] = lap;
-        if (var == 1)
-            diffmh_d[id * nv * 3 + lev * 3 + 0] = lap;
-        if (var == 2)
-            diffmh_d[id * nv * 3 + lev * 3 + 1] = lap;
-        if (var == 3) { //zero out radial component
-            // funcx = func_r_d[id * 3 + 0];
-            // funcy = func_r_d[id * 3 + 1];
-            // funcz = func_r_d[id * 3 + 2];
-            // dmhz  = lap;
-            // //does diffmh_d always get updated before this step?? need to verify!!
-            // dmhr = funcx * diffmh_d[id * nv * 3 + lev * 3 + 0]
-            //        + funcy * diffmh_d[id * nv * 3 + lev * 3 + 1] + funcz * dmhz;
-            // diffmh_d[id * nv * 3 + lev * 3 + 0] += -funcx * dmhr;
-            // diffmh_d[id * nv * 3 + lev * 3 + 1] += -funcy * dmhr;
-            // diffmh_d[id * nv * 3 + lev * 3 + 2] = dmhz - funcz * dmhr;
-            diffmh_d[id * nv * 3 + lev * 3 + 2] = lap;
         }
-        if (var == 4)
+        if (var == 1) {
+            diffmh_d[id * nv * 3 + lev * 3 + 0] = lap;
+            if (DiffSponge && order_diff_sponge == 2) {
+                diffmh_d[id * nv * 3 + lev * 3 + 0] +=
+                    Rho_d[id * nv + lev] * Kdh2_d[lev] * diff_d[id * nv * 6 + lev * 6 + var];
+            }
+        }
+        if (var == 2) {
+            diffmh_d[id * nv * 3 + lev * 3 + 1] = lap;
+            if (DiffSponge && order_diff_sponge == 2) {
+                diffmh_d[id * nv * 3 + lev * 3 + 1] +=
+                    Rho_d[id * nv + lev] * Kdh2_d[lev] * diff_d[id * nv * 6 + lev * 6 + var];
+            }
+        }
+        if (var == 3) {
+            diffmh_d[id * nv * 3 + lev * 3 + 2] = lap;
+            if (DiffSponge && order_diff_sponge == 2) {
+                diffmh_d[id * nv * 3 + lev * 3 + 2] +=
+                    Rho_d[id * nv + lev] * Kdh2_d[lev] * diff_d[id * nv * 6 + lev * 6 + var];
+            }
+        }
+        if (var == 4) {
             diffw_d[id * nv + lev] = lap;
+            if (DiffSponge && order_diff_sponge == 2) {
+                diffw_d[id * nv + lev] +=
+                    Rho_d[id * nv + lev] * Kdh2_d[lev] * diff_d[id * nv * 6 + lev * 6 + var];
+            }
+        }
         if (var == 5)
             diffpr_d[id * nv + lev] = lap;
     }
-    else
+    else {
         diff_d[id * nv * 6 + lev * 6 + var] = lap;
+    }
 }
 
 template<int NN>
@@ -367,6 +426,7 @@ __global__ void Diffusion_Op_Poles(double* diffmh_d,
                                    double* W_d,
                                    double* func_r_d,
                                    double* areasTr_d,
+                                   double* areas_d,
                                    double* nvecoa_d,
                                    double* nvecti_d,
                                    double* nvecte_d,
@@ -374,11 +434,17 @@ __global__ void Diffusion_Op_Poles(double* diffmh_d,
                                    double* Altitude_d,
                                    double* Altitudeh_d,
                                    double  A,
-                                   double  Rd,
+                                   double* Rd_d,
+                                   double* Cp_d,
                                    int*    local_d,
                                    int     num,
                                    bool    laststep,
-                                   bool    DeepModel) {
+                                   bool    DeepModel,
+                                   bool    DiffSponge,
+                                   int     order_diff_sponge,
+                                   double* Kdh2_d,
+                                   double* boundary_flux_d,
+                                   bool    energy_equation) {
 
     int id = blockIdx.x * blockDim.x + threadIdx.x;
     id += num - 2; // Poles
@@ -387,15 +453,12 @@ __global__ void Diffusion_Op_Poles(double* diffmh_d,
     int lev = blockIdx.y;
     int var = blockIdx.z;
 
-    double alt, sdiff, vdiff;
+    double alt, sdiff, vdiff, astar;
     double rscale;
     int    jp1, jp2;
     int    kp1, kp2;
-    double o3 = 1.0 / 3.0;
-    double o6 = 1.0 / 6.0;
+    // double o6 = 1.0 / 6.0;
     double AT1, AT2;
-    // double dmhz, dmhr;
-    // double funcx, funcy, funcz;
     double lap, lap1, lap2, lap3, lap4, lap5, lap6;
     double lapx1, lapx2, lapy1, lapy2, lapz1, lapz2;
     /////////////////////////////////////////
@@ -403,13 +466,14 @@ __global__ void Diffusion_Op_Poles(double* diffmh_d,
     __shared__ double Rho_p[NN + 1];
 
     __shared__ double areasTr_p[NN];
+    __shared__ double areas_p[NN * 3];
     __shared__ double nvecoa_p[NN * 3];
     __shared__ double nvecti_p[NN * 3];
     __shared__ double nvecte_p[NN * 3];
     __shared__ int    local_p[NN];
     /////////////////////////////////////////
 
-    for (int i = 0; i < 5; i++)
+    for (int i = 0; i < 5; i++) //why do we do this loop five times in sequence??
         local_p[i] = local_d[id * 6 + i];
     for (int i = 0; i < 5; i++)
         areasTr_p[i] = areasTr_d[id * 6 + i];
@@ -422,7 +486,9 @@ __global__ void Diffusion_Op_Poles(double* diffmh_d,
     for (int i = 0; i < 5; i++)
         for (int k = 0; k < 3; k++)
             nvecte_p[i * 3 + k] = nvecte_d[id * 6 * 3 + i * 3 + k];
-
+    for (int i = 0; i < 5; i++)
+        for (int k = 0; k < 3; k++)
+            areas_p[i * 3 + k] = areas_d[id * 6 * 3 + i * 3 + k];
 
     alt = Altitude_d[lev];
 
@@ -431,16 +497,24 @@ __global__ void Diffusion_Op_Poles(double* diffmh_d,
         Rho_p[i] = Rho_d[local_p[i - 1] * nv + lev];
 
     if (laststep) {
-        if (var < 5)
-            sdiff = -K_d[lev];
-        else
-            sdiff = -K_d[lev] * Rd;
+        sdiff = -K_d[lev];
     }
 
     if (laststep) {
-        a_p[0] = diff_d[id * nv * 6 + lev * 6 + var];
-        for (int i = 1; i < 6; i++)
-            a_p[i] = diff_d[local_p[i - 1] * nv * 6 + lev * 6 + var];
+        if (var == 0) {
+            a_p[0] = diff_d[id * nv * 6 + lev * 6 + var];
+        }
+        else {
+            a_p[0] = diff_d[id * nv * 6 + lev * 6 + var] * Rho_p[0];
+        }
+        for (int i = 1; i < 6; i++) {
+            if (var == 0) {
+                a_p[i] = diff_d[local_p[i - 1] * nv * 6 + lev * 6 + var];
+            }
+            else {
+                a_p[i] = diff_d[local_p[i - 1] * nv * 6 + lev * 6 + var] * Rho_p[i];
+            }
+        }
     }
     else {
         if (var == 0) {
@@ -469,111 +543,144 @@ __global__ void Diffusion_Op_Poles(double* diffmh_d,
                 a_p[i] = W_d[local_p[i - 1] * nv + lev] / Rho_p[i];
         }
         if (var == 5) {
-            a_p[0] = temperature_d[id * nv + lev];
-            for (int i = 1; i < 6; i++)
-                a_p[i] = temperature_d[local_p[i - 1] * nv + lev];
-        }
-
-
-        if (DeepModel)
-            rscale = A / (alt + A);
-        else
-            rscale = 1.0;
-
-        lap = 0.0;
-
-        for (int k = 0; k < 5; k++) {
-            int j = k + 1;
-            jp1   = (j + 1) % 5;
-            jp2   = (j + 2) % 5;
-            kp1   = (k + 1) % 5;
-            kp2   = (k + 2) % 5;
-
-            if (laststep)
-                vdiff = 0.5 * sdiff * rscale
-                        * (2.0 * Rho_p[0] + Rho_p[j] + 2.0 * Rho_p[jp1] + Rho_p[jp2]) * o6;
-            else
-                vdiff = 0.5 * rscale;
-
-            if (k == 0) {
-                lap1 = (o6 * (a_p[0] + a_p[j]) - o3 * a_p[jp1]);
-                lap2 = (o6 * (a_p[j] + a_p[jp1]) - o3 * a_p[0]);
-                lap3 = (o6 * (a_p[0] + a_p[jp1]) - o3 * a_p[j]);
-                AT1  = rscale / areasTr_p[k];
-            }
-            AT2  = rscale / areasTr_p[kp1];
-            lap4 = (o6 * (a_p[0] + a_p[jp1]) - o3 * a_p[jp2]);
-            lap5 = (o6 * (a_p[jp1] + a_p[jp2]) - o3 * a_p[0]);
-            lap6 = (o6 * (a_p[0] + a_p[jp2]) - o3 * a_p[jp1]);
-
-            if (k == 0) {
-                lapx1 = (-lap1 * nvecti_p[k * 3 + 0] + lap2 * nvecte_p[k * 3 + 0]
-                         + lap3 * nvecti_p[kp1 * 3 + 0])
-                        * AT1;
-                lapx2 = (-lap4 * nvecti_p[kp1 * 3 + 0] + lap5 * nvecte_p[kp1 * 3 + 0]
-                         + lap6 * nvecti_p[kp2 * 3 + 0])
-                        * AT2;
-
-                lapy1 = (-lap1 * nvecti_p[k * 3 + 1] + lap2 * nvecte_p[k * 3 + 1]
-                         + lap3 * nvecti_p[kp1 * 3 + 1])
-                        * AT1;
-                lapy2 = (-lap4 * nvecti_p[kp1 * 3 + 1] + lap5 * nvecte_p[kp1 * 3 + 1]
-                         + lap6 * nvecti_p[kp2 * 3 + 1])
-                        * AT2;
-
-                lapz1 = (-lap1 * nvecti_p[k * 3 + 2] + lap2 * nvecte_p[k * 3 + 2]
-                         + lap3 * nvecti_p[kp1 * 3 + 2])
-                        * AT1;
-                lapz2 = (-lap4 * nvecti_p[kp1 * 3 + 2] + lap5 * nvecte_p[kp1 * 3 + 2]
-                         + lap6 * nvecti_p[kp2 * 3 + 2])
-                        * AT2;
+            if (energy_equation) {
+                a_p[0] = (Cp_d[id * nv + lev] - Rd_d[id * nv + lev]) * temperature_d[id * nv + lev];
+                for (int i = 1; i < 6; i++)
+                    a_p[i] = (Cp_d[local_p[i - 1] * nv + lev] - Rd_d[local_p[i - 1] * nv + lev])
+                             * temperature_d[local_p[i - 1] * nv + lev];
             }
             else {
-                lapx1 = lapx2;
-                lapx2 = (-lap4 * nvecti_p[kp1 * 3 + 0] + lap5 * nvecte_p[kp1 * 3 + 0]
-                         + lap6 * nvecti_p[kp2 * 3 + 0])
-                        * AT2;
-
-                lapy1 = lapy2;
-                lapy2 = (-lap4 * nvecti_p[kp1 * 3 + 1] + lap5 * nvecte_p[kp1 * 3 + 1]
-                         + lap6 * nvecti_p[kp2 * 3 + 1])
-                        * AT2;
-
-                lapz1 = lapz2;
-                lapz2 = (-lap4 * nvecti_p[kp1 * 3 + 2] + lap5 * nvecte_p[kp1 * 3 + 2]
-                         + lap6 * nvecti_p[kp2 * 3 + 2])
-                        * AT2;
+                a_p[0] = Rd_d[id * nv + lev] * temperature_d[id * nv + lev];
+                for (int i = 1; i < 6; i++)
+                    a_p[i] =
+                        Rd_d[local_p[i - 1] * nv + lev] * temperature_d[local_p[i - 1] * nv + lev];
             }
-            lap += ((lapx1 + lapx2) * nvecoa_p[k * 3 + 2] + (lapy1 + lapy2) * nvecoa_p[k * 3 + 1]
-                    + (lapz1 + lapz2) * nvecoa_p[k * 3 + 2])
-                   * vdiff;
         }
+    }
+
+
+    if (DeepModel)
+        rscale = A / (alt + A);
+    else
+        rscale = 1.0;
+
+    lap = 0.0;
+
+    for (int k = 0; k < 5; k++) {
+        int j = k + 1;
+        jp1   = (j) % 5 + 1;
+        jp2   = (j + 1) % 5 + 1;
+        kp1   = (k + 1) % 5;
+        kp2   = (k + 2) % 5;
+
         if (laststep) {
-            if (var == 0)
-                diffrh_d[id * nv + lev] = lap;
-            if (var == 1)
-                diffmh_d[id * 3 * nv + lev * 3 + 0] = lap;
-            if (var == 2)
-                diffmh_d[id * 3 * nv + lev * 3 + 1] = lap;
-            if (var == 3) {
-                // funcx = func_r_d[id * 3 + 0];
-                // funcy = func_r_d[id * 3 + 1];
-                // funcz = func_r_d[id * 3 + 2];
-                // dmhz  = lap;
-                // dmhr  = funcx * diffmh_d[id * nv * 3 + lev * 3 + 0]
-                //        + funcy * diffmh_d[id * nv * 3 + lev * 3 + 1] + funcz * dmhz;
-                // diffmh_d[id * nv * 3 + lev * 3 + 0] += -funcx * dmhr;
-                // diffmh_d[id * nv * 3 + lev * 3 + 1] += -funcy * dmhr;
-                // diffmh_d[id * nv * 3 + lev * 3 + 2] = dmhz - funcz * dmhr;
-                diffmh_d[id * 3 * nv + lev * 3 + 2] = lap;
-            }
-            if (var == 4)
-                diffw_d[id * nv + lev] = lap;
-            if (var == 5)
-                diffpr_d[id * nv + lev] = lap;
+            // if (var == 0) {
+            vdiff = 0.5 * sdiff * rscale;
+            // }
+            // else {
+            //     vdiff = 0.5 * sdiff * rscale
+            //             * (2.0 * Rho_p[0] + Rho_p[j] + 2.0 * Rho_p[jp1] + Rho_p[jp2]) * o6;
+            // }
         }
         else
-            diff_d[id * nv * 6 + lev * 6 + var] = lap;
+            vdiff = 0.5 * rscale;
+
+        if (k == 0) {
+            AT1   = rscale / areasTr_p[k];
+            astar = (areas_p[k * 3 + 0] * a_p[0] + areas_p[k * 3 + 1] * a_p[j]
+                     + areas_p[k * 3 + 2] * a_p[jp1])
+                    / areasTr_p[k];
+            lap1 = (0.5 * (a_p[j] + a_p[0]) - astar);
+            lap2 = (0.5 * (a_p[j] + a_p[jp1]) - astar);
+            lap3 = (0.5 * (a_p[0] + a_p[jp1]) - astar);
+        }
+        AT2   = rscale / areasTr_p[kp1];
+        astar = (areas_p[kp1 * 3 + 0] * a_p[0] + areas_p[kp1 * 3 + 1] * a_p[jp1]
+                 + areas_p[kp1 * 3 + 2] * a_p[jp2])
+                / areasTr_p[kp1];
+        lap4 = (0.5 * (a_p[jp1] + a_p[0]) - astar);
+        lap5 = (0.5 * (a_p[jp2] + a_p[jp1]) - astar);
+        lap6 = (0.5 * (a_p[0] + a_p[jp2]) - astar);
+
+        if (k == 0) {
+            lapx1 = (-lap1 * nvecti_p[k * 3 + 0] + lap2 * nvecte_p[k * 3 + 0]
+                     + lap3 * nvecti_p[kp1 * 3 + 0])
+                    * AT1;
+            lapx2 = (-lap4 * nvecti_p[kp1 * 3 + 0] + lap5 * nvecte_p[kp1 * 3 + 0]
+                     + lap6 * nvecti_p[kp2 * 3 + 0])
+                    * AT2;
+
+            lapy1 = (-lap1 * nvecti_p[k * 3 + 1] + lap2 * nvecte_p[k * 3 + 1]
+                     + lap3 * nvecti_p[kp1 * 3 + 1])
+                    * AT1;
+            lapy2 = (-lap4 * nvecti_p[kp1 * 3 + 1] + lap5 * nvecte_p[kp1 * 3 + 1]
+                     + lap6 * nvecti_p[kp2 * 3 + 1])
+                    * AT2;
+
+            lapz1 = (-lap1 * nvecti_p[k * 3 + 2] + lap2 * nvecte_p[k * 3 + 2]
+                     + lap3 * nvecti_p[kp1 * 3 + 2])
+                    * AT1;
+            lapz2 = (-lap4 * nvecti_p[kp1 * 3 + 2] + lap5 * nvecte_p[kp1 * 3 + 2]
+                     + lap6 * nvecti_p[kp2 * 3 + 2])
+                    * AT2;
+        }
+        else {
+            lapx1 = lapx2;
+            lapx2 = (-lap4 * nvecti_p[kp1 * 3 + 0] + lap5 * nvecte_p[kp1 * 3 + 0]
+                     + lap6 * nvecti_p[kp2 * 3 + 0])
+                    * AT2;
+
+            lapy1 = lapy2;
+            lapy2 = (-lap4 * nvecti_p[kp1 * 3 + 1] + lap5 * nvecte_p[kp1 * 3 + 1]
+                     + lap6 * nvecti_p[kp2 * 3 + 1])
+                    * AT2;
+
+            lapz1 = lapz2;
+            lapz2 = (-lap4 * nvecti_p[kp1 * 3 + 2] + lap5 * nvecte_p[kp1 * 3 + 2]
+                     + lap6 * nvecti_p[kp2 * 3 + 2])
+                    * AT2;
+        }
+
+        lap += ((lapx1 + lapx2) * nvecoa_p[k * 3 + 0] + (lapy1 + lapy2) * nvecoa_p[k * 3 + 1]
+                + (lapz1 + lapz2) * nvecoa_p[k * 3 + 2])
+               * vdiff;
+    }
+    if (laststep) {
+        if (var == 0)
+            diffrh_d[id * nv + lev] = lap;
+        if (var == 1) {
+            diffmh_d[id * 3 * nv + lev * 3 + 0] = lap;
+            if (DiffSponge && order_diff_sponge == 2) {
+                diffmh_d[id * nv * 3 + lev * 3 + 0] +=
+                    Rho_d[id * nv + lev] * Kdh2_d[lev] * diff_d[id * nv * 6 + lev * 6 + var];
+            }
+        }
+        if (var == 2) {
+            diffmh_d[id * 3 * nv + lev * 3 + 1] = lap;
+            if (DiffSponge && order_diff_sponge == 2) {
+                diffmh_d[id * nv * 3 + lev * 3 + 1] +=
+                    Rho_d[id * nv + lev] * Kdh2_d[lev] * diff_d[id * nv * 6 + lev * 6 + var];
+            }
+        }
+        if (var == 3) {
+            diffmh_d[id * 3 * nv + lev * 3 + 2] = lap;
+            if (DiffSponge && order_diff_sponge == 2) {
+                diffmh_d[id * nv * 3 + lev * 3 + 2] +=
+                    Rho_d[id * nv + lev] * Kdh2_d[lev] * diff_d[id * nv * 6 + lev * 6 + var];
+            }
+        }
+        if (var == 4) {
+            diffw_d[id * nv + lev] = lap;
+            if (DiffSponge && order_diff_sponge == 2) {
+                diffw_d[id * nv + lev] +=
+                    Rho_d[id * nv + lev] * Kdh2_d[lev] * diff_d[id * nv * 6 + lev * 6 + var];
+            }
+        }
+        if (var == 5)
+            diffpr_d[id * nv + lev] = lap;
+    }
+    else {
+        diff_d[id * nv * 6 + lev * 6 + var] = lap;
     }
 }
 

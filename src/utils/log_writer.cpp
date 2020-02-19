@@ -163,65 +163,66 @@ void log_writer::write_output_log(int step_number, int file_number, string filen
 }
 
 // *************************************************************************************************
-// * conservation file
-int log_writer::prepare_conservation_file(bool append) {
+// * globdiag file
+int log_writer::prepare_globdiag_file(bool append) {
     path o(output_dir);
 
     o /= ("esp_global_" + simulation_ID + ".txt");
-    //log::printf("Output conservation file to %s\n", o.to_string().c_str());
+    //log::printf("Output globdiag file to %s\n", o.to_string().c_str());
 
     // Open for write
     if (append) {
         // write and append, open at end of file
-        conservation_output_file.open(o.to_string(), std::ofstream::out | std::ofstream::app);
+        globdiag_output_file.open(o.to_string(), std::ofstream::out | std::ofstream::app);
     }
     else {
         // start a new file
-        conservation_output_file.open(o.to_string(), std::ofstream::out);
+        globdiag_output_file.open(o.to_string(), std::ofstream::out);
 
         // output file header
-        conservation_output_file << std::setprecision(16);
-        conservation_output_file << "#"
-                                 << "current_step"
-                                 << "\t"
-                                 << "simulation_time"
-                                 << "\t"
-                                 << "GlobalE_h"
-                                 << "\t"
-                                 << "GlobalMass_h"
-                                 << "\t"
-                                 << "GlobalAMx_h"
-                                 << "\t"
-                                 << "GlobalAMy_h"
-                                 << "\t"
-                                 << "GlobalAMz_h"
-                                 << "\t"
-                                 << "GlobalEnt_h" << std::endl;
+        globdiag_output_file << "#"
+                             << "current_step"
+                             << "\t"
+                             << "simulation_time"
+                             << "\t"
+                             << "GlobalE_h"
+                             << "\t"
+                             << "GlobalMass_h"
+                             << "\t"
+                             << "GlobalAMx_h"
+                             << "\t"
+                             << "GlobalAMy_h"
+                             << "\t"
+                             << "GlobalAMz_h"
+                             << "\t"
+                             << "GlobalEnt_h" << std::endl;
     }
+
+    globdiag_output_file << std::setprecision(16);
 
 
     return 0;
 };
 
 
-void log_writer::output_conservation(int    current_step,
-                                     double simulation_time,
-                                     double GlobalE_h,
-                                     double GlobalMass_h,
-                                     double GlobalAMx_h,
-                                     double GlobalAMy_h,
-                                     double GlobalAMz_h,
-                                     double GlobalEnt_h) {
-    //log::printf("output conservation\n");
+void log_writer::output_globdiag(int    current_step,
+                                 double simulation_time,
+                                 double GlobalE_h,
+                                 double GlobalMass_h,
+                                 double GlobalAMx_h,
+                                 double GlobalAMy_h,
+                                 double GlobalAMz_h,
+                                 double GlobalEnt_h) {
+    //log::printf("output globdiag\n");
 
-    // output global conservation values
-    conservation_output_file << current_step << "\t" << simulation_time << "\t" << GlobalE_h << "\t"
-                             << GlobalMass_h << "\t" << GlobalAMx_h << "\t" << GlobalAMy_h << "\t"
-                             << GlobalAMz_h << "\t" << GlobalEnt_h << std::endl;
+    // output global globdiag values
+    globdiag_output_file << current_step << "\t" << simulation_time << "\t" << GlobalE_h << "\t"
+                         << GlobalMass_h << "\t" << GlobalAMx_h << "\t" << GlobalAMy_h << "\t"
+                         << GlobalAMz_h << "\t" << GlobalEnt_h << std::endl;
 
 
     // flush file to disk
-    conservation_output_file.flush();
+    globdiag_output_file.flush();
 }
 
 // *************************************************************************************************
@@ -230,7 +231,8 @@ int log_writer::prepare_diagnostics_file(bool append) {
     path o(output_dir);
 
     o /= ("esp_diagnostics_" + simulation_ID + ".txt");
-    //log::printf("Output conservation file to %s\n", o.to_string().c_str());
+    //log::printf("Output globdiag file to %s\n", o.to_string().c_str());
+
 
     // Open for write
     if (append) {
@@ -242,7 +244,6 @@ int log_writer::prepare_diagnostics_file(bool append) {
         diagnostics_output_file.open(o.to_string(), std::ofstream::out);
 
         // output file header
-        diagnostics_output_file << std::setprecision(16);
         diagnostics_output_file << "#"
                                 << "current_step"
                                 << "\t"
@@ -261,6 +262,8 @@ int log_writer::prepare_diagnostics_file(bool append) {
                                 << "end_time" << std::endl;
     }
 
+    diagnostics_output_file << std::setprecision(16);
+
 
     return 0;
 };
@@ -274,9 +277,9 @@ void log_writer::output_diagnostics(int         current_step,
                                     double      time_left,
                                     double      mean_delta_per_step,
                                     std::time_t end_time) {
-    //log::printf("output conservation\n");
+    //log::printf("output globdiag\n");
 
-    // output global conservation values
+    // output global globdiag values
     diagnostics_output_file << current_step << "\t" << simulation_time << "\t" << total_bytes
                             << "\t" << free_bytes << "\t" << elapsed_time << "\t" << time_left
                             << "\t" << mean_delta_per_step << "\t" << end_time << std::endl;

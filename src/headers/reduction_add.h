@@ -191,3 +191,98 @@ template<int BLOCK_SIZE> double cpu_linear_sum(double *d, long length) {
 
     return out;
 };
+
+template<int BLOCK_SIZE>
+__global__ void gpu_reduction_sum_sponge(double *d, double *o, long length) {
+    // temporary memory for all tiles in that thread
+    __shared__ double ds_in[2 * BLOCK_SIZE];
+
+    int ilat = blockIdx.z;
+    int nv   = gridDim.y;
+    int lev  = blockIdx.y;
+
+    // import all the data from global memory
+    int mem_offset1 = 2 * (blockDim.x * blockIdx.x + threadIdx.x);
+
+    if (mem_offset1 + 1 < length) {
+        *((double2 *)(&(ds_in[2 * threadIdx.x]))) =
+            *((double2 *)(&(d[ilat * nv * length + lev * length + mem_offset1])));
+    }
+
+    else if (mem_offset1 < length) {
+        ds_in[2 * threadIdx.x]     = d[ilat * nv * length + lev * length + mem_offset1];
+        ds_in[2 * threadIdx.x + 1] = 0.0f;
+    }
+    else {
+        ds_in[2 * threadIdx.x]     = 0.0f;
+        ds_in[2 * threadIdx.x + 1] = 0.0f;
+    }
+
+
+    // loop on stride and add
+    for (int stride = blockDim.x; stride > 0; stride /= 2) {
+        __syncthreads();
+        if (threadIdx.x < stride) {
+            ds_in[threadIdx.x] += ds_in[threadIdx.x + stride];
+            // if ((ilat == 0) && (lev == 0)) {
+            //     printf("%f\n", ds_in[threadIdx.x]);
+            // }
+        }
+    }
+
+    __syncthreads();
+
+    // copy to output
+
+    if (threadIdx.x == 0)
+        o[ilat * nv * gridDim.x + lev * gridDim.x + blockIdx.x] = ds_in[0];
+};
+
+template<int BLOCK_SIZE>
+__host__ void gpu_sum_on_device_sponge(double *in_d,
+                                       long    length,
+                                       double *vbar_h,
+                                       int     nv,
+                                       int     nlat_bins,
+                                       int     xyz) {
+    int  num_blocks = ceil(double(length) / double(2 * BLOCK_SIZE));
+    dim3 NB(num_blocks, nv, nlat_bins);
+
+    // printf("num_blocks=%d\n", num_blocks);
+    double *out_h = new double[num_blocks * nv * nlat_bins];
+    double *out_d;
+    // create device temp array
+    cudaMalloc((void **)&out_d, num_blocks * nv * nlat_bins * sizeof(double));
+    cudaError_t err = cudaGetLastError();
+    if (err != cudaSuccess)
+        log::printf("Malloc: %s\n", cudaGetErrorString(err));
+
+    gpu_reduction_sum_sponge<BLOCK_SIZE><<<NB, BLOCK_SIZE>>>(in_d, out_d, length);
+    err = cudaGetLastError();
+    if (err != cudaSuccess)
+        log::printf("krnl: %s\n", cudaGetErrorString(err));
+
+    cudaMemcpy(out_h, out_d, num_blocks * nv * nlat_bins * sizeof(double), cudaMemcpyDeviceToHost);
+    err = cudaGetLastError();
+    if (err != cudaSuccess)
+        log::printf("cpyD2H: %s\n", cudaGetErrorString(err));
+
+    cudaDeviceSynchronize();
+    // double out = 0.0;
+    for (int ilat = 0; ilat < nlat_bins; ilat++) {
+        for (int lev = 0; lev < nv; lev++) {
+            vbar_h[ilat * nv * 3 + lev * 3 + xyz] = 0.0;
+            for (int i = 0; i < num_blocks; i++) {
+                vbar_h[ilat * nv * 3 + lev * 3 + xyz] +=
+                    out_h[ilat * nv * num_blocks + lev * num_blocks + i];
+                // printf("out = %.16e\n", out_h[ilat * nv * num_blocks + lev * num_blocks + i]);
+            }
+        }
+    }
+
+    cudaFree(out_d);
+    delete[] out_h;
+
+
+    // return out;
+};

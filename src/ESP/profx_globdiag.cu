@@ -40,7 +40,7 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
-#include "phy/profx_conservation.h"
+#include "phy/profx_globdiag.h"
 
 __global__ void CalcTotEnergy(double *Etotal_d,
                               double *GlobalE_d,
@@ -49,8 +49,8 @@ __global__ void CalcTotEnergy(double *Etotal_d,
                               double *Rho_d,
                               double *temperature_d,
                               double  Gravit,
-                              double  Cp,
-                              double  Rd,
+                              double *Cp_d,
+                              double *Rd_d,
                               double  A,
                               double *Altitude_d,
                               double *Altitudeh_d,
@@ -67,7 +67,7 @@ __global__ void CalcTotEnergy(double *Etotal_d,
     if (id < num) {
         double Ek, Eint, Eg;
         double wx, wy, wz;
-        double Cv = Cp - Rd;
+        double Cv = Cp_d[id * nv + lev] - Rd_d[id * nv + lev];
 
         //calculate control volume
         double zup, zlow, Vol;
@@ -203,8 +203,8 @@ __global__ void CalcMass(double *Mass_d,
 __global__ void CalcEntropy(double *Entropy_d,
                             double *pressure_d,
                             double *temperature_d,
-                            double  Cp,
-                            double  Rd,
+                            double *Cp_d,
+                            double *Rd_d,
                             double  A,
                             double  P_Ref,
                             double *Altitude_d,
@@ -220,9 +220,9 @@ __global__ void CalcEntropy(double *Entropy_d,
     int lev = blockIdx.y;
 
     if (id < num) {
-        double kappa = Rd / Cp;
+        double kappa = Rd_d[id * nv + lev] / Cp_d[id * nv + lev];
         double potT  = temperature_d[id * nv + lev] * pow(P_Ref / pressure_d[id * nv + lev], kappa);
-        double Sdens = Cp * log(potT);
+        double Sdens = Cp_d[id * nv + lev] * log(potT);
 
         //calculate control volume
         double zup, zlow, Vol;
