@@ -856,7 +856,8 @@ int main(int argc, char** argv) {
           Dv_sponge,
           ns_diff_sponge,
           order_diff_sponge,
-          t_shrink,       // time to shrink sponge layer
+          t_shrink, // time to shrink sponge layer
+          shrink_sponge,
           Grid.point_num, // Number of grid points
           sim.globdiag,   // compute globdiag values
           core_benchmark, // benchmark test type
@@ -1118,7 +1119,7 @@ int main(int argc, char** argv) {
 
         //
         //     Physical Core Integration (ProfX)
-        X.ProfX(sim, n_out, shrink_sponge);
+        X.ProfX(sim, n_out);
 
         if (!sim.gcm_off) {
             //
