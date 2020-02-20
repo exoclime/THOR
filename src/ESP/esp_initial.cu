@@ -96,6 +96,7 @@ __host__ ESP::ESP(int *                 point_local_,
                   double                ns_diff_sponge_,
                   int                   order_diff_sponge_,
                   double                t_shrink_,
+                  bool                  shrink_sponge_,
                   int                   point_num_,
                   bool                  globdiag,
                   benchmark_types       core_benchmark_,
@@ -128,7 +129,8 @@ __host__ ESP::ESP(int *                 point_local_,
     raysp_calc_mode(raysp_calc_mode_),
     ultrahot_thermo(ultrahot_thermo_),
     ultrahot_heating(ultrahot_heating_),
-    thermo_equation(thermo_equation_) {
+    thermo_equation(thermo_equation_),
+    shrink_sponge(shrink_sponge_) {
 
     point_local_h = point_local_;
     maps_h        = maps_;
@@ -204,14 +206,12 @@ __host__ void ESP::alloc_data(bool globdiag, bool output_mean) {
         Wh_mean_h       = (double *)malloc(nvi * point_num * sizeof(double));
     }
 
-    if (globdiag == true) {
-        Etotal_h  = (double *)malloc(nv * point_num * sizeof(double));
-        Mass_h    = (double *)malloc(nv * point_num * sizeof(double));
-        AngMomx_h = (double *)malloc(nv * point_num * sizeof(double));
-        AngMomy_h = (double *)malloc(nv * point_num * sizeof(double));
-        AngMomz_h = (double *)malloc(nv * point_num * sizeof(double));
-        Entropy_h = (double *)malloc(nv * point_num * sizeof(double));
-    }
+    Etotal_h  = (double *)malloc(nv * point_num * sizeof(double));
+    Mass_h    = (double *)malloc(nv * point_num * sizeof(double));
+    AngMomx_h = (double *)malloc(nv * point_num * sizeof(double));
+    AngMomy_h = (double *)malloc(nv * point_num * sizeof(double));
+    AngMomz_h = (double *)malloc(nv * point_num * sizeof(double));
+    Entropy_h = (double *)malloc(nv * point_num * sizeof(double));
 
     // ultra-hot jupiter stuff
     Rd_h = (double *)malloc(nv * point_num * sizeof(double));
@@ -949,6 +949,8 @@ __host__ ESP::~ESP() {
     //
     //  Host
     // Simulation state data
+    log::printf("Freeing ESP memory.\n");
+
     free(Rho_h);
     free(pressure_h);
     free(temperature_h);
@@ -1067,7 +1069,6 @@ __host__ ESP::~ESP() {
     free(AngMomx_h);
     free(AngMomy_h);
     free(AngMomz_h);
-
     //  Extras-nan
     cudaFree(check_d);
 

@@ -135,6 +135,7 @@ public:
 
     // sponge layer settings and variables
     double t_shrink;
+    bool   shrink_sponge;
     // Rayleigh sponge
     int *                 zonal_mean_tab_h;
     double                Ruv_sponge;
@@ -350,6 +351,7 @@ public:
         double                ns_diff_sponge_,
         int                   order_diff_sponge_,
         double                t_shrink_,
+        bool                  shrink_sponge_,
         int                   point_num_,
         bool                  globdiag,
         benchmark_types       core_benchmark_,
@@ -390,8 +392,7 @@ public:
     void Thor(const SimulationSetup &sim);
 
     void ProfX(const SimulationSetup &sim,
-               int                    n_out, // output step (triggers globdiag calc)
-               bool                   shrink_sponge);          // Shrink sponge after some time
+               int                    n_out); // output step (triggers globdiag calc)
 
 
     void output(int                    fidx, // Index of output file

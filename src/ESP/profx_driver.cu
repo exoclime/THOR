@@ -65,8 +65,7 @@
 #include "reduction_add.h"
 
 __host__ void ESP::ProfX(const SimulationSetup& sim,
-                         int                    n_out, // output step (triggers globdiag calc)
-                         bool                   shrink_sponge) {         // Shrink sponge after some time
+                         int                    n_out) { // output step (triggers globdiag calc)
     USE_BENCHMARK()
     //
     //  Number of threads per block.
