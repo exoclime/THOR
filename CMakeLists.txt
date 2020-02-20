@@ -17,6 +17,8 @@
 
 # specify the path to physical modules
 # $ cmake -DMODULES_SRC="src/physics/managers/multi" ..
+# build the Alfrodull module
+# $ cmake -DMODULES_SRC=Alfrodull ..
 
 cmake_minimum_required (VERSION 3.8 FATAL_ERROR)
 

@@ -1,0 +1,3 @@
+[submodule "Alfrodull"]
+	path = Alfrodull
+	url = git@github.com:exoclime/Alfrodull.git
