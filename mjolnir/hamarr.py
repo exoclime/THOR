@@ -583,6 +583,30 @@ regrid_tools = SourceModule("""
     }
 """)
 
+def create_rg_map(resultsf,simID,rotation=False,theta_z=0,theta_y=0):
+    outall = GetOutput(resultsf,simID,0,0,rotation=rotation,theta_z=theta_z,theta_y=theta_y)
+    input = outall.input
+    grid = outall.grid
+
+    #vector positions of ico grid points
+    v_ico = np.vstack([np.cos(grid.lon)*np.cos(grid.lat),\
+                       np.sin(grid.lon)*np.cos(grid.lat),\
+                       np.sin(grid.lat)]).T
+
+    #set horizontal angular resolution of latlon grid roughly same as ico grid
+    ang_deg = 4.0/2**(input.glevel-4)
+
+    #1D lat and lon arrays
+    lat_range = np.arange(-np.pi/2+ang_res/2,np.pi/2,ang_res)
+    lon_range = np.arange(0,2*np.pi,ang_res)
+    loni, lati = np.meshgrid(lon_range,lat_range)
+    num_ll = len(lat_range)*len(lon_range)
+
+    #vector positions of latitude-longitude points
+    v_ll = np.vstack([(np.cos(loni)*np.cos(lati)).ravel(),\
+                      (np.sin(loni)*np.cos(lati)).ravel(),\
+                      (np.sin(lati)).ravel()]).T
+
 def calc_RV_PV(grid,output,input,lons,lats,sigma,t_ind,fileh5,comp=4,pressure_vert=True,type='gd',lmax_set='grid'):
     #Calculates relative and potential vorticity on height levels, then interpolates to pressure.
     #It is easiest to calculate these on a lat-lon-altitude grid since conversion
