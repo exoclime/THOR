@@ -23,7 +23,7 @@ log_n_out = 1000
 
 # output directory (relative to current working directory)
 # defaults to 'results'
-results_path = earth_hs
+results_path = earth_alf
 
 # output global diagnostics (energy, mass, momentum, entropy)
 globdiag = true
@@ -68,7 +68,7 @@ P_ref = 100000.0
 Top_altitude = 36000.0
 
 # Horizontal resolution level.
-glevel = 5
+glevel = 4
 
 # Number of vertical layers
 vlevel = 32
@@ -114,7 +114,7 @@ init_PT_profile = isothermal
 # Acoustic wave test = AcousticTest
 # Gravity wave test = GWaveTest
 # No benchmark test == NoBenchmark (model is then forced with grey RT by default)
-core_benchmark = HeldSuarez
+core_benchmark = NoBenchmark
 
 # Switch off dynamical core (gcm)
 # This is useful for testing/debugging physics modules
