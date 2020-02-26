@@ -304,20 +304,20 @@ Alf_Tstar = 5000.0
 # Isothermal or non-isothermal treatment of layers for two stream RT
 Alf_iso = false
 
-Alf_real_star
-Alf_fake_opac
-Alf_T_surf
-Alf_albedo
+Alf_real_star = false
+Alf_fake_opac = 0.0
+Alf_T_surf = 5000.0
+Alf_albedo = 1.0
 # asymmetry factor
 # (values: [-1, 1]. 0: isotropic scattering. 1: pure forward, -1: pure backward.)
 Alf_g_0 = 0.0
 # diffusivity factor (usually set to 2)
-Alf_diffusivity
+Alf_diffusivity = 2.0
 
-Alf_scat
-Alf_scat_corr
-Alf_R_planet
-Alf_a
+Alf_scat = true
+Alf_scat_corr = true
+Alf_R_planet = 1.0
+Alf_a = 1.0
 # direct irradiation beam
 Alf_dir_beam = true
 # geometric zenith angle correction
@@ -326,8 +326,8 @@ Alf_geom_zenith_corr = true
 # (0.667: dayside only, no redistribution, 0.25: global redistribution, 1: substellar point)
 Alf_f_factor = 0.667
 
-Alf_w_0_limit
-Alf_i2s_transition
+Alf_w_0_limit = 1.0
+Alf_i2s_transition = 0.0
 
 Alf_opacities_file = ./Alfrodull/input/opac_sample.h5 
 
