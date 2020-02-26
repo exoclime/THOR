@@ -105,7 +105,8 @@ set(SRC
   src/ESP/profx_sponge.cu
   src/ESP/reduction_add.cu
   src/ESP/phy_modules_device.cu
-  src/ESP/ultrahot_thermo.cu  
+  src/ESP/ultrahot_thermo.cu
+  src/utils/cuda_device_memory.cu
   )
 
 # source for test program for storage class
