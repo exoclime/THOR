@@ -69,7 +69,7 @@ public:
 
   
     void deallocate() {
-      printf("deallocate: %x\n", device_ptr);
+      // printf("deallocate: %x\n", device_ptr);
         if (device_ptr != nullptr) {
             cudaError_t ret = cudaFree(device_ptr);
             if (ret != cudaSuccess)

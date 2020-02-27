@@ -19,6 +19,11 @@
 # $ cmake -DMODULES_SRC="src/physics/managers/multi" ..
 # build the Alfrodull module
 # $ cmake -DMODULES_SRC=Alfrodull ..
+# debug or release
+# release build
+# $ cmake -DCMAKE_BUILD_TYPE=Release ..
+# debug build
+# $ cmake -DCMAKE_BUILD_TYPE=Debug ..
 
 cmake_minimum_required (VERSION 3.8 FATAL_ERROR)
 
