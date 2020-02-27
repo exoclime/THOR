@@ -928,6 +928,7 @@ int main(int argc, char** argv) {
 
     if (!load_initial) {
         log::printf("error loading initial conditions from %s.\n", initial_conditions.c_str());
+
         exit(EXIT_FAILURE);
     }
 
@@ -965,6 +966,9 @@ int main(int argc, char** argv) {
 
             log::printf(" Aborting. \n"
                         "use --overwrite to overwrite existing files.\n");
+
+	    cuda_device_memory_manager::get_instance().deallocate();
+	    
             exit(EXIT_FAILURE);
         }
     }
