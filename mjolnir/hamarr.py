@@ -297,13 +297,8 @@ class rg_out:
                 openh5 = h5py.File(fileh5)
             else:
                 print(fileh5+' not found, regridding now with default settings...')
-                regrid(resultsf,simID,ntsi,nts,pressure_vert=pressure_vert,pgrid_ref=pgrid_ref)
+                regrid(resultsf,simID,ntsi,nts,pgrid_ref=pgrid_ref)
                 openh5 = h5py.File(fileh5)
-
-            # if not 'del_hseq' in openh5.keys():
-            #     openh5.close()
-            #     regrid(resultsf,simID,ntsi,nts,pressure_vert=pressure_vert)
-            #     openh5 = h5py.File(fileh5)
 
             Rhoi = openh5['Rho'][...]
             Tempi = openh5['Temperature'][...]
@@ -340,18 +335,8 @@ class rg_out:
                 co2i = openh5['co2'][...]
                 nh3i = openh5['nh3'][...]
 
-            if not 'PV' in openh5.keys():
-                calc_RV_PV(grid,output,input,loni,lati,Prei,t-ntsi+1,fileh5,pressure_vert=pressure_vert)
-
             PVi = openh5['PV'][...]
-            RVi = openh5['RV'][...]
-            lati_lr = openh5['Lat_lowres'][...]
-            loni_lr = openh5['Lon_lowres'][...]
-
-            # if not 'streamf' in openh5.keys():
-            #     calc_moc_streamf(grid,output,input,loni,lati,Prei,t-ntsi+1,fileh5,pressure_vert=pressure_vert)
-
-            # streamfi = openh5['streamf'][...]
+            RVi = openh5['RVw'][...]
 
             openh5.close()
 
@@ -369,11 +354,7 @@ class rg_out:
                 self.lon = np.zeros(np.shape(loni)+(nts-ntsi+1,))
                 self.PV = np.zeros(np.shape(PVi)+(nts-ntsi+1,))
                 self.RV = np.zeros(np.shape(RVi)+(nts-ntsi+1,))
-                self.lat_lr = np.zeros(np.shape(lati_lr)+(nts-ntsi+1,))
-                self.lon_lr = np.zeros(np.shape(loni_lr)+(nts-ntsi+1,))
-                # self.streamf = np.zeros(np.shape(streamfi)+(nts-ntsi+1,))
 
-                # self.del_hseq = np.zeros(np.shape(del_hseqi)+(nts-ntsi+1,))
                 if RT == 1:
                     self.tau_sw = np.zeros(np.shape(tau_swi)+(nts-ntsi+1,))
                     self.tau_lw = np.zeros(np.shape(tau_lwi)+(nts-ntsi+1,))
@@ -394,7 +375,6 @@ class rg_out:
             self.V[:,:,:,t-ntsi+1] = Vi
             self.W[:,:,:,t-ntsi+1] = Wi
             self.Temperature[:,:,:,t-ntsi+1] = Tempi
-            # self.del_hseq[:,:,:,t-ntsi+1] = del_hseqi
             if pressure_vert == True:
                 self.Pressure[:,t-ntsi+1] = Prei
                 if t > ntsi-1:
@@ -405,13 +385,7 @@ class rg_out:
             self.lat[:,t-ntsi+1] = lati
             self.lon[:,t-ntsi+1] = loni
             self.PV[:,:,:,t-ntsi+1] = PVi
-            try:
-                self.RV[:,:,:,:,t-ntsi+1] = RVi
-            except:
-                import pdb; pdb.set_trace()
-            self.lat_lr[:,t-ntsi+1] = lati_lr
-            self.lon_lr[:,t-ntsi+1] = loni_lr
-            # self.streamf[:,:,:,t-ntsi+1] = streamfi
+            self.RV[:,:,:,t-ntsi+1] = RVi
 
             if RT == 1:
                 self.tau_sw[:,:,:,t-ntsi+1] = tau_swi
@@ -497,7 +471,6 @@ regrid_tools = SourceModule("""
 
     __global__ void find_nearest(int *near, double *a, double *a_ico, int num_ll, int num_ico) {
         int id = blockIdx.x * blockDim.x + threadIdx.x;
-        //int id = threadIdx.x;
 
         if (id < num_ll) {
             double dot_max = 0.0, dot_new;
@@ -509,9 +482,7 @@ regrid_tools = SourceModule("""
                     closest = i_ico;
                 }
             }
-            //printf("%f\\n",dot_max);
             near[id] = closest;
-            //printf("%d, %d\\n",id,near[id]);
         }
     }
 
@@ -519,8 +490,12 @@ regrid_tools = SourceModule("""
         return a[0]*(b[1]*c[2]-b[2]*c[1])-a[1]*(b[0]*c[2]-b[2]*c[0])+a[2]*(b[0]*c[1]-b[1]*c[0]);
     }
 
-    __device__ void weights_tuv(double *a, double *b, double *c, double *d, double *t, double *u, double *v) {
-        //double *OD, *OA, *BA, *CA;
+    __device__ void weights_tuv(double *a, double *b, double *c, double *d,
+                                double *t, double *u, double *v) {
+        // Simple code-up of Moller-Trumbore algorithm
+        // Ref: [Fast, Minimum Storage Ray/Triangle Intersection.
+        //       Möller & Trumbore. Journal of Graphics Tools, 1997.]
+
         double *OD = new double[3]();
         double *OA = new double[3]();
         double *BA = new double[3]();
@@ -581,6 +556,55 @@ regrid_tools = SourceModule("""
             }
         }
     }
+
+    __global__ void vert_lin_interp(double *x, double *y, double *xnew,
+                                    double *ynew, int nxnew, int point_num, int nv,
+                                    int *x_non_mono_check, int *xnew_non_mono_check) {
+        // linear interpolation for vertical columns (pressure or height)
+        // x and xnew must be monotonically increasing
+        // in the case that they are not, the mono_check array entries will = 1
+        int id = blockIdx.x * blockDim.x + threadIdx.x;
+
+        if (id < point_num) {
+            for (int lev = 1; lev < nv; lev++) {
+                //check for monotonicity of column (x -> increasing order)
+                if (x[id*nv+lev] < x[id*nv+lev-1]) {
+                    x_non_mono_check[id] = 1;
+                }
+            }
+
+            for (int ilev = 1; ilev < nxnew; ilev++) {
+                //check for monotonicity of new vert grid
+                if (xnew[ilev] < xnew[ilev-1]) {
+                    xnew_non_mono_check[0] = 1;
+                }
+            }
+
+            if ((x_non_mono_check[id]==0) && (xnew_non_mono_check[0]==0)){
+                //monotonicity ok, do the interpolation
+                for (int ilev = 0; ilev < nxnew; ilev++) {
+                    int lev;
+                    if (xnew[ilev] < x[id*nv+0]) {
+                        //extrapolate below
+                        lev = 0;
+                    } else if (xnew[ilev] > x[id*nv+nv-1]) {
+                        //extrapolate above
+                        lev = nv - 2;
+                    } else {
+                        //interpolation
+                        lev = 0;
+                        while (xnew[ilev] > x[id*nv+lev+1]) {
+                            lev += 1;
+                        }
+                    }
+                    ynew[id*nxnew+ilev] = y[id*nv+lev] + (xnew[ilev]-x[id*nv+lev])*
+                                        (y[id*nv+lev+1]-y[id*nv+lev])/
+                                        (x[id*nv+lev+1]-x[id*nv+lev]);
+                }
+            }
+        }
+    }
+
 """)
 
 def create_rg_map(resultsf,simID,rotation=False,theta_z=0,theta_y=0):
@@ -594,7 +618,7 @@ def create_rg_map(resultsf,simID,rotation=False,theta_z=0,theta_y=0):
                        np.sin(grid.lat)]).T
 
     #set horizontal angular resolution of latlon grid roughly same as ico grid
-    ang_deg = 4.0/2**(input.glevel-4)
+    ang_res = (4.0/2**(input.glevel-4))*np.pi/180
 
     #1D lat and lon arrays
     lat_range = np.arange(-np.pi/2+ang_res/2,np.pi/2,ang_res)
@@ -606,6 +630,517 @@ def create_rg_map(resultsf,simID,rotation=False,theta_z=0,theta_y=0):
     v_ll = np.vstack([(np.cos(loni)*np.cos(lati)).ravel(),\
                       (np.sin(loni)*np.cos(lati)).ravel(),\
                       (np.sin(lati)).ravel()]).T
+
+    #arrays for nearest neighbors and weights
+    near3 = np.zeros((num_ll,3),dtype=np.int32)
+    weight3 = np.zeros((num_ll,3))
+    near = np.zeros(num_ll,dtype=np.int32)
+
+    #cuda functions and sizes
+    find_nearest = regrid_tools.get_function("find_nearest")
+    calc_weights =  regrid_tools.get_function("calc_weights")
+    gridGPU = (np.int(np.floor(num_ll/256))+1,1,1)
+    blockGPU = (256,1,1)
+
+    #nearest neighbor search
+    find_nearest(cuda.Out(near),cuda.In(v_ll.ravel()),cuda.In(v_ico.ravel()),\
+             np.int32(num_ll),np.int32(grid.point_num),\
+             block=blockGPU,grid=gridGPU)
+    near3[:,0] = near
+
+    #next 2 neighbors and weights from Moller-Trumbore algorithm
+    calc_weights(cuda.Out(weight3.ravel()),cuda.InOut(near3.ravel()),\
+            cuda.In(v_ll.ravel()),cuda.In(v_ico.ravel()), \
+            cuda.In(grid.pntloc.ravel()),np.int32(num_ll),\
+            np.int32(grid.point_num),block=blockGPU,grid=gridGPU)
+
+    #save into numpy zip file
+    np.savez(resultsf+'/regrid_map.npz',lon=lon_range,lat=lat_range,\
+             near3=near3,weight3=weight3)
+
+def vertical_regrid_field(source_array,nv,x,xnew):
+    #handles set up and running of vertical interpolation in pycuda
+    vert_lin_interp = regrid_tools.get_function("vert_lin_interp")
+    x_non_mono_check = np.zeros(np.shape(source_array)[:-1],dtype=np.int32)
+    xnew_non_mono_check = np.zeros(1,dtype=np.int32)
+    gridgpu = (np.int(np.floor(len(x_non_mono_check.ravel())/256))+1,1,1)
+    blockgpu = (256,1,1)
+
+    y = np.ascontiguousarray(source_array.ravel())
+    ynew = np.zeros(np.shape(source_array)[:-1]+(len(xnew),))
+    vert_lin_interp(cuda.In(x),cuda.In(y),cuda.In(xnew),\
+                    cuda.Out(ynew.ravel()),np.int32(len(xnew)),\
+                    np.int32(len(x_non_mono_check.ravel())),np.int32(nv),\
+                    cuda.InOut(x_non_mono_check.ravel()),\
+                    cuda.InOut(xnew_non_mono_check),grid=gridgpu,block=blockgpu)
+    if (x_non_mono_check==1).any():
+        raise ValueError('Pressure interpolation failed! Pressure not monotonically decreasing with height')
+    if (xnew_non_mono_check[0] == 1):
+        raise ValueError('Pressure interpolation failed! Destination pgrid not monotonically decreasing with height')
+    return ynew
+
+def regrid_new(resultsf,simID,ntsi,nts,pgrid_ref='auto',overwrite=False,comp=4,
+            pressure_vert=True,vertical_top='default',rotation=False,theta_z=0,theta_y=0,
+            mask_surf=True):
+    t0 = time.time()
+    #New regridding process, smoother and faster than previous one
+    #For each point on destination grid (lat-lon), find 3 points (near3) on the ico grid
+    #that define a triangle containing the destination point. Then use the
+    #Moller-Trumbore algorithm to calculate the weights (weight3) that interpolate the 3
+    #points to the destination point. PyCuda is used to accelerate the process.
+    #Interpolating each field is then a vectorized process using Numpy, taking
+    #field_on_ll_grid = weight3 * field_on_ico_grid[near3]
+    #Remapping from height to pressure is done on all columns via pycuda
+
+    if not os.path.exists(resultsf+'/regrid_map.npz'):
+        #if numpy zip file containing weights d.n.e., then create it
+        create_rg_map(resultsf,simID,rotation=rotation,theta_z=theta_z,theta_y=theta_y)
+
+    #open numpy zip file containing weights
+    rg_map = np.load(resultsf+'/regrid_map.npz')
+    lon_range = rg_map['lon']
+    lat_range = rg_map['lat']
+    near3 = rg_map['near3']
+    weight3 = rg_map['weight3']
+
+    #open first file to get some basic properties
+    outall = GetOutput(resultsf,simID,ntsi,ntsi,rotation=rotation,theta_z=theta_z,theta_y=theta_y)
+    input = outall.input
+    grid = outall.grid
+    output = outall.output
+
+    print('Regrid data in folder '+resultsf+'...\n')
+
+    #handling of vertical coordinate
+    if pressure_vert == True:
+        if pgrid_ref == 'auto':
+            try:
+                files_found = spr.check_output('ls '+resultsf+'/pgrid_*.txt',shell=True).split()
+            except:
+                raise IOError('No pgrid file found in "%s/", please run "pgrid -i <first> -l <last> %s"'%(resultsf,resultsf))
+            if len(files_found) > 1:
+                raise IOError('Multiple pgrid files found in "%s/", please specify with -pgrid flag'%resultsf)
+            else:
+                pgrid_file = files_found[0].decode()
+        else:
+            if os.path.exists(resultsf+'/'+pgrid_ref):
+                pgrid_file = resultsf+'/'+ pgrid_ref
+            else:
+                raise IOError('pgrid file %s not found!'%(resultsf+'/'+pgrid_ref))
+        print('Vertical coordinate = pressure from file %s'%pgrid_file)
+        Pref = np.loadtxt(pgrid_file,unpack=True,usecols=1)
+
+    else:
+        print('Vertical coordinate = height')
+        nlev = len(grid.Altitude)
+        Pref = np.zeros(nlev)
+
+    #destination grid and set some dimensions
+    loni, lati = np.meshgrid(lon_range,lat_range)
+    d_lon = np.shape(loni)
+    tsp = nts-ntsi+1
+    d_sig = np.size(Pref)
+
+    #handling of module properties
+    RT = 0      #gray radiative transfer module
+    if hasattr(input,"core_benchmark"):
+        if input.core_benchmark[0] == 0: # need to switch to 'radiative_tranfer' flag
+            RT = 1
+            surf = 0
+            if input.surface:
+                surf = 1
+                extrap_low = (grid.Altitudeh[0]-grid.Altitude[1])/(grid.Altitude[0]-grid.Altitude[1])
+                Psurf = output.Pressure[:,1,:]+extrap_low*(output.Pressure[:,0,:]-output.Pressure[:,1,:])
+        else:
+            surf = 0
+
+    chem = 0        #chemistry module
+    if hasattr(input,"chemistry"):
+        if input.chemistry == 1:
+            chem = 1
+
+    #begin regrid loop over times
+    for t in np.arange(ntsi,nts+1):
+        #check for existing h5 files
+        proceed = 0
+        if pressure_vert == True:   #check for pressure regridded files
+            fileh5 = resultsf+'/regrid_'+simID+'_'+np.str(t)
+        else:                       #check for height regridded files
+            fileh5 = resultsf+'/regrid_height_'+simID+'_'+np.str(t)
+        if rotation == True:        #tell the user they asked for a rotated grid
+            print('Applied rotation (theta_z,theta_y) = (%f,%f) to grid\n'\
+                  %(theta_z*180/np.pi,theta_y*180/np.pi))
+        fileh5 += '.h5'
+        if os.path.exists(fileh5):   #regrid files exist
+            if overwrite == True:    #overwrite existing files
+                proceed = 1
+            else:                    #skip existing files
+                print(fileh5+' already present! Skipping time = %d'%t)
+        else:                        #no existing regrid files, all clear
+            proceed = 1
+
+        #begin regridding
+        if proceed == 1:
+            print('Regridding time = %d...'%t)
+
+            #read in one file at a time to prevent mem overflow
+            outall = GetOutput(resultsf,simID,t,t,rotation=rotation,theta_z=theta_z,theta_y=theta_y)
+            output = outall.output
+
+            #interpolate in z to middle of layers using this
+            interpz = (grid.Altitude-grid.Altitudeh[:-1])/(grid.Altitudeh[1:]-grid.Altitudeh[:-1])
+
+            #set up dictionary with source arrays (add new quantities here!)
+            source = {'Temperature':(output.Pressure/(output.Rd*output.Rho))[:,:,0],
+                      'W':(output.Wh[:,:-1,0] + (output.Wh[:,1:,0]-output.Wh[:,:-1,0])*interpz[None,:])/output.Rho[:,:,0],
+                      'Rho':output.Rho[:,:,0],
+                      'Mh':output.Mh[:,:,:,0]}
+
+            if RT == 1:
+                source['flw_up'] = output.flw_up[:,:-1,0]+(output.flw_up[:,1:,0]-output.flw_up[:,:-1,0])*interpz[None,:]
+                source['flw_dn'] = output.flw_dn[:,:-1,0]+(output.flw_dn[:,1:,0]-output.flw_dn[:,:-1,0])*interpz[None,:]
+                source['tau_sw'] = output.tau_sw[:,:,0]
+                source['tau_lw'] = output.tau_lw[:,:,0]
+                source['insol'] = output.Insol[:,0]
+                if surf == 1:
+                    source['Tsurface'] = output.Tsurface[:,0]
+
+            if chem == 1:
+                source['ch4'] = output.ch4[:,:,0]
+                source['co'] = output.co[:,:,0]
+                source['h2o'] = output.h2o[:,:,0]
+                source['co2'] = output.co2[:,:,0]
+                source['nh3'] = output.nh3[:,:,0]
+
+            #set up intermediate arrays (icogrid and pressure)
+            if pressure_vert == True:
+                interm = {}
+                for key in source.keys():
+                    if np.shape(source[key])==(3,grid.point_num,grid.nv):
+                        #vector quantity (e.g. horiz momentum)
+                        interm[key] = np.zeros((3,grid.point_num,d_sig))
+                    elif np.shape(source[key])==(grid.point_num):
+                        #2D field (e.g., insolation) -> not needed
+                        pass
+                    else:
+                        interm[key] = np.zeros((grid.point_num,d_sig))
+            else:   #no pressure interpolation (use height)
+                interm = source
+
+            #set up destination arrays (lat-lon and pressure/height)
+            dest = {}
+            for key in source.keys():
+                if key == 'Mh':
+                    #special treatment for horizontal momentum
+                    dest['U'] = np.zeros((d_lon[0],d_lon[1],d_sig))
+                    dest['V'] = np.zeros((d_lon[0],d_lon[1],d_sig))
+                elif np.shape(source[key])==(grid.point_num,):
+                    #2D field (e.g., insolation)
+                    dest[key] = np.zeros((d_lon[0],d_lon[1]))
+                else:
+                    dest[key] = np.zeros((d_lon[0],d_lon[1],d_sig))
+
+
+            #regrid to pressure coordinate
+            if pressure_vert == True: # use pressure as vertical coordinate
+                #need to make sure the arrays are contiguous
+                x = np.ascontiguousarray(output.Pressure[:,::-1,0].ravel())
+                xnew = np.ascontiguousarray(Pref[::-1])
+
+                for key in interm.keys():
+                    if key == 'Mh':
+                        #need to handle horizontal momentum a little differently
+                        for i in np.arange(3):
+                            interm[key][i,:,:] = vertical_regrid_field(source[key][i,:,::-1],grid.nv,x,xnew)[:,::-1]
+
+                            if surf and mask_surf:
+                                interm[key][i][(Pref[:,None]>Psurf[:,0]).T] = np.nan
+
+                    elif np.shape(source[key])==(grid.point_num,):
+                        #2D field (e.g., insolation) -> not needed
+                        pass
+                    else:
+                        interm[key][:,:] = vertical_regrid_field(source[key][:,::-1],grid.nv,x,xnew)[:,::-1]
+
+                        if surf and mask_surf:
+                            interm[key][(Pref[:,None]>Psurf[:,0]).T] = np.nan
+
+            #calculate zonal and meridional velocity (special step for Mh)
+            interm['U'] = (-interm['Mh'][0]*np.sin(grid.lon[:,None])+\
+                           interm['Mh'][1]*np.cos(grid.lon[:,None]))/interm['Rho']
+            interm['V'] = (-interm['Mh'][0]*np.sin(grid.lat[:,None])*np.cos(grid.lon[:,None])\
+                      -interm['Mh'][1]*np.sin(grid.lat[:,None])*np.sin(grid.lon[:,None])\
+                      +interm['Mh'][2]*np.cos(grid.lat[:,None]))/interm['Rho']
+
+            for key in dest.keys():
+                if np.shape(dest[key]) == (d_lon[0],d_lon[1]):
+                    #2D field (e.g., insolation)
+                    tmp = np.sum(weight3[:,:]*source[key][near3],axis=1)
+                    dest[key][:,:] = tmp.reshape((d_lon[0],d_lon[1]))
+                else:
+                    try:
+                        tmp = np.sum(weight3[:,:,None]*interm[key][near3],axis=1)
+                    except:
+                        pdb.set_trace()
+                    dest[key][:,:] = tmp.reshape((d_lon[0],d_lon[1],d_sig))
+
+            #create h5 files
+            openh5 = h5py.File(fileh5,"w")
+
+            print('Writing file '+fileh5+'...')
+
+            # coordinates
+            if pressure_vert == True:
+                Pre = openh5.create_dataset("Pressure",data=Pref,\
+                                            compression='gzip',compression_opts=comp)
+            else:
+                Alt = openh5.create_dataset("Altitude",data=grid.Altitude,\
+                                            compression='gzip',compression_opts=comp)
+            Lat = openh5.create_dataset("Latitude",data=lat_range,\
+                                        compression='gzip',compression_opts=comp)
+            Lon = openh5.create_dataset("Longitude",data=lon_range,\
+                                        compression='gzip',compression_opts=comp)
+            # data
+            for key in dest.keys():
+                tmp_data = openh5.create_dataset(key,data=dest[key],\
+                                                 compression='gzip',compression_opts=comp)
+
+            openh5.close()
+
+    tf = time.time()
+    print(tf-t0)
+
+
+def regrid(resultsf,simID,ntsi,nts,pgrid_ref='auto',overwrite=False,comp=4,
+            rotation=False,theta_z=0,theta_y=0,mask_surf=True):
+    #New regridding process, smoother and faster than previous one
+    #For each point on destination grid (lat-lon), find 3 points (near3) on the ico grid
+    #that define a triangle containing the destination point. Then use the
+    #Moller-Trumbore algorithm to calculate the weights (weight3) that interpolate the 3
+    #points to the destination point. PyCuda is used to accelerate the process.
+    #Interpolating each field is then a vectorized process using Numpy, taking
+    #field_on_ll_grid = weight3 * field_on_ico_grid[near3]
+    #Remapping from height to pressure is done on all columns via pycuda
+
+    if not os.path.exists(resultsf+'/regrid_map.npz'):
+        #if numpy zip file containing weights d.n.e., then create it
+        create_rg_map(resultsf,simID,rotation=rotation,theta_z=theta_z,theta_y=theta_y)
+
+    #open numpy zip file containing weights
+    rg_map = np.load(resultsf+'/regrid_map.npz')
+    lon_range = rg_map['lon']
+    lat_range = rg_map['lat']
+    near3 = rg_map['near3']
+    weight3 = rg_map['weight3']
+
+    #open first file to get some basic properties
+    outall = GetOutput(resultsf,simID,ntsi,ntsi,rotation=rotation,theta_z=theta_z,theta_y=theta_y)
+    input = outall.input
+    grid = outall.grid
+    output = outall.output
+
+    print('Regrid data in folder '+resultsf+'...\n')
+
+    #handling of vertical coordinate
+    if pgrid_ref == 'auto':
+        try:
+            files_found = spr.check_output('ls '+resultsf+'/pgrid_*.txt',shell=True).split()
+        except:
+            raise IOError('No pgrid file found in "%s/", please run "pgrid -i <first> -l <last> %s"'%(resultsf,resultsf))
+        if len(files_found) > 1:
+            raise IOError('Multiple pgrid files found in "%s/", please specify with -pgrid flag'%resultsf)
+        else:
+            pgrid_file = files_found[0].decode()
+    else:
+        if os.path.exists(resultsf+'/'+pgrid_ref):
+            pgrid_file = resultsf+'/'+ pgrid_ref
+        else:
+            raise IOError('pgrid file %s not found!'%(resultsf+'/'+pgrid_ref))
+    print('Vertical coordinate = pressure from file %s'%pgrid_file)
+    Pref = np.loadtxt(pgrid_file,unpack=True,usecols=1)
+
+    #destination grid and set some dimensions
+    loni, lati = np.meshgrid(lon_range,lat_range)
+    d_lon = np.shape(loni)
+    tsp = nts-ntsi+1
+    d_sig = np.size(Pref)
+
+    #handling of module properties
+    RT = 0      #gray radiative transfer module
+    if hasattr(input,"core_benchmark"):
+        if input.core_benchmark[0] == 0: # need to switch to 'radiative_tranfer' flag
+            RT = 1
+            surf = 0
+            if input.surface:
+                surf = 1
+                extrap_low = (grid.Altitudeh[0]-grid.Altitude[1])/(grid.Altitude[0]-grid.Altitude[1])
+                Psurf = output.Pressure[:,1,:]+extrap_low*(output.Pressure[:,0,:]-output.Pressure[:,1,:])
+        else:
+            surf = 0
+
+    chem = 0        #chemistry module
+    if hasattr(input,"chemistry"):
+        if input.chemistry == 1:
+            chem = 1
+
+    #begin regrid loop over times
+    for t in np.arange(ntsi,nts+1):
+        #check for existing h5 files
+        proceed = 0
+        fileh5p = resultsf+'/regrid_'+simID+'_'+np.str(t)
+
+        fileh5h = resultsf+'/regrid_height_'+simID+'_'+np.str(t)
+        if rotation == True:        #tell the user they asked for a rotated grid
+            print('Applied rotation (theta_z,theta_y) = (%f,%f) to grid\n'\
+                  %(theta_z*180/np.pi,theta_y*180/np.pi))
+        fileh5p += '.h5'; fileh5h += '.h5'
+        if os.path.exists(fileh5p) or os.path.exists(fileh5h):  #regrid files exist
+            if overwrite == True:    #overwrite existing files
+                proceed = 1
+            else:                    #skip existing files
+                print(fileh5p+'or '+fileh5h+' already present! Skipping time = %d'%t)
+        else:                        #no existing regrid files, all clear
+            proceed = 1
+
+        #begin regridding
+        if proceed == 1:
+            print('Regridding time = %d...'%t)
+
+            #read in one file at a time to prevent mem overflow
+            outall = GetOutput(resultsf,simID,t,t,rotation=rotation,theta_z=theta_z,theta_y=theta_y)
+            output = outall.output
+
+            #interpolate in z to middle of layers using this
+            interpz = (grid.Altitude-grid.Altitudeh[:-1])/(grid.Altitudeh[1:]-grid.Altitudeh[:-1])
+
+            #set up dictionary with source arrays (add new quantities here!)
+            source = {'Temperature':(output.Pressure/(output.Rd*output.Rho))[:,:,0],
+                      'W':(output.Wh[:,:-1,0] + (output.Wh[:,1:,0]-output.Wh[:,:-1,0])*interpz[None,:])/output.Rho[:,:,0],
+                      'Rho':output.Rho[:,:,0],
+                      'Mh':output.Mh[:,:,:,0],
+                      'Pressure':output.Pressure[:,:,0],
+                      'Psurf':Psurf[:,0],
+                      'Rd':output.Rd[:,:,0],
+                      'Cp':output.Cp[:,:,0]}
+
+            if RT == 1:
+                source['flw_up'] = output.flw_up[:,:-1,0]+(output.flw_up[:,1:,0]-output.flw_up[:,:-1,0])*interpz[None,:]
+                source['flw_dn'] = output.flw_dn[:,:-1,0]+(output.flw_dn[:,1:,0]-output.flw_dn[:,:-1,0])*interpz[None,:]
+                source['tau_sw'] = output.tau_sw[:,:,0]
+                source['tau_lw'] = output.tau_lw[:,:,0]
+                source['insol'] = output.Insol[:,0]
+                if surf == 1:
+                    source['Tsurface'] = output.Tsurface[:,0]
+
+            if chem == 1:
+                source['ch4'] = output.ch4[:,:,0]
+                source['co'] = output.co[:,:,0]
+                source['h2o'] = output.h2o[:,:,0]
+                source['co2'] = output.co2[:,:,0]
+                source['nh3'] = output.nh3[:,:,0]
+
+            #calculate zonal and meridional velocity (special step for Mh)
+            source['U'] = (-source['Mh'][0]*np.sin(grid.lon[:,None])+\
+                           source['Mh'][1]*np.cos(grid.lon[:,None]))/source['Rho']
+            source['V'] = (-source['Mh'][0]*np.sin(grid.lat[:,None])*np.cos(grid.lon[:,None])\
+                      -source['Mh'][1]*np.sin(grid.lat[:,None])*np.sin(grid.lon[:,None])\
+                      +source['Mh'][2]*np.cos(grid.lat[:,None]))/source['Rho']
+
+            #set up intermediate arrays (icogrid and pressure)
+            interm = {}
+            for key in source.keys():
+                if key == 'Mh':
+                    pass
+                elif np.shape(source[key])==(grid.point_num,):
+                    #2D field (e.g., insolation) -> not needed
+                    interm[key] = np.zeros((d_lon[0],d_lon[1]))
+                else:
+                    interm[key] = np.zeros((d_lon[0],d_lon[1],grid.nv))
+
+            for key in interm.keys():
+                if np.shape(interm[key]) == (d_lon[0],d_lon[1]):
+                    #2D field (e.g., insolation)
+                    tmp = np.sum(weight3[:,:]*source[key][near3],axis=1)
+                    interm[key][:,:] = tmp.reshape((d_lon[0],d_lon[1]))
+                else:
+                    tmp = np.sum(weight3[:,:,None]*source[key][near3],axis=1)
+                    interm[key][:,:] = tmp.reshape((d_lon[0],d_lon[1],grid.nv))
+
+            #dealing with RV and PV
+            #potential temp (only for constant Rd and Cp, currently)
+            pt = interm['Temperature']*(interm['Pressure']/input.P_Ref)**(-interm['Rd']/interm['Cp'])
+            dptdz = np.gradient(pt,grid.Altitude,axis=2)
+            # these are not very accurate at the 'edges'
+            dptdlat = np.gradient(pt,lat_range,axis=0)/(input.A+grid.Altitude[None,None,:])
+            dptdlon = np.gradient(pt,lon_range,axis=1)/(input.A+grid.Altitude[None,None,:])/np.cos(lat_range[:,None,None])
+
+            #relative vorticity
+            curlVz, curlVlat, curlVlon = CurlF(interm['W'],interm['V'],interm['U'],\
+                                               lat_range,lon_range,grid.Altitude,input.A)
+            interm['RVw'] = curlVz    #vertical component
+            interm['RVv'] = curlVlat  #horizontal components
+            interm['RVu'] = curlVlon  # these are probably small in most cases
+
+            curlVlon += 2*input.Omega #add solid body rotation
+            interm['PV'] = (curlVz*dptdz + curlVlat*dptdlat + curlVlon*dptdlon)/interm['Rho']
+
+            #set up destination arrays (lat-lon and pressure/height)
+            dest = {}
+            for key in interm.keys():
+                if key == 'Mh' or key == 'Pressure':
+                    pass  #don't need these any further
+                elif np.shape(interm[key])==(d_lon[0],d_lon[1]):
+                    #2D field (e.g., insolation)
+                    dest[key] = np.zeros((d_lon[0],d_lon[1]))
+                else:
+                    dest[key] = np.zeros((d_lon[0],d_lon[1],d_sig))
+
+            #regrid to pressure coordinate
+            #need to make sure the arrays are contiguous
+            x = np.ascontiguousarray(interm['Pressure'][:,:,::-1].ravel())
+            xnew = np.ascontiguousarray(Pref[::-1])
+
+            for key in dest.keys():
+                if np.shape(interm[key])==(d_lon[0],d_lon[1]):
+                    #2D field (e.g., insolation)
+                    dest[key] = interm[key]
+
+                else:
+                    dest[key][:,:,:] = vertical_regrid_field(interm[key][:,:,::-1],grid.nv,x,xnew)[:,:,::-1]
+                    if surf and mask_surf:
+                        dest[key][(Pref[None,None,:]>interm['Psurf'][:,:,None])] = np.nan
+
+            #create h5 files (pressure grid)
+            openh5 = h5py.File(fileh5p,"w")
+            print('Writing file '+fileh5p+'...')
+            # coordinates
+            Pre = openh5.create_dataset("Pressure",data=Pref,\
+                                            compression='gzip',compression_opts=comp)
+            Lat = openh5.create_dataset("Latitude",data=lat_range*180/np.pi,\
+                                        compression='gzip',compression_opts=comp)
+            Lon = openh5.create_dataset("Longitude",data=lon_range*180/np.pi,\
+                                        compression='gzip',compression_opts=comp)
+            # data
+            for key in dest.keys():
+                tmp_data = openh5.create_dataset(key,data=dest[key],\
+                                                 compression='gzip',compression_opts=comp)
+            openh5.close()
+
+            #create h5 files (height grid)
+            openh5 = h5py.File(fileh5h,"w")
+            print('Writing file '+fileh5h+'...')
+            Alt = openh5.create_dataset("Altitude",data=grid.Altitude,\
+                                            compression='gzip',compression_opts=comp)
+            Lat = openh5.create_dataset("Latitude",data=lat_range*180/np.pi,\
+                                        compression='gzip',compression_opts=comp)
+            Lon = openh5.create_dataset("Longitude",data=lon_range*180/np.pi,\
+                                        compression='gzip',compression_opts=comp)
+            # data
+            for key in dest.keys():
+                tmp_data = openh5.create_dataset(key,data=interm[key],\
+                                                 compression='gzip',compression_opts=comp)
+            openh5.close()
+
 
 def calc_RV_PV(grid,output,input,lons,lats,sigma,t_ind,fileh5,comp=4,pressure_vert=True,type='gd',lmax_set='grid'):
     #Calculates relative and potential vorticity on height levels, then interpolates to pressure.
@@ -755,9 +1290,10 @@ def calc_RV_PV(grid,output,input,lons,lats,sigma,t_ind,fileh5,comp=4,pressure_ve
     Lonlr = openh5.create_dataset("Lon_lowres",data=lon_range,compression='gzip',compression_opts=comp)
     openh5.close()
 
-def regrid(resultsf,simID,ntsi,nts,nlev=40,pgrid_ref='auto',overwrite=False,comp=4,
+def regrid_old(resultsf,simID,ntsi,nts,nlev=40,pgrid_ref='auto',overwrite=False,comp=4,
             pressure_vert=True,type='gd',vertical_top='default',rotation=False,theta_z=0,theta_y=0,
             lmax_set='grid',mask_surf=True):
+    t0 = time.time()
     # runs over files and converts ico-height grid to lat-lon-pr grid
     outall = GetOutput(resultsf,simID,ntsi,ntsi,rotation=rotation,theta_z=theta_z,theta_y=theta_y)
     input = outall.input
@@ -1021,7 +1557,7 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pgrid_ref='auto',overwrite=False,comp
                             co2_icop[i,Pref>Psurf[i,0]] = np.nan
                             nh3_icop[i,Pref>Psurf[i,0]] = np.nan
 
-            else:  # keep height at vertical coordinate (sometimes useful)
+            else:  # keep height at vertical coordinate
                 Temp_icop[:,:] = Temp_icoh[:,:,0]
                 Rho_icop[:,:] = output.Rho[:,:,0]
                 Mh_icop[:,:,:] = output.Mh[:,:,:,0]
@@ -1251,8 +1787,10 @@ def regrid(resultsf,simID,ntsi,nts,nlev=40,pgrid_ref='auto',overwrite=False,comp
 
             openh5.close()
 
+    tf = time.time()
+    print(tf-t0)
             ## calculate relative and potential vorticity and add to regrid file
-            calc_RV_PV(grid,output,input,lon_range,lat_range,Pref,0,fileh5,pressure_vert,type=type,lmax_set=lmax_set)
+            # calc_RV_PV(grid,output,input,lon_range,lat_range,Pref,0,fileh5,pressure_vert,type=type,lmax_set=lmax_set)
             # calc_moc_streamf(grid,output,input,lon_range,lat_range,Pref,0,fileh5,pressure_vert)
 
 
@@ -2083,19 +2621,25 @@ def dFunc_dLon(f, dLon):
                                 -8*f[:,i-1,:]+f[:,i-2,:])/(12*dLon)
     return dfdlon
 
-def CurlF(fr,flat,flon,lati,alti,res_deg,nv,A,dz):
+def CurlF(fr,flat,flon,lat_range,lon_range,Altitude,A):
     curlFz = np.zeros_like(fr)
     curlFlat = np.zeros_like(fr)
     curlFlon = np.zeros_like(fr)
 
-    curlFz = -1.0*(dFunc_dLat(flon*np.cos(lati),res_deg)-dFunc_dLon(flat,res_deg))
-    curlFz /= (np.cos(lati)*(A+alti))
+    curlFz = -1.0*(np.gradient(flon*np.cos(lat_range[:,None,None]),lat_range,axis=0)\
+                  -np.gradient(flat,lon_range,axis=1))
+    # curlFz = -1.0*(dFunc_dLat(flon*np.cos(lati),res_deg)-dFunc_dLon(flat,res_deg))
+    curlFz /= (np.cos(lat_range[:,None,None])*(A+Altitude[None,None,:]))
 
-    curlFlat = -1.0*(dFunc_dLon(fr,res_deg)/np.cos(lati)-dFunc_dZ((A+alti)*flon,alti,nv,dz))
-    curlFlat /= (A+alti)
+    curlFlat = -1.0*(np.gradient(fr,lon_range,axis=1)\
+                    -np.gradient((A+Altitude[None,None,:])*flon,Altitude,axis=2))
+    #curlFlat = -1.0*(dFunc_dLon(fr,res_deg)/np.cos(lati)-dFunc_dZ((A+alti)*flon,alti,nv,dz))
+    curlFlat /= (A+Altitude[None,None,:])
 
-    curlFlon = -1.0*(dFunc_dZ((A+alti)*flat,alti,nv,dz)-dFunc_dLat(fr,res_deg))
-    curlFlon /= (A+alti)
+    curlFlon = -1.0*(np.gradient((A+Altitude[None,None,:])*flat,Altitude,axis=2)\
+                    -np.gradient(fr,lat_range,axis=0))
+    #curlFlon = -1.0*(dFunc_dZ((A+alti)*flat,alti,nv,dz)-dFunc_dLat(fr,res_deg))
+    curlFlon /= (A+Altitude[None,None,:])
 
     return curlFz, curlFlat, curlFlon
 

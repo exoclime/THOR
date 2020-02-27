@@ -29,7 +29,6 @@ parser = argparse.ArgumentParser()
 parser.add_argument('resultsf',metavar='nview',nargs='*',help='Results directory')
 parser.add_argument("-s","--simulation_ID",nargs=1,default=['auto'],help='Name of simulation (e.g., planet name)')
 parser.add_argument("-t","--type",nargs=1,default=['gd'],choices=['gd','GD','sh','SH'],help='Horizontal interpolation type')
-parser.add_argument("-vc","--vcoord",nargs=1,default=['pressure'],help='Vertical coordinate to use (pressure or height)')
 parser.add_argument("-pgrid","--pgrid_ref",nargs=1,default=['auto'],help='Reference file for pressure grid')
 parser.add_argument("-i","--initial_file",nargs=1,default=[10],type=int,help='Initial file id number (integer)')
 parser.add_argument("-l","--last_file",nargs=1,default=['init'],type=int,help='Last file id number (integer)')
@@ -58,13 +57,6 @@ if args.simulation_ID[0] == 'auto':
 else:
     simulation_ID = args.simulation_ID[0]
 
-if args.vcoord[0] == 'pressure':
-    use_p = True
-elif args.vcoord[0] == 'height':
-    use_p = False
-else:
-    raise ValueError('%s not a valid vcoord. Valid options are "pressure" or "height"'%args.vcoord[0])
-
 if args.unmask_surf:
     mask = False
 else:
@@ -73,9 +65,9 @@ else:
 if args.overwrite:
     print('Warning! Overwriting existing regrid files!')
 
-ham.regrid(resultsf,simulation_ID,ntsi,nts,pressure_vert=use_p,type=args.type[0],pgrid_ref=args.pgrid_ref[0],
+ham.regrid(resultsf,simulation_ID,ntsi,nts,pgrid_ref=args.pgrid_ref[0],
             rotation=args.rotation,theta_z=args.rotation_angles[0]*np.pi/180,theta_y = args.rotation_angles[1]*np.pi/180,
-            overwrite=args.overwrite,lmax_set = args.lmax[0],mask_surf=mask)
+            overwrite=args.overwrite,mask_surf=mask)
 
 last = time.time()
 print(last-first)
