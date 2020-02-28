@@ -7,14 +7,14 @@ config_version = 1
 
 #-- Time stepping and output options -----------------------------------------#
 # number of steps
-num_steps = 103680
+num_steps = 2000
 
 # length of timesteps in seconds
 timestep = 1000
 
 # output
 # output every n steps
-n_out = 1920
+n_out = 10
 
 # write to log file at a different cadence from n_out
 custom_log_n_out = false
