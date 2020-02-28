@@ -324,13 +324,25 @@ Alf_a = 1.0
 Alf_dir_beam = true
 # geometric zenith angle correction
 Alf_geom_zenith_corr = true
-# TODO: not needed
-# (0.667: dayside only, no redistribution, 0.25: global redistribution, 1: substellar point)
-# Alf_f_factor = 0.667
-Alf_f_factor = 1.0
 
 # transition in w0. only above this value I2S is used.
 Alf_i2s_transition = 0.1
 
 Alf_opacities_file = ./Alfrodull/input/opac_sample.h5 
 
+## insolation (orbit + spin-state) parameters ###########
+# synchronous rotation (tidally-locking at 1:1)
+Alf_sync_rot = true
+# mean motion of orbit (if sync_rot=false and ecc>0) (rad/s)
+Alf_mean_motion = 1.98e-7
+# initial substellar longitude (deg)
+Alf_alpha_i = 0
+# initial orbital position (deg)
+Alf_true_long_i = 0
+# eccentricity of orbit
+Alf_ecc = 0
+# obliquity (axial-tilt) (deg)
+Alf_obliquity = 0
+# longitude of periastron (relative to equinox) (deg)
+# (stupid Earth convention applies)
+Alf_longp = 0
