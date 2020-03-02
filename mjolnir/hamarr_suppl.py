@@ -11,7 +11,7 @@ import time
 import subprocess as spr
 import pyshtools as chairs
 import pdb
-from hamarr import GetOutput
+from hamarr import GetOutput, curlF
 
 #This is mostly old code that might still be useful in some situations
 #I don't plan on maintaining this so you're on your own if you want to use it
@@ -295,7 +295,6 @@ def calc_RV_PV(grid,output,input,lons,lats,sigma,t_ind,fileh5,comp=4,pressure_ve
 def regrid_old(resultsf,simID,ntsi,nts,nlev=40,pgrid_ref='auto',overwrite=False,comp=4,
             pressure_vert=True,type='gd',vertical_top='default',rotation=False,theta_z=0,theta_y=0,
             lmax_set='grid',mask_surf=True):
-    t0 = time.time()
     # runs over files and converts ico-height grid to lat-lon-pr grid
     outall = GetOutput(resultsf,simID,ntsi,ntsi,rotation=rotation,theta_z=theta_z,theta_y=theta_y)
     input = outall.input
@@ -789,10 +788,8 @@ def regrid_old(resultsf,simID,ntsi,nts,nlev=40,pgrid_ref='auto',overwrite=False,
 
             openh5.close()
 
-    tf = time.time()
-    print(tf-t0)
             ## calculate relative and potential vorticity and add to regrid file
-            # calc_RV_PV(grid,output,input,lon_range,lat_range,Pref,0,fileh5,pressure_vert,type=type,lmax_set=lmax_set)
+            calc_RV_PV(grid,output,input,lon_range,lat_range,Pref,0,fileh5,pressure_vert,type=type,lmax_set=lmax_set)
             # calc_moc_streamf(grid,output,input,lon_range,lat_range,Pref,0,fileh5,pressure_vert)
 
 

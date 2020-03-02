@@ -433,7 +433,10 @@ def define_Pgrid(resultsf,simID,ntsi,nts,stride,overwrite=False):
         openh5 = h5py.File(fileh5)
     else:
         raise IOError(fileh5+' not found!')
-    surf = openh5['surface'][0]
+    if openh5['core_benchmark'][0] > 0:
+        surf = 0
+    else:
+        surf = openh5['surface'][0]
     openh5.close()
 
     # now we'll loop over all the files to get the pressure_mean
@@ -789,7 +792,6 @@ def regrid(resultsf,simID,ntsi,nts,pgrid_ref='auto',overwrite=False,comp=4,
                       'Rho':output.Rho[:,:,0],
                       'Mh':output.Mh[:,:,:,0],
                       'Pressure':output.Pressure[:,:,0],
-                      'Psurf':Psurf[:,0],
                       'Rd':output.Rd[:,:,0],
                       'Cp':output.Cp[:,:,0]}
 
@@ -801,6 +803,7 @@ def regrid(resultsf,simID,ntsi,nts,pgrid_ref='auto',overwrite=False,comp=4,
                 source['insol'] = output.Insol[:,0]
                 if surf == 1:
                     source['Tsurface'] = output.Tsurface[:,0]
+                    source['Psurf'] = Psurf[:,0]
 
             if chem == 1:
                 source['ch4'] = output.ch4[:,:,0]
@@ -1933,6 +1936,28 @@ def SRindex(input,grid,output):
             os.mkdir(input.resultsf+'/figures')
     plt.savefig(input.resultsf+'/figures/SRindex_i%d_l%d.pdf'%(output.ntsi,output.nts))
     plt.close()
+
+def Get_Prange(input,grid,rg,args,xtype='lat',use_p=True):
+    # Sigma (normalized pressure) values for the plotting
+    if not isinstance(args.slice,list):
+        raise IOError("'slice' argument must be a list")
+
+    if use_p:
+        if (args.vertical_top[0]=='default'):
+            args.vertical_top[0] = np.min(rg.Pressure)/100
+
+        if np.max(input.P_Ref)/np.float(args.vertical_top[0]) > 1000:
+            sigmaref = np.logspace(np.log10(np.max(rg.Pressure)),np.log10(np.float(args.vertical_top[0])*100),20)/input.P_Ref
+        else:
+            sigmaref = np.linspace(np.max(rg.Pressure),np.float(args.vertical_top[0])*100,20)/input.P_Ref
+
+    else:
+        if (args.vertical_top[0]=='default'):
+            sigmaref = grid.Altitude
+        else:
+            sigmaref = grid.Altitude[np.where(grid.Altitude<=np.float(args.vertical_top[0])*input.Top_altitude)[0]]
+    return sigmaref
+
 
 def RTbalance(input,grid,output):
     #not finished!
