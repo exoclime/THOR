@@ -346,3 +346,5 @@ Alf_obliquity = 0
 # longitude of periastron (relative to equinox) (deg)
 # (stupid Earth convention applies)
 Alf_longp = 0
+# compute radiative transfer every n step
+Alf_compute_every_nstep = 20
