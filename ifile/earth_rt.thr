@@ -7,7 +7,7 @@ config_version = 1
 
 #-- Time stepping and output options -----------------------------------------#
 # number of steps
-num_steps = 2000
+num_steps = 20000
 
 # length of timesteps in seconds
 timestep = 1000
@@ -23,7 +23,7 @@ log_n_out = 1000
 
 # output directory (relative to current working directory)
 # defaults to 'results'
-results_path = earth_alf
+results_path = earth_rt
 
 # output global diagnostics (energy, mass, momentum, entropy)
 globdiag = true
@@ -193,8 +193,9 @@ order_diff_sponge = 2
 
 
 #-- Radiative transfer options (core_benchmark = NoBenchmark) --------------------------#
-## Common radiative transfer options #################################
-## Used for RT and Alfrodull
+## RT parameters #######################################
+radiative_transfer = true
+
 # stellar temperature (k)
 Tstar = 5800
 
@@ -203,34 +204,6 @@ planet_star_dist = 1
 
 # radius of host star (R_sun)
 radius_star = 1
-
-## insolation (orbit + spin-state) parameters ###########
-# synchronous rotation (tidally-locking at 1:1)
-sync_rot = true
-
-# mean motion of orbit (if sync_rot=false and ecc>0) (rad/s)
-#mean_motion = 1.98e-7
-
-# initial substellar longitude (deg)
-#alpha_i = 0
-
-# initial orbital position (deg)
-#true_long_i = 0
-
-# eccentricity of orbit
-#ecc = 0
-
-# obliquity (axial-tilt) (deg)
-#obliquity = 0
-
-# longitude of periastron (relative to equinox) (deg)
-# (stupid Earth convention applies)
-#longp = 0
-#########################################################
-
-## RT parameters #######################################
-radiative_transfer = false
-
 
 # bond albedo of planet
 albedo = 0.3
@@ -278,43 +251,29 @@ rt1Dmode = false
 
 #########################################################
 
+## insolation (orbit + spin-state) parameters ###########
+# synchronous rotation (tidally-locking at 1:1)
+sync_rot = true
 
+# mean motion of orbit (if sync_rot=false and ecc>0) (rad/s)
+#mean_motion = 1.98e-7
 
+# initial substellar longitude (deg)
+#alpha_i = 0
 
+# initial orbital position (deg)
+#true_long_i = 0
 
-#-- Alfrodull options --------------------------------------------------------#
-two_streams_radiative_transfer = true
+# eccentricity of orbit
+#ecc = 0
 
-# Isothermal or non-isothermal treatment of layers for two stream RT
-Alf_iso = false
+# obliquity (axial-tilt) (deg)
+#obliquity = 0
 
-# use real star spectrum or planck spectrum
-Alf_real_star = false
-Alf_fake_opac = 0.0
-Alf_T_surf = 5000.0
-# surface albedo
-Alf_albedo = 1.0
-# asymmetry factor
-# (values: [-1, 1]. 0: isotropic scattering. 1: pure forward, -1: pure backward.)
-Alf_g_0 = 0.0
-# diffusivity factor (usually set to 2)
-Alf_diffusivity = 2.0
-
-Alf_scat = true
-Alf_scat_corr = true
-
-# direct irradiation beam
-Alf_dir_beam = true
-# geometric zenith angle correction
-Alf_geom_zenith_corr = true
-
-# transition in w0. only above this value I2S is used.
-Alf_i2s_transition = 0.1
-
-Alf_opacities_file = ./Alfrodull/input/opac_sample.h5 
-
-# compute radiative transfer every n step
-Alf_compute_every_nstep = 1
+# longitude of periastron (relative to equinox) (deg)
+# (stupid Earth convention applies)
+#longp = 0
+#########################################################
 
 
 #-- Boundary layer options (core_benchmark = NoBenchmark) --------------------#
@@ -334,3 +293,56 @@ bl_type = RayleighHS
 # GPU ID number
 GPU_ID_N = 0
 
+
+#-- Alfrodull options --------------------------------------------------------#
+two_streams_radiative_transfer = false
+
+
+# Star temperature (K)
+Alf_Tstar = 5000.0
+
+# Isothermal or non-isothermal treatment of layers for two stream RT
+Alf_iso = false
+
+# use real star spectrum or planck spectrum
+Alf_real_star = false
+Alf_fake_opac = 0.0
+Alf_T_surf = 5000.0
+# surface albedo
+Alf_albedo = 1.0
+# asymmetry factor
+# (values: [-1, 1]. 0: isotropic scattering. 1: pure forward, -1: pure backward.)
+Alf_g_0 = 0.0
+# diffusivity factor (usually set to 2)
+Alf_diffusivity = 2.0
+
+Alf_scat = true
+Alf_scat_corr = true
+Alf_R_planet = 1.0
+Alf_a = 1.0
+# direct irradiation beam
+Alf_dir_beam = true
+# geometric zenith angle correction
+Alf_geom_zenith_corr = true
+
+# transition in w0. only above this value I2S is used.
+Alf_i2s_transition = 0.1
+
+Alf_opacities_file = ./Alfrodull/input/opac_sample.h5 
+
+## insolation (orbit + spin-state) parameters ###########
+# synchronous rotation (tidally-locking at 1:1)
+Alf_sync_rot = true
+# mean motion of orbit (if sync_rot=false and ecc>0) (rad/s)
+Alf_mean_motion = 1.98e-7
+# initial substellar longitude (deg)
+Alf_alpha_i = 0
+# initial orbital position (deg)
+Alf_true_long_i = 0
+# eccentricity of orbit
+Alf_ecc = 0
+# obliquity (axial-tilt) (deg)
+Alf_obliquity = 0
+# longitude of periastron (relative to equinox) (deg)
+# (stupid Earth convention applies)
+Alf_longp = 0
