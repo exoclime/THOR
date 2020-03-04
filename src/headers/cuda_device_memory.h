@@ -101,7 +101,7 @@ public:
         }
 
         if (host_mem)
-            host_ptr = std::make_shared<T[]>(size_in);
+            host_ptr = std::shared_ptr<T[]>(new T[size_in]);
 
         return ret == cudaSuccess;
     };
