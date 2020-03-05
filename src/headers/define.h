@@ -114,6 +114,7 @@
 #define kappa_sw_default 0.001 // m^2 kg^-1
 #define Tint_default 100.0
 #define f_lw_default 0.5
+#define bv_freq_default 0.01
 
 #define uh_thermo_default "none"
 
@@ -132,7 +133,7 @@ enum benchmark_types {
     GWAVE_TEST           = 7
 };
 
-enum init_PT_profile_types { ISOTHERMAL = 0, GUILLOT = 1 };
+enum init_PT_profile_types { ISOTHERMAL = 0, GUILLOT = 1, CONSTBV = 2 };
 
 enum uh_thermo_types { NO_UH_THERMO = 0, VARY_R_CP = 1, FULL = 2 };
 

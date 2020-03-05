@@ -56,7 +56,8 @@ class input:
             self.core_benchmark = openh5['hstest'][...]
         else:
             self.core_benchmark = openh5['core_benchmark'][...]
-        if self.core_benchmark[0] == 0: # need to switch to rt flag
+        if 'radiative_transfer' in openh5.keys():
+            self.RT = openh5['radiative_transfer'][0]
             self.Tstar = openh5['Tstar'][...]
             self.planet_star_dist = openh5['planet_star_dist'][...]
             self.radius_star = openh5['radius_star'][...]
@@ -73,6 +74,8 @@ class input:
                 self.surface = openh5['surface'][0]
             else:
                 self.surface = 0
+        else:
+            self.RT = 0
         if 'vulcan' in openh5.keys():
             self.chemistry = openh5['vulcan'][...]
         if 'chemistry' in openh5.keys():
@@ -272,13 +275,13 @@ class output:
 
 class rg_out:
     def __init__(self,resultsf,simID,ntsi,nts,input,output,grid,pressure_vert=True,pgrid_ref='auto'):
-        RT = 0
-        if "core_benchmark" in dir(input):
-            if input.core_benchmark[0] == 0: # need to switch to 'radiative_tranfer' flag
-                RT = 1
-                surf = 0
-                if input.surface:
-                    surf = 1
+
+        if input.RT == 1:
+            surf = 0
+            if input.surface:
+                surf = 1
+        else:
+            surf = 0
 
         chem = 0
         if hasattr(input,"chemistry"):
@@ -312,7 +315,7 @@ class rg_out:
             lati = openh5['Latitude'][...]
             loni = openh5['Longitude'][...]
 
-            if RT == 1:
+            if input.RT == 1:
                 tau_swi = openh5['tau_sw'][...]
                 tau_lwi = openh5['tau_lw'][...]
                 if 'fnet_up' in openh5.keys():
@@ -357,7 +360,7 @@ class rg_out:
                 self.PV = np.zeros(np.shape(PVi)+(nts-ntsi+1,))
                 self.RV = np.zeros(np.shape(RVi)+(nts-ntsi+1,))
 
-                if RT == 1:
+                if input.RT == 1:
                     self.tau_sw = np.zeros(np.shape(tau_swi)+(nts-ntsi+1,))
                     self.tau_lw = np.zeros(np.shape(tau_lwi)+(nts-ntsi+1,))
                     self.flw_up = np.zeros(np.shape(flw_upi)+(nts-ntsi+1,))
@@ -389,7 +392,7 @@ class rg_out:
             self.PV[:,:,:,t-ntsi+1] = PVi
             self.RV[:,:,:,t-ntsi+1] = RVi
 
-            if RT == 1:
+            if input.RT == 1:
                 self.tau_sw[:,:,:,t-ntsi+1] = tau_swi
                 self.tau_lw[:,:,:,t-ntsi+1] = tau_lwi
                 self.flw_up[:,:,:,t-ntsi+1] = flw_upi
@@ -433,10 +436,10 @@ def define_Pgrid(resultsf,simID,ntsi,nts,stride,overwrite=False):
         openh5 = h5py.File(fileh5)
     else:
         raise IOError(fileh5+' not found!')
-    if openh5['core_benchmark'][0] > 0:
-        surf = 0
-    else:
+    if 'surface' in openh5.keys():
         surf = openh5['surface'][0]
+    else:
+        surf = 0
     openh5.close()
 
     # now we'll loop over all the files to get the pressure_mean
@@ -739,17 +742,14 @@ def regrid(resultsf,simID,ntsi,nts,pgrid_ref='auto',overwrite=False,comp=4,
     d_sig = np.size(Pref)
 
     #handling of module properties
-    RT = 0      #gray radiative transfer module
-    if hasattr(input,"core_benchmark"):
-        if input.core_benchmark[0] == 0: # need to switch to 'radiative_tranfer' flag
-            RT = 1
-            surf = 0
-            if input.surface:
-                surf = 1
-                extrap_low = (grid.Altitudeh[0]-grid.Altitude[1])/(grid.Altitude[0]-grid.Altitude[1])
-                Psurf = output.Pressure[:,1,:]+extrap_low*(output.Pressure[:,0,:]-output.Pressure[:,1,:])
-        else:
-            surf = 0
+    if input.RT == 1:#gray radiative transfer module
+        surf = 0
+        if input.surface:
+            surf = 1
+            extrap_low = (grid.Altitudeh[0]-grid.Altitude[1])/(grid.Altitude[0]-grid.Altitude[1])
+            Psurf = output.Pressure[:,1,:]+extrap_low*(output.Pressure[:,0,:]-output.Pressure[:,1,:])
+    else:
+        surf = 0
 
     chem = 0        #chemistry module
     if hasattr(input,"chemistry"):
@@ -795,7 +795,7 @@ def regrid(resultsf,simID,ntsi,nts,pgrid_ref='auto',overwrite=False,comp=4,
                       'Rd':output.Rd[:,:,0],
                       'Cp':output.Cp[:,:,0]}
 
-            if RT == 1:
+            if input.RT == 1:
                 source['flw_up'] = output.flw_up[:,:-1,0]+(output.flw_up[:,1:,0]-output.flw_up[:,:-1,0])*interpz[None,:]
                 source['flw_dn'] = output.flw_dn[:,:-1,0]+(output.flw_dn[:,1:,0]-output.flw_dn[:,:-1,0])*interpz[None,:]
                 source['tau_sw'] = output.tau_sw[:,:,0]
@@ -1686,8 +1686,8 @@ def profile(input,grid,output,z,stride=50):
 
     for column in np.arange(0,grid.point_num,stride):
         if tsp > 1:
-            P = np.mean(output.Pressure[column,:,:],axis=2)
-            x = np.mean(z['value'][column,:,:],axis=2)
+            P = np.mean(output.Pressure[column,:,:],axis=1)
+            x = np.mean(z['value'][column,:,:],axis=1)
         else:
             P = output.Pressure[column,:,0]
             x = z['value'][column,:,0]

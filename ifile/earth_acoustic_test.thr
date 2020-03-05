@@ -68,7 +68,7 @@ P_ref = 100000.0
 Top_altitude = 10000.0
 
 # Horizontal resolution level.
-glevel = 5
+glevel = 4
 
 # Number of vertical layers
 vlevel = 20

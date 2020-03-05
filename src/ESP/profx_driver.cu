@@ -306,32 +306,32 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
                             timestep,
                             point_num);
     }
-    else if (core_benchmark == ACOUSTIC_TEST) {
-        if (current_step == 1) {
-            acoustic_test<<<NB, NTH>>>(pressure_d,
-                                       Rho_d,
-                                       temperature_d,
-                                       sim.Rd,
-                                       Altitude_d,
-                                       lonlat_d,
-                                       sim.Top_altitude,
-                                       point_num);
-        }
-    }
-    else if (core_benchmark == GWAVE_TEST) {
-        if (current_step == 1) {
-            gwave_test<<<NB, NTH>>>(pressure_d,
-                                    Rho_d,
-                                    temperature_d,
-                                    sim.Rd,
-                                    sim.Cp,
-                                    sim.P_Ref,
-                                    Altitude_d,
-                                    lonlat_d,
-                                    sim.Top_altitude,
-                                    point_num);
-        }
-    }
+    // else if (core_benchmark == ACOUSTIC_TEST) {
+    //     if (current_step == 1) {
+    //         acoustic_test<<<NB, NTH>>>(pressure_d,
+    //                                    Rho_d,
+    //                                    temperature_d,
+    //                                    sim.Rd,
+    //                                    Altitude_d,
+    //                                    lonlat_d,
+    //                                    sim.Top_altitude,
+    //                                    point_num);
+    //     }
+    // }
+    // else if (core_benchmark == GWAVE_TEST) {
+    //     if (current_step == 1) {
+    //         gwave_test<<<NB, NTH>>>(pressure_d,
+    //                                 Rho_d,
+    //                                 temperature_d,
+    //                                 sim.Rd,
+    //                                 sim.Cp,
+    //                                 sim.P_Ref,
+    //                                 Altitude_d,
+    //                                 lonlat_d,
+    //                                 sim.Top_altitude,
+    //                                 point_num);
+    //     }
+    // }
     BENCH_POINT_I_PHY(current_step,
                       "phy_core_benchmark",
                       (),

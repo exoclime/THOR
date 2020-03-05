@@ -130,6 +130,7 @@ public:
     double kappa_lw; //long wave opacity
     double kappa_sw; //short wave opacity
     double f_lw;     //fraction of lw optical depth due to well-mixed absorbers
+    double bv_freq;  //for constbv profile, brunt-vaisala frequency
 
     bool check_h;
 
@@ -363,6 +364,7 @@ public:
         double                kappa_lw_,
         double                kappa_sw_,
         double                f_lw_,
+        double                bv_freq_,
         uh_thermo_types       ultrahot_thermo_,
         uh_heating_types      ultrahot_heating_,
         thermo_equation_types thermo_equation_);
