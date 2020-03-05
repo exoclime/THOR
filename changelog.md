@@ -39,3 +39,5 @@
  * corrected heat capacity in RT calculation, as appropriate for updating pressure rather than temperature
  * added pgrid utility to mjolnir/regrid, which must be used to determine a fixed pressure grid to use for interpolation before doing regrid operation (this ensures that all regrid files are utilizing the same pressure grid)
  * changed regrid to open only one file at a time to prevent overloading memory
+ * corrected volume calculation for shallow model conservation outputs
+ * computing sponge averages only once per time step to speed up model (testing this!)

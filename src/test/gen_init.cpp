@@ -201,7 +201,7 @@ void Output(int                current_step, // Number of integration steps
         //      CP
         s.append_value(sim.Cp, "/Cp", "J/(Kg K)", "Specific heat capacity");
         //      SpongeLayer option
-        s.append_value(sim.SpongeLayer ? 1.0 : 0.0, "/SpongeLayer", "-", "Using SpongeLayer?");
+        s.append_value(sim.RayleighSponge ? 1.0 : 0.0, "/SpongeLayer", "-", "Using SpongeLayer?");
         //      DeepModel option
         s.append_value(sim.DeepModel ? 1.0 : 0.0, "/DeepModel", "-", "Using Deep Model");
 
@@ -231,7 +231,7 @@ void Output(int                current_step, // Number of integration steps
         s.append_value(sim.rest ? 1.0 : 0.0, "/rest", "-", "Starting from rest");
 
         //      TPprof option
-        s.append_value(sim.TPprof, "/TPprof", "-", "Initial TP profile option");
+        // s.append_value(sim.TPprof, "/TPprof", "-", "Initial TP profile option");
     }
 
     //  ESP OUTPUT

@@ -5,7 +5,7 @@ import hamarr as ham
 import sys
 import argparse
 import h5py
-from imp import reload
+from importlib import reload
 reload(ham)
 import time
 import subprocess as spr
@@ -218,7 +218,7 @@ if 'PTlonver' in pview:
 if 'PVver' in pview:
     # sigmaref = np.arange(1,0,)
     z = {'value':rg.PV, 'label':r'Potential Vorticity (K m$^2$ kg$^{-1}$ s$^{-1}$)',
-         'name':'pot_vort', 'cmap':'viridis', 'lat':rg.lat_lr, 'lon':rg.lon_lr, 'mt':maketable, 'plog':plog}
+         'name':'pot_vort', 'cmap':'viridis', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable, 'plog':plog}
     sigmaref = ham.Get_Prange(input,grid,rg,args,xtype='lat',use_p=use_p)
     ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice,use_p=use_p)
     # ham.potential_vort_vert(input,grid,output,sigmaref)
@@ -274,7 +274,7 @@ if 'PVlev' in pview:
     else:
         PR_LV = np.float(args.horizontal_lev[0])*1000
     z = {'value':rg.PV, 'label':r'Potential Vorticity (K m$^2$ kg$^{-1}$ s$^{-1}$)',
-        'name':'pot_vort', 'cmap':'viridis', 'lat':rg.lat_lr, 'lon':rg.lon_lr, 'mt':maketable, 'llswap':args.latlonswap}
+        'name':'pot_vort', 'cmap':'viridis', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable, 'llswap':args.latlonswap}
     ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True,use_p=use_p)
     # ham.potential_vort_lev(input,grid,output,PR_LV)
 if 'RVlev' in pview:
@@ -282,8 +282,8 @@ if 'RVlev' in pview:
         PR_LV = np.float(args.horizontal_lev[0])*100
     else:
         PR_LV = np.float(args.horizontal_lev[0])*1000
-    z = {'value':rg.RV[0], 'label':r'Relative Vorticity (s$^{-1}$)',
-        'name':'rela_vort', 'cmap':'viridis', 'lat':rg.lat_lr, 'lon':rg.lon_lr, 'mt':maketable, 'llswap':args.latlonswap}
+    z = {'value':rg.RV, 'label':r'Relative Vorticity (s$^{-1}$)',
+        'name':'rela_vort', 'cmap':'viridis', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable, 'llswap':args.latlonswap}
     ham.horizontal_lev(input,grid,output,rg,PR_LV,z,wind_vectors=True,use_p=use_p)
     # ham.rela_vort_lev(input,grid,output,PR_LV)
 if 'tracer' in pview:
@@ -321,11 +321,12 @@ if 'Tsurf' in pview:
 
 #--- Pressure profile types-------------------------------
 if 'TP' in pview:
-    z = {'value': output.Pressure/input.Rd/output.Rho, 'label':'Temperature (K)', 'name':'T' }
+    z = {'value': output.Pressure/output.Rd/output.Rho, 'label':'Temperature (K)', 'name':'T' }
     #ham.TPprof(input,grid,output,sigmaref,1902)
     ham.profile(input,grid,output,z)
 if 'PTP' in pview:
-    kappa_ad = input.Rd/input.Cp  # adiabatic coefficient
+    #kappa_ad = input.Rd/input.Cp  # adiabatic coefficient
+    kappa_ad = output.Rd/output.Cp
     T = output.Pressure/input.Rd/output.Rho
     pt = T*(output.Pressure/input.P_Ref)**(-kappa_ad)
     z = {'value': pt, 'label':'Potential Temperature (K)', 'name':'PT' }

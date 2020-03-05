@@ -102,7 +102,6 @@ __global__ void Compute_Advec_Cori1(
     bool load_halo = compute_mem_idx(maps_d, nhl, nhl2, ig, igh, ir, ir2, pent_ind);
     id             = ig;
 
-
     M_s[ir]        = Mh_d[ig * nv + lev];
     rho            = Rho_d[ig * nv + lev];
     w              = W_d[ig * nv + lev];

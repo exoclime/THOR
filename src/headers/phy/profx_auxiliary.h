@@ -48,7 +48,7 @@
 __global__ void Compute_temperature_only(double *temperature_d,
                                          double *pressure_d,
                                          double *Rho_d,
-                                         double  Rd,
+                                         double *Rd_d,
                                          int     num) {
 
     int id  = blockIdx.x * blockDim.x + threadIdx.x;
@@ -57,7 +57,8 @@ __global__ void Compute_temperature_only(double *temperature_d,
 
     // Computes absolute temperature
     if (id < num)
-        temperature_d[id * nv + lev] = pressure_d[id * nv + lev] / (Rd * Rho_d[id * nv + lev]);
+        temperature_d[id * nv + lev] =
+            pressure_d[id * nv + lev] / (Rd_d[id * nv + lev] * Rho_d[id * nv + lev]);
 }
 
 __global__ void Compute_temperature(double *temperature_d,
@@ -65,28 +66,33 @@ __global__ void Compute_temperature(double *temperature_d,
                                     double *pressure_d,
                                     double *Rho_d,
                                     double  P_Ref,
-                                    double  Rd,
-                                    double  Cp,
-                                    int     num) {
+                                    double *Rd_d,
+                                    double *Cp_d,
+                                    int     num,
+                                    bool    calcT) {
 
     int id  = blockIdx.x * blockDim.x + threadIdx.x;
     int nv  = gridDim.y;
     int lev = blockIdx.y;
 
-    double Cv    = Cp - Rd;
-    double CvoCp = Cv / Cp;
+    double Cv;
+    double CvoCp;
 
     // Computes absolute and potential temperature
     if (id < num) {
-        temperature_d[id * nv + lev] = pressure_d[id * nv + lev] / (Rd * Rho_d[id * nv + lev]);
+        Cv    = Cp_d[id * nv + lev] - Rd_d[id * nv + lev];
+        CvoCp = Cv / Cp_d[id * nv + lev];
+        if (calcT) {
+            temperature_d[id * nv + lev] =
+                pressure_d[id * nv + lev] / (Rd_d[id * nv + lev] * Rho_d[id * nv + lev]);
+        }
+        pt_d[id * nv + lev] = (P_Ref / (Rd_d[id * nv + lev] * Rho_d[id * nv + lev]))
+                              * pow(pressure_d[id * nv + lev] / P_Ref, CvoCp);
     }
-    if (id < num)
-        pt_d[id * nv + lev] =
-            (P_Ref / (Rd * Rho_d[id * nv + lev])) * pow(pressure_d[id * nv + lev] / P_Ref, CvoCp);
 }
 
 __global__ void
-Compute_pressure(double *pressure_d, double *temperature_d, double *Rho_d, double Rd, int num) {
+Compute_pressure(double *pressure_d, double *temperature_d, double *Rho_d, double *Rd_d, int num) {
 
 
     int id  = blockIdx.x * blockDim.x + threadIdx.x;
@@ -95,7 +101,8 @@ Compute_pressure(double *pressure_d, double *temperature_d, double *Rho_d, doubl
 
     // Computes absolute pressure
     if (id < num) {
-        pressure_d[id * nv + lev] = temperature_d[id * nv + lev] * Rd * Rho_d[id * nv + lev];
+        pressure_d[id * nv + lev] =
+            temperature_d[id * nv + lev] * Rd_d[id * nv + lev] * Rho_d[id * nv + lev];
     }
 }
 
