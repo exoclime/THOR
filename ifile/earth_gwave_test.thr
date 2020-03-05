@@ -14,7 +14,7 @@ timestep = 1800
 
 # output
 # output every n steps
-n_out = 1
+n_out = 4
 
 # write to log file at a different cadence from n_out
 custom_log_n_out = false
@@ -23,7 +23,7 @@ log_n_out = 1000
 
 # output directory (relative to current working directory)
 # defaults to 'results'
-results_path = gwave_test_nopert
+results_path = gwave_test
 
 # output global diagnostics (energy, mass, momentum, entropy)
 globdiag = true
@@ -105,7 +105,7 @@ initial = ic_special/gen_ic_earth/esp_initial.h5
 #    includes the collision-induced absorption approx. from Heng+ 2011
 #    this can be omitted by setting f_lw = 1
 init_PT_profile = constbv
-bv_freq = 0.02
+bv_freq = 0.01
 
 # Core benchmark tests
 # Held-Suarez test for Earth == HeldSuarez

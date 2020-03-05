@@ -11,10 +11,15 @@ import time
 import subprocess as spr
 import pyshtools as chairs
 import pdb
-import pycuda.driver as cuda
-import pycuda.autoinit
-from pycuda.compiler import SourceModule
-import pycuda.gpuarray as gpuarray
+try:
+    import pycuda.driver as cuda
+    import pycuda.autoinit
+    from pycuda.compiler import SourceModule
+    import pycuda.gpuarray as gpuarray
+    has_pycuda = True
+except ImportError as e:
+    print(e)
+    has_pycuda = False
 
 plt.rcParams['image.cmap'] = 'magma'
 # plt.rcParams['font.family'] = 'sans-serif'
@@ -472,148 +477,149 @@ def define_Pgrid(resultsf,simID,ntsi,nts,stride,overwrite=False):
     else:
         raise IOError(pfile+' already exists in this directory!')
 
-regrid_tools = SourceModule("""
-    __device__ double dot_product(double *a, double *b) {
-        return a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
-    }
-
-    __global__ void find_nearest(int *near, double *a, double *a_ico, int num_ll, int num_ico) {
-        int id = blockIdx.x * blockDim.x + threadIdx.x;
-
-        if (id < num_ll) {
-            double dot_max = 0.0, dot_new;
-            int closest = -1;
-            for (int i_ico = 0; i_ico < num_ico; i_ico++) {
-                dot_new = dot_product(&a[id*3],&a_ico[i_ico*3]);
-                if (dot_new > dot_max) {
-                    dot_max = dot_new;
-                    closest = i_ico;
-                }
-            }
-            near[id] = closest;
-        }
-    }
-
-    __device__ double determinant(double *a, double *b, double *c) {
-        return a[0]*(b[1]*c[2]-b[2]*c[1])-a[1]*(b[0]*c[2]-b[2]*c[0])+a[2]*(b[0]*c[1]-b[1]*c[0]);
-    }
-
-    __device__ void weights_tuv(double *a, double *b, double *c, double *d,
-                                double *t, double *u, double *v) {
-        // Simple code-up of Moller-Trumbore algorithm
-        // Ref: [Fast, Minimum Storage Ray/Triangle Intersection.
-        //       Möller & Trumbore. Journal of Graphics Tools, 1997.]
-
-        double *OD = new double[3]();
-        double *OA = new double[3]();
-        double *BA = new double[3]();
-        double *CA = new double[3]();
-
-        for (int i = 0; i < 3; i++){
-            OD[i] = -d[i];
-            OA[i] = -a[i];
-            BA[i] = b[i] - a[i];
-            CA[i] = c[i] - a[i];
+if has_pycuda:
+    regrid_tools = SourceModule("""
+        __device__ double dot_product(double *a, double *b) {
+            return a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
         }
 
-        double det0, det1, det2, det3;
+        __global__ void find_nearest(int *near, double *a, double *a_ico, int num_ll, int num_ico) {
+            int id = blockIdx.x * blockDim.x + threadIdx.x;
 
-        det0 = determinant(OD,BA,CA);
-        det1 = determinant(OA,BA,CA);
-        det2 = determinant(OD,OA,CA);
-        det3 = determinant(OD,BA,OA);
-
-        *t = det1/det0;
-        *u = det2/det0;
-        *v = det3/det0;
-
-        delete[] OD;
-        delete[] OA;
-        delete[] BA;
-        delete[] CA;
-
-    }
-
-    __global__ void calc_weights(double *weight3, int *near3, double *a, double *a_ico,
-                                 int *pntloc, int num_ll, int num_ico) {
-        int id = blockIdx.x * blockDim.x + threadIdx.x;
-
-        if (id < num_ll) {
-            int i_ico = near3[id*3+0], j = 0, jp1, ii1, ii2;
-            double t, u, v;
-            bool correct_triangle = false;
-            while (correct_triangle == false){
-                jp1 = (j+1)%6;
-                ii1 = pntloc[i_ico*6+j];
-                ii2 = pntloc[i_ico*6+jp1];
-                weights_tuv(&a_ico[i_ico*3],&a_ico[ii1*3],&a_ico[ii2*3],&a[id*3],&t,&u,&v);
-
-                if ((u<0) || (u>1)) {
-                    correct_triangle = false;
-                } else if ((v<0) || (u+v>1)) {
-                    correct_triangle = false;
-                } else {
-                    correct_triangle = true;
-                    near3[id*3+1] = ii1;
-                    near3[id*3+2] = ii2;
-                    weight3[id*3+0] = 1.0-u-v;
-                    weight3[id*3+1] = u;
-                    weight3[id*3+2] = v;
-                }
-                j += 1;
-            }
-        }
-    }
-
-    __global__ void vert_lin_interp(double *x, double *y, double *xnew,
-                                    double *ynew, int nxnew, int point_num, int nv,
-                                    int *x_non_mono_check, int *xnew_non_mono_check) {
-        // linear interpolation for vertical columns (pressure or height)
-        // x and xnew must be monotonically increasing
-        // in the case that they are not, the mono_check array entries will = 1
-        int id = blockIdx.x * blockDim.x + threadIdx.x;
-
-        if (id < point_num) {
-            for (int lev = 1; lev < nv; lev++) {
-                //check for monotonicity of column (x -> increasing order)
-                if (x[id*nv+lev] < x[id*nv+lev-1]) {
-                    x_non_mono_check[id] = 1;
-                }
-            }
-
-            for (int ilev = 1; ilev < nxnew; ilev++) {
-                //check for monotonicity of new vert grid
-                if (xnew[ilev] < xnew[ilev-1]) {
-                    xnew_non_mono_check[0] = 1;
-                }
-            }
-
-            if ((x_non_mono_check[id]==0) && (xnew_non_mono_check[0]==0)){
-                //monotonicity ok, do the interpolation
-                for (int ilev = 0; ilev < nxnew; ilev++) {
-                    int lev;
-                    if (xnew[ilev] < x[id*nv+0]) {
-                        //extrapolate below
-                        lev = 0;
-                    } else if (xnew[ilev] > x[id*nv+nv-1]) {
-                        //extrapolate above
-                        lev = nv - 2;
-                    } else {
-                        //interpolation
-                        lev = 0;
-                        while (xnew[ilev] > x[id*nv+lev+1]) {
-                            lev += 1;
-                        }
+            if (id < num_ll) {
+                double dot_max = 0.0, dot_new;
+                int closest = -1;
+                for (int i_ico = 0; i_ico < num_ico; i_ico++) {
+                    dot_new = dot_product(&a[id*3],&a_ico[i_ico*3]);
+                    if (dot_new > dot_max) {
+                        dot_max = dot_new;
+                        closest = i_ico;
                     }
-                    ynew[id*nxnew+ilev] = y[id*nv+lev] + (xnew[ilev]-x[id*nv+lev])*
-                                        (y[id*nv+lev+1]-y[id*nv+lev])/
-                                        (x[id*nv+lev+1]-x[id*nv+lev]);
+                }
+                near[id] = closest;
+            }
+        }
+
+        __device__ double determinant(double *a, double *b, double *c) {
+            return a[0]*(b[1]*c[2]-b[2]*c[1])-a[1]*(b[0]*c[2]-b[2]*c[0])+a[2]*(b[0]*c[1]-b[1]*c[0]);
+        }
+
+        __device__ void weights_tuv(double *a, double *b, double *c, double *d,
+                                    double *t, double *u, double *v) {
+            // Simple code-up of Moller-Trumbore algorithm
+            // Ref: [Fast, Minimum Storage Ray/Triangle Intersection.
+            //       Möller & Trumbore. Journal of Graphics Tools, 1997.]
+
+            double *OD = new double[3]();
+            double *OA = new double[3]();
+            double *BA = new double[3]();
+            double *CA = new double[3]();
+
+            for (int i = 0; i < 3; i++){
+                OD[i] = -d[i];
+                OA[i] = -a[i];
+                BA[i] = b[i] - a[i];
+                CA[i] = c[i] - a[i];
+            }
+
+            double det0, det1, det2, det3;
+
+            det0 = determinant(OD,BA,CA);
+            det1 = determinant(OA,BA,CA);
+            det2 = determinant(OD,OA,CA);
+            det3 = determinant(OD,BA,OA);
+
+            *t = det1/det0;
+            *u = det2/det0;
+            *v = det3/det0;
+
+            delete[] OD;
+            delete[] OA;
+            delete[] BA;
+            delete[] CA;
+
+        }
+
+        __global__ void calc_weights(double *weight3, int *near3, double *a, double *a_ico,
+                                     int *pntloc, int num_ll, int num_ico) {
+            int id = blockIdx.x * blockDim.x + threadIdx.x;
+
+            if (id < num_ll) {
+                int i_ico = near3[id*3+0], j = 0, jp1, ii1, ii2;
+                double t, u, v;
+                bool correct_triangle = false;
+                while (correct_triangle == false){
+                    jp1 = (j+1)%6;
+                    ii1 = pntloc[i_ico*6+j];
+                    ii2 = pntloc[i_ico*6+jp1];
+                    weights_tuv(&a_ico[i_ico*3],&a_ico[ii1*3],&a_ico[ii2*3],&a[id*3],&t,&u,&v);
+
+                    if ((u<0) || (u>1)) {
+                        correct_triangle = false;
+                    } else if ((v<0) || (u+v>1)) {
+                        correct_triangle = false;
+                    } else {
+                        correct_triangle = true;
+                        near3[id*3+1] = ii1;
+                        near3[id*3+2] = ii2;
+                        weight3[id*3+0] = 1.0-u-v;
+                        weight3[id*3+1] = u;
+                        weight3[id*3+2] = v;
+                    }
+                    j += 1;
                 }
             }
         }
-    }
 
-""")
+        __global__ void vert_lin_interp(double *x, double *y, double *xnew,
+                                        double *ynew, int nxnew, int point_num, int nv,
+                                        int *x_non_mono_check, int *xnew_non_mono_check) {
+            // linear interpolation for vertical columns (pressure or height)
+            // x and xnew must be monotonically increasing
+            // in the case that they are not, the mono_check array entries will = 1
+            int id = blockIdx.x * blockDim.x + threadIdx.x;
+
+            if (id < point_num) {
+                for (int lev = 1; lev < nv; lev++) {
+                    //check for monotonicity of column (x -> increasing order)
+                    if (x[id*nv+lev] < x[id*nv+lev-1]) {
+                        x_non_mono_check[id] = 1;
+                    }
+                }
+
+                for (int ilev = 1; ilev < nxnew; ilev++) {
+                    //check for monotonicity of new vert grid
+                    if (xnew[ilev] < xnew[ilev-1]) {
+                        xnew_non_mono_check[0] = 1;
+                    }
+                }
+
+                if ((x_non_mono_check[id]==0) && (xnew_non_mono_check[0]==0)){
+                    //monotonicity ok, do the interpolation
+                    for (int ilev = 0; ilev < nxnew; ilev++) {
+                        int lev;
+                        if (xnew[ilev] < x[id*nv+0]) {
+                            //extrapolate below
+                            lev = 0;
+                        } else if (xnew[ilev] > x[id*nv+nv-1]) {
+                            //extrapolate above
+                            lev = nv - 2;
+                        } else {
+                            //interpolation
+                            lev = 0;
+                            while (xnew[ilev] > x[id*nv+lev+1]) {
+                                lev += 1;
+                            }
+                        }
+                        ynew[id*nxnew+ilev] = y[id*nv+lev] + (xnew[ilev]-x[id*nv+lev])*
+                                            (y[id*nv+lev+1]-y[id*nv+lev])/
+                                            (x[id*nv+lev+1]-x[id*nv+lev]);
+                    }
+                }
+            }
+        }
+
+    """)
 
 def create_rg_map(resultsf,simID,rotation=False,theta_z=0,theta_y=0):
     outall = GetOutput(resultsf,simID,0,0,rotation=rotation,theta_z=theta_z,theta_y=theta_y)

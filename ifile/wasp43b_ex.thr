@@ -23,7 +23,7 @@ log_n_out = 1000
 
 # output directory (relative to current working directory)
 # defaults to 'results'
-results_path = wasp43b_example
+results_path = wasp43b_example_test7
 
 # output global diagnostics (energy, mass, momentum, entropy)
 globdiag = true
@@ -68,7 +68,7 @@ P_ref = 10000000.0
 Top_altitude = 1.4e6
 
 # Horizontal resolution level.
-glevel = 4
+glevel = 7
 
 # Number of vertical layers
 vlevel = 40
