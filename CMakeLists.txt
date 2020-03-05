@@ -49,8 +49,8 @@ project (THOR CUDA CXX)
 # some C++ flags
 set (CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set ( COMPILE_FLAGS --compiler-options;-Wall)
-
+string (APPEND CMAKE_CXX_FLAGS " -Wall -Wpedantic ")
+string (APPEND CMAKE_CUDA_FLAGS " --compiler-options -Wall ")
 
 include(CheckLanguage)
 check_language(CUDA)
