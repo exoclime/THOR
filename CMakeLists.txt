@@ -27,6 +27,8 @@
 
 cmake_minimum_required (VERSION 3.8 FATAL_ERROR)
 
+MESSAGE(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
+
 # check command line args, user can specify SM to override manual setting
 set(SM "0" CACHE STRING "GPU SM value")
 set(MODULES_SRC "0" CACHE STRING "Physics module subdirectory")
@@ -45,6 +47,10 @@ endif()
 message(STATUS "detected CMake version ${CMAKE_VERSION}")
   
 project (THOR CUDA CXX)
+
+if (BUILD_TYPE MATCHES "Debug")
+  set(CMAKE_CUDA_FLAGS ${CMAKE_CUDA_FLAGS_DEBUG})
+endif()
 
 # some C++ flags
 set (CMAKE_CXX_STANDARD 14)
