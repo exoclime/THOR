@@ -23,8 +23,6 @@ matrix:
             - libhdf5-serial-dev
             - libhdf5-cpp-100
 
-git:
-  submodules: false
 
 before_install:
   - INSTALLER=cuda-repo-${UBUNTU_VERSION}_${CUDA}_amd64.deb
