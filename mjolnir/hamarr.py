@@ -704,7 +704,7 @@ def regrid(resultsf,simID,ntsi,nts,pgrid_ref='auto',overwrite=False,comp=4,
     #field_on_ll_grid = weight3 * field_on_ico_grid[near3]
     #Remapping from height to pressure is done on all columns via pycuda
 
-    if not os.path.exists(resultsf+'/regrid_map.npz'):
+    if not os.path.exists(resultsf+'/regrid_map.npz') or overwrite:
         #if numpy zip file containing weights d.n.e., then create it
         create_rg_map(resultsf,simID,rotation=rotation,theta_z=theta_z,theta_y=theta_y)
 

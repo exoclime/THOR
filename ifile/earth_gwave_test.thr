@@ -23,7 +23,7 @@ log_n_out = 1000
 
 # output directory (relative to current working directory)
 # defaults to 'results'
-results_path = gwave_test
+results_path = gwave_test3-2
 
 # output global diagnostics (energy, mass, momentum, entropy)
 globdiag = true
@@ -71,7 +71,7 @@ Top_altitude = 10000.0
 glevel = 5
 
 # Number of vertical layers
-vlevel = 20
+vlevel = 40
 
 # Spring dynamics
 spring_dynamics = true

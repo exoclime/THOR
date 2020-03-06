@@ -629,7 +629,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 double lon   = lonlat_h[i * 2];
                 double kappa = sim.Rd / sim.Cp, pt;
 
-                vmode   = 1;         // vertical mode
+                vmode   = 2;         // vertical mode
                 dpt     = 10;        // potential temp perturbation (K)
                 R       = 1.0 / 3.0; // distance cutoff of perturbation
                 lambda0 = 0;         //longitude of perturbation
