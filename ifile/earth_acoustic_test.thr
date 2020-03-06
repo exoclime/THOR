@@ -23,7 +23,7 @@ log_n_out = 1000
 
 # output directory (relative to current working directory)
 # defaults to 'results'
-results_path = acoustic_test_energy
+results_path = acoustic_test_divdonly
 
 # output global diagnostics (energy, mass, momentum, entropy)
 globdiag = true
@@ -124,7 +124,7 @@ gcm_off = false
 conv_adj = false
 
 # type of thermodynamic equation = "entropy" (ready) or "energy" (in development!!)
-thermo_equation = energy
+thermo_equation = entropy
 
 # ultrahot atmosphere options (hydrogen only)
 # under development!!
