@@ -108,6 +108,7 @@ __host__ ESP::ESP(int *                 point_local_,
                   double                kappa_lw_,
                   double                kappa_sw_,
                   double                f_lw_,
+                  double                bv_freq_,
                   uh_thermo_types       ultrahot_thermo_,
                   uh_heating_types      ultrahot_heating_,
                   thermo_equation_types thermo_equation_) :
@@ -169,6 +170,7 @@ __host__ ESP::ESP(int *                 point_local_,
     kappa_lw = kappa_lw_;
     kappa_sw = kappa_sw_;
     f_lw     = f_lw_;
+    bv_freq  = bv_freq_;
 
     // Set the physics module execute state for the rest of the lifetime of ESP object
     // only execute physics modules when no benchmarks are enabled
@@ -415,20 +417,68 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
     double chi_H = 0, ptmp, eps = 1e-8, f, df, dz, mu;
     int    it, it_max = 100;
 
-    double Rd_L, P_L, T_L;
+    double Rd_L, P_L, T_L, rho_L, alpha;
     if (sim.rest) {
         for (int i = 0; i < point_num; i++) {
             //
             //          Initial conditions for an isothermal Atmosphere
             //
-            if (init_PT_profile == ISOTHERMAL && ultrahot_thermo == NO_UH_THERMO) {
+            if ((init_PT_profile == ISOTHERMAL || init_PT_profile == CONSTBV)
+                && ultrahot_thermo == NO_UH_THERMO) {
                 //isothermal initial profile, no variation in Rd or Cp due to H-H2 reaction
-                double Ha = sim.Rd * sim.Tmean / sim.Gravit;
+                //exact solution to hydrostatic equation
+                // double Ha = sim.Rd * sim.Tmean / sim.Gravit;
+                // for (int lev = 0; lev < nv; lev++) {
+                //     pressure_h[i * nv + lev]    = sim.P_Ref * exp(-Altitude_h[lev] / Ha);
+                //     temperature_h[i * nv + lev] = sim.Tmean;
+                //     Rd_h[i * nv + lev]          = sim.Rd;
+                //     Cp_h[i * nv + lev]          = sim.Cp;
+                // }
+
+                //iterative solution to hydrostatic equation
                 for (int lev = 0; lev < nv; lev++) {
-                    pressure_h[i * nv + lev]    = sim.P_Ref * exp(-Altitude_h[lev] / Ha);
-                    temperature_h[i * nv + lev] = sim.Tmean;
+                    //first, we define thermo quantities of layer below and make
+                    //our initial guess for the Newton-Raphson solver
+                    if (lev == 0) {
+                        P_L   = sim.P_Ref;
+                        rho_L = sim.P_Ref / (sim.Rd * sim.Tmean);
+                        T_L   = sim.Tmean;
+                        dz    = Altitude_h[0];
+                    }
+                    else {
+                        P_L   = pressure_h[i * nv + lev - 1];
+                        rho_L = Rho_h[i * nv + lev - 1];
+                        T_L   = temperature_h[i * nv + lev - 1];
+                        dz    = Altitude_h[lev] - Altitude_h[lev - 1];
+                    }
+                    pressure_h[i * nv + lev]    = P_L;
                     Rd_h[i * nv + lev]          = sim.Rd;
                     Cp_h[i * nv + lev]          = sim.Cp;
+                    Rho_h[i * nv + lev]         = rho_L;
+                    temperature_h[i * nv + lev] = T_L;
+                    ptmp                        = pressure_h[i * nv + lev] + 2 * eps;
+
+                    it = 0;
+                    while (it < it_max && ptmp - pressure_h[i * nv + lev] > eps) {
+                        //Newton-Raphson solver of hydrostatic eqn for thermo properties
+                        ptmp = pressure_h[i * nv + lev];
+                        f    = (pressure_h[i * nv + lev] - P_L) / dz
+                            + sim.Gravit * 0.5 * (Rho_h[i * nv + lev] + rho_L);
+                        df = 1.0 / dz + 0.5 * sim.Gravit / (sim.Rd * temperature_h[i * nv + lev]);
+                        pressure_h[i * nv + lev] = pressure_h[i * nv + lev] - f / df;
+                        if (init_PT_profile == CONSTBV) {
+                            //use a constant brunt-vaisala freq
+                            //alpha is a function equal to 1/2*(1/T)*dT
+                            alpha = 0.5 * pow(bv_freq, 2) / sim.Gravit * dz
+                                    + sim.Rd / sim.Cp * (pressure_h[i * nv + lev] - P_L)
+                                          / (pressure_h[i * nv + lev] + P_L);
+                            temperature_h[i * nv + lev] = (1 + alpha) * T_L / (1 - alpha);
+                        }
+                        Rho_h[i * nv + lev] =
+                            pressure_h[i * nv + lev] / (sim.Rd * temperature_h[i * nv + lev]);
+
+                        it++;
+                    }
                 }
             }
             else {
@@ -438,6 +488,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 mu = 0.5;
 
                 for (int lev = 0; lev < nv; lev++) {
+                    //first, we define thermo quantities of layer below and make
+                    //our initial guess for the Newton-Raphson solver
                     if (lev == 0) {
                         if (init_PT_profile == ISOTHERMAL) {
                             temperature_h[i * nv + lev] = sim.Tmean;
@@ -485,6 +537,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                     it = 0;
                     while (it < it_max && ptmp - pressure_h[i * nv + lev] > eps) {
+                        //Newton-Raphson solver of hydrostatic eqn for thermo properties
                         ptmp = pressure_h[i * nv + lev];
                         f    = log(pressure_h[i * nv + lev] / P_L) / dz
                             + sim.Gravit
@@ -544,6 +597,63 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 Wh_h[i * (nv + 1) + lev] = 0.0; // Layers interface.
             }
             Wh_h[i * (nv + 1) + nv] = 0.0;
+
+            if (core_benchmark == ACOUSTIC_TEST) {
+                // add density perturbation for acoustic wave test
+                double dp, R, lambda0, phi0, vmode, r, g, f;
+                double lat = lonlat_h[i * 2 + 1];
+                double lon = lonlat_h[i * 2];
+                vmode      = 1;         // vertical mode
+                dp         = 100.0;     // pressure perturbation (Pa)
+                R          = 1.0 / 3.0; // distance cutoff of perturbation
+                lambda0    = 0;         //longitude of perturbation
+                phi0       = 0;         //latitude of perturbation
+                r          = acos(sin(phi0) * sin(lat) + cos(phi0) * cos(lat) * cos(lon - lambda0));
+                if (r < R) {
+                    f = 0.5 * (1 + cos(M_PI * r / R));
+                }
+                else {
+                    f = 0.0;
+                }
+                for (int lev = 0; lev < nv; lev++) {
+                    g = sin(vmode * M_PI * Altitude_h[lev] / sim.Top_altitude);
+
+                    pressure_h[i * nv + lev] += dp * f * g;
+                    Rho_h[i * nv + lev] =
+                        pressure_h[i * nv + lev] / sim.Rd / temperature_h[i * nv + lev];
+                }
+            }
+            else if (core_benchmark == GWAVE_TEST) {
+                double dpt, R, lambda0, phi0, vmode, r, g, f;
+                double lat   = lonlat_h[i * 2 + 1];
+                double lon   = lonlat_h[i * 2];
+                double kappa = sim.Rd / sim.Cp, pt;
+
+                vmode   = 2;         // vertical mode
+                dpt     = 10;        // potential temp perturbation (K)
+                R       = 1.0 / 3.0; // distance cutoff of perturbation
+                lambda0 = 0;         //longitude of perturbation
+                phi0    = 0;         //latitude of perturbation
+                r       = acos(sin(phi0) * sin(lat) + cos(phi0) * cos(lat) * cos(lon - lambda0));
+
+                if (r < R) {
+                    f = 0.5 * (1 + cos(M_PI * r / R));
+                }
+                else {
+                    f = 0.0;
+                }
+                for (int lev = 0; lev < nv; lev++) {
+                    g  = sin(vmode * M_PI * Altitude_h[lev] / sim.Top_altitude);
+                    pt = temperature_h[i * nv + lev]
+                         * pow(pressure_h[i * nv + lev] / sim.P_Ref, -kappa);
+
+                    pt += dpt * f * g; // apply perturbation to potential temperature
+                    temperature_h[i * nv + lev] =
+                        pt * pow(pressure_h[i * nv + lev] / sim.P_Ref, kappa);
+                    Rho_h[i * nv + lev] =
+                        pressure_h[i * nv + lev] / (sim.Rd * temperature_h[i * nv + lev]);
+                }
+            }
         }
         if (core_benchmark == JET_STEADY) {
             //  Number of threads per block.

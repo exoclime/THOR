@@ -71,7 +71,7 @@ __global__ void shallowHJ(double *Mh_d,
         //double sigmab = 0.7;
         //double ka     = (1.0/40.0) * (1.0/86400.0);
         //double ks     = (1.0/4.0) * (1.0/86400.0);
-        double dTy = 200.0;
+        double dTy = 300.0;
         double ps, pre;
         double psm1;
         double lat = lonlat_d[id * 2 + 1];

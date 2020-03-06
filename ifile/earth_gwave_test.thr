@@ -88,7 +88,7 @@ NonHydro = true
 DeepModel = true
 
 # Initial conditions
-rest = false
+rest = true
 
 # initial conditions file, used if rest is set to false
 # (path relative to current working directory)
@@ -104,7 +104,8 @@ initial = ic_special/gen_ic_earth/esp_initial.h5
 #    also uses the gray RT params Tint, kappa_lw, kappa_sw, f_lw
 #    includes the collision-induced absorption approx. from Heng+ 2011
 #    this can be omitted by setting f_lw = 1
-init_PT_profile = isothermal
+init_PT_profile = constbv
+bv_freq = 0.01
 
 # Core benchmark tests
 # Held-Suarez test for Earth == HeldSuarez

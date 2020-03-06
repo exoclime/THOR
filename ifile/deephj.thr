@@ -88,13 +88,13 @@ NonHydro = true
 DeepModel = true
 
 # Initial conditions
-rest = true
+rest = false
 
 # initial conditions file, used if rest is set to false
 # (path relative to current working directory)
 # defaults to 'ifile/esp_initial.h5'
 # 'planet' file must be present with name a la 'ifile/esp_initial_planet.h5'
-initial = ifile/esp_initial.h5
+initial = ic_special/gen_ic_deep/esp_initial.h5
 
 # initial temperature-pressure profile (isothermal or guillot)
 # overridden if rest = false !
@@ -104,7 +104,7 @@ initial = ifile/esp_initial.h5
 #    also uses the gray RT params Tint, kappa_lw, kappa_sw, f_lw
 #    includes the collision-induced absorption approx. from Heng+ 2011
 #    this can be omitted by setting f_lw = 1
-init_PT_profile = isothermal
+init_PT_profile = guillot
 
 # Core benchmark tests
 # Held-Suarez test for Earth == HeldSuarez
@@ -114,7 +114,7 @@ init_PT_profile = isothermal
 # Acoustic wave test = AcousticTest
 # Gravity wave test = GWaveTest
 # No benchmark test == NoBenchmark (model is then forced with grey RT by default)
-core_benchmark = DeepHotJupiter
+core_benchmark =  DeepHotJupiter
 
 # Switch off dynamical core (gcm)
 # This is useful for testing/debugging physics modules
@@ -233,7 +233,7 @@ kappa_sw = 0.00125
 f_lw = 0.5
 
 # temperature of internal heat flux (bottom boundary) (K)
-Tint = 0
+Tint = 100
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 # add sin(lat)^2 dependence to tau lw (advanced)
