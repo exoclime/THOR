@@ -333,11 +333,12 @@ int main(int argc, char** argv) {
     config_reader.append_config_var(
         "init_PT_profile", init_PT_profile_str, string(init_PT_profile_default)); //
     // additional settings for guillot profile (also borrowed by double gray RT)
-    double Tint = 100, kappa_lw = 0.002, kappa_sw = 0.001, f_lw = 0.5;
+    double Tint = 100, kappa_lw = 0.002, kappa_sw = 0.001, f_lw = 0.5, bv_freq = 0.01;
     config_reader.append_config_var("Tint", Tint, Tint_default);
     config_reader.append_config_var("kappa_lw", kappa_lw, kappa_lw_default);
     config_reader.append_config_var("kappa_sw", kappa_sw, kappa_sw_default);
     config_reader.append_config_var("f_lw", f_lw, f_lw_default);
+    config_reader.append_config_var("bv_freq", bv_freq, bv_freq_default);
 
     // ultrahot thermodynamics
     string uh_thermo_str("none");
@@ -520,6 +521,10 @@ int main(int argc, char** argv) {
     }
     else if (init_PT_profile_str == "guillot") {
         init_PT_profile = GUILLOT;
+        config_OK &= true;
+    }
+    else if (init_PT_profile_str == "constbv") {
+        init_PT_profile = CONSTBV;
         config_OK &= true;
     }
     else {
@@ -869,6 +874,7 @@ int main(int argc, char** argv) {
           kappa_lw,
           kappa_sw,
           f_lw,
+          bv_freq,
           ultrahot_thermo,
           ultrahot_heating,
           thermo_equation);
