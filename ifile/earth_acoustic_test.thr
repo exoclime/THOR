@@ -23,7 +23,7 @@ log_n_out = 1000
 
 # output directory (relative to current working directory)
 # defaults to 'results'
-results_path = acoustic_test
+results_path = acoustic_test_energy
 
 # output global diagnostics (energy, mass, momentum, entropy)
 globdiag = true
@@ -124,7 +124,7 @@ gcm_off = false
 conv_adj = false
 
 # type of thermodynamic equation = "entropy" (ready) or "energy" (in development!!)
-thermo_equation = entropy
+thermo_equation = energy
 
 # ultrahot atmosphere options (hydrogen only)
 # under development!!
@@ -138,7 +138,7 @@ ultrahot_thermo = none
 HyDiff  =  false
 
 # Divergence-damping
-DivDampP =   false
+DivDampP =   true
 
 # Strength of diffusion
 Diffc = 0.02
