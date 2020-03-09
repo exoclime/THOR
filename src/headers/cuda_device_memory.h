@@ -122,13 +122,32 @@ public:
         return size;
     };
 
-
-    std::shared_ptr<T[]> get_host_data() {
+    std::shared_ptr<T[]> get_host_data_ptr() {
         if (host_ptr == nullptr) {
             host_ptr = std::shared_ptr<T[]>(new T[size]);
         }
 
-        fetch_to_host();
+
+        return host_ptr;
+    }
+
+    // copy data from local array passed as argument to device
+    bool put() {
+        if (host_ptr) {
+            cudaError_t ret =
+                cudaMemcpy(device_ptr, &(host_ptr[0]), size * sizeof(T), cudaMemcpyHostToDevice);
+            return ret == cudaSuccess;
+        }
+        else {
+            return false;
+        }
+    };
+
+
+    std::shared_ptr<T[]> get_host_data() {
+        get_host_data_ptr();
+
+        bool out = fetch_to_host();
 
         return host_ptr;
     }
