@@ -308,7 +308,7 @@ Alf_i2s_transition = 0.1
 Alf_opacities_file = ./Alfrodull/input/opac_sample.h5 
 
 # compute radiative transfer every n step
-Alf_compute_every_nstep = 1
+Alf_compute_every_nstep = 100
 
 
 #-- Boundary layer options (core_benchmark = NoBenchmark) --------------------#
