@@ -886,10 +886,10 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
 
             if input.TSRT:
                 source['mustar'] = output.mustar[:, 0]
-                source['f_net'] = output.f_net[:, :-1, 0]
+                source['f_net'] = output.f_net[:, :-1, 0] + (output.f_net[:, 1:, 0] - output.f_net[:, :-1, 0]) * interpz[None, :]
                 source['q_heat'] = output.q_heat[:, :, 0]
-                source['f_up_tot'] = output.f_up_tot[:, :-1, 0]
-                source['f_down_tot'] = output.f_down_tot[:, :-1, 0]
+                source['f_up_tot'] = output.f_up_tot[:, :-1, 0] + (output.f_up_tot[:, 1:, 0] - output.f_up_tot[:, :-1, 0]) * interpz[None, :]
+                source['f_down_tot'] = output.f_down_tot[:, :-1, 0] + (output.f_down_tot[:, 1:, 0] - output.f_down_tot[:, :-1, 0]) * interpz[None, :]
             if chem == 1:
                 source['ch4'] = output.ch4[:, :, 0]
                 source['co'] = output.co[:, :, 0]

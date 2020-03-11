@@ -287,7 +287,7 @@ Alf_real_star = false
 Alf_fake_opac = 0.0
 Alf_T_surf = 300.0
 # surface albedo
-Alf_albedo = 1.0
+Alf_albedo = 0.1
 # asymmetry factor
 # (values: [-1, 1]. 0: isotropic scattering. 1: pure forward, -1: pure backward.)
 Alf_g_0 = 0.0
@@ -308,7 +308,7 @@ Alf_i2s_transition = 0.1
 Alf_opacities_file = ./Alfrodull/input/opac_sample.h5 
 
 # compute radiative transfer every n step
-Alf_compute_every_nstep = 100
+Alf_compute_every_nstep = 1
 
 
 #-- Boundary layer options (core_benchmark = NoBenchmark) --------------------#
