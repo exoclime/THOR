@@ -346,13 +346,6 @@ if 'cfl' in pview:
     cs = np.sqrt(input.Cp/(input.Cp-input.Rd)*output.Pressure/output.Rho)
     z = {'value': cs*dt/dx, 'label':'CFL number for (horizontal) acoustic waves', 'name':'CFL' }
     ham.profile(input,grid,output,z,stride=20)
-if 'hsprof' in pview:
-    dpdr = np.gradient(output.Pressure,grid.Altitude,axis=1)
-    hseq = (dpdr + output.Rho*input.Gravit)/output.Rho/input.Gravit
-    hseq[:,0,:] = np.nan
-    hseq[:,-1,:] = np.nan
-    z = {'value': hseq, 'label':r'$dP/dr + \rho g$', 'name':'hsprof'}
-    ham.profile(input,grid,output,z,stride=20)
 if 'bvprof' in pview:
     kappa_ad = input.Rd/input.Cp  # adiabatic coefficient
     T = output.Pressure/input.Rd/output.Rho
