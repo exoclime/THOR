@@ -14,7 +14,7 @@ timestep = 300
 
 # output
 # output every n steps
-n_out = 7200
+n_out = 100
 
 # write to log file at a different cadence from n_out
 custom_log_n_out = false
