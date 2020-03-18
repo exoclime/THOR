@@ -220,7 +220,7 @@ set(PHYSICS_LIBRARY_PATH "${MODULES_SRC}/libphy_modules.a")
 add_executable(esp ${SRC})
 target_compile_options(esp  PUBLIC -DBUILD_LEVEL="release" -DDEVICE_SM=${SM})
 # options for debugging
-target_compile_options(esp PUBLIC -DBENCHMARKING -DBENCH_NAN_CHECK)
+#target_compile_options(esp PUBLIC -DBENCHMARKING -DBENCH_NAN_CHECK)
 target_link_libraries (esp ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES} phy_modules)
 
 # build tests
