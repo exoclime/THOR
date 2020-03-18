@@ -14,7 +14,7 @@ timestep = 300
 
 # output
 # output every n steps
-n_out = 100
+n_out = 1
 
 # write to log file at a different cadence from n_out
 custom_log_n_out = false
@@ -285,7 +285,7 @@ Alf_iso = false
 # use real star spectrum or planck spectrum
 Alf_real_star = false
 Alf_fake_opac = 0.0
-Alf_T_surf = 300.0
+Alf_T_surf = 100.0
 # surface albedo
 Alf_albedo = 0.1
 # asymmetry factor
