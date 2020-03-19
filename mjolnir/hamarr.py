@@ -1241,14 +1241,17 @@ def vertical_lat(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
         z['name'] += '_p'
     else:
         z['name'] += '_h'
+    pfile = False
     if save == True:
         # save the plot to file designated by z
         if len(slice) == 2:
             fname = '%s_ver_i%d_l%d_lon%#.2f-%#.2f'%(z['name'],output.ntsi,output.nts,slice[0],slice[1])
-            plt.savefig(input.resultsf+'/figures/'+fname.replace(".","+")+'.pdf')
+            pfile = input.resultsf+'/figures/'+fname.replace(".","+")+'.pdf'
         else:
             fname = '%s_ver_i%d_l%d_lon%#.2f'%(z['name'],output.ntsi,output.nts,slice[0])
-            plt.savefig(input.resultsf+'/figures/'+fname.replace(".","+")+'.pdf')
+            pfile = input.resultsf+'/figures/'+fname.replace(".","+")+'.pdf'
+
+        plt.savefig(pfile)
         plt.close()
     if z['mt'] == True:
         if len(slice) == 2:
@@ -1259,6 +1262,8 @@ def vertical_lat(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
             maketable(latp*180/np.pi,rg.Pressure[prange[0],0]/1e5,Zonallt[:,prange[0]],'Latitude(d)','Pressure(bar)',z['name'],input.resultsf,fname)
         else:
             maketable(latp*180/np.pi,rg.Altitude[hrange[0],0],Zonallt[:,hrange[0]],'Latitude(d)','Altitude(m)',z['name'],input.resultsf,fname)
+
+    return pfile
 
 def vertical_lon(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True, axis=False, csp=500, wind_vectors=False, use_p=True,clevs=[40]):
     # generic pressure/longitude plot function
@@ -1454,14 +1459,17 @@ def vertical_lon(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
         z['name'] += '_p'
     else:
         z['name'] += '_h'
+    pfile = False
     if save == True:
         # save the plot to file designated by z
         if len(slice) == 2:
             fname = '%s_ver_i%d_l%d_lat%#.2f-%#.2f'%(z['name'],output.ntsi,output.nts,slice[0],slice[1])
-            plt.savefig(input.resultsf+'/figures/'+fname.replace(".","+")+'.pdf')
+            pfile = input.resultsf+'/figures/'+fname.replace(".","+")+'.pdf'
         else:
             fname = '%s_ver_i%d_l%d_lat%#.2f'%(z['name'],output.ntsi,output.nts,slice[0])
-            plt.savefig(input.resultsf+'/figures/'+fname.replace(".","+")+'.pdf')
+            pfile = input.resultsf+'/figures/'+fname.replace(".","+")+'.pdf'
+
+        plt.savefig(pfile)
         plt.close()
     if z['mt'] == True:
         if len(slice) == 2:
@@ -1472,6 +1480,7 @@ def vertical_lon(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
             maketable(lonp*180/np.pi,rg.Pressure[prange[0],0]/1e5,Meridlt[:,prange[0]],'Longitude(d)','Pressure(bar)',z['name'],input.resultsf,fname)
         else:
             maketable(lonp*180/np.pi,rg.Altitude[hrange[0],0],Meridlt[:,hrange[0]],'Longitude(d)','Altitude(m)',z['name'],input.resultsf,fname)
+    return pfile
 
 def horizontal_lev(input, grid, output, rg, Plev, z, save=True, axis=False, wind_vectors=False, use_p=True,clevs=[40]):
     # Set the latitude-longitude grid.
@@ -1617,8 +1626,10 @@ def horizontal_lev(input, grid, output, rg, Plev, z, save=True, axis=False, wind
     if not os.path.exists(input.resultsf+'/figures'):
         os.mkdir(input.resultsf+'/figures')
     plt.tight_layout()
+    pfile = False
     if save == True:
-        plt.savefig(input.resultsf+'/figures/'+fname.replace(".","+")+'.pdf')
+        pfile = input.resultsf+'/figures/'+fname.replace(".","+")+'.pdf'
+        plt.savefig(pfile)
         plt.close()
     if z['mt'] == True:
         dname = fname+'.dat'
@@ -1627,6 +1638,7 @@ def horizontal_lev(input, grid, output, rg, Plev, z, save=True, axis=False, wind
         else:
             zname = z['name']
         maketable(lonp,latp,zlevt.T,'Longitude(d)','Latitude(d)',zname,input.resultsf,dname)
+    return pfile
 
 def CurlF(fr, flat, flon, lat_range, lon_range, Altitude, A):
     curlFz = np.zeros_like(fr)
@@ -1727,12 +1739,15 @@ def streamf_moc_plot(input, grid, output, rg, sigmaref, save=True, axis=False, w
     if not os.path.exists(input.resultsf+'/figures'):
         os.mkdir(input.resultsf+'/figures')
     plt.tight_layout()
+    pfile = False
     if save == True:
-        plt.savefig(input.resultsf+'/figures/streamf_ver_i%d_l%d.pdf'%(output.ntsi,output.nts))
+        pfile = input.resultsf+'/figures/streamf_ver_i%d_l%d.pdf'%(output.ntsi,output.nts)
+        plt.savefig(pfile)
         plt.close()
     if mt == True:
         fname = 'streamf_ver_i%d_l%d.dat' % (output.ntsi, output.nts)
         maketable(latp*180/np.pi,rg.Pressure[prange[0],0]/1e5,Zonallt[:,prange[0]],'Latitude(d)','Pressure(bar)','streamfunc',input.resultsf,fname)
+    return pfile
 
 def profile(input, grid, output, z, stride=50):
     # Pref = input.P_Ref*sigmaref
