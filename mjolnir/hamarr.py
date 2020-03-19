@@ -1048,7 +1048,7 @@ def maketable(x, y, z, xname, yname, zname, resultsf, fname):
     f.close()
 
 
-def vertical_lat(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True, axis=False, csp=500, wind_vectors=False, use_p=True,clevs='auto'):
+def vertical_lat(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True, axis=False, csp=500, wind_vectors=False, use_p=True,clevs=[40]):
     # generic pressure/latitude plot function
 
     # Set the reference pressure
@@ -1158,12 +1158,10 @@ def vertical_lat(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
         zvals = Zonallt[:, hrange[0]].T
 
     # Contour plot
-    if clevs == 'auto':
-        clevels = 40  # may want to make this adjustable
-    elif len(clevs) == 1:
-        clevels = clevs[0]
+    if len(clevs) == 1:
+        clevels = np.int(clevs[0])
     elif len(clevs) == 3:
-        clevels = np.linspace(280,500,45)
+        clevels = np.linspace(np.int(clevs[0]),np.int(clevs[1]),np.int(clevs[2]))
     else:
         raise IOError("clevs not valid!")
     # print(np.max(zvals))
@@ -1260,7 +1258,7 @@ def vertical_lat(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
         else:
             maketable(latp*180/np.pi,rg.Altitude[hrange[0],0],Zonallt[:,hrange[0]],'Latitude(d)','Altitude(m)',z['name'],input.resultsf,fname)
 
-def vertical_lon(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True, axis=False, csp=500, wind_vectors=False, use_p=True):
+def vertical_lon(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True, axis=False, csp=500, wind_vectors=False, use_p=True,clevs=[40]):
     # generic pressure/longitude plot function
 
     # Set the reference pressure
@@ -1372,8 +1370,12 @@ def vertical_lon(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
         zvals = Meridlt[:, hrange[0]].T
 
     # Contour plot
-    clevels = 40  # may want to make this adjustable
-    # clevels = np.linspace(-100,6400,66)
+    if len(clevs) == 1:
+        clevels = np.int(clevs[0])
+    elif len(clevs) == 3:
+        clevels = np.linspace(np.int(clevs[0]),np.int(clevs[1]),np.int(clevs[2]))
+    else:
+        raise IOError("clevs not valid!")
     # print(np.min(zvals),np.max(zvals))
     if isinstance(axis, axes.SubplotBase):
         C = axis.contourf(lonp*180/np.pi,ycoord,zvals,clevels,cmap=z['cmap'])
@@ -1467,7 +1469,7 @@ def vertical_lon(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
         else:
             maketable(lonp*180/np.pi,rg.Altitude[hrange[0],0],Meridlt[:,hrange[0]],'Longitude(d)','Altitude(m)',z['name'],input.resultsf,fname)
 
-def horizontal_lev(input, grid, output, rg, Plev, z, save=True, axis=False, wind_vectors=False, use_p=True):
+def horizontal_lev(input, grid, output, rg, Plev, z, save=True, axis=False, wind_vectors=False, use_p=True,clevs=[40]):
     # Set the latitude-longitude grid.
     loni, lati = np.meshgrid(rg.lon[:, 0], rg.lat[:, 0])
 
@@ -1556,7 +1558,12 @@ def horizontal_lev(input, grid, output, rg, Plev, z, save=True, axis=False, wind
     lonp = rg.lon[:, 0]
     latp = rg.lat[:, 0]
 
-    clevels = 50
+    if len(clevs) == 1:
+        clevels = np.int(clevs[0])
+    elif len(clevs) == 3:
+        clevels = np.linspace(np.int(clevs[0]),np.int(clevs[1]),np.int(clevs[2]))
+    else:
+        raise IOError("clevs not valid!")
     # clevels = np.linspace(900,1470,58)
     if isinstance(axis, axes.SubplotBase):
         if z['llswap']:
