@@ -1048,7 +1048,7 @@ def maketable(x, y, z, xname, yname, zname, resultsf, fname):
     f.close()
 
 
-def vertical_lat(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True, axis=False, csp=500, wind_vectors=False, use_p=True):
+def vertical_lat(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True, axis=False, csp=500, wind_vectors=False, use_p=True,clevs='auto'):
     # generic pressure/latitude plot function
 
     # Set the reference pressure
@@ -1158,8 +1158,14 @@ def vertical_lat(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
         zvals = Zonallt[:, hrange[0]].T
 
     # Contour plot
-    clevels = 40  # may want to make this adjustable
-    # clevels = np.linspace(280,500,45)
+    if clevs == 'auto':
+        clevels = 40  # may want to make this adjustable
+    elif len(clevs) == 1:
+        clevels = clevs[0]
+    elif len(clevs) == 3:
+        clevels = np.linspace(280,500,45)
+    else:
+        raise IOError("clevs not valid!")
     # print(np.max(zvals))
     if isinstance(axis, axes.SubplotBase):
         C = axis.contourf(latp*180/np.pi,ycoord,zvals,clevels,cmap=z['cmap'])
