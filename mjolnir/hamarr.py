@@ -1217,7 +1217,8 @@ def vertical_lat(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
     if use_p:
         ax.set_ylabel('Pressure (bar)')
         # ax.plot(latp*180/np.pi,np.zeros_like(latp)+np.max(output.Pressure[:,grid.nv-1,:])/1e5,'r--')
-        ax.set_ylim(np.max(rg.Pressure[prange[0], 0])/1e5, np.min(Pref)/1e5)
+        #ax.set_ylim(np.max(rg.Pressure[prange[0], 0])/1e5, np.min(Pref)/1e5)
+        ax.set_ylim(np.max(rg.Pressure[prange[0], 0])/1e5, np.min(rg.Pressure[prange[0], 0])/1e5)
 
         if ax.get_ylim()[1] > ax.get_ylim()[0]:
             ax.invert_yaxis()
@@ -1540,7 +1541,7 @@ def horizontal_lev(input, grid, output, rg, Plev, z, save=True, axis=False, wind
             del Uii, Vii
 
     # smoothing
-    zlevt = ndimage.gaussian_filter(zlevt, sigma=2, order=0)
+    #zlevt = ndimage.gaussian_filter(zlevt, sigma=2, order=0)
 
     #################
     # Create Figure #
@@ -1702,7 +1703,7 @@ def streamf_moc_plot(input, grid, output, rg, sigmaref, save=True, axis=False, w
     ax.set_ylabel('Pressure (bar)')
     # ax.plot(rg.lat[:,0],np.zeros_like(rg.lat[:,0])+np.max(output.Pressure[:,grid.nv-1,:])/1e5,'r--')
     # if np.min(rg.Pressure[prange[0],0]) < np.max(output.Pressure[:,grid.nv-1,:]):
-    ax.set_ylim(np.max(rg.Pressure[prange[0], 0])/1e5, np.min(Pref)/1e5)
+    ax.set_ylim(np.max(rg.Pressure[prange[0], 0])/1e5, np.min(rg.Pressure[prange[0],0])/1e5)
     # else:
     #     ax.set_ylim(np.max(rg.Pressure[prange[0],0])/1e5,np.max(output.Pressure[:,grid.nv-1,:])/1e5)
     ax.set_title('Time = %#.1f-%#.1f days, Lon = (0,360)'%(output.time[0],output.time[-1]),fontsize=10)
@@ -1731,13 +1732,14 @@ def profile(input, grid, output, z, stride=50):
             x = z['value'][column, :, 0]
 
         plt.semilogy(x, P/1e5, 'k-', alpha=0.5, lw=1)
-        plt.plot(x[np.int(np.floor(grid.nv/2))],P[np.int(np.floor(grid.nv/2))]/100000,'r+',ms =5,alpha=0.5)
-        plt.plot(x[np.int(np.floor(grid.nv*0.75))],P[np.int(np.floor(grid.nv*0.75))]/100000,'g+',ms =5,alpha=0.5)
+        rp, = plt.plot(x[np.int(np.floor(grid.nv/2))],P[np.int(np.floor(grid.nv/2))]/100000,'r+',ms =5,alpha=0.5)
+        gp, = plt.plot(x[np.int(np.floor(grid.nv*0.75))],P[np.int(np.floor(grid.nv*0.75))]/100000,'g+',ms =5,alpha=0.5)
 
     # plt.plot(Tad,P/100,'r--')
     plt.gca().invert_yaxis()
     plt.ylabel('Pressure (bar)')
     plt.xlabel(z['label'])
+    plt.legend([rp,gp],['z=0.5*ztop','z=0.75*ztop'])
     plt.title('Time = %#.3f - %#.3f days' % (output.time[0], output.time[-1]))
     if not os.path.exists(input.resultsf+'/figures'):
         os.mkdir(input.resultsf+'/figures')
