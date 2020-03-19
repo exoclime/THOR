@@ -1244,9 +1244,11 @@ def vertical_lat(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
     if save == True:
         # save the plot to file designated by z
         if len(slice) == 2:
-            plt.savefig(input.resultsf+'/figures/%s_ver_i%d_l%d_lon%#.2f-%#.2f.pdf'%(z['name'],output.ntsi,output.nts,slice[0],slice[1]))
+            fname = '%s_ver_i%d_l%d_lon%#.2f-%#.2f'%(z['name'],output.ntsi,output.nts,slice[0],slice[1])
+            plt.savefig(input.resultsf+'/figures/'+fname.replace(".","+")+'.pdf')
         else:
-            plt.savefig(input.resultsf+'/figures/%s_ver_i%d_l%d_lon%#.2f.pdf'%(z['name'],output.ntsi,output.nts,slice[0]))
+            fname = '%s_ver_i%d_l%d_lon%#.2f'%(z['name'],output.ntsi,output.nts,slice[0])
+            plt.savefig(input.resultsf+'/figures/'+fname.replace(".","+")+'.pdf')
         plt.close()
     if z['mt'] == True:
         if len(slice) == 2:
@@ -1455,9 +1457,11 @@ def vertical_lon(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
     if save == True:
         # save the plot to file designated by z
         if len(slice) == 2:
-            plt.savefig(input.resultsf+'/figures/%s_ver_i%d_l%d_lat%#.2f-%#.2f.pdf'%(z['name'],output.ntsi,output.nts,slice[0],slice[1]))
+            fname = '%s_ver_i%d_l%d_lat%#.2f-%#.2f'%(z['name'],output.ntsi,output.nts,slice[0],slice[1])
+            plt.savefig(input.resultsf+'/figures/'+fname.replace(".","+")+'.pdf')
         else:
-            plt.savefig(input.resultsf+'/figures/%s_ver_i%d_l%d_lat%#.2f.pdf'%(z['name'],output.ntsi,output.nts,slice[0]))
+            fname = '%s_ver_i%d_l%d_lat%#.2f'%(z['name'],output.ntsi,output.nts,slice[0])
+            plt.savefig(input.resultsf+'/figures/'+fname.replace(".","+")+'.pdf')
         plt.close()
     if z['mt'] == True:
         if len(slice) == 2:
@@ -1614,7 +1618,7 @@ def horizontal_lev(input, grid, output, rg, Plev, z, save=True, axis=False, wind
         os.mkdir(input.resultsf+'/figures')
     plt.tight_layout()
     if save == True:
-        plt.savefig(input.resultsf+'/figures/'+fname+'.pdf')
+        plt.savefig(input.resultsf+'/figures/'+fname.replace(".","+")+'.pdf')
         plt.close()
     if z['mt'] == True:
         dname = fname+'.dat'
