@@ -1,6 +1,27 @@
 import hamarr as ham
 import subprocess as spr
 
+class mjol_args:
+    #make_plot args, populate with defaults
+    def __init__(self,file):
+        self.file = [file]
+        self.simulation_ID = ['auto']
+        self.initial_file = [10]
+        self.last_file = ['init']
+        self.horizontal_lev = [2.5e2]
+        self.vertical_top = ['default']
+        self.split_layer = ['no_split']
+        self.coordinate_sys = ['icoh']
+        self.lmax_adjust = [0]
+        self.slice = [0,360]
+        self.maketable = False
+        self.no_pressure_log = False
+        self.latlonswap = False
+        self.vcoord = ['pressure']
+        self.pgrid_ref = ['auto']
+        self.clevels = [40]
+
+
 def make_plot(args):
     pview = args.pview
 
