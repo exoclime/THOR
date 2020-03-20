@@ -1,9 +1,11 @@
 import hamarr as ham
 import subprocess as spr
+import numpy as np
 
 class mjol_args:
     #make_plot args, populate with defaults
     def __init__(self,file):
+        self.pview = []
         self.file = [file]
         self.simulation_ID = ['auto']
         self.initial_file = [10]
