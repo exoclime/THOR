@@ -229,7 +229,7 @@ def make_plot(args):
         if use_p:
             sigmaref = ham.Get_Prange(input,grid,rg,args,xtype='lat',use_p=use_p)
             # ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice,csp=[0])
-            pfile = ham.streamf_moc_plot(input,grid,output,rg,sigmaref,mt=maketable,plog=plog)
+            pfile = ham.streamf_moc_plot(input,grid,output,rg,sigmaref,mt=maketable,plog=plog,clevs=args.clevels)
             if pfile:
                 print('Created file: '+pfile)
                 plots_created.append(pfile)

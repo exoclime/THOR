@@ -1663,7 +1663,7 @@ def CurlF(fr, flat, flon, lat_range, lon_range, Altitude, A):
     return curlFz, curlFlat, curlFlon
 
 
-def streamf_moc_plot(input, grid, output, rg, sigmaref, save=True, axis=False, wind_vectors=False, mt=False, plog=True):
+def streamf_moc_plot(input, grid, output, rg, sigmaref, save=True, axis=False, wind_vectors=False, mt=False, plog=True,clevs=[40]):
     # special plotting function for the mass streamfunction
 
     # Set the reference pressure
@@ -1696,12 +1696,19 @@ def streamf_moc_plot(input, grid, output, rg, sigmaref, save=True, axis=False, w
     prange = np.where(rg.Pressure[:, 0] >= np.min(Pref))
 
     # Contour plot
+    if len(clevs) == 1:
+        clevels = np.int(clevs[0])
+    elif len(clevs) == 3:
+        clevels = np.linspace(np.int(clevs[0]),np.int(clevs[1]),np.int(clevs[2]))
+    else:
+        raise IOError("clevs not valid!")
+
     if isinstance(axis, axes.SubplotBase):
-        C = axis.contourf(rg.lat[:,0],rg.Pressure[prange[0],0]/1e5,sf[:,prange[0]].T,40,cmap = 'viridis')
+        C = axis.contourf(rg.lat[:,0],rg.Pressure[prange[0],0]/1e5,sf[:,prange[0]].T,clevels,cmap = 'viridis')
         ax = axis
     elif axis == False:
         plt.figure(figsize=(5, 4))
-        C = plt.contourf(rg.lat[:,0],rg.Pressure[prange[0],0]/1e5,sf[:,prange[0]].T,40,cmap = 'viridis')
+        C = plt.contourf(rg.lat[:,0],rg.Pressure[prange[0],0]/1e5,sf[:,prange[0]].T,clevels,cmap = 'viridis')
         ax = plt.gca()
     else:
         raise IOError("'axis = {}' but {} is not an axes.SubplotBase instance".format(axis,axis))
