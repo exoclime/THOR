@@ -1,9 +1,34 @@
 """
-Queue multiple tasks for slurm 
+Queue multiple tasks for slurm in batch mode.
 """
 
 import subprocess
 import re
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('input_file',metavar='nview',nargs='*',help='Thor config file to run')
+parser.add_argument("-jn","--job_name",nargs=1,default=['default'],help='Job name for slurm scheduler')
+parser.add_argument("-n","--num_jobs",nargs=1,default=[2],type=int,help='Number of sequential jobs to run (integer)')
+parser.add_argument("-p","--prof", action="store_true", default=False, help='Run profiler on job')
+parser.add_argument("-o","--output", type=str, default=NoneFalse, help='Output dir name')
+args = parser.parse_args()
+initial_file = args.input_file[0]
+if args.job_name[0] == 'default':
+    job_name = args.input_file
+else:
+    job_name = args.job_name[0]
+num_jobs = args.num_jobs[0]
+
+if args.prof:
+    profiling = f"{job_name}.prof"
+else:
+    profiling = None
+
+if args.output is not None: 
+    output_arg = "-o {args.output}
+else:
+    output_arg = {}
 
 
 def start_esp(args, esp_command, esp_args, initial_file, profiling=None):
@@ -22,7 +47,7 @@ def start_esp(args, esp_command, esp_args, initial_file, profiling=None):
         proc.stdin.write(f"srun {prof_cmd} {esp_command} {esp_args} {initial_file}\n")
         proc.stdin.close()
         procid_string = proc.stdout.read()
-        # print(procid_string)
+        print(proc.stderr.read())
         m = batch_id_re.match(procid_string)
         if m is not None:
             batch_id = m.group(1)
@@ -34,20 +59,20 @@ def start_esp(args, esp_command, esp_args, initial_file, profiling=None):
             return False, -1
 
 
-working_dir = "/home/urss/prog/THOR-dev/"
-job_name = "wasp_alf_alf"
-initial_file = "ifile/alf_wasp_alf.thr"
+# Configure batch
+working_dir = "/path/to/thor/directory/"
+# job_name = "myjobname"
+# initial_file = "ifile/initialfile.thr"
+
 # Acceptable  time  formats  include  "minutes", "minutes:seconds",
 # "hours:minutes:seconds", "days-hours",
 # "days-hours:minutes" and "days-hours:minutes:seconds".
-time_limit = "0-12:0"
-mail = "urs.schroffenegger@csh.unibe.ch"
-
-profiling = None
-#profiling = f"{job_name}.prof"
+time_limit = "0-0:10"
+mail = "thoruser@thorsim.org"
+output_file = f"/path/to/slurm-esp-{job_name}-%j.out"  # %j for job index
 
 
-output_file = f"/home/urss/slurm-esp-{job_name}-%j.out"
+
 args = ['sbatch',
         '-D', working_dir,
         '-J', job_name,
@@ -59,10 +84,9 @@ args = ['sbatch',
         '--mail-user=' + mail,
         '--output=' + output_file,
         '--signal=INT@60']
-esp_command = "bin/esp_alf"
-#esp_args = f'-b -N 20 -o {job_name}'
-esp_args = f'-b -o {job_name}'
-num_jobs = 1
+esp_command = "bin/esp"
+esp_args = f'-b {output_arg}'
+
 
 
 last_success = None

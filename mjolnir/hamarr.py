@@ -63,30 +63,31 @@ class input:
             self.core_benchmark = openh5['hstest'][...]
         else:
             self.core_benchmark = openh5['core_benchmark'][...]
-        if self.core_benchmark[0] == 0:  # need to switch to rt flag
-            self.RT = "radiative_transfer" in openh5
-            if self.RT:
-                self.Tstar = openh5['Tstar'][...]
-                self.planet_star_dist = openh5['planet_star_dist'][...]
-                self.radius_star = openh5['radius_star'][...]
-                if 'diff_fac' in openh5.keys():  # called diff_fac in old versions
-                    self.diff_ang = openh5['diff_fac'][...]
-                else:
-                    self.diff_ang = openh5['diff_ang'][...]
-                if 'Tint' in openh5.keys():
-                    self.Tint = openh5['Tint'][...]
-                self.albedo = openh5['albedo'][...]
-                self.tausw = openh5['tausw'][...]
-                self.taulw = openh5['taulw'][...]
-                if 'surface' in openh5.keys():
-                    self.surface = openh5['surface'][0]
-                else:
-                    self.surface = 0
-            self.TSRT = "two_streams_radiative_transfer" in openh5
-            if self.TSRT:
-                self.Tstar = openh5['Tstar'][...]
-                self.planet_star_dist = openh5['planet_star_dist'][...]
-                self.radius_star = openh5['radius_star'][...]
+
+        self.RT = "radiative_transfer" in openh5
+        if self.RT:
+            self.Tstar = openh5['Tstar'][...]
+            self.planet_star_dist = openh5['planet_star_dist'][...]
+            self.radius_star = openh5['radius_star'][...]
+            if 'diff_fac' in openh5.keys():  # called diff_fac in old versions
+                self.diff_ang = openh5['diff_fac'][...]
+            else:
+                self.diff_ang = openh5['diff_ang'][...]
+            if 'Tint' in openh5.keys():
+                self.Tint = openh5['Tint'][...]
+            self.albedo = openh5['albedo'][...]
+            self.tausw = openh5['tausw'][...]
+            self.taulw = openh5['taulw'][...]
+            if 'surface' in openh5.keys():
+                self.surface = openh5['surface'][0]
+            else:
+                self.surface = 0
+
+        self.TSRT = "two_streams_radiative_transfer" in openh5
+        if self.TSRT:
+            self.Tstar = openh5['Tstar'][...]
+            self.planet_star_dist = openh5['planet_star_dist'][...]
+            self.radius_star = openh5['radius_star'][...]
 
         if 'vulcan' in openh5.keys():
             self.chemistry = openh5['vulcan'][...]
@@ -1099,7 +1100,7 @@ def maketable(x, y, z, xname, yname, zname, resultsf, fname):
     f.close()
 
 
-def vertical_lat(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True, axis=False, csp=500, wind_vectors=False, use_p=True):
+def vertical_lat(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True, axis=False, csp=500, wind_vectors=False, use_p=True, clevs=[40]):
     # generic pressure/latitude plot function
 
     # Set the reference pressure
@@ -1208,8 +1209,12 @@ def vertical_lat(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
         zvals = Zonallt[:, hrange[0]].T
 
     # Contour plot
-    clevels = 40  # may want to make this adjustable
-    # clevels = np.linspace(280,500,45)
+    if len(clevs) == 1:
+        clevels = np.int(clevs[0])
+    elif len(clevs) == 3:
+        clevels = np.linspace(np.int(clevs[0]), np.int(clevs[1]), np.int(clevs[2]))
+    else:
+        raise IOError("clevs not valid!")
     # print(np.max(zvals))
     if isinstance(axis, axes.SubplotBase):
         C = axis.contourf(latp * 180 / np.pi, ycoord, zvals, clevels, cmap=z['cmap'])
@@ -1267,7 +1272,8 @@ def vertical_lat(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
     if use_p:
         ax.set_ylabel('Pressure (bar)')
         # ax.plot(latp*180/np.pi,np.zeros_like(latp)+np.max(output.Pressure[:,grid.nv-1,:])/1e5,'r--')
-        ax.set_ylim(np.max(rg.Pressure[prange[0], 0]) / 1e5, np.min(Pref) / 1e5)
+        #ax.set_ylim(np.max(rg.Pressure[prange[0], 0])/1e5, np.min(Pref)/1e5)
+        ax.set_ylim(np.max(rg.Pressure[prange[0], 0]) / 1e5, np.min(rg.Pressure[prange[0], 0]) / 1e5)
 
         if ax.get_ylim()[1] > ax.get_ylim()[0]:
             ax.invert_yaxis()
@@ -1286,12 +1292,18 @@ def vertical_lat(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
         z['name'] += '_p'
     else:
         z['name'] += '_h'
+    pfile = False
     if save == True:
         # save the plot to file designated by z
         if len(slice) == 2:
-            plt.savefig(input.resultsf + '/figures/%s_ver_i%d_l%d_lon%#.2f-%#.2f.pdf' % (z['name'], output.ntsi, output.nts, slice[0], slice[1]))
+            fname = '%s_ver_i%d_l%d_lon%#.2f-%#.2f' % (z['name'], output.ntsi, output.nts, slice[0], slice[1])
+            pfile = input.resultsf + '/figures/' + fname.replace(".", "+") + '.pdf'
         else:
-            plt.savefig(input.resultsf + '/figures/%s_ver_i%d_l%d_lon%#.2f.pdf' % (z['name'], output.ntsi, output.nts, slice[0]))
+            fname = '%s_ver_i%d_l%d_lon%#.2f' % (z['name'], output.ntsi, output.nts, slice[0])
+            pfile = input.resultsf + '/figures/' + fname.replace(".", "+") + '.pdf'
+
+        plt.savefig(pfile)
+
         plt.close()
     if z['mt'] == True:
         if len(slice) == 2:
@@ -1303,8 +1315,10 @@ def vertical_lat(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
         else:
             maketable(latp * 180 / np.pi, rg.Altitude[hrange[0], 0], Zonallt[:, hrange[0]], 'Latitude(d)', 'Altitude(m)', z['name'], input.resultsf, fname)
 
+    return pfile
 
-def vertical_lon(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True, axis=False, csp=500, wind_vectors=False, use_p=True):
+
+def vertical_lon(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True, axis=False, csp=500, wind_vectors=False, use_p=True, clevs=[40]):
     # generic pressure/longitude plot function
 
     # Set the reference pressure
@@ -1415,8 +1429,12 @@ def vertical_lon(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
         zvals = Meridlt[:, hrange[0]].T
 
     # Contour plot
-    clevels = 40  # may want to make this adjustable
-    # clevels = np.linspace(-100,6400,66)
+    if len(clevs) == 1:
+        clevels = np.int(clevs[0])
+    elif len(clevs) == 3:
+        clevels = np.linspace(np.int(clevs[0]), np.int(clevs[1]), np.int(clevs[2]))
+    else:
+        raise IOError("clevs not valid!")
     # print(np.min(zvals),np.max(zvals))
     if isinstance(axis, axes.SubplotBase):
         C = axis.contourf(lonp * 180 / np.pi, ycoord, zvals, clevels, cmap=z['cmap'])
@@ -1493,12 +1511,18 @@ def vertical_lon(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
         z['name'] += '_p'
     else:
         z['name'] += '_h'
+    pfile = False
     if save == True:
         # save the plot to file designated by z
         if len(slice) == 2:
-            plt.savefig(input.resultsf + '/figures/%s_ver_i%d_l%d_lat%#.2f-%#.2f.pdf' % (z['name'], output.ntsi, output.nts, slice[0], slice[1]))
+            fname = '%s_ver_i%d_l%d_lat%#.2f-%#.2f' % (z['name'], output.ntsi, output.nts, slice[0], slice[1])
+            pfile = input.resultsf + '/figures/' + fname.replace(".", "+") + '.pdf'
         else:
-            plt.savefig(input.resultsf + '/figures/%s_ver_i%d_l%d_lat%#.2f.pdf' % (z['name'], output.ntsi, output.nts, slice[0]))
+            fname = '%s_ver_i%d_l%d_lat%#.2f' % (z['name'], output.ntsi, output.nts, slice[0])
+            pfile = input.resultsf + '/figures/' + fname.replace(".", "+") + '.pdf'
+
+        plt.savefig(pfile)
+
         plt.close()
     if z['mt'] == True:
         if len(slice) == 2:
@@ -1508,10 +1532,12 @@ def vertical_lon(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
         if use_p:
             maketable(lonp * 180 / np.pi, rg.Pressure[prange[0], 0] / 1e5, Meridlt[:, prange[0]], 'Longitude(d)', 'Pressure(bar)', z['name'], input.resultsf, fname)
         else:
-            maketable(lonp * 180 / np.pi, rg.Altitude[hrange[0], 0], Meridlt[:, hrange[0]], 'Longitude(d)', 'Altitude(m)', z['name'], input.resultsf, fname)
+            maketable(lonp * 180 / np.pi, rg.Altitude[hrange[0], 0], Meridlt[:, hrange[0]],
+                      'Longitude(d)', 'Altitude(m)', z['name'], input.resultsf, fname)
+    return pfile
 
 
-def horizontal_lev(input, grid, output, rg, Plev, z, save=True, axis=False, wind_vectors=False, use_p=True):
+def horizontal_lev(input, grid, output, rg, Plev, z, save=True, axis=False, wind_vectors=False, use_p=True, clevs=[40]):
     # Set the latitude-longitude grid.
     loni, lati = np.meshgrid(rg.lon[:, 0], rg.lat[:, 0])
 
@@ -1591,7 +1617,7 @@ def horizontal_lev(input, grid, output, rg, Plev, z, save=True, axis=False, wind
             del Uii, Vii
 
     # smoothing
-    zlevt = ndimage.gaussian_filter(zlevt, sigma=2, order=0)
+    #zlevt = ndimage.gaussian_filter(zlevt, sigma=2, order=0)
 
     #################
     # Create Figure #
@@ -1600,7 +1626,12 @@ def horizontal_lev(input, grid, output, rg, Plev, z, save=True, axis=False, wind
     lonp = rg.lon[:, 0]
     latp = rg.lat[:, 0]
 
-    clevels = 50
+    if len(clevs) == 1:
+        clevels = np.int(clevs[0])
+    elif len(clevs) == 3:
+        clevels = np.linspace(np.int(clevs[0]), np.int(clevs[1]), np.int(clevs[2]))
+    else:
+        raise IOError("clevs not valid!")
     # clevels = np.linspace(900,1470,58)
     if isinstance(axis, axes.SubplotBase):
         if z['llswap']:
@@ -1650,8 +1681,11 @@ def horizontal_lev(input, grid, output, rg, Plev, z, save=True, axis=False, wind
     if not os.path.exists(input.resultsf + '/figures'):
         os.mkdir(input.resultsf + '/figures')
     plt.tight_layout()
+    pfile = False
     if save == True:
-        plt.savefig(input.resultsf + '/figures/' + fname + '.pdf')
+        pfile = input.resultsf + '/figures/' + fname.replace(".", "+") + '.pdf'
+        plt.savefig(pfile)
+
         plt.close()
     if z['mt'] == True:
         dname = fname + '.dat'
@@ -1660,6 +1694,7 @@ def horizontal_lev(input, grid, output, rg, Plev, z, save=True, axis=False, wind
         else:
             zname = z['name']
         maketable(lonp, latp, zlevt.T, 'Longitude(d)', 'Latitude(d)', zname, input.resultsf, dname)
+    return pfile
 
 
 def CurlF(fr, flat, flon, lat_range, lon_range, Altitude, A):
@@ -1685,7 +1720,7 @@ def CurlF(fr, flat, flon, lat_range, lon_range, Altitude, A):
     return curlFz, curlFlat, curlFlon
 
 
-def streamf_moc_plot(input, grid, output, rg, sigmaref, save=True, axis=False, wind_vectors=False, mt=False, plog=True):
+def streamf_moc_plot(input, grid, output, rg, sigmaref, save=True, axis=False, wind_vectors=False, mt=False, plog=True, clevs=[40]):
     # special plotting function for the mass streamfunction
 
     # Set the reference pressure
@@ -1718,12 +1753,20 @@ def streamf_moc_plot(input, grid, output, rg, sigmaref, save=True, axis=False, w
     prange = np.where(rg.Pressure[:, 0] >= np.min(Pref))
 
     # Contour plot
+    if len(clevs) == 1:
+        clevels = np.int(clevs[0])
+    elif len(clevs) == 3:
+        clevels = np.linspace(np.int(clevs[0]), np.int(clevs[1]), np.int(clevs[2]))
+    else:
+        raise IOError("clevs not valid!")
+
     if isinstance(axis, axes.SubplotBase):
-        C = axis.contourf(rg.lat[:, 0], rg.Pressure[prange[0], 0] / 1e5, sf[:, prange[0]].T, 40, cmap='viridis')
+        C = axis.contourf(rg.lat[:, 0], rg.Pressure[prange[0], 0] / 1e5, sf[:, prange[0]].T, clevels, cmap='viridis')
         ax = axis
     elif axis == False:
         plt.figure(figsize=(5, 4))
-        C = plt.contourf(rg.lat[:, 0], rg.Pressure[prange[0], 0] / 1e5, sf[:, prange[0]].T, 40, cmap='viridis')
+        C = plt.contourf(rg.lat[:, 0], rg.Pressure[prange[0], 0] / 1e5, sf[:, prange[0]].T, clevels, cmap='viridis')
+
         ax = plt.gca()
     else:
         raise IOError("'axis = {}' but {} is not an axes.SubplotBase instance".format(axis, axis))
@@ -1754,19 +1797,24 @@ def streamf_moc_plot(input, grid, output, rg, sigmaref, save=True, axis=False, w
     ax.set_ylabel('Pressure (bar)')
     # ax.plot(rg.lat[:,0],np.zeros_like(rg.lat[:,0])+np.max(output.Pressure[:,grid.nv-1,:])/1e5,'r--')
     # if np.min(rg.Pressure[prange[0],0]) < np.max(output.Pressure[:,grid.nv-1,:]):
-    ax.set_ylim(np.max(rg.Pressure[prange[0], 0]) / 1e5, np.min(Pref) / 1e5)
+    ax.set_ylim(np.max(rg.Pressure[prange[0], 0]) / 1e5, np.min(rg.Pressure[prange[0], 0]) / 1e5)
+
     # else:
     #     ax.set_ylim(np.max(rg.Pressure[prange[0],0])/1e5,np.max(output.Pressure[:,grid.nv-1,:])/1e5)
     ax.set_title('Time = %#.1f-%#.1f days, Lon = (0,360)' % (output.time[0], output.time[-1]), fontsize=10)
     if not os.path.exists(input.resultsf + '/figures'):
         os.mkdir(input.resultsf + '/figures')
     plt.tight_layout()
+    pfile = False
     if save == True:
-        plt.savefig(input.resultsf + '/figures/streamf_ver_i%d_l%d.pdf' % (output.ntsi, output.nts))
+        pfile = input.resultsf + '/figures/streamf_ver_i%d_l%d.pdf' % (output.ntsi, output.nts)
+        plt.savefig(pfile)
         plt.close()
     if mt == True:
         fname = 'streamf_ver_i%d_l%d.dat' % (output.ntsi, output.nts)
-        maketable(latp * 180 / np.pi, rg.Pressure[prange[0], 0] / 1e5, Zonallt[:, prange[0]], 'Latitude(d)', 'Pressure(bar)', 'streamfunc', input.resultsf, fname)
+        maketable(latp * 180 / np.pi, rg.Pressure[prange[0], 0] / 1e5, Zonallt[:, prange[0]],
+                  'Latitude(d)', 'Pressure(bar)', 'streamfunc', input.resultsf, fname)
+    return pfile
 
 
 def profile(input, grid, output, z, stride=50):
@@ -1784,13 +1832,14 @@ def profile(input, grid, output, z, stride=50):
             x = z['value'][column, :, 0]
 
         plt.semilogy(x, P / 1e5, 'k-', alpha=0.5, lw=1)
-        plt.plot(x[np.int(np.floor(grid.nv / 2))], P[np.int(np.floor(grid.nv / 2))] / 100000, 'r+', ms=5, alpha=0.5)
-        plt.plot(x[np.int(np.floor(grid.nv * 0.75))], P[np.int(np.floor(grid.nv * 0.75))] / 100000, 'g+', ms=5, alpha=0.5)
+        rp, = plt.plot(x[np.int(np.floor(grid.nv / 2))], P[np.int(np.floor(grid.nv / 2))] / 100000, 'r+', ms=5, alpha=0.5)
+        gp, = plt.plot(x[np.int(np.floor(grid.nv * 0.75))], P[np.int(np.floor(grid.nv * 0.75))] / 100000, 'g+', ms=5, alpha=0.5)
 
     # plt.plot(Tad,P/100,'r--')
     plt.gca().invert_yaxis()
     plt.ylabel('Pressure (bar)')
     plt.xlabel(z['label'])
+    plt.legend([rp, gp], ['z=0.5*ztop', 'z=0.75*ztop'])
     plt.title('Time = %#.3f - %#.3f days' % (output.time[0], output.time[-1]))
     if not os.path.exists(input.resultsf + '/figures'):
         os.mkdir(input.resultsf + '/figures')
