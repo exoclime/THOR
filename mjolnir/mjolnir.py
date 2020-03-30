@@ -67,7 +67,7 @@ if args.no_pressure_log:
 valid = ['uver', 'ulonver', 'vver', 'wver', 'wlonver', 'wprof', 'Tver', 'Tlonver', 'Tulev', 'PTver', 'PTlonver', 'ulev', 'PVver', 'PVlev',
          'TP', 'RVlev', 'cons', 'stream', 'pause', 'tracer', 'PTP', 'regrid', 'KE',
          'SR', 'uprof', 'cfl', 'bvprof', 'fluxprof', 'Tsurf', 'insol', 'massf',
-         'futprof', 'fdtprof', 'mustar', 'fuptot', 'fdowntot', 'fnet', 'qheat'  # alf stuff
+         'futprof', 'fdtprof', 'fnetprof', 'mustar', 'fuptot', 'fdowntot', 'fnet', 'qheat'  # alf stuff
          ]
 
 rg_needed = ['Tver', 'Tlonver', 'uver', 'ulonver', 'vver', 'wver', 'wlonver', 'Tulev', 'PTver', 'PTlonver', 'ulev', 'PVver', 'PVlev',
@@ -434,6 +434,17 @@ if 'fdtprof' in pview:
     fdn = output.f_down_tot[:, :-1, :]
     z = {'value': fdn, 'label': r'Total Downward flux (W m$^{-2}$)', 'name': 'fdowntot'}
     ham.profile(input, grid, output, z, stride=20)
+if 'fnetprof' in pview:
+    # total_f = output.fnet_up - output.fnet_dn
+    # TODO: did this get renamed ?
+    # total_f = output.flw_up - output.flw_dn
+    # fup = total_f[:, :-1, :] + (total_f[:, 1:, :] - total_f[:, :-1, :]) *\
+    #     (grid.Altitude[None, :, None] - grid.Altitudeh[None, :-1, None]) /\
+    #     (grid.Altitudeh[None, 1:, None] - grid.Altitudeh[None, :-1, None])
+    fdn = output.f_net[:, :-1, :]
+    z = {'value': fdn, 'label': r'Total Net flux (W m$^{-2}$)', 'name': 'fnetprof'}
+    ham.profile(input, grid, output, z, stride=20)
+
 
 # --- Global diagnostics -----------------------------------
 if 'cons' in pview:  # RD: needs some work!
