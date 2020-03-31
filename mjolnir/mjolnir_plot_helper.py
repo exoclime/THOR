@@ -193,7 +193,7 @@ def make_plot(args):
         kappa_ad = input.Rd/input.Cp  # adiabatic coefficient
         pt = rg.Temperature*(rg.Pressure/input.P_Ref)**(-kappa_ad)
         z = {'value':pt, 'label':r'Potential Temperature (K)', 'name':'potential_temp',
-             'cmap':'plasma', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable, 'plog':plog}
+             'cmap':'plasma_r', 'lat':rg.lat, 'lon':rg.lon, 'mt':maketable, 'plog':plog}
         sigmaref = ham.Get_Prange(input,grid,rg,args,xtype='lat',use_p=use_p)
         # Averaged potential temperature (latitude vs pressure)
         pfile = ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice,use_p=use_p,csp=5000,clevs=args.clevels)
