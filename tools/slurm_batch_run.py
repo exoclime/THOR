@@ -100,7 +100,7 @@ else:
 
 def start_esp(args, esp_command, esp_args, initial_file, profiling=None):
     batch_id_re = re.compile("Submitted batch job (\d+)\n")
-
+    print(f"Batch job args: {args}")
     with subprocess.Popen(args,
                           stdin=subprocess.PIPE,
                           stdout=subprocess.PIPE,
