@@ -17,96 +17,84 @@
 
 # specify the path to physical modules
 # $ cmake -DMODULES_SRC="src/physics/managers/multi" ..
+# build the Alfrodull module
+# $ cmake -DMODULES_SRC=Alfrodull ..
+# debug or release
+# release build
+# $ cmake -DCMAKE_BUILD_TYPE=Release ..
+# debug build
+# $ cmake -DCMAKE_BUILD_TYPE=Debug ..
 
-cmake_minimum_required (VERSION 3.5 FATAL_ERROR)
+#######################################################
+# Config for travis-ci
+
+# basic setup for cmake
+cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+set(CMAKE_INCLUDE_DIRECTORIES_PROJECT_BEFORE ON)
+set(CMAKE_COLOR_MAKEFILE ON)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
+set(CMAKE_CXX_STANDARD 11)
+# disable in source builds
+# this is only a temporary fix, but for now we need it as cmake will
+# otherwise overwrite the existing makefiles
+set(CMAKE_DISABLE_SOURCE_CHANGES ON)
+set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
+
+#
+# PROJECT is QUDA
+#
+project (THOR CUDA CXX)
+  find_package(CUDA REQUIRED)
+  set(USING_CUDA_LANG_SUPPORT False)
+#######################################################
+
+cmake_minimum_required (VERSION 3.8 FATAL_ERROR)
+
+MESSAGE(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
 # check command line args, user can specify SM to override manual setting
 set(SM "0" CACHE STRING "GPU SM value")
 set(MODULES_SRC "0" CACHE STRING "Physics module subdirectory")
 
 if (MODULES_SRC MATCHES "0")
-  set(MODULES_SRC "src/physics/managers/multi")
+  #set(MODULES_SRC "Alfrodull")
+  #set(MODULES_SRC "src/physics/managers/multi/")
+  set(MODULES_SRC "src/physics/managers/empty/")
 endif()
 
 # if CUDA wants gcc/g++ 5
-SET(CMAKE_CXX_COMPILER g++-6)
-SET(CMAKE_C_COMPILER gcc-6)
+# SET(CMAKE_CXX_COMPILER g++-7)
+# SET(CMAKE_C_COMPILER gcc-7)
 
+# versions of CMAKE above 3.8
+message(STATUS "detected CMake version ${CMAKE_VERSION}")
   
-# check what CMAKE version we use, above 3.8, CUDA is recognised as a
-# language and fully integrated. UBUNTU 14 used on the clusters still
-# uses cmake 3.5
-# set project and cuda variables
-if(${CMAKE_VERSION} VERSION_LESS 3.8)
-  message(STATUS "detected CMake version ${CMAKE_VERSION} below 3.8")
+project (THOR CUDA CXX)
 
-  project (THOR CXX)
-  # some C++ flags
-  set (CMAKE_CXX_STANDARD 11)
-  set(CMAKE_CXX_STANDARD_REQUIRED ON)
-  set ( COMPILE_FLAGS --compiler-options;-Wall)
-
-  # Find CUDA
-  find_package(CUDA REQUIRED)
-
-
-  # check CUDA for CMake 3.5
-  # from here:
-  # https://wagonhelm.github.io/articles/2018-03/detecting-cuda-capability-with-cmake
-  if (CUDA_FOUND AND SM MATCHES "0")
-    #Get CUDA compute capability
-    set(OUTPUTFILE ${CMAKE_CURRENT_SOURCE_DIR}/build/cuda_script) # No suffix required
-    set(CUDAFILE ${CMAKE_CURRENT_SOURCE_DIR}/tools/check_cuda.cu)
-    execute_process(COMMAND nvcc -lcuda ${CUDAFILE} -o ${OUTPUTFILE})
-    execute_process(COMMAND ${OUTPUTFILE}
-                            RESULT_VARIABLE CUDA_RETURN_CODE
-                            OUTPUT_VARIABLE ARCH)
-
-     if(${CUDA_RETURN_CODE} EQUAL 0)
-       set(CUDA_SUCCESS "TRUE")
-     else()
-       set(CUDA_SUCCESS "FALSE")
-     endif()
-
-     if (${CUDA_SUCCESS})
-       message(STATUS "CUDA Architecture: ${ARCH}")
-       message(STATUS "CUDA Version: ${CUDA_VERSION_STRING}")
-       message(STATUS "CUDA Path: ${CUDA_TOOLKIT_ROOT_DIR}")
-       message(STATUS "CUDA Libraries: ${CUDA_LIBRARIES}")
-       message(STATUS "CUDA Performance Primitives: ${CUDA_npp_LIBRARY}")
-       
-       set(ARCH_FLAGS "${ARCH}")
-       add_definitions(-DGPU) #You may not require this
-
-     else()
-       message(WARNING ${ARCH})
-     endif()
-   else()
-     message(STATUS "CUDA Architecture manually set to: -arch=sm_${SM}")
-     set(ARCH_FLAGS "-arch=sm_${SM}")
-   endif()
-else()
-  # versions of CMAKE above 3.8
-  message(STATUS "detected CMake version ${CMAKE_VERSION} above 3.8")
-  
-  project (THOR C CXX CUDA)
-
-  # some C++ flags
-  set (CMAKE_CXX_STANDARD 11)
-  set(CMAKE_CXX_STANDARD_REQUIRED ON)
-  set ( COMPILE_FLAGS --compiler-options;-Wall)
-  
-
-  # Find CUDA
-  find_package(CUDA REQUIRED)
-  if (CUDA_FOUND AND SM MATCHES "0")
-    CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS Auto)
-  else()
-    message(STATUS "CUDA Architecture manually set to: -arch=sm_${SM}")
-    set(ARCH_FLAGS "-arch=sm_${SM}")
-  endif()
-  
+if (BUILD_TYPE MATCHES "Debug")
+  set(CMAKE_CUDA_FLAGS ${CMAKE_CUDA_FLAGS_DEBUG})
 endif()
+
+# some C++ flags
+set (CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+string (APPEND CMAKE_CXX_FLAGS " -Wall -Wpedantic ")
+string (APPEND CMAKE_CUDA_FLAGS " --compiler-options -Wall ")
+
+include(CheckLanguage)
+check_language(CUDA)
+  
+
+  # Find CUDA
+  #  find_package(CUDA REQUIRED)
+  #if (CUDA_FOUND AND SM MATCHES "0")
+  #  CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS Auto)
+  #else()
+  #  message(STATUS "CUDA Architecture manually set to: -arch=sm_${SM}")
+  #  set(ARCH_FLAGS "-arch=sm_${SM}")
+  #endif()
+  
 
 #####################################################################
 # output directories
@@ -115,15 +103,19 @@ set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR})
 
 
 # build flafs
-LIST(APPEND CUDA_NVCC_FLAGS ${ARCH_FLAGS})
-LIST(APPEND CUDA_NVCC_FLAGS ${COMPILE_FLAGS})
-LIST(APPEND CUDA_NVCC_FLAGS "-std c++11")
+#LIST(APPEND CUDA_NVCC_FLAGS ${ARCH_FLAGS})
+#LIST(APPEND CUDA_NVCC_FLAGS ${COMPILE_FLAGS})
+#LIST(APPEND CUDA_NVCC_FLAGS "-std c++14")
 
 #LIST(APPEND CUDA_NVCC_FLAGS "-ccbin gcc-5")
 #set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_BUILD_TYPE Release)
 
 string (APPEND CMAKE_CUDA_FLAGS " -cudart shared" )
+
+set(CMAKE_CUDA_STANDARD 14)
+set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+
 
 ######################################################################
 # define sources 
@@ -144,9 +136,13 @@ set(SRC
   src/utils/directories.cpp
   src/utils/log_writer.cpp
   src/utils/iteration_timer.cpp
-  src/ESP/profx_conservation.cu
+  src/ESP/profx_globdiag.cu
+  src/ESP/profx_sponge.cu
   src/ESP/reduction_add.cu
-  src/ESP/phy_modules_device.cu)
+  src/ESP/phy_modules_device.cu
+  src/ESP/ultrahot_thermo.cu
+  src/utils/cuda_device_memory.cu
+  )
 
 # source for test program for storage class
 set(SRC_STORAGE
@@ -205,7 +201,10 @@ include_directories("src/headers")
 ######################################################################
 # physics modules subdirectory
 
-set(THOR_ROOT "../../../../")
+set(THOR_MODULE "1")
+
+file(RELATIVE_PATH THOR_ROOT "${PROJECT_SOURCE_DIR}/${MODULES_SRC}" "${PROJECT_SOURCE_DIR}/" )
+message("Relative path to THOR root from physics module: " ${THOR_ROOT})
 set(THOR_ROOT_INCLUDES "${THOR_ROOT}src/headers" )
 set(SHARED_PHY_MODULES_INC_DIR "${THOR_ROOT}src/physics/modules/inc" )
 set(SHARED_PHY_MODULES_SRC_DIR "${THOR_ROOT}src/physics/modules/src" )
@@ -218,21 +217,35 @@ set(PHYSICS_LIBRARY_PATH "${MODULES_SRC}/libphy_modules.a")
 
 ######################################################################
 # build application
-cuda_add_executable(esp ${SRC} OPTIONS -DBUILD_LEVEL="release" -DDEVICE_SM=${SM})
+add_executable(esp ${SRC})
+target_compile_options(esp  PUBLIC -DBUILD_LEVEL="release" -DDEVICE_SM=${SM})
+# options for debugging
+#target_compile_options(esp PUBLIC -DBENCHMARKING -DBENCH_NAN_CHECK)
 target_link_libraries (esp ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES} phy_modules)
 
 # build tests
-cuda_add_executable(test_storage ${SRC_STORAGE})
+add_executable(test_storage EXCLUDE_FROM_ALL ${SRC_STORAGE})
 target_link_libraries (test_storage ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES}  )
 
 
-add_executable(test_args ${SRC_CMDARGS})
-add_executable(test_config ${SRC_CONFIG})
-add_executable(test_directories ${SRC_DIRECTORIES})
-#cuda_add_executable(test_reduction_add ${SRC_REDUCTION_ADD})
-cuda_add_executable(test_gen_init ${SRC_GEN_INIT})
+add_executable(test_args EXCLUDE_FROM_ALL ${SRC_CMDARGS})
+add_executable(test_config EXCLUDE_FROM_ALL ${SRC_CONFIG})
+add_executable(test_directories EXCLUDE_FROM_ALL ${SRC_DIRECTORIES})
+add_executable(test_reduction_add EXCLUDE_FROM_ALL ${SRC_REDUCTION_ADD})
+add_executable(test_gen_init EXCLUDE_FROM_ALL ${SRC_GEN_INIT})
 target_link_libraries (test_gen_init ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES}  )
 
-cuda_add_executable(test_grid ${SRC_GRID} OPTIONS -DBENCHMARKING -DBENCH_POINT_COMPARE -D BENCH_PRINT_DEBUG)
-target_compile_definitions(test_grid PRIVATE -DBENCHMARKING -DBENCH_POINT_COMPARE -DBENCH_PRINT_DEBUG)
+add_executable(test_grid EXCLUDE_FROM_ALL ${SRC_GRID})
+target_compile_options(test_grid PUBLIC -DBENCHMARKING -DBENCH_POINT_COMPARE -DBENCH_PRINT_DEBUG)
+
 target_link_libraries (test_grid ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES}  )
+
+set(TEST_NAMES
+	test_storage
+	test_args
+	test_config
+	test_directories
+	test_gen_init
+	test_grid)
+
+add_custom_target(tests EXCLUDE_FROM_ALL DEPENDS ${TEST_NAMES})

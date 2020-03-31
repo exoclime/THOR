@@ -65,8 +65,8 @@ public:
     void open_output_log_for_write(bool append);
     void write_output_log(int step_number, int file_number, std::string filename);
 
-    // conservation file log
-    void output_conservation(int    current_step,
+    // globdiag file log
+    void output_globdiag(int    current_step,
                              double simulation_time,
                              double GlobalE_h,
                              double GlobalMass_h,
@@ -74,7 +74,7 @@ public:
                              double GlobalAMy_h,
                              double GlobalAMz_h,
                              double GlobalEnt_h);
-    int  prepare_conservation_file(bool append);
+    int  prepare_globdiag_file(bool append);
 
 
     int  prepare_diagnostics_file(bool append);
@@ -94,7 +94,7 @@ private:
     std::string output_dir;    // output directory
 
     std::fstream fileoutput_output_file;
-    std::fstream conservation_output_file;
+    std::fstream globdiag_output_file;
     std::fstream diagnostics_output_file;
 };
 
