@@ -41,7 +41,7 @@ def load_config():
     cwd_config = pathlib.Path("slurm.cfg")
     # find in home directory, expanding '~'
     user_config = pathlib.Path("~/.config/THOR-gcm/slurm.cfg").expanduser()
-    sys_config = pathlib.Path("/etc/THOR-gcm/config.cfg")
+    sys_config = pathlib.Path("/etc/THOR-gcm/slurm.cfg")
 
     configs_to_try = [cwd_config, user_config, sys_config]
 
@@ -135,8 +135,12 @@ working_dir = str(pathlib.Path(config_data['working_dir']).expanduser())
 # "days-hours:minutes" and "days-hours:minutes:seconds".
 time_limit = "0-23:00"
 mail = config_data['user_email']
+log_dir = pathlib.Path(config_data['log_dir']).expanduser()
+if not log_dir.exists():
+    print(f"Creating log output directory: {log_dir}")
+    log_dir.mkdir(parents=True, exist_ok=True)
 
-output_file = str(pathlib.Path(config_data['log_dir']).expanduser() / f"slurm-esp-{job_name}-%j.out")  # %j for job index
+output_file = str(log_dir / f"slurm-esp-{job_name}-%j.out")  # %j for job index
 
 
 args = ['sbatch',
