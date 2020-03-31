@@ -1160,10 +1160,10 @@ def vertical_lat(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
     if len(clevs) == 1:
         clevels = np.int(clevs[0])
     elif len(clevs) == 3:
-        # if 'log' in clevs[2]:
-            # clevels = np.logspace(np.log10(np.float(clevs[0])),np.log10(np.float(clevs[1])),np.int(clevs[2][:-3]))
-        # else:
-        clevels = np.linspace(np.int(clevs[0]),np.int(clevs[1]),np.int(clevs[2]))
+        if isinstance(clevs[2],str) and 'log' in clevs[2]:
+            clevels = np.logspace(np.log10(np.float(clevs[0])),np.log10(np.float(clevs[1])),np.int(clevs[2][:-3]))
+        else:
+            clevels = np.linspace(np.int(clevs[0]),np.int(clevs[1]),np.int(clevs[2]))
     else:
         raise IOError("clevs not valid!")
     # print(np.max(zvals))
