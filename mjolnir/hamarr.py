@@ -1320,10 +1320,12 @@ def vertical_lat(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
         else:
             fname = '%s_ver_i%d_l%d_lon%#.2f' % (z['name'], output.ntsi, output.nts, slice[0])
 
-        pfile = output_path / fname.replace(".", "+") + '.pdf'
+        pfile = output_path / (fname.replace(".", "+") + '.pdf')
         plt.savefig(pfile)
 
         plt.close()
+        pfile = str(pfile)
+
     if z['mt'] == True:
         if len(slice) == 2:
             fname = '%s_ver_i%d_l%d_lon%#.2f-%#.2f.dat' % (z['name'], output.ntsi, output.nts, slice[0], slice[1])
@@ -1554,6 +1556,9 @@ def vertical_lon(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
         plt.savefig(pfile)
 
         plt.close()
+
+        pfile = str(pfile)
+
     if z['mt'] == True:
         if len(slice) == 2:
             fname = '%s_ver_i%d_l%d_lat%#.2f-%#.2f.dat' % (z['name'], output.ntsi, output.nts, slice[0], slice[1])
@@ -1720,10 +1725,13 @@ def horizontal_lev(input, grid, output, rg, Plev, z, save=True, axis=False, wind
         if not output_path.exists():
             output_path.mkdir()
 
-        pfile = output_path / fname.replace(".", "+") + '.pdf'
+        pfile = output_path / (fname.replace(".", "+") + '.pdf')
         plt.savefig(pfile)
 
         plt.close()
+
+        pfile = str(pfile)
+
     if z['mt'] == True:
         dname = fname + '.dat'
         if z['name'] == 'temperature-uv':
@@ -1847,6 +1855,9 @@ def streamf_moc_plot(input, grid, output, rg, sigmaref, save=True, axis=False, w
         pfile = input.resultsf + '/figures/streamf_ver_i%d_l%d.pdf' % (output.ntsi, output.nts)
         plt.savefig(pfile)
         plt.close()
+
+        pfile = str(pfile)
+
     if mt == True:
         fname = 'streamf_ver_i%d_l%d.dat' % (output.ntsi, output.nts)
         maketable(latp * 180 / np.pi, rg.Pressure[prange[0], 0] / 1e5, Zonallt[:, prange[0]],
@@ -1901,7 +1912,7 @@ def profile(input, grid, output, z, stride=50, axis=None, save=True):
             output_path.mkdir()
 
         fname = f"{z['name']}Pprofile_i{output.ntsi}_l{output.nts}.pdf"
-        pfile = output_path / fname.replace(".", "+") + '.pdf'
+        pfile = output_path / (fname.replace(".", "+") + '.pdf')
         plt.savefig(pfile)
 
         plt.close()
