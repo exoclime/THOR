@@ -151,7 +151,7 @@ if not log_dir.exists():
 output_file = str(log_dir / f"slurm-esp-{job_name}-%j.out")  # %j for job index
 
 
-args = ['sbatch',
+sbatch_args = ['sbatch',
         '-D', working_dir,
         '-J', job_name,
         '-n', str(1),
@@ -168,9 +168,9 @@ esp_args = f'-b {output_arg}'
 last_success = None
 for i in range(num_jobs):
     if last_id is None:
-        last_success, last_id = start_esp(args, esp_command, esp_args, initial_file, profiling=profiling)
+        last_success, last_id = start_esp(sbatch_args, esp_command, esp_args, initial_file, profiling=profiling)
     elif last_success:
-        last_success, last_id = start_esp(args + ['--dependency=afterany:{}'.format(last_id)], esp_command, esp_args, initial_file, profiling=profiling)
+        last_success, last_id = start_esp(sbatch_args + ['--dependency=afterany:{}'.format(last_id)], esp_command, esp_args, initial_file, profiling=profiling)
     else:
         print("Error queuing last command")
         exit(-1)
@@ -203,18 +203,33 @@ def start_muninn(args, muninn_command):
 
 
 if args.report:
+    
+    output_file = str(log_dir / f"slurm-muninn-{job_name}-%j.out")  # %j for job index                                   
 
+    
+    sbatch_args = ['sbatch',
+                   '-D', working_dir,
+                   '-J', job_name,
+                   '-n', str(1),
+                   '--gres', config_data['gpu_key'],
+                   '-p', config_data['partition'],
+                   '--time', time_limit,
+                   '--mail-type=ALL',
+                   '--mail-user=' + mail,
+                   '--output=' + output_file,
+                   '--signal=INT@60']
+    
     if args.output is not None:
-        muninn_output_arg = f"-o {args.output}"
+        muninn_output_arg = f"{args.output}"
     else:
         print("need to specify path to output for muninn")
         exit(-1)
 
     muninn_command = f"./mjolnir/muninn -j mjolnir/mjolnyr.ipynb {muninn_output_arg}"
     if last_id is None:
-        last_success, last_id = start_muninn(args, muninn_command)
+        last_success, last_id = start_muninn(sbatch_args, muninn_command)
     elif last_success:
-        last_success, last_id = start_muninn(args + ['--dependency=afterany:{}'.format(last_id)], muninn_command)
+        last_success, last_id = start_muninn(sbatch_args + ['--dependency=afterany:{}'.format(last_id)], muninn_command)
     else:
         print("Error queuing last command")
         exit(-1)
