@@ -3,8 +3,13 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import matplotlib.axes as axes
 
+
 import matplotlib.cm as cm
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from matplotlib.colors import hsv_to_rgb
+import matplotlib.patheffects as pe
+
+import math
 
 import scipy.interpolate as interp
 import scipy.ndimage as ndimage
@@ -1885,6 +1890,9 @@ def profile(input, grid, output, z, stride=50, axis=None, save=True):
 
     tsp = output.nts - output.ntsi + 1
 
+    col_lon = []
+    col_lat = []
+    col_lor = []
     for column in np.arange(0, grid.point_num, stride):
         if tsp > 1:
             P = np.mean(output.Pressure[column, :, :], axis=1)
@@ -1893,15 +1901,45 @@ def profile(input, grid, output, z, stride=50, axis=None, save=True):
             P = output.Pressure[column, :, 0]
             x = z['value'][column, :, 0]
 
-        ax.semilogy(x, P / 1e5, 'k-', alpha=0.5, lw=1)
+        #color = hsv_to_rgb([column / grid.point_num, 1.0, 1.0])
+        lon = grid.lon[column]
+        lat = grid.lat[column]
+        lon_norm = lon / (2.0 * math.pi)
+        lat_norm = lat / (math.pi / 2.0)
+        if lat > 0.0:
+            color = hsv_to_rgb([lon_norm, 1.0 - 0.7 * lat_norm, 1.0])
+        else:
+            color = hsv_to_rgb([lon_norm, 1.0, 1.0 + 0.7 * lat_norm])
+
+        col_lon.append(lon)
+        col_lat.append(lat)
+        col_lor.append(color)
+        ax.semilogy(x, P / 1e5, 'k-', alpha=0.5, lw=1.0,
+                    path_effects=[pe.Stroke(linewidth=1.5, foreground=color), pe.Normal()])
+
         rp, = ax.plot(x[np.int(np.floor(grid.nv / 2))], P[np.int(np.floor(grid.nv / 2))] / 100000, 'r+', ms=5, alpha=0.5)
         gp, = ax.plot(x[np.int(np.floor(grid.nv * 0.75))], P[np.int(np.floor(grid.nv * 0.75))] / 100000, 'g+', ms=5, alpha=0.5)
+
+    # add an insert showing the position of
+    inset_pos = [0.8, 0.8, 0.18, 0.18]
+    ax_inset = ax.inset_axes(inset_pos)
+    ax_inset.scatter(col_lon, col_lat, c=col_lor, s=1.0)
+    ax_inset.tick_params(axis='both',
+                         which='both',
+                         top=False,
+                         bottom=False,
+                         left=False,
+                         right=False,
+                         labelright=False,
+                         labelleft=False,
+                         labeltop=False,
+                         labelbottom=False)
 
     # plt.plot(Tad,P/100,'r--')
     ax.invert_yaxis()
     ax.set_ylabel('Pressure (bar)')
     ax.set_xlabel(z['label'])
-    ax.legend([rp, gp], ['z=0.5*ztop', 'z=0.75*ztop'])
+    ax.legend([rp, gp], ['z=0.5*ztop', 'z=0.75*ztop'], loc="lower right", fontsize='xx-small')
     ax.set_title('Time = %#.3f - %#.3f days' % (output.time[0], output.time[-1]))
 
     fig.tight_layout()
