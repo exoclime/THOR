@@ -37,7 +37,7 @@ def make_plot(args):
                 'SR','uprof','cfl','bvprof','fluxprof','Tsurf','insol','massf']
 
     rg_needed = ['Tver','Tlonver','uver','ulonver','vver','wver','wlonver','Tulev','PTver','PTlonver','ulev','PVver','PVlev',
-                'RVlev','stream','tracer','Tsurf','insol','massf']  #these types need regrid
+                'RVlev','stream','tracer','Tsurf','insol','massf','pause_rg']  #these types need regrid
 
     openrg = 0
     if 'all' in pview:
@@ -110,7 +110,7 @@ def make_plot(args):
 
     # quick and dirty break point, if you just want to look at the output data
     # does not load regridded data!
-    if 'pause' in pview:
+    if 'pause' in pview or 'pause_rg' in pview:
         import pdb; pdb.set_trace()
 
     #########
