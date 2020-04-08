@@ -348,6 +348,13 @@ class rg_out:
             lati = openh5['Latitude'][...]
             loni = openh5['Longitude'][...]
 
+            #time averaged quantities
+            Rho_meani = openh5['Rho_mean'][...]
+            Temp_meani = openh5['Temperature_mean'][...]
+            U_meani = openh5['U_mean'][...]
+            V_meani = openh5['V_mean'][...]
+            W_meani = openh5['W_mean'][...]
+
             if RT:
                 tau_swi = openh5['tau_sw'][...]
                 tau_lwi = openh5['tau_lw'][...]
@@ -393,6 +400,12 @@ class rg_out:
                 self.PV = np.zeros(np.shape(PVi)+(nts-ntsi+1,))
                 self.RV = np.zeros(np.shape(RVi)+(nts-ntsi+1,))
 
+                self.Rho_mean = np.zeros(np.shape(Rho_meani)+(nts-ntsi+1,))
+                self.U_mean = np.zeros(np.shape(U_meani)+(nts-ntsi+1,))
+                self.V_mean = np.zeros(np.shape(V_meani)+(nts-ntsi+1,))
+                self.W_mean = np.zeros(np.shape(W_meani)+(nts-ntsi+1,))
+                self.Temperature_mean = np.zeros(np.shape(Temp_meani)+(nts-ntsi+1,))
+
                 if RT:
                     self.tau_sw = np.zeros(np.shape(tau_swi)+(nts-ntsi+1,))
                     self.tau_lw = np.zeros(np.shape(tau_lwi)+(nts-ntsi+1,))
@@ -424,6 +437,12 @@ class rg_out:
             self.lon[:, t-ntsi+1] = loni
             self.PV[:, :, :, t-ntsi+1] = PVi
             self.RV[:, :, :, t-ntsi+1] = RVi
+
+            self.Rho_mean[:, :, :, t-ntsi+1] = Rho_meani
+            self.U_mean[:, :, :, t-ntsi+1] = U_meani
+            self.V_mean[:, :, :, t-ntsi+1] = V_meani
+            self.W_mean[:, :, :, t-ntsi+1] = W_meani
+            self.Temperature_mean[:, :, :, t-ntsi+1] = Temp_meani
 
             if RT:
                 self.tau_sw[:, :, :, t-ntsi+1] = tau_swi
