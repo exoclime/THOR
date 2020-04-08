@@ -34,7 +34,7 @@ def make_plot(args):
 
     valid = ['uver','ulonver','vver','wver','wlonver','wprof','Tver','Tlonver','Tulev','PTver','PTlonver','ulev','PVver','PVlev',
                 'TP','RVlev','cons','stream','pause','tracer','PTP','regrid','KE',
-                'SR','uprof','cfl','bvprof','fluxprof','Tsurf','insol','massf']
+                'SR','uprof','cfl','bvprof','fluxprof','Tsurf','insol','massf','pause_rg']
 
     rg_needed = ['Tver','Tlonver','uver','ulonver','vver','wver','wlonver','Tulev','PTver','PTlonver','ulev','PVver','PVlev',
                 'RVlev','stream','tracer','Tsurf','insol','massf','pause_rg']  #these types need regrid
