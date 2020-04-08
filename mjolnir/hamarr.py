@@ -189,6 +189,12 @@ class output:
         self.Rd = np.zeros((grid.point_num, grid.nv, nts-ntsi+1))
         self.Cp = np.zeros((grid.point_num, grid.nv, nts-ntsi+1))
 
+        # time averaged quantities
+        self.Rho_mean = np.zeros((grid.point_num, grid.nv, nts-ntsi+1))
+        self.Pressure_mean = np.zeros((grid.point_num, grid.nv, nts-ntsi+1))
+        self.Mh_mean = np.zeros((3, grid.point_num, grid.nv, nts-ntsi+1))
+        self.Wh_mean = np.zeros((grid.point_num, grid.nvi, nts-ntsi+1))
+
         # Read model results
         for t in np.arange(ntsi-1, nts, stride):
             fileh5 = resultsf+'/esp_output_'+simID+'_'+np.str(t+1)+'.h5'
@@ -203,6 +209,11 @@ class output:
             Whi = openh5['Wh'][...]
             time = openh5['simulation_time'][0]/86400
             nstep = openh5['nstep'][0]
+
+            Rho_meani = openh5['Rho_mean'][...]
+            Pressure_meani = openh5['Pressure_mean'][...]
+            Mh_meani = openh5['Mh_mean'][...]
+            Wh_meani = openh5['Wh_mean'][...]
 
             if 'Rd' in openh5.keys():
                 Rdi = openh5['Rd'][...]
@@ -259,6 +270,13 @@ class output:
             self.Wh[:,:,t-ntsi+1] = np.reshape(Whi,(grid.point_num,grid.nvi))
             self.Rd[:,:,t-ntsi+1] = np.reshape(Rdi,(grid.point_num,grid.nv))
             self.Cp[:,:,t-ntsi+1] = np.reshape(Cpi,(grid.point_num,grid.nv))
+
+            self.Rho_mean[:,:,t-ntsi+1] = np.reshape(Rho_meani,(grid.point_num,grid.nv))
+            self.Pressure_mean[:,:,t-ntsi+1] = np.reshape(Pressure_meani,(grid.point_num,grid.nv))
+            self.Mh_mean[0,:,:,t-ntsi+1] = np.reshape(Mh_meani[::3],(grid.point_num,grid.nv))
+            self.Mh_mean[1,:,:,t-ntsi+1] = np.reshape(Mh_meani[1::3],(grid.point_num,grid.nv))
+            self.Mh_mean[2,:,:,t-ntsi+1] = np.reshape(Mh_meani[2::3],(grid.point_num,grid.nv))
+            self.Wh_mean[:,:,t-ntsi+1] = np.reshape(Wh_meani,(grid.point_num,grid.nvi))
 
             self.time[t-ntsi+1] = time
             self.nstep[t-ntsi+1] = nstep
@@ -826,7 +844,12 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
                       'Mh': output.Mh[:, :, :, 0],
                       'Pressure': output.Pressure[:, :, 0],
                       'Rd': output.Rd[:, :, 0],
-                      'Cp': output.Cp[:, :, 0]}
+                      'Cp': output.Cp[:, :, 0],
+                      'Temperature_mean': (output.Pressure_mean/(output.Rd*output.Rho_mean))[:,:,0],
+                      'W_mean': (output.Wh_mean[:, :-1, 0] + (output.Wh_mean[:, 1:, 0]-output.Wh_mean[:, :-1, 0])*interpz[None, :])/output.Rho_mean[:, :, 0],
+                      'Rho_mean': output.Rho_mean[:, :, 0],
+                      'Mh_mean': output.Mh_mean[:, :, :, 0],
+                      'Pressure_mean': output.Pressure_mean[:, :, 0]}
 
             if input.RT == 1:
                 source['flw_up'] = output.flw_up[:,:-1,0]+(output.flw_up[:,1:,0]-output.flw_up[:,:-1,0])*interpz[None,:]
@@ -851,11 +874,16 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
             source['V'] = (-source['Mh'][0]*np.sin(grid.lat[:,None])*np.cos(grid.lon[:,None])\
                       -source['Mh'][1]*np.sin(grid.lat[:,None])*np.sin(grid.lon[:,None])\
                            + source['Mh'][2]*np.cos(grid.lat[:, None]))/source['Rho']
+            source['U_mean'] = (-source['Mh_mean'][0]*np.sin(grid.lon[:,None])+\
+                           source['Mh_mean'][1]*np.cos(grid.lon[:, None]))/source['Rho_mean']
+            source['V_mean'] = (-source['Mh_mean'][0]*np.sin(grid.lat[:,None])*np.cos(grid.lon[:,None])\
+                      -source['Mh_mean'][1]*np.sin(grid.lat[:,None])*np.sin(grid.lon[:,None])\
+                           + source['Mh_mean'][2]*np.cos(grid.lat[:, None]))/source['Rho_mean']
 
             # set up intermediate arrays (icogrid and pressure)
             interm = {}
             for key in source.keys():
-                if key == 'Mh':
+                if key == 'Mh' or key == 'Mh_mean':
                     pass
                 elif np.shape(source[key]) == (grid.point_num,):
                     # 2D field (e.g., insolation) -> not needed
@@ -893,7 +921,7 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
             # set up destination arrays (lat-lon and pressure/height)
             dest = {}
             for key in interm.keys():
-                if key == 'Mh' or key == 'Pressure':
+                if key == 'Mh' or key == 'Mh_mean' or key == 'Pressure':
                     pass  # don't need these any further
                 elif np.shape(interm[key]) == (d_lon[0], d_lon[1]):
                     # 2D field (e.g., insolation)
