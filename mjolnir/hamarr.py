@@ -2,7 +2,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import matplotlib.axes as axes
+
+
 import matplotlib.cm as cm
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+from matplotlib.colors import hsv_to_rgb
+import matplotlib.patheffects as pe
+
+import math
+
 import scipy.interpolate as interp
 import scipy.ndimage as ndimage
 import os
@@ -11,6 +19,9 @@ import time
 import subprocess as spr
 import pyshtools as chairs
 import pdb
+
+import pathlib
+
 try:
     import pycuda.driver as cuda
     import pycuda.autoinit
@@ -1100,7 +1111,7 @@ def maketable(x, y, z, xname, yname, zname, resultsf, fname):
     f.close()
 
 
-def vertical_lat(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True, axis=False, csp=500, wind_vectors=False, use_p=True, clevs=[40]):
+def vertical_lat(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True, axis=None, csp=500, wind_vectors=False, use_p=True, clevs=[40]):
     # generic pressure/latitude plot function
 
     # Set the reference pressure
@@ -1216,15 +1227,21 @@ def vertical_lat(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
     else:
         raise IOError("clevs not valid!")
     # print(np.max(zvals))
+
     if isinstance(axis, axes.SubplotBase):
-        C = axis.contourf(latp * 180 / np.pi, ycoord, zvals, clevels, cmap=z['cmap'])
         ax = axis
-    elif axis == False:
-        plt.figure(figsize=(5, 4))
-        C = plt.contourf(latp * 180 / np.pi, ycoord, zvals, clevels, cmap=z['cmap'])
-        ax = plt.gca()
+        fig = plt.gcf()
+    elif (isinstance(axis, tuple)
+          and isinstance(axis[0], plt.Figure)
+          and isinstance(axis[1], axes.SubplotBase)):
+        fig = axis[0]
+        ax = axis[1]
+    elif axis is None:
+        fig, ax = plt.subplots(1, 1, figsize=(5, 4))
     else:
-        raise IOError("'axis = {}' but {} is not an axes.SubplotBase instance".format(axis, axis))
+        raise IOError("'axis = {}' but {} is neither an axes.SubplotBase instance nor a (axes.SubplotBase, plt.Figure) instance".format(axis, axis))
+
+    C = ax.contourf(latp * 180 / np.pi, ycoord, zvals, clevels, cmap=z['cmap'])
 
     if wind_vectors == True:
         vspacing = np.int(np.shape(rg.lat)[0] / 10)
@@ -1245,10 +1262,15 @@ def vertical_lat(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
         #latq = lati[::spacing,::spacing].ravel()
         latq, preq = np.meshgrid(rg.lat[::vspacing, 0], yqcoord)
         del Vlt, Wlt
-        plt.quiver(latq.ravel(), preq.ravel() / 1e5, Vq, Wq, color='0.5')
+        ax.quiver(latq.ravel(), preq.ravel() / 1e5, Vq, Wq, color='0.5')
 
-    clb = plt.colorbar(C, extend='both', ax=ax)
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    kwargs = {'format': '%#3.4e'}
+    #clb = plt.colorbar(C, extend='both', ax=ax)
+    clb = fig.colorbar(C, cax=cax, extend='both', **kwargs)
     clb.set_label(z['label'])
+
     if isinstance(csp, list) or isinstance(csp, tuple):
         levp = csp
     else:
@@ -1261,7 +1283,7 @@ def vertical_lat(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
                 levp = np.arange(np.ceil(np.nanmin(Zonallt[:, hrange[0]]) / csp) * csp, np.floor(np.nanmax(Zonallt[:, hrange[0]]) / csp) * csp, csp)
 
     c2 = ax.contour(latp * 180 / np.pi, ycoord, zvals, levels=levp, colors='w', linewidths=1)
-    plt.clabel(c2, inline=False, fontsize=6, fmt='%d', use_clabeltext=True)
+    ax.clabel(c2, inline=False, fontsize=6, fmt='%d', use_clabeltext=True)
     for cc in C.collections:
         cc.set_edgecolor("face")  # fixes a stupid bug in matplotlib 2.0
     # ax.invert_yaxis()
@@ -1285,26 +1307,30 @@ def vertical_lat(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
     else:
         ax.set_title('Time = %#.3f-%#.3f days, Lon = (%#.3f,)' % (output.time[0], output.time[-1], slice[0]), fontsize=10)
 
-    if not os.path.exists(input.resultsf + '/figures'):
-        os.mkdir(input.resultsf + '/figures')
     plt.tight_layout()
     if use_p:
         z['name'] += '_p'
     else:
         z['name'] += '_h'
+
     pfile = False
     if save == True:
+        output_path = pathlib.Path(input.resultsf) / 'figures'
+        if not output_path.exists():
+            output_path.mkdir()
+
         # save the plot to file designated by z
         if len(slice) == 2:
             fname = '%s_ver_i%d_l%d_lon%#.2f-%#.2f' % (z['name'], output.ntsi, output.nts, slice[0], slice[1])
-            pfile = input.resultsf + '/figures/' + fname.replace(".", "+") + '.pdf'
         else:
             fname = '%s_ver_i%d_l%d_lon%#.2f' % (z['name'], output.ntsi, output.nts, slice[0])
-            pfile = input.resultsf + '/figures/' + fname.replace(".", "+") + '.pdf'
 
+        pfile = output_path / (fname.replace(".", "+") + '.pdf')
         plt.savefig(pfile)
 
         plt.close()
+        pfile = str(pfile)
+
     if z['mt'] == True:
         if len(slice) == 2:
             fname = '%s_ver_i%d_l%d_lon%#.2f-%#.2f.dat' % (z['name'], output.ntsi, output.nts, slice[0], slice[1])
@@ -1318,7 +1344,7 @@ def vertical_lat(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
     return pfile
 
 
-def vertical_lon(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True, axis=False, csp=500, wind_vectors=False, use_p=True, clevs=[40]):
+def vertical_lon(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True, axis=None, csp=500, wind_vectors=False, use_p=True, clevs=[40]):
     # generic pressure/longitude plot function
 
     # Set the reference pressure
@@ -1437,14 +1463,19 @@ def vertical_lon(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
         raise IOError("clevs not valid!")
     # print(np.min(zvals),np.max(zvals))
     if isinstance(axis, axes.SubplotBase):
-        C = axis.contourf(lonp * 180 / np.pi, ycoord, zvals, clevels, cmap=z['cmap'])
         ax = axis
-    elif axis == False:
-        plt.figure(figsize=(5, 4))
-        C = plt.contourf(lonp * 180 / np.pi, ycoord, zvals, clevels, cmap=z['cmap'])
-        ax = plt.gca()
+        fig = plt.gcf()
+    elif (isinstance(axis, tuple)
+          and isinstance(axis[0], plt.Figure)
+          and isinstance(axis[1], axes.SubplotBase)):
+        fig = axis[0]
+        ax = axis[1]
+    elif axis is None:
+        fig, ax = plt.subplots(1, 1, figsize=(5, 4))
     else:
-        raise IOError("'axis = {}' but {} is not an axes.SubplotBase instance".format(axis, axis))
+        raise IOError("'axis = {}' but {} is neither an axes.SubplotBase instance nor a (axes.SubplotBase, plt.Figure) instance".format(axis, axis))
+
+    C = ax.contourf(lonp * 180 / np.pi, ycoord, zvals, clevels, cmap=z['cmap'])
 
     if wind_vectors == True:
         vspacing = np.int(np.shape(rg.lon)[0] / 10)
@@ -1465,10 +1496,15 @@ def vertical_lon(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
         #latq = lati[::spacing,::spacing].ravel()
         lonq, preq = np.meshgrid(rg.lon[::vspacing, 0], yqcoord)
         del Ult, Wlt
-        plt.quiver(lonq.ravel(), preq.ravel() / 1e5, Uq, Wq, color='0.5')
+        ax.quiver(lonq.ravel(), preq.ravel() / 1e5, Uq, Wq, color='0.5')
 
-    clb = plt.colorbar(C, extend='both', ax=ax)
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    kwargs = {'format': '%#3.4e'}
+    #clb = plt.colorbar(C, extend='both', ax=ax)
+    clb = fig.colorbar(C, cax=cax, extend='both', **kwargs)
     clb.set_label(z['label'])
+
     if isinstance(csp, list) or isinstance(csp, tuple):
         levp = csp
     else:
@@ -1481,7 +1517,8 @@ def vertical_lon(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
                 levp = np.arange(np.ceil(np.nanmin(Meridlt[:, hrange[0]]) / csp) * csp, np.floor(np.nanmax(Meridlt[:, hrange[0]]) / csp) * csp, csp)
 
     c2 = ax.contour(lonp * 180 / np.pi, ycoord, zvals, levels=levp, colors='w', linewidths=1)
-    plt.clabel(c2, inline=False, fontsize=6, fmt='%d', use_clabeltext=True)
+    ax.clabel(c2, inline=False, fontsize=6, fmt='%d', use_clabeltext=True)
+
     for cc in C.collections:
         cc.set_edgecolor("face")  # fixes a stupid bug in matplotlib 2.0
     # ax.invert_yaxis()
@@ -1506,7 +1543,7 @@ def vertical_lon(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
 
     if not os.path.exists(input.resultsf + '/figures'):
         os.mkdir(input.resultsf + '/figures')
-    plt.tight_layout()
+    fig.tight_layout()
     if use_p:
         z['name'] += '_p'
     else:
@@ -1524,6 +1561,9 @@ def vertical_lon(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
         plt.savefig(pfile)
 
         plt.close()
+
+        pfile = str(pfile)
+
     if z['mt'] == True:
         if len(slice) == 2:
             fname = '%s_ver_i%d_l%d_lat%#.2f-%#.2f.dat' % (z['name'], output.ntsi, output.nts, slice[0], slice[1])
@@ -1634,20 +1674,22 @@ def horizontal_lev(input, grid, output, rg, Plev, z, save=True, axis=False, wind
         raise IOError("clevs not valid!")
     # clevels = np.linspace(900,1470,58)
     if isinstance(axis, axes.SubplotBase):
-        if z['llswap']:
-            C = axis.contourf(latp, lonp, zlevt.T, clevels, cmap=z['cmap'])
-        else:
-            C = axis.contourf(lonp, latp, zlevt, clevels, cmap=z['cmap'])
         ax = axis
-    elif axis == False:
-        plt.figure(figsize=(5, 4))
-        if z['llswap']:
-            C = plt.contourf(latp, lonp, zlevt.T, clevels, cmap=z['cmap'])
-        else:
-            C = plt.contourf(lonp, latp, zlevt, clevels, cmap=z['cmap'])
-        ax = plt.gca()
+        fig = plt.gcf()
+    elif (isinstance(axis, tuple)
+          and isinstance(axis[0], plt.Figure)
+          and isinstance(axis[1], axes.SubplotBase)):
+        fig = axis[0]
+        ax = axis[1]
+    elif axis is None:
+        fig, ax = plt.subplots(1, 1, figsize=(5, 4))
     else:
-        raise IOError("'axis = {}' but {} is not an axes.SubplotBase instance".format(axis, axis))
+        raise IOError("'axis = {}' but {} is neither an axes.SubplotBase instance nor a (axes.SubplotBase, plt.Figure) instance".format(axis, axis))
+
+    if z['llswap']:
+        C = ax.contourf(latp, lonp, zlevt.T, clevels, cmap=z['cmap'])
+    else:
+        C = ax.contourf(lonp, latp, zlevt, clevels, cmap=z['cmap'])
 
     for cc in C.collections:
         cc.set_edgecolor("face")  # fixes a stupid bug in matplotlib 2.0
@@ -1670,23 +1712,31 @@ def horizontal_lev(input, grid, output, rg, Plev, z, save=True, axis=False, wind
         latq = lati[::spacing, ::spacing].ravel()
         del Uiii, Viii
         if z['llswap']:
-            q = plt.quiver(latq, lonq, V, U, color='0.5')
+            q = ax.quiver(latq, lonq, V, U, color='0.5')
         else:
-            q = plt.quiver(lonq, latq, U, V, color='0.5')
+            q = ax.quiver(lonq, latq, U, V, color='0.5')
         ax.quiverkey(q, X=0.85, Y=-0.1, U=np.max(np.sqrt(U**2 + V**2)), label='%#.2f m/s' % np.max(np.sqrt(U**2 + V**2)), labelpos='E')
 
-    clb = plt.colorbar(C)
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    kwargs = {'format': '%#3.4e'}
+    clb = fig.colorbar(C, cax=cax, orientation='vertical', **kwargs)
     clb.set_label(z['label'])
 
-    if not os.path.exists(input.resultsf + '/figures'):
-        os.mkdir(input.resultsf + '/figures')
-    plt.tight_layout()
+    fig.tight_layout()
     pfile = False
     if save == True:
-        pfile = input.resultsf + '/figures/' + fname.replace(".", "+") + '.pdf'
+        output_path = pathlib.Path(input.resultsf) / 'figures'
+        if not output_path.exists():
+            output_path.mkdir()
+
+        pfile = output_path / (fname.replace(".", "+") + '.pdf')
         plt.savefig(pfile)
 
         plt.close()
+
+        pfile = str(pfile)
+
     if z['mt'] == True:
         dname = fname + '.dat'
         if z['name'] == 'temperature-uv':
@@ -1810,6 +1860,9 @@ def streamf_moc_plot(input, grid, output, rg, sigmaref, save=True, axis=False, w
         pfile = input.resultsf + '/figures/streamf_ver_i%d_l%d.pdf' % (output.ntsi, output.nts)
         plt.savefig(pfile)
         plt.close()
+
+        pfile = str(pfile)
+
     if mt == True:
         fname = 'streamf_ver_i%d_l%d.dat' % (output.ntsi, output.nts)
         maketable(latp * 180 / np.pi, rg.Pressure[prange[0], 0] / 1e5, Zonallt[:, prange[0]],
@@ -1817,12 +1870,29 @@ def streamf_moc_plot(input, grid, output, rg, sigmaref, save=True, axis=False, w
     return pfile
 
 
-def profile(input, grid, output, z, stride=50):
+def profile(input, grid, output, z, stride=50, axis=None, save=True):
     # Pref = input.P_Ref*sigmaref
     # d_sig = np.size(sigmaref)
 
+    # get figure and axis
+    if isinstance(axis, axes.SubplotBase):
+        ax = axis
+        fig = plt.gcf()
+    elif (isinstance(axis, tuple)
+          and isinstance(axis[0], plt.Figure)
+          and isinstance(axis[1], axes.SubplotBase)):
+        fig = axis[0]
+        ax = axis[1]
+    elif axis is None:
+        fig, ax = plt.subplots(1, 1, figsize=(5, 4))
+    else:
+        raise IOError("'axis = {}' but {} is neither an axes.SubplotBase instance nor a (axes.SubplotBase, plt.Figure) instance".format(axis, axis))
+
     tsp = output.nts - output.ntsi + 1
 
+    col_lon = []
+    col_lat = []
+    col_lor = []
     for column in np.arange(0, grid.point_num, stride):
         if tsp > 1:
             P = np.mean(output.Pressure[column, :, :], axis=1)
@@ -1831,20 +1901,59 @@ def profile(input, grid, output, z, stride=50):
             P = output.Pressure[column, :, 0]
             x = z['value'][column, :, 0]
 
-        plt.semilogy(x, P / 1e5, 'k-', alpha=0.5, lw=1)
-        rp, = plt.plot(x[np.int(np.floor(grid.nv / 2))], P[np.int(np.floor(grid.nv / 2))] / 100000, 'r+', ms=5, alpha=0.5)
-        gp, = plt.plot(x[np.int(np.floor(grid.nv * 0.75))], P[np.int(np.floor(grid.nv * 0.75))] / 100000, 'g+', ms=5, alpha=0.5)
+        #color = hsv_to_rgb([column / grid.point_num, 1.0, 1.0])
+        lon = grid.lon[column]
+        lat = grid.lat[column]
+        lon_norm = lon / (2.0 * math.pi)
+        lat_norm = lat / (math.pi / 2.0)
+        if lat > 0.0:
+            color = hsv_to_rgb([lon_norm, 1.0 - 0.7 * lat_norm, 1.0])
+        else:
+            color = hsv_to_rgb([lon_norm, 1.0, 1.0 + 0.7 * lat_norm])
+
+        col_lon.append(lon)
+        col_lat.append(lat)
+        col_lor.append(color)
+        ax.semilogy(x, P / 1e5, 'k-', alpha=0.5, lw=1.0,
+                    path_effects=[pe.Stroke(linewidth=1.5, foreground=color), pe.Normal()])
+
+        rp, = ax.plot(x[np.int(np.floor(grid.nv / 2))], P[np.int(np.floor(grid.nv / 2))] / 100000, 'r+', ms=5, alpha=0.5)
+        gp, = ax.plot(x[np.int(np.floor(grid.nv * 0.75))], P[np.int(np.floor(grid.nv * 0.75))] / 100000, 'g+', ms=5, alpha=0.5)
+
+    # add an insert showing the position of
+    inset_pos = [0.8, 0.8, 0.18, 0.18]
+    ax_inset = ax.inset_axes(inset_pos)
+    ax_inset.scatter(col_lon, col_lat, c=col_lor, s=1.0)
+    ax_inset.tick_params(axis='both',
+                         which='both',
+                         top=False,
+                         bottom=False,
+                         left=False,
+                         right=False,
+                         labelright=False,
+                         labelleft=False,
+                         labeltop=False,
+                         labelbottom=False)
 
     # plt.plot(Tad,P/100,'r--')
-    plt.gca().invert_yaxis()
-    plt.ylabel('Pressure (bar)')
-    plt.xlabel(z['label'])
-    plt.legend([rp, gp], ['z=0.5*ztop', 'z=0.75*ztop'])
-    plt.title('Time = %#.3f - %#.3f days' % (output.time[0], output.time[-1]))
-    if not os.path.exists(input.resultsf + '/figures'):
-        os.mkdir(input.resultsf + '/figures')
-    plt.savefig(input.resultsf + '/figures/%sPprofile_i%d_l%d.pdf' % (z['name'], output.ntsi, output.nts))
-    plt.close()
+    ax.invert_yaxis()
+    ax.set_ylabel('Pressure (bar)')
+    ax.set_xlabel(z['label'])
+    ax.legend([rp, gp], ['z=0.5*ztop', 'z=0.75*ztop'], loc="lower right", fontsize='xx-small')
+    ax.set_title('Time = %#.3f - %#.3f days' % (output.time[0], output.time[-1]))
+
+    fig.tight_layout()
+    pfile = False
+    if save == True:
+        output_path = pathlib.Path(input.resultsf) / 'figures'
+        if not output_path.exists():
+            output_path.mkdir()
+
+        fname = f"{z['name']}Pprofile_i{output.ntsi}_l{output.nts}.pdf"
+        pfile = output_path / (fname.replace(".", "+") + '.pdf')
+        plt.savefig(pfile)
+
+        plt.close()
 
 
 def CalcE_M_AM(input, grid, output, split):
