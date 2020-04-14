@@ -19,6 +19,11 @@
 # $ cmake -DMODULES_SRC="src/physics/managers/multi" ..
 # build the Alfrodull module
 # $ cmake -DMODULES_SRC=Alfrodull ..
+# debug or release
+# release build
+# $ cmake -DCMAKE_BUILD_TYPE=Release ..
+# debug build
+# $ cmake -DCMAKE_BUILD_TYPE=Debug ..
 
 #######################################################
 # Config for travis-ci
@@ -46,6 +51,8 @@ project (THOR CUDA CXX)
 
 cmake_minimum_required (VERSION 3.8 FATAL_ERROR)
 
+MESSAGE(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
+
 # check command line args, user can specify SM to override manual setting
 set(SM "0" CACHE STRING "GPU SM value")
 set(MODULES_SRC "0" CACHE STRING "Physics module subdirectory")
@@ -65,11 +72,15 @@ message(STATUS "detected CMake version ${CMAKE_VERSION}")
   
 project (THOR CUDA CXX)
 
+if (BUILD_TYPE MATCHES "Debug")
+  set(CMAKE_CUDA_FLAGS ${CMAKE_CUDA_FLAGS_DEBUG})
+endif()
+
 # some C++ flags
 set (CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set ( COMPILE_FLAGS --compiler-options;-Wall)
-
+string (APPEND CMAKE_CXX_FLAGS " -Wall -Wpedantic ")
+string (APPEND CMAKE_CUDA_FLAGS " --compiler-options -Wall ")
 
 include(CheckLanguage)
 check_language(CUDA)
@@ -129,7 +140,8 @@ set(SRC
   src/ESP/profx_sponge.cu
   src/ESP/reduction_add.cu
   src/ESP/phy_modules_device.cu
-  src/ESP/ultrahot_thermo.cu  
+  src/ESP/ultrahot_thermo.cu
+  src/utils/cuda_device_memory.cu
   )
 
 # source for test program for storage class
@@ -207,6 +219,8 @@ set(PHYSICS_LIBRARY_PATH "${MODULES_SRC}/libphy_modules.a")
 # build application
 add_executable(esp ${SRC})
 target_compile_options(esp  PUBLIC -DBUILD_LEVEL="release" -DDEVICE_SM=${SM})
+# options for debugging
+#target_compile_options(esp PUBLIC -DBENCHMARKING -DBENCH_NAN_CHECK)
 target_link_libraries (esp ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES} phy_modules)
 
 # build tests

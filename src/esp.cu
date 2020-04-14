@@ -88,6 +88,8 @@ using std::string;
 
 #include "log_writer.h"
 
+#include "cuda_device_memory.h"
+
 enum e_sig { ESIG_NOSIG = 0, ESIG_SIGTERM = 1, ESIG_SIGINT = 2 };
 
 
@@ -932,6 +934,7 @@ int main(int argc, char** argv) {
 
     if (!load_initial) {
         log::printf("error loading initial conditions from %s.\n", initial_conditions.c_str());
+
         exit(EXIT_FAILURE);
     }
 
@@ -969,6 +972,9 @@ int main(int argc, char** argv) {
 
             log::printf(" Aborting. \n"
                         "use --overwrite to overwrite existing files.\n");
+
+	    cuda_device_memory_manager::get_instance().deallocate();
+	    
             exit(EXIT_FAILURE);
         }
     }
@@ -1255,6 +1261,8 @@ int main(int argc, char** argv) {
     //
     //  END OF THE ESP
     log::printf("End of the ESP!\n\n");
+
+    cuda_device_memory_manager::get_instance().deallocate();
 
     Grid.free_memory();
 
