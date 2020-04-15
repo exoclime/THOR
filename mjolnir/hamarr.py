@@ -362,7 +362,11 @@ class rg_out:
         # Read model results
         for t in np.arange(ntsi - 1, nts):
             if pressure_vert == True:
-                fileh5 = resultsf + '/regrid_' + simID + '_' + np.str(t + 1)
+                if pgrid_ref == 'auto':
+                    pgrid_folder = resultsf + '/pgrid_%d_%d_1'%(ntsi,nts)
+                else:
+                    pgrid_folder = resultsf + '/' + pgrid_ref[:-4]
+                fileh5 = pgrid_folder + '/regrid_' + simID + '_' + np.str(t + 1)
             else:
                 fileh5 = resultsf + '/regrid_height_' + simID + '_' + np.str(t + 1)
             fileh5 += '.h5'
@@ -527,63 +531,67 @@ class GetOutput:
 
 
 def define_Pgrid(resultsf, simID, ntsi, nts, stride, overwrite=False):
-    # first we need the grid size
-    fileh5 = resultsf + '/esp_output_grid_' + simID + '.h5'
-    if os.path.exists(fileh5):
-        openh5 = h5py.File(fileh5)
-    else:
-        raise IOError(fileh5 + ' not found!')
-    nv = np.int(openh5['nv'][0])
-    point_num = np.int(openh5['point_num'][0])
-    Altitude = openh5['Altitude'][...]
-    Altitudeh = openh5['Altitudeh'][...]
-    openh5.close()
+    pfile = 'pgrid_%d_%d_%d.txt' % (ntsi, nts, stride)
+    if not os.path.exists(resultsf + '/' + pfile) or overwrite == True:
+        #check for existence of pgrid file
 
-    # we also need to know if we included a surface
-    fileh5 = resultsf + '/esp_output_planet_' + simID + '.h5'
-    if os.path.exists(fileh5):
-        openh5 = h5py.File(fileh5)
-    else:
-        raise IOError(fileh5 + ' not found!')
-    if openh5['core_benchmark'][0] > 0:
-        surf = 0
-    else:
-        if "radiative_transfer" in openh5:
-            surf = openh5['surface'][0]
-        else:
-            surf = 0
-
-    openh5.close()
-
-    # now we'll loop over all the files to get the pressure_mean
-    num_out = np.int((nts - ntsi) / stride) + 1
-    pressure_mean = np.zeros((point_num, nv, num_out))
-    for i in np.arange(num_out):
-        t = ntsi + stride * i
-        fileh5 = resultsf + '/esp_output_' + simID + '_' + np.str(t) + '.h5'
+        # first we need the grid size
+        fileh5 = resultsf + '/esp_output_grid_' + simID + '.h5'
         if os.path.exists(fileh5):
             openh5 = h5py.File(fileh5)
         else:
             raise IOError(fileh5 + ' not found!')
-
-        pressure_mean[:, :, i] = np.reshape(openh5['Pressure_mean'][...], (point_num, nv))
+        nv = np.int(openh5['nv'][0])
+        point_num = np.int(openh5['point_num'][0])
+        Altitude = openh5['Altitude'][...]
+        Altitudeh = openh5['Altitudeh'][...]
         openh5.close()
 
-    pgrid = np.mean(np.mean(pressure_mean, axis=0), axis=1)
-    if surf == 1:
-        extrap_low = (Altitudeh[0] - Altitude[1]) / (Altitude[0] - Altitude[1])
-        Psurf = pressure_mean[:, 1, :] + extrap_low * (pressure_mean[:, 0, :] - pressure_mean[:, 1, :])
-        Psurf_mean = np.mean(np.mean(Psurf, axis=0), axis=0)
-        pgrid = np.concatenate((np.array([Psurf_mean]), pgrid))
+        # we also need to know if we included a surface
+        fileh5 = resultsf + '/esp_output_planet_' + simID + '.h5'
+        if os.path.exists(fileh5):
+            openh5 = h5py.File(fileh5)
+        else:
+            raise IOError(fileh5 + ' not found!')
+        if openh5['core_benchmark'][0] > 0:
+            surf = 0
+        else:
+            if "radiative_transfer" in openh5:
+                surf = openh5['surface'][0]
+            else:
+                surf = 0
 
-    pfile = 'pgrid_%d_%d_%d.txt' % (ntsi, nts, stride)
-    if not os.path.exists(resultsf + '/' + pfile) or overwrite == True:
+        openh5.close()
+
+        # now we'll loop over all the files to get the pressure_mean
+        num_out = np.int((nts - ntsi) / stride) + 1
+        pressure_mean = np.zeros((point_num, nv, num_out))
+        for i in np.arange(num_out):
+            t = ntsi + stride * i
+            fileh5 = resultsf + '/esp_output_' + simID + '_' + np.str(t) + '.h5'
+            if os.path.exists(fileh5):
+                openh5 = h5py.File(fileh5)
+            else:
+                raise IOError(fileh5 + ' not found!')
+
+            pressure_mean[:, :, i] = np.reshape(openh5['Pressure_mean'][...], (point_num, nv))
+            openh5.close()
+
+        pgrid = np.mean(np.mean(pressure_mean, axis=0), axis=1)
+        if surf == 1:
+            extrap_low = (Altitudeh[0] - Altitude[1]) / (Altitude[0] - Altitude[1])
+            Psurf = pressure_mean[:, 1, :] + extrap_low * (pressure_mean[:, 0, :] - pressure_mean[:, 1, :])
+            Psurf_mean = np.mean(np.mean(Psurf, axis=0), axis=0)
+            pgrid = np.concatenate((np.array([Psurf_mean]), pgrid))
+
         f = open(resultsf + '/' + pfile, 'w')
         for j in np.arange(len(pgrid)):
             f.write('%d %#.6e\n' % (j, pgrid[j]))
         f.close()
     else:
-        raise IOError(pfile + ' already exists in this directory!')
+        print(pfile + ' already exists in this directory! Skipping...')
+        #raise IOError(pfile + ' already exists in this directory!')
+    return pfile
 
 
 if has_pycuda:
@@ -837,21 +845,26 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
 
     # handling of vertical coordinate
     if pgrid_ref == 'auto':
-        try:
-            files_found = spr.check_output('ls ' + resultsf + '/pgrid_*.txt', shell=True).split()
-        except:
-            raise IOError('No pgrid file found in "%s/", please run "pgrid -i <first> -l <last> %s"' % (resultsf, resultsf))
-        if len(files_found) > 1:
-            raise IOError('Multiple pgrid files found in "%s/", please specify with -pgrid flag' % resultsf)
-        else:
-            pgrid_file = files_found[0].decode()
+        pgrid_file = resultsf+'/'+define_Pgrid(resultsf,simID,ntsi,nts,1,overwrite=overwrite)
+        # try:
+        #     files_found = spr.check_output('ls ' + resultsf + '/pgrid_*.txt', shell=True).split()
+        # except:
+        #     raise IOError('No pgrid file found in "%s/", please run "pgrid -i <first> -l <last> %s"' % (resultsf, resultsf))
+        # if len(files_found) > 1:
+        #     raise IOError('Multiple pgrid files found in "%s/", please specify with -pgrid flag' % resultsf)
+        # else:
+        #     pgrid_file = files_found[0].decode()
     else:
         if os.path.exists(resultsf + '/' + pgrid_ref):
             pgrid_file = resultsf + '/' + pgrid_ref
         else:
             raise IOError('pgrid file %s not found!' % (resultsf + '/' + pgrid_ref))
+    pgrid_folder = pgrid_file[:-4]  #define folder as pgrid without file suffix
     print('Vertical coordinate = pressure from file %s' % pgrid_file)
     Pref = np.loadtxt(pgrid_file, unpack=True, usecols=1)
+    p_output_path = pathlib.Path(pgrid_folder)
+    if not p_output_path.exists():
+        p_output_path.mkdir()
 
     # destination grid and set some dimensions
     loni, lati = np.meshgrid(lon_range, lat_range)
@@ -887,7 +900,8 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
     for t in np.arange(ntsi, nts + 1):
         # check for existing h5 files
         proceed = 0
-        fileh5p = resultsf + '/regrid_' + simID + '_' + np.str(t)
+        skip_height_file = 0
+        fileh5p = pgrid_folder + '/regrid_' + simID + '_' + np.str(t)
 
         fileh5h = resultsf + '/regrid_height_' + simID + '_' + np.str(t)
         if rotation == True:  # tell the user they asked for a rotated grid
@@ -895,13 +909,19 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
                   % (theta_z * 180 / np.pi, theta_y * 180 / np.pi))
         fileh5p += '.h5'
         fileh5h += '.h5'
-        if os.path.exists(fileh5p) or os.path.exists(fileh5h):  # regrid files exist
+        if os.path.exists(fileh5p) and os.path.exists(fileh5h):  # regrid files exist
             if overwrite == True:  # overwrite existing files
                 proceed = 1
             else:  # skip existing files
-                print(fileh5p + 'or ' + fileh5h + ' already present! Skipping time = %d' % t)
-        else:  # no existing regrid files, all clear
+                print(fileh5p + ' and ' + fileh5h + ' already present! Skipping time = %d' % t)
+        else:  # >= one file missing
             proceed = 1
+            if os.path.exists(fileh5h):  #height file already exists
+                if overwrite == True:
+                    skip_height_file = 0
+                else:
+                    print(fileh5h + ' already present! Skipping height file for time = %d' % t)
+                    skip_height_file = 1
 
         # begin regridding
         if proceed == 1:
@@ -1045,19 +1065,20 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
             openh5.close()
 
             # create h5 files (height grid)
-            openh5 = h5py.File(fileh5h, "w")
-            print('Writing file ' + fileh5h + '...')
-            Alt = openh5.create_dataset("Altitude", data=grid.Altitude,
-                                        compression='gzip', compression_opts=comp)
-            Lat = openh5.create_dataset("Latitude", data=lat_range * 180 / np.pi,
-                                        compression='gzip', compression_opts=comp)
-            Lon = openh5.create_dataset("Longitude", data=lon_range * 180 / np.pi,
-                                        compression='gzip', compression_opts=comp)
-            # data
-            for key in dest.keys():
-                tmp_data = openh5.create_dataset(key, data=interm[key],
-                                                 compression='gzip', compression_opts=comp)
-            openh5.close()
+            if not skip_height_file:
+                openh5 = h5py.File(fileh5h, "w")
+                print('Writing file ' + fileh5h + '...')
+                Alt = openh5.create_dataset("Altitude", data=grid.Altitude,
+                                            compression='gzip', compression_opts=comp)
+                Lat = openh5.create_dataset("Latitude", data=lat_range * 180 / np.pi,
+                                            compression='gzip', compression_opts=comp)
+                Lon = openh5.create_dataset("Longitude", data=lon_range * 180 / np.pi,
+                                            compression='gzip', compression_opts=comp)
+                # data
+                for key in dest.keys():
+                    tmp_data = openh5.create_dataset(key, data=interm[key],
+                                                     compression='gzip', compression_opts=comp)
+                openh5.close()
 
 
 def KE_spect(input, grid, output, sigmaref, coord='icoh', lmax_adjust=0):
