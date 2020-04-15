@@ -54,7 +54,7 @@
 #pragma once
 
 #include <math.h>
-
+#include <cstdio>
 
 // **********************************************************************
 // 3D vector operations
@@ -234,7 +234,7 @@ inline __host__ __device__ double4 inv2x2(const double4 A) {
 // ********************************************************************************************
 
 
-__host__ __device__ double3 sort_add3(const double3 &a, const double3 &b, const double3 &c) {
+inline __host__ __device__ double3 sort_add3(const double3 &a, const double3 &b, const double3 &c) {
     // Sort three vectors for triangle vertices, then add them in a predictable order
     // Exploit the fact that three vertices cannot all have the same z
     // and if two have the same z, x and y must be different
