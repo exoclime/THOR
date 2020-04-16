@@ -340,6 +340,42 @@ class output:
                 self.f_net[:, :, t - ntsi + 1] = np.reshape(f_net_i, (grid.point_num, grid.nvi))
                 self.q_heat[:, :, t - ntsi + 1] = np.reshape(q_heat_i, (grid.point_num, grid.nv))
 
+class output_new:
+    def __init__(self, resultsf, simID, ntsi, nts, input, grid, stride=1):
+        #need to test best way to read/create virtual dataset
+        #if I read in source files with "r", I need to close the virtual data file
+        # and then reopen it with "r" to make data visible
+        #if I read in source files with "r+", there is no need to close and reopen
+
+        #should create a dictionary of h5 keys and matching attribute names, then loop over
+
+        for t in np.arange(ntsi - 1, nts, stride):
+            fileh5 = resultsf + '/esp_output_' + simID + '_' + np.str(t + 1) + '.h5'
+            if os.path.exists(fileh5):
+                openh5 = h5py.File(fileh5, 'r+')
+            else:
+                raise IOError(fileh5 + ' not found!')
+
+            if t == ntsi - 1:
+                #create VDS layout shape
+                Pressure_lo = h5py.VirtualLayout(shape=
+                                (np.shape(openh5['Pressure'])[0],nts-ntsi+1),dtype='f8')
+
+            #shove source reference into layout
+            Pressure_lo[:,t-ntsi+1] = h5py.VirtualSource(openh5['Pressure'])
+
+            openh5.close()
+
+        fileVDS = resultsf+'/esp_output_'+simID+'_VDS.h5'
+        self.openVDS = h5py.File(fileVDS,'w',libver='latest')
+
+        #create data sets.
+        #will need to reshape them (grid.point_num,grid.nv,nts-ntsi+1) in mjolnir
+        self.Pressure = self.openVDS.create_virtual_dataset('Pressure',Pressure_lo,fillvalue=0)
+
+    # for use at end of plotting... closes h5 file with virtual data set
+    def closeVDS(self):
+        self.openVDS.close()
 
 class rg_out:
     def __init__(self, resultsf, simID, ntsi, nts, input, output, grid, pressure_vert=True, pgrid_ref='auto'):
