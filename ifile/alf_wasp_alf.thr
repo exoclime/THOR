@@ -310,6 +310,10 @@ Alf_opacities_file = ./Alfrodull/input/opac_sample_r5.h5
 # compute radiative transfer every n step
 Alf_compute_every_nstep = 1
 
+# number of steps to keep idle before Alf spinup
+Alf_idle_steps = 0
+
+Alf_spinup_steps = 1000
 
 #-- Boundary layer options (core_benchmark = NoBenchmark) --------------------#
 boundary_layer = false
