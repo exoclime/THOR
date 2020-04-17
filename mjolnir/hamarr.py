@@ -48,6 +48,7 @@ class input:
                 openh5 = h5py.File(fileh5_old)
             else:
                 raise IOError(fileh5 + ' or ' + fileh5_old + ' not found!')
+        pdb.set_trace()
         self.A = openh5['A'][...]  # 'A' is the key for this dataset
         # [...] is syntax for "gimme all the data under this key"
         self.Rd = openh5['Rd'][...]
@@ -347,7 +348,40 @@ class output_new:
         # and then reopen it with "r" to make data visible
         #if I read in source files with "r+", there is no need to close and reopen
 
-        #should create a dictionary of h5 keys and matching attribute names, then loop over
+        #some basic info
+        self.ntsi = ntsi
+        self.nts = nts
+        # 1-D arrays
+        self.time = np.zeros(nts - ntsi + 1)
+        self.nstep = np.zeros(nts - ntsi + 1)
+        self.ConvData = np.zeros(nts - ntsi + 1)
+        self.GlobalE = np.zeros(nts - ntsi + 1)
+        self.GlobalEnt = np.zeros(nts - ntsi + 1)
+        self.GlobalMass = np.zeros(nts - ntsi + 1)
+        self.GlobalAMx = np.zeros(nts - ntsi + 1)
+        self.GlobalAMy = np.zeros(nts - ntsi + 1)
+        self.GlobalAMz = np.zeros(nts - ntsi + 1)
+
+        # dictionary of field variables (2-D or 3-D arrays)
+        # key is the key in h5 file, value is desired attribute name in this class
+        outputs = {'Rho': 'Rho', 'Pressure': 'Pressure', 'Mh': 'Mh', 'Wh': 'Wh',
+                    'Rho_mean': 'Rho_mean', 'Pressure_mean': 'Pressure_mean',
+                    'Mh_mean': 'Mh_mean', 'Wh_mean': 'Wh_mean',
+                    'simulation_time': 'time', 'nstep': 'nstep'}
+
+        #add things to outputs that can be checked for in input or grid
+        if input.RT:
+            outputs['tau'] = 'tau'  #have to be careful about slicing this (sw = ::2, lw = 1::2)
+            outputs['flw_up'] = 'flw_up'
+            outputs['flw_dn'] = 'flw_dn'
+            outputs['fsw_dn'] = 'fsw_dn'
+
+        if input.TSRT:
+            outputs['F_up_tot'] = 'f_up_tot'
+            outputs['F_down_tot'] = 'f_down_tot'
+            outputs['F_net'] = 'f_net'
+            outputs['Alf_Qheat'] = 'q_heat'
+            outputs['col_mu_star'] = 'mustar'
 
         for t in np.arange(ntsi - 1, nts, stride):
             fileh5 = resultsf + '/esp_output_' + simID + '_' + np.str(t + 1) + '.h5'
@@ -357,12 +391,52 @@ class output_new:
                 raise IOError(fileh5 + ' not found!')
 
             if t == ntsi - 1:
+                # add things to outputs dictionary that require checking for existence in openh5
+                if 'Etotal' in openh5.keys():
+                    self.ConvData[t-ntsi+1] = True
+                    outputs['Etotal'] = 'Etotal'
+                    outputs['Mass'] = 'Mass'
+                    outputs['AngMomx'] = 'AngMomx'
+                    outputs['AngMomy'] = 'AngMomy'
+                    outputs['AngMomz'] = 'AngMomz'
+                    outputs['Entropy'] = 'Entropy'
+                else:
+                    print('Warning: conservation diagnostics not available in file %s' % fileh5)
+                    self.ConvData[t-ntsi+1] = False
+
+                if 'insol' in openh5.keys():
+                    outputs['insol'] = 'Insol'
+                if 'tracer' in openh5.keys():
+                    outputs['tracer'] = 'tracer' #ch4 ::5, co 1::5, h2o 2::5, co2 3::5, nh3 4::5
+                if 'Tsurface' in openh5.keys():
+                    outputs['Tsurface'] = 'Tsurface'
+                if 'Rd' in openh5.keys():
+                    self.ConstRdCp = False
+                    outputs['Rd'] = 'Rd'
+                    outputs['Cp'] = 'Cp'
+                else:
+                    self.ConstRdCp = True
+
                 #create VDS layout shape
-                Pressure_lo = h5py.VirtualLayout(shape=
-                                (np.shape(openh5['Pressure'])[0],nts-ntsi+1),dtype='f8')
+                for key in outputs.keys():
+                    vars()[outputs[key]+'_lo'] = h5py.VirtualLayout(shape=
+                                (np.shape(openh5[key])[0],nts-ntsi+1),dtype='f8')
 
             #shove source reference into layout
-            Pressure_lo[:,t-ntsi+1] = h5py.VirtualSource(openh5['Pressure'])
+            for key in outputs.keys():
+                vars()[outputs[key]+'_lo'][:,t-ntsi+1] = \
+                                            h5py.VirtualSource(openh5[key])
+
+            # 1-D arrays, unlikely to overflow memory
+            self.time[t-ntsi+1] = openh5['simulation_time'][0] / 86400
+            self.nstep[t-ntsi+1] = openh5['nstep'][0]
+            if self.ConvData[t-ntsi+1]:
+                self.GlobalE[t - ntsi + 1] = openh5['GlobalE'][0]
+                self.GlobalMass[t - ntsi + 1] = openh5['GlobalMass'][0]
+                self.GlobalAMx[t - ntsi + 1] = openh5['GlobalAMx'][0]
+                self.GlobalAMy[t - ntsi + 1] = openh5['GlobalAMy'][0]
+                self.GlobalAMz[t - ntsi + 1] = openh5['GlobalAMz'][0]
+                self.GlobalEnt[t - ntsi + 1] = openh5['GlobalEnt'][0]
 
             openh5.close()
 
@@ -371,7 +445,9 @@ class output_new:
 
         #create data sets.
         #will need to reshape them (grid.point_num,grid.nv,nts-ntsi+1) in mjolnir
-        self.Pressure = self.openVDS.create_virtual_dataset('Pressure',Pressure_lo,fillvalue=0)
+        #self.Pressure = self.openVDS.create_virtual_dataset('Pressure',Pressure_lo,fillvalue=0)
+        for key in outputs.keys():
+            setattr(self, outputs[key], self.openVDS.create_virtual_dataset(outputs[key],vars()[outputs[key]+'_lo'],fillvalue=0))
 
     # for use at end of plotting... closes h5 file with virtual data set
     def closeVDS(self):
