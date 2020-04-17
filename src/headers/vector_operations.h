@@ -220,8 +220,12 @@ inline double4 multsub2x2(const double4 & A, const double4 & B, const double4 & 
 
 inline __host__ __device__ double4 inv2x2(const double4 A) {
   double det_inv = 1.0/( A.x*A.w - A.y*A.z );
-  if (det_inv == 0.0)
-    printf("Warning, null determinant for matrix inversion\n");
+  if (isnan(det_inv))
+    {
+      printf("Warning, NaN determinant for matrix inversion [[ %g, %g ], [ %g, %g ]], det: %g\n",
+	   A.x, A.y, A.z, A.w,  A.x*A.w - A.y*A.z );
+      exit(-1);
+    }
   return make_double4(det_inv*A.w,
 		      -det_inv*A.y,
 		      -det_inv*A.z,
