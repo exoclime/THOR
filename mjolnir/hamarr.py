@@ -41,14 +41,13 @@ class input:
     def __init__(self, resultsf, simID):
         fileh5 = resultsf + '/esp_output_planet_' + simID + '.h5'
         if os.path.exists(fileh5):
-            openh5 = h5py.File(fileh5)
+            openh5 = h5py.File(fileh5,'r')
         else:
             fileh5_old = resultsf + '/esp_output_' + simID + '.h5'
             if os.path.exists(fileh5_old):
-                openh5 = h5py.File(fileh5_old)
+                openh5 = h5py.File(fileh5_old,'r')
             else:
                 raise IOError(fileh5 + ' or ' + fileh5_old + ' not found!')
-        pdb.set_trace()
         self.A = openh5['A'][...]  # 'A' is the key for this dataset
         # [...] is syntax for "gimme all the data under this key"
         self.Rd = openh5['Rd'][...]
@@ -108,6 +107,34 @@ class input:
 
         openh5.close()
 
+class input_new:
+    def __init__(self, resultsf, simID):
+        fileh5 = resultsf + '/esp_output_planet_' + simID + '.h5'
+        if os.path.exists(fileh5):
+            openh5 = h5py.File(fileh5,'r')
+        else:
+            fileh5_old = resultsf + '/esp_output_' + simID + '.h5'
+            if os.path.exists(fileh5_old):
+                openh5 = h5py.File(fileh5_old,'r')
+            else:
+                raise IOError(fileh5 + ' or ' + fileh5_old + ' not found!')
+
+        self.resultsf = resultsf
+        self.simID = simID
+        for key in openh5.keys():
+            setattr(self,key,openh5[key][...])
+
+        #special cases (things we test on a lot, etc)
+        self.RT = "radiative_transfer" in openh5
+        self.TSRT = "two_streams_radiative_transfer" in openh5
+        if not hasattr(self,'surface'):
+            self.surface = False
+        #some bw compatibility things
+        if hasattr(self,'vulcan'):
+            self.chemistry = self.vulcan
+        if hasattr(self,'diff_fac'):
+            self.diff_ang = self.diff_fac
+        openh5.close()
 
 def LatLong2Cart(lat, lon):
     x = np.cos(lat) * np.cos(lon)
@@ -138,7 +165,7 @@ class grid:
     def __init__(self, resultsf, simID, rotation=False, theta_y=0, theta_z=0):
         fileh5 = resultsf + '/esp_output_grid_' + simID + '.h5'
         if os.path.exists(fileh5):
-            openh5 = h5py.File(fileh5)
+            openh5 = h5py.File(fileh5,'r')
         else:
             raise IOError(fileh5 + ' not found!')
         self.Altitude = openh5['Altitude'][...]
@@ -148,6 +175,8 @@ class grid:
         self.point_num = np.int(openh5['point_num'][0])
         self.pntloc = np.reshape(openh5['pntloc'][...], (self.point_num, 6))  # indices of nearest neighbors
         self.nv = np.int(openh5['nv'][0])
+
+        pdb.set_trace()
         if 'grad' in openh5.keys():
             self.grad = np.reshape(openh5['grad'][...], (self.point_num, 7, 3))
             self.div = np.reshape(openh5['div'][...], (self.point_num, 7, 3))
@@ -164,6 +193,35 @@ class grid:
             self.lat, self.lon = Cart2LatLong(xtmp2, ytmp2, ztmp2)
             self.lon = self.lon % (2 * np.pi)
 
+class grid_new:
+    def __init__(self, resultsf, simID, rotation=False, theta_y=0, theta_z=0):
+        fileh5 = resultsf + '/esp_output_grid_' + simID + '.h5'
+        if os.path.exists(fileh5):
+            openh5 = h5py.File(fileh5,'r')
+        else:
+            raise IOError(fileh5 + ' not found!')
+
+        self.point_num = np.int(openh5['point_num'][0])
+        self.nv = np.int(openh5['nv'][0])
+        self.nvi = self.nv + 1
+        for key in openh5.keys():
+            if key != 'nv' and key != 'point_num':
+                if key == 'pntloc':
+                    setattr(self,key,np.reshape(openh5[key][...],(self.point_num,6)))
+                elif key == 'grad' or key == 'div' or key == 'curlz':
+                    setattr(self,key,np.reshape(openh5[key][...],(self.point_num,7,3)))
+                elif key == 'lonlat':
+                    self.lon = (openh5[key][::2]) % (2*np.pi)
+                    self.lat = openh5[key][1::2]
+                    if rotation == True:
+                        xtmp, ytmp, ztmp = LatLong2Cart(self.lat, self.lon)
+                        xtmp1, ytmp1, ztmp1 = Rot_z(theta_z, xtmp, ytmp, ztmp)
+                        xtmp2, ytmp2, ztmp2 = Rot_y(theta_y, xtmp1, ytmp1, ztmp1)
+                        self.lat, self.lon = Cart2LatLong(xtmp2, ytmp2, ztmp2)
+                        self.lon = self.lon % (2 * np.pi)
+                else:
+                    setattr(self,key,openh5[key][...])
+        openh5.close()
 
 class output:
     def __init__(self, resultsf, simID, ntsi, nts, input, grid, stride=1):
@@ -225,7 +283,7 @@ class output:
         for t in np.arange(ntsi - 1, nts, stride):
             fileh5 = resultsf + '/esp_output_' + simID + '_' + np.str(t + 1) + '.h5'
             if os.path.exists(fileh5):
-                openh5 = h5py.File(fileh5)
+                openh5 = h5py.File(fileh5,'r')
             else:
                 raise IOError(fileh5 + ' not found!')
 
@@ -453,6 +511,18 @@ class output_new:
     def closeVDS(self):
         self.openVDS.close()
 
+    #loads arrays from disk into memory and reshapes them (destroys reference to virtual data set)
+    def load_reshape(self,grid):
+        tlen = self.nts-self.ntsi+1
+        for key in self.openVDS.keys():
+            data = getattr(self, key)[...]
+            if np.shape(data) == (grid.point_num*grid.nv,tlen):
+                data = np.reshape(data,(grid.point_num,grid.nv,tlen))
+            elif np.shape(data) == (grid.point_num*grid.nvi,tlen):
+                data = np.reshape(data,(grid.point_num,grid.nvi,tlen))
+            setattr(self, key, data)
+        self.closeVDS()
+
 class rg_out:
     def __init__(self, resultsf, simID, ntsi, nts, input, output, grid, pressure_vert=True, pgrid_ref='auto'):
         RT = False
@@ -483,11 +553,11 @@ class rg_out:
                 fileh5 = resultsf + '/regrid_height_' + simID + '_' + np.str(t + 1)
             fileh5 += '.h5'
             if os.path.exists(fileh5):
-                openh5 = h5py.File(fileh5)
+                openh5 = h5py.File(fileh5,'r')
             else:
                 print(fileh5 + ' not found, regridding now with default settings...')
                 regrid(resultsf, simID, ntsi, nts, pgrid_ref=pgrid_ref)
-                openh5 = h5py.File(fileh5)
+                openh5 = h5py.File(fileh5,'r')
 
             Rhoi = openh5['Rho'][...]
             Tempi = openh5['Temperature'][...]
@@ -634,8 +704,8 @@ class rg_out:
 
 class GetOutput:
     def __init__(self, resultsf, simID, ntsi, nts, stride=1, openrg=0, pressure_vert=True, rotation=False, theta_y=0, theta_z=0, pgrid_ref='auto'):
-        self.input = input(resultsf, simID)
-        self.grid = grid(resultsf, simID, rotation=rotation, theta_y=theta_y, theta_z=theta_z)
+        self.input = input_new(resultsf, simID)
+        self.grid = grid_new(resultsf, simID, rotation=rotation, theta_y=theta_y, theta_z=theta_z)
         self.output = output(resultsf, simID, ntsi, nts, self.input, self.grid, stride=stride)
         if openrg == 1:
             self.rg = rg_out(resultsf, simID, ntsi, nts, self.input, self.output, self.grid,
@@ -650,7 +720,7 @@ def define_Pgrid(resultsf, simID, ntsi, nts, stride, overwrite=False):
         # first we need the grid size
         fileh5 = resultsf + '/esp_output_grid_' + simID + '.h5'
         if os.path.exists(fileh5):
-            openh5 = h5py.File(fileh5)
+            openh5 = h5py.File(fileh5,'r')
         else:
             raise IOError(fileh5 + ' not found!')
         nv = np.int(openh5['nv'][0])
@@ -662,7 +732,7 @@ def define_Pgrid(resultsf, simID, ntsi, nts, stride, overwrite=False):
         # we also need to know if we included a surface
         fileh5 = resultsf + '/esp_output_planet_' + simID + '.h5'
         if os.path.exists(fileh5):
-            openh5 = h5py.File(fileh5)
+            openh5 = h5py.File(fileh5,'r')
         else:
             raise IOError(fileh5 + ' not found!')
         if openh5['core_benchmark'][0] > 0:
@@ -682,7 +752,7 @@ def define_Pgrid(resultsf, simID, ntsi, nts, stride, overwrite=False):
             t = ntsi + stride * i
             fileh5 = resultsf + '/esp_output_' + simID + '_' + np.str(t) + '.h5'
             if os.path.exists(fileh5):
-                openh5 = h5py.File(fileh5)
+                openh5 = h5py.File(fileh5,'r')
             else:
                 raise IOError(fileh5 + ' not found!')
 
