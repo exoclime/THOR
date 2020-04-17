@@ -206,7 +206,8 @@ planet_star_dist = 0.015
 radius_star = 0.667
 
 # bond albedo of planet
-albedo = 0.18
+# 0.18, scattering at top of the atmosphere
+albedo = 0.0
 
 # diff_ang = 1/(diffusivity factor) for lw radiation
 diff_ang = 0.5
@@ -310,8 +311,8 @@ Alf_opacities_file = ./Alfrodull/input/opac_sample_r5.h5
 # compute radiative transfer every n step
 Alf_compute_every_nstep = 1
 
-# number of steps to keep idle before Alf spinup
-Alf_idle_steps = 0
+# number of double gray radiative transfer spinup steps before shifting progressivelly to two stream
+Alf_dgrt_spinup_steps = 144000
 
 # number of steps to spinup from 0 to full Qheat
 Alf_spinup_steps = 28800

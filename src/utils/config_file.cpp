@@ -72,7 +72,8 @@ bool config_file::parse_config(std::basic_istream<char>& config) {
 
     // initialise key value pairs
     for (auto&& it = config_vars.begin(); it != config_vars.end(); ++it) {
-        it->second->set_default();
+      for (auto & v : it->second)
+	v->set_default();
         // cout << it->first  << "\t" << it->second->to_str() << endl;
     }
 
@@ -102,13 +103,17 @@ bool config_file::parse_config(std::basic_istream<char>& config) {
             // cout << "key value pair matched: (" << match[1] << ":" << match[2] <<")"<< endl;
             auto&& it = config_vars.find(key);
             if (it != config_vars.end()) {
-                bool parsed = it->second->parse(value);
-                if (!parsed) {
-                    cout << "ERROR: parsing of value [" << value << "] failed for key [" << key
-                         << "] " << endl;
-                    parse_success &= false;
-                }
-            }
+
+		  for (auto & v : it->second)
+		    {
+		      bool parsed = v->parse(value);
+			if (!parsed) {
+				      cout << "ERROR: parsing of value [" << value << "] failed for key [" << key
+				      << "] " << endl;
+				      parse_success &= false;
+			}
+		    }
+	    }
             else {
                 cout << "WARNING: config file key [" << key << "] does not exist, skipping" << endl;
                 // Do not fail if key does not exist
@@ -130,12 +135,13 @@ bool config_file::append_config_var(const string&                           name
     // check if entry exists
     auto&& it = config_vars.find(name);
     if (it != config_vars.end()) {
-        cout << "config entry " << name << " already exists" << endl;
+      it->second.push_back(std::move(entry));
+        // cout << "config entry " << name << " already exists" << endl;
         return false;
     }
     else {
-        // append entry
-        config_vars[name] = std::move(entry);
-        return true;
+      // append entry
+      config_vars[name].push_back(std::move(entry));
+      return true;
     }
 }

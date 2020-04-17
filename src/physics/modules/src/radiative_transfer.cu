@@ -267,6 +267,7 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                                  surf_flux_d,
                                  esp.profx_Qheat_d,
                                  esp.Rd_d,
+                                 Qheat_scaling,
                                  sim.gcm_off,
                                  rt1Dmode);
 
