@@ -729,7 +729,7 @@ class rg_out:
                 self.nh3[:, :, :, t - ntsi + 1] = nh3i
 
 class rg_out_new:
-    def __init__(self, resultsf, simID, ntsi, nts, input, output, grid, pressure_vert=True, pgrid_ref='auto'):
+    def __init__(self, resultsf, simID, ntsi, nts, input, grid, pressure_vert=True, pgrid_ref='auto'):
         RT = False
         if "core_benchmark" in dir(input):
             # need to switch to 'radiative_tranfer' flag
@@ -808,7 +808,7 @@ class rg_out_new:
                 else:
                     print("Dataset %s has already been loaded into memory"%key)
             else:
-                raise IOError("Invalid data set specified: %s"%key)
+                print("Invalid data set specified: %s; not loading"%key)
 
     def load_all(self):
         keys = self.openVDS.keys()
@@ -820,11 +820,10 @@ class GetOutput:
     def __init__(self, resultsf, simID, ntsi, nts, stride=1, openrg=0, pressure_vert=True, rotation=False, theta_y=0, theta_z=0, pgrid_ref='auto'):
         self.input = input_new(resultsf, simID)
         self.grid = grid_new(resultsf, simID, rotation=rotation, theta_y=theta_y, theta_z=theta_z)
-        self.output = output_new(resultsf, simID, ntsi, nts, self.input, self.grid, stride=stride)
-        if openrg == 1:
-            self.rg = rg_out_new(resultsf, simID, ntsi, nts, self.input, self.output, self.grid,
+        if openrg == 1:  #checking for regrid before output prevents file open conflict
+            self.rg = rg_out_new(resultsf, simID, ntsi, nts, self.input, self.grid,
                              pressure_vert=pressure_vert, pgrid_ref=pgrid_ref)
-
+        self.output = output_new(resultsf, simID, ntsi, nts, self.input, self.grid, stride=stride)
 
 def define_Pgrid(resultsf, simID, ntsi, nts, stride, overwrite=False):
     pfile = 'pgrid_%d_%d_%d.txt' % (ntsi, nts, stride)
@@ -2168,13 +2167,13 @@ def streamf_moc_plot(input, grid, output, rg, sigmaref, save=True, axis=False, w
             Wavglt = np.mean(rg.V[:, :, :, 0], axis=1)
 
     sf = np.zeros_like(Vavglt)
-    arg = 2 * np.pi * input.A * np.cos(rg.lat[:, 0][:, None] * np.pi / 180) / input.Gravit * Vavglt
+    arg = 2 * np.pi * input.A * np.cos(rg.Latitude[:, None] * np.pi / 180) / input.Gravit * Vavglt
     for ilat in np.arange(np.shape(Vavglt)[0]):
         for ilev in np.arange(np.shape(Vavglt)[1]):
             if ilev == 0:
-                sf[ilat, -1] = arg[ilat, -1] * rg.Pressure[-1, 0]
+                sf[ilat, -1] = arg[ilat, -1] * rg.Pressure[-1]
             else:
-                sf[ilat, -(ilev + 1)] = np.trapz(arg[ilat, -1:-(ilev + 2):-1], x=rg.Pressure[-1:-(ilev + 2):-1][:, 0])
+                sf[ilat, -(ilev + 1)] = np.trapz(arg[ilat, -1:-(ilev + 2):-1], x=rg.Pressure[-1:-(ilev + 2):-1][:])
 
     # need to set desired pressure range (major PITA!)
     # prange = np.where(np.logical_and(rg.Pressure>=np.min(Pref),rg.Pressure<=np.max(Pref)))
@@ -2189,11 +2188,11 @@ def streamf_moc_plot(input, grid, output, rg, sigmaref, save=True, axis=False, w
         raise IOError("clevs not valid!")
 
     if isinstance(axis, axes.SubplotBase):
-        C = axis.contourf(rg.lat[:, 0], rg.Pressure[prange[0]] / 1e5, sf[:, prange[0]].T, clevels, cmap='viridis')
+        C = axis.contourf(rg.Latitude[:], rg.Pressure[prange[0]] / 1e5, sf[:, prange[0]].T, clevels, cmap='viridis')
         ax = axis
     elif axis == False:
         plt.figure(figsize=(5, 4))
-        C = plt.contourf(rg.lat[:, 0], rg.Pressure[prange[0]] / 1e5, sf[:, prange[0]].T, clevels, cmap='viridis')
+        C = plt.contourf(rg.Latitude[:], rg.Pressure[prange[0]] / 1e5, sf[:, prange[0]].T, clevels, cmap='viridis')
 
         ax = plt.gca()
     else:
@@ -2203,7 +2202,7 @@ def streamf_moc_plot(input, grid, output, rg, sigmaref, save=True, axis=False, w
         cc.set_edgecolor("face")  # fixes a stupid bug in matplotlib 2.0
 
     if wind_vectors == True:
-        vspacing = np.int(np.shape(rg.lat)[0] / 10)
+        vspacing = np.int(np.shape(rg.Latitude)[0] / 10)
         wspacing = np.int(np.shape(rg.Pressure)[0] / 10)
         Vlt = Vavglt[:, prange[0]]
         Wlt = Wavglt[:, prange[0]]
@@ -2211,12 +2210,12 @@ def streamf_moc_plot(input, grid, output, rg, sigmaref, save=True, axis=False, w
         Wq = Wlt[::vspacing, ::wspacing].ravel()
         #preq = rg.Pressure[:,0][::spacing,::spacing].ravel()
         #latq = lati[::spacing,::spacing].ravel()
-        latq, preq = np.meshgrid(rg.lat[::vspacing, 0], rg.Pressure[::wspacing, 0][prange[0]])
+        latq, preq = np.meshgrid(rg.Latitude[::vspacing], rg.Pressure[::wspacing][prange[0]])
         del Vlt, Wlt
         plt.quiver(latq.ravel(), preq.ravel() / 1e5, Vq, Wq, color='0.5')
 
     ax.invert_yaxis()
-    c2 = ax.contour(rg.lat[:], rg.Pressure[:] / 1e5, sf.T, levels=[0.0], colors='w', linewidths=1)
+    c2 = ax.contour(rg.Latitude[:], rg.Pressure[:] / 1e5, sf.T, levels=[0.0], colors='w', linewidths=1)
     clb = plt.colorbar(C)
     clb.set_label(r'Eulerian streamfunction (kg s$^{-1}$)')
     if plog == True:

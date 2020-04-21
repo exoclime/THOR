@@ -16,7 +16,7 @@ class mjol_args:
         self.split_layer = ['no_split']
         self.coordinate_sys = ['icoh']
         self.lmax_adjust = [0]
-        self.slice = [0, 360]
+        self.slice = ['default']
         self.maketable = False
         self.no_pressure_log = False
         self.latlonswap = False
@@ -37,22 +37,19 @@ def make_plot(args, save=True, axis=None):
              'TP', 'RVlev', 'cons', 'stream', 'pause', 'tracer', 'PTP', 'regrid', 'KE',
              'SR', 'uprof', 'cfl', 'bvprof', 'fluxprof', 'Tsurf', 'insol', 'massf', 'pause_rg',
              'futprof', 'fdtprof', 'fnetprof', 'mustar', 'fuptot', 'fdowntot', 'fnet', 'qheat',  # alf stuff
-             'phase']
+             'phase','all']
 
     rg_needed = ['Tver', 'Tlonver', 'uver', 'ulonver', 'vver', 'wver', 'wlonver', 'Tulev', 'PTver', 'PTlonver', 'ulev', 'PVver', 'PVlev',
                  'RVlev', 'stream', 'tracer', 'Tsurf', 'insol', 'massf', 'pause_rg',
-                 'mustar', 'fuptot', 'fdowntot', 'fnet', 'qheat']  # these types need regrid
+                 'mustar', 'fuptot', 'fdowntot', 'fnet', 'qheat', 'all']  # these types need regrid
 
     openrg = 0
-    if 'all' in pview:
-        pview = valid
-        openrg = 1
-    else:
-        for p in pview:
-            if openrg == 0 and p in rg_needed:
-                openrg = 1
-            if p not in valid:
-                raise ValueError('%s not a valid plot option. Valid options are ' % p + ', '.join(valid))
+
+    for p in pview:
+        if openrg == 0 and p in rg_needed:
+            openrg = 1
+        if p not in valid:
+            raise ValueError('%s not a valid plot option. Valid options are ' % p + ', '.join(valid))
 
     ntsi = args.initial_file[0]  # initial file id number
 
@@ -124,7 +121,7 @@ def make_plot(args, save=True, axis=None):
 
     plots_created = []
     # --- Vertical plot types-------------------------------
-    if 'uver' in pview:
+    if 'uver' in pview or 'all' in pview:
         rg.load(['U'])  #load these arrays into memory
         z = {'value': rg.U, 'label': r'Velocity (m s$^{-1}$)', 'name': 'u',
              'cmap': 'viridis', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'plog': plog}
@@ -135,7 +132,7 @@ def make_plot(args, save=True, axis=None):
         if pfile:
             print('Created file: ' + pfile)
             plots_created.append(pfile)
-    if 'ulonver' in pview:
+    if 'ulonver' in pview or 'all' in pview:
         rg.load(['U'])
         z = {'value': rg.U, 'label': r'Velocity (m s$^{-1}$)', 'name': 'u',
              'cmap': 'viridis', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'plog': plog}
@@ -146,10 +143,10 @@ def make_plot(args, save=True, axis=None):
         if pfile:
             print('Created file: ' + pfile)
             plots_created.append(pfile)
-    if 'vver' in pview:
+    if 'vver' in pview or 'all' in pview:
         rg.load(['V'])
         z = {'value': rg.V, 'label': r'Velocity (m s$^{-1}$)', 'name': 'v',
-             'cmap': 'viridis', 'lat': rg.Latitude, 'lon': rg.Latitude, 'mt': maketable, 'plog': plog}
+             'cmap': 'viridis', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'plog': plog}
         sigmaref = ham.Get_Prange(input, grid, rg, args, xtype='lat', use_p=use_p)
         # Averaged zonal winds (latitude vs pressure)
         # ham.u(input,grid,output,rg,sigmaref,slice=args.slice[0])
@@ -157,7 +154,7 @@ def make_plot(args, save=True, axis=None):
         if pfile:
             print('Created file: ' + pfile)
             plots_created.append(pfile)
-    if 'wver' in pview:
+    if 'wver' in pview or 'all' in pview:
         rg.load(['W'])
         z = {'value': rg.W, 'label': r'Velocity (m s$^{-1}$)', 'name': 'w',
              'cmap': 'viridis', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'plog': plog}
@@ -168,10 +165,10 @@ def make_plot(args, save=True, axis=None):
         if pfile:
             print('Created file: ' + pfile)
             plots_created.append(pfile)
-    if 'wlonver' in pview:
+    if 'wlonver' in pview or 'all' in pview:
         rg.load(['W'])
         z = {'value': rg.W, 'label': r'Velocity (m s$^{-1}$)', 'name': 'w',
-             'cmap': 'viridis', 'lat': rg.Latitude, 'lon': rg.Latitude, 'mt': maketable, 'plog': plog}
+             'cmap': 'viridis', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'plog': plog}
         sigmaref = ham.Get_Prange(input, grid, rg, args, xtype='lat', use_p=use_p)
         # Averaged zonal winds (latitude vs pressure)
         # ham.u(input,grid,output,rg,sigmaref,slice=args.slice[0])
@@ -179,10 +176,10 @@ def make_plot(args, save=True, axis=None):
         if pfile:
             print('Created file: ' + pfile)
             plots_created.append(pfile)
-    if 'Tver' in pview:
+    if 'Tver' in pview or 'all' in pview:
         rg.load(['Temperature'])
         z = {'value': rg.Temperature, 'label': r'Temperature (K)', 'name': 'temperature',
-             'cmap': 'magma', 'lat': rg.lat, 'lon': rg.Longitude, 'mt': maketable, 'plog': plog}
+             'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'plog': plog}
         sigmaref = ham.Get_Prange(input, grid, rg, args, xtype='lat', use_p=use_p)
         # Averaged temperature (latitude vs pressure)
         # ham.temperature(input,grid,output,rg,sigmaref)
@@ -190,9 +187,9 @@ def make_plot(args, save=True, axis=None):
         if pfile:
             print('Created file: ' + pfile)
             plots_created.append(pfile)
-    if 'Tlonver' in pview:
+    if 'Tlonver' in pview or 'all' in pview:
         z = {'value': rg.Temperature, 'label': r'Temperature (K)', 'name': 'temperature',
-             'cmap': 'magma', 'lat': rg.lat, 'lon': rg.Longitude, 'mt': maketable, 'plog': plog}
+             'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'plog': plog}
         sigmaref = ham.Get_Prange(input, grid, rg, args, xtype='lat', use_p=use_p)
         # Averaged temperature (latitude vs pressure)
         # ham.temperature(input,grid,output,rg,sigmaref)
@@ -200,7 +197,7 @@ def make_plot(args, save=True, axis=None):
         if pfile:
             print('Created file: ' + pfile)
             plots_created.append(pfile)
-    if 'PTver' in pview:
+    if 'PTver' in pview or 'all' in pview:
         rg.load(['Temperature','Pressure'])
         kappa_ad = input.Rd / input.Cp  # adiabatic coefficient
         pt = rg.Temperature * (rg.Pressure / input.P_Ref)**(-kappa_ad)
@@ -212,7 +209,7 @@ def make_plot(args, save=True, axis=None):
         if pfile:
             print('Created file: ' + pfile)
             plots_created.append(pfile)
-    if 'PTlonver' in pview:
+    if 'PTlonver' in pview or 'all' in pview:
         rg.load(['Temperature','Pressure'])
         kappa_ad = input.Rd / input.Cp  # adiabatic coefficient
         pt = rg.Temperature * (rg.Pressure / input.P_Ref)**(-kappa_ad)
@@ -224,7 +221,7 @@ def make_plot(args, save=True, axis=None):
         if pfile:
             print('Created file: ' + pfile)
             plots_created.append(pfile)
-    if 'PVver' in pview:
+    if 'PVver' in pview or 'all' in pview:
         rg.load(['PV'])
         # sigmaref = np.arange(1,0,)
         z = {'value': rg.PV, 'label': r'Potential Vorticity (K m$^2$ kg$^{-1}$ s$^{-1}$)',
@@ -235,12 +232,13 @@ def make_plot(args, save=True, axis=None):
         if pfile:
             print('Created file: ' + pfile)
             plots_created.append(pfile)
-    if 'stream' in pview:  # RD: needs some work! to adapt to height coordinate
+    if 'stream' in pview or 'all' in pview:  # RD: needs some work! to adapt to height coordinate
         # strm = ham.calc_moc_streamf(input,grid,output)
         # strm = rg.streamf
         # z = {'value':strm, 'label':r'Eulerian streamfunction (kg s$^{-1}$)', 'name':'streamf2',
         #      'cmap':'viridis', 'lat':rg.Latitude, 'lon':rg.Longitude}
         if use_p:
+            rg.load(['V','W'])
             sigmaref = ham.Get_Prange(input, grid, rg, args, xtype='lat', use_p=use_p)
             # ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice,csp=[0])
             pfile = ham.streamf_moc_plot(input, grid, output, rg, sigmaref, mt=maketable, plog=plog, clevs=args.clevels, save=save)
@@ -267,7 +265,7 @@ def make_plot(args, save=True, axis=None):
 
     # --- Horizontal plot types-------------------------------
     # need to be updated for height coordinates
-    if 'Tulev' in pview:
+    if 'Tulev' in pview or 'all' in pview:
         # Averaged temperature and wind field (longitude vs latitude)
         # PR_LV - Pressure level (Pa)
         rg.load(['Temperature','U','V'])
@@ -281,7 +279,7 @@ def make_plot(args, save=True, axis=None):
         if pfile:
             print('Created file: ' + pfile)
             plots_created.append(pfile)
-    if 'ulev' in pview:
+    if 'ulev' in pview or 'all' in pview:
         rg.load(['U','V'])
         if use_p:
             PR_LV = np.float(args.horizontal_lev[0]) * 100
@@ -299,7 +297,7 @@ def make_plot(args, save=True, axis=None):
         if pfile:
             print('Created file: ' + pfile)
             plots_created.append(pfile)
-    if 'PVlev' in pview:
+    if 'PVlev' in pview or 'all' in pview:
         rg.load(['PV','U','V'])
         if use_p:
             PR_LV = np.float(args.horizontal_lev[0]) * 100
@@ -312,7 +310,7 @@ def make_plot(args, save=True, axis=None):
             print('Created file: ' + pfile)
             plots_created.append(pfile)
         # ham.potential_vort_lev(input,grid,output,PR_LV)
-    if 'RVlev' in pview:
+    if 'RVlev' in pview or 'all' in pview:
         rg.load(['RV','U','V'])
         if use_p:
             PR_LV = np.float(args.horizontal_lev[0]) * 100
@@ -325,7 +323,7 @@ def make_plot(args, save=True, axis=None):
             print('Created file: ' + pfile)
             plots_created.append(pfile)
         # ham.rela_vort_lev(input,grid,output,PR_LV)
-    if 'tracer' in pview:
+    if ('tracer' in pview or 'all' in pview) and input.chemistry:
         rg.load(['ch4','co','h2o','co2','nh3'])
         if use_p:
             PR_LV = np.float(args.horizontal_lev[0]) * 100
@@ -361,7 +359,7 @@ def make_plot(args, save=True, axis=None):
         if pfile:
             print('Created file: ' + pfile)
             plots_created.append(pfile)
-    if 'insol' in pview:
+    if ('insol' in pview or 'all' in pview) and (input.RT or input.TSRT):
         rg.load(['insol'])
         PR_LV = np.max(output.Pressure)  # not important here
         z = {'value': rg.insol, 'label': r'Insolation (W m$^{-2}$)', 'name': 'insol',
@@ -370,7 +368,7 @@ def make_plot(args, save=True, axis=None):
         if pfile:
             print('Created file: ' + pfile)
             plots_created.append(pfile)
-    if 'Tsurf' in pview:
+    if ('Tsurf' in pview or 'all' in pview) and (input.RT or input.TSRT):
         if not hasattr(rg, "Tsurface"):
             raise ValueError("'Tsurface' not available in regrid file")
         rg.load(['Tsurface'])
@@ -382,7 +380,7 @@ def make_plot(args, save=True, axis=None):
             print('Created file: ' + pfile)
             plots_created.append(pfile)
 
-    if 'fuptot' in pview:
+    if ('fuptot' in pview or 'all' in pview) and (input.RT or input.TSRT):
         # Averaged temperature and wind field (longitude vs latitude)
         # PR_LV - Pressure level (Pa)
         if use_p:
@@ -395,7 +393,7 @@ def make_plot(args, save=True, axis=None):
         if pfile:
             print('Created file: ' + pfile)
             plots_created.append(pfile)
-    if 'fdowntot' in pview:
+    if ('fdowntot' in pview) and (input.RT or input.TSRT): #add all later
         # Averaged temperature and wind field (longitude vs latitude)
         # PR_LV - Pressure level (Pa)
         if use_p:
@@ -408,7 +406,7 @@ def make_plot(args, save=True, axis=None):
         if pfile:
             print('Created file: ' + pfile)
             plots_created.append(pfile)
-    if 'fnet' in pview:
+    if ('fnet' in pview) and (input.RT or input.TSRT):
         # Averaged temperature and wind field (longitude vs latitude)
         # PR_LV - Pressure level (Pa)
         if use_p:
@@ -421,7 +419,7 @@ def make_plot(args, save=True, axis=None):
         if pfile:
             print('Created file: ' + pfile)
             plots_created.append(pfile)
-    if 'qheat' in pview:
+    if ('qheat' in pview) and (input.RT or input.TSRT):
         # Averaged temperature and wind field (longitude vs latitude)
         # PR_LV - Pressure level (Pa)
         if use_p:
@@ -434,7 +432,7 @@ def make_plot(args, save=True, axis=None):
         if pfile:
             print('Created file: ' + pfile)
             plots_created.append(pfile)
-    if 'mustar' in pview:
+    if ('mustar' in pview) and (input.TSRT):
         PR_LV = np.max(output.Pressure)  # not important here
         z = {'value': rg.mustar, 'label': r'mu_star ', 'name': 'mustar',
              'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
@@ -442,13 +440,14 @@ def make_plot(args, save=True, axis=None):
         if pfile:
             print('Created file: ' + pfile)
             plots_created.append(pfile)
+
     # --- Pressure profile types-------------------------------
-    if 'TP' in pview:
+    if 'TP' in pview or 'all' in pview:
         output.load_reshape(grid,['Pressure','Rd','Rho'])
         z = {'value': output.Pressure / output.Rd / output.Rho, 'label': 'Temperature (K)', 'name': 'T'}
         # ham.TPprof(input,grid,output,sigmaref,1902)
         ham.profile(input, grid, output, z, save=save, axis=axis)
-    if 'PTP' in pview:
+    if 'PTP' in pview or 'all' in pview:
         output.load_reshape(grid,['Pressure','Rd','Rho','Cp'])
         # kappa_ad = input.Rd/input.Cp  # adiabatic coefficient
         kappa_ad = output.Rd / output.Cp
@@ -456,25 +455,25 @@ def make_plot(args, save=True, axis=None):
         pt = T * (output.Pressure / input.P_Ref)**(-kappa_ad)
         z = {'value': pt, 'label': 'Potential Temperature (K)', 'name': 'PT'}
         ham.profile(input, grid, output, z, save=save, axis=axis)
-    if 'wprof' in pview:  # RD: needs some work!
+    if 'wprof' in pview or 'all' in pview:  # RD: needs some work!
         output.load_reshape(grid,['WH','Pressure', 'Rho'])
         z = {'value': output.Wh[:, 1:, :] / output.Rho, 'label': r'Vertical velocity (m s$^{-1}$)', 'name': 'W'}
         ham.profile(input, grid, output, z, stride=20, save=save, axis=axis)
         # Averaged vertical windh (latitude vs pressure)
         # ham.w_prof(input,grid,output)
-    if 'uprof' in pview:  # RD: needs some work!
+    if 'uprof' in pview or 'all' in pview:  # RD: needs some work!
         output.load_reshape(grid,['Mh','Pressure', 'Rho'])
         u = (-output.Mh[0] * np.sin(grid.lon[:, None, None]) + output.Mh[1] * np.cos(grid.lon[:, None, None])) / output.Rho
         z = {'value': u, 'label': r'Zonal velocity (m s$^{-1}$)', 'name': 'U'}
         ham.profile(input, grid, output, z, stride=20, save=save, axis=axis)
-    if 'cfl' in pview:
+    if 'cfl' in pview or 'all' in pview:
         output.load_reshape(grid,['Pressure','Rho'])
         dt = output.time[0] / output.nstep[0] * 86400
         dx = np.sqrt(np.min(grid.areasT))
         cs = np.sqrt(input.Cp / (input.Cp - input.Rd) * output.Pressure / output.Rho)
         z = {'value': cs * dt / dx, 'label': 'CFL number for (horizontal) acoustic waves', 'name': 'CFL'}
         ham.profile(input, grid, output, z, stride=20, save=save, axis=axis)
-    if 'bvprof' in pview:
+    if 'bvprof' in pview or 'all' in pview:
         output.load_reshape(grid,['Pressure','Rho'])
         kappa_ad = input.Rd / input.Cp  # adiabatic coefficient
         T = output.Pressure / input.Rd / output.Rho
@@ -483,22 +482,22 @@ def make_plot(args, save=True, axis=None):
         N = np.sqrt(input.Gravit / pt * dptdr)
         z = {'value': N, 'label': r'$N$ (s$^{-1}$)', 'name': 'BVprof'}
         ham.profile(input, grid, output, z, stride=20, save=save, axis=axis)
-    if 'fluxprof' in pview:
+    if ('fluxprof' in pview) and (input.RT or input.TSRT):
         total_f = output.fnet_up - output.fnet_dn
         fup = total_f[:, :-1, :] + (total_f[:, 1:, :] - total_f[:, :-1, :]) *\
             (grid.Altitude[None, :, None] - grid.Altitudeh[None, :-1, None]) /\
             (grid.Altitudeh[None, 1:, None] - grid.Altitudeh[None, :-1, None])
         z = {'value': fup, 'label': r'Total flux (W m$^{-2}$)', 'name': 'ftot'}
         ham.profile(input, grid, output, z, stride=20, save=save, axis=axis)
-    if 'futprof' in pview:
+    if ('futprof' in pview) and (input.RT or input.TSRT):
         fup = output.f_up_tot[:, :-1, :]
         z = {'value': fup, 'label': r'Total Upward flux (W m$^{-2}$)', 'name': 'fuptot'}
         ham.profile(input, grid, output, z, stride=20, save=save, axis=axis)
-    if 'fdtprof' in pview:
+    if ('fdtprof' in pview) and (input.RT or input.TSRT):
         fdn = output.f_down_tot[:, :-1, :]
         z = {'value': fdn, 'label': r'Total Downward flux (W m$^{-2}$)', 'name': 'fdowntot'}
         ham.profile(input, grid, output, z, stride=20, save=save, axis=axis)
-    if 'fnetprof' in pview:
+    if ('fnetprof' in pview) and (input.RT or input.TSRT):
         fdn = output.f_net[:, :-1, :]
         z = {'value': fdn, 'label': r'Total Net flux (W m$^{-2}$)', 'name': 'fnetprof'}
         ham.profile(input, grid, output, z, stride=20, save=save, axis=axis)
@@ -517,7 +516,11 @@ def make_plot(args, save=True, axis=None):
         ham.SRindex(input, grid, output)
     if 'RTbalance' in pview:
         ham.RTbalance(input, grid, output)
-    if 'phase' in pview:
+    if 'phase' in pview and input.RT:
         ham.phase_curve(input,grid,output)
+
+    #some clean up
+    output.closeVDS()
+    rg.closeVDS()
 
     return plots_created
