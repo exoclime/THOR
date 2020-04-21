@@ -424,8 +424,7 @@ class output_new:
         # key is the key in h5 file, value is desired attribute name in this class
         outputs = {'Rho': 'Rho', 'Pressure': 'Pressure', 'Mh': 'Mh', 'Wh': 'Wh',
                     'Rho_mean': 'Rho_mean', 'Pressure_mean': 'Pressure_mean',
-                    'Mh_mean': 'Mh_mean', 'Wh_mean': 'Wh_mean',
-                    'simulation_time': 'time', 'nstep': 'nstep'}
+                    'Mh_mean': 'Mh_mean', 'Wh_mean': 'Wh_mean'}
 
         #add things to outputs that can be checked for in input or grid
         if input.RT:
@@ -503,7 +502,7 @@ class output_new:
 
         #create data sets.
         #will need to reshape them (grid.point_num,grid.nv,nts-ntsi+1) in mjolnir
-        #self.Pressure = self.openVDS.create_virtual_dataset('Pressure',Pressure_lo,fillvalue=0)
+        #self .Pressure = self.openVDS.create_virtual_dataset('Pressure',Pressure_lo,fillvalue=0)
         for key in outputs.keys():
             setattr(self, outputs[key], self.openVDS.create_virtual_dataset(outputs[key],vars()[outputs[key]+'_lo'],fillvalue=0))
 
@@ -512,15 +511,43 @@ class output_new:
         self.openVDS.close()
 
     #loads arrays from disk into memory and reshapes them (destroys reference to virtual data set)
-    def load_reshape(self,grid):
+    def load_reshape(self,grid,keys):
         tlen = self.nts-self.ntsi+1
-        for key in self.openVDS.keys():
-            data = getattr(self, key)[...]
-            if np.shape(data) == (grid.point_num*grid.nv,tlen):
-                data = np.reshape(data,(grid.point_num,grid.nv,tlen))
-            elif np.shape(data) == (grid.point_num*grid.nvi,tlen):
-                data = np.reshape(data,(grid.point_num,grid.nvi,tlen))
-            setattr(self, key, data)
+        for key in keys:
+            if key in self.openVDS.keys():
+                data_ref = getattr(self, key)
+                if isinstance(data_ref,h5py.Dataset):
+                    data = data_ref[...]
+                    if np.shape(data) == (grid.point_num*grid.nv,tlen):
+                        data = np.reshape(data,(grid.point_num,grid.nv,tlen))
+                    elif np.shape(data) == (grid.point_num*grid.nvi,tlen):
+                        data = np.reshape(data,(grid.point_num,grid.nvi,tlen))
+                    # need to handle special formats (Mh, tracers...)
+                    elif np.shape(data) == (grid.point_num*grid.nv*3,tlen):
+                        data_new = np.zeros((3,grid.point_num,grid.nv,tlen))
+                        data_new[0] = np.reshape(data[::3],(grid.point_num,grid.nv,tlen))
+                        data_new[1] = np.reshape(data[1::3],(grid.point_num,grid.nv,tlen))
+                        data_new[2] = np.reshape(data[2::3],(grid.point_num,grid.nv,tlen))
+                        data = data_new
+                    if key == 'tracer':  #special case for passive tracers
+                        self.ch4 = np.reshape(data[::5],(grid.point_num,grid.nv,tlen))
+                        self.co = np.reshape(data[1::5],(grid.point_num,grid.nv,tlen))
+                        self.h2o = np.reshape(data[2::5],(grid.point_num,grid.nv,tlen))
+                        self.co2 = np.reshape(data[3::5],(grid.point_num,grid.nv,tlen))
+                        self.nh3 = np.reshape(data[4::5],(grid.point_num,grid.nv,tlen))
+                    elif key == 'tau':
+                        self.tau_sw = np.reshape(data[::2],(grid.point_num,grid.nv,tlen))
+                        self.tau_lw = np.reshape(data[1::2],(grid.point_num,grid.nv,tlen))
+                    else:
+                        setattr(self, key, data)
+                else:
+                    print("Dataset %s has already been loaded into memory"%key)
+            else:
+                raise IOError("Invalid data set specified: %s"%key)
+
+    def load_reshape_all(self,grid):
+        keys = self.openVDS.keys()
+        self.load_reshape(grid,keys)
         self.closeVDS()
 
 class rg_out:
@@ -701,14 +728,101 @@ class rg_out:
                 self.co2[:, :, :, t - ntsi + 1] = co2i
                 self.nh3[:, :, :, t - ntsi + 1] = nh3i
 
+class rg_out_new:
+    def __init__(self, resultsf, simID, ntsi, nts, input, output, grid, pressure_vert=True, pgrid_ref='auto'):
+        RT = False
+        if "core_benchmark" in dir(input):
+            # need to switch to 'radiative_tranfer' flag
+            if input.core_benchmark[0] == 0 and input.RT:
+                RT = True
+                surf = 0
+                if input.surface:
+                    surf = 1
+            else:
+                surf = 0
+
+        chem = 0
+        if hasattr(input, "chemistry"):
+            if input.chemistry == 1:
+                chem = 1
+
+        #some basic info
+        self.ntsi = ntsi
+        self.nts = nts
+        # Read model results
+        for t in np.arange(ntsi - 1, nts):
+            if pressure_vert == True:
+                if pgrid_ref == 'auto':
+                    pgrid_folder = resultsf + '/pgrid_%d_%d_1'%(ntsi,nts)
+                else:
+                    pgrid_folder = resultsf + '/' + pgrid_ref[:-4]
+                fileh5 = pgrid_folder + '/regrid_' + simID + '_' + np.str(t + 1)
+            else:
+                fileh5 = resultsf + '/regrid_height_' + simID + '_' + np.str(t + 1)
+            fileh5 += '.h5'
+            if os.path.exists(fileh5):
+                openh5 = h5py.File(fileh5,'r+')
+            else:
+                print(fileh5 + ' not found, regridding now with default settings...')
+                regrid(resultsf, simID, ntsi, nts, pgrid_ref=pgrid_ref)
+                openh5 = h5py.File(fileh5,'r+')
+
+            for key in openh5.keys():
+                if t == ntsi - 1:  #set up VDS layout shape
+                    if openh5[key].ndim == 1:
+                        setattr(self,key,openh5[key][:])
+                    else:
+                        vars()[key+'_lo'] = h5py.VirtualLayout(shape=
+                                            np.shape(openh5[key])+(nts-ntsi+1,),dtype='f8')
+
+                if openh5[key].ndim == 1:
+                    pass
+                    #vars()[key+'_lo'][:,t-ntsi+1] = h5py.VirtualSource(openh5[key])
+                elif openh5[key].ndim == 2:
+                    vars()[key+'_lo'][:,:,t-ntsi+1] = h5py.VirtualSource(openh5[key])
+                elif openh5[key].ndim == 3:
+                    vars()[key+'_lo'][:,:,:,t-ntsi+1] = h5py.VirtualSource(openh5[key])
+                else:
+                    raise IOError('Property %s with unknown dimensions in regrid file'%key)
+
+        fileVDS = resultsf+'/regrid_'+simID+'_VDS.h5'
+        self.openVDS = h5py.File(fileVDS,'w',libver='latest')
+
+        for key in openh5.keys():
+            if openh5[key].ndim == 1:
+                pass
+            else:
+                setattr(self,key,self.openVDS.create_virtual_dataset(key,vars()[key+'_lo'],fillvalue=0))
+
+    def closeVDS(self):
+        self.openVDS.close()
+
+    def load(self,keys):
+        tlen = self.nts-self.ntsi+1
+        for key in keys:
+            if key in self.openVDS.keys():
+                data_ref = getattr(self, key)
+                if isinstance(data_ref,h5py.Dataset):
+                    data = data_ref[...]
+                    setattr(self,key,data)
+                else:
+                    print("Dataset %s has already been loaded into memory"%key)
+            else:
+                raise IOError("Invalid data set specified: %s"%key)
+
+    def load_all(self):
+        keys = self.openVDS.keys()
+        self.load(keys)
+        self.closeVDS()
+
 
 class GetOutput:
     def __init__(self, resultsf, simID, ntsi, nts, stride=1, openrg=0, pressure_vert=True, rotation=False, theta_y=0, theta_z=0, pgrid_ref='auto'):
         self.input = input_new(resultsf, simID)
         self.grid = grid_new(resultsf, simID, rotation=rotation, theta_y=theta_y, theta_z=theta_z)
-        self.output = output(resultsf, simID, ntsi, nts, self.input, self.grid, stride=stride)
+        self.output = output_new(resultsf, simID, ntsi, nts, self.input, self.grid, stride=stride)
         if openrg == 1:
-            self.rg = rg_out(resultsf, simID, ntsi, nts, self.input, self.output, self.grid,
+            self.rg = rg_out_new(resultsf, simID, ntsi, nts, self.input, self.output, self.grid,
                              pressure_vert=pressure_vert, pgrid_ref=pgrid_ref)
 
 
@@ -1022,6 +1136,7 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
     input = outall.input
     grid = outall.grid
     output = outall.output
+    output.load_reshape_all(grid)
 
     print('Regrid data in folder ' + resultsf + '...\n')
 
@@ -1112,6 +1227,7 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
             # read in one file at a time to prevent mem overflow
             outall = GetOutput(resultsf, simID, t, t, rotation=rotation, theta_z=theta_z, theta_y=theta_y)
             output = outall.output
+            output.load_reshape_all(grid)
 
             # interpolate in z to middle of layers using this
             interpz = (grid.Altitude - grid.Altitudeh[:-1]) / (grid.Altitudeh[1:] - grid.Altitudeh[:-1])
@@ -1147,11 +1263,11 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
                 source['f_up_tot'] = output.f_up_tot[:, :-1, 0] + (output.f_up_tot[:, 1:, 0] - output.f_up_tot[:, :-1, 0]) * interpz[None, :]
                 source['f_down_tot'] = output.f_down_tot[:, :-1, 0] + (output.f_down_tot[:, 1:, 0] - output.f_down_tot[:, :-1, 0]) * interpz[None, :]
             if chem == 1:
-                source['ch4'] = output.ch4[:, :, 0]
-                source['co'] = output.co[:, :, 0]
-                source['h2o'] = output.h2o[:, :, 0]
-                source['co2'] = output.co2[:, :, 0]
-                source['nh3'] = output.nh3[:, :, 0]
+                source['ch4'] = output.ch4[:, :, 0] / output.Rho[:,:,0]
+                source['co'] = output.co[:, :, 0]/ output.Rho[:,:,0]
+                source['h2o'] = output.h2o[:, :, 0]/ output.Rho[:,:,0]
+                source['co2'] = output.co2[:, :, 0]/ output.Rho[:,:,0]
+                source['nh3'] = output.nh3[:, :, 0]/ output.Rho[:,:,0]
 
             # calculate zonal and meridional velocity (special step for Mh)
             source['U'] = (-source['Mh'][0]*np.sin(grid.lon[:,None])+\
@@ -1361,7 +1477,7 @@ def maketable(x, y, z, xname, yname, zname, resultsf, fname):
     f.close()
 
 
-def vertical_lat(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True, axis=None, csp=500, wind_vectors=False, use_p=True, clevs=[40]):
+def vertical_lat(input, grid, output, rg, sigmaref, z, slice=['default'], save=True, axis=None, csp=500, wind_vectors=False, use_p=True, clevs=[40]):
     # generic pressure/latitude plot function
 
     # Set the reference pressure
@@ -1374,6 +1490,10 @@ def vertical_lat(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
 
     if not isinstance(slice, list):
         raise IOError("'slice' argument must be a list")
+    if slice[0] == 'default':
+        slice = [0, 360]
+    else:
+        slice = [np.float(slice[0]),np.float(slice[1])]
 
     lat = z['lat']
     lon = z['lon']
@@ -1395,7 +1515,7 @@ def vertical_lat(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
         ##################
         # Averaging in time and longitude
         if tsp > 1:
-            Zonall = np.nanmean(z['value'][:, mask_ind[:, 0], :, :], axis=1)
+            Zonall = np.nanmean(z['value'][:, mask_ind[:], :, :], axis=1)
             # Vl = np.nanmean(rg.V[:,:,:,:],axis=1)
             # Wl = np.nanmean(rg.W[:,:,:,:],axis=1)
             Zonallt = np.nanmean(Zonall[:, :, :], axis=2)
@@ -1403,25 +1523,25 @@ def vertical_lat(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
             # Wlt = np.nanmean(Wl[:,:,:],axis=2)
             del Zonall
             if wind_vectors == True:
-                Vl = np.nanmean(rg.V[:, mask_ind[:, 0], :, :], axis=1)
-                Wl = np.nanmean(rg.W[:, mask_ind[:, 0], :, :], axis=1)
+                Vl = np.nanmean(rg.V[:, mask_ind[:], :, :], axis=1)
+                Wl = np.nanmean(rg.W[:, mask_ind[:], :, :], axis=1)
                 Vlt = np.nanmean(Vl[:, :, :], axis=2)
                 Wlt = np.nanmean(Wl[:, :, :], axis=2)
                 del Vl, Wl
         else:
-            Zonallt = np.nanmean(z['value'][:, :, :, 0][:, mask_ind[:, 0], :], axis=1)
+            Zonallt = np.nanmean(z['value'][:, :, :, 0][:, mask_ind[:], :], axis=1)
             # Vlt = np.nanmean(rg.V[:,:,:,0],axis=1)
             # Wlt = np.nanmean(rg.W[:,:,:,0],axis=1)
             if wind_vectors == True:
-                Vlt = np.nanmean(rg.V[:, :, :, 0][:, mask_ind[:, 0], :], axis=1)
-                Wlt = np.nanmean(rg.W[:, :, :, 0][:, mask_ind[:, 0], :], axis=1)
+                Vlt = np.nanmean(rg.V[:, :, :, 0][:, mask_ind[:], :], axis=1)
+                Wlt = np.nanmean(rg.W[:, :, :, 0][:, mask_ind[:], :], axis=1)
 
     elif len(slice) == 1:
         if slice[0] in lon:
-            Zonall = z['value'][:, lon[:, 0] == slice[0], :, :]
+            Zonall = z['value'][:, lon[:] == slice[0], :, :]
             if wind_vectors == True:
-                Vl = rg.V[:, lon[:, 0] == slice[0], :, :]
-                Wl = rg.W[:, lon[:, 0] == slice[0], :, :]
+                Vl = rg.V[:, lon[:] == slice[0], :, :]
+                Wl = rg.W[:, lon[:] == slice[0], :, :]
         else:
             Zonall = np.zeros((len(lat), 1, d_sig, tsp))
             if wind_vectors == True:
@@ -1456,17 +1576,17 @@ def vertical_lat(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
     # Create figure #
     #################
     # Latitude
-    latp = lat[:, 0] * np.pi / 180
+    latp = lat[:] * np.pi / 180
 
     if use_p:
         # need to set desired pressure range (major PITA!)
         # prange = np.where(np.logical_and(rg.Pressure[:,0]>=np.min(Pref),rg.Pressure[:,0]<=np.max(Pref)))
-        prange = np.where(rg.Pressure[:, 0] >= np.min(Pref))
-        ycoord = rg.Pressure[prange[0], 0] / 1e5
+        prange = np.where(rg.Pressure[:] >= np.min(Pref))
+        ycoord = rg.Pressure[prange[0]] / 1e5
         zvals = Zonallt[:, prange[0]].T
     else:
-        hrange = np.where(np.logical_and(rg.Altitude[:, 0] >= np.min(sigmaref), rg.Altitude[:, 0] <= np.max(sigmaref)))
-        ycoord = rg.Altitude[hrange[0], 0] / 1000
+        hrange = np.where(np.logical_and(rg.Altitude[:] >= np.min(sigmaref), rg.Altitude[:] <= np.max(sigmaref)))
+        ycoord = rg.Altitude[hrange[0]] / 1000
         zvals = Zonallt[:, hrange[0]].T
 
     # Contour plot
@@ -1548,7 +1668,7 @@ def vertical_lat(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
         ax.set_ylabel('Pressure (bar)')
         # ax.plot(latp*180/np.pi,np.zeros_like(latp)+np.max(output.Pressure[:,grid.nv-1,:])/1e5,'r--')
         #ax.set_ylim(np.max(rg.Pressure[prange[0], 0])/1e5, np.min(Pref)/1e5)
-        ax.set_ylim(np.max(rg.Pressure[prange[0], 0]) / 1e5, np.min(rg.Pressure[prange[0], 0]) / 1e5)
+        ax.set_ylim(np.max(rg.Pressure[prange[0]]) / 1e5, np.min(rg.Pressure[prange[0]]) / 1e5)
 
         if ax.get_ylim()[1] > ax.get_ylim()[0]:
             ax.invert_yaxis()
@@ -1590,14 +1710,14 @@ def vertical_lat(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
         else:
             fname = '%s_ver_i%d_l%d_lon%#.2f.dat' % (z['name'], output.ntsi, output.nts, slice[0])
         if use_p:
-            maketable(latp * 180 / np.pi, rg.Pressure[prange[0], 0] / 1e5, Zonallt[:, prange[0]], 'Latitude(d)', 'Pressure(bar)', z['name'], input.resultsf, fname)
+            maketable(latp * 180 / np.pi, rg.Pressure[prange[0]] / 1e5, Zonallt[:, prange[0]], 'Latitude(d)', 'Pressure(bar)', z['name'], input.resultsf, fname)
         else:
-            maketable(latp * 180 / np.pi, rg.Altitude[hrange[0], 0], Zonallt[:, hrange[0]], 'Latitude(d)', 'Altitude(m)', z['name'], input.resultsf, fname)
+            maketable(latp * 180 / np.pi, rg.Altitude[hrange[0]], Zonallt[:, hrange[0]], 'Latitude(d)', 'Altitude(m)', z['name'], input.resultsf, fname)
 
     return pfile
 
 
-def vertical_lon(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True, axis=None, csp=500, wind_vectors=False, use_p=True, clevs=[40]):
+def vertical_lon(input, grid, output, rg, sigmaref, z, slice='default', save=True, axis=None, csp=500, wind_vectors=False, use_p=True, clevs=[40]):
     # generic pressure/longitude plot function
 
     # Set the reference pressure
@@ -1610,6 +1730,10 @@ def vertical_lon(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
 
     if not isinstance(slice, list):
         raise IOError("'slice' argument must be a list")
+    if slice[0] == 'default':
+        slice = [-90, 90]
+    else:
+        slice = [np.float(slice[0]),np.float(slice[1])]
 
     lat = z['lat']
     lon = z['lon']
@@ -1633,7 +1757,7 @@ def vertical_lon(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
 
         # Averaging in time and latitude (weighted by a cosine(lat))
         if tsp > 1:
-            Meridl = np.nanmean(z['value'][mask_ind[:, 0], :, :, :] * np.cos(lat[mask_ind[:, 0], 0] * np.pi / 180)[:, None, None, None], axis=0)
+            Meridl = np.nanmean(z['value'][mask_ind[:], :, :, :] * np.cos(lat[mask_ind[:], 0] * np.pi / 180)[:, None, None, None], axis=0)
             # Vl = np.nanmean(rg.V[:,:,:,:],axis=1)
             # Wl = np.nanmean(rg.W[:,:,:,:],axis=1)
             Meridlt = np.nanmean(Meridl[:, :, :], axis=2)
@@ -1641,25 +1765,25 @@ def vertical_lon(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
             # Wlt = np.nanmean(Wl[:,:,:],axis=2)
             del Meridl
             if wind_vectors == True:
-                Ul = np.nanmean(rg.U[mask_ind[:, 0], :, :, :] * np.cos(lat[mask_ind[:, 0], 0] * np.pi / 180)[:, None, None, None], axis=0)
-                Wl = np.nanmean(rg.W[mask_ind[:, 0], :, :, :] * np.cos(lat[mask_ind[:, 0], 0] * np.pi / 180)[:, None, None, None], axis=0)
+                Ul = np.nanmean(rg.U[mask_ind[:], :, :, :] * np.cos(lat[mask_ind[:], 0] * np.pi / 180)[:, None, None, None], axis=0)
+                Wl = np.nanmean(rg.W[mask_ind[:], :, :, :] * np.cos(lat[mask_ind[:], 0] * np.pi / 180)[:, None, None, None], axis=0)
                 Ult = np.nanmean(Ul[:, :, :], axis=2)
                 Wlt = np.nanmean(Wl[:, :, :], axis=2)
                 del Ul, Wl
         else:
-            Meridlt = np.nanmean(z['value'][:, :, :, 0][mask_ind[:, 0], :, :] * np.cos(lat[mask_ind[:, 0], 0] * np.pi / 180)[:, None, None], axis=0)
+            Meridlt = np.nanmean(z['value'][:, :, :, 0][mask_ind[:], :, :] * np.cos(lat[mask_ind[:]] * np.pi / 180)[:, None, None], axis=0)
             # Ult = np.nanmean(rg.V[:,:,:,0],axis=1)
             # Wlt = np.nanmean(rg.W[:,:,:,0],axis=1)
             if wind_vectors == True:
-                Ult = np.nanmean(rg.U[:, :, :, 0][mask_ind[:, 0], :, :] * np.cos(lat[mask_ind[:, 0], 0] * np.pi / 180)[:, None, None], axis=0)
-                Wlt = np.nanmean(rg.W[:, :, :, 0][mask_ind[:, 0], :, :] * np.cos(lat[mask_ind[:, 0], 0] * np.pi / 180)[:, None, None], axis=0)
+                Ult = np.nanmean(rg.U[:, :, :, 0][mask_ind[:], :, :] * np.cos(lat[mask_ind[:]] * np.pi / 180)[:, None, None], axis=0)
+                Wlt = np.nanmean(rg.W[:, :, :, 0][mask_ind[:], :, :] * np.cos(lat[mask_ind[:]] * np.pi / 180)[:, None, None], axis=0)
 
     elif len(slice) == 1:
         if slice[0] in lat:
-            Meridl = z['value'][lat[:, 0] == slice[0], :, :, :]
+            Meridl = z['value'][lat[:] == slice[0], :, :, :]
             if wind_vectors == True:
-                Ul = rg.U[lat[:, 0] == slice[0], :, :, :]
-                Wl = rg.W[lat[:, 0] == slice[0], :, :, :]
+                Ul = rg.U[lat[:] == slice[0], :, :, :]
+                Wl = rg.W[lat[:] == slice[0], :, :, :]
         else:
             Meridl = np.zeros((1, len(lon), d_sig, tsp))
             if wind_vectors == True:
@@ -1694,16 +1818,16 @@ def vertical_lon(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
     # Create figure #
     #################
     # Longitude
-    lonp = lon[:, 0] * np.pi / 180
+    lonp = lon[:] * np.pi / 180
 
     if use_p:
         # need to set desired pressure range (major PITA!)
         # prange = np.where(np.logical_and(rg.Pressure[:,0]>=np.min(Pref),rg.Pressure[:,0]<=np.max(Pref)))
-        prange = np.where(rg.Pressure[:, 0] >= np.min(Pref))
-        ycoord = rg.Pressure[prange[0], 0] / 1e5
+        prange = np.where(rg.Pressure[:] >= np.min(Pref))
+        ycoord = rg.Pressure[prange[0]] / 1e5
         zvals = Meridlt[:, prange[0]].T
     else:
-        hrange = np.where(np.logical_and(rg.Altitude[:, 0] >= np.min(sigmaref), rg.Altitude[:, 0] <= np.max(sigmaref)))
+        hrange = np.where(np.logical_and(rg.Altitude[:] >= np.min(sigmaref), rg.Altitude[:] <= np.max(sigmaref)))
         ycoord = rg.Altitude[hrange[0], 0] / 1000
         zvals = Meridlt[:, hrange[0]].T
 
@@ -1781,8 +1905,9 @@ def vertical_lon(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
     ax.set_xlabel('Longitude (deg)')
     if use_p:
         ax.set_ylabel('Pressure (bar)')
-        ax.plot(lonp * 180 / np.pi, np.zeros_like(lonp) + np.max(output.Pressure[:, grid.nv - 1, :]) / 1e5, 'r--')
-        ax.set_ylim(np.max(rg.Pressure[prange[0], 0]) / 1e5, np.min(Pref) / 1e5)
+        #ax.plot(lonp * 180 / np.pi, np.zeros_like(lonp) + np.max(output.Pressure[:, grid.nv - 1, :]) / 1e5, 'r--')
+        #ax.set_ylim(np.max(rg.Pressure[prange[0]]) / 1e5, np.min(Pref) / 1e5)
+        ax.set_ylim(np.max(rg.Pressure[prange[0]]) / 1e5, np.min(rg.Pressure[prange[0]]) / 1e5)
 
         if ax.get_ylim()[1] > ax.get_ylim()[0]:
             ax.invert_yaxis()
@@ -1823,9 +1948,9 @@ def vertical_lon(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
         else:
             fname = '%s_ver_i%d_l%d_lat%#.2f.dat' % (z['name'], output.ntsi, output.nts, slice[0])
         if use_p:
-            maketable(lonp * 180 / np.pi, rg.Pressure[prange[0], 0] / 1e5, Meridlt[:, prange[0]], 'Longitude(d)', 'Pressure(bar)', z['name'], input.resultsf, fname)
+            maketable(lonp * 180 / np.pi, rg.Pressure[prange[0]] / 1e5, Meridlt[:, prange[0]], 'Longitude(d)', 'Pressure(bar)', z['name'], input.resultsf, fname)
         else:
-            maketable(lonp * 180 / np.pi, rg.Altitude[hrange[0], 0], Meridlt[:, hrange[0]],
+            maketable(lonp * 180 / np.pi, rg.Altitude[hrange[0]], Meridlt[:, hrange[0]],
                       'Longitude(d)', 'Altitude(m)', z['name'], input.resultsf, fname)
     return pfile
 
@@ -2053,7 +2178,7 @@ def streamf_moc_plot(input, grid, output, rg, sigmaref, save=True, axis=False, w
 
     # need to set desired pressure range (major PITA!)
     # prange = np.where(np.logical_and(rg.Pressure>=np.min(Pref),rg.Pressure<=np.max(Pref)))
-    prange = np.where(rg.Pressure[:, 0] >= np.min(Pref))
+    prange = np.where(rg.Pressure[:] >= np.min(Pref))
 
     # Contour plot
     if len(clevs) == 1:
@@ -2064,11 +2189,11 @@ def streamf_moc_plot(input, grid, output, rg, sigmaref, save=True, axis=False, w
         raise IOError("clevs not valid!")
 
     if isinstance(axis, axes.SubplotBase):
-        C = axis.contourf(rg.lat[:, 0], rg.Pressure[prange[0], 0] / 1e5, sf[:, prange[0]].T, clevels, cmap='viridis')
+        C = axis.contourf(rg.lat[:, 0], rg.Pressure[prange[0]] / 1e5, sf[:, prange[0]].T, clevels, cmap='viridis')
         ax = axis
     elif axis == False:
         plt.figure(figsize=(5, 4))
-        C = plt.contourf(rg.lat[:, 0], rg.Pressure[prange[0], 0] / 1e5, sf[:, prange[0]].T, clevels, cmap='viridis')
+        C = plt.contourf(rg.lat[:, 0], rg.Pressure[prange[0]] / 1e5, sf[:, prange[0]].T, clevels, cmap='viridis')
 
         ax = plt.gca()
     else:
@@ -2091,7 +2216,7 @@ def streamf_moc_plot(input, grid, output, rg, sigmaref, save=True, axis=False, w
         plt.quiver(latq.ravel(), preq.ravel() / 1e5, Vq, Wq, color='0.5')
 
     ax.invert_yaxis()
-    c2 = ax.contour(rg.lat[:, 0], rg.Pressure[:, 0] / 1e5, sf.T, levels=[0.0], colors='w', linewidths=1)
+    c2 = ax.contour(rg.lat[:], rg.Pressure[:] / 1e5, sf.T, levels=[0.0], colors='w', linewidths=1)
     clb = plt.colorbar(C)
     clb.set_label(r'Eulerian streamfunction (kg s$^{-1}$)')
     if plog == True:
@@ -2100,7 +2225,7 @@ def streamf_moc_plot(input, grid, output, rg, sigmaref, save=True, axis=False, w
     ax.set_ylabel('Pressure (bar)')
     # ax.plot(rg.lat[:,0],np.zeros_like(rg.lat[:,0])+np.max(output.Pressure[:,grid.nv-1,:])/1e5,'r--')
     # if np.min(rg.Pressure[prange[0],0]) < np.max(output.Pressure[:,grid.nv-1,:]):
-    ax.set_ylim(np.max(rg.Pressure[prange[0], 0]) / 1e5, np.min(rg.Pressure[prange[0], 0]) / 1e5)
+    ax.set_ylim(np.max(rg.Pressure[prange[0]]) / 1e5, np.min(rg.Pressure[prange[0]]) / 1e5)
 
     # else:
     #     ax.set_ylim(np.max(rg.Pressure[prange[0],0])/1e5,np.max(output.Pressure[:,grid.nv-1,:])/1e5)
@@ -2118,7 +2243,7 @@ def streamf_moc_plot(input, grid, output, rg, sigmaref, save=True, axis=False, w
 
     if mt == True:
         fname = 'streamf_ver_i%d_l%d.dat' % (output.ntsi, output.nts)
-        maketable(latp * 180 / np.pi, rg.Pressure[prange[0], 0] / 1e5, Zonallt[:, prange[0]],
+        maketable(latp * 180 / np.pi, rg.Pressure[prange[0]] / 1e5, Zonallt[:, prange[0]],
                   'Latitude(d)', 'Pressure(bar)', 'streamfunc', input.resultsf, fname)
     return pfile
 
@@ -2170,8 +2295,8 @@ def profile(input, grid, output, z, stride=50, axis=None, save=True):
         ax.semilogy(x, P / 1e5, 'k-', alpha=0.5, lw=1.0,
                     path_effects=[pe.Stroke(linewidth=1.5, foreground=color), pe.Normal()])
 
-        rp, = ax.plot(x[np.int(np.floor(grid.nv / 2))], P[np.int(np.floor(grid.nv / 2))] / 100000, 'r+', ms=5, alpha=0.5)
-        gp, = ax.plot(x[np.int(np.floor(grid.nv * 0.75))], P[np.int(np.floor(grid.nv * 0.75))] / 100000, 'g+', ms=5, alpha=0.5)
+        rp, = ax.plot(x[np.int(np.floor(grid.nv / 2))], P[np.int(np.floor(grid.nv / 2))] / 100000, 'k+', ms=5, alpha=0.5)
+        gp, = ax.plot(x[np.int(np.floor(grid.nv * 0.75))], P[np.int(np.floor(grid.nv * 0.75))] / 100000, 'k*', ms=5, alpha=0.5)
 
     # add an insert showing the position of
     inset_pos = [0.8, 0.8, 0.18, 0.18]
@@ -2202,7 +2327,7 @@ def profile(input, grid, output, z, stride=50, axis=None, save=True):
         if not output_path.exists():
             output_path.mkdir()
 
-        fname = f"{z['name']}Pprofile_i{output.ntsi}_l{output.nts}.pdf"
+        fname = f"{z['name']}Pprofile_i{output.ntsi}_l{output.nts}"
         pfile = output_path / (fname.replace(".", "+") + '.pdf')
         plt.savefig(pfile)
 

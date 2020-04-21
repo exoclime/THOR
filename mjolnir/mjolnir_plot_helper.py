@@ -125,8 +125,9 @@ def make_plot(args, save=True, axis=None):
     plots_created = []
     # --- Vertical plot types-------------------------------
     if 'uver' in pview:
+        rg.load(['U'])  #load these arrays into memory
         z = {'value': rg.U, 'label': r'Velocity (m s$^{-1}$)', 'name': 'u',
-             'cmap': 'viridis', 'lat': rg.lat, 'lon': rg.lon, 'mt': maketable, 'plog': plog}
+             'cmap': 'viridis', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'plog': plog}
         sigmaref = ham.Get_Prange(input, grid, rg, args, xtype='lat', use_p=use_p)
         # Averaged zonal winds (latitude vs pressure)
         # ham.u(input,grid,output,rg,sigmaref,slice=args.slice[0])
@@ -135,8 +136,9 @@ def make_plot(args, save=True, axis=None):
             print('Created file: ' + pfile)
             plots_created.append(pfile)
     if 'ulonver' in pview:
+        rg.load(['U'])
         z = {'value': rg.U, 'label': r'Velocity (m s$^{-1}$)', 'name': 'u',
-             'cmap': 'viridis', 'lat': rg.lat, 'lon': rg.lon, 'mt': maketable, 'plog': plog}
+             'cmap': 'viridis', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'plog': plog}
         sigmaref = ham.Get_Prange(input, grid, rg, args, xtype='lat', use_p=use_p)
         # Averaged zonal winds (latitude vs pressure)
         # ham.u(input,grid,output,rg,sigmaref,slice=args.slice[0])
@@ -145,8 +147,9 @@ def make_plot(args, save=True, axis=None):
             print('Created file: ' + pfile)
             plots_created.append(pfile)
     if 'vver' in pview:
+        rg.load(['V'])
         z = {'value': rg.V, 'label': r'Velocity (m s$^{-1}$)', 'name': 'v',
-             'cmap': 'viridis', 'lat': rg.lat, 'lon': rg.lon, 'mt': maketable, 'plog': plog}
+             'cmap': 'viridis', 'lat': rg.Latitude, 'lon': rg.Latitude, 'mt': maketable, 'plog': plog}
         sigmaref = ham.Get_Prange(input, grid, rg, args, xtype='lat', use_p=use_p)
         # Averaged zonal winds (latitude vs pressure)
         # ham.u(input,grid,output,rg,sigmaref,slice=args.slice[0])
@@ -155,8 +158,9 @@ def make_plot(args, save=True, axis=None):
             print('Created file: ' + pfile)
             plots_created.append(pfile)
     if 'wver' in pview:
+        rg.load(['W'])
         z = {'value': rg.W, 'label': r'Velocity (m s$^{-1}$)', 'name': 'w',
-             'cmap': 'viridis', 'lat': rg.lat, 'lon': rg.lon, 'mt': maketable, 'plog': plog}
+             'cmap': 'viridis', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'plog': plog}
         sigmaref = ham.Get_Prange(input, grid, rg, args, xtype='lat', use_p=use_p)
         # Averaged vertical winds (latitude vs pressure)
         # ham.w_ver(input,grid,output,rg,sigmaref)
@@ -165,8 +169,9 @@ def make_plot(args, save=True, axis=None):
             print('Created file: ' + pfile)
             plots_created.append(pfile)
     if 'wlonver' in pview:
+        rg.load(['W'])
         z = {'value': rg.W, 'label': r'Velocity (m s$^{-1}$)', 'name': 'w',
-             'cmap': 'viridis', 'lat': rg.lat, 'lon': rg.lon, 'mt': maketable, 'plog': plog}
+             'cmap': 'viridis', 'lat': rg.Latitude, 'lon': rg.Latitude, 'mt': maketable, 'plog': plog}
         sigmaref = ham.Get_Prange(input, grid, rg, args, xtype='lat', use_p=use_p)
         # Averaged zonal winds (latitude vs pressure)
         # ham.u(input,grid,output,rg,sigmaref,slice=args.slice[0])
@@ -175,8 +180,9 @@ def make_plot(args, save=True, axis=None):
             print('Created file: ' + pfile)
             plots_created.append(pfile)
     if 'Tver' in pview:
+        rg.load(['Temperature'])
         z = {'value': rg.Temperature, 'label': r'Temperature (K)', 'name': 'temperature',
-             'cmap': 'magma', 'lat': rg.lat, 'lon': rg.lon, 'mt': maketable, 'plog': plog}
+             'cmap': 'magma', 'lat': rg.lat, 'lon': rg.Longitude, 'mt': maketable, 'plog': plog}
         sigmaref = ham.Get_Prange(input, grid, rg, args, xtype='lat', use_p=use_p)
         # Averaged temperature (latitude vs pressure)
         # ham.temperature(input,grid,output,rg,sigmaref)
@@ -186,7 +192,7 @@ def make_plot(args, save=True, axis=None):
             plots_created.append(pfile)
     if 'Tlonver' in pview:
         z = {'value': rg.Temperature, 'label': r'Temperature (K)', 'name': 'temperature',
-             'cmap': 'magma', 'lat': rg.lat, 'lon': rg.lon, 'mt': maketable, 'plog': plog}
+             'cmap': 'magma', 'lat': rg.lat, 'lon': rg.Longitude, 'mt': maketable, 'plog': plog}
         sigmaref = ham.Get_Prange(input, grid, rg, args, xtype='lat', use_p=use_p)
         # Averaged temperature (latitude vs pressure)
         # ham.temperature(input,grid,output,rg,sigmaref)
@@ -195,10 +201,11 @@ def make_plot(args, save=True, axis=None):
             print('Created file: ' + pfile)
             plots_created.append(pfile)
     if 'PTver' in pview:
+        rg.load(['Temperature','Pressure'])
         kappa_ad = input.Rd / input.Cp  # adiabatic coefficient
         pt = rg.Temperature * (rg.Pressure / input.P_Ref)**(-kappa_ad)
         z = {'value': pt, 'label': r'Potential Temperature (K)', 'name': 'potential_temp',
-             'cmap': 'plasma', 'lat': rg.lat, 'lon': rg.lon, 'mt': maketable, 'plog': plog}
+             'cmap': 'plasma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'plog': plog}
         sigmaref = ham.Get_Prange(input, grid, rg, args, xtype='lat', use_p=use_p)
         # Averaged potential temperature (latitude vs pressure)
         pfile = ham.vertical_lat(input, grid, output, rg, sigmaref, z, slice=args.slice, use_p=use_p, csp=5000, clevs=args.clevels, save=save, axis=axis)
@@ -206,10 +213,11 @@ def make_plot(args, save=True, axis=None):
             print('Created file: ' + pfile)
             plots_created.append(pfile)
     if 'PTlonver' in pview:
+        rg.load(['Temperature','Pressure'])
         kappa_ad = input.Rd / input.Cp  # adiabatic coefficient
         pt = rg.Temperature * (rg.Pressure / input.P_Ref)**(-kappa_ad)
         z = {'value': pt, 'label': r'Potential Temperature (K)', 'name': 'potential_temp',
-             'cmap': 'plasma', 'lat': rg.lat, 'lon': rg.lon, 'mt': maketable, 'plog': plog}
+             'cmap': 'plasma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'plog': plog}
         sigmaref = ham.Get_Prange(input, grid, rg, args, xtype='lat', use_p=use_p)
         # Averaged potential temperature (latitude vs pressure)
         pfile = ham.vertical_lon(input, grid, output, rg, sigmaref, z, slice=args.slice, use_p=use_p, csp=5000, clevs=args.clevels, save=save, axis=axis)
@@ -217,9 +225,10 @@ def make_plot(args, save=True, axis=None):
             print('Created file: ' + pfile)
             plots_created.append(pfile)
     if 'PVver' in pview:
+        rg.load(['PV'])
         # sigmaref = np.arange(1,0,)
         z = {'value': rg.PV, 'label': r'Potential Vorticity (K m$^2$ kg$^{-1}$ s$^{-1}$)',
-             'name': 'pot_vort', 'cmap': 'viridis', 'lat': rg.lat, 'lon': rg.lon, 'mt': maketable, 'plog': plog}
+             'name': 'pot_vort', 'cmap': 'viridis', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'plog': plog}
         sigmaref = ham.Get_Prange(input, grid, rg, args, xtype='lat', use_p=use_p)
         pfile = ham.vertical_lat(input, grid, output, rg, sigmaref, z, slice=args.slice, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
         # ham.potential_vort_vert(input,grid,output,sigmaref)
@@ -230,7 +239,7 @@ def make_plot(args, save=True, axis=None):
         # strm = ham.calc_moc_streamf(input,grid,output)
         # strm = rg.streamf
         # z = {'value':strm, 'label':r'Eulerian streamfunction (kg s$^{-1}$)', 'name':'streamf2',
-        #      'cmap':'viridis', 'lat':rg.lat, 'lon':rg.lon}
+        #      'cmap':'viridis', 'lat':rg.Latitude, 'lon':rg.Longitude}
         if use_p:
             sigmaref = ham.Get_Prange(input, grid, rg, args, xtype='lat', use_p=use_p)
             # ham.vertical_lat(input,grid,output,rg,sigmaref,z,slice=args.slice,csp=[0])
@@ -244,9 +253,10 @@ def make_plot(args, save=True, axis=None):
     if 'massf' in pview:
         if use_p == False:
             # mass flow rate (zonal average)
-            massfdl = (input.A + rg.Altitude[None, None, :, :]) * np.cos(rg.lat[:, None, None, :] * np.pi / 180) / (2 * np.pi) * rg.Rho * rg.V
+            rg.load(['Rho','V'])
+            massfdl = (input.A + rg.Altitude[None, None, :, None]) * np.cos(rg.Latitude[:, None, None, None] * np.pi / 180) / (2 * np.pi) * rg.Rho * rg.V
             z = {'value': massfdl, 'label': r'Mass flow', 'name': 'massf',
-                 'cmap': 'magma', 'lat': rg.lat, 'lon': rg.lon, 'mt': maketable, 'plog': plog}
+                 'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'plog': plog}
             sigmaref = ham.Get_Prange(input, grid, rg, args, xtype='lat', use_p=use_p)
             pfile = ham.vertical_lat(input, grid, output, rg, sigmaref, z, slice=args.slice, use_p=use_p, csp=[0], clevs=args.clevels, save=save, axis=axis)
             if pfile:
@@ -260,96 +270,102 @@ def make_plot(args, save=True, axis=None):
     if 'Tulev' in pview:
         # Averaged temperature and wind field (longitude vs latitude)
         # PR_LV - Pressure level (Pa)
+        rg.load(['Temperature','U','V'])
         if use_p:
             PR_LV = np.float(args.horizontal_lev[0]) * 100
         else:
             PR_LV = np.float(args.horizontal_lev[0]) * 1000
         z = {'value': rg.Temperature, 'label': r'Temperature (K)', 'name': 'temperature-uv',
-             'cmap': 'magma', 'lat': rg.lat, 'lon': rg.lon, 'mt': maketable, 'llswap': args.latlonswap}
+             'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
         pfile = ham.horizontal_lev(input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
         if pfile:
             print('Created file: ' + pfile)
             plots_created.append(pfile)
     if 'ulev' in pview:
+        rg.load(['U','V'])
         if use_p:
             PR_LV = np.float(args.horizontal_lev[0]) * 100
         else:
             PR_LV = np.float(args.horizontal_lev[0]) * 1000
         z = {'value': rg.U, 'label': r'Zonal Velocity (m s$^{-1}$)', 'name': 'u',
-             'cmap': 'viridis', 'lat': rg.lat, 'lon': rg.lon, 'mt': maketable, 'llswap': args.latlonswap}
+             'cmap': 'viridis', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
         pfile = ham.horizontal_lev(input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
         if pfile:
             print('Created file: ' + pfile)
             plots_created.append(pfile)
         z = {'value': rg.V, 'label': r'Meridional Velocity (m s$^{-1}$)', 'name': 'v',
-             'cmap': 'viridis', 'lat': rg.lat, 'lon': rg.lon, 'mt': maketable, 'llswap': args.latlonswap}
+             'cmap': 'viridis', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
         pfile = ham.horizontal_lev(input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
         if pfile:
             print('Created file: ' + pfile)
             plots_created.append(pfile)
     if 'PVlev' in pview:
+        rg.load(['PV','U','V'])
         if use_p:
             PR_LV = np.float(args.horizontal_lev[0]) * 100
         else:
             PR_LV = np.float(args.horizontal_lev[0]) * 1000
         z = {'value': rg.PV, 'label': r'Potential Vorticity (K m$^2$ kg$^{-1}$ s$^{-1}$)',
-             'name': 'pot_vort', 'cmap': 'viridis', 'lat': rg.lat, 'lon': rg.lon, 'mt': maketable, 'llswap': args.latlonswap}
+             'name': 'pot_vort', 'cmap': 'viridis', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
         pfile = ham.horizontal_lev(input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
         if pfile:
             print('Created file: ' + pfile)
             plots_created.append(pfile)
         # ham.potential_vort_lev(input,grid,output,PR_LV)
     if 'RVlev' in pview:
+        rg.load(['RV','U','V'])
         if use_p:
             PR_LV = np.float(args.horizontal_lev[0]) * 100
         else:
             PR_LV = np.float(args.horizontal_lev[0]) * 1000
         z = {'value': rg.RV, 'label': r'Relative Vorticity (s$^{-1}$)',
-             'name': 'rela_vort', 'cmap': 'viridis', 'lat': rg.lat, 'lon': rg.lon, 'mt': maketable, 'llswap': args.latlonswap}
+             'name': 'rela_vort', 'cmap': 'viridis', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
         pfile = ham.horizontal_lev(input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
         if pfile:
             print('Created file: ' + pfile)
             plots_created.append(pfile)
         # ham.rela_vort_lev(input,grid,output,PR_LV)
     if 'tracer' in pview:
+        rg.load(['ch4','co','h2o','co2','nh3'])
         if use_p:
             PR_LV = np.float(args.horizontal_lev[0]) * 100
         else:
             PR_LV = np.float(args.horizontal_lev[0]) * 1000
         z = {'value': np.log10(rg.ch4), 'label': r'Log(mixing ratio)',
-             'name': 'chem-ch4-uv1', 'cmap': 'magma', 'lat': rg.lat, 'lon': rg.lon, 'mt': maketable, 'llswap': args.latlonswap}
+             'name': 'chem-ch4-uv1', 'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
         pfile = ham.horizontal_lev(input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
         if pfile:
             print('Created file: ' + pfile)
             plots_created.append(pfile)
         z = {'value': np.log10(rg.co), 'label': r'Log(mixing ratio)',
-             'name': 'chem-co-uv1', 'cmap': 'magma', 'lat': rg.lat, 'lon': rg.lon, 'mt': maketable, 'llswap': args.latlonswap}
+             'name': 'chem-co-uv1', 'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
         pfile = ham.horizontal_lev(input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
         if pfile:
             print('Created file: ' + pfile)
             plots_created.append(pfile)
         z = {'value': np.log10(rg.h2o), 'label': r'Log(mixing ratio)',
-             'name': 'chem-h2o-uv1', 'cmap': 'magma', 'lat': rg.lat, 'lon': rg.lon, 'mt': maketable, 'llswap': args.latlonswap}
+             'name': 'chem-h2o-uv1', 'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
         pfile = ham.horizontal_lev(input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
         if pfile:
             print('Created file: ' + pfile)
             plots_created.append(pfile)
         z = {'value': np.log10(rg.co2), 'label': r'Log(mixing ratio)',
-             'name': 'chem-co2-uv1', 'cmap': 'magma', 'lat': rg.lat, 'lon': rg.lon, 'mt': maketable, 'llswap': args.latlonswap}
+             'name': 'chem-co2-uv1', 'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
         pfile = ham.horizontal_lev(input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
         if pfile:
             print('Created file: ' + pfile)
             plots_created.append(pfile)
         z = {'value': np.log10(rg.nh3), 'label': r'Log(mixing ratio)',
-             'name': 'chem-nh3-uv1', 'cmap': 'magma', 'lat': rg.lat, 'lon': rg.lon, 'mt': maketable, 'llswap': args.latlonswap}
+             'name': 'chem-nh3-uv1', 'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
         pfile = ham.horizontal_lev(input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
         if pfile:
             print('Created file: ' + pfile)
             plots_created.append(pfile)
     if 'insol' in pview:
+        rg.load(['insol'])
         PR_LV = np.max(output.Pressure)  # not important here
         z = {'value': rg.insol, 'label': r'Insolation (W m$^{-2}$)', 'name': 'insol',
-             'cmap': 'magma', 'lat': rg.lat, 'lon': rg.lon, 'mt': maketable, 'llswap': args.latlonswap}
+             'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
         pfile = ham.horizontal_lev(input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
         if pfile:
             print('Created file: ' + pfile)
@@ -357,9 +373,10 @@ def make_plot(args, save=True, axis=None):
     if 'Tsurf' in pview:
         if not hasattr(rg, "Tsurface"):
             raise ValueError("'Tsurface' not available in regrid file")
+        rg.load(['Tsurface'])
         PR_LV = np.max(output.Pressure)  # not important here
         z = {'value': rg.Tsurface, 'label': r'Surface Temperature (K)', 'name': 'Tsurf',
-             'cmap': 'magma', 'lat': rg.lat, 'lon': rg.lon, 'mt': maketable, 'llswap': args.latlonswap}
+             'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
         pfile = ham.horizontal_lev(input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
         if pfile:
             print('Created file: ' + pfile)
@@ -373,7 +390,7 @@ def make_plot(args, save=True, axis=None):
         else:
             PR_LV = np.float(args.horizontal_lev[0]) * 1000
         z = {'value': rg.f_up_tot, 'label': r'Total upward flux (W m^-2)', 'name': 'fuptot',
-             'cmap': 'magma', 'lat': rg.lat, 'lon': rg.lon, 'mt': maketable, 'llswap': args.latlonswap}
+             'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
         pfile = ham.horizontal_lev(input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
         if pfile:
             print('Created file: ' + pfile)
@@ -386,7 +403,7 @@ def make_plot(args, save=True, axis=None):
         else:
             PR_LV = np.float(args.horizontal_lev[0]) * 1000
         z = {'value': rg.f_down_tot, 'label': r'Total downward flux (W m^-2)', 'name': 'fdowntot',
-             'cmap': 'magma', 'lat': rg.lat, 'lon': rg.lon, 'mt': maketable, 'llswap': args.latlonswap}
+             'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
         pfile = ham.horizontal_lev(input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
         if pfile:
             print('Created file: ' + pfile)
@@ -399,7 +416,7 @@ def make_plot(args, save=True, axis=None):
         else:
             PR_LV = np.float(args.horizontal_lev[0]) * 1000
         z = {'value': rg.f_net, 'label': r'Total net flux (W m^-2)', 'name': 'fnet',
-             'cmap': 'magma', 'lat': rg.lat, 'lon': rg.lon, 'mt': maketable, 'llswap': args.latlonswap}
+             'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
         pfile = ham.horizontal_lev(input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
         if pfile:
             print('Created file: ' + pfile)
@@ -412,7 +429,7 @@ def make_plot(args, save=True, axis=None):
         else:
             PR_LV = np.float(args.horizontal_lev[0]) * 1000
         z = {'value': rg.q_heat, 'label': r'Q Heat (W m^-3)', 'name': 'qheat',
-             'cmap': 'magma', 'lat': rg.lat, 'lon': rg.lon, 'mt': maketable, 'llswap': args.latlonswap}
+             'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
         pfile = ham.horizontal_lev(input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
         if pfile:
             print('Created file: ' + pfile)
@@ -420,17 +437,19 @@ def make_plot(args, save=True, axis=None):
     if 'mustar' in pview:
         PR_LV = np.max(output.Pressure)  # not important here
         z = {'value': rg.mustar, 'label': r'mu_star ', 'name': 'mustar',
-             'cmap': 'magma', 'lat': rg.lat, 'lon': rg.lon, 'mt': maketable, 'llswap': args.latlonswap}
+             'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
         pfile = ham.horizontal_lev(input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
         if pfile:
             print('Created file: ' + pfile)
             plots_created.append(pfile)
     # --- Pressure profile types-------------------------------
     if 'TP' in pview:
+        output.load_reshape(grid,['Pressure','Rd','Rho'])
         z = {'value': output.Pressure / output.Rd / output.Rho, 'label': 'Temperature (K)', 'name': 'T'}
         # ham.TPprof(input,grid,output,sigmaref,1902)
         ham.profile(input, grid, output, z, save=save, axis=axis)
     if 'PTP' in pview:
+        output.load_reshape(grid,['Pressure','Rd','Rho','Cp'])
         # kappa_ad = input.Rd/input.Cp  # adiabatic coefficient
         kappa_ad = output.Rd / output.Cp
         T = output.Pressure / input.Rd / output.Rho
@@ -438,21 +457,25 @@ def make_plot(args, save=True, axis=None):
         z = {'value': pt, 'label': 'Potential Temperature (K)', 'name': 'PT'}
         ham.profile(input, grid, output, z, save=save, axis=axis)
     if 'wprof' in pview:  # RD: needs some work!
+        output.load_reshape(grid,['WH','Pressure', 'Rho'])
         z = {'value': output.Wh[:, 1:, :] / output.Rho, 'label': r'Vertical velocity (m s$^{-1}$)', 'name': 'W'}
         ham.profile(input, grid, output, z, stride=20, save=save, axis=axis)
-        # Averaged vertical winds (latitude vs pressure)
+        # Averaged vertical windh (latitude vs pressure)
         # ham.w_prof(input,grid,output)
     if 'uprof' in pview:  # RD: needs some work!
+        output.load_reshape(grid,['Mh','Pressure', 'Rho'])
         u = (-output.Mh[0] * np.sin(grid.lon[:, None, None]) + output.Mh[1] * np.cos(grid.lon[:, None, None])) / output.Rho
         z = {'value': u, 'label': r'Zonal velocity (m s$^{-1}$)', 'name': 'U'}
         ham.profile(input, grid, output, z, stride=20, save=save, axis=axis)
     if 'cfl' in pview:
+        output.load_reshape(grid,['Pressure','Rho'])
         dt = output.time[0] / output.nstep[0] * 86400
         dx = np.sqrt(np.min(grid.areasT))
         cs = np.sqrt(input.Cp / (input.Cp - input.Rd) * output.Pressure / output.Rho)
         z = {'value': cs * dt / dx, 'label': 'CFL number for (horizontal) acoustic waves', 'name': 'CFL'}
         ham.profile(input, grid, output, z, stride=20, save=save, axis=axis)
     if 'bvprof' in pview:
+        output.load_reshape(grid,['Pressure','Rho'])
         kappa_ad = input.Rd / input.Cp  # adiabatic coefficient
         T = output.Pressure / input.Rd / output.Rho
         pt = T * (output.Pressure / input.P_Ref)**(-kappa_ad)
