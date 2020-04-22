@@ -311,12 +311,12 @@ def make_plot(args, save=True, axis=None):
             plots_created.append(pfile)
         # ham.potential_vort_lev(input,grid,output,PR_LV)
     if 'RVlev' in pview or 'all' in pview:
-        rg.load(['RV','U','V'])
+        rg.load(['RVw','U','V'])
         if use_p:
             PR_LV = np.float(args.horizontal_lev[0]) * 100
         else:
             PR_LV = np.float(args.horizontal_lev[0]) * 1000
-        z = {'value': rg.RV, 'label': r'Relative Vorticity (s$^{-1}$)',
+        z = {'value': rg.RVw, 'label': r'Relative Vorticity (s$^{-1}$)',
              'name': 'rela_vort', 'cmap': 'viridis', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
         pfile = ham.horizontal_lev(input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
         if pfile:
@@ -387,32 +387,45 @@ def make_plot(args, save=True, axis=None):
             PR_LV = np.float(args.horizontal_lev[0]) * 100
         else:
             PR_LV = np.float(args.horizontal_lev[0]) * 1000
-        z = {'value': rg.f_up_tot, 'label': r'Total upward flux (W m^-2)', 'name': 'fuptot',
+        if input.RT:
+            rg.load(['flw_up'])
+            fup = rg.flw_up
+        elif input.TSRT:
+            rg.load(['f_up_tot'])
+            fup = rg.f_up_tot
+        z = {'value': fup, 'label': r'Total upward flux (W m^-2)', 'name': 'fuptot',
              'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
         pfile = ham.horizontal_lev(input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
         if pfile:
             print('Created file: ' + pfile)
             plots_created.append(pfile)
-    if ('fdowntot' in pview) and (input.RT or input.TSRT): #add all later
+    if ('fdowntot' in pview or 'all' in pview) and (input.RT or input.TSRT): #add all later
         # Averaged temperature and wind field (longitude vs latitude)
         # PR_LV - Pressure level (Pa)
         if use_p:
             PR_LV = np.float(args.horizontal_lev[0]) * 100
         else:
             PR_LV = np.float(args.horizontal_lev[0]) * 1000
-        z = {'value': rg.f_down_tot, 'label': r'Total downward flux (W m^-2)', 'name': 'fdowntot',
+        if input.RT:
+            rg.load(['flw_dn','fsw_dn'])
+            fdn = rg.flw_dn + rg.fsw_dn
+        elif input.TSRT:
+            rg.load(['f_down_tot'])
+            fdn = rg.f_down_tot
+        z = {'value': fdn, 'label': r'Total downward flux (W m^-2)', 'name': 'fdowntot',
              'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
         pfile = ham.horizontal_lev(input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
         if pfile:
             print('Created file: ' + pfile)
             plots_created.append(pfile)
-    if ('fnet' in pview) and (input.RT or input.TSRT):
+    if ('fnet' in pview or 'all' in pview)  and (input.RT or input.TSRT):
         # Averaged temperature and wind field (longitude vs latitude)
         # PR_LV - Pressure level (Pa)
         if use_p:
             PR_LV = np.float(args.horizontal_lev[0]) * 100
         else:
             PR_LV = np.float(args.horizontal_lev[0]) * 1000
+        rg.load(['f_net'])
         z = {'value': rg.f_net, 'label': r'Total net flux (W m^-2)', 'name': 'fnet',
              'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
         pfile = ham.horizontal_lev(input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
@@ -446,7 +459,10 @@ def make_plot(args, save=True, axis=None):
         output.load_reshape(grid,['Pressure','Rd','Rho'])
         z = {'value': output.Pressure / output.Rd / output.Rho, 'label': 'Temperature (K)', 'name': 'T'}
         # ham.TPprof(input,grid,output,sigmaref,1902)
-        ham.profile(input, grid, output, z, save=save, axis=axis)
+        pfile = ham.profile(input, grid, output, z, save=save, axis=axis)
+        if pfile:
+            print('Created file: ' + pfile)
+            plots_created.append(pfile)
     if 'PTP' in pview or 'all' in pview:
         output.load_reshape(grid,['Pressure','Rd','Rho','Cp'])
         # kappa_ad = input.Rd/input.Cp  # adiabatic coefficient
@@ -454,25 +470,35 @@ def make_plot(args, save=True, axis=None):
         T = output.Pressure / input.Rd / output.Rho
         pt = T * (output.Pressure / input.P_Ref)**(-kappa_ad)
         z = {'value': pt, 'label': 'Potential Temperature (K)', 'name': 'PT'}
-        ham.profile(input, grid, output, z, save=save, axis=axis)
+        pfile = ham.profile(input, grid, output, z, save=save, axis=axis)
+        if pfile:
+            print('Created file: ' + pfile)
+            plots_created.append(pfile)
     if 'wprof' in pview or 'all' in pview:  # RD: needs some work!
-        output.load_reshape(grid,['WH','Pressure', 'Rho'])
+        output.load_reshape(grid,['Wh','Pressure', 'Rho'])
         z = {'value': output.Wh[:, 1:, :] / output.Rho, 'label': r'Vertical velocity (m s$^{-1}$)', 'name': 'W'}
-        ham.profile(input, grid, output, z, stride=20, save=save, axis=axis)
-        # Averaged vertical windh (latitude vs pressure)
-        # ham.w_prof(input,grid,output)
+        pfile = ham.profile(input, grid, output, z, stride=20, save=save, axis=axis)
+        if pfile:
+            print('Created file: ' + pfile)
+            plots_created.append(pfile)
     if 'uprof' in pview or 'all' in pview:  # RD: needs some work!
         output.load_reshape(grid,['Mh','Pressure', 'Rho'])
         u = (-output.Mh[0] * np.sin(grid.lon[:, None, None]) + output.Mh[1] * np.cos(grid.lon[:, None, None])) / output.Rho
         z = {'value': u, 'label': r'Zonal velocity (m s$^{-1}$)', 'name': 'U'}
-        ham.profile(input, grid, output, z, stride=20, save=save, axis=axis)
+        pfile = ham.profile(input, grid, output, z, stride=20, save=save, axis=axis)
+        if pfile:
+            print('Created file: ' + pfile)
+            plots_created.append(pfile)
     if 'cfl' in pview or 'all' in pview:
         output.load_reshape(grid,['Pressure','Rho'])
         dt = output.time[0] / output.nstep[0] * 86400
         dx = np.sqrt(np.min(grid.areasT))
         cs = np.sqrt(input.Cp / (input.Cp - input.Rd) * output.Pressure / output.Rho)
         z = {'value': cs * dt / dx, 'label': 'CFL number for (horizontal) acoustic waves', 'name': 'CFL'}
-        ham.profile(input, grid, output, z, stride=20, save=save, axis=axis)
+        pfile = ham.profile(input, grid, output, z, stride=20, save=save, axis=axis)
+        if pfile:
+            print('Created file: ' + pfile)
+            plots_created.append(pfile)
     if 'bvprof' in pview or 'all' in pview:
         output.load_reshape(grid,['Pressure','Rho'])
         kappa_ad = input.Rd / input.Cp  # adiabatic coefficient
@@ -481,26 +507,59 @@ def make_plot(args, save=True, axis=None):
         dptdr = np.gradient(pt, grid.Altitude, axis=1)
         N = np.sqrt(input.Gravit / pt * dptdr)
         z = {'value': N, 'label': r'$N$ (s$^{-1}$)', 'name': 'BVprof'}
-        ham.profile(input, grid, output, z, stride=20, save=save, axis=axis)
-    if ('fluxprof' in pview) and (input.RT or input.TSRT):
-        total_f = output.fnet_up - output.fnet_dn
-        fup = total_f[:, :-1, :] + (total_f[:, 1:, :] - total_f[:, :-1, :]) *\
+        pfile = ham.profile(input, grid, output, z, stride=20, save=save, axis=axis)
+        if pfile:
+            print('Created file: ' + pfile)
+            plots_created.append(pfile)
+    if ('fluxprof' in pview or 'all' in pview) and (input.RT or input.TSRT):
+        if input.RT: # double gray RT
+            output.load_reshape(grid,['flw_up','fsw_dn','flw_dn'])
+            fnet_int = output.flw_up - output.flw_dn - output.fsw_dn
+        elif input.TSRT: # wavelength dep'd RT
+            output.load_reshape(grid,['f_net'])
+            fnet_int = output.f_net
+        fnet = fnet_int[:, :-1, :] + (fnet_int[:, 1:, :] - fnet_int[:, :-1, :]) *\
             (grid.Altitude[None, :, None] - grid.Altitudeh[None, :-1, None]) /\
             (grid.Altitudeh[None, 1:, None] - grid.Altitudeh[None, :-1, None])
-        z = {'value': fup, 'label': r'Total flux (W m$^{-2}$)', 'name': 'ftot'}
-        ham.profile(input, grid, output, z, stride=20, save=save, axis=axis)
-    if ('futprof' in pview) and (input.RT or input.TSRT):
-        fup = output.f_up_tot[:, :-1, :]
+        z = {'value': fnet, 'label': r'Total flux (W m$^{-2}$)', 'name': 'ftot'}
+        pfile = ham.profile(input, grid, output, z, stride=20, save=save, axis=axis)
+        if pfile:
+            print('Created file: ' + pfile)
+            plots_created.append(pfile)
+    if ('futprof' in pview or 'all' in pview) and (input.RT or input.TSRT):
+        if input.RT:
+            output.load_reshape(grid,['flw_up'])
+            fup_int = output.flw_up
+        elif input.TSRT:
+            output.load_reshape(grid,['f_up_tot'])
+            fup_int = output.f_up_tot
+        fup = fup_int[:, :-1, :] + (fup_int[:, 1:, :] - fup_int[:, :-1, :]) *\
+            (grid.Altitude[None, :, None] - grid.Altitudeh[None, :-1, None]) /\
+            (grid.Altitudeh[None, 1:, None] - grid.Altitudeh[None, :-1, None])
         z = {'value': fup, 'label': r'Total Upward flux (W m$^{-2}$)', 'name': 'fuptot'}
-        ham.profile(input, grid, output, z, stride=20, save=save, axis=axis)
-    if ('fdtprof' in pview) and (input.RT or input.TSRT):
-        fdn = output.f_down_tot[:, :-1, :]
+        pfile = ham.profile(input, grid, output, z, stride=20, save=save, axis=axis)
+        if pfile:
+            print('Created file: ' + pfile)
+            plots_created.append(pfile)
+    if ('fdtprof' in pview or 'all' in pview) and (input.RT or input.TSRT):
+        if input.RT:
+            output.load_reshape(grid,['flw_dn','fsw_dn'])
+            fdn_int = output.flw_dn + output.fsw_dn
+        elif input.TSRT:
+            output.load_reshape(grid,['f_down_tot'])
+            fdn_int = output.f_down_tot
+        fdn = fdn_int[:, :-1, :] + (fdn_int[:, 1:, :] - fdn_int[:, :-1, :]) *\
+            (grid.Altitude[None, :, None] - grid.Altitudeh[None, :-1, None]) /\
+            (grid.Altitudeh[None, 1:, None] - grid.Altitudeh[None, :-1, None])
         z = {'value': fdn, 'label': r'Total Downward flux (W m$^{-2}$)', 'name': 'fdowntot'}
-        ham.profile(input, grid, output, z, stride=20, save=save, axis=axis)
-    if ('fnetprof' in pview) and (input.RT or input.TSRT):
-        fdn = output.f_net[:, :-1, :]
-        z = {'value': fdn, 'label': r'Total Net flux (W m$^{-2}$)', 'name': 'fnetprof'}
-        ham.profile(input, grid, output, z, stride=20, save=save, axis=axis)
+        pfile = ham.profile(input, grid, output, z, stride=20, save=save, axis=axis)
+        if pfile:
+            print('Created file: ' + pfile)
+            plots_created.append(pfile)
+    # if ('fnetprof' in pview) and (input.RT or input.TSRT):
+    #     fdn = output.f_net[:, :-1, :]
+    #     z = {'value': fdn, 'label': r'Total Net flux (W m$^{-2}$)', 'name': 'fnetprof'}
+    #     ham.profile(input, grid, output, z, stride=20, save=save, axis=axis)
 
     # --- Global diagnostics -----------------------------------
     if 'cons' in pview:  # RD: needs some work!
@@ -521,6 +580,7 @@ def make_plot(args, save=True, axis=None):
 
     #some clean up
     output.closeVDS()
-    rg.closeVDS()
+    if openrg:
+        rg.closeVDS()
 
     return plots_created

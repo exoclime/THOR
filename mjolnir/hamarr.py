@@ -2,8 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import matplotlib.axes as axes
-
-
 import matplotlib.cm as cm
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.colors import hsv_to_rgb
@@ -21,6 +19,7 @@ import pyshtools as chairs
 import pdb
 
 import pathlib
+import resource
 
 try:
     import pycuda.driver as cuda
@@ -127,6 +126,7 @@ class input_new:
         #special cases (things we test on a lot, etc)
         self.RT = "radiative_transfer" in openh5
         self.TSRT = "two_streams_radiative_transfer" in openh5
+        self.chemistry = "chemistry" in openh5
         if not hasattr(self,'surface'):
             self.surface = False
         #some bw compatibility things
@@ -176,7 +176,6 @@ class grid:
         self.pntloc = np.reshape(openh5['pntloc'][...], (self.point_num, 6))  # indices of nearest neighbors
         self.nv = np.int(openh5['nv'][0])
 
-        pdb.set_trace()
         if 'grad' in openh5.keys():
             self.grad = np.reshape(openh5['grad'][...], (self.point_num, 7, 3))
             self.div = np.reshape(openh5['div'][...], (self.point_num, 7, 3))
@@ -825,6 +824,15 @@ class GetOutput:
                              pressure_vert=pressure_vert, pgrid_ref=pgrid_ref)
         self.output = output_new(resultsf, simID, ntsi, nts, self.input, self.grid, stride=stride)
 
+class GetOutput_old:
+    def __init__(self, resultsf, simID, ntsi, nts, stride=1, openrg=0, pressure_vert=True, rotation=False, theta_y=0, theta_z=0, pgrid_ref='auto'):
+        self.input = input(resultsf, simID)
+        self.grid = grid(resultsf, simID, rotation=rotation, theta_y=theta_y, theta_z=theta_z)
+        self.output = output(resultsf, simID, ntsi, nts, self.input, self.grid, stride=stride)
+        if openrg == 1:
+            self.rg = rg_out(resultsf, simID, ntsi, nts, self.input, self.output, self.grid,
+                             pressure_vert=pressure_vert, pgrid_ref=pgrid_ref)
+
 def define_Pgrid(resultsf, simID, ntsi, nts, stride, overwrite=False):
     pfile = 'pgrid_%d_%d_%d.txt' % (ntsi, nts, stride)
     if not os.path.exists(resultsf + '/' + pfile) or overwrite == True:
@@ -1248,6 +1256,9 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
             if input.RT == 1:
                 source['flw_up'] = output.flw_up[:, :-1, 0] + (output.flw_up[:, 1:, 0] - output.flw_up[:, :-1, 0]) * interpz[None, :]
                 source['flw_dn'] = output.flw_dn[:, :-1, 0] + (output.flw_dn[:, 1:, 0] - output.flw_dn[:, :-1, 0]) * interpz[None, :]
+                source['fsw_dn'] = output.fsw_dn[:, :-1, 0] + (output.fsw_dn[:, 1:, 0] - output.fsw_dn[:, :-1, 0]) * interpz[None, :]
+                fnet_tmp = output.flw_up[:,:,0] - (output.flw_dn[:,:,0]+output.fsw_dn[:,:,0])
+                source['f_net'] = fnet_tmp[:,:-1] + (fnet_tmp[:, 1:] - fnet_tmp[:, :-1]) * interpz[None, :]
                 source['tau_sw'] = output.tau_sw[:, :, 0]
                 source['tau_lw'] = output.tau_lw[:, :, 0]
                 source['insol'] = output.Insol[:, 0]
@@ -1616,23 +1627,23 @@ def vertical_lat(input, grid, output, rg, sigmaref, z, slice=['default'], save=T
     C = ax.contourf(latp * 180 / np.pi, ycoord, zvals, clevels, cmap=z['cmap'])
 
     if wind_vectors == True:
-        vspacing = np.int(np.shape(rg.lat)[0] / 10)
+        vspacing = np.int(np.shape(rg.Latitude)[0] / 10)
         if use_p:
             wspacing = np.int(np.shape(rg.Pressure)[0] / 10)
             Vlt = Vlt[:, prange[0]]
             Wlt = Wlt[:, prange[0]]
-            yqcoord = rg.Pressure[::wspacing, 0][prange[0]]
+            yqcoord = rg.Pressure[::wspacing][prange[0]]
         else:
             wspacing = np.int(np.shape(rg.Altitude)[0] / 10)
             Vlt = Vlt[:, hrange[0]]
             Wlt = Wlt[:, hrange[0]]
-            yqcoord = rg.Altitude[::wspacing, 0][hrange[0]]
+            yqcoord = rg.Altitude[::wspacing][hrange[0]]
 
         Vq = Vlt[::vspacing, ::wspacing].ravel()
         Wq = Wlt[::vspacing, ::wspacing].ravel()
         #preq = rg.Pressure[:,0][::spacing,::spacing].ravel()
         #latq = lati[::spacing,::spacing].ravel()
-        latq, preq = np.meshgrid(rg.lat[::vspacing, 0], yqcoord)
+        latq, preq = np.meshgrid(rg.Latitude[::vspacing], yqcoord)
         del Vlt, Wlt
         ax.quiver(latq.ravel(), preq.ravel() / 1e5, Vq, Wq, color='0.5')
 
@@ -1756,7 +1767,7 @@ def vertical_lon(input, grid, output, rg, sigmaref, z, slice='default', save=Tru
 
         # Averaging in time and latitude (weighted by a cosine(lat))
         if tsp > 1:
-            Meridl = np.nanmean(z['value'][mask_ind[:], :, :, :] * np.cos(lat[mask_ind[:], 0] * np.pi / 180)[:, None, None, None], axis=0)
+            Meridl = np.nanmean(z['value'][mask_ind[:], :, :, :] * np.cos(lat[mask_ind[:]] * np.pi / 180)[:, None, None, None], axis=0)
             # Vl = np.nanmean(rg.V[:,:,:,:],axis=1)
             # Wl = np.nanmean(rg.W[:,:,:,:],axis=1)
             Meridlt = np.nanmean(Meridl[:, :, :], axis=2)
@@ -1827,7 +1838,7 @@ def vertical_lon(input, grid, output, rg, sigmaref, z, slice='default', save=Tru
         zvals = Meridlt[:, prange[0]].T
     else:
         hrange = np.where(np.logical_and(rg.Altitude[:] >= np.min(sigmaref), rg.Altitude[:] <= np.max(sigmaref)))
-        ycoord = rg.Altitude[hrange[0], 0] / 1000
+        ycoord = rg.Altitude[hrange[0]] / 1000
         zvals = Meridlt[:, hrange[0]].T
 
     # Contour plot
@@ -1854,7 +1865,7 @@ def vertical_lon(input, grid, output, rg, sigmaref, z, slice='default', save=Tru
     C = ax.contourf(lonp * 180 / np.pi, ycoord, zvals, clevels, cmap=z['cmap'])
 
     if wind_vectors == True:
-        vspacing = np.int(np.shape(rg.lon)[0] / 10)
+        vspacing = np.int(np.shape(rg.Longitude)[0] / 10)
         if use_p:
             wspacing = np.int(np.shape(rg.Pressure)[0] / 10)
             Ult = Ult[:, prange[0]]
@@ -1864,13 +1875,13 @@ def vertical_lon(input, grid, output, rg, sigmaref, z, slice='default', save=Tru
             wspacing = np.int(np.shape(rg.Altitude)[0] / 10)
             Ult = Ult[:, hrange[0]]
             Wlt = Wlt[:, hrange[0]]
-            yqcoord = rg.Altitude[::wspacing, 0][hrange[0]]
+            yqcoord = rg.Altitude[::wspacing][hrange[0]]
 
         Uq = Ult[::vspacing, ::wspacing].ravel()
         Wq = Wlt[::vspacing, ::wspacing].ravel()
         #preq = rg.Pressure[:,0][::spacing,::spacing].ravel()
         #latq = lati[::spacing,::spacing].ravel()
-        lonq, preq = np.meshgrid(rg.lon[::vspacing, 0], yqcoord)
+        lonq, preq = np.meshgrid(rg.Longitude[::vspacing], yqcoord)
         del Ult, Wlt
         ax.quiver(lonq.ravel(), preq.ravel() / 1e5, Uq, Wq, color='0.5')
 
@@ -1956,7 +1967,7 @@ def vertical_lon(input, grid, output, rg, sigmaref, z, slice='default', save=Tru
 
 def horizontal_lev(input, grid, output, rg, Plev, z, save=True, axis=False, wind_vectors=False, use_p=True, clevs=[40]):
     # Set the latitude-longitude grid.
-    loni, lati = np.meshgrid(rg.lon[:, 0], rg.lat[:, 0])
+    loni, lati = np.meshgrid(rg.Longitude[:], rg.Latitude[:])
 
     d_lon = np.shape(loni)
     tsp = output.nts - output.ntsi + 1
@@ -1993,9 +2004,9 @@ def horizontal_lev(input, grid, output, rg, Plev, z, save=True, axis=False, wind
 
         if len(np.shape(z['value'])) == 4:
             # single level of a 3D field
-            zlev[:, :, t] = (z['value'][:, :, below, t] * (vcoord[above, t] - Plev)
-                             + z['value'][:, :, above, t] * (Plev - vcoord[below, t]))\
-                / (vcoord[above, t] - vcoord[below, t])
+            zlev[:, :, t] = (z['value'][:, :, below, t] * (vcoord[above] - Plev)
+                             + z['value'][:, :, above, t] * (Plev - vcoord[below]))\
+                             / (vcoord[above] - vcoord[below])
             if use_p:
                 title = 'Time = %#.3f-%#.3f days, Plev = %#.3f bar' % (output.time[0], output.time[-1], Plev / 1e5)
                 fname = '%s_lev%#.3fmbar_i%d_l%d' % (z['name'], Plev / 100, output.ntsi, output.nts)
@@ -2010,12 +2021,12 @@ def horizontal_lev(input, grid, output, rg, Plev, z, save=True, axis=False, wind
             wind_vectors = False
 
         if wind_vectors == True:
-            Uii[:, :, t] = (rg.U[:, :, below, t] * (vcoord[above, t] - Plev)
-                            + rg.U[:, :, above, t] * (Plev - vcoord[below, t]))\
-                / (vcoord[above, t] - vcoord[below, t])
-            Vii[:, :, t] = (rg.V[:, :, below, t] * (vcoord[above, t] - Plev)
-                            + rg.V[:, :, above, t] * (Plev - vcoord[below, t]))\
-                / (vcoord[above, t] - vcoord[below, t])
+            Uii[:, :, t] = (rg.U[:, :, below, t] * (vcoord[above] - Plev)
+                            + rg.U[:, :, above, t] * (Plev - vcoord[below]))\
+                / (vcoord[above] - vcoord[below])
+            Vii[:, :, t] = (rg.V[:, :, below, t] * (vcoord[above] - Plev)
+                            + rg.V[:, :, above, t] * (Plev - vcoord[below]))\
+                / (vcoord[above] - vcoord[below])
 
     # Averaging in time
     if tsp > 1:
@@ -2040,8 +2051,8 @@ def horizontal_lev(input, grid, output, rg, Plev, z, save=True, axis=False, wind
     # Create Figure #
     #################
 
-    lonp = rg.lon[:, 0]
-    latp = rg.lat[:, 0]
+    lonp = rg.Longitude[:]
+    latp = rg.Latitude[:]
 
     if len(clevs) == 1:
         clevels = np.int(clevs[0])
@@ -2222,7 +2233,7 @@ def streamf_moc_plot(input, grid, output, rg, sigmaref, save=True, axis=False, w
         ax.set_yscale("log")
     ax.set_xlabel('Latitude (deg)')
     ax.set_ylabel('Pressure (bar)')
-    # ax.plot(rg.lat[:,0],np.zeros_like(rg.lat[:,0])+np.max(output.Pressure[:,grid.nv-1,:])/1e5,'r--')
+    # ax.plot(rg.Latitude[:,0],np.zeros_like(rg.Latitude[:,0])+np.max(output.Pressure[:,grid.nv-1,:])/1e5,'r--')
     # if np.min(rg.Pressure[prange[0],0]) < np.max(output.Pressure[:,grid.nv-1,:]):
     ax.set_ylim(np.max(rg.Pressure[prange[0]]) / 1e5, np.min(rg.Pressure[prange[0]]) / 1e5)
 
@@ -2331,6 +2342,9 @@ def profile(input, grid, output, z, stride=50, axis=None, save=True):
         plt.savefig(pfile)
 
         plt.close()
+        pfile = str(pfile)
+
+    return pfile
 
 
 def CalcE_M_AM(input, grid, output, split):
