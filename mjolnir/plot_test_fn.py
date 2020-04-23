@@ -6,11 +6,17 @@ from pathlib import Path
 import time
 
 #script designed to test mjolnir/regrid/hamarr functions and options
+#things to add:
+#   multi-panel plot
+#   tidal earth with rotations
+#   stream func fail with vc height
+#   global diagnostics
+#   specify options: slice, mt, clevs, vtop, stride (pgrid only? add to mjolnir?)
 
 simulations_path = Path('simulations/repo_benchmarks')
 fig_destination = Path('simulations/repo_benchmarks/test_figures')
 
-sub_stdout = sub.DEVNULL
+sub_stdout = None
 
 if not simulations_path.exists():
     raise IOError(simulations_path.__str__() +' does not exist!')
@@ -71,8 +77,12 @@ args.last_file = [60]
 args.pview = ['all']
 plots = mph.make_plot(args)
 for p in plots:   # move to destination folder for easy viewing
-    moveit(p,prefix,fig_destination)
-    tests.append(check_m_time(f'{fig_destination.__str__()}/{prefix}_{p.split("/")[-1]}',60))
+    if p == "'massf' plot type requires -vc height; plot not created":
+        #this one should fail to produce a plot with these options
+        tests.append(p+": "+C+"PASS"+W)
+    else:
+        moveit(p,prefix,fig_destination)
+        tests.append(check_m_time(f'{fig_destination.__str__()}/{prefix}_{p.split("/")[-1]}',60))
 
 ### remove regrid file, test mjolnir executes regrid, no unmask flag
 os.remove(f'{sim_path.__str__()}/pgrid_60_60_1/regrid_Earth_60.h5')
