@@ -19,7 +19,7 @@ import pyshtools as chairs
 import pdb
 
 import pathlib
-import resource
+import psutil
 
 try:
     import pycuda.driver as cuda
@@ -516,6 +516,8 @@ class output_new:
             if key in self.openVDS.keys():
                 data_ref = getattr(self, key)
                 if isinstance(data_ref,h5py.Dataset):
+                    if data_ref.size*8 > psutil.virtual_memory().available:
+                        raise IOError("Dataset %s too large for memory; not loading"%key)
                     data = data_ref[...]
                     if np.shape(data) == (grid.point_num*grid.nv,tlen):
                         data = np.reshape(data,(grid.point_num,grid.nv,tlen))
@@ -773,24 +775,19 @@ class rg_out_new:
                     else:
                         vars()[key+'_lo'] = h5py.VirtualLayout(shape=
                                             np.shape(openh5[key])+(nts-ntsi+1,),dtype='f8')
-
-                if openh5[key].ndim == 1:
-                    pass
-                    #vars()[key+'_lo'][:,t-ntsi+1] = h5py.VirtualSource(openh5[key])
-                elif openh5[key].ndim == 2:
-                    vars()[key+'_lo'][:,:,t-ntsi+1] = h5py.VirtualSource(openh5[key])
-                elif openh5[key].ndim == 3:
-                    vars()[key+'_lo'][:,:,:,t-ntsi+1] = h5py.VirtualSource(openh5[key])
-                else:
-                    raise IOError('Property %s with unknown dimensions in regrid file'%key)
+                if key+'_lo' in vars():
+                    if openh5[key].ndim == 2:
+                        vars()[key+'_lo'][:,:,t-ntsi+1] = h5py.VirtualSource(openh5[key])
+                    elif openh5[key].ndim == 3:
+                        vars()[key+'_lo'][:,:,:,t-ntsi+1] = h5py.VirtualSource(openh5[key])
+                    else:
+                        raise IOError('Property %s with unknown dimensions in regrid file'%key)
 
         fileVDS = resultsf+'/regrid_'+simID+'_VDS.h5'
         self.openVDS = h5py.File(fileVDS,'w',libver='latest')
 
         for key in openh5.keys():
-            if openh5[key].ndim == 1:
-                pass
-            else:
+            if key+'_lo' in vars():
                 setattr(self,key,self.openVDS.create_virtual_dataset(key,vars()[key+'_lo'],fillvalue=0))
 
     def closeVDS(self):
@@ -802,6 +799,8 @@ class rg_out_new:
             if key in self.openVDS.keys():
                 data_ref = getattr(self, key)
                 if isinstance(data_ref,h5py.Dataset):
+                    if data_ref.size*8 > psutil.virtual_memory().available:
+                        raise IOError("Dataset %s too large for memory; not loading"%key)
                     data = data_ref[...]
                     setattr(self,key,data)
                 else:
