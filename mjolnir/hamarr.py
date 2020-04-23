@@ -2166,15 +2166,15 @@ def streamf_moc_plot(input, grid, output, rg, sigmaref, save=True, axis=False, w
     tsp = output.nts - output.ntsi + 1
 
     if tsp > 1:
-        Vavgl = np.mean(rg.V, axis=1)
-        Vavglt = np.mean(Vavgl, axis=2)
+        Vavgl = np.nanmean(rg.V, axis=1)
+        Vavglt = np.nanmean(Vavgl, axis=2)
         if wind_vectors == True:
-            Wavgl = np.mean(rg.W, axis=1)
-            Wavglt = np.mean(Wavgl, axis=2)
+            Wavgl = np.nanmean(rg.W, axis=1)
+            Wavglt = np.nanmean(Wavgl, axis=2)
     else:
-        Vavglt = np.mean(rg.V[:, :, :, 0], axis=1)
+        Vavglt = np.nanmean(rg.V[:, :, :, 0], axis=1)
         if wind_vectors == True:
-            Wavglt = np.mean(rg.V[:, :, :, 0], axis=1)
+            Wavglt = np.nanmean(rg.V[:, :, :, 0], axis=1)
 
     sf = np.zeros_like(Vavglt)
     arg = 2 * np.pi * input.A * np.cos(rg.Latitude[:, None] * np.pi / 180) / input.Gravit * Vavglt
