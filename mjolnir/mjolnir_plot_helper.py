@@ -599,6 +599,12 @@ def make_plot(args, save=True, axis=None):
         pfile = call_plot('TSqheatprof',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
         plots_created.append(pfile)
 
+    if ('qheatprof' in pview or 'all' in pview):
+        output.load_reshape(grid,['qheat'])
+        qheat = output.qheat
+        z = {'value': qheat, 'label': r'Q heat (W m$^{-2}$)', 'name': 'qheatprof'}
+        pfile = call_plot('qheatprof',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
+        plots_created.append(pfile)
     # --- Global diagnostics -----------------------------------
     if 'cons' in pview:  # RD: needs some work!
         if args.split_layer[0] == 'no_split':
