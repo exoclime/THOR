@@ -146,7 +146,7 @@ class output_new:
         # key is the key in h5 file, value is desired attribute name in this class
         outputs = {'Rho': 'Rho', 'Pressure': 'Pressure', 'Mh': 'Mh', 'Wh': 'Wh',
                     'Rho_mean': 'Rho_mean', 'Pressure_mean': 'Pressure_mean',
-                    'Mh_mean': 'Mh_mean', 'Wh_mean': 'Wh_mean'}
+                    'Mh_mean': 'Mh_mean', 'Wh_mean': 'Wh_mean', 'Qheat': 'qheat'}
 
         #add things to outputs that can be checked for in input or grid
         if input.RT:
@@ -159,7 +159,7 @@ class output_new:
             outputs['F_up_tot'] = 'f_up_tot'
             outputs['F_down_tot'] = 'f_down_tot'
             outputs['F_net'] = 'f_net'
-            outputs['Alf_Qheat'] = 'q_heat'
+            outputs['Alf_Qheat'] = 'TSqheat'
             outputs['col_mu_star'] = 'mustar'
 
         for t in np.arange(ntsi - 1, nts, stride):
@@ -367,15 +367,6 @@ class GetOutput:
             self.rg = rg_out_new(resultsf, simID, ntsi, nts, self.input, self.grid,
                              pressure_vert=pressure_vert, pgrid_ref=pgrid_ref)
         self.output = output_new(resultsf, simID, ntsi, nts, self.input, self.grid, stride=stride)
-
-class GetOutput_old:
-    def __init__(self, resultsf, simID, ntsi, nts, stride=1, openrg=0, pressure_vert=True, rotation=False, theta_y=0, theta_z=0, pgrid_ref='auto'):
-        self.input = input(resultsf, simID)
-        self.grid = grid(resultsf, simID, rotation=rotation, theta_y=theta_y, theta_z=theta_z)
-        self.output = output(resultsf, simID, ntsi, nts, self.input, self.grid, stride=stride)
-        if openrg == 1:
-            self.rg = rg_out(resultsf, simID, ntsi, nts, self.input, self.output, self.grid,
-                             pressure_vert=pressure_vert, pgrid_ref=pgrid_ref)
 
 def define_Pgrid(resultsf, simID, ntsi, nts, stride, overwrite=False):
     pfile = 'pgrid_%d_%d_%d.txt' % (ntsi, nts, stride)
@@ -797,12 +788,14 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
                       'Mh_mean': output.Mh_mean[:, :, :, 0],
                       'Pressure_mean': output.Pressure_mean[:, :, 0]}
 
+            source['qheat'] = output.qheat[:, :, 0]
+            
             if input.RT == 1:
                 source['flw_up'] = output.flw_up[:, :-1, 0] + (output.flw_up[:, 1:, 0] - output.flw_up[:, :-1, 0]) * interpz[None, :]
                 source['flw_dn'] = output.flw_dn[:, :-1, 0] + (output.flw_dn[:, 1:, 0] - output.flw_dn[:, :-1, 0]) * interpz[None, :]
                 source['fsw_dn'] = output.fsw_dn[:, :-1, 0] + (output.fsw_dn[:, 1:, 0] - output.fsw_dn[:, :-1, 0]) * interpz[None, :]
                 fnet_tmp = output.flw_up[:,:,0] - (output.flw_dn[:,:,0]+output.fsw_dn[:,:,0])
-                source['f_net'] = fnet_tmp[:,:-1] + (fnet_tmp[:, 1:] - fnet_tmp[:, :-1]) * interpz[None, :]
+                source['DGf_net'] = fnet_tmp[:,:-1] + (fnet_tmp[:, 1:] - fnet_tmp[:, :-1]) * interpz[None, :]
                 source['tau_sw'] = output.tau_sw[:, :, 0]
                 source['tau_lw'] = output.tau_lw[:, :, 0]
                 source['insol'] = output.Insol[:, 0]
@@ -812,8 +805,8 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
 
             if input.TSRT:
                 source['mustar'] = output.mustar[:, 0]
-                source['f_net'] = output.f_net[:, :-1, 0] + (output.f_net[:, 1:, 0] - output.f_net[:, :-1, 0]) * interpz[None, :]
-                source['q_heat'] = output.q_heat[:, :, 0]
+                source['TSf_net'] = output.f_net[:, :-1, 0] + (output.f_net[:, 1:, 0] - output.f_net[:, :-1, 0]) * interpz[None, :]
+                source['TSqheat'] = output.TSqheat[:, :, 0]
                 source['f_up_tot'] = output.f_up_tot[:, :-1, 0] + (output.f_up_tot[:, 1:, 0] - output.f_up_tot[:, :-1, 0]) * interpz[None, :]
                 source['f_down_tot'] = output.f_down_tot[:, :-1, 0] + (output.f_down_tot[:, 1:, 0] - output.f_down_tot[:, :-1, 0]) * interpz[None, :]
             if chem == 1:
@@ -1806,6 +1799,9 @@ def profile(input, grid, output, z, stride=50, axis=None, save=True):
     # Pref = input.P_Ref*sigmaref
     # d_sig = np.size(sigmaref)
 
+    # prepare pressure array
+    output.load_reshape(grid, ['Pressure'])
+    
     # get figure and axis
     if isinstance(axis, axes.SubplotBase):
         ax = axis
