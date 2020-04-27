@@ -1161,6 +1161,8 @@ def vertical_lat(input, grid, output, rg, sigmaref, z, slice=['default'], save=T
     else:
         raise IOError("'axis = {}' but {} is neither an axes.SubplotBase instance nor a (axes.SubplotBase, plt.Figure) instance".format(axis, axis))
 
+    fig.set_tight_layout(True)
+    
     C = ax.contourf(latp * 180 / np.pi, ycoord, zvals, clevels, cmap=z['cmap'])
 
     if wind_vectors == True:
@@ -1227,13 +1229,12 @@ def vertical_lat(input, grid, output, rg, sigmaref, z, slice=['default'], save=T
     else:
         ax.set_title('Time = %#.3f-%#.3f days, Lon = (%#.3f,)' % (output.time[0], output.time[-1], slice[0]), fontsize=10)
 
-    plt.tight_layout()
     if use_p:
         z['name'] += '_p'
     else:
         z['name'] += '_h'
 
-    pfile = False
+    pfile = None
     if save == True:
         output_path = pathlib.Path(input.resultsf) / 'figures'
         if not output_path.exists():
@@ -1399,6 +1400,8 @@ def vertical_lon(input, grid, output, rg, sigmaref, z, slice='default', save=Tru
     else:
         raise IOError("'axis = {}' but {} is neither an axes.SubplotBase instance nor a (axes.SubplotBase, plt.Figure) instance".format(axis, axis))
 
+    fig.set_tight_layout(True)
+        
     C = ax.contourf(lonp * 180 / np.pi, ycoord, zvals, clevels, cmap=z['cmap'])
 
     if wind_vectors == True:
@@ -1468,12 +1471,12 @@ def vertical_lon(input, grid, output, rg, sigmaref, z, slice='default', save=Tru
 
     if not os.path.exists(input.resultsf + '/figures'):
         os.mkdir(input.resultsf + '/figures')
-    fig.tight_layout()
+
     if use_p:
         z['name'] += '_p'
     else:
         z['name'] += '_h'
-    pfile = False
+    pfile = None
     if save == True:
         # save the plot to file designated by z
         if len(slice) == 2:
@@ -1611,6 +1614,8 @@ def horizontal_lev(input, grid, output, rg, Plev, z, save=True, axis=False, wind
     else:
         raise IOError("'axis = {}' but {} is neither an axes.SubplotBase instance nor a (axes.SubplotBase, plt.Figure) instance".format(axis, axis))
 
+    fig.set_tight_layout(True)
+        
     if z['llswap']:
         C = ax.contourf(latp, lonp, zlevt.T, clevels, cmap=z['cmap'])
     else:
@@ -1648,8 +1653,8 @@ def horizontal_lev(input, grid, output, rg, Plev, z, save=True, axis=False, wind
     clb = fig.colorbar(C, cax=cax, orientation='vertical', **kwargs)
     clb.set_label(z['label'])
 
-    fig.tight_layout()
-    pfile = False
+
+    pfile = None
     if save == True:
         output_path = pathlib.Path(input.resultsf) / 'figures'
         if not output_path.exists():
@@ -1780,7 +1785,7 @@ def streamf_moc_plot(input, grid, output, rg, sigmaref, save=True, axis=False, w
     if not os.path.exists(input.resultsf + '/figures'):
         os.mkdir(input.resultsf + '/figures')
     plt.tight_layout()
-    pfile = False
+    pfile = None
     if save == True:
         pfile = input.resultsf + '/figures/streamf_ver_i%d_l%d.pdf' % (output.ntsi, output.nts)
         plt.savefig(pfile)
@@ -1816,6 +1821,8 @@ def profile(input, grid, output, z, stride=50, axis=None, save=True):
     else:
         raise IOError("'axis = {}' but {} is neither an axes.SubplotBase instance nor a (axes.SubplotBase, plt.Figure) instance".format(axis, axis))
 
+    fig.set_tight_layout(True)
+    
     tsp = output.nts - output.ntsi + 1
 
     col_lon = []
@@ -1870,8 +1877,7 @@ def profile(input, grid, output, z, stride=50, axis=None, save=True):
     ax.legend([rp, gp], ['z=0.5*ztop', 'z=0.75*ztop'], loc="lower right", fontsize='xx-small')
     ax.set_title('Time = %#.3f - %#.3f days' % (output.time[0], output.time[-1]))
 
-    fig.tight_layout()
-    pfile = False
+    pfile = None
     if save == True:
         output_path = pathlib.Path(input.resultsf) / 'figures'
         if not output_path.exists():

@@ -28,11 +28,11 @@ class mjol_args:
 def call_plot(name, func, *args, **kwargs):
     try:
         pfile = func(*args,**kwargs)
-        print('Created file: ' + pfile)
+        print('Created file: ' + str(pfile))
     except:
         print(traceback.format_exc())
-        pfile = name+' plot FAILED'
-        print(pfile)
+        print(f'{name} plot FAILED') 
+        
     return pfile
 
 def make_plot(args, save=True, axis=None):
