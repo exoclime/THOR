@@ -90,6 +90,8 @@ __host__ void ESP::copy_to_host() {
     cudaMemcpy(Mh_h, Mh_d, 3 * point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
     cudaMemcpy(Rd_h, Rd_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
     cudaMemcpy(Cp_h, Cp_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+
+    cudaMemcpy(profx_Qheat_h, profx_Qheat_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
 }
 
 __host__ void ESP::copy_mean_to_host() {
@@ -317,6 +319,9 @@ __host__ void ESP::output(int                    fidx, // Index of output file
 
         //  GlobalAMz (total angular momentum in y direction over entire planet)
         s.append_value(GlobalAMz_h, "/GlobalAMz", "kg m^2/s", "Global AngMomZ");
+
+	// profX Qheat from physics modules
+	s.append_table(profx_Qheat_h, nv * point_num, "/Qheat", "W m^-3", "Physics module Qheat");
     }
 
     if (sim.output_mean == true) {
