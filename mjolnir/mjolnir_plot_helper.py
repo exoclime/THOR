@@ -28,7 +28,8 @@ class mjol_args:
 def call_plot(name, func, *args, **kwargs):
     try:
         pfile = func(*args,**kwargs)
-        print('Created file: ' + str(pfile))
+        if pfile is not None:
+            print('Created file: ' + str(pfile))
     except:
         print(traceback.format_exc())
         print(f'{name} plot FAILED') 
