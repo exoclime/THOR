@@ -54,7 +54,10 @@
 #pragma once
 
 #include <math.h>
+#include <cstdio>
 
+// **********************************************************************
+// 3D vector operations
 // negation
 inline __host__ __device__ double3 operator-(const double3 &a) {
     return make_double3(-a.x, -a.y, -a.z);
@@ -158,7 +161,84 @@ inline __host__ __device__ double3 cross(const double3 &a, const double3 &b) {
     return make_double3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
 }
 
-__host__ __device__ double3 sort_add3(const double3 &a, const double3 &b, const double3 &c) {
+// *******************************************************************************************
+// 2D vector operations and 2x2 matrix as double4
+// double4 operators 
+// matrix negation
+inline __host__ __device__ double4 operator-(const double4 &a) {
+  return make_double4(-a.x, -a.y, -a.z, -a.w);
+}
+
+// matrix-matrix addition
+inline __host__ __device__ double4 operator+(const double4 &a, const double4 &b) {
+  return make_double4(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w);
+}
+
+// matrix multiplication
+inline __host__ __device__ double4 operator*(const double4 &A, const double4 &B) {
+    return make_double4(A.x*B.x + A.y*B.z,
+		       A.x*B.y + A.y*B.w,
+		       A.z*B.x + A.w*B.z,
+		       A.z*B.y + A.w*B.w);
+}
+
+// matrix-vector multiplication
+inline __host__ __device__ double2 operator*(const double4 &A, const double2 &v) {
+    return make_double2(A.x*v.x + A.y*v.y,
+			A.z*v.x + A.w*v.y);
+}
+
+
+// vector-vector addition
+inline __host__ __device__ double2 operator+(const double2 &A, const double2 &B) {
+  return make_double2(A.x+B.x, A.y+B.y);
+}
+
+// vector-vector subtraction
+inline __host__ __device__ double2 operator-(const double2 &A, const double2 &B) {
+  return make_double2(A.x-B.x, A.y-B.y);
+}
+
+// vector negation
+inline __host__ __device__ double2 operator-(const double2 &a) {
+  return make_double2(-a.x, -a.y);
+}
+
+
+// subtraction
+inline __host__ __device__ double4 operator-(const double4 &a, const double4 &b) {
+  return make_double4(a.x - b.x, a.y - b.y, a.z - b.z, a.w - b.w);
+}
+
+inline double4 multsub2x2(const double4 & A, const double4 & B, const double4 & C) {
+  return make_double4(A.x - (B.x*C.x + B.y*C.z),
+		      A.y - (B.x*C.y + B.y*C.w),
+		      A.z - (B.z*C.x + B.w*C.z),
+		      A.w - (B.z*C.y + B.w*C.w) );
+}
+
+
+inline __host__ __device__ double4 inv2x2(const double4 A) {
+  double det_inv = 1.0/( A.x*A.w - A.y*A.z );
+  if (isnan(det_inv))
+    {
+      printf("Warning, NaN determinant for matrix inversion [[ %g, %g ], [ %g, %g ]], det: %g\n",
+	   A.x, A.y, A.z, A.w,  A.x*A.w - A.y*A.z );
+      exit(-1);
+    }
+  return make_double4(det_inv*A.w,
+		      -det_inv*A.y,
+		      -det_inv*A.z,
+		      det_inv*A.x);
+}
+
+
+
+
+// ********************************************************************************************
+
+
+inline __host__ __device__ double3 sort_add3(const double3 &a, const double3 &b, const double3 &c) {
     // Sort three vectors for triangle vertices, then add them in a predictable order
     // Exploit the fact that three vertices cannot all have the same z
     // and if two have the same z, x and y must be different
