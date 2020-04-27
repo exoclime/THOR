@@ -173,6 +173,9 @@ public:
     double *GibbsdG;
     int     GibbsN = 61;
 
+    // physics module Qheat, for output
+    double *profx_Qheat_h;
+  
     ///////////////////////////
     //  Device
     int *point_local_d;

@@ -332,6 +332,17 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
     //                                 point_num);
     //     }
     // }
+    //always do this nan check so the code doesn't keep computing garbage
+    check_h = false;
+    cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
+    isnan_check<<<16, NTH>>>(temperature_d, nv, point_num, check_d);
+    cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
+    if (check_h) {
+        log::printf("\n\n Error in NAN check before profx::phy_modules_phy_loop!\n");
+        exit(EXIT_FAILURE);
+    }
+
+    
     BENCH_POINT_I_PHY(current_step,
                       "phy_core_benchmark",
                       (),
