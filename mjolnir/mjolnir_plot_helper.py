@@ -32,8 +32,8 @@ def call_plot(name, func, *args, **kwargs):
             print('Created file: ' + str(pfile))
     except:
         print(traceback.format_exc())
-        print(f'{name} plot FAILED') 
-        
+        print(f'{name} plot FAILED')
+
     return pfile
 
 def make_plot(args, save=True, axis=None):
@@ -150,7 +150,7 @@ def make_plot(args, save=True, axis=None):
         z = {'value': rg.U, 'label': r'Velocity (m s$^{-1}$)', 'name': 'u',
              'cmap': 'viridis', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'plog': plog}
         sigmaref = ham.Get_Prange(input, grid, rg, args, xtype='lat', use_p=use_p)
-        pfile = call_plot('ulonver',ham.vertical_lat,input, grid, output, rg, sigmaref, z, slice=args.slice, use_p=use_p, csp=1000, clevs=args.clevels, save=save, axis=axis)
+        pfile = call_plot('ulonver',ham.vertical_lon,input, grid, output, rg, sigmaref, z, slice=args.slice, use_p=use_p, csp=1000, clevs=args.clevels, save=save, axis=axis)
         plots_created.append(pfile)
 
     if 'vver' in pview or 'all' in pview:
@@ -191,6 +191,7 @@ def make_plot(args, save=True, axis=None):
         sigmaref = ham.Get_Prange(input, grid, rg, args, xtype='lat', use_p=use_p)
         pfile = call_plot('Tlonver',ham.vertical_lon,input, grid, output, rg, sigmaref, z, slice=args.slice, use_p=use_p, csp=[0], clevs=args.clevels, save=save, axis=axis)
         plots_created.append(pfile)
+        
     if 'PTver' in pview or 'all' in pview:
         rg.load(['Temperature','Pressure'])
         kappa_ad = input.Rd / input.Cp  # adiabatic coefficient
@@ -360,7 +361,7 @@ def make_plot(args, save=True, axis=None):
              'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
         pfile = call_plot('DGfuptot',ham.horizontal_lev,input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
         plots_created.append(pfile)
-        
+
     if ('TSfuptot' in pview or 'all' in pview) and input.TSRT:
         # Averaged temperature and wind field (longitude vs latitude)
         # PR_LV - Pressure level (Pa)
@@ -376,7 +377,7 @@ def make_plot(args, save=True, axis=None):
         pfile = call_plot('TSfuptot',ham.horizontal_lev,input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
         plots_created.append(pfile)
 
-        
+
     if ('DGfdowntot' in pview or 'all' in pview) and input.RT: #add all later
         # Averaged temperature and wind field (longitude vs latitude)
         # PR_LV - Pressure level (Pa)
@@ -433,7 +434,7 @@ def make_plot(args, save=True, axis=None):
              'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
         pfile = call_plot('TSfnet',ham.horizontal_lev,input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
         plots_created.append(pfile)
-        
+
     if ('qheat' in pview) and (input.RT or input.TSRT):
         # Averaged temperature and wind field (longitude vs latitude)
         # PR_LV - Pressure level (Pa)
@@ -470,7 +471,7 @@ def make_plot(args, save=True, axis=None):
         pfile = call_plot('TSqheat',ham.horizontal_lev,input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
         plots_created.append(pfile)
 
-        
+
     if ('mustar' in pview) and (input.TSRT):
         PR_LV = np.max(output.Pressure)  # not important here
         z = {'value': rg.mustar, 'label': r'mu_star ', 'name': 'mustar',
@@ -539,7 +540,7 @@ def make_plot(args, save=True, axis=None):
         z = {'value': fnet, 'label': r'Double Gray Net flux (W m$^{-2}$)', 'name': 'DGfnet'}
         pfile = call_plot('DGfluxprof',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
         plots_created.append(pfile)
-        
+
     if ('TSfluxprof' in pview or 'all' in pview) and input.TSRT:
 
         output.load_reshape(grid,['f_net'])
@@ -562,7 +563,7 @@ def make_plot(args, save=True, axis=None):
         pfile = call_plot('DGfutprof',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
         plots_created.append(pfile)
 
-        
+
     if ('TSfutprof' in pview or 'all' in pview) and input.TSRT:
         output.load_reshape(grid,['f_up_tot'])
         fup_int = output.f_up_tot
@@ -623,7 +624,7 @@ def make_plot(args, save=True, axis=None):
 
     if 'RTbalance' in pview:
         ham.RTbalance(input, grid, output)
-        
+
     if 'phase' in pview and input.RT:
         ham.phase_curve(input,grid,output)
 
