@@ -148,7 +148,8 @@ public:
         get_host_data_ptr();
 
         bool out = fetch_to_host();
-
+	if (!out)
+	  printf("fetch_to_host failed\n");
         return host_ptr;
     }
 
@@ -181,6 +182,13 @@ public:
     bool put(std::unique_ptr<T[]>& data_ptr) {
         cudaError_t ret =
             cudaMemcpy(device_ptr, &(data_ptr[0]), size * sizeof(T), cudaMemcpyHostToDevice);
+        return ret == cudaSuccess;
+    };
+
+  // copy data from local array passed as argument to device
+  bool put(T * data_ptr) {
+        cudaError_t ret =
+            cudaMemcpy(device_ptr, data_ptr, size * sizeof(T), cudaMemcpyHostToDevice);
         return ret == cudaSuccess;
     };
 
