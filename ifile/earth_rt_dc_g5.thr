@@ -238,7 +238,7 @@ Tint = 0
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 # add sin(lat)^2 dependence to tau lw (advanced)
-latf_lw = ture
+latf_lw = true
 # opacity at poles (lw)
 kappa_lw_pole = 1.47e-5
 
