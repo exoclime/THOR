@@ -28,11 +28,12 @@ class mjol_args:
 def call_plot(name, func, *args, **kwargs):
     try:
         pfile = func(*args,**kwargs)
-        print('Created file: ' + pfile)
+        if pfile is not None:
+            print('Created file: ' + str(pfile))
     except:
         print(traceback.format_exc())
-        pfile = name+' plot FAILED'
-        print(pfile)
+        print(f'{name} plot FAILED') 
+        
     return pfile
 
 def make_plot(args, save=True, axis=None):
@@ -45,13 +46,18 @@ def make_plot(args, save=True, axis=None):
 
     valid = ['uver', 'ulonver', 'vver', 'wver', 'wlonver', 'wprof', 'Tver', 'Tlonver', 'Tulev', 'PTver', 'PTlonver', 'ulev', 'PVver', 'PVlev',
              'TP', 'RVlev', 'cons', 'stream', 'pause', 'tracer', 'PTP', 'regrid', 'KE',
-             'SR', 'uprof', 'cfl', 'bvprof', 'fluxprof', 'Tsurf', 'insol', 'massf', 'pause_rg',
-             'futprof', 'fdtprof', 'fnetprof', 'mustar', 'fuptot', 'fdowntot', 'fnet', 'qheat',  # alf stuff
+             'SR', 'uprof', 'cfl', 'bvprof', 'TSfluxprof', 'Tsurf', 'insol', 'massf', 'pause_rg', 'DGfluxprof', 'qheat',
+             'DGfutprof', 'DGfdtprof', 'DGfnetprof', 'mustar', 'DGfuptot', 'DGfdowntot', 'DGfnet', 'DGqheat',  # alf stuff
+             'TSfutprof', 'TSfdtprof', 'TSfnetprof', 'mustar', 'TSfuptot', 'TSfdowntot', 'TSfnet', 'TSqheat',
+             'DGqheatprof', 'TSqheatprof', 'qheatprof',
              'phase','all']
 
     rg_needed = ['Tver', 'Tlonver', 'uver', 'ulonver', 'vver', 'wver', 'wlonver', 'Tulev', 'PTver', 'PTlonver', 'ulev', 'PVver', 'PVlev',
                  'RVlev', 'stream', 'tracer', 'Tsurf', 'insol', 'massf', 'pause_rg',
-                 'mustar', 'fuptot', 'fdowntot', 'fnet', 'qheat', 'all']  # these types need regrid
+                 'mustar', 'qheat',
+                 'TSfuptot', 'TSfdowntot', 'TSfnet', 'TSqheat',
+                 'DGfuptot', 'DGfdowntot', 'DGfnet', 'DGqheat',
+                 'all']  # these types need regrid
 
     openrg = 0
 
@@ -340,55 +346,94 @@ def make_plot(args, save=True, axis=None):
         pfile = call_plot('Tsurf',ham.horizontal_lev,input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
         plots_created.append(pfile)
 
-    if ('fuptot' in pview or 'all' in pview) and (input.RT or input.TSRT):
+    if ('DGfuptot' in pview or 'all' in pview) and input.RT:
         # Averaged temperature and wind field (longitude vs latitude)
         # PR_LV - Pressure level (Pa)
         if use_p:
             PR_LV = np.float(args.horizontal_lev[0]) * 100
         else:
             PR_LV = np.float(args.horizontal_lev[0]) * 1000
-        if input.RT:
-            rg.load(['flw_up'])
-            fup = rg.flw_up
-        elif input.TSRT:
-            rg.load(['f_up_tot'])
-            fup = rg.f_up_tot
-        z = {'value': fup, 'label': r'Total upward flux (W m^-2)', 'name': 'fuptot',
-             'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
-        pfile = call_plot('fuptot',ham.horizontal_lev,input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
-        plots_created.append(pfile)
 
-    if ('fdowntot' in pview or 'all' in pview) and (input.RT or input.TSRT): #add all later
+        rg.load(['flw_up'])
+        fup = rg.flw_up
+        z = {'value': fup, 'label': r'Double Gray Total upward flux (W m^-2)', 'name': 'DGfuptot',
+             'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
+        pfile = call_plot('DGfuptot',ham.horizontal_lev,input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
+        plots_created.append(pfile)
+        
+    if ('TSfuptot' in pview or 'all' in pview) and input.TSRT:
         # Averaged temperature and wind field (longitude vs latitude)
         # PR_LV - Pressure level (Pa)
         if use_p:
             PR_LV = np.float(args.horizontal_lev[0]) * 100
         else:
             PR_LV = np.float(args.horizontal_lev[0]) * 1000
-        if input.RT:
-            rg.load(['flw_dn','fsw_dn'])
-            fdn = rg.flw_dn + rg.fsw_dn
-        elif input.TSRT:
-            rg.load(['f_down_tot'])
-            fdn = rg.f_down_tot
-        z = {'value': fdn, 'label': r'Total downward flux (W m^-2)', 'name': 'fdowntot',
+
+        rg.load(['f_up_tot'])
+        fup = rg.f_up_tot
+        z = {'value': fup, 'label': r'Two Streams Total upward flux (W m^-2)', 'name': 'TSfuptot',
              'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
-        pfile = call_plot('fdowntot',ham.horizontal_lev,input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
+        pfile = call_plot('TSfuptot',ham.horizontal_lev,input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
         plots_created.append(pfile)
 
-    if ('fnet' in pview or 'all' in pview)  and (input.RT or input.TSRT):
+        
+    if ('DGfdowntot' in pview or 'all' in pview) and input.RT: #add all later
         # Averaged temperature and wind field (longitude vs latitude)
         # PR_LV - Pressure level (Pa)
         if use_p:
             PR_LV = np.float(args.horizontal_lev[0]) * 100
         else:
             PR_LV = np.float(args.horizontal_lev[0]) * 1000
-        rg.load(['f_net'])
-        z = {'value': rg.f_net, 'label': r'Total net flux (W m^-2)', 'name': 'fnet',
+
+        rg.load(['flw_dn','fsw_dn'])
+        fdn = rg.flw_dn + rg.fsw_dn
+
+        z = {'value': fdn, 'label': r'Double Gray Total downward flux (W m^-2)', 'name': 'DGfdowntot',
              'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
-        pfile = call_plot('fnet',ham.horizontal_lev,input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
+        pfile = call_plot('DGfdowntot',ham.horizontal_lev,input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
         plots_created.append(pfile)
 
+    if ('TSfdowntot' in pview or 'all' in pview) and input.TSRT: #add all later
+        # Averaged temperature and wind field (longitude vs latitude)
+        # PR_LV - Pressure level (Pa)
+        if use_p:
+            PR_LV = np.float(args.horizontal_lev[0]) * 100
+        else:
+            PR_LV = np.float(args.horizontal_lev[0]) * 1000
+        rg.load(['f_down_tot'])
+        fdn = rg.f_down_tot
+        z = {'value': fdn, 'label': r'Two Streams Total downward flux (W m^-2)', 'name': 'TSfdowntot',
+             'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
+        pfile = call_plot('TSfdowntot',ham.horizontal_lev,input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
+        plots_created.append(pfile)
+
+
+    if ('DGfnet' in pview or 'all' in pview)  and input.RT:
+        # Averaged temperature and wind field (longitude vs latitude)
+        # PR_LV - Pressure level (Pa)
+        if use_p:
+            PR_LV = np.float(args.horizontal_lev[0]) * 100
+        else:
+            PR_LV = np.float(args.horizontal_lev[0]) * 1000
+        rg.load(['DGf_net'])
+        z = {'value': rg.DGf_net, 'label': r'Double Gray Total net flux (W m^-2)', 'name': 'DGfnet',
+             'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
+        pfile = call_plot('DGfnet',ham.horizontal_lev,input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
+        plots_created.append(pfile)
+
+    if ('TSfnet' in pview or 'all' in pview)  and input.TSRT:
+        # Averaged temperature and wind field (longitude vs latitude)
+        # PR_LV - Pressure level (Pa)
+        if use_p:
+            PR_LV = np.float(args.horizontal_lev[0]) * 100
+        else:
+            PR_LV = np.float(args.horizontal_lev[0]) * 1000
+        rg.load(['TSf_net'])
+        z = {'value': rg.TSf_net, 'label': r'Two Streams Total net flux (W m^-2)', 'name': 'TSfnet',
+             'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
+        pfile = call_plot('TSfnet',ham.horizontal_lev,input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
+        plots_created.append(pfile)
+        
     if ('qheat' in pview) and (input.RT or input.TSRT):
         # Averaged temperature and wind field (longitude vs latitude)
         # PR_LV - Pressure level (Pa)
@@ -396,11 +441,36 @@ def make_plot(args, save=True, axis=None):
             PR_LV = np.float(args.horizontal_lev[0]) * 100
         else:
             PR_LV = np.float(args.horizontal_lev[0]) * 1000
-        z = {'value': rg.q_heat, 'label': r'Q Heat (W m^-3)', 'name': 'qheat',
+        z = {'value': rg.qheat, 'label': r'Q Heat (W m^-3)', 'name': 'qheat',
              'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
         pfile = call_plot('qheat',ham.horizontal_lev,input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
         plots_created.append(pfile)
 
+    if ('DGqheat' in pview) and input.RT:
+        # Averaged temperature and wind field (longitude vs latitude)
+        # PR_LV - Pressure level (Pa)
+        if use_p:
+            PR_LV = np.float(args.horizontal_lev[0]) * 100
+        else:
+            PR_LV = np.float(args.horizontal_lev[0]) * 1000
+        z = {'value': rg.DGqheat, 'label': r'Double Gray Q Heat (W m^-3)', 'name': 'DGqheat',
+             'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
+        pfile = call_plot('DGqheat',ham.horizontal_lev,input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
+        plots_created.append(pfile)
+
+    if ('TSqheat' in pview) and input.TSRT:
+        # Averaged temperature and wind field (longitude vs latitude)
+        # PR_LV - Pressure level (Pa)
+        if use_p:
+            PR_LV = np.float(args.horizontal_lev[0]) * 100
+        else:
+            PR_LV = np.float(args.horizontal_lev[0]) * 1000
+        z = {'value': rg.TSqheat, 'label': r'Q Heat (W m^-3)', 'name': 'TSqheat',
+             'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
+        pfile = call_plot('TSqheat',ham.horizontal_lev,input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
+        plots_created.append(pfile)
+
+        
     if ('mustar' in pview) and (input.TSRT):
         PR_LV = np.max(output.Pressure)  # not important here
         z = {'value': rg.mustar, 'label': r'mu_star ', 'name': 'mustar',
@@ -459,48 +529,83 @@ def make_plot(args, save=True, axis=None):
         pfile = call_plot('bvprof',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
         plots_created.append(pfile)
 
-    if ('fluxprof' in pview or 'all' in pview) and (input.RT or input.TSRT):
-        if input.RT: # double gray RT
-            output.load_reshape(grid,['flw_up','fsw_dn','flw_dn'])
-            fnet_int = output.flw_up - output.flw_dn - output.fsw_dn
-        elif input.TSRT: # wavelength dep'd RT
-            output.load_reshape(grid,['f_net'])
-            fnet_int = output.f_net
+    if ('DGfluxprof' in pview or 'all' in pview) and input.RT:
+
+        output.load_reshape(grid,['flw_up','fsw_dn','flw_dn'])
+        fnet_int = output.flw_up - output.flw_dn - output.fsw_dn
         fnet = fnet_int[:, :-1, :] + (fnet_int[:, 1:, :] - fnet_int[:, :-1, :]) *\
             (grid.Altitude[None, :, None] - grid.Altitudeh[None, :-1, None]) /\
             (grid.Altitudeh[None, 1:, None] - grid.Altitudeh[None, :-1, None])
-        z = {'value': fnet, 'label': r'Total flux (W m$^{-2}$)', 'name': 'ftot'}
-        pfile = call_plot('fluxprof',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
+        z = {'value': fnet, 'label': r'Double Gray Net flux (W m$^{-2}$)', 'name': 'DGfnet'}
+        pfile = call_plot('DGfluxprof',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
+        plots_created.append(pfile)
+        
+    if ('TSfluxprof' in pview or 'all' in pview) and input.TSRT:
+
+        output.load_reshape(grid,['f_net'])
+        fnet_int = output.f_net
+        fnet = fnet_int[:, :-1, :] + (fnet_int[:, 1:, :] - fnet_int[:, :-1, :]) *\
+            (grid.Altitude[None, :, None] - grid.Altitudeh[None, :-1, None]) /\
+            (grid.Altitudeh[None, 1:, None] - grid.Altitudeh[None, :-1, None])
+        z = {'value': fnet, 'label': r'Two Stream Net flux (W m$^{-2}$)', 'name': 'TSfnet'}
+        pfile = call_plot('TSfluxprof',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
         plots_created.append(pfile)
 
-    if ('futprof' in pview or 'all' in pview) and (input.RT or input.TSRT):
-        if input.RT:
-            output.load_reshape(grid,['flw_up'])
-            fup_int = output.flw_up
-        elif input.TSRT:
-            output.load_reshape(grid,['f_up_tot'])
-            fup_int = output.f_up_tot
+    if ('DGfutprof' in pview or 'all' in pview) and input.RT:
+
+        output.load_reshape(grid,['flw_up'])
+        fup_int = output.flw_up
         fup = fup_int[:, :-1, :] + (fup_int[:, 1:, :] - fup_int[:, :-1, :]) *\
             (grid.Altitude[None, :, None] - grid.Altitudeh[None, :-1, None]) /\
             (grid.Altitudeh[None, 1:, None] - grid.Altitudeh[None, :-1, None])
-        z = {'value': fup, 'label': r'Total Upward flux (W m$^{-2}$)', 'name': 'fuptot'}
-        pfile = call_plot('futprof',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
+        z = {'value': fup, 'label': r'Double Gray Total Upward flux (W m$^{-2}$)', 'name': 'DGfuptot'}
+        pfile = call_plot('DGfutprof',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
         plots_created.append(pfile)
 
-    if ('fdtprof' in pview or 'all' in pview) and (input.RT or input.TSRT):
-        if input.RT:
-            output.load_reshape(grid,['flw_dn','fsw_dn'])
-            fdn_int = output.flw_dn + output.fsw_dn
-        elif input.TSRT:
-            output.load_reshape(grid,['f_down_tot'])
-            fdn_int = output.f_down_tot
+        
+    if ('TSfutprof' in pview or 'all' in pview) and input.TSRT:
+        output.load_reshape(grid,['f_up_tot'])
+        fup_int = output.f_up_tot
+        fup = fup_int[:, :-1, :] + (fup_int[:, 1:, :] - fup_int[:, :-1, :]) *\
+            (grid.Altitude[None, :, None] - grid.Altitudeh[None, :-1, None]) /\
+            (grid.Altitudeh[None, 1:, None] - grid.Altitudeh[None, :-1, None])
+        z = {'value': fup, 'label': r'Two Stream Total Upward flux (W m$^{-2}$)', 'name': 'TSfuptot'}
+        pfile = call_plot('TSfutprof',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
+        plots_created.append(pfile)
+
+    if ('DGfdtprof' in pview or 'all' in pview) and input.RT:
+        output.load_reshape(grid,['flw_dn','fsw_dn'])
+        fdn_int = output.flw_dn + output.fsw_dn
         fdn = fdn_int[:, :-1, :] + (fdn_int[:, 1:, :] - fdn_int[:, :-1, :]) *\
             (grid.Altitude[None, :, None] - grid.Altitudeh[None, :-1, None]) /\
             (grid.Altitudeh[None, 1:, None] - grid.Altitudeh[None, :-1, None])
-        z = {'value': fdn, 'label': r'Total Downward flux (W m$^{-2}$)', 'name': 'fdowntot'}
-        pfile = call_plot('fdtprof',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
+        z = {'value': fdn, 'label': r'Double Gray Total Downward flux (W m$^{-2}$)', 'name': 'DGfdowntot'}
+        pfile = call_plot('DGfdtprof',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
         plots_created.append(pfile)
 
+    if ('TSfdtprof' in pview or 'all' in pview) and input.TSRT:
+        output.load_reshape(grid,['f_down_tot'])
+        fdn_int = output.f_down_tot
+        fdn = fdn_int[:, :-1, :] + (fdn_int[:, 1:, :] - fdn_int[:, :-1, :]) *\
+            (grid.Altitude[None, :, None] - grid.Altitudeh[None, :-1, None]) /\
+            (grid.Altitudeh[None, 1:, None] - grid.Altitudeh[None, :-1, None])
+        z = {'value': fdn, 'label': r'Two Stream Total Downward flux (W m$^{-2}$)', 'name': 'TSfdowntot'}
+        pfile = call_plot('TSfdtprof',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
+        plots_created.append(pfile)
+
+    if ('TSqheatprof' in pview or 'all' in pview) and input.TSRT:
+        output.load_reshape(grid,['TSqheat'])
+        qheat = output.TSqheat
+        z = {'value': qheat, 'label': r'Two Stream Q heat (W m$^{-2}$)', 'name': 'TSqheatprof'}
+        pfile = call_plot('TSqheatprof',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
+        plots_created.append(pfile)
+
+    if ('qheatprof' in pview or 'all' in pview):
+        output.load_reshape(grid,['qheat'])
+        qheat = output.qheat
+        z = {'value': qheat, 'label': r'Q heat (W m$^{-2}$)', 'name': 'qheatprof'}
+        pfile = call_plot('qheatprof',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
+        plots_created.append(pfile)
     # --- Global diagnostics -----------------------------------
     if 'cons' in pview:  # RD: needs some work!
         if args.split_layer[0] == 'no_split':
