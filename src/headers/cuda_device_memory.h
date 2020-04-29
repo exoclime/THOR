@@ -10,6 +10,19 @@
 
 using std::vector;
 
+// **********************************************************************************************************
+// Helper function for debug
+template<class T> std::shared_ptr<T[]> get_cuda_data(T* device_ptr, size_t size) {
+    std::shared_ptr<T[]> host_mem = std::shared_ptr<T[]>(new T[size]);
+
+    cudaError_t ret =
+        cudaMemcpy(host_mem.get(), device_ptr, size * sizeof(T), cudaMemcpyDeviceToHost);
+
+
+    return host_mem;
+}
+// **********************************************************************************************************
+
 // class for memory manager storage, to be able to store multiple template
 // instantiations
 class cuda_device_memory_interface
