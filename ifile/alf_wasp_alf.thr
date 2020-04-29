@@ -14,7 +14,7 @@ timestep = 300
 
 # output
 # output every n steps
-n_out = 1
+n_out = 144
 
 # write to log file at a different cadence from n_out
 custom_log_n_out = false
@@ -206,7 +206,8 @@ planet_star_dist = 0.015
 radius_star = 0.667
 
 # bond albedo of planet
-albedo = 0.18
+# 0.18, scattering at top of the atmosphere
+albedo = 0.0
 
 # diff_ang = 1/(diffusivity factor) for lw radiation
 diff_ang = 0.5
@@ -287,7 +288,7 @@ Alf_real_star = false
 Alf_fake_opac = 0.0
 Alf_T_surf = 100.0
 # surface albedo
-Alf_albedo = 0.1
+Alf_albedo = 1.0
 # asymmetry factor
 # (values: [-1, 1]. 0: isotropic scattering. 1: pure forward, -1: pure backward.)
 Alf_g_0 = 0.0
@@ -310,6 +311,11 @@ Alf_opacities_file = ./Alfrodull/input/opac_sample_r5.h5
 # compute radiative transfer every n step
 Alf_compute_every_nstep = 1
 
+# number of double gray radiative transfer spinup steps before shifting progressivelly to two stream
+Alf_dgrt_spinup_steps = 144000
+
+# number of steps to spinup from 0 to full Qheat
+Alf_spinup_steps = 28800
 
 #-- Boundary layer options (core_benchmark = NoBenchmark) --------------------#
 boundary_layer = false
