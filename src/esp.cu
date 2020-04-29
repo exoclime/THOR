@@ -354,6 +354,13 @@ int main(int argc, char** argv) {
     config_reader.append_config_var(
         "thermo_equation", thermo_equation_str, string(thermo_equation_default));
 
+    // vertical grid refinement in lower atmos (for turbulent BL)
+    bool vert_refined = false;
+    int  n_bl_layers  = 9;
+    config_reader.append_config_var("vert_refined", vert_refined, vert_refined_default);
+    config_reader.append_config_var("n_bl_layers", n_bl_layers, n_bl_layers_default);
+
+
     //*****************************************************************
     // read configs for modules
     phy_modules_generate_config(config_reader);
@@ -869,7 +876,9 @@ int main(int argc, char** argv) {
                  sim.A,                 // Planet radius
                  sim.Top_altitude,      // Top of the model's domain
                  initialize_zonal_mean, // Use zonal mean in rayleigh sponge layer?
-                 &max_count);
+                 &max_count,
+                 vert_refined,
+                 n_bl_layers);
 
     //  Define object X.
     ESP X(Grid.point_local,    // First neighbours

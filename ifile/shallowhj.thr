@@ -79,6 +79,12 @@ spring_dynamics = true
 # Parameter beta for spring dynamics
 spring_beta = 1.15
 
+# use grid refinement in vertical for lower atmos
+vert_refined = false
+
+# number of layers in logarithmic lower region
+n_bl_layers = 9
+
 
 #-- Model options ------------------------------------------------------------#
 # Non-hydrostatic parameter

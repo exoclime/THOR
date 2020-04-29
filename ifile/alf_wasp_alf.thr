@@ -79,6 +79,12 @@ spring_dynamics = true
 # Parameter beta for spring dynamics
 spring_beta = 1.15
 
+# use grid refinement in vertical for lower atmos
+vert_refined = false
+
+# number of layers in logarithmic lower region
+n_bl_layers = 9
+
 
 #-- Model options ------------------------------------------------------------#
 # Non-hydrostatic parameter
@@ -305,7 +311,7 @@ Alf_geom_zenith_corr = true
 # transition in w0. only above this value I2S is used.
 Alf_i2s_transition = 0.1
 
-Alf_opacities_file = ./Alfrodull/input/opac_sample_r5.h5 
+Alf_opacities_file = ./Alfrodull/input/opac_sample_r5.h5
 
 # compute radiative transfer every n step
 Alf_compute_every_nstep = 1
