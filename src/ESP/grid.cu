@@ -1918,6 +1918,8 @@ void Icogrid::set_altitudes_refined(double *Altitude,
     double c       = -10.614;
     double err_tar = 1.0E-8;
 
+    // stitch the two domains together (log and linear regions)
+    // solve for intersection via secant method
     int    nitmax = 100, j = 0;
     double x1 = 0.5;
     double x2 = 1.0;
