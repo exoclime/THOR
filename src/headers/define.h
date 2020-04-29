@@ -122,6 +122,9 @@
 
 #define thermo_equation_default "entropy"
 
+#define vert_refined_default false
+#define n_bl_layers_default 9
+
 enum benchmark_types {
     NO_BENCHMARK         = 0,
     HELD_SUAREZ          = 1,

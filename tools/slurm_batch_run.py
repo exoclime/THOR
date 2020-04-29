@@ -79,6 +79,9 @@ parser.add_argument("-jn", "--job_name", nargs=1, default=['default'], help='Job
 parser.add_argument("-n", "--num_jobs", nargs=1, default=[2], type=int, help='Number of sequential jobs to run (integer)')
 parser.add_argument("-p", "--prof", action="store_true", default=False, help='Run profiler on job')
 parser.add_argument("-o", "--output", type=str, default=None, help='Output dir name')
+parser.add_argument("-r", "--report", action="store_true", default=False, help="Run reporting code at end of sim")
+parser.add_argument("-d", "--dependency", action="store", type=int, default=None, help="Run after this job ID")
+
 args = parser.parse_args()
 initial_file = args.input_file[0]
 if args.job_name[0] == 'default':
@@ -95,7 +98,12 @@ else:
 if args.output is not None:
     output_arg = f"-o {args.output}"
 else:
-    output_arg = {}
+    output_arg = ""
+
+if args.dependency is not None:
+    last_id = args.dependency
+else:
+    last_id = None
 
 
 def start_esp(args, esp_command, esp_args, initial_file, profiling=None):
@@ -143,7 +151,7 @@ if not log_dir.exists():
 output_file = str(log_dir / f"slurm-esp-{job_name}-%j.out")  # %j for job index
 
 
-args = ['sbatch',
+sbatch_args = ['sbatch',
         '-D', working_dir,
         '-J', job_name,
         '-n', str(1),
@@ -157,14 +165,71 @@ args = ['sbatch',
 esp_command = "bin/esp"
 esp_args = f'-b {output_arg}'
 
-
 last_success = None
-last_id = None
 for i in range(num_jobs):
     if last_id is None:
-        last_success, last_id = start_esp(args, esp_command, esp_args, initial_file, profiling=profiling)
+        last_success, last_id = start_esp(sbatch_args, esp_command, esp_args, initial_file, profiling=profiling)
     elif last_success:
-        last_success, last_id = start_esp(args + ['--dependency=afterany:{}'.format(last_id)], esp_command, esp_args, initial_file, profiling=profiling)
+        last_success, last_id = start_esp(sbatch_args + ['--dependency=afterany:{}'.format(last_id)], esp_command, esp_args, initial_file, profiling=profiling)
+    else:
+        print("Error queuing last command")
+        exit(-1)
+
+
+def start_muninn(args, muninn_command):
+    batch_id_re = re.compile("Submitted batch job (\d+)\n")
+    print(f"Batch job args: {args}")
+    with subprocess.Popen(args,
+                          stdin=subprocess.PIPE,
+                          stdout=subprocess.PIPE,
+                          stderr=subprocess.PIPE,
+                          universal_newlines=True) as proc:
+
+        proc.stdin.write("#!/bin/sh\n")
+        srun_command = f"srun {muninn_command}\n"
+        proc.stdin.write(srun_command)
+        proc.stdin.close()
+        procid_string = proc.stdout.read()
+        print(proc.stderr.read())
+        m = batch_id_re.match(procid_string)
+        if m is not None:
+            batch_id = m.group(1)
+            print(f"Submitted muninn batch with ID: {batch_id}\nCommand: {srun_command}")
+            return True, batch_id
+        else:
+            print(f"Error reading batch id from muninn return: {procid_string}\nCommand: {srun_command}")
+
+            return False, -1
+
+
+if args.report:
+    
+    output_file = str(log_dir / f"slurm-muninn-{job_name}-%j.out")  # %j for job index                                   
+
+    
+    sbatch_args = ['sbatch',
+                   '-D', working_dir,
+                   '-J', job_name,
+                   '-n', str(1),
+                   '--gres', config_data['gpu_key'],
+                   '-p', config_data['partition'],
+                   '--time', time_limit,
+                   '--mail-type=ALL',
+                   '--mail-user=' + mail,
+                   '--output=' + output_file,
+                   '--signal=INT@60']
+    
+    if args.output is not None:
+        muninn_output_arg = f"{args.output}"
+    else:
+        print("need to specify path to output for muninn")
+        exit(-1)
+
+    muninn_command = f"./mjolnir/muninn -j mjolnir/mjolnyr.ipynb {muninn_output_arg}"
+    if last_id is None:
+        last_success, last_id = start_muninn(sbatch_args, muninn_command)
+    elif last_success:
+        last_success, last_id = start_muninn(sbatch_args + ['--dependency=afterany:{}'.format(last_id)], muninn_command)
     else:
         print("Error queuing last command")
         exit(-1)

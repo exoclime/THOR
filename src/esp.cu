@@ -316,7 +316,6 @@ int main(int argc, char** argv) {
     config_reader.append_config_var("results_path", output_path, string(output_path_default));
 
     config_reader.append_config_var("gcm_off", sim.gcm_off, gcm_off_default);
-
     config_reader.append_config_var("globdiag", sim.globdiag, globdiag_default);
 
     bool custom_global_n_out;
@@ -354,6 +353,13 @@ int main(int argc, char** argv) {
     string thermo_equation_str("entropy");
     config_reader.append_config_var(
         "thermo_equation", thermo_equation_str, string(thermo_equation_default));
+
+    // vertical grid refinement in lower atmos (for turbulent BL)
+    bool vert_refined = false;
+    int  n_bl_layers  = 9;
+    config_reader.append_config_var("vert_refined", vert_refined, vert_refined_default);
+    config_reader.append_config_var("n_bl_layers", n_bl_layers, n_bl_layers_default);
+
 
     //*****************************************************************
     // read configs for modules
@@ -679,6 +685,9 @@ int main(int argc, char** argv) {
     // Data logger
     log_writer logwriter(sim.simulation_ID, output_path);
 
+    string planet_filename;
+    int    output_file_idx = 0;
+
     // Batch mode handling
     if (run_as_batch) {
         log::printf("Starting in batch mode.\n");
@@ -716,6 +725,16 @@ int main(int argc, char** argv) {
                 // reload the last file we found as initial conditions
                 initial_conditions = o.to_string();
 
+                bool find_continue_OK = false;
+                find_continue_OK      = find_continue_file(
+                    initial_conditions, planet_filename, continue_sim, output_file_idx);
+
+                if (!find_continue_OK) {
+                    cuda_device_memory_manager::get_instance().deallocate();
+
+                    exit(EXIT_FAILURE);
+                }
+
                 logwriter.open_output_log_for_write(true /*open in append mode */);
                 logwriter.prepare_globdiag_file(true);
                 logwriter.prepare_diagnostics_file(true);
@@ -726,6 +745,21 @@ int main(int argc, char** argv) {
             }
         }
         else {
+            bool find_continue_OK = false;
+            if (sim.rest == false) {
+                find_continue_OK = find_continue_file(
+                    initial_conditions, planet_filename, continue_sim, output_file_idx);
+            }
+            else {
+                find_continue_OK = true;
+            }
+
+            if (!find_continue_OK) {
+                cuda_device_memory_manager::get_instance().deallocate();
+
+                exit(EXIT_FAILURE);
+            }
+
             log::printf("No batch file found, initialise simulation.\n");
             // we don't have an output file, start from scratch, reinitialising outputs
             logwriter.open_output_log_for_write(false /*open in non append mode */);
@@ -734,6 +768,24 @@ int main(int argc, char** argv) {
         }
     }
     else {
+        bool find_continue_OK = false;
+        if (sim.rest == false) {
+            find_continue_OK = find_continue_file(
+                initial_conditions, planet_filename, continue_sim, output_file_idx);
+        }
+        else {
+            find_continue_OK = true;
+        }
+
+        bool overwrite_OK = false;
+        overwrite_OK =
+            overwrite_check(output_path, simulation_ID, output_file_idx, force_overwrite);
+        if (!overwrite_OK || !find_continue_OK) {
+            cuda_device_memory_manager::get_instance().deallocate();
+
+            exit(EXIT_FAILURE);
+        }
+
         log::printf("Opening result output file.\n");
         logwriter.open_output_log_for_write(continue_sim /*open in append mode */);
         logwriter.prepare_globdiag_file(continue_sim);
@@ -812,7 +864,6 @@ int main(int argc, char** argv) {
             "Capabilities: %d (compiled with SM=%d).\n", device_major_minor_number, DEVICE_SM);
     }
 
-
     int max_count = 0;
     //
     //  Make the icosahedral grid
@@ -825,7 +876,9 @@ int main(int argc, char** argv) {
                  sim.A,                 // Planet radius
                  sim.Top_altitude,      // Top of the model's domain
                  initialize_zonal_mean, // Use zonal mean in rayleigh sponge layer?
-                 &max_count);
+                 &max_count,
+                 vert_refined,
+                 n_bl_layers);
 
     //  Define object X.
     ESP X(Grid.point_local,    // First neighbours
@@ -911,25 +964,25 @@ int main(int argc, char** argv) {
     double simulation_start_time = 0.0;
 
     // Initial conditions
-    int  output_file_idx = 0;
-    int  step_idx        = 0;
-    bool load_initial    = X.initial_values(initial_conditions,    // initial conditions if not
-                                                                // started from
-                                                                // rest
-                                         continue_sim,          // if we
-                                                                // specify
-                                                                // initial
-                                                                // conditions,
-                                                                // continue or
-                                                                // start at 0?
-                                         timestep,              // Time-step [s]
-                                         sim,                   // simulation parameters
-                                         step_idx,              // current step index
-                                         simulation_start_time, // output:
-                                                                // simulation start time
-                                         output_file_idx);      // output file
-                                                                   // read + 1, 0
-                                                                   // if nothing read
+    int  step_idx     = 0;
+    bool load_initial = X.initial_values(initial_conditions, // initial conditions if not
+                                                             // started from
+                                                             // rest
+                                         planet_filename,
+                                         // continue_sim,          // if we
+                                         // specify
+                                         // initial
+                                         // conditions,
+                                         // continue or
+                                         // start at 0?
+                                         timestep,               // Time-step [s]
+                                         sim,                    // simulation parameters
+                                         step_idx,               // current step index
+                                         simulation_start_time); // output:
+                                                                 // simulation start time
+    // output_file_idx);      // output file
+    // read + 1, 0
+    // if nothing read
 
 
     if (!load_initial) {
@@ -937,48 +990,6 @@ int main(int argc, char** argv) {
 
         exit(EXIT_FAILURE);
     }
-
-    // Check presence of output files
-    path results(output_path);
-
-    // Get the files in the directory
-    std::vector<string> result_files = get_files_in_directory(results.to_string());
-
-    // match them to name pattern, get file numbers and check numbers that are greater than the
-    // restart file number
-    std::vector<std::pair<string, int>> matching_name_result_files;
-    for (const auto& r : result_files) {
-        string basename    = "";
-        int    file_number = 0;
-        if (match_output_file_numbering_scheme(r, basename, file_number)) {
-            if (basename == simulation_ID && file_number > output_file_idx)
-                matching_name_result_files.emplace_back(r, file_number);
-        }
-    }
-    // sort them by number
-    std::sort(matching_name_result_files.begin(),
-              matching_name_result_files.end(),
-              [](const std::pair<string, int>& left, const std::pair<string, int>& right) {
-                  return left.second < right.second;
-              });
-
-    if (matching_name_result_files.size() > 0) {
-        if (!force_overwrite) {
-            log::printf("output files already exist and would be overwritten \n"
-                        "when running simulation. \n"
-                        "Files found:\n");
-            for (const auto& f : matching_name_result_files)
-                log::printf("\t%s\n", f.first.c_str());
-
-            log::printf(" Aborting. \n"
-                        "use --overwrite to overwrite existing files.\n");
-
-	    cuda_device_memory_manager::get_instance().deallocate();
-	    
-            exit(EXIT_FAILURE);
-        }
-    }
-
 
     long startTime = clock();
 

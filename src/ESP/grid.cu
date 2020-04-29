@@ -88,7 +88,9 @@ __host__ Icogrid::Icogrid(bool   sprd,        // Spring dynamics option
                           double A,            // Planet radius [m]
                           double Top_altitude, // Top model's domain [m]
                           bool   sponge,
-                          int *  max_count) {
+                          int *  max_count,
+                          bool   vert_refined,
+                          int    n_bl_layers) {
 
     log::printf("\n\n Building icosahedral grid!");
 
@@ -209,7 +211,12 @@ __host__ Icogrid::Icogrid(bool   sprd,        // Spring dynamics option
     //  Set the Altitudes
     Altitude  = (double *)malloc(nv * sizeof(double));
     Altitudeh = (double *)malloc(nvi * sizeof(double));
-    set_altitudes(Altitude, Altitudeh, Top_altitude, nv);
+    if (vert_refined) {
+        set_altitudes_refined(Altitude, Altitudeh, Top_altitude, nv, n_bl_layers);
+    }
+    else {
+        set_altitudes_uniform(Altitude, Altitudeh, Top_altitude, nv);
+    }
 
     //  Converting to spherical coordinates.
     lonlat = (double *)malloc(2 * point_num * sizeof(double));
@@ -1855,7 +1862,10 @@ void Icogrid::relocate_centres(int *   point_local,
     }
 }
 
-void Icogrid::set_altitudes(double *Altitude, double *Altitudeh, double Top_altitude, int nv) {
+void Icogrid::set_altitudes_uniform(double *Altitude,
+                                    double *Altitudeh,
+                                    double  Top_altitude,
+                                    int     nv) {
 
     //
     //  Description:
@@ -1873,8 +1883,82 @@ void Icogrid::set_altitudes(double *Altitude, double *Altitudeh, double Top_alti
     Altitudeh[0]    = 0.0;
     for (int lev = 0; lev < nv; lev++)
         Altitudeh[lev + 1] = Altitudeh[lev] + res_vert;
-    for (int lev = 0; lev < nv; lev++)
+    for (int lev = 0; lev < nv; lev++) {
         Altitude[lev] = (Altitudeh[lev] + Altitudeh[lev + 1]) / 2.0;
+        // printf("Vertical layer, half-layer %d = %f %f\n", lev, Altitude[lev], Altitudeh[lev + 1]);
+    }
+}
+
+void Icogrid::set_altitudes_refined(double *Altitude,
+                                    double *Altitudeh,
+                                    double  Top_altitude,
+                                    int     nv,
+                                    int     n_bl_layers) {
+
+    //
+    //  Description:
+    //
+    //  Sets the layers and interfaces altitudes with refinement in the lower atmosphere.
+    //  Useful for turbulent boundary layers of terrestrial planets
+    //  The first n_bl_layers are logarithmically spaced (coefficients are ad hoc)
+    //  Above that, the remaining layers are uniformly spaced
+    //  Algorithm written by Pierre Auclair-Desrotours
+    //
+    //  Input:  - nv - Number of vertical layers.
+    //          - top_altitude - Altitude of the top model domain.
+    //
+    //  Output: - Altitude  - Layers altitudes.
+    //          - Altitudeh - Interfaces altitudes.
+    //
+    int    ntrans  = n_bl_layers + 2;
+    double xup     = nv * 1.0 / ntrans;
+    double zup     = Top_altitude;
+    double a       = -4.4161; //These numbers are completely ad hoc.
+    double b       = 12.925;  //May need to be adjusted depending on performance, &c
+    double c       = -10.614;
+    double err_tar = 1.0E-8;
+
+    // stitch the two domains together (log and linear regions)
+    // solve for intersection via secant method
+    int    nitmax = 100, j = 0;
+    double x1 = 0.5;
+    double x2 = 1.0;
+    double f1 = exp(a * pow(x1, 2) + b * x1 + c) * (1 + (xup - x1) * (2 * a * x1 + b)) - 1;
+    double f2 = exp(a * pow(x2, 2) + b * x2 + c) * (1 + (xup - x2) * (2 * a * x2 + b)) - 1;
+    double xnew, fnew, err = 1.0, xbl, xh, d, k;
+    int    levbl, levh;
+
+    while (j < nitmax && err > err_tar) {
+        xnew = (x1 * f2 - x2 * f1) / (f2 - f1);
+        fnew = exp(a * pow(xnew, 2) + b * xnew + c) * (1 + (xup - xnew) * (2 * a * xnew + b)) - 1;
+        err  = fabs(xnew - x2);
+        x1   = x2;
+        x2   = xnew;
+        f1   = f2;
+        f2   = fnew;
+        j++;
+    }
+
+    xbl   = x2;
+    levbl = floor(xbl * ntrans);
+    d     = (2 * a * xbl + b) * exp(a * pow(xbl, 2) + b * xbl + c);
+    k     = 1 - d * xup;
+
+    Altitudeh[0] = 0.0;
+    for (int lev = 0; lev < nv; lev++) {
+        levh = lev + 1;
+        xh   = levh * 1.0 / ntrans;
+        if (levh > levbl) {
+            Altitudeh[levh] = zup * (d * xh + k);
+        }
+        else {
+            Altitudeh[levh] = zup * exp(a * pow(xh, 2) + b * xh + c);
+        }
+    }
+    for (int lev = 0; lev < nv; lev++) {
+        Altitude[lev] = (Altitudeh[lev] + Altitudeh[lev + 1]) / 2.0;
+        // printf("Vertical layer, half-layer %d = %f %f\n", lev, Altitude[lev], Altitudeh[lev + 1]);
+    }
 }
 
 

@@ -48,7 +48,7 @@
 #include <map>
 #include <memory>
 #include <string>
-
+#include <vector>
 
 #include "parser_helpers.h"
 
@@ -120,7 +120,7 @@ private:
     bool append_config_var(const string& name, std::unique_ptr<config_entry_interface> entry);
 
     // Storage map as key value pair
-    map<string, std::unique_ptr<config_entry_interface>> config_vars;
+    map<string, std::vector<std::unique_ptr<config_entry_interface>>> config_vars;
 
     int version = -1;
 };

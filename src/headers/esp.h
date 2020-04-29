@@ -173,6 +173,9 @@ public:
     double *GibbsdG;
     int     GibbsN = 61;
 
+    // physics module Qheat, for output
+    double *profx_Qheat_h;
+  
     ///////////////////////////
     //  Device
     int *point_local_d;
@@ -374,12 +377,11 @@ public:
     void alloc_data(bool, bool);
 
     bool initial_values(const std::string &initial_conditions_filename,
-                        const bool &       continue_sim,
+                        const std::string &planet_filename,
                         double             timestep_dyn,
                         SimulationSetup &  sim,
                         int &              nsteps,
-                        double &           simulation_start_time,
-                        int &              output_file_idx);
+                        double &           simulation_start_time);
 
     void init_timestep(int nstep, double simtime, double timestep_) {
         current_step    = nstep;
