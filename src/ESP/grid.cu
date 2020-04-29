@@ -1877,6 +1877,75 @@ void Icogrid::set_altitudes(double *Altitude, double *Altitudeh, double Top_alti
         Altitude[lev] = (Altitudeh[lev] + Altitudeh[lev + 1]) / 2.0;
 }
 
+void Icogrid::set_altitudes_nu(double *Altitude, double *Altitudeh, double Top_altitude, int nv) {
+
+    //
+    //  Description:
+    //
+    //  Sets the layers and interfaces altitudes.
+    //
+    //  Input:  - nv - Number of vertical layers.
+    //          - top_altitude - Altitude of the top model domain.
+    //
+    //  Output: - Altitude  - Layers altitudes.
+    //          - Altitudeh - Interfaces altitudes.
+    //
+    int    ntrans   = 11;
+    double xup      = nv*1.0/ntrans;
+    double zup      = Top_altitude/1000.0;
+    double a        = -4.4161;
+    double b        = 12.925;
+    double c        = -10.614;
+    double err_tar  = 1.0E-6;
+
+    int    nitmax   = 10;
+    double x1     = 0.5;
+    double x2     = 1.0;
+    double f1     = exp(a*pow(x1,2)+b*x1+c)*(1+(xup-x1)*(2*a*x1+b))-1;
+    double f2     = exp(a*pow(x2,2)+b*x2+c)*(1+(xup-x2)*(2*a*x2+b))-1;
+    double xnew,fnew,err,xbl,xh,d,k;
+    int    levbl,levh;
+
+    //   printf("%f %f \n",f1,f2);
+
+    for (int j = 0; j < nitmax; j++) {
+        xnew = (x1*f2-x2*f1)/(f2-f1);
+        fnew = exp(a*pow(xnew,2)+b*xnew+c)*(1+(xup-xnew)*(2*a*xnew+b))-1;
+      	err  = fabs(xnew-x2);
+      	x1   = x2;
+      	x2   = xnew;
+      	f1   = f2;
+      	f2   = fnew;
+      	//   printf("%f %f %f \n",xnew,fnew,err);
+      	if (err < err_tar) {
+      	    break;
+      	}
+    }
+
+    xbl = x2;
+    levbl = floor(xbl*ntrans);
+    d   = (2*a*xbl + b)*exp(a*pow(xbl,2) + b*xbl + c);
+    k   = 1 - d*xup;
+
+    //  printf("%f %f %f %f\n",d,k,xbl,levbl);
+
+    Altitudeh[0]    = 0.0;
+    for (int lev = 0; lev < nv; lev++) {
+        levh = lev+1;
+      	xh   = levh*1.0/ntrans;
+      	if (levh > levbl) {
+      	    Altitudeh[levh] = zup*(d*xh + k)*1000.0;
+      	}
+      	else {
+      	    Altitudeh[levh] = zup*exp(a*pow(xh,2) + b*xh + c)*1000.0;
+      	}
+    }
+    for (int lev = 0; lev < nv; lev++) {
+        Altitude[lev] = (Altitudeh[lev] + Altitudeh[lev + 1]) / 2.0;
+	      printf("%f %f\n",Altitude[lev],Altitudeh[lev+1]);
+    }
+}
+
 
 void Icogrid::cart2sphe(double *lonlat, double *xyz, int point_num) {
 

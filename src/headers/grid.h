@@ -124,6 +124,7 @@ private:
     void find_qpoints(int *, double *, double *, int *, int);
     void relocate_centres(int *, double *, double *, int *, int);
     void set_altitudes(double *, double *, double, int);
+    void set_altitudes_nu(double *, double *, double, int);
     void cart2sphe(double *, double *, int);
     void correct_xyz_points(double, double *, double *, int *, int);
     void control_areas(double *, double *, double *, int *, double *, double *, int *, int, double);
