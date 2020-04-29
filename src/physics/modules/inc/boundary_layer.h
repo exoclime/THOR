@@ -48,9 +48,7 @@
 
 #define bl_type_default "RayleighHS"
 
-enum boundary_layer_types {
-    RAYLEIGHHS = 0,
-};
+enum boundary_layer_types { RAYLEIGHHS = 0, MONINOBUKHOV = 1 };
 
 
 class boundary_layer : public phy_module_base

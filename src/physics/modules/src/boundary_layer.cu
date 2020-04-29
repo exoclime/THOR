@@ -82,6 +82,10 @@ bool boundary_layer::initial_conditions(const ESP &esp, const SimulationSetup &s
         bl_type = RAYLEIGHHS;
         config_OK &= true;
     }
+    else if (bl_type_str == "MoninObukhov" || bl_type_str == "MO") {
+        bl_type = MONINOBUKHOV;
+        config_OK &= true;
+    }
     else {
         log::printf("bl_type config item not recognised: [%s]\n", bl_type_str.c_str());
         config_OK &= false;
@@ -108,15 +112,20 @@ bool boundary_layer::phy_loop(ESP &                  esp,
     //  Specify the block sizes.
     dim3 NB((esp.point_num / NTH) + 1, esp.nv, 1);
 
-    rayleighHS<<<NB, NTH>>>(esp.Mh_d,
-                            esp.pressure_d,
-                            esp.Rho_d,
-                            esp.Altitude_d,
-                            surf_drag,
-                            bl_sigma,
-                            sim.Gravit,
-                            time_step,
-                            esp.point_num);
+    if (bl_type == RAYLEIGHHS) {
+        rayleighHS<<<NB, NTH>>>(esp.Mh_d,
+                                esp.pressure_d,
+                                esp.Rho_d,
+                                esp.Altitude_d,
+                                surf_drag,
+                                bl_sigma,
+                                sim.Gravit,
+                                time_step,
+                                esp.point_num);
+    }
+    else if (bl_type == MONINOBUKHOV) {
+        printf("MO BL not ready yet!\n");
+    }
 
     return true;
 }
