@@ -65,11 +65,17 @@ void boundary_layer::print_config() {
 bool boundary_layer::initialise_memory(const ESP &              esp,
                                        device_RK_array_manager &phy_modules_core_arrays) {
 
+    cudaMalloc((void **)&dvdz_tmp, esp.nvi * esp.point_num * sizeof(double));
+    cudaMalloc((void **)&d2vdz2_tmp, esp.nv * esp.point_num * sizeof(double));
+
     return true;
 }
 
 
 bool boundary_layer::free_memory() {
+
+    cudaFree(dvdz_tmp);
+    cudaFree(d2vdz2_tmp);
 
     return true;
 }
@@ -84,6 +90,10 @@ bool boundary_layer::initial_conditions(const ESP &esp, const SimulationSetup &s
     }
     else if (bl_type_str == "MoninObukhov" || bl_type_str == "MO") {
         bl_type = MONINOBUKHOV;
+        config_OK &= true;
+    }
+    else if (bl_type_str == "EkmanSpiral" || bl_type_str == "Ekman") {
+        bl_type = EKMANSPIRAL;
         config_OK &= true;
     }
     else {
@@ -111,6 +121,7 @@ bool boundary_layer::phy_loop(ESP &                  esp,
 
     //  Specify the block sizes.
     dim3 NB((esp.point_num / NTH) + 1, esp.nv, 1);
+    dim3 NBLEV((esp.point_num / NTH) + 1, 1, 1);
 
     if (bl_type == RAYLEIGHHS) {
         rayleighHS<<<NB, NTH>>>(esp.Mh_d,
@@ -126,6 +137,24 @@ bool boundary_layer::phy_loop(ESP &                  esp,
     else if (bl_type == MONINOBUKHOV) {
         printf("MO BL not ready yet!\n");
     }
+    else if (bl_type == EKMANSPIRAL) {
+        double KMconst = 12.5;
+        cudaMemset(dvdz_tmp, 0, sizeof(double) * 3 * esp.point_num * esp.nvi);
+        cudaMemset(d2vdz2_tmp, 0, sizeof(double) * 3 * esp.point_num * esp.nv);
+
+        ConstKMEkman<<<NBLEV, NTH>>>(esp.Mh_d,
+                                     esp.pressure_d,
+                                     esp.Rho_d,
+                                     esp.Altitude_d,
+                                     esp.Altitudeh_d,
+                                     dvdz_tmp,
+                                     d2vdz2_tmp,
+                                     KMconst,
+                                     time_step,
+                                     esp.point_num,
+                                     esp.nv);
+    }
+
 
     return true;
 }
@@ -202,5 +231,42 @@ __global__ void rayleighHS(double *Mh_d,
                 Mh_d[id * 3 * nv + lev * 3 + k] / (1.0 + kv_hs * time_step);
 
         // Wh_d[id * (nv + 1) + lev + k] = Wh_d[id * (nv + 1) + lev + k] / (1.0 + kv_hs * time_step);
+    }
+}
+
+__global__ void ConstKMEkman(double *Mh_d,
+                             double *pressure_d,
+                             double *Rho_d,
+                             double *Altitude_d,
+                             double *Altitudeh_d,
+                             double *dvdz_tmp,
+                             double *d2vdz2_tmp,
+                             double  KMconst,
+                             double  time_step,
+                             int     num,
+                             int     nv) {
+
+    int id = blockIdx.x * blockDim.x + threadIdx.x;
+    int lev;
+
+    if (id < num) {
+        for (int k = 0; k < 3; k++) {
+            dvdz_tmp[id * 3 * (nv + 1) + 0 * 3 + k] = 0; //boundary condition
+            for (lev = 1; lev <= nv; lev++) {
+                //first derivative at interfaces (half-layers)
+                dvdz_tmp[id * 3 * (nv + 1) + lev * 3 + k] =
+                    (Mh_d[id * 3 * nv + lev * 3 + k] / Rho_d[id * nv + lev]
+                     - Mh_d[id * 3 * nv + (lev - 1) * 3 + k] / Rho_d[id * nv + lev - 1])
+                    / (Altitude_d[lev] - Altitude_d[lev - 1]);
+            }
+            for (lev = 0; lev < nv; lev++) {
+                d2vdz2_tmp[id * 3 * nv + lev * 3 + k] = (dvdz_tmp[id * 3 * nv + (lev + 1) * 3 + k]
+                                                         - dvdz_tmp[id * 3 * nv + lev * 3 + k])
+                                                        / (Altitudeh_d[lev + 1] - Altitudeh_d[lev]);
+                Mh_d[id * 3 * nv + lev * 3 + k] += -Rho_d[id * nv + lev] * KMconst
+                                                   * d2vdz2_tmp[id * 3 * nv + lev * 3 + k]
+                                                   * time_step;
+            }
+        }
     }
 }

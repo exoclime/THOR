@@ -48,7 +48,7 @@
 
 #define bl_type_default "RayleighHS"
 
-enum boundary_layer_types { RAYLEIGHHS = 0, MONINOBUKHOV = 1 };
+enum boundary_layer_types { RAYLEIGHHS = 0, MONINOBUKHOV = 1, EKMANSPIRAL = 2 };
 
 
 class boundary_layer : public phy_module_base
@@ -83,8 +83,10 @@ private:
     double surf_drag_config = 1.0 / 86400.0; // surface drag coefficient
     double bl_sigma_config  = 0.7;           // sigma coord of boundary layer (% of surf pressure)
 
-    double surf_drag;
-    double bl_sigma;
+    double  surf_drag;
+    double  bl_sigma;
+    double *dvdz_tmp;
+    double *d2vdz2_tmp;
 
     void BLSetup(int bl_type_, double surf_drag_, double bl_sigma_);
 };
@@ -98,3 +100,15 @@ __global__ void rayleighHS(double *Mh_d,
                            double  Gravit,
                            double  time_step,
                            int     num);
+
+__global__ void ConstKMEkman(double *Mh_d,
+                             double *pressure_d,
+                             double *Rho_d,
+                             double *Altitude_d,
+                             double *Altitudeh_d,
+                             double *dvdz_tmp,
+                             double *d2vdz2_tmp,
+                             double  KMconst,
+                             double  time_step,
+                             int     num,
+                             int     nv);
