@@ -125,6 +125,10 @@
                            std::vector<std::string>(BRACED_INIT_LIST in),                       \
                            std::vector<std::string>(BRACED_INIT_LIST out),                      \
                            true);
+#    define BENCH_POINT_REGISTER_PHY_VARS(vars, in, out)                                        \
+        btester.register_phy_modules_variables(vars,			                        \
+                           std::vector<std::string>(BRACED_INIT_LIST in),                       \
+                           std::vector<std::string>(BRACED_INIT_LIST out)                      );
 
 
 #else // do nothing
@@ -140,6 +144,7 @@
 #    define BENCH_POINT_I_PHY(iteration, name, in, out)
 #    define BENCH_POINT_I_S_PHY(iteration, subiteration, name, in, out)
 #    define BENCH_POINT_I_SS_PHY(iteration, subiteration, subsubiteration, name, in, out)
+#    define BENCH_POINT_REGISTER_PHY_VARS(vars, in, out)                                        
 #endif // BENCHMARKING
 
 #ifdef BENCHMARKING
