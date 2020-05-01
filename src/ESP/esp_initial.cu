@@ -403,15 +403,13 @@ __host__ void ESP::alloc_data(bool globdiag, bool output_mean) {
 }
 
 __host__ bool ESP::initial_values(const std::string &initial_conditions_filename,
-                                  const bool &       continue_sim,
+                                  const std::string &planet_filename,
                                   double             timestep_dyn,
                                   SimulationSetup &  sim,
                                   int &              nstep,
-                                  double &           simulation_start_time,
-                                  int &              output_file_idx) {
+                                  double &           simulation_start_time) {
 
-    output_file_idx = 0;
-    nstep           = 0;
+    nstep = 0;
     //  Set initial conditions.
     //
     //
@@ -702,48 +700,6 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
     } //end if rest
     else {
         bool load_OK = true;
-        // build planet filename
-        string planet_filename;
-
-        path   p(initial_conditions_filename);
-        int    file_number = 0;
-        string basename    = "";
-
-        string parent_path = p.parent();
-
-        // Reload correct file if we are continuing from a specific file
-        if (continue_sim) {
-            if (!match_output_file_numbering_scheme(
-                    initial_conditions_filename, basename, file_number)) {
-                log::printf("Loading initial conditions: "
-                            "Could not recognise file numbering scheme "
-                            "for input %s: (found base: %s, num: %d) \n",
-                            initial_conditions_filename.c_str(),
-                            basename.c_str(),
-                            file_number);
-                return false;
-            }
-
-            output_file_idx = file_number;
-
-            planet_filename = p.parent() + "/esp_output_planet_" + basename + ".h5";
-        }
-        else {
-            planet_filename = p.parent() + "/" + p.stem() + "_planet.h5";
-        }
-
-        // check existence of files
-        if (!path_exists(initial_conditions_filename)) {
-            log::printf("initial condition file %s not found.\n",
-                        initial_conditions_filename.c_str());
-            return false;
-        }
-
-        if (!path_exists(planet_filename)) {
-            log::printf("planet_file %s not found.\n", planet_filename.c_str());
-            return false;
-        }
-
 
         log::printf("Loading planet from: %s\n", planet_filename.c_str());
         log::printf("Loading initial conditions from: %s\n", initial_conditions_filename.c_str());

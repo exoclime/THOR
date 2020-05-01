@@ -57,6 +57,15 @@ bool create_output_dir(const string& output_dir);
 
 bool path_exists(const string& path);
 
+bool find_continue_file(string& initial_conditions,
+                        string& planet_filename,
+                        bool    continue_sim,
+                        int&    output_file_idx);
+
+bool overwrite_check(string& output_path,
+                     string& simulation_ID,
+                     int     output_file_idx,
+                     bool    force_overwrite);
 
 class path
 {
