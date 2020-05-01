@@ -68,7 +68,7 @@ using namespace std;
 map<string, output_def> build_definitions(ESP& esp, Icogrid& grid) {
 
     map<string, output_def> out = {
-        // {"map name, {variable pointer, table size, name, short name, on device}}
+        // {"map name, {variable pointer, table size, name, short name, on device, function call back for loc}}
         {"Rho_d",
          {esp.Rho_d,
           esp.nv * esp.point_num,
@@ -77,7 +77,6 @@ map<string, output_def> build_definitions(ESP& esp, Icogrid& grid) {
           true,
           std::bind(
               &ESP::index_to_location_scalar, &esp, std::placeholders::_1, std::placeholders::_2)}},
-
         {"pressure_d",
          {esp.pressure_d,
           esp.nv * esp.point_num,
@@ -574,16 +573,23 @@ map<string, output_def> build_definitions(ESP& esp, Icogrid& grid) {
           false,
           std::bind(
               &ESP::index_to_location_3x7xn, &esp, std::placeholders::_1, std::placeholders::_2)}},
-    };
+        {"Qheat",
+         {esp.profx_Qheat_d,
+          esp.nv * esp.point_num,
+          "Qheat",
+          "qh",
+          true,
+          std::bind(&ESP::index_to_location_scalar,
+                    &esp,
+                    std::placeholders::_1,
+                    std::placeholders::_2)}}};
 
     return out;
 }
 
 
 binary_test::binary_test(string output_dir_, string output_base_name_) :
-    output_dir(output_dir_),
-    output_base_name(output_base_name_),
-    nan_check_d(nullptr) {
+    output_dir(output_dir_), output_base_name(output_base_name_), nan_check_d(nullptr) {
     create_output_dir(output_dir);
 }
 binary_test::~binary_test() {

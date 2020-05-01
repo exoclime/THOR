@@ -123,6 +123,10 @@ public:
         return device_ptr;
     };
 
+  T*& ptr_ref() {
+    return device_ptr;
+    };
+
     T* operator*() {
         return device_ptr;
     };
