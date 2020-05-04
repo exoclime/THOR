@@ -577,8 +577,8 @@ if has_pycuda:
     """)
 
 
-def create_rg_map(resultsf, simID, rotation=False, theta_z=0, theta_y=0):
-    outall = GetOutput(resultsf, simID, 0, 0, rotation=rotation, theta_z=theta_z, theta_y=theta_y)
+def create_rg_map(resultsf, simID, idx1, idx2, rotation=False, theta_z=0, theta_y=0):
+    outall = GetOutput(resultsf, simID, idx1, idx2, rotation=rotation, theta_z=theta_z, theta_y=theta_y)
     input = outall.input
     grid = outall.grid
 
@@ -664,7 +664,7 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
 
     if not os.path.exists(resultsf + '/regrid_map.npz') or overwrite:
         # if numpy zip file containing weights d.n.e., then create it
-        create_rg_map(resultsf, simID, rotation=rotation, theta_z=theta_z, theta_y=theta_y)
+        create_rg_map(resultsf, simID, ntsi, ntsi, rotation=rotation, theta_z=theta_z, theta_y=theta_y)
 
     # open numpy zip file containing weights
     rg_map = np.load(resultsf + '/regrid_map.npz')
