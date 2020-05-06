@@ -789,7 +789,7 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
                       'Pressure_mean': output.Pressure_mean[:, :, 0]}
 
             source['qheat'] = output.qheat[:, :, 0]
-            
+
             if input.RT == 1:
                 source['flw_up'] = output.flw_up[:, :-1, 0] + (output.flw_up[:, 1:, 0] - output.flw_up[:, :-1, 0]) * interpz[None, :]
                 source['flw_dn'] = output.flw_dn[:, :-1, 0] + (output.flw_dn[:, 1:, 0] - output.flw_dn[:, :-1, 0]) * interpz[None, :]
@@ -1162,7 +1162,7 @@ def vertical_lat(input, grid, output, rg, sigmaref, z, slice=['default'], save=T
         raise IOError("'axis = {}' but {} is neither an axes.SubplotBase instance nor a (axes.SubplotBase, plt.Figure) instance".format(axis, axis))
 
     fig.set_tight_layout(True)
-    
+
     C = ax.contourf(latp * 180 / np.pi, ycoord, zvals, clevels, cmap=z['cmap'])
 
     if wind_vectors == True:
@@ -1401,7 +1401,7 @@ def vertical_lon(input, grid, output, rg, sigmaref, z, slice='default', save=Tru
         raise IOError("'axis = {}' but {} is neither an axes.SubplotBase instance nor a (axes.SubplotBase, plt.Figure) instance".format(axis, axis))
 
     fig.set_tight_layout(True)
-        
+
     C = ax.contourf(lonp * 180 / np.pi, ycoord, zvals, clevels, cmap=z['cmap'])
 
     if wind_vectors == True:
@@ -1615,7 +1615,7 @@ def horizontal_lev(input, grid, output, rg, Plev, z, save=True, axis=False, wind
         raise IOError("'axis = {}' but {} is neither an axes.SubplotBase instance nor a (axes.SubplotBase, plt.Figure) instance".format(axis, axis))
 
     fig.set_tight_layout(True)
-        
+
     if z['llswap']:
         C = ax.contourf(latp, lonp, zlevt.T, clevels, cmap=z['cmap'])
     else:
@@ -1806,7 +1806,7 @@ def profile(input, grid, output, z, stride=50, axis=None, save=True):
 
     # prepare pressure array
     output.load_reshape(grid, ['Pressure'])
-    
+
     # get figure and axis
     if isinstance(axis, axes.SubplotBase):
         ax = axis
@@ -1822,7 +1822,7 @@ def profile(input, grid, output, z, stride=50, axis=None, save=True):
         raise IOError("'axis = {}' but {} is neither an axes.SubplotBase instance nor a (axes.SubplotBase, plt.Figure) instance".format(axis, axis))
 
     fig.set_tight_layout(True)
-    
+
     tsp = output.nts - output.ntsi + 1
 
     col_lon = []
