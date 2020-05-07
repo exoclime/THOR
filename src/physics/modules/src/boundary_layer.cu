@@ -65,8 +65,8 @@ void boundary_layer::print_config() {
 bool boundary_layer::initialise_memory(const ESP &              esp,
                                        device_RK_array_manager &phy_modules_core_arrays) {
 
-    cudaMalloc((void **)&dvdz_tmp, esp.nvi * esp.point_num * sizeof(double));
-    cudaMalloc((void **)&d2vdz2_tmp, esp.nv * esp.point_num * sizeof(double));
+    cudaMalloc((void **)&dvdz_tmp, 3 * esp.nvi * esp.point_num * sizeof(double));
+    cudaMalloc((void **)&d2vdz2_tmp, 3 * esp.nv * esp.point_num * sizeof(double));
 
     return true;
 }
@@ -251,8 +251,9 @@ __global__ void ConstKMEkman(double *Mh_d,
 
     if (id < num) {
         for (int k = 0; k < 3; k++) {
-            dvdz_tmp[id * 3 * (nv + 1) + 0 * 3 + k] = 0; //boundary condition
-            for (lev = 1; lev <= nv; lev++) {
+            dvdz_tmp[id * 3 * (nv + 1) + 0 * 3 + k]  = 0; //boundary condition
+            dvdz_tmp[id * 3 * (nv + 1) + nv * 3 + k] = 0;
+            for (lev = 1; lev < nv; lev++) {
                 //first derivative at interfaces (half-layers)
                 dvdz_tmp[id * 3 * (nv + 1) + lev * 3 + k] =
                     (Mh_d[id * 3 * nv + lev * 3 + k] / Rho_d[id * nv + lev]
