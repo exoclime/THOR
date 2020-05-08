@@ -173,10 +173,8 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
                                     profx_dW_d,
                                     profx_Qheat_d);
 
-        BENCH_POINT_I(current_step,
-                      "phy_Sponge",
-                      (),
-                      ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"))
+        BENCH_POINT_I(
+            current_step, "phy_Sponge", (), ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "W_d"))
     }
 
 
@@ -342,7 +340,7 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
         exit(EXIT_FAILURE);
     }
 
-    
+
     BENCH_POINT_I_PHY(current_step,
                       "phy_core_benchmark",
                       (),
@@ -360,7 +358,7 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
     BENCH_POINT_I_PHY(current_step,
                       "phy_module",
                       (),
-                      ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"))
+                      ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d", "Qheat"))
     //  Computes the new pressures.
     cudaDeviceSynchronize();
     Compute_pressure<<<NB, NTH>>>(pressure_d, temperature_d, Rho_d, Rd_d, point_num);

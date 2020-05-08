@@ -989,6 +989,10 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
     cudaMemset(boundary_flux_d, 0, sizeof(double) * 6 * nv * point_num);
 
+    cudaMemset(profx_dMh_d, 0, sizeof(double) * 3 * point_num * nv);
+    cudaMemset(profx_dWh_d, 0, sizeof(double) * point_num * nvi);
+    cudaMemset(profx_dW_d, 0, sizeof(double) * point_num * nv);
+
     delete[] Kdh4_h;
     delete[] Kdhz_h;
     delete[] Kdv6_h;

@@ -1058,7 +1058,15 @@ int main(int argc, char** argv) {
     char          dest_name[256];
     sprintf(dest_name, "%s/config_copy.%d", output_path.c_str(), output_file_idx);
     std::ofstream destin(dest_name);
-    destin << source.rdbuf();
+
+    std::istreambuf_iterator<char> begin_source(source);
+    std::istreambuf_iterator<char> end_source;
+    std::ostreambuf_iterator<char> begin_dest(destin); 
+    std::copy(begin_source, end_source, begin_dest);
+
+    source.close();
+    destin.close();
+
 
     // We'll start writnig data to file and running main loop,
     // setup signal handlers to handle gracefully termination and interrupt

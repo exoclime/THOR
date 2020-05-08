@@ -577,8 +577,8 @@ if has_pycuda:
     """)
 
 
-def create_rg_map(resultsf, simID, rotation=False, theta_z=0, theta_y=0):
-    outall = GetOutput(resultsf, simID, 0, 0, rotation=rotation, theta_z=theta_z, theta_y=theta_y)
+def create_rg_map(resultsf, simID, idx1, idx2, rotation=False, theta_z=0, theta_y=0):
+    outall = GetOutput(resultsf, simID, idx1, idx2, rotation=rotation, theta_z=theta_z, theta_y=theta_y)
     input = outall.input
     grid = outall.grid
 
@@ -664,7 +664,7 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
 
     if not os.path.exists(resultsf + '/regrid_map.npz') or overwrite:
         # if numpy zip file containing weights d.n.e., then create it
-        create_rg_map(resultsf, simID, rotation=rotation, theta_z=theta_z, theta_y=theta_y)
+        create_rg_map(resultsf, simID, ntsi, ntsi, rotation=rotation, theta_z=theta_z, theta_y=theta_y)
 
     # open numpy zip file containing weights
     rg_map = np.load(resultsf + '/regrid_map.npz')
@@ -789,7 +789,7 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
                       'Pressure_mean': output.Pressure_mean[:, :, 0]}
 
             source['qheat'] = output.qheat[:, :, 0]
-            
+
             if input.RT == 1:
                 source['flw_up'] = output.flw_up[:, :-1, 0] + (output.flw_up[:, 1:, 0] - output.flw_up[:, :-1, 0]) * interpz[None, :]
                 source['flw_dn'] = output.flw_dn[:, :-1, 0] + (output.flw_dn[:, 1:, 0] - output.flw_dn[:, :-1, 0]) * interpz[None, :]
@@ -1162,7 +1162,7 @@ def vertical_lat(input, grid, output, rg, sigmaref, z, slice=['default'], save=T
         raise IOError("'axis = {}' but {} is neither an axes.SubplotBase instance nor a (axes.SubplotBase, plt.Figure) instance".format(axis, axis))
 
     fig.set_tight_layout(True)
-    
+
     C = ax.contourf(latp * 180 / np.pi, ycoord, zvals, clevels, cmap=z['cmap'])
 
     if wind_vectors == True:
@@ -1401,7 +1401,7 @@ def vertical_lon(input, grid, output, rg, sigmaref, z, slice='default', save=Tru
         raise IOError("'axis = {}' but {} is neither an axes.SubplotBase instance nor a (axes.SubplotBase, plt.Figure) instance".format(axis, axis))
 
     fig.set_tight_layout(True)
-        
+
     C = ax.contourf(lonp * 180 / np.pi, ycoord, zvals, clevels, cmap=z['cmap'])
 
     if wind_vectors == True:
@@ -1615,7 +1615,7 @@ def horizontal_lev(input, grid, output, rg, Plev, z, save=True, axis=False, wind
         raise IOError("'axis = {}' but {} is neither an axes.SubplotBase instance nor a (axes.SubplotBase, plt.Figure) instance".format(axis, axis))
 
     fig.set_tight_layout(True)
-        
+
     if z['llswap']:
         C = ax.contourf(latp, lonp, zlevt.T, clevels, cmap=z['cmap'])
     else:
@@ -1806,7 +1806,7 @@ def profile(input, grid, output, z, stride=50, axis=None, save=True):
 
     # prepare pressure array
     output.load_reshape(grid, ['Pressure'])
-    
+
     # get figure and axis
     if isinstance(axis, axes.SubplotBase):
         ax = axis
@@ -1822,7 +1822,7 @@ def profile(input, grid, output, z, stride=50, axis=None, save=True):
         raise IOError("'axis = {}' but {} is neither an axes.SubplotBase instance nor a (axes.SubplotBase, plt.Figure) instance".format(axis, axis))
 
     fig.set_tight_layout(True)
-    
+
     tsp = output.nts - output.ntsi + 1
 
     col_lon = []
