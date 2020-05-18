@@ -45,6 +45,9 @@
 // 1.0     16/08/2017 Released version  (JM)
 //
 ////////////////////////////////////////////////////////////////////////
+
+#include "debug.h"
+
 __global__ void Vertical_Eq(double *Whs_d,
                             double *Ws_d,
                             double *pressures_d,
@@ -321,7 +324,23 @@ __global__ void Vertical_Eq(double *Whs_d,
                 }
             } // End of if (DeepModel) physics computation
 
-
+#ifdef CHECK_THOR_VERTICAL_INT_THOMAS_DIAG_DOM
+            {
+                // check that matrix is diagonaly dominant
+                double cc_s = cc[threadIdx.x * nvi + lev];
+                if (!(fabs(bb) >= THOMAS_DIAG_DOM_FACTOR * (fabs(aa) + fabs(cc_s)))) {
+                    double sum = cc_s + bb + aa;
+                    printf("Thomas Diagonal Dominance Check failed at (grid_idx: %d, level: %d ): "
+                           "a: %g, b: %g, c: %g. sum: %g \n",
+                           id,
+                           lev,
+                           aa,
+                           bb,
+                           cc_s,
+                           sum);
+                }
+            }
+#endif // CHECK_THOR_VERTICAL_INT_THOMAS_DIAG_DOM
             dd[threadIdx.x * nvi + lev] = -C0;
             if (lev == 1) {
                 cc[threadIdx.x * nvi + 1] = cc[threadIdx.x * nvi + 1] / bb;
