@@ -65,8 +65,23 @@ void boundary_layer::print_config() {
 bool boundary_layer::initialise_memory(const ESP &              esp,
                                        device_RK_array_manager &phy_modules_core_arrays) {
 
-    cudaMalloc((void **)&dvdz_tmp, 3 * esp.nvi * esp.point_num * sizeof(double));
+    // cudaMalloc((void **)&dvdz_tmp, 3 * esp.nvi * esp.point_num * sizeof(double));
     cudaMalloc((void **)&d2vdz2_tmp, 3 * esp.nv * esp.point_num * sizeof(double));
+
+    cudaMalloc((void **)&atmp, esp.nv * esp.point_num * sizeof(double));
+    cudaMalloc((void **)&btmp, esp.nv * esp.point_num * sizeof(double));
+    cudaMalloc((void **)&ctmp, esp.nv * esp.point_num * sizeof(double));
+    cudaMalloc((void **)&cpr_tmp, esp.nv * esp.point_num * sizeof(double));
+    cudaMalloc((void **)&dtmp, 3 * esp.nv * esp.point_num * sizeof(double));
+    cudaMalloc((void **)&dpr_tmp, 3 * esp.nv * esp.point_num * sizeof(double));
+
+    cudaMemset(atmp, 0, sizeof(double) * esp.point_num * esp.nv);
+    cudaMemset(btmp, 0, sizeof(double) * esp.point_num * esp.nv);
+    cudaMemset(ctmp, 0, sizeof(double) * esp.point_num * esp.nv);
+    cudaMemset(cpr_tmp, 0, sizeof(double) * esp.point_num * esp.nv);
+    cudaMemset(dtmp, 0, sizeof(double) * 3 * esp.point_num * esp.nv);
+    cudaMemset(dpr_tmp, 0, sizeof(double) * 3 * esp.point_num * esp.nv);
+
 
     return true;
 }
@@ -74,7 +89,7 @@ bool boundary_layer::initialise_memory(const ESP &              esp,
 
 bool boundary_layer::free_memory() {
 
-    cudaFree(dvdz_tmp);
+    // cudaFree(dvdz_tmp);
     cudaFree(d2vdz2_tmp);
 
     return true;
@@ -106,7 +121,7 @@ bool boundary_layer::initial_conditions(const ESP &esp, const SimulationSetup &s
         exit(-1);
     }
 
-    BLSetup(bl_type, surf_drag_config, bl_sigma_config);
+    BLSetup(esp, sim, bl_type, surf_drag_config, bl_sigma_config);
 
     return true;
 }
@@ -139,20 +154,38 @@ bool boundary_layer::phy_loop(ESP &                  esp,
     }
     else if (bl_type == EKMANSPIRAL) {
         double KMconst = 12.5;
-        cudaMemset(dvdz_tmp, 0, sizeof(double) * 3 * esp.point_num * esp.nvi);
+        // cudaMemset(dvdz_tmp, 0, sizeof(double) * 3 * esp.point_num * esp.nvi);
         cudaMemset(d2vdz2_tmp, 0, sizeof(double) * 3 * esp.point_num * esp.nv);
 
-        ConstKMEkman<<<NBLEV, NTH>>>(esp.Mh_d,
-                                     esp.pressure_d,
-                                     esp.Rho_d,
-                                     esp.Altitude_d,
-                                     esp.Altitudeh_d,
-                                     dvdz_tmp,
-                                     d2vdz2_tmp,
-                                     KMconst,
-                                     time_step,
-                                     esp.point_num,
-                                     esp.nv);
+        // ConstKMEkman<<<NBLEV, NTH>>>(esp.Mh_d,
+        //                              esp.pressure_d,
+        //                              esp.Rho_d,
+        //                              esp.Altitude_d,
+        //                              esp.Altitudeh_d,
+        //                              d2vdz2_tmp,
+        //                              KMconst,
+        //                              zbl,
+        //                              time_step,
+        //                              esp.point_num,
+        //                              esp.nv);
+
+        ConstKMEkman_Impl<<<NBLEV, NTH>>>(esp.Mh_d,
+                                          esp.pressure_d,
+                                          esp.Rho_d,
+                                          esp.Altitude_d,
+                                          esp.Altitudeh_d,
+                                          atmp,
+                                          btmp,
+                                          ctmp,
+                                          cpr_tmp,
+                                          dtmp,
+                                          dpr_tmp,
+                                          KMconst,
+                                          zbl,
+                                          time_step,
+                                          esp.point_num,
+                                          esp.nv,
+                                          bl_top_lev);
     }
 
 
@@ -184,11 +217,24 @@ bool boundary_layer::store_init(storage &s) {
     return true;
 }
 
-void boundary_layer::BLSetup(int bl_type, double surf_drag_, double bl_sigma_) {
+void boundary_layer::BLSetup(const ESP &            esp,
+                             const SimulationSetup &sim,
+                             int                    bl_type,
+                             double                 surf_drag_,
+                             double                 bl_sigma_) {
     if (bl_type == RAYLEIGHHS) {
         surf_drag = surf_drag_;
         bl_sigma  = bl_sigma_;
     }
+    else if (bl_type == EKMANSPIRAL) {
+        zbl     = bl_sigma_ * sim.Top_altitude;
+        int lev = 0;
+        while (esp.Altitude_h[lev] < zbl) {
+            bl_top_lev = lev;
+            lev++;
+        }
+    }
+    // printf("%f, %f, %d\n", zbl, esp.Altitude_h[bl_top_lev], bl_top_lev);
 }
 
 
@@ -239,9 +285,9 @@ __global__ void ConstKMEkman(double *Mh_d,
                              double *Rho_d,
                              double *Altitude_d,
                              double *Altitudeh_d,
-                             double *dvdz_tmp,
                              double *d2vdz2_tmp,
                              double  KMconst,
+                             double  zbl,
                              double  time_step,
                              int     num,
                              int     nv) {
@@ -251,23 +297,166 @@ __global__ void ConstKMEkman(double *Mh_d,
 
     if (id < num) {
         for (int k = 0; k < 3; k++) {
-            dvdz_tmp[id * 3 * (nv + 1) + 0 * 3 + k]  = 0; //boundary condition
-            dvdz_tmp[id * 3 * (nv + 1) + nv * 3 + k] = 0;
-            for (lev = 1; lev < nv; lev++) {
-                //first derivative at interfaces (half-layers)
-                dvdz_tmp[id * 3 * (nv + 1) + lev * 3 + k] =
-                    (Mh_d[id * 3 * nv + lev * 3 + k] / Rho_d[id * nv + lev]
-                     - Mh_d[id * 3 * nv + (lev - 1) * 3 + k] / Rho_d[id * nv + lev - 1])
-                    / (Altitude_d[lev] - Altitude_d[lev - 1]);
-            }
+            // dvdz_tmp[id * 3 * (nv + 1) + 0 * 3 + k]  = 0; //boundary condition
+            // dvdz_tmp[id * 3 * (nv + 1) + nv * 3 + k] = 0;
+            // for (lev = 1; lev < nv; lev++) {
+            //     //first derivative at interfaces (half-layers)
+            //     dvdz_tmp[id * 3 * (nv + 1) + lev * 3 + k] =
+            //         (Mh_d[id * 3 * nv + lev * 3 + k] / Rho_d[id * nv + lev]
+            //          - Mh_d[id * 3 * nv + (lev - 1) * 3 + k] / Rho_d[id * nv + lev - 1])
+            //         / (Altitude_d[lev] - Altitude_d[lev - 1]);
+            // }
+            // for (lev = 0; lev < nv; lev++) {
+            //     d2vdz2_tmp[id * 3 * nv + lev * 3 + k] = (dvdz_tmp[id * 3 * nv + (lev + 1) * 3 + k]
+            //                                              - dvdz_tmp[id * 3 * nv + lev * 3 + k])
+            //                                             / (Altitudeh_d[lev + 1] - Altitudeh_d[lev]);
+            //     Mh_d[id * 3 * nv + lev * 3 + k] += -Rho_d[id * nv + lev] * KMconst
+            //                                        * d2vdz2_tmp[id * 3 * nv + lev * 3 + k]
+            //                                        * time_step;
+            // }
             for (lev = 0; lev < nv; lev++) {
-                d2vdz2_tmp[id * 3 * nv + lev * 3 + k] = (dvdz_tmp[id * 3 * nv + (lev + 1) * 3 + k]
-                                                         - dvdz_tmp[id * 3 * nv + lev * 3 + k])
-                                                        / (Altitudeh_d[lev + 1] - Altitudeh_d[lev]);
-                Mh_d[id * 3 * nv + lev * 3 + k] += -Rho_d[id * nv + lev] * KMconst
-                                                   * d2vdz2_tmp[id * 3 * nv + lev * 3 + k]
-                                                   * time_step;
+                if (Altitude_d[lev] < zbl) {
+                    if (lev == 0) { //lowest layer, v at lowest boundary = 0, dz0 = Altitude0
+                        d2vdz2_tmp[id * 3 * nv + lev * 3 + k] =
+                            ((Mh_d[id * 3 * nv + (lev + 1) * 3 + k]
+                              - Mh_d[id * 3 * nv + (lev)*3 + k])
+                                 / (Altitude_d[lev + 1] - Altitude_d[lev])
+                             - (Mh_d[id * 3 * nv + (lev)*3 + k]) / (Altitude_d[lev]))
+                            / (Altitudeh_d[lev + 1] - Altitudeh_d[lev]);
+                    }
+                    // else if (lev == nv - 1) { //top layer,
+                    //     ((Mh_d[id * 3 * nv + (lev + 1) * 3 + k] / Rho_d[id * nv + lev + 1]
+                    //       - Mh_d[id * 3 * nv + (lev)*3 + k] / Rho_d[id * nv + lev])
+                    //          / (Altitude_d[lev + 1] - Altitude_d[lev])
+                    //      - (Mh_d[id * 3 * nv + (lev)*3 + k] / Rho_d[id * nv + lev]
+                    //         - Mh_d[id * 3 * nv + (lev - 1) * 3 + k] / Rho_d[id * nv + lev - 1])
+                    //            / (Altitude_d[lev] - Altitude_d[lev - 1]))
+                    //         / (Altitudeh_d[lev + 1] - Altitudeh_d[lev]);
+                    // }
+                    else { //might need to add a term to layer above to conserve momentum
+                        d2vdz2_tmp[id * 3 * nv + lev * 3 + k] =
+                            ((Mh_d[id * 3 * nv + (lev + 1) * 3 + k]
+                              - Mh_d[id * 3 * nv + (lev)*3 + k])
+                                 / (Altitude_d[lev + 1] - Altitude_d[lev])
+                             - (Mh_d[id * 3 * nv + (lev)*3 + k]
+                                - Mh_d[id * 3 * nv + (lev - 1) * 3 + k])
+                                   / (Altitude_d[lev] - Altitude_d[lev - 1]))
+                            / (Altitudeh_d[lev + 1] - Altitudeh_d[lev]);
+                    }
+                    Mh_d[id * 3 * nv + lev * 3 + k] +=
+                        KMconst * d2vdz2_tmp[id * 3 * nv + lev * 3 + k] * time_step;
+                }
             }
         }
+    }
+}
+
+__global__ void ConstKMEkman_Impl(double *Mh_d,
+                                  double *pressure_d,
+                                  double *Rho_d,
+                                  double *Altitude_d,
+                                  double *Altitudeh_d,
+                                  double *atmp,
+                                  double *btmp,
+                                  double *ctmp,
+                                  double *cpr_tmp,
+                                  double *dtmp,
+                                  double *dpr_tmp,
+                                  double  KMconst,
+                                  double  zbl,
+                                  double  time_step,
+                                  int     num,
+                                  int     nv,
+                                  int     bl_top_lev) {
+
+    //should create check on stability of thomas algorithm
+
+    int id = blockIdx.x * blockDim.x + threadIdx.x;
+    int lev;
+
+    if (id < num) {
+        for (lev = 0; lev < bl_top_lev + 1; lev++) {
+            //forward sweep
+            if (lev == 0) { //lowest layer, v at lowest boundary = 0, dz0 = Altitude0
+                atmp[id * nv + lev] = 0;
+                btmp[id * nv + lev] =
+                    -(KMconst / (Altitudeh_d[lev + 1] - Altitudeh_d[lev])
+                          * (1.0 / (Altitude_d[lev + 1] - Altitude_d[lev]) + 1.0 / Altitude_d[lev])
+                      + 1.0 / time_step);
+                ctmp[id * nv + lev] = KMconst
+                                      / ((Altitudeh_d[lev + 1] - Altitudeh_d[lev])
+                                         * (Altitude_d[lev + 1] - Altitude_d[lev]));
+                cpr_tmp[id * nv + lev] = ctmp[id * nv + lev] / btmp[id * nv + lev];
+                for (int k = 0; k < 3; k++) {
+                    dtmp[id * nv * 3 + lev * 3 + k] = -Mh_d[id * 3 * nv + lev * 3 + k] / time_step;
+                    dpr_tmp[id * nv * 3 + lev * 3 + k] =
+                        dtmp[id * nv * 3 + lev * 3 + k] / btmp[id * nv + lev];
+                }
+            }
+            else if (lev == bl_top_lev) {
+                atmp[id * nv + lev] = KMconst
+                                      / ((Altitudeh_d[lev + 1] - Altitudeh_d[lev])
+                                         * (Altitude_d[lev] - Altitude_d[lev - 1]));
+                btmp[id * nv + lev]    = -(KMconst / (Altitudeh_d[lev + 1] - Altitudeh_d[lev])
+                                            * (1.0 / (Altitude_d[lev + 1] - Altitude_d[lev])
+                                               + 1.0 / (Altitude_d[lev] - Altitude_d[lev - 1]))
+                                        + 1.0 / time_step);
+                ctmp[id * nv + lev]    = 0;
+                cpr_tmp[id * nv + lev] = 0; //not used, i think
+                for (int k = 0; k < 3; k++) {
+                    dtmp[id * nv * 3 + lev * 3 + k] =
+                        -Mh_d[id * 3 * nv + lev * 3 + k] / time_step
+                        - KMconst / (Altitudeh_d[lev + 1] - Altitudeh_d[lev])
+                              * Mh_d[id * 3 * nv + (lev + 1) * 3 + k]
+                              / (Altitude_d[lev + 1] - Altitude_d[lev]);
+                    dpr_tmp[id * nv * 3 + lev * 3 + k] =
+                        (dtmp[id * nv * 3 + lev * 3 + k]
+                         - atmp[id * nv + lev] * dpr_tmp[id * nv * 3 + (lev - 1) * 3 + k])
+                        / (btmp[id * nv + lev] - atmp[id * nv + lev] * cpr_tmp[id * nv + lev - 1]);
+                }
+            }
+            else {
+                atmp[id * nv + lev] = KMconst
+                                      / ((Altitudeh_d[lev + 1] - Altitudeh_d[lev])
+                                         * (Altitude_d[lev] - Altitude_d[lev - 1]));
+                btmp[id * nv + lev] = -(KMconst / (Altitudeh_d[lev + 1] - Altitudeh_d[lev])
+                                            * (1.0 / (Altitude_d[lev + 1] - Altitude_d[lev])
+                                               + 1.0 / (Altitude_d[lev] - Altitude_d[lev - 1]))
+                                        + 1.0 / time_step);
+                ctmp[id * nv + lev] = KMconst
+                                      / ((Altitudeh_d[lev + 1] - Altitudeh_d[lev])
+                                         * (Altitude_d[lev + 1] - Altitude_d[lev]));
+                cpr_tmp[id * nv + lev] =
+                    ctmp[id * nv + lev]
+                    / (btmp[id * nv + lev] - atmp[id * nv + lev] * cpr_tmp[id * nv + lev - 1]);
+                for (int k = 0; k < 3; k++) {
+                    dtmp[id * nv * 3 + lev * 3 + k] = -Mh_d[id * 3 * nv + lev * 3 + k] / time_step;
+                    dpr_tmp[id * nv * 3 + lev * 3 + k] =
+                        (dtmp[id * nv * 3 + lev * 3 + k]
+                         - atmp[id * nv + lev] * dpr_tmp[id * nv * 3 + (lev - 1) * 3 + k])
+                        / (btmp[id * nv + lev] - atmp[id * nv + lev] * cpr_tmp[id * nv + lev - 1]);
+                }
+            }
+        }
+        // if (id == 1000) {
+        //     printf("stop");
+        // }
+
+        for (lev = bl_top_lev; lev >= 0; lev--) {
+            //backward sweep
+            for (int k = 0; k < 3; k++) {
+                if (lev == bl_top_lev) {
+                    Mh_d[id * nv * 3 + lev * 3 + k] = dpr_tmp[id * nv * 3 + lev * 3 + k];
+                }
+                else {
+                    Mh_d[id * nv * 3 + lev * 3 + k] =
+                        (dpr_tmp[id * nv * 3 + lev * 3 + k]
+                         - cpr_tmp[id * nv + lev] * Mh_d[id * nv * 3 + (lev + 1) * 3 + k]);
+                }
+            }
+        }
+        // if (id == 1000) {
+        //     printf("stop");
+        // }
     }
 }

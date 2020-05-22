@@ -83,12 +83,19 @@ private:
     double surf_drag_config = 1.0 / 86400.0; // surface drag coefficient
     double bl_sigma_config  = 0.7;           // sigma coord of boundary layer (% of surf pressure)
 
-    double  surf_drag;
-    double  bl_sigma;
-    double *dvdz_tmp;
+    double surf_drag;
+    double bl_sigma;
+    // double *dvdz_tmp;
     double *d2vdz2_tmp;
+    double *atmp, *btmp, *ctmp, *cpr_tmp, *dtmp, *dpr_tmp;
+    double  zbl;        // altitude of transition from BL to free atmosph
+    int     bl_top_lev; // index of highest level inside BL
 
-    void BLSetup(int bl_type_, double surf_drag_, double bl_sigma_);
+    void BLSetup(const ESP &            esp,
+                 const SimulationSetup &sim,
+                 int                    bl_type_,
+                 double                 surf_drag_,
+                 double                 bl_sigma_);
 };
 
 __global__ void rayleighHS(double *Mh_d,
@@ -106,9 +113,27 @@ __global__ void ConstKMEkman(double *Mh_d,
                              double *Rho_d,
                              double *Altitude_d,
                              double *Altitudeh_d,
-                             double *dvdz_tmp,
                              double *d2vdz2_tmp,
                              double  KMconst,
+                             double  zbl,
                              double  time_step,
                              int     num,
                              int     nv);
+
+__global__ void ConstKMEkman_Impl(double *Mh_d,
+                                  double *pressure_d,
+                                  double *Rho_d,
+                                  double *Altitude_d,
+                                  double *Altitudeh_d,
+                                  double *atmp,
+                                  double *btmp,
+                                  double *ctmp,
+                                  double *cpr_tmp,
+                                  double *dtmp,
+                                  double *dpr_tmp,
+                                  double  KMconst,
+                                  double  zbl,
+                                  double  time_step,
+                                  int     num,
+                                  int     nv,
+                                  int     bl_top_lev);

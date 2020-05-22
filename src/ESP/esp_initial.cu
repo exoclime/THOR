@@ -343,9 +343,9 @@ __host__ void ESP::alloc_data(bool globdiag, bool output_mean) {
     cudaMalloc((void **)&diffv_d1, 6 * nv * point_num * sizeof(double));
     cudaMalloc((void **)&diffv_d2, 6 * nv * point_num * sizeof(double));
 
-    
+
     profx_Qheat_h = (double *)malloc(nv * point_num * sizeof(double));
-    
+
     cudaMalloc((void **)&profx_Qheat_d, nv * point_num * sizeof(double));
     cudaMalloc((void **)&profx_dMh_d, 3 * nv * point_num * sizeof(double));
     cudaMalloc((void **)&profx_dWh_d, nvi * point_num * sizeof(double));
@@ -588,9 +588,18 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 Rho_h[i * nv + lev] =
                     pressure_h[i * nv + lev] / (temperature_h[i * nv + lev] * Rd_h[i * nv + lev]);
 
+                // if (i == 0) {
+                //     printf("%f\n", Rho_h[i * nv + lev]);
+                // }
+                // hack to check PBL solver xxxxxxx
+                double u = 10.0;
+                //              Momentum [kg/m3 m/s]  //should be zero! setting to test PBL
+                Mh_h[i * 3 * nv + 3 * lev + 0] = -Rho_h[i * nv + lev] * u * (sin(lonlat_h[i * 2]));
+                Mh_h[i * 3 * nv + 3 * lev + 1] = Rho_h[i * nv + lev] * u * (cos(lonlat_h[i * 2]));
+
                 //              Momentum [kg/m3 m/s]
-                Mh_h[i * 3 * nv + 3 * lev + 0] = 0.0;
-                Mh_h[i * 3 * nv + 3 * lev + 1] = 0.0;
+                // Mh_h[i * 3 * nv + 3 * lev + 0] = 0.0;
+                // Mh_h[i * 3 * nv + 3 * lev + 1] = 0.0;
                 Mh_h[i * 3 * nv + 3 * lev + 2] = 0.0;
 
                 //              Vertical momentum [kg/m3 m/s]
@@ -1164,7 +1173,7 @@ __host__ ESP::~ESP() {
     cudaFree(Ttmp);
 
     free(profx_Qheat_h);
-    
+
     cudaFree(profx_Qheat_d);
     cudaFree(profx_dMh_d);
     cudaFree(profx_dWh_d);

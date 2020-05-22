@@ -191,7 +191,7 @@ def make_plot(args, save=True, axis=None):
         sigmaref = ham.Get_Prange(input, grid, rg, args, xtype='lat', use_p=use_p)
         pfile = call_plot('Tlonver',ham.vertical_lon,input, grid, output, rg, sigmaref, z, slice=args.slice, use_p=use_p, csp=[0], clevs=args.clevels, save=save, axis=axis)
         plots_created.append(pfile)
-        
+
     if 'PTver' in pview or 'all' in pview:
         rg.load(['Temperature','Pressure'])
         kappa_ad = input.Rd / input.Cp  # adiabatic coefficient
