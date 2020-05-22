@@ -51,8 +51,8 @@ __global__ void dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
                              double *Temperature_d, // Temperature [K]
                              double *pt_d,          // Potential temperature [K]
                              double *Rho_d,         // Density [m^3/kg]
-                             double  Cp,            // Specific heat capacity [J/kg/K]
-                             double  Rd,            // Gas constant [J/kg/K]
+                             double *Cp_d,          // Specific heat capacity [J/kg/K]
+                             double *Rd_d,          // Gas constant [J/kg/K]
                              double  Gravit,        // Gravity [m/s^2]
                              double *Altitude_d,    // Altitudes of the layers
                              double *Altitudeh_d,   // Altitudes of the interfaces
@@ -110,9 +110,9 @@ __global__ void dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
 
         // Compute Potential Temperature
         for (int lev = 0; lev < nv; lev++) {
-            pt_d[id * nv + lev] =
-                Temperature_d[id * nv + lev]
-                * pow(Pressureh_d[id * (nv + 1) + 0] / Pressure_d[id * nv + lev], Rd / Cp);
+            pt_d[id * nv + lev] = Temperature_d[id * nv + lev]
+                                  * pow(Pressureh_d[id * (nv + 1) + 0] / Pressure_d[id * nv + lev],
+                                        Rd_d[id * nv + lev] / Cp_d[id * nv + lev]);
         }
 
         bool done_col = false;
@@ -152,8 +152,10 @@ __global__ void dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
                         // calc adiabatic pressure, integrate upward for new pot. temp.
                         double pu = Pressureh_d[id * (nv + 1) + lev + 1];
                         double pl = Pressureh_d[id * (nv + 1) + lev];
-                        double pi = pow(Pressure_d[id * nv + lev] / Pressureh_d[id * (nv + 1) + 0],
-                                        Rd / Cp); // adiabatic pressure wrt bottom of column
+                        double pi = pow(
+                            Pressure_d[id * nv + lev] / Pressureh_d[id * (nv + 1) + 0],
+                            Rd_d[id * nv + lev]
+                                / Cp_d[id * nv + lev]); // adiabatic pressure wrt bottom of column
                         double deltap = pl - pu;
 
                         h   = h + pt_d[id * nv + lev] * pi * deltap;
@@ -196,8 +198,10 @@ __global__ void dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
         for (int lev = 0; lev < nv; lev++) {
             Temperature_d[id * nv + lev] =
                 pt_d[id * nv + lev]
-                * pow(Pressure_d[id * nv + lev] / Pressureh_d[id * (nv + 1) + 0], Rd / Cp);
-            Pressure_d[id * nv + lev] = Temperature_d[id * nv + lev] * Rd * Rho_d[id * nv + lev];
+                * pow(Pressure_d[id * nv + lev] / Pressureh_d[id * (nv + 1) + 0],
+                      Rd_d[id * nv + lev] / Cp_d[id * nv + lev]);
+            Pressure_d[id * nv + lev] =
+                Temperature_d[id * nv + lev] * Rd_d[id * nv + lev] * Rho_d[id * nv + lev];
         }
     }
 }

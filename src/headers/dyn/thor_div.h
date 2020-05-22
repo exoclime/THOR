@@ -53,6 +53,7 @@ __global__ void DivM_Op(double* DivM_d,
                         double* Wh_d,
                         double* K_d,
                         double* areasTr_d,
+                        double* areas_d,
                         double* nvecoa_d,
                         double* nvecti_d,
                         double* nvecte_d,
@@ -81,7 +82,6 @@ __global__ void DivM_Op(double* DivM_d,
     double a01x, a01y, a01z, a02x, a02y, a02z, a03x, a03y, a03z;
     double a12x, a12y, a12z, a23x, a23y, a23z;
     double meanwl, meanwt, meanwl2, meanwt2;
-    double o3 = 1.0 / 3.0;
     double lapx, lapy, lapz, lapr;
     double lap1, lap2;
     double sdiff;
@@ -199,10 +199,23 @@ __global__ void DivM_Op(double* DivM_d,
         }
 
         if (!laststep) {
-            meanwl  = (wl_s[ir] + wl_s[pt1] + wl_s[pt2]) * o3;
-            meanwt  = (wt_s[ir] + wt_s[pt1] + wt_s[pt2]) * o3;
-            meanwl2 = (wl_s[ir] + wl_s[pt2] + wl_s[pt3]) * o3;
-            meanwt2 = (wt_s[ir] + wt_s[pt2] + wt_s[pt3]) * o3;
+            // do tri-linear interpolation to get vertical mom. at corners
+            meanwl = (areas_d[id * 6 * 3 + j * 3 + 0] * wl_s[ir]
+                      + areas_d[id * 6 * 3 + j * 3 + 1] * wl_s[pt1]
+                      + areas_d[id * 6 * 3 + j * 3 + 2] * wl_s[pt2])
+                     / areasTr_d[id * 6 + j];
+            meanwt = (areas_d[id * 6 * 3 + j * 3 + 0] * wt_s[ir]
+                      + areas_d[id * 6 * 3 + j * 3 + 1] * wt_s[pt1]
+                      + areas_d[id * 6 * 3 + j * 3 + 2] * wt_s[pt2])
+                     / areasTr_d[id * 6 + j];
+            meanwl2 = (areas_d[id * 6 * 3 + jp1 * 3 + 0] * wl_s[ir]
+                       + areas_d[id * 6 * 3 + jp1 * 3 + 1] * wl_s[pt2]
+                       + areas_d[id * 6 * 3 + jp1 * 3 + 2] * wl_s[pt3])
+                      / areasTr_d[id * 6 + jp1];
+            meanwt2 = (areas_d[id * 6 * 3 + jp1 * 3 + 0] * wt_s[ir]
+                       + areas_d[id * 6 * 3 + jp1 * 3 + 1] * wt_s[pt2]
+                       + areas_d[id * 6 * 3 + jp1 * 3 + 2] * wt_s[pt3])
+                      / areasTr_d[id * 6 + jp1];
 
             dwdz  = (1 - (pent_ind && j == 5)) * (meanwl - meanwt) * dz;
             dwdz2 = (1 - (pent_ind && j == 5)) * (meanwl2 - meanwt2) * dz;
@@ -308,6 +321,7 @@ __global__ void DivM_Op_Poles(double* DivM_d,
                               double* Wh_d,
                               double* K_d,
                               double* areasTr_d,
+                              double* areas_d,
                               double* nvecoa_d,
                               double* nvecti_d,
                               double* nvecte_d,
@@ -332,7 +346,6 @@ __global__ void DivM_Op_Poles(double* DivM_d,
     double meanwl, meanwl2;
     double meanwt, meanwt2;
     double rscale;
-    double o3 = 1.0 / 3.0;
     double lapx, lapy, lapz, lapr, lap1, lap2;
     double a01x, a01y, a01z, a02x, a02y, a02z, a03x, a03y, a03z;
     double a12x, a12y, a12z, a23x, a23y, a23z;
@@ -349,6 +362,7 @@ __global__ void DivM_Op_Poles(double* DivM_d,
     __shared__ double nvecti_p[NN * 3];
     __shared__ double nvecte_p[NN * 3];
     __shared__ int    local_p[NN];
+    __shared__ double areas_p[NN * 3];
 
     /////////////////////////////////////////
 
@@ -365,6 +379,9 @@ __global__ void DivM_Op_Poles(double* DivM_d,
     for (int i = 0; i < 5; i++)
         for (int k = 0; k < 3; k++)
             nvecte_p[i * 3 + k] = nvecte_d[id * 6 * 3 + i * 3 + k];
+    for (int i = 0; i < 5; i++)
+        for (int k = 0; k < 3; k++)
+            areas_p[i * 3 + k] = areas_d[id * 6 * 3 + i * 3 + k];
 
     if (laststep)
         sdiff = K_d[lev];
@@ -422,15 +439,25 @@ __global__ void DivM_Op_Poles(double* DivM_d,
             dwdz2 = 0.0;
         }
         else {
-            meanwl  = (wl_p[0] + wl_p[j] + wl_p[jp1]) * o3;
-            meanwt  = (wt_p[0] + wt_p[j] + wt_p[jp1]) * o3;
-            meanwl2 = (wl_p[0] + wl_p[j] + wl_p[jp2]) * o3;
-            meanwt2 = (wt_p[0] + wt_p[j] + wt_p[jp2]) * o3;
+            // use tri-linear interpolation
+            meanwl = (areas_p[k * 3 + 0] * wl_p[0] + areas_p[k * 3 + 1] * wl_p[j]
+                      + areas_p[k * 3 + 1] * wl_p[jp1])
+                     / areasTr_p[k];
+            meanwt = (areas_p[k * 3 + 0] * wt_p[0] + areas_p[k * 3 + 1] * wt_p[j]
+                      + areas_p[k * 3 + 1] * wt_p[jp1])
+                     / areasTr_p[k];
+            meanwl2 = (areas_p[kp1 * 3 + 0] * wl_p[0] + areas_p[kp1 * 3 + 1] * wl_p[jp1]
+                       + areas_p[kp1 * 3 + 1] * wl_p[jp2])
+                      / areasTr_p[kp1];
+            meanwt2 = (areas_p[kp1 * 3 + 0] * wt_p[0] + areas_p[kp1 * 3 + 1] * wt_p[jp1]
+                       + areas_p[kp1 * 3 + 1] * wt_p[jp2])
+                      / areasTr_p[kp1];
 
             dwdz  = (meanwl - meanwt) * dz;
             dwdz2 = (meanwl2 - meanwt2) * dz;
         }
 
+        // set up terms of divergence at each corner of two triangles
         if (k == 0) {
             a01x = (a_p[0 * 3 + 0] + a_p[j * 3 + 0]);
             a01y = (a_p[0 * 3 + 1] + a_p[j * 3 + 1]);
@@ -452,6 +479,7 @@ __global__ void DivM_Op_Poles(double* DivM_d,
         a03z = (a_p[0 * 3 + 2] + a_p[jp2 * 3 + 2]);
         AT2  = 0.5 * rscale / (areasTr_p[kp1]);
 
+        // calculate divergence of two adjacent triangles
         if (k == 0) {
             lap1 = (-a01x * nvecti_p[k * 3 + 0] - a01y * nvecti_p[k * 3 + 1]
                     - a01z * nvecti_p[k * 3 + 2] + a12x * nvecte_p[k * 3 + 0]
@@ -477,6 +505,7 @@ __global__ void DivM_Op_Poles(double* DivM_d,
                     + a03z * nvecti_p[kp2 * 3 + 2])
                    * AT2;
         }
+        // gradient terms
         lapx += (lap1 + dwdz + lap2 + dwdz2) * nvecoa_p[k * 3 + 0] * AT0;
         lapy += (lap1 + dwdz + lap2 + dwdz2) * nvecoa_p[k * 3 + 1] * AT0;
         lapz += (lap1 + dwdz + lap2 + dwdz2) * nvecoa_p[k * 3 + 2] * AT0;

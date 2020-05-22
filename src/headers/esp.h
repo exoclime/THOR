@@ -74,7 +74,6 @@ public:
     const int    nvi;
     const int    nl_region;
     const int    nr;
-    const int    nlat;
     const int    glevel;
     const bool   spring_dynamics;
     const double spring_beta;
@@ -94,6 +93,7 @@ public:
     double *nvecte_h;
     double *areasT_h;
     double *areasTr_h;
+    double *areas_h;
 
     double *div_h;
     double *grad_h;
@@ -120,15 +120,39 @@ public:
     // double *Kdvz_h;
     // double *Kdv6_h;
 
+    double *flux_vec;
+    double *boundary_flux_h;
+    double *boundary_flux_d;
+
+
+    // guillot profile set-up, also to be borrowed by double gray scheme
+    double Tint;     // temperature of internal heat flux
+    double kappa_lw; //long wave opacity
+    double kappa_sw; //short wave opacity
+    double f_lw;     //fraction of lw optical depth due to well-mixed absorbers
+    double bv_freq;  //for constbv profile, brunt-vaisala frequency
+
     bool check_h;
 
-    int *  zonal_mean_tab_h;
-    double Rv_sponge;
-    double RvT_sponge;
-    double ns_sponge;
+    // sponge layer settings and variables
     double t_shrink;
+    bool   shrink_sponge;
+    // Rayleigh sponge
+    int *                 zonal_mean_tab_h;
+    double                Ruv_sponge;
+    double                Rw_sponge;
+    double                RT_sponge;
+    double                ns_ray_sponge;
+    const int             nlat_bins;
+    bool                  damp_uv_to_mean;
+    bool                  damp_w_to_mean;
+    raysp_calc_mode_types raysp_calc_mode;
+    // Diffusive sponge
+    double    Dv_sponge;
+    double    ns_diff_sponge;
+    const int order_diff_sponge;
 
-    //  energy, ang momentum and mass conservation
+    //  energy, ang momentum and mass globdiag
     double *Etotal_h;     //total energy (internal+kinetic+gravit) in control volume
     double  GlobalE_h;    //total energy over entire atmosphere
     double *Mass_h;       //mass in control volume
@@ -142,6 +166,16 @@ public:
     double *Entropy_h;   //entropy in control volume
     double  GlobalEnt_h; //entropy over entire atmosphere
 
+    // ultra-hot jupiter quantities
+    double *Rd_h; //local value of gas constant
+    double *Cp_h; //local value of heat capacity
+    double *GibbsT;
+    double *GibbsdG;
+    int     GibbsN = 61;
+
+    // physics module Qheat, for output
+    double *profx_Qheat_h;
+  
     ///////////////////////////
     //  Device
     int *point_local_d;
@@ -153,8 +187,9 @@ public:
     double *nvecoa_d;
     double *nvecti_d;
     double *nvecte_d;
-    double *areasT_d;
-    double *areasTr_d;
+    double *areasT_d;  //area of control volume (hexagon/pentagon)
+    double *areasTr_d; //area of (6/5) triangles in hexagon/pentagon
+    double *areas_d;   //area of sub-triangles (18 per hexagon, 15 per pentagon)
 
     double *lonlat_d;
 
@@ -202,6 +237,12 @@ public:
     double *v_d;
     double *pt_d;
     double *pth_d;
+    // double *pt_tau_d; // value of pot. temp. at prev. iteration in inner loop (not used x_x bad idea!)
+    double *Etotal_tau_d;
+    double *epotential_d;
+    double *epotentialh_d;
+    double *ekinetic_d;
+    double *ekinetich_d;
 
     double *gtil_d;
     double *gtilh_d;
@@ -213,6 +254,8 @@ public:
     double *Kdh4_d;
     double *Kdvz_d;
     double *Kdv6_d;
+
+    double *Kdh2_d;
 
     double *DivM_d;
     double *diffpr_d;
@@ -231,7 +274,7 @@ public:
     double *divg_Mh_d;
     bool *  check_d;
 
-    double *profx_dP_d;
+    double *profx_Qheat_d;
     double *profx_dMh_d;
     double *profx_dWh_d;
     double *profx_dW_d;
@@ -253,7 +296,7 @@ public:
     int     max_count;   // max number of points in latitude rings
     double *pressureh_d; // midpoint pressure used in dry conv adj
 
-    //  energy, ang momentum and mass conservation
+    //  energy, ang momentum and mass globdiag
     double *Etotal_d;     //total energy (internal+kinetic+gravit) in control volume
     double *GlobalE_d;    //total energy over entire atmosphere
     double *Mass_d;       //mass in control volume
@@ -267,55 +310,78 @@ public:
     double *Entropy_d; // entropy in control volume
     double *GlobalEnt_d;
 
+    // ultra-hot jupiter quantities
+    double *Rd_d; //local value of gas constant
+    double *Cp_d; //local value of heat capacity
+    double *GibbsT_d;
+    double *GibbsdG_d;
+
     ///////////////////////////
 
     //  Functions
     // Constructor, receives all grid parameters
-    ESP(int *           point_local_,
-        int *           maps_,
-        double *        lonlat_,
-        double *        Altitude_,
-        double *        Altitudeh_,
-        double *        nvecoa_,
-        double *        nvecti_,
-        double *        nvecte_,
-        double *        areasT_,
-        double *        areasTr_,
-        double *        div_,
-        double *        grad_,
-        double *        curlz_,
-        double *        func_r_,
-        int             nl_region_,
-        int             nr_,
-        int             nv_,
-        int             nvi_,
-        int             glevel_,
-        bool            spring_dynamics_,
-        double          spring_beta_,
-        int             nlat_,
-        int *           zonal_mean_tab,
-        double          Rv_sponge_,
-        double          RvT_sponge_,
-        double          ns_sponge_,
-        double          t_shrink_,
-        int             point_num_,
-        bool            conservation,
-        benchmark_types core_benchmark_,
-        log_writer &    logwriter_,
-        int             max_count_,
-        bool            output_mean);
+    ESP(int *                 point_local_,
+        int *                 maps_,
+        double *              lonlat_,
+        double *              Altitude_,
+        double *              Altitudeh_,
+        double *              nvecoa_,
+        double *              nvecti_,
+        double *              nvecte_,
+        double *              areasT_,
+        double *              areasTr_,
+        double *              areas_,
+        double *              div_,
+        double *              grad_,
+        double *              curlz_,
+        double *              func_r_,
+        int                   nl_region_,
+        int                   nr_,
+        int                   nv_,
+        int                   nvi_,
+        int                   glevel_,
+        bool                  spring_dynamics_,
+        double                spring_beta_,
+        int                   nlat_bins_,
+        int *                 zonal_mean_tab,
+        double                Ruv_sponge_,
+        double                Rw_sponge_,
+        double                RT_sponge_,
+        double                ns_ray_sponge_,
+        bool                  damp_uv_to_mean_,
+        bool                  damp_w_to_mean_,
+        raysp_calc_mode_types raysp_calc_mode_,
+        double                Dv_sponge_,
+        double                ns_diff_sponge_,
+        int                   order_diff_sponge_,
+        double                t_shrink_,
+        bool                  shrink_sponge_,
+        int                   point_num_,
+        bool                  globdiag,
+        benchmark_types       core_benchmark_,
+        log_writer &          logwriter_,
+        int                   max_count_,
+        bool                  output_mean,
+        init_PT_profile_types init_PT_profile_,
+        double                Tint_,
+        double                kappa_lw_,
+        double                kappa_sw_,
+        double                f_lw_,
+        double                bv_freq_,
+        uh_thermo_types       ultrahot_thermo_,
+        uh_heating_types      ultrahot_heating_,
+        thermo_equation_types thermo_equation_);
 
     ~ESP();
 
     void alloc_data(bool, bool);
 
     bool initial_values(const std::string &initial_conditions_filename,
-                        const bool &       continue_sim,
+                        const std::string &planet_filename,
                         double             timestep_dyn,
                         SimulationSetup &  sim,
                         int &              nsteps,
-                        double &           simulation_start_time,
-                        int &              output_file_idx);
+                        double &           simulation_start_time);
 
     void init_timestep(int nstep, double simtime, double timestep_) {
         current_step    = nstep;
@@ -323,12 +389,14 @@ public:
         timestep        = timestep_;
     };
 
+    bool read_in_gibbs_H(int);
+
+    // double chi_H_equilibrium(double, double);
 
     void Thor(const SimulationSetup &sim);
 
     void ProfX(const SimulationSetup &sim,
-               int                    n_out, // output step (triggers conservation calc)
-               bool                   shrink_sponge);          // Shrink sponge after some time
+               int                    n_out); // output step (triggers globdiag calc)
 
 
     void output(int                    fidx, // Index of output file
@@ -337,10 +405,10 @@ public:
 
     void set_output_param(const std::string &sim_id_, const std::string &output_dir_);
 
-    void conservation(const SimulationSetup &sim);
+    void globdiag(const SimulationSetup &sim);
 
     void copy_to_host();
-    void copy_conservation_to_host();
+    void copy_globdiag_to_host();
     void copy_global_to_host();
     void copy_mean_to_host();
 
@@ -492,6 +560,13 @@ public:
 private:
     // store if we run benchmarks
     benchmark_types core_benchmark;
+
+    init_PT_profile_types init_PT_profile;
+
+    uh_thermo_types  ultrahot_thermo;
+    uh_heating_types ultrahot_heating;
+
+    thermo_equation_types thermo_equation;
 
     // run physics modules
     bool phy_modules_execute;

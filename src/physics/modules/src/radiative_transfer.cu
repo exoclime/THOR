@@ -59,14 +59,14 @@ void radiative_transfer::print_config() {
     log::printf("    Orbital distance            = %f au.\n", planet_star_dist_config);
     log::printf("    Radius of host star         = %f R_sun.\n", radius_star_config);
     log::printf("    1.0/Diffusivity factor      = %f.\n", diff_ang_config);
-    log::printf("    Internal flux temperature   = %f K.\n", Tint_config);
+    // log::printf("    Internal flux temperature   = %f K.\n", Tint_config);
     log::printf("    Bond albedo                 = %f.\n", albedo_config);
-    log::printf("    Shortwave Absorption coef   = %f.\n", tausw_config);
-    log::printf("    Longwave Absorption coef    = %f.\n", taulw_config);
+    // log::printf("    Shortwave Absorption coef   = %f.\n", tausw_config);
+    // log::printf("    Longwave Absorption coef    = %f.\n", taulw_config);
     log::printf("    Using sin(lat) variation LW?      = %s.\n", latf_lw_config ? "true" : "false");
-    log::printf("    Longwave Absorption coef (poles)  = %f.\n", taulw_pole_config);
+    log::printf("    Longwave opacity (poles)  = %f.\n", kappa_lw_pole_config);
     log::printf("    Power law index of unmixed LW abs = %f.\n", n_lw_config);
-    log::printf("    Strength of mixed LW abs    = %f.\n", f_lw_config);
+    // log::printf("    Strength of mixed LW abs    = %f.\n", f_lw_config);
     log::printf("    Power law index of SW       = %f.\n", n_sw_config);
     log::printf("\n");
 
@@ -147,15 +147,16 @@ bool radiative_transfer::initial_conditions(const ESP &            esp,
             planet_star_dist_config,
             radius_star_config,
             diff_ang_config,
-            Tint_config,
+            sim.P_Ref,
+            sim.Gravit,
             albedo_config,
-            tausw_config,
-            taulw_config,
+            esp.kappa_sw,
+            esp.kappa_lw,
             latf_lw_config,
-            taulw_pole_config,
+            kappa_lw_pole_config,
             n_lw_config,
             n_sw_config,
-            f_lw_config,
+            esp.f_lw,
             sync_rot_config,
             mean_motion_config,
             true_long_i_config,
@@ -170,9 +171,7 @@ bool radiative_transfer::initial_conditions(const ESP &            esp,
             sim.Tmean,
             esp.point_num);
 
-    // if (rt1Dmode) {
-    //     sim.gcm_off = true; //does not work... not sure why
-    // }
+
     bool returnstatus = true;
     int  id;
     if (surface == true) {
@@ -217,7 +216,6 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
     dim3 NBRT((esp.point_num / NTH) + 1, 1, 1);
 
     rtm_dual_band<<<NBRT, NTH>>>(esp.pressure_d,
-                                 //rtm_dual_band <<< 1,1 >>> (pressure_d         ,
                                  esp.Rho_d,
                                  esp.temperature_d,
                                  flw_up_d,
@@ -226,7 +224,7 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                                  fsw_dn_d,
                                  tau_d,
                                  sim.Gravit,
-                                 sim.Cp,
+                                 esp.Cp_d,
                                  esp.lonlat_d,
                                  esp.Altitude_d,
                                  esp.Altitudeh_d,
@@ -239,7 +237,7 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                                  planet_star_dist,
                                  radius_star,
                                  diff_ang,
-                                 Tint,
+                                 esp.Tint,
                                  albedo,
                                  tausw,
                                  taulw,
@@ -247,7 +245,7 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                                  taulw_pole,
                                  n_sw,
                                  n_lw,
-                                 f_lw,
+                                 esp.f_lw,
                                  incflx,
                                  sim.P_Ref,
                                  esp.point_num,
@@ -267,8 +265,9 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                                  Csurf,
                                  Tsurface_d,
                                  surf_flux_d,
-                                 esp.profx_dP_d,
-                                 sim.Rd,
+                                 esp.profx_Qheat_d,
+                                 esp.Rd_d,
+                                 Qheat_scaling,
                                  sim.gcm_off,
                                  rt1Dmode);
 
@@ -287,18 +286,18 @@ bool radiative_transfer::configure(config_file &config_reader) {
         "planet_star_dist", planet_star_dist_config, planet_star_dist_config);
     config_reader.append_config_var("radius_star", radius_star_config, radius_star_config);
     config_reader.append_config_var("diff_ang", diff_ang_config, diff_ang_config);
-    config_reader.append_config_var("Tint", Tint_config, Tint_config);
+    // config_reader.append_config_var("Tint", Tint_config, Tint_config);
     config_reader.append_config_var("albedo", albedo_config, albedo_config);
-    config_reader.append_config_var("tausw", tausw_config, tausw_config);
-    config_reader.append_config_var("taulw", taulw_config, taulw_config);
+    // config_reader.append_config_var("tausw", tausw_config, tausw_config);
+    // config_reader.append_config_var("taulw", taulw_config, taulw_config);
 
     // options for latitude dependence in longwave opacity
     config_reader.append_config_var("latf_lw", latf_lw_config, latf_lw_config);
-    config_reader.append_config_var("taulw_pole", taulw_pole_config, taulw_pole_config);
+    config_reader.append_config_var("kappa_lw_pole", kappa_lw_pole_config, kappa_lw_pole_config);
 
     config_reader.append_config_var("n_sw", n_sw_config, n_sw_config);
     config_reader.append_config_var("n_lw", n_lw_config, n_lw_config);
-    config_reader.append_config_var("f_lw", f_lw_config, f_lw_config);
+    // config_reader.append_config_var("f_lw", f_lw_config, f_lw_config);
 
 
     // orbit/insolation properties
@@ -360,7 +359,7 @@ bool radiative_transfer::store(const ESP &esp, storage &s) {
 
 bool radiative_transfer::store_init(storage &s) {
     s.append_value(Tstar, "/Tstar", "K", "Temperature of host star");
-    s.append_value(Tint, "/Tint", "K", "Temperature of interior heat flux");
+    // s.append_value(Tint, "/Tint", "K", "Temperature of interior heat flux");
     s.append_value(planet_star_dist / 149597870.7,
                    "/planet_star_dist",
                    "au",
@@ -384,8 +383,7 @@ bool radiative_transfer::store_init(storage &s) {
         taulw_pole, "/taulw_pole", "-", "longwave optical depth of deepest layer at poles");
     s.append_value(n_lw, "/n_lw", "-", "power law exponent for unmixed absorber in LW");
     s.append_value(n_sw, "/n_sw", "-", "power law exponent for mixed/unmixed absorber in SW");
-    s.append_value(f_lw, "/f_lw", "-", "fraction of taulw in well-mixed absorber");
-
+    // s.append_value(f_lw, "/f_lw", "-", "fraction of taulw in well-mixed absorber");
 
     s.append_value(surface ? 1.0 : 0.0, "/surface", "-", "include solid/liquid surface");
     s.append_value(Csurf, "/Csurf", "J/K/m^2", "heat capacity of surface by area");
@@ -398,15 +396,16 @@ void radiative_transfer::RTSetup(double Tstar_,
                                  double planet_star_dist_,
                                  double radius_star_,
                                  double diff_ang_,
-                                 double Tint_,
+                                 double P_Ref,
+                                 double Gravit,
                                  double albedo_,
-                                 double tausw_,
-                                 double taulw_,
+                                 double kappa_sw,
+                                 double kappa_lw,
                                  bool   latf_lw_,
-                                 double taulw_pole_,
+                                 double kappa_lw_pole,
                                  double n_lw_,
                                  double n_sw_,
-                                 double f_lw_,
+                                 double f_lw,
                                  bool   sync_rot_,
                                  double mean_motion_,
                                  double true_long_i_,
@@ -427,15 +426,15 @@ void radiative_transfer::RTSetup(double Tstar_,
     planet_star_dist = planet_star_dist_ * 149597870.7; //conv to km
     radius_star      = radius_star_ * 695508;           //conv to km
     diff_ang         = diff_ang_;
-    Tint             = Tint_;
-    albedo           = albedo_;
-    tausw            = tausw_;
-    taulw            = taulw_;
-    taulw_pole       = taulw_pole_;
-    latf_lw          = latf_lw_;
-    n_sw             = n_sw_;
-    n_lw             = n_lw_;
-    f_lw             = f_lw_;
+    // Tint             = Tint_;
+    albedo     = albedo_;
+    tausw      = kappa_sw * P_Ref / Gravit;
+    taulw      = kappa_lw * P_Ref / (f_lw * Gravit);
+    taulw_pole = kappa_lw_pole * P_Ref / (f_lw * Gravit);
+    latf_lw    = latf_lw_;
+    n_sw       = n_sw_;
+    n_lw       = n_lw_;
+    // f_lw             = f_lw_;
 
     double resc_flx = pow(radius_star / planet_star_dist, 2.0);
     incflx          = resc_flx * bc * Tstar * Tstar * Tstar * Tstar;

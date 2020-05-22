@@ -68,7 +68,7 @@ using namespace std;
 map<string, output_def> build_definitions(ESP& esp, Icogrid& grid) {
 
     map<string, output_def> out = {
-        // {"map name, {variable pointer, table size, name, short name, on device}}
+        // {"map name, {variable pointer, table size, name, short name, on device, function call back for loc}}
         {"Rho_d",
          {esp.Rho_d,
           esp.nv * esp.point_num,
@@ -574,7 +574,16 @@ map<string, output_def> build_definitions(ESP& esp, Icogrid& grid) {
           false,
           std::bind(
               &ESP::index_to_location_3x7xn, &esp, std::placeholders::_1, std::placeholders::_2)}},
-    };
+        {"Qheat",
+         {esp.profx_Qheat_d,
+          esp.nv * esp.point_num,
+          "Qheat",
+          "qh",
+          true,
+          std::bind(&ESP::index_to_location_scalar,
+                    &esp,
+                    std::placeholders::_1,
+                    std::placeholders::_2)}}};
 
     return out;
 }
