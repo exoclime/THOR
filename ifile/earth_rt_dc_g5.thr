@@ -287,7 +287,7 @@ longp = 0
 boundary_layer = true
 
 # type of boundary layer drag
-bl_type = Ekman
+bl_type = RayleighHS
 
 # strength of drag
 #surf_drag = 1.157407e-5
