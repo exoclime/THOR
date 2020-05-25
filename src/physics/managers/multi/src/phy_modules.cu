@@ -11,7 +11,6 @@
 #include "radiative_transfer.h"
 
 #include "log_writer.h"
-#include "radiative_transfer.h"
 
 #include <math.h>
 #include <memory>
