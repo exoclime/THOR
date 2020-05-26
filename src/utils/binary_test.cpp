@@ -776,7 +776,11 @@ bool binary_test::compare_to_reference(const string&             iteration,
         }
 #    endif // BENCH_COMPARE_PRINT_STATISTICS
 
-        oss << " " << def.short_name << ": " << comp;
+        oss << " " << def.short_name << ": ";
+	if (comp)
+	  oss << "\033[1;32m" << comp << "\033[0m" ;
+	else
+	  oss << "\033[1;31m" << comp << "\033[0m" ;
         out &= comp;
     }
 
@@ -833,6 +837,13 @@ void binary_test::register_phy_modules_variables(const std::map<string, output_d
         phy_modules_data_in.end(), phy_modules_data_in_.begin(), phy_modules_data_in_.end());
     phy_modules_data_out.insert(
         phy_modules_data_out.end(), phy_modules_data_out_.begin(), phy_modules_data_out_.end());
+}
+
+std::string dummy(int i, int first) {
+    //placeholder function to fill the build definitions in binary_test.cpp
+    std::ostringstream string_stream;
+    string_stream << 0;
+    return string_stream.str();
 }
 
 

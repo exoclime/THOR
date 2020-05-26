@@ -79,4 +79,6 @@
 // a_ii > mag * sum(a_ij, i!=j) 
 // #define THOMAS_DIAG_DOM_FACTOR 1.0
 
-// #define CHECK_DENSITY_PRESSURE_EQ
+#define CHECK_DENSITY_PRESSURE_EQ
+
+
