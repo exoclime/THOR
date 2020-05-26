@@ -100,6 +100,9 @@ bool radiative_transfer::initialise_memory(const ESP &              esp,
     cudaMalloc((void **)&ttemp, esp.nv * esp.point_num * sizeof(double));
     cudaMalloc((void **)&dtemp, esp.nv * esp.point_num * sizeof(double));
 
+    cudaMalloc((void **)&qheat_d, esp.nv * esp.point_num * sizeof(double));
+    qheat_h = (double *)malloc(esp.point_num * esp.nv * sizeof(double));
+    
     insol_h = (double *)malloc(esp.point_num * sizeof(double));
     cudaMalloc((void **)&insol_d, esp.point_num * sizeof(double));
     insol_ann_h = (double *)malloc(esp.point_num * sizeof(double));
@@ -127,6 +130,8 @@ bool radiative_transfer::free_memory() {
     cudaFree(fsw_dn_d);
     cudaFree(tau_d);
 
+    cudaFree(qheat_d);
+
     cudaFree(phtemp);
     cudaFree(thtemp);
     cudaFree(ttemp);
@@ -135,6 +140,10 @@ bool radiative_transfer::free_memory() {
     cudaFree(insol_d);
     cudaFree(insol_ann_d);
     cudaFree(surf_flux_d);
+
+    free(qheat_h);
+    // TODO: looks like it's missing a whole bunch of frees...
+    
 
     return true;
 }
@@ -266,6 +275,7 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                                  Tsurface_d,
                                  surf_flux_d,
                                  esp.profx_Qheat_d,
+				 qheat_d,
                                  esp.Rd_d,
                                  Qheat_scaling,
                                  sim.gcm_off,
@@ -351,6 +361,13 @@ bool radiative_transfer::store(const ESP &esp, storage &s) {
                    "/tau",
                    " ",
                    "optical depth across each layer (not total optical depth)");
+
+    cudaMemcpy(qheat_h, qheat_d, esp.nv * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
+    s.append_table(qheat_h,
+                   esp.nv * esp.point_num,
+                   "/DGQheat",
+                   " ",
+                   "Double Gray Qheat");
 
     cudaMemcpy(Tsurface_h, Tsurface_d, esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
     s.append_table(Tsurface_h, esp.point_num, "/Tsurface", "K", "surface temperature");
