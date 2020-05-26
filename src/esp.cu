@@ -16,7 +16,7 @@
 //     <http://www.gnu.org/licenses/>.
 // ==============================================================================
 //
-// ESP -  Exoclimes Simulation Platform. (version 2.0)
+// ESP -  Exoclimes Simulation Platform. (version 2.3)
 //
 //
 //
@@ -676,7 +676,7 @@ int main(int argc, char** argv) {
     log::printf("Time: %s\n\n", std::ctime(&prog_start_time));
 
 
-    log::printf_logonly("\n\n version 2.0\n");
+    log::printf_logonly("\n\n version 2.3\n");
     log::printf_logonly(" Compiled on %s at %s.\n", __DATE__, __TIME__);
 
     log::printf_logonly(" build level: %s\n\n", BUILD_LEVEL);
@@ -1061,7 +1061,7 @@ int main(int argc, char** argv) {
 
     std::istreambuf_iterator<char> begin_source(source);
     std::istreambuf_iterator<char> end_source;
-    std::ostreambuf_iterator<char> begin_dest(destin); 
+    std::ostreambuf_iterator<char> begin_dest(destin);
     std::copy(begin_source, end_source, begin_dest);
 
     source.close();

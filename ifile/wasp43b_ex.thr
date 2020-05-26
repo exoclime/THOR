@@ -295,6 +295,16 @@ bl_type = RayleighHS
 #bl_sigma = 0.7
 
 
+#-- Hot Jupiter chemistry ----------------------------------------------------#
+# chemical relaxation model from Mendonca+ 2018(b)
+# contains species CH4, CO, H2O, CO2, NH3
+chemistry = true
+
+# the files below contain the time scales and equilibrium values (from VULCAN)
+chem_time_file = src/physics/modules/ifile/solar_chem_time.txt
+chem_fEQ_file = src/physics/modules/ifile/solar_fEQ_THOR.txt
+
+
 #-- Device options -----------------------------------------------------------#
 # GPU ID number
 GPU_ID_N = 0

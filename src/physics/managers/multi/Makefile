@@ -75,6 +75,14 @@ $(BUILDDIR)/${OUTPUTDIR}: $(BUILDDIR)
 
 INCLUDE_DIRS = -I$(SHARED_MODULES_INCLUDE) -I$(THOR_INCLUDE) -I$(LOCAL_INCLUDE)
 
+$(BUILDDIR)/${OUTPUTDIR}/chemistry.o: chemistry.cu chemistry.h phy_modules.h phy_module_base.h thor_chemistry.h | $(BUILDDIR)
+	@echo $(YELLOW)creating $@ $(END)
+	if test $$CDB = "-MJ" ; then \
+		$(CC) $(CC_comp_flag) $(arch) $(cuda_flags) $(h5include) $(h5libdir) $(INCLUDE_DIRS) $(CDB) $@.json -o $@ $<; \
+	else \
+		$(CC) $(CC_comp_flag) $(arch) $(cuda_flags) $(h5include) $(h5libdir) $(INCLUDE_DIRS) -o $@ $<; \
+	fi
+
 $(BUILDDIR)/${OUTPUTDIR}/radiative_transfer.o: radiative_transfer.cu radiative_transfer.h profx_RT.h phy_modules.h phy_module_base.h | $(BUILDDIR)/${OUTPUTDIR}
 	@echo $(YELLOW)creating $@ $(END)
 	if test $$CDB = "-MJ" ; then \
@@ -100,10 +108,10 @@ $(BUILDDIR)/${OUTPUTDIR}/phy_modules.o: phy_modules.cu phy_modules.h phy_module_
 	fi
 
 
-libphy_modules.a:  $(BUILDDIR)/${OUTPUTDIR}/radiative_transfer.o $(BUILDDIR)/${OUTPUTDIR}/boundary_layer.o $(BUILDDIR)/${OUTPUTDIR}/phy_modules.o | $(BUILDDIR)
+libphy_modules.a: $(BUILDDIR)/${OUTPUTDIR}/chemistry.o $(BUILDDIR)/${OUTPUTDIR}/radiative_transfer.o $(BUILDDIR)/${OUTPUTDIR}/boundary_layer.o $(BUILDDIR)/${OUTPUTDIR}/phy_modules.o | $(BUILDDIR)
 	@echo $(YELLOW)creating $@ $(END)
 	@echo $(GREEN)Linking Modules into static lib $(END)
-	ar rcs $@ $(BUILDDIR)/${OUTPUTDIR}/phy_modules.o $(BUILDDIR)/${OUTPUTDIR}/radiative_transfer.o $(BUILDDIR)/${OUTPUTDIR}/boundary_layer.o
+	ar rcs $@ $(BUILDDIR)/${OUTPUTDIR}/phy_modules.o $(BUILDDIR)/${OUTPUTDIR}/radiative_transfer.o $(BUILDDIR)/${OUTPUTDIR}/boundary_layer.o $(BUILDDIR)/${OUTPUTDIR}/chemistry.o
 
 #######################################################################
 # Cleanup
