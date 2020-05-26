@@ -176,7 +176,7 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
         BENCH_POINT_I(current_step,
                       "phy_Sponge",
                       (),
-                      ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"))
+                      ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "W_d"))
     }
 
 
