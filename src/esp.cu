@@ -90,6 +90,8 @@ using std::string;
 
 #include "cuda_device_memory.h"
 
+#include "reduction_min.h"
+
 enum e_sig { ESIG_NOSIG = 0, ESIG_SIGTERM = 1, ESIG_SIGINT = 2 };
 
 
@@ -106,6 +108,11 @@ void sigint_handler(int sig) {
     log::printf("SIGINT caught, trying to exit gracefully\n");
 }
 
+// To clean up at exit in all conditions (like when calling exit(EXIT_FAILURE)
+void exit_handler() {
+    // Clean up device memory
+    cuda_device_memory_manager::get_instance().deallocate();
+}
 
 std::string duration_to_str(double delta) {
     unsigned int days = delta / (24 * 3600);
@@ -289,6 +296,13 @@ int main(int argc, char** argv) {
     config_reader.append_config_var(
         "order_diff_sponge", order_diff_sponge, order_diff_sponge_default);
 
+    // Low pressure test
+    bool   exit_on_low_pressure_warning = false;
+    double pressure_check_limit         = 1e-3;
+    config_reader.append_config_var(
+        "exit_on_low_pressure_warning", exit_on_low_pressure_warning, exit_on_low_pressure_warning);
+    config_reader.append_config_var(
+        "pressure_check_limit", pressure_check_limit, pressure_check_limit);
     // Initial conditions
     // rest supersedes initial condition entry,
     // but if initial condition set from  command line, it overrides
@@ -1090,6 +1104,9 @@ int main(int argc, char** argv) {
         log::printf("Error: cannot handle SIGINT\n"); // Should not happen
     }
 
+    // Register clean up function for exit
+    atexit(exit_handler);
+
     //
     //  Writes initial conditions
     double simulation_time = simulation_start_time;
@@ -1258,6 +1275,15 @@ int main(int argc, char** argv) {
                    duration_to_str(time_left).c_str(),
                    end_time_str.str().c_str(),
                    file_output ? "[saved output]" : "");
+        }
+
+        // Run pressure check
+        double pressure_min = gpu_min_on_device<1024>(X.pressure_d, X.point_num * X.nv);
+        log::printf("\n min pressure : %g\n", pressure_min);
+        if (pressure_min < pressure_check_limit) {
+            log::printf("\n min pressure lower than min pressure limit: %g\n", pressure_min);
+            if (exit_on_low_pressure_warning)
+                break;
         }
 
         if (caught_signal != ESIG_NOSIG) {
