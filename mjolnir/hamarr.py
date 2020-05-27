@@ -154,6 +154,7 @@ class output_new:
             outputs['flw_up'] = 'flw_up'
             outputs['flw_dn'] = 'flw_dn'
             outputs['fsw_dn'] = 'fsw_dn'
+            outputs['DGQheat'] = 'DGqheat'
 
         if input.TSRT:
             outputs['F_up_tot'] = 'f_up_tot'
@@ -798,6 +799,7 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
                 source['DGf_net'] = fnet_tmp[:,:-1] + (fnet_tmp[:, 1:] - fnet_tmp[:, :-1]) * interpz[None, :]
                 source['tau_sw'] = output.tau_sw[:, :, 0]
                 source['tau_lw'] = output.tau_lw[:, :, 0]
+                source['DGqheat'] = output.DGqheat[:, :, 0]
                 source['insol'] = output.Insol[:, 0]
                 if surf == 1:
                     source['Tsurface'] = output.Tsurface[:, 0]

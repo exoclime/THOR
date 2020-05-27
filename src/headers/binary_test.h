@@ -396,4 +396,6 @@ bool binary_test::compare_arrays(int                 s1,
 
     return same;
 }
+
+std::string dummy(int i, int first);
 #endif // BENCHMARKING

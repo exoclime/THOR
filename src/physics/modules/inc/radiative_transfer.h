@@ -70,7 +70,10 @@ public:
 
     void print_config();
 
-  void set_qheat_scaling(const double & scaling ) { Qheat_scaling = scaling; };
+    void set_qheat_scaling(const double &scaling) {
+        Qheat_scaling = scaling;
+    };
+
 private:
   // Scaling of Qheat, for slow ramp up or ramp down.
   double Qheat_scaling = 1.0;
@@ -159,6 +162,9 @@ private:
     double *insol_d;
     double *insol_ann_h;
     double *insol_ann_d;
+
+    double *qheat_d;
+    double *qheat_h;
 
     //  These arrays are for temporary usage in RT code
     double *dtemp;
