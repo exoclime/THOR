@@ -172,9 +172,13 @@ public:
 
     // zero out device memory
     bool zero() {
-
+      if (device_ptr != nullptr && size > 0)
+	{
         cudaError_t ret = cudaMemset(device_ptr, 0, sizeof(T) * size);
         return ret == cudaSuccess;
+	}
+      else
+	return true;
     };
 
     // copy data from device to local member array
