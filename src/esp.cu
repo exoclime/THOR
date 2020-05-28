@@ -360,6 +360,9 @@ int main(int argc, char** argv) {
     config_reader.append_config_var("vert_refined", vert_refined, vert_refined_default);
     config_reader.append_config_var("n_bl_layers", n_bl_layers, n_bl_layers_default);
 
+    bool surface_config = false; // use solid/liquid surface at altitude 0
+    config_reader.append_config_var("surface", surface_config, surface_config);
+
 
     //*****************************************************************
     // read configs for modules
@@ -932,7 +935,8 @@ int main(int argc, char** argv) {
           bv_freq,
           ultrahot_thermo,
           ultrahot_heating,
-          thermo_equation);
+          thermo_equation,
+          surface_config);
 
 
     USE_BENCHMARK();
@@ -1022,6 +1026,7 @@ int main(int argc, char** argv) {
     log::printf("   Time integration =  %d s.\n", nsmax * timestep);
     log::printf("   Large time-step  =  %d s.\n", timestep);
     log::printf("   Start time       =  %f s.\n", simulation_start_time);
+    log::printf("   Surface          = %s.\n", surface_config ? "true" : "false");
 
     log::printf("    \n");
 

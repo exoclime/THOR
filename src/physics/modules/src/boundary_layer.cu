@@ -74,6 +74,9 @@ bool boundary_layer::initialise_memory(const ESP &              esp,
     cudaMalloc((void **)&cpr_tmp, esp.nv * esp.point_num * sizeof(double));
     cudaMalloc((void **)&dtmp, 3 * esp.nv * esp.point_num * sizeof(double));
     cudaMalloc((void **)&dpr_tmp, 3 * esp.nv * esp.point_num * sizeof(double));
+    cudaMalloc((void **)&RiB_d, esp.nvi * esp.point_num * sizeof(double));
+    cudaMalloc((void **)&KM_d, esp.nvi * esp.point_num * sizeof(double));
+    cudaMalloc((void **)&KH_d, esp.nvi * esp.point_num * sizeof(double));
 
     cudaMemset(atmp, 0, sizeof(double) * esp.point_num * esp.nv);
     cudaMemset(btmp, 0, sizeof(double) * esp.point_num * esp.nv);
@@ -81,7 +84,9 @@ bool boundary_layer::initialise_memory(const ESP &              esp,
     cudaMemset(cpr_tmp, 0, sizeof(double) * esp.point_num * esp.nv);
     cudaMemset(dtmp, 0, sizeof(double) * 3 * esp.point_num * esp.nv);
     cudaMemset(dpr_tmp, 0, sizeof(double) * 3 * esp.point_num * esp.nv);
-
+    cudaMemset(RiB_d, 0, sizeof(double) * esp.point_num * esp.nvi);
+    cudaMemset(KM_d, 0, sizeof(double) * esp.point_num * esp.nvi);
+    cudaMemset(KH_d, 0, sizeof(double) * esp.point_num * esp.nvi);
 
     return true;
 }
@@ -168,6 +173,27 @@ bool boundary_layer::phy_loop(ESP &                  esp,
         //                              time_step,
         //                              esp.point_num,
         //                              esp.nv);
+
+        CalcRiB<<<NBLEV, NTH>>>(esp.pressure_d,
+                                esp.Rho_d,
+                                esp.Mh_d,
+                                esp.Tsurface_d,
+                                esp.Altitude_d,
+                                esp.Altitudeh_d,
+                                sim.Rd,
+                                sim.Cp,
+                                sim.P_Ref,
+                                sim.Gravit,
+                                RiB_d,
+                                esp.point_num,
+                                esp.nv);
+
+        // TO DO
+        // need KM array, KH array, general thomas solver for KM, KH
+        // stability check for thomas solver
+        // adjust Tsurface for sensible heat flux
+        // how to adjust pressure? adjust pt first, then compute pressure? or is there a shortcut?
+        // update pressure (implicitly) here, or add to qheat?
 
         ConstKMEkman_Impl<<<NBLEV, NTH>>>(esp.Mh_d,
                                           esp.pressure_d,
@@ -437,6 +463,10 @@ __global__ void ConstKMEkman_Impl(double *Mh_d,
                         / (btmp[id * nv + lev] - atmp[id * nv + lev] * cpr_tmp[id * nv + lev - 1]);
                 }
             }
+            if (fabs(btmp[id * nv + lev])
+                < (fabs(atmp[id * nv + lev]) + fabs(ctmp[id * nv + lev]))) {
+                printf("Warning! Thomas algorithm in boundary layer unstable\n");
+            }
         }
         // if (id == 1000) {
         //     printf("stop");
@@ -458,5 +488,98 @@ __global__ void ConstKMEkman_Impl(double *Mh_d,
         // if (id == 1000) {
         //     printf("stop");
         // }
+    }
+}
+
+__global__ void CalcRiB(double *pressure_d,
+                        double *Rho_d,
+                        double *Mh_d,
+                        double *Tsurface_d,
+                        double *Altitude_d,
+                        double *Altitudeh_d,
+                        double  Rd,
+                        double  Cp,
+                        double  P_Ref,
+                        double  Gravit,
+                        double *RiB_d,
+                        int     num,
+                        int     nv) {
+
+    // Calculate bulk Richardson number for each level
+    // The first value is defined at the midpoint between the lowest layer and the surface
+    // The rest are at the interfaces between layers
+
+    int id = blockIdx.x * blockDim.x + threadIdx.x;
+    int lev;
+
+    if (id < num) {
+        double kappa = Rd / Cp;
+        double p_surf, pt_surf, extrap_surf;
+        double pt_layer, pt_lowest, pt_layer_below, pt_interface;
+        double vh_layer, vh_layer_below, vh_interface;
+        for (lev = 0; lev <= nv; lev++) {
+            //first find surface pressure, and calculate pt at the interfaces
+
+            if (lev == 0) {
+                //lowest level, RiB defined at midpoint between lowest and surface
+                // calculate pot temp of surface
+                extrap_surf = -Altitude_d[lev + 1] / (Altitude_d[lev] - Altitude_d[lev + 1]);
+                p_surf =
+                    pressure_d[id * nv + lev + 1]
+                    + extrap_surf * (pressure_d[id * nv + lev] - pressure_d[id * nv + lev + 1]);
+                pt_surf = Tsurface_d[id] * pow(p_surf / P_Ref, -kappa);
+
+                // calculate pt and horizontal velocity of layer
+                pt_layer = pow(P_Ref, kappa) * pow(pressure_d[id * nv + lev], 1.0 - kappa)
+                           / (Rho_d[id * nv + lev] * Rd);
+                pt_lowest = pt_layer; //will need this later
+                vh_layer  = sqrt((pow(Mh_d[id * nv * 3 + lev * 3 + 0], 2)
+                                 + pow(Mh_d[id * nv * 3 + lev * 3 + 1], 2)
+                                 + pow(Mh_d[id * nv * 3 + lev * 3 + 2], 2)))
+                           / Rho_d[id * nv + lev];
+
+                if (pow(vh_layer, 2) == 0) { //zero velocity, RiB = large +number
+                    RiB_d[id * nv + lev] = HUGE;
+                }
+                else { // bulk Richardson number, wrt to surface
+                    RiB_d[id * (nv + 1) + lev] = Gravit * Altitude_d[lev] * (pt_layer - pt_surf)
+                                                 / (pt_surf * pow(vh_layer, 2));
+                }
+            }
+            else if (lev == nv) {
+                //what should I do at the top level??
+                RiB_d[id * (nv + 1) + lev] = HUGE; //top level can't be incorporated into BL?
+            }
+            else {
+                //potential temperatures for this layer, layer below, and interface b/w
+                pt_layer_below = pt_layer;
+                pt_layer       = pow(P_Ref, kappa) * pow(pressure_d[id * nv + lev], 1.0 - kappa)
+                           / (Rho_d[id * nv + lev] * Rd);
+                pt_interface = pt_layer_below
+                               + (pt_layer - pt_layer_below)
+                                     * (Altitudeh_d[lev] - Altitude_d[lev - 1])
+                                     / (Altitude_d[lev] - Altitude_d[lev - 1]);
+
+                //vh for the layers and interface
+                vh_layer_below = vh_layer;
+                vh_layer       = sqrt((pow(Mh_d[id * nv * 3 + lev * 3 + 0], 2)
+                                 + pow(Mh_d[id * nv * 3 + lev * 3 + 1], 2)
+                                 + pow(Mh_d[id * nv * 3 + lev * 3 + 2], 2)))
+                           / Rho_d[id * nv + lev];
+                vh_interface = vh_layer_below
+                               + (vh_layer - vh_layer_below)
+                                     * (Altitudeh_d[lev] - Altitude_d[lev - 1])
+                                     / (Altitude_d[lev] - Altitude_d[lev - 1]);
+
+                if (pow(vh_interface, 2) == 0) { //zero velocity, set RiB to a big +number
+                    RiB_d[id * (nv + 1) + lev] = HUGE;
+                }
+                else { //bulk Ri number, wrt to lowest layer
+                    RiB_d[id * (nv + 1) + lev] = Gravit * Altitudeh_d[lev]
+                                                 * (pt_interface - pt_lowest)
+                                                 / (pt_lowest * pow(vh_interface, 2));
+                }
+            }
+        }
     }
 }

@@ -175,7 +175,12 @@ public:
 
     // physics module Qheat, for output
     double *profx_Qheat_h;
-  
+
+    // general variables related to surface
+    bool    surface;
+    double *Tsurface_d;
+    double *Tsurface_h;
+
     ///////////////////////////
     //  Device
     int *point_local_d;
@@ -370,7 +375,8 @@ public:
         double                bv_freq_,
         uh_thermo_types       ultrahot_thermo_,
         uh_heating_types      ultrahot_heating_,
-        thermo_equation_types thermo_equation_);
+        thermo_equation_types thermo_equation_,
+        bool                  surface_config);
 
     ~ESP();
 

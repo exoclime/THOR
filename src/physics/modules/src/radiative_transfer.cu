@@ -80,7 +80,6 @@ void radiative_transfer::print_config() {
     log::printf("    Longitude of periastron     = %f deg.\n", longp_config);
 
     // surface parameters
-    log::printf("    Surface                     = %s.\n", surface_config ? "true" : "false");
     log::printf("    Surface Heat Capacity       = %f J/K/m^2.\n", Csurf_config);
     log::printf("    1D mode                     = %s.\n", rt1Dmode_config ? "true" : "false");
 }
@@ -113,8 +112,6 @@ bool radiative_transfer::initialise_memory(const ESP &              esp,
     fsw_dn_h = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
 
     cudaMalloc((void **)&surf_flux_d, esp.point_num * sizeof(double));
-    cudaMalloc((void **)&Tsurface_d, esp.point_num * sizeof(double));
-    Tsurface_h = (double *)malloc(esp.point_num * sizeof(double));
 
     return true;
 }
@@ -131,7 +128,6 @@ bool radiative_transfer::free_memory() {
     cudaFree(thtemp);
     cudaFree(ttemp);
     cudaFree(dtemp);
-    cudaFree(Tsurface_d);
     cudaFree(insol_d);
     cudaFree(insol_ann_d);
     cudaFree(surf_flux_d);
@@ -165,28 +161,28 @@ bool radiative_transfer::initial_conditions(const ESP &            esp,
             alpha_i_config,
             obliquity_config,
             sim.Omega,
-            surface_config,
             Csurf_config,
             rt1Dmode_config,
             sim.Tmean,
             esp.point_num);
 
+    cudaMemset(surf_flux_d, 0, sizeof(double) * esp.point_num);
 
     bool returnstatus = true;
-    int  id;
-    if (surface == true) {
-        if (s != nullptr) {
-            // load initialisation data from storage s
-            returnstatus &= (*s).read_table_to_ptr("/Tsurface", Tsurface_h, esp.point_num);
-        }
-        else {
-            for (id = 0; id < esp.point_num; id++) {
-                Tsurface_h[id] = sim.Tmean;
-            }
-            cudaMemset(surf_flux_d, 0, sizeof(double) * esp.point_num);
-        }
-        cudaMemcpy(Tsurface_d, Tsurface_h, esp.point_num * sizeof(double), cudaMemcpyHostToDevice);
-    }
+    // int  id;
+    // if (esp.surface == true) {
+    //     if (s != nullptr) {
+    //         // load initialisation data from storage s
+    //         returnstatus &= (*s).read_table_to_ptr("/Tsurface", Tsurface_h, esp.point_num);
+    //     }
+    //     else {
+    //         for (id = 0; id < esp.point_num; id++) {
+    //             Tsurface_h[id] = sim.Tmean;
+    //         }
+    //         cudaMemset(surf_flux_d, 0, sizeof(double) * esp.point_num);
+    //     }
+    //     cudaMemcpy(Tsurface_d, Tsurface_h, esp.point_num * sizeof(double), cudaMemcpyHostToDevice);
+    // }
 
     return returnstatus;
 }
@@ -261,9 +257,9 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                                  ecc,
                                  obliquity,
                                  insol_d,
-                                 surface,
+                                 esp.surface,
                                  Csurf,
-                                 Tsurface_d,
+                                 esp.Tsurface_d,
                                  surf_flux_d,
                                  esp.profx_Qheat_d,
                                  esp.Rd_d,
@@ -310,7 +306,6 @@ bool radiative_transfer::configure(config_file &config_reader) {
     config_reader.append_config_var("longp", longp_config, longp_config);
 
     // properties for a solid/liquid surface
-    config_reader.append_config_var("surface", surface_config, surface_config);
     config_reader.append_config_var("Csurf", Csurf_config, Csurf_config);
 
     config_reader.append_config_var("rt1Dmode", rt1Dmode_config, rt1Dmode_config);
@@ -352,8 +347,7 @@ bool radiative_transfer::store(const ESP &esp, storage &s) {
                    " ",
                    "optical depth across each layer (not total optical depth)");
 
-    cudaMemcpy(Tsurface_h, Tsurface_d, esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
-    s.append_table(Tsurface_h, esp.point_num, "/Tsurface", "K", "surface temperature");
+
     return true;
 }
 
@@ -385,7 +379,6 @@ bool radiative_transfer::store_init(storage &s) {
     s.append_value(n_sw, "/n_sw", "-", "power law exponent for mixed/unmixed absorber in SW");
     // s.append_value(f_lw, "/f_lw", "-", "fraction of taulw in well-mixed absorber");
 
-    s.append_value(surface ? 1.0 : 0.0, "/surface", "-", "include solid/liquid surface");
     s.append_value(Csurf, "/Csurf", "J/K/m^2", "heat capacity of surface by area");
 
 
@@ -414,7 +407,6 @@ void radiative_transfer::RTSetup(double Tstar_,
                                  double alpha_i_,
                                  double obliquity_,
                                  double Omega,
-                                 bool   surface_,
                                  double Csurf_,
                                  bool   rt1Dmode_,
                                  double Tmean,
@@ -455,8 +447,7 @@ void radiative_transfer::RTSetup(double Tstar_,
     alpha_i               = alpha_i_ * M_PI / 180.0;
     obliquity             = obliquity_ * M_PI / 180.0;
 
-    surface = surface_;
-    Csurf   = Csurf_;
+    Csurf = Csurf_;
 
     rt1Dmode = rt1Dmode_;
 }

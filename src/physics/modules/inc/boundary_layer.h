@@ -48,6 +48,8 @@
 
 #define bl_type_default "RayleighHS"
 
+#define HUGE 1e8
+
 enum boundary_layer_types { RAYLEIGHHS = 0, MONINOBUKHOV = 1, EKMANSPIRAL = 2 };
 
 
@@ -90,6 +92,10 @@ private:
     double *atmp, *btmp, *ctmp, *cpr_tmp, *dtmp, *dpr_tmp;
     double  zbl;        // altitude of transition from BL to free atmosph
     int     bl_top_lev; // index of highest level inside BL
+    double *RiB_d;      // bulk Richardson number
+
+    double *KM_d; // momentum diffusivity (turbulence)
+    double *KH_d; // heat diffusivity (turbulence)
 
     void BLSetup(const ESP &            esp,
                  const SimulationSetup &sim,
@@ -137,3 +143,17 @@ __global__ void ConstKMEkman_Impl(double *Mh_d,
                                   int     num,
                                   int     nv,
                                   int     bl_top_lev);
+
+__global__ void CalcRiB(double *pressure_d,
+                        double *Rho_d,
+                        double *Mh_d,
+                        double *Tsurface_d,
+                        double *Altitude_d,
+                        double *Altitudeh_d,
+                        double  Rd,
+                        double  Cp,
+                        double  P_Ref,
+                        double  Gravit,
+                        double *RiB_d,
+                        int     num,
+                        int     nv);

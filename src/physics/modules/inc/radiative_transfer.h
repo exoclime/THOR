@@ -70,11 +70,14 @@ public:
 
     void print_config();
 
-  void set_qheat_scaling(const double & scaling ) { Qheat_scaling = scaling; };
+    void set_qheat_scaling(const double &scaling) {
+        Qheat_scaling = scaling;
+    };
+
 private:
-  // Scaling of Qheat, for slow ramp up or ramp down.
-  double Qheat_scaling = 1.0;
-  
+    // Scaling of Qheat, for slow ramp up or ramp down.
+    double Qheat_scaling = 1.0;
+
     // Config options
     double Tstar_config            = 4520;  // Star effective temperature [K]
     double planet_star_dist_config = 0.015; // Planet-star distance [au]
@@ -90,7 +93,6 @@ private:
     double n_sw_config          = 1.0;   // power law dependence for mixed/unmixed absorbers in SW
     // double f_lw_config       = 0.5;    // fraction of taulw in well-mixed absorber
 
-
     bool   sync_rot_config    = true;     // is planet syncronously rotating?
     double mean_motion_config = 1.991e-7; // orbital mean motion (rad/s)
     double true_long_i_config = 0;        // initial true longitude of planet (rad)
@@ -99,7 +101,6 @@ private:
     double alpha_i_config     = 0;        // initial right asc of host star (relative to long = 0)
     double longp_config       = 0;        // longitude of periastron (rad)
 
-    bool   surface_config  = false; // use solid/liquid surface at altitude 0
     double Csurf_config    = 1e7;   // heat capacity of surface (J K^-1 m^-2)
     bool   rt1Dmode_config = false; // 1D mode=all columns are irradiated identically
 
@@ -120,11 +121,9 @@ private:
     // double f_lw       = 0.5; // fraction of taulw in well-mixed absorber
 
     bool    rt1Dmode;
-    bool    surface;
     double  Csurf;
     double *surf_flux_d;
-    double *Tsurface_d;
-    double *Tsurface_h;
+
 
     double incflx;
     //  Arrays used in RT code
@@ -187,7 +186,6 @@ private:
                     double alpha_i_,
                     double obliquity_,
                     double Omega,
-                    bool   surface,
                     double Csurf,
                     bool   rt1Dmode,
                     double Tmean,
