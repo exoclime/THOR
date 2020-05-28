@@ -82,11 +82,11 @@ ifeq ($(COMP), nvcc)
 	dependencies_flags = --generate-dependencies
 
 	# define common flags
-	cpp_flags := $(ccbin)  --compiler-options  -Wall -std=c++11 -DDEVICE_SM=$(SM)
-	cuda_flags := $(ccbin) --compiler-options  -Wall -std=c++11 -DDEVICE_SM=$(SM)
+	cpp_flags := $(ccbin)  --compiler-options  -Wall -std=c++14 -DDEVICE_SM=$(SM)
+	cuda_flags := $(ccbin) --compiler-options  -Wall -std=c++14 -DDEVICE_SM=$(SM)
 
-	cpp_dep_flags := $(ccbin) -std=c++11
-	cuda_dep_flags := $(ccbin) -std=c++11
+	cpp_dep_flags := $(ccbin) -std=c++14
+	cuda_dep_flags := $(ccbin) -std=c++14
 	link_flags = $(ccbin)
 else
 	# need to compile with clang for compilation database
@@ -97,11 +97,11 @@ else
 	dependencies_flags := -MM
 
 	# define common flags
-	cpp_flags := -Wall -std=c++11 -DDEVICE_SM=$(SM)
-	cuda_flags := -Wall -std=c++11 -DDEVICE_SM=$(SM) --cuda-path=$(CUDA_PATH)
+	cpp_flags := -Wall -std=c++14 -DDEVICE_SM=$(SM)
+	cuda_flags := -Wall -std=c++14 -DDEVICE_SM=$(SM) --cuda-path=$(CUDA_PATH)
 
-	cpp_dep_flags := -std=c++11
-	cuda_dep_flags := -std=c++11 --cuda-path=$(CUDA_PATH)
+	cpp_dep_flags := -std=c++14
+	cuda_dep_flags := -std=c++14 --cuda-path=$(CUDA_PATH)
 	link_flags = --cuda-path=$(CUDA_PATH) -L$(CUDA_LIBS) -lcudart_static -ldl -lrt -pthread
 endif
 
@@ -250,7 +250,7 @@ $(BINDIR)/${TESTDIR}: $(BINDIR)
 
 # for CUDA files
 $(OBJDIR)/${OUTPUTDIR}/%.d: %.cu | $(OBJDIR)/$(OUTPUTDIR) $(OBJDIR)
-	@echo $(BLUE)computing dependencies $@ $(END)
+	@echo -e $(BLUE)computing dependencies $@ $(END)
 	set -e; rm -f $@; \
 	$(CC) $(dependencies_flags) $(arch) $(cuda_dep_flags) $(h5include) -I$(includedir)  $< > $@.$$$$; \
 	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
@@ -259,7 +259,7 @@ $(OBJDIR)/${OUTPUTDIR}/%.d: %.cu | $(OBJDIR)/$(OUTPUTDIR) $(OBJDIR)
 
 # for C++ files
 $(OBJDIR)/${OUTPUTDIR}/%.d: %.cpp | $(OBJDIR)/$(OUTPUTDIR) $(OBJDIR)
-	@echo $(BLUE)computing dependencies $@ $(END)
+	@echo -e $(BLUE)computing dependencies $@ $(END)
 	set -e; rm -f $@; \
 	$(CC) $(dependencies_flags) $(arch) $(cpp_dep_flags) $(h5include) -I$(includedir) $< > $@.$$$$; \
 	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
@@ -269,7 +269,7 @@ $(OBJDIR)/${OUTPUTDIR}/%.d: %.cpp | $(OBJDIR)/$(OUTPUTDIR) $(OBJDIR)
 # build objects
 # CUDA files
 $(OBJDIR)/${OUTPUTDIR}/%.o: %.cu $(OBJDIR)/$(OUTPUTDIR)/%.d| $(OBJDIR)/$(OUTPUTDIR) $(OBJDIR)
-	@echo $(YELLOW)creating $@ $(END)
+	@echo -e $(YELLOW)creating $@ $(END)
 	if test $$CDB = "-MJ" ; then \
 		$(CC) $(CC_comp_flag) $(arch)  $(cuda_flags) $(h5include) -I$(includedir) $(CDB) $@.json -o $@ $<; \
 	else \
@@ -278,7 +278,7 @@ $(OBJDIR)/${OUTPUTDIR}/%.o: %.cu $(OBJDIR)/$(OUTPUTDIR)/%.d| $(OBJDIR)/$(OUTPUTD
 
 # C++ files
 $(OBJDIR)/${OUTPUTDIR}/%.o: %.cpp $(OBJDIR)/$(OUTPUTDIR)/%.d| $(OBJDIR)/$(OUTPUTDIR) $(OBJDIR)
-	@echo $(YELLOW)creating $@ $(END)
+	@echo -e $(YELLOW)creating $@ $(END)
 	if test $$CDB = "-MJ" ; then \
 		$(CC) $(CC_comp_flag) $(arch) $(cpp_flags) $(h5include) -I$(includedir) $(CDB) $@.json -o $@ $<; \
 	else \
@@ -287,8 +287,9 @@ $(OBJDIR)/${OUTPUTDIR}/%.o: %.cpp $(OBJDIR)/$(OUTPUTDIR)/%.d| $(OBJDIR)/$(OUTPUT
 
 
 # link *.o objects
+.PHONY: 
 $(BINDIR)/${OUTPUTDIR}/esp: $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj)) $(MODULES_SRC)/libphy_modules.a | $(BINDIR) $(RESDIR) $(BINDIR)/$(OUTPUTDIR)  $(OBJDIR)
-	@echo $(YELLOW)creating $@ $(END)
+	@echo -e $(YELLOW)creating $@ $(END)
 	$(CC) -o $(BINDIR)/$(OUTPUTDIR)/esp $(arch) $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj)) -L$(MODULES_SRC) -lphy_modules $(h5libdir) $(h5libs) $(link_flags)
 	if test $$CDB = "-MJ" ; then \
 	rm -f compile_commands.json; \
@@ -300,7 +301,7 @@ $(BINDIR)/${OUTPUTDIR}/esp: $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj)) $(MODULE
 # phony so that it will always be run
 .PHONY: symlink
 symlink: $(BINDIR)/$(OUTPUTDIR)/esp
-	@echo $(BLUE)make link from $(BINDIR)/$(OUTPUTDIR)/esp to $(BINDIR)/esp  $(END)
+	@echo -e $(BLUE)make link from $(BINDIR)/$(OUTPUTDIR)/esp to $(BINDIR)/esp  $(END)
 	rm -f $(BINDIR)/esp
 	ln -s $(BINDIR)/$(OUTPUTDIR)/esp -r -t bin
 
@@ -311,7 +312,7 @@ export
 # always call submakefile for modules
 .PHONY: $(MODULES_SRC)/libphy_modules.a
 $(MODULES_SRC)/libphy_modules.a:
-	@echo $(MAGENTA)Creating physics module from subdir $(MODULES_SRC)$(END)
+	@echo -e $(MAGENTA)Creating physics module from subdir $(MODULES_SRC)$(END)
 	$(MAKE) -f Makefile -C $(MODULES_SRC)
 
 #######################################################################
@@ -324,53 +325,53 @@ $(MODULES_SRC)/libphy_modules.a:
 tests: ${BINDIR}/${TESTDIR}/cmdargs_test ${BINDIR}/${TESTDIR}/config_test ${BINDIR}/${TESTDIR}/storage_test ${BINDIR}/${TESTDIR}/directories_test ${BINDIR}/${TESTDIR}/gen_init  ${BINDIR}/${TESTDIR}/reduction_add_test
 
 $(BINDIR)/$(TESTDIR)/cmdargs_test:  $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_cmdargs)) | $(BINDIR)/${OUTPUTDIR} $(BINDIR)/$(TESTDIR) $(BINDIR) $(RESDIR)
-	@echo $(YELLOW)creating $@ $(END)
+	@echo -e $(YELLOW)creating $@ $(END)
 	$(CC) $(arch) $(link_flags) -o $(BINDIR)/$(TESTDIR)/cmdargs_test $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_cmdargs))
 
 $(BINDIR)/$(TESTDIR)/config_test:  $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_config)) | $(BINDIR)/${OUTPUTDIR} $(BINDIR)/$(TESTDIR) $(BINDIR) $(RESDIR)
-	@echo $(YELLOW)creating $@ $(END)
+	@echo -e $(YELLOW)creating $@ $(END)
 	$(CC)  $(arch) $(link_flags) -o $(BINDIR)/$(TESTDIR)/config_test $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_config))
 
 $(BINDIR)/$(TESTDIR)/directories_test:  $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_directories)) | $(BINDIR)/${OUTPUTDIR} $(BINDIR)/$(TESTDIR) $(BINDIR) $(RESDIR)
-	@echo $(YELLOW)creating $@ $(END)
+	@echo -e $(YELLOW)creating $@ $(END)
 	$(CC) $(arch) $(link_flags) -o $(BINDIR)/$(TESTDIR)/directories_test $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_directories))
 
 $(BINDIR)/$(TESTDIR)/storage_test:  $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_storage)) | $(BINDIR)/${OUTPUTDIR} $(BINDIR)/$(TESTDIR) $(BINDIR) $(RESDIR)
-	@echo $(YELLOW)creating $@ $(END)
+	@echo -e $(YELLOW)creating $@ $(END)
 	$(CC) $(arch) $(link_flags) -o $(BINDIR)/$(TESTDIR)/storage_test $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_storage))  $(h5libdir) $(h5libs)
 
 $(BINDIR)/$(TESTDIR)/gen_init:  $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_gen_init)) | $(BINDIR)/${OUTPUTDIR} $(BINDIR)/$(TESTDIR) $(BINDIR) $(RESDIR)
-	@echo $(YELLOW)creating $@ $(END)
+	@echo -e $(YELLOW)creating $@ $(END)
 	$(CC) $(arch) $(link_flags) -o $(BINDIR)/$(TESTDIR)/gen_init $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_gen_init))  $(h5libdir) $(h5libs)
 
 $(BINDIR)/$(TESTDIR)/reduction_add_test:  $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_reduction_add)) | $(BINDIR)/${OUTPUTDIR} $(BINDIR)/$(TESTDIR) $(BINDIR) $(RESDIR)
-	@echo $(YELLOW)creating $@ $(END)
+	@echo -e $(YELLOW)creating $@ $(END)
 	$(CC) $(arch) $(link_flags) -o $(BINDIR)/$(TESTDIR)/reduction_add_test $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj_tests_reduction_add))  $(h5libdir) $(h5libs)
 
 #######################################################################
 # Cleanup
 .phony: clean,ar
 clean:
-	@echo $(CYAN)clean up binaries $(END)
+	@echo -e $(CYAN)clean up binaries $(END)
 	-$(RM) $(BINDIR)/debug/esp
 	-$(RM) $(BINDIR)/release/esp
 	-$(RM) $(BINDIR)/prof/esp
-	@echo $(CYAN)clean up objects files and dependencies $(END)
+	@echo -e $(CYAN)clean up objects files and dependencies $(END)
 	-$(RM) $(OBJDIR)/debug/*.o $(OBJDIR)/debug/*.d $(OBJDIR)/debug/*.d.* $(OBJDIR)/debug/*.o.json
 	-$(RM) $(OBJDIR)/release/*.o $(OBJDIR)/release/*.d $(OBJDIR)/release/*.d.* $(OBJDIR)/release/*.o.json
 	-$(RM) $(OBJDIR)/prof/*.o $(OBJDIR)/prof/*.d $(OBJDIR)/prof/*.d.* $(OBJDIR)/prof/*.o.json
-	@echo $(CYAN)clean up tests binaries $(END)
+	@echo -e $(CYAN)clean up tests binaries $(END)
 	-$(RM) $(BINDIR)/tests/cmdargs_test
 	-$(RM) $(BINDIR)/tests/storage_test
 	-$(RM) $(BINDIR)/tests/config_test
 	-$(RM) $(BINDIR)/tests/directories_test
 	-$(RM) $(BINDIR)/tests/gen_init
 	-$(RM) $(BINDIR)/tests/test_reduction_add
-	@echo $(CYAN)clean up symlink $(END)
+	@echo -e $(CYAN)clean up symlink $(END)
 	-$(RM) $(BINDIR)/esp
-	@echo $(CYAN)clean up modules directory $(END)
+	@echo -e $(CYAN)clean up modules directory $(END)
 	$(MAKE) -C $(MODULES_SRC) clean
-	@echo $(CYAN)clean up directories $(END)
+	@echo -e $(CYAN)clean up directories $(END)
 	-$(RM) -d $(BINDIR)/debug $(BINDIR)/release $(BINDIR)/prof
 	-$(RM) -d $(BINDIR)/tests
 	-$(RM) -d $(OBJDIR)/debug
