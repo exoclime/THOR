@@ -86,7 +86,7 @@ libphy_modules.a: $(BUILDDIR)/phy_modules.o | $(BUILDDIR)
 # Cleanup
 .phony: clean,ar
 clean:
-	@echo '$(CYAN)clean up library $(END)'
+	@echo -e '$(CYAN)clean up library $(END)'
 	-$(RM) libphy_modules.a
 	@echo -e '$(CYAN)clean up modules objects $(END)'
 	-$(RM) $(BUILDDIR)/phy_modules.o
