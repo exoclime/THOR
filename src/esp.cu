@@ -1279,9 +1279,9 @@ int main(int argc, char** argv) {
 
         // Run pressure check
         double pressure_min = gpu_min_on_device<1024>(X.pressure_d, X.point_num * X.nv);
-        log::printf("\n min pressure : %g\n", pressure_min);
+        log::printf("\n min pressure : %g Pa\n", pressure_min);
         if (pressure_min < pressure_check_limit) {
-            log::printf("\n min pressure lower than min pressure limit: %g\n", pressure_min);
+            log::printf("\n WARNING: min pressure lower than min pressure limit: %g Pa\n", pressure_min);
             if (exit_on_low_pressure_warning)
                 break;
         }
