@@ -90,12 +90,18 @@ private:
     // double *dvdz_tmp;
     double *d2vdz2_tmp;
     double *atmp, *btmp, *ctmp, *cpr_tmp, *dtmp, *dpr_tmp;
-    double  zbl;        // altitude of transition from BL to free atmosph
-    int     bl_top_lev; // index of highest level inside BL
-    double *RiB_d;      // bulk Richardson number
+    double  zbl;          // altitude of transition from BL to free atmosph
+    int *   bl_top_lev_d; // index of highest level inside BL
+    int *   bl_top_lev_h; // index of highest level inside BL
+    double *RiB_d;        // bulk Richardson number
+    double *RiB_h;        // bulk Richardson number
 
     double *KM_d; // momentum diffusivity (turbulence)
+    double *KM_h;
+
     double *KH_d; // heat diffusivity (turbulence)
+    double *KH_h;
+
 
     void BLSetup(const ESP &            esp,
                  const SimulationSetup &sim,
@@ -126,7 +132,7 @@ __global__ void ConstKMEkman(double *Mh_d,
                              int     num,
                              int     nv);
 
-__global__ void ConstKMEkman_Impl(double *Mh_d,
+__global__ void MomentumDiff_Impl(double *Mh_d,
                                   double *pressure_d,
                                   double *Rho_d,
                                   double *Altitude_d,
@@ -137,12 +143,12 @@ __global__ void ConstKMEkman_Impl(double *Mh_d,
                                   double *cpr_tmp,
                                   double *dtmp,
                                   double *dpr_tmp,
-                                  double  KMconst,
+                                  double *KM_d,
                                   double  zbl,
                                   double  time_step,
                                   int     num,
                                   int     nv,
-                                  int     bl_top_lev);
+                                  int *   bl_top_lev_d);
 
 __global__ void CalcRiB(double *pressure_d,
                         double *Rho_d,

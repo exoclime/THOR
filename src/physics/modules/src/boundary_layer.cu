@@ -78,6 +78,13 @@ bool boundary_layer::initialise_memory(const ESP &              esp,
     cudaMalloc((void **)&KM_d, esp.nvi * esp.point_num * sizeof(double));
     cudaMalloc((void **)&KH_d, esp.nvi * esp.point_num * sizeof(double));
 
+    cudaMalloc((void **)&bl_top_lev_d, esp.point_num * sizeof(int));
+
+    RiB_h        = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
+    KM_h         = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
+    KH_h         = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
+    bl_top_lev_h = (int *)malloc(esp.point_num * sizeof(int));
+
     cudaMemset(atmp, 0, sizeof(double) * esp.point_num * esp.nv);
     cudaMemset(btmp, 0, sizeof(double) * esp.point_num * esp.nv);
     cudaMemset(ctmp, 0, sizeof(double) * esp.point_num * esp.nv);
@@ -87,6 +94,7 @@ bool boundary_layer::initialise_memory(const ESP &              esp,
     cudaMemset(RiB_d, 0, sizeof(double) * esp.point_num * esp.nvi);
     cudaMemset(KM_d, 0, sizeof(double) * esp.point_num * esp.nvi);
     cudaMemset(KH_d, 0, sizeof(double) * esp.point_num * esp.nvi);
+    cudaMemset(bl_top_lev_d, 0, sizeof(int) * esp.point_num);
 
     return true;
 }
@@ -158,7 +166,6 @@ bool boundary_layer::phy_loop(ESP &                  esp,
         printf("MO BL not ready yet!\n");
     }
     else if (bl_type == EKMANSPIRAL) {
-        double KMconst = 12.5;
         // cudaMemset(dvdz_tmp, 0, sizeof(double) * 3 * esp.point_num * esp.nvi);
         cudaMemset(d2vdz2_tmp, 0, sizeof(double) * 3 * esp.point_num * esp.nv);
 
@@ -190,12 +197,12 @@ bool boundary_layer::phy_loop(ESP &                  esp,
 
         // TO DO
         // need KM array, KH array, general thomas solver for KM, KH
-        // stability check for thomas solver
+        // calc BL height from RiB
         // adjust Tsurface for sensible heat flux
         // how to adjust pressure? adjust pt first, then compute pressure? or is there a shortcut?
         // update pressure (implicitly) here, or add to qheat?
 
-        ConstKMEkman_Impl<<<NBLEV, NTH>>>(esp.Mh_d,
+        MomentumDiff_Impl<<<NBLEV, NTH>>>(esp.Mh_d,
                                           esp.pressure_d,
                                           esp.Rho_d,
                                           esp.Altitude_d,
@@ -206,12 +213,12 @@ bool boundary_layer::phy_loop(ESP &                  esp,
                                           cpr_tmp,
                                           dtmp,
                                           dpr_tmp,
-                                          KMconst,
+                                          KM_d,
                                           zbl,
                                           time_step,
                                           esp.point_num,
                                           esp.nv,
-                                          bl_top_lev);
+                                          bl_top_lev_d);
     }
 
 
@@ -253,12 +260,23 @@ void boundary_layer::BLSetup(const ESP &            esp,
         bl_sigma  = bl_sigma_;
     }
     else if (bl_type == EKMANSPIRAL) {
-        zbl     = bl_sigma_ * sim.Top_altitude;
-        int lev = 0;
-        while (esp.Altitude_h[lev] < zbl) {
-            bl_top_lev = lev;
-            lev++;
+        double KMconst = 12.5;
+
+        zbl = bl_sigma_ * sim.Top_altitude;
+
+        for (int id = 0; id < esp.point_num; id++) {
+            int lev = 0;
+            while (esp.Altitude_h[lev] < zbl) {
+                bl_top_lev_h[id] = lev;
+                lev++;
+            }
+
+            for (lev = 0; lev < esp.nvi; lev++) {
+                KM_h[id * esp.nvi + lev] = KMconst;
+            }
         }
+        cudaMemcpy(KM_d, KM_h, esp.nvi * esp.point_num * sizeof(double), cudaMemcpyHostToDevice);
+        cudaMemcpy(bl_top_lev_d, bl_top_lev_h, esp.point_num * sizeof(int), cudaMemcpyHostToDevice);
     }
     // printf("%f, %f, %d\n", zbl, esp.Altitude_h[bl_top_lev], bl_top_lev);
 }
@@ -377,7 +395,7 @@ __global__ void ConstKMEkman(double *Mh_d,
     }
 }
 
-__global__ void ConstKMEkman_Impl(double *Mh_d,
+__global__ void MomentumDiff_Impl(double *Mh_d,
                                   double *pressure_d,
                                   double *Rho_d,
                                   double *Altitude_d,
@@ -388,12 +406,12 @@ __global__ void ConstKMEkman_Impl(double *Mh_d,
                                   double *cpr_tmp,
                                   double *dtmp,
                                   double *dpr_tmp,
-                                  double  KMconst,
+                                  double *KM_d,
                                   double  zbl,
                                   double  time_step,
                                   int     num,
                                   int     nv,
-                                  int     bl_top_lev) {
+                                  int *   bl_top_lev_d) {
 
     //should create check on stability of thomas algorithm
 
@@ -401,15 +419,16 @@ __global__ void ConstKMEkman_Impl(double *Mh_d,
     int lev;
 
     if (id < num) {
-        for (lev = 0; lev < bl_top_lev + 1; lev++) {
+        for (lev = 0; lev < bl_top_lev_d[id] + 1; lev++) {
             //forward sweep
             if (lev == 0) { //lowest layer, v at lowest boundary = 0, dz0 = Altitude0
                 atmp[id * nv + lev] = 0;
                 btmp[id * nv + lev] =
-                    -(KMconst / (Altitudeh_d[lev + 1] - Altitudeh_d[lev])
-                          * (1.0 / (Altitude_d[lev + 1] - Altitude_d[lev]) + 1.0 / Altitude_d[lev])
+                    -(1.0 / (Altitudeh_d[lev + 1] - Altitudeh_d[lev])
+                          * (KM_d[id * (nv + 1) + lev + 1] / (Altitude_d[lev + 1] - Altitude_d[lev])
+                             + KM_d[id * (nv + 1) + lev] / Altitude_d[lev])
                       + 1.0 / time_step);
-                ctmp[id * nv + lev] = KMconst
+                ctmp[id * nv + lev] = KM_d[id * (nv + 1) + lev + 1]
                                       / ((Altitudeh_d[lev + 1] - Altitudeh_d[lev])
                                          * (Altitude_d[lev + 1] - Altitude_d[lev]));
                 cpr_tmp[id * nv + lev] = ctmp[id * nv + lev] / btmp[id * nv + lev];
@@ -419,20 +438,21 @@ __global__ void ConstKMEkman_Impl(double *Mh_d,
                         dtmp[id * nv * 3 + lev * 3 + k] / btmp[id * nv + lev];
                 }
             }
-            else if (lev == bl_top_lev) {
-                atmp[id * nv + lev] = KMconst
+            else if (lev == bl_top_lev_d[id]) {
+                atmp[id * nv + lev] = KM_d[id * (nv + 1) + lev]
                                       / ((Altitudeh_d[lev + 1] - Altitudeh_d[lev])
                                          * (Altitude_d[lev] - Altitude_d[lev - 1]));
-                btmp[id * nv + lev]    = -(KMconst / (Altitudeh_d[lev + 1] - Altitudeh_d[lev])
-                                            * (1.0 / (Altitude_d[lev + 1] - Altitude_d[lev])
-                                               + 1.0 / (Altitude_d[lev] - Altitude_d[lev - 1]))
-                                        + 1.0 / time_step);
+                btmp[id * nv + lev] =
+                    -(1.0 / (Altitudeh_d[lev + 1] - Altitudeh_d[lev])
+                          * (KM_d[id * (nv + 1) + lev + 1] / (Altitude_d[lev + 1] - Altitude_d[lev])
+                             + KM_d[id * (nv + 1) + lev] / (Altitude_d[lev] - Altitude_d[lev - 1]))
+                      + 1.0 / time_step);
                 ctmp[id * nv + lev]    = 0;
                 cpr_tmp[id * nv + lev] = 0; //not used, i think
                 for (int k = 0; k < 3; k++) {
                     dtmp[id * nv * 3 + lev * 3 + k] =
                         -Mh_d[id * 3 * nv + lev * 3 + k] / time_step
-                        - KMconst / (Altitudeh_d[lev + 1] - Altitudeh_d[lev])
+                        - KM_d[id * (nv + 1) + lev + 1] / (Altitudeh_d[lev + 1] - Altitudeh_d[lev])
                               * Mh_d[id * 3 * nv + (lev + 1) * 3 + k]
                               / (Altitude_d[lev + 1] - Altitude_d[lev]);
                     dpr_tmp[id * nv * 3 + lev * 3 + k] =
@@ -442,14 +462,15 @@ __global__ void ConstKMEkman_Impl(double *Mh_d,
                 }
             }
             else {
-                atmp[id * nv + lev] = KMconst
+                atmp[id * nv + lev] = KM_d[id * (nv + 1) + lev]
                                       / ((Altitudeh_d[lev + 1] - Altitudeh_d[lev])
                                          * (Altitude_d[lev] - Altitude_d[lev - 1]));
-                btmp[id * nv + lev] = -(KMconst / (Altitudeh_d[lev + 1] - Altitudeh_d[lev])
-                                            * (1.0 / (Altitude_d[lev + 1] - Altitude_d[lev])
-                                               + 1.0 / (Altitude_d[lev] - Altitude_d[lev - 1]))
-                                        + 1.0 / time_step);
-                ctmp[id * nv + lev] = KMconst
+                btmp[id * nv + lev] =
+                    -(1.0 / (Altitudeh_d[lev + 1] - Altitudeh_d[lev])
+                          * (KM_d[id * (nv + 1) + lev + 1] / (Altitude_d[lev + 1] - Altitude_d[lev])
+                             + KM_d[id * (nv + 1) + lev] / (Altitude_d[lev] - Altitude_d[lev - 1]))
+                      + 1.0 / time_step);
+                ctmp[id * nv + lev] = KM_d[id * (nv + 1) + lev + 1]
                                       / ((Altitudeh_d[lev + 1] - Altitudeh_d[lev])
                                          * (Altitude_d[lev + 1] - Altitude_d[lev]));
                 cpr_tmp[id * nv + lev] =
@@ -472,10 +493,10 @@ __global__ void ConstKMEkman_Impl(double *Mh_d,
         //     printf("stop");
         // }
 
-        for (lev = bl_top_lev; lev >= 0; lev--) {
+        for (lev = bl_top_lev_d[id]; lev >= 0; lev--) {
             //backward sweep
             for (int k = 0; k < 3; k++) {
-                if (lev == bl_top_lev) {
+                if (lev == bl_top_lev_d[id]) {
                     Mh_d[id * nv * 3 + lev * 3 + k] = dpr_tmp[id * nv * 3 + lev * 3 + k];
                 }
                 else {
