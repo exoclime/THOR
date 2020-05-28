@@ -48,7 +48,7 @@
 
 #define bl_type_default "RayleighHS"
 
-#define HUGE 1e8
+#define LARGERiB 1e8
 
 enum boundary_layer_types { RAYLEIGHHS = 0, MONINOBUKHOV = 1, EKMANSPIRAL = 2 };
 

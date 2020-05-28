@@ -539,7 +539,7 @@ __global__ void CalcRiB(double *pressure_d,
                            / Rho_d[id * nv + lev];
 
                 if (pow(vh_layer, 2) == 0) { //zero velocity, RiB = large +number
-                    RiB_d[id * nv + lev] = HUGE;
+                    RiB_d[id * nv + lev] = LARGERiB;
                 }
                 else { // bulk Richardson number, wrt to surface
                     RiB_d[id * (nv + 1) + lev] = Gravit * Altitude_d[lev] * (pt_layer - pt_surf)
@@ -548,7 +548,7 @@ __global__ void CalcRiB(double *pressure_d,
             }
             else if (lev == nv) {
                 //what should I do at the top level??
-                RiB_d[id * (nv + 1) + lev] = HUGE; //top level can't be incorporated into BL?
+                RiB_d[id * (nv + 1) + lev] = LARGERiB; //top level can't be incorporated into BL?
             }
             else {
                 //potential temperatures for this layer, layer below, and interface b/w
@@ -572,7 +572,7 @@ __global__ void CalcRiB(double *pressure_d,
                                      / (Altitude_d[lev] - Altitude_d[lev - 1]);
 
                 if (pow(vh_interface, 2) == 0) { //zero velocity, set RiB to a big +number
-                    RiB_d[id * (nv + 1) + lev] = HUGE;
+                    RiB_d[id * (nv + 1) + lev] = LARGERiB;
                 }
                 else { //bulk Ri number, wrt to lowest layer
                     RiB_d[id * (nv + 1) + lev] = Gravit * Altitudeh_d[lev]
