@@ -248,11 +248,31 @@ $(BINDIR)/${TESTDIR}: $(BINDIR)
 # those files are then included at the end
 # make is run twice, once to create the dependency targets and once to run the compilation
 
+GITREV_FILE = $(OBJDIR)/git-rev.h 
+
+.PHONY: versionfile
+versionfile: | $(OBJDIR)
+	@echo -e '$(GREEN)Creating version file $(END)'
+	@echo -n "#define GIT_BRANCH_RAW " > $(GITREV_FILE)
+	@echo \"$(shell git rev-parse --abbrev-ref HEAD)\" >> $(GITREV_FILE)
+	@echo -n "#define GIT_HASH_RAW " >> $(GITREV_FILE)
+	@echo \"$(shell git describe --always --dirty --abbrev=40 --match="NoTagWithThisName")\" >> $(GITREV_FILE)
+
+
+
+# for CUDA files
+# $(OBJDIR)/${OUTPUTDIR}/esp.d: esp.cu versionfile | $(OBJDIR)/$(OUTPUTDIR) $(OBJDIR) 
+# 	@echo -e '$(BLUE)computing dependencies $@ $(END)'
+# 	set -e; rm -f $@; \
+# 	$(CC) $(dependencies_flags) $(arch) $(cuda_dep_flags) $(h5include) -I$(includedir) -I$(OBJDIR) $< > $@.$$$$; \
+# 	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
+# 	rm -f $@.$$$$
+
 # for CUDA files
 $(OBJDIR)/${OUTPUTDIR}/%.d: %.cu | $(OBJDIR)/$(OUTPUTDIR) $(OBJDIR)
 	@echo -e '$(BLUE)computing dependencies $@ $(END)'
 	set -e; rm -f $@; \
-	$(CC) $(dependencies_flags) $(arch) $(cuda_dep_flags) $(h5include) -I$(includedir)  $< > $@.$$$$; \
+	$(CC) $(dependencies_flags) $(arch) $(cuda_dep_flags) $(h5include) -I$(includedir)  -I$(OBJDIR)  $< > $@.$$$$; \
 	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
 	rm -f $@.$$$$
 
@@ -268,6 +288,14 @@ $(OBJDIR)/${OUTPUTDIR}/%.d: %.cpp | $(OBJDIR)/$(OUTPUTDIR) $(OBJDIR)
 #######################################################################
 # build objects
 # CUDA files
+$(OBJDIR)/${OUTPUTDIR}/esp.o: esp.cu $(OBJDIR)/$(OUTPUTDIR)/esp.d versionfile | $(OBJDIR)/$(OUTPUTDIR) $(OBJDIR)
+	@echo -e '$(YELLOW)creating $@ $(END)'
+	if test $$CDB = "-MJ" ; then \
+		$(CC) $(CC_comp_flag) $(arch)  $(cuda_flags) $(h5include) -I$(includedir) -I$(OBJDIR) $(CDB) $@.json -o $@ $<; \
+	else \
+		$(CC) $(CC_comp_flag) $(arch)  $(cuda_flags) $(h5include) -I$(includedir) -I$(OBJDIR) -o $@ $<; \
+	fi
+
 $(OBJDIR)/${OUTPUTDIR}/%.o: %.cu $(OBJDIR)/$(OUTPUTDIR)/%.d| $(OBJDIR)/$(OUTPUTDIR) $(OBJDIR)
 	@echo -e '$(YELLOW)creating $@ $(END)'
 	if test $$CDB = "-MJ" ; then \
@@ -360,6 +388,7 @@ clean:
 	-$(RM) $(OBJDIR)/debug/*.o $(OBJDIR)/debug/*.d $(OBJDIR)/debug/*.d.* $(OBJDIR)/debug/*.o.json
 	-$(RM) $(OBJDIR)/release/*.o $(OBJDIR)/release/*.d $(OBJDIR)/release/*.d.* $(OBJDIR)/release/*.o.json
 	-$(RM) $(OBJDIR)/prof/*.o $(OBJDIR)/prof/*.d $(OBJDIR)/prof/*.d.* $(OBJDIR)/prof/*.o.json
+	-$(RM) $(GITREV_FILE)
 	@echo -e '$(CYAN)clean up tests binaries $(END)'
 	-$(RM) $(BINDIR)/tests/cmdargs_test
 	-$(RM) $(BINDIR)/tests/storage_test

@@ -86,6 +86,8 @@ using std::string;
 
 #include "reduction_min.h"
 
+#include "git-rev.h"
+
 enum e_sig { ESIG_NOSIG = 0, ESIG_SIGTERM = 1, ESIG_SIGINT = 2 };
 
 
@@ -224,6 +226,9 @@ int main(int argc, char** argv) {
 
     log::printf(" build level: %s\n", BUILD_LEVEL);
 
+    log::printf(" git branch: %s\n", GIT_BRANCH_RAW);
+    log::printf(" git hash: %s\n", GIT_HASH_RAW);
+    
 
     //*****************************************************************
     // Initial conditions

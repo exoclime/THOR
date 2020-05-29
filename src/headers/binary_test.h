@@ -134,7 +134,7 @@
 #else // do nothing
 #    define USE_BENCHMARK()
 #    define SET_BENCHMARK_PATH(path)
-#    define INIT_BENCHMARK(esp, grid, path)
+#    define INIT_BENCHMARK(esp, grid, path, write, compare)
 #    define BENCH_POINT(iteration, name, in, out)
 #    define BENCH_POINT_I(iteration, name, in, out)
 #    define BENCH_POINT_I_S(iteration, subiteration, name, in, out)
