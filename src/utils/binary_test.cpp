@@ -629,14 +629,11 @@ void binary_test::check_data(const string&         iteration,
 
 
 // Specific debugging functions
-#    ifdef BENCH_POINT_WRITE
-    output_reference(iteration, ref_name, data_output);
-#    endif // BENCH_POINT_WRITE
+    if (use_write)
+      output_reference(iteration, ref_name, data_output);
 
-#    ifdef BENCH_POINT_COMPARE
-    compare_to_reference(iteration, ref_name, data_output);
-
-#    endif // BENCH_POINT_COMPARE
+    if (use_compare)
+      compare_to_reference(iteration, ref_name, data_output);
 
 #    ifdef BENCH_NAN_CHECK
     if (nan_check_d == nullptr) {

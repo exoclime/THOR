@@ -51,9 +51,9 @@
 // ***************************************
 // * binary comparison
 // compare benchmark point to references
-// #define BENCH_POINT_COMPARE
+// use --bincompare option
 // write reference benchmark point
-// #define BENCH_POINT_WRITE
+// use --binwrite option
 // print out more debug info, by default, only print out failures
 // #define BENCH_PRINT_DEBUG
 // print out comparisaon statistics
