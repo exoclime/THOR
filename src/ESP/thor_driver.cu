@@ -683,6 +683,11 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                                profx_Qheat_d,
                                                energy_equation);
         cudaDeviceSynchronize();
+        BENCH_POINT_I_S(current_step,
+                        rk,
+                        "Compute_Slow_Modes",
+                        (),
+                        ("SlowMh_d", "SlowWh_d", "SlowRho_d", "Slowpressure_d"))
         // Updates: SlowMh_d, SlowWh_d, SlowRho_d, Slowpressure_d
         Compute_Slow_Modes_Poles<6><<<2, 1>>>(SlowMh_d,
                                               SlowWh_d,
@@ -723,6 +728,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                               profx_dWh_d,
                                               profx_Qheat_d,
                                               energy_equation);
+        cudaDeviceSynchronize();
 
         BENCH_POINT_I_S(current_step,
                         rk,
