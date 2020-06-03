@@ -30,11 +30,12 @@ def call_plot(name, func, *args, **kwargs):
         pfile = func(*args,**kwargs)
         if pfile is not None:
             print('Created file: ' + str(pfile))
+        return pfile
     except:
         print(traceback.format_exc())
         print(f'{name} plot FAILED')
+        return None
 
-    return pfile
 
 def make_plot(args, save=True, axis=None):
     pview = args.pview
@@ -50,6 +51,7 @@ def make_plot(args, save=True, axis=None):
              'DGfutprof', 'DGfdtprof', 'DGfnetprof', 'mustar', 'DGfuptot', 'DGfdowntot', 'DGfnet', 'DGqheat',  # alf stuff
              'TSfutprof', 'TSfdtprof', 'TSfnetprof', 'mustar', 'TSfuptot', 'TSfdowntot', 'TSfnet', 'TSqheat',
              'DGqheatprof', 'TSqheatprof', 'qheatprof',
+             'spectrum',
              'phase','all']
 
     rg_needed = ['Tver', 'Tlonver', 'uver', 'ulonver', 'vver', 'wver', 'wlonver', 'Tulev', 'PTver', 'PTlonver', 'ulev', 'PVver', 'PVlev',
@@ -478,6 +480,12 @@ def make_plot(args, save=True, axis=None):
              'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
         pfile = call_plot('mustar',ham.horizontal_lev,input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
         plots_created.append(pfile)
+
+    if ('spectrum' in pview) and (input.TSRT):
+        z = {'label': r'spectrum ', 'name': 'spectrum',
+             'cmap': 'magma', 'mt': maketable}
+        pfile = call_plot('spectrum',ham.spectrum, input, grid, output, z, save=save, axis=axis)
+        plots_created.append(pfile)   
 
     # --- Pressure profile types-------------------------------
     if 'TP' in pview or 'all' in pview:
