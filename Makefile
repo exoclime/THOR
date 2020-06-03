@@ -258,18 +258,8 @@ versionfile: | $(OBJDIR)
 	@echo -n "#define GIT_HASH_RAW " >> $(GITREV_FILE)
 	@echo \"$(shell git describe --always --dirty --abbrev=40 --match="NoTagWithThisName")\" >> $(GITREV_FILE)
 
-
-
 # for CUDA files
-# $(OBJDIR)/${OUTPUTDIR}/esp.d: esp.cu versionfile | $(OBJDIR)/$(OUTPUTDIR) $(OBJDIR) 
-# 	@echo -e '$(BLUE)computing dependencies $@ $(END)'
-# 	set -e; rm -f $@; \
-# 	$(CC) $(dependencies_flags) $(arch) $(cuda_dep_flags) $(h5include) -I$(includedir) -I$(OBJDIR) $< > $@.$$$$; \
-# 	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
-# 	rm -f $@.$$$$
-
-# for CUDA files
-$(OBJDIR)/${OUTPUTDIR}/%.d: %.cu | $(OBJDIR)/$(OUTPUTDIR) $(OBJDIR)
+$(OBJDIR)/${OUTPUTDIR}/%.d: %.cu | $(OBJDIR)/$(OUTPUTDIR) $(OBJDIR) versionfile
 	@echo -e '$(BLUE)computing dependencies $@ $(END)'
 	set -e; rm -f $@; \
 	$(CC) $(dependencies_flags) $(arch) $(cuda_dep_flags) $(h5include) -I$(includedir)  -I$(OBJDIR)  $< > $@.$$$$; \
