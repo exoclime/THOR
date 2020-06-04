@@ -412,9 +412,9 @@ __global__ void rtm_dual_band(double *pressure_d,
                               double *Tsurface_d,
                               double *surf_flux_d,
                               double *profx_Qheat_d,
-			      double *DG_Qheat_d, // internal qheat for debugging
+                              double *DG_Qheat_d, // internal qheat for debugging
                               double *Rd_d,
-			      double  Qheat_scaling,
+                              double  Qheat_scaling,
                               bool    gcm_off,
                               bool    rt1Dmode) {
 
@@ -587,8 +587,8 @@ __global__ void rtm_dual_band(double *pressure_d,
                     //trying to prevent too much cooling resulting in negative pressure in dyn core
                     dtemp[id * nv + lev] = -pressure_d[id * nv + lev] / timestep;
                 }
-		DG_Qheat_d[id * nv + lev] = dtemp[id * nv + lev];
-                profx_Qheat_d[id * nv + lev] = Qheat_scaling*dtemp[id * nv + lev];
+                DG_Qheat_d[id * nv + lev]    = dtemp[id * nv + lev];
+                profx_Qheat_d[id * nv + lev] = Qheat_scaling * dtemp[id * nv + lev];
             }
         }
     }
