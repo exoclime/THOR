@@ -506,8 +506,8 @@ __global__ void MomentumDiff_Impl(double *Mh_d,
                 }
             }
         }
-        // if (id == 1000) {
-        //     printf("stop");
+        // if (id == 0) {
+        //     printf("%f\n", Mh_d[id * nv * 3 + 0]);
         // }
     }
 }
