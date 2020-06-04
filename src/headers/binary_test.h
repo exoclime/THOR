@@ -61,8 +61,6 @@
 // precompiler macros to enable binary testing of simulation output
 // BENCHMARKING enables the binary testing. if not set, those
 // functions are empty and ignored by the compiler.
-// BENCH_POINT_WRITE enables writing data out to reference files
-// BENCH_POINT_COMPARE enables comparing current value with reference files
 
 #ifdef BENCHMARKING
 #    define BRACED_INIT_LIST(...) \
@@ -70,9 +68,11 @@
 #    define USE_BENCHMARK() binary_test& btester = binary_test::get_instance();
 #    define SET_BENCHMARK_PATH(path) \
         binary_test& btester = binary_test::get_instance().set_output("bindata_", path);
-#    define INIT_BENCHMARK(esp, grid, path)                                           \
+#    define INIT_BENCHMARK(esp, grid, path, write, compare)                           \
         binary_test::get_instance().append_definitions(build_definitions(esp, grid)); \
-        binary_test::get_instance().set_output("bindata_", path);
+        binary_test::get_instance().set_output("bindata_", path);                     \
+        binary_test::get_instance().set_write(write);                                 \
+        binary_test::get_instance().set_compare(compare);
 #    define BENCH_POINT(iteration, name, in, out)                          \
         btester.check_data(iteration,                                      \
                            name,                                           \
@@ -125,16 +125,16 @@
                            std::vector<std::string>(BRACED_INIT_LIST in),                       \
                            std::vector<std::string>(BRACED_INIT_LIST out),                      \
                            true);
-#    define BENCH_POINT_REGISTER_PHY_VARS(vars, in, out)                                        \
-        btester.register_phy_modules_variables(vars,			                        \
-                           std::vector<std::string>(BRACED_INIT_LIST in),                       \
-                           std::vector<std::string>(BRACED_INIT_LIST out)                      );
+#    define BENCH_POINT_REGISTER_PHY_VARS(vars, in, out)                                      \
+        btester.register_phy_modules_variables(vars,                                          \
+                                               std::vector<std::string>(BRACED_INIT_LIST in), \
+                                               std::vector<std::string>(BRACED_INIT_LIST out));
 
 
 #else // do nothing
 #    define USE_BENCHMARK()
 #    define SET_BENCHMARK_PATH(path)
-#    define INIT_BENCHMARK(esp, grid, path)
+#    define INIT_BENCHMARK(esp, grid, path, write, compare)
 #    define BENCH_POINT(iteration, name, in, out)
 #    define BENCH_POINT_I(iteration, name, in, out)
 #    define BENCH_POINT_I_S(iteration, subiteration, name, in, out)
@@ -144,7 +144,7 @@
 #    define BENCH_POINT_I_PHY(iteration, name, in, out)
 #    define BENCH_POINT_I_S_PHY(iteration, subiteration, name, in, out)
 #    define BENCH_POINT_I_SS_PHY(iteration, subiteration, subsubiteration, name, in, out)
-#    define BENCH_POINT_REGISTER_PHY_VARS(vars, in, out)                                        
+#    define BENCH_POINT_REGISTER_PHY_VARS(vars, in, out)
 #endif // BENCHMARKING
 
 #ifdef BENCHMARKING
@@ -231,6 +231,13 @@ public:
                                         const vector<string>&               phy_modules_data_in,
                                         const vector<string>&               phy_modules_data_out);
 
+    void set_compare(bool b) {
+        use_compare = b;
+    };
+    void set_write(bool b) {
+        use_write = b;
+    };
+
 private:
     vector<string> phy_modules_data_in;
     vector<string> phy_modules_data_out;
@@ -242,6 +249,8 @@ private:
     string output_crash;
     string output_base_name;
 
+    bool use_write   = false;
+    bool use_compare = false;
 
     // make constructor private, can only be instantiated through get_instance
     binary_test(string output_dir, string output_base_name);

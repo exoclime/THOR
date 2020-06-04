@@ -451,7 +451,14 @@ map<string, output_def> build_definitions(ESP& esp, Icogrid& grid) {
               {"halo",          { grid.halo, grid.nh, "halo", "halo", false}},
               {"maps",          { grid.maps, (grid.nl_region+2)*(grid.nl_region+2)*grid.nr, "maps", "m", false}},
             */
-
+        {"func_r_d",
+         {esp.func_r_d,
+          3 * grid.point_num,
+          "func_r_d",
+          "fd",
+          true,
+          std::bind(
+              &ESP::index_to_location_3xn, &esp, std::placeholders::_1, std::placeholders::_2)}},
         {"func_r",
          {grid.func_r,
           3 * grid.point_num,
@@ -629,14 +636,11 @@ void binary_test::check_data(const string&         iteration,
 
 
 // Specific debugging functions
-#    ifdef BENCH_POINT_WRITE
-    output_reference(iteration, ref_name, data_output);
-#    endif // BENCH_POINT_WRITE
+    if (use_write)
+      output_reference(iteration, ref_name, data_output);
 
-#    ifdef BENCH_POINT_COMPARE
-    compare_to_reference(iteration, ref_name, data_output);
-
-#    endif // BENCH_POINT_COMPARE
+    if (use_compare)
+      compare_to_reference(iteration, ref_name, data_output);
 
 #    ifdef BENCH_NAN_CHECK
     if (nan_check_d == nullptr) {

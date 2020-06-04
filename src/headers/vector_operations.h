@@ -224,7 +224,8 @@ inline __host__ __device__ double4 inv2x2(const double4 A) {
     {
       printf("Warning, NaN determinant for matrix inversion [[ %g, %g ], [ %g, %g ]], det: %g\n",
 	   A.x, A.y, A.z, A.w,  A.x*A.w - A.y*A.z );
-      exit(-1);
+      // This is not really allowed here...
+      // exit(-1);
     }
   return make_double4(det_inv*A.w,
 		      -det_inv*A.y,

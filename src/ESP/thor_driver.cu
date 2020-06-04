@@ -343,6 +343,13 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                                energy_equation);
             cudaDeviceSynchronize();
 
+            BENCH_POINT_I_S(current_step,
+                            rk,
+                            "Diffusion_Op1",
+                            (),
+                            ("diffmh_d", "diffw_d", "diffrh_d", "diffpr_d", "diff_d"))
+
+
             cudaMemset(diffrh_d, 0, sizeof(double) * point_num * nv);
             cudaMemset(boundary_flux_d, 0, sizeof(double) * 6 * point_num * nv);
             //Updates: diffmh_d, diffw_d, diffrh_d, diffpr_d, diff_d
@@ -409,7 +416,19 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
 
             cudaDeviceSynchronize();
 
+            BENCH_POINT_I_S(current_step,
+                            rk,
+                            "Diffusion_Op2",
+                            (),
+                            ("diffmh_d", "diffw_d", "diffrh_d", "diffpr_d", "diff_d"))
+
+
             Correct_Horizontal<<<NBALL, NTH>>>(diffmh_d, diffmv_d, func_r_d, point_num);
+
+            cudaDeviceSynchronize();
+
+            BENCH_POINT_I_S(
+                current_step, rk, "Correct_Horizontal", (), ("diffmh_d", "diffmv_d", "func_r_d"))
         }
 
         if (phy_modules_execute)
@@ -642,6 +661,30 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
             cudaDeviceSynchronize();
         }
 
+        BENCH_POINT_I_S(current_step,
+                        rk,
+                        "phy_before_slow_modews",
+                        (),
+                        ("Mhk_d",
+                         "Whk_d",
+                         "Rhok_d",
+                         "Adv_d",
+                         "DivM_d",
+                         "diffmh_d",
+                         "diffw_d",
+                         "diffrh_d",
+                         "diffpr_d",
+                         "diffmv_d",
+                         "diffwv_d",
+                         "diffrv_d",
+                         "diffprv_d",
+                         "pressurek_d",
+                         "h_d",
+                         "hh_d",
+                         "gtil_d",
+                         "Altitude_d",
+                         "Altitudeh_d",
+                         "Qheat_d"))
 
         // Updates: SlowMh_d, SlowWh_d, SlowRho_d, Slowpressure_d
         Compute_Slow_Modes<LN, LN><<<NB, NT>>>(SlowMh_d,
@@ -683,6 +726,11 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                                profx_Qheat_d,
                                                energy_equation);
         cudaDeviceSynchronize();
+        BENCH_POINT_I_S(current_step,
+                        rk,
+                        "Compute_Slow_Modes",
+                        (),
+                        ("SlowMh_d", "SlowWh_d", "SlowRho_d", "Slowpressure_d"))
         // Updates: SlowMh_d, SlowWh_d, SlowRho_d, Slowpressure_d
         Compute_Slow_Modes_Poles<6><<<2, 1>>>(SlowMh_d,
                                               SlowWh_d,
@@ -723,6 +771,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                               profx_dWh_d,
                                               profx_Qheat_d,
                                               energy_equation);
+        cudaDeviceSynchronize();
 
         BENCH_POINT_I_S(current_step,
                         rk,
