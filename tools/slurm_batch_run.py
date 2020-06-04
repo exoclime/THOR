@@ -106,7 +106,7 @@ else:
     last_id = None
 
 
-def start_esp(args, esp_command, esp_args, initial_file, profiling=None):
+def start_esp(args, esp_command, esp_args, initial_file, index=0, profiling=None):
     batch_id_re = re.compile("Submitted batch job (\d+)\n")
     print(f"Batch job args: {args}")
     with subprocess.Popen(args,
@@ -115,7 +115,7 @@ def start_esp(args, esp_command, esp_args, initial_file, profiling=None):
                           stderr=subprocess.PIPE,
                           universal_newlines=True) as proc:
         if profiling is not None:
-            prof_cmd = f"nvprof --export-profile {profiling}"
+            prof_cmd = f"nvprof --export-profile {profiling}.{index}"
         else:
             prof_cmd = ''
         proc.stdin.write("#!/bin/sh\n")
@@ -153,7 +153,6 @@ output_file = str(log_dir / f"slurm-esp-{job_name}-%j.out")  # %j for job index
 
 sbatch_args = ['sbatch',
         '-D', working_dir,
-        '-J', job_name,
         '-n', str(1),
         '--gres', config_data['gpu_key'],
         '-p', config_data['partition'],
@@ -168,9 +167,9 @@ esp_args = f'-b {output_arg}'
 last_success = None
 for i in range(num_jobs):
     if last_id is None:
-        last_success, last_id = start_esp(sbatch_args, esp_command, esp_args, initial_file, profiling=profiling)
+        last_success, last_id = start_esp(sbatch_args + ['-J', f'{job_name}-{i}'], esp_command, esp_args, initial_file, index=i, profiling=profiling)
     elif last_success:
-        last_success, last_id = start_esp(sbatch_args + ['--dependency=afterany:{}'.format(last_id)], esp_command, esp_args, initial_file, profiling=profiling)
+        last_success, last_id = start_esp(sbatch_args + ['--dependency=afterany:{}'.format(last_id), '-J', f'{job_name}-{i}'], esp_command, esp_args, initial_file, index=i, profiling=profiling)
     else:
         print("Error queuing last command")
         exit(-1)

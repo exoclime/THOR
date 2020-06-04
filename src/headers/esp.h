@@ -563,6 +563,7 @@ public:
         return string_stream.str();
     }
 
+  std::string get_output_dir() { return output_dir; };
 private:
     // store if we run benchmarks
     benchmark_types core_benchmark;

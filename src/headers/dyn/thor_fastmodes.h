@@ -45,6 +45,9 @@
 //
 ////////////////////////////////////////////////////////////////////////
 #include "kernel_halo_helpers.h"
+
+#include "debug.h"
+
 #define REALLY_SMALL 1e-300
 
 template<int NX, int NY>
@@ -283,7 +286,8 @@ __global__ void Density_Pressure_Eqs(double *pressure_d,
                                      int     nl_region,
                                      bool    DeepModel,
                                      bool    energy_equation) {
-
+    // This function is one of the tricky part in the algorithm. 
+    // It uses the output of the vertical solver using a thomas algorithm
     int x = threadIdx.x;
     int y = threadIdx.y;
     //    int ib  = blockIdx.x;
@@ -470,12 +474,16 @@ __global__ void Density_Pressure_Eqs(double *pressure_d,
         }
     }
 
+    // uses thomas algorithm computed vertical velocities in dyn/thor_vertical_int.h :: vertical_eq
+    // wht/whl and wht/whl2 -> can have big error
     dz     = altht - althl;
     dwdz   = (wht * r2p - whl * r2l) / (dz * r2m);
     dwptdz = (wht2 * pht * r2p - whl2 * phl * r2l) / (dz * r2m);
 
+    // the errors can sometimes make aux become negative and cause issues later
     aux = -(nflxpt_s[iri] + dwptdz) * dt;               //advection terms in thermo eqn
     r   = Rhok_d[id * nv + lev] + Rho_d[id * nv + lev]; //density at time tau
+
 
     // Updates density
     nflxr_s[iri] += dwdz;
@@ -512,10 +520,21 @@ __global__ void Density_Pressure_Eqs(double *pressure_d,
              * pow((pressure_d[id * nv + lev] + pressurek_d[id * nv + lev]) / P_Ref,
                    Cv / Cp_d[id * nv + lev]);
 
+        // negative aux can get wrongly negative here and cause NaN in fractional power computation.
+        // r: current density
         aux += pt * r;
-
-        p = P_Ref * pow(Rd_d[id * nv + lev] * aux / P_Ref, Cp_d[id * nv + lev] / Cv); //
-
+#ifdef CHECK_DENSITY_PRESSURE_EQ
+        if (aux < 0.0) {
+            printf("Negative AUX value: %g, grididx: %d, lev: %d ", aux, id, lev);
+        }
+#endif  // CHECK_DENSITY_PRESSURE_EQ
+        // fractional power that returns a NaN
+        p = P_Ref * pow(Rd_d[id * nv + lev] * aux / P_Ref, Cp_d[id * nv + lev] / Cv);
+#ifdef CHECK_DENSITY_PRESSURE_EQ
+        if (isnan(p)) {
+            printf("NaN pressure. grididx: %d, lev: %d ", id, lev);
+        }
+#endif // CHECK_DENSITY_PRESSURE_EQ
         pressure_d[id * nv + lev] = p - pressurek_d[id * nv + lev]
                                     + (diffpr_d[id * nv + lev] + diffprv_d[id * nv + lev]) * dt
                                     + Rd_d[id * nv + lev] / Cv * profx_Qheat_d[id * nv + lev] * dt;
@@ -727,8 +746,18 @@ __global__ void Density_Pressure_Eqs_Poles(double *pressure_d,
 
                 aux += pt * r;
 
+#ifdef CHECK_DENSITY_PRESSURE_EQ
+                if (aux < 0.0) {
+                    printf("Negative AUX value: %g, grididx: %d, lev: %d ", aux, id, lev);
+                }
+#endif // CHECK_DENSITY_PRESSURE_EQ
 
                 p = P_Ref * pow(Rd_d[id * nv + lev] * aux / P_Ref, Cp_d[id * nv + lev] / Cv); //
+#ifdef CHECK_DENSITY_PRESSURE_EQ
+                if (isnan(p)) {
+                    printf("NaN pressure. grididx: %d, lev: %d ", id, lev);
+                }
+#endif // CHECK_DENSITY_PRESSURE_EQ
 
                 // Updates pressure
                 pressure_d[id * nv + lev] =

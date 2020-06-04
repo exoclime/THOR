@@ -74,12 +74,6 @@
 #include "debug.h"
 #ifdef BENCHMARKING
 #    warning "Compiling with benchmarktest enabled"
-#    ifdef BENCH_POINT_COMPARE
-#        warning "Compare flag enabled"
-#    endif
-#    ifdef BENCH_POINT_WRITE
-#        warning "Write flag enabled"
-#    endif
 #endif
 
 #include <csignal>
@@ -89,6 +83,10 @@ using std::string;
 #include "log_writer.h"
 
 #include "cuda_device_memory.h"
+
+#include "reduction_min.h"
+
+#include "git-rev.h"
 
 enum e_sig { ESIG_NOSIG = 0, ESIG_SIGTERM = 1, ESIG_SIGINT = 2 };
 
@@ -106,6 +104,11 @@ void sigint_handler(int sig) {
     log::printf("SIGINT caught, trying to exit gracefully\n");
 }
 
+// To clean up at exit in all conditions (like when calling exit(EXIT_FAILURE)
+void exit_handler() {
+    // Clean up device memory
+    cuda_device_memory_manager::get_instance().deallocate();
+}
 
 std::string duration_to_str(double delta) {
     unsigned int days = delta / (24 * 3600);
@@ -158,6 +161,8 @@ int main(int argc, char** argv) {
     // argparser.add_arg("d", "double", 1e-5, "this is a double");
     // argparser.add_arg("s", "string", string("value"), "this is a string");
 
+    // for bool, the default value given is the value that will be returned if the option is present. 
+
     string default_config_filename("ifile/earth.thr");
 
     argparser.add_positional_arg(default_config_filename, "config filename");
@@ -175,7 +180,12 @@ int main(int argc, char** argv) {
 
     argparser.add_arg("b", "batch", true, "Run as batch");
 
-
+#ifdef BENCHMARKING
+    // binary comparison type
+    argparser.add_arg("bw", "binwrite", true, "binary comparison write");
+    argparser.add_arg("bc", "bincompare", true, "binary comparison compare");
+#endif // BENCHMARKING
+    
     // Parse arguments, exit on fail
     bool parse_ok = argparser.parse(argc, argv);
     if (!parse_ok) {
@@ -190,6 +200,25 @@ int main(int argc, char** argv) {
     string config_filename = "";
     argparser.get_positional_arg(config_filename);
 
+#ifdef BENCHMARKING
+     // binary comparison reading
+    bool bincomp_write = false;
+    bool bincomp_write_arg = false;
+    if (argparser.get_arg("binwrite", bincomp_write_arg))
+      bincomp_write = bincomp_write_arg;
+
+    bool bincomp_compare = false;
+    bool bincomp_compare_arg = false;
+    if (argparser.get_arg("bincompare", bincomp_compare_arg))
+      bincomp_compare = bincomp_compare_arg;
+
+    if (bincomp_compare && bincomp_write)
+      {
+	log::printf("ARGUMENT ERROR: binwrite and bincompare can't be set to true at the same time\n");
+	exit(-1);
+      }
+#endif // BENCHMARKING
+
     //*****************************************************************
     log::printf("\n Starting ESP!");
     log::printf("\n\n version 2.3\n");
@@ -197,6 +226,9 @@ int main(int argc, char** argv) {
 
     log::printf(" build level: %s\n", BUILD_LEVEL);
 
+    log::printf(" git branch: %s\n", GIT_BRANCH_RAW);
+    log::printf(" git hash: %s\n", GIT_HASH_RAW);
+    
 
     //*****************************************************************
     // Initial conditions
@@ -289,6 +321,13 @@ int main(int argc, char** argv) {
     config_reader.append_config_var(
         "order_diff_sponge", order_diff_sponge, order_diff_sponge_default);
 
+    // Low pressure test
+    bool   exit_on_low_pressure_warning = false;
+    double pressure_check_limit         = 1e-3;
+    config_reader.append_config_var(
+        "exit_on_low_pressure_warning", exit_on_low_pressure_warning, exit_on_low_pressure_warning);
+    config_reader.append_config_var(
+        "pressure_check_limit", pressure_check_limit, pressure_check_limit);
     // Initial conditions
     // rest supersedes initial condition entry,
     // but if initial condition set from  command line, it overrides
@@ -649,12 +688,16 @@ int main(int argc, char** argv) {
 
 #ifdef BENCHMARKING
     string output_path_ref = path(output_path).to_string();
-#    ifdef BENCH_POINT_COMPARE
-    output_path = (path(output_path) / string("compare")).to_string();
-#    endif // BENCH_POINT_COMPARE
-#    ifdef BENCH_POINT_WRITE
-    output_path = (path(output_path) / string("write")).to_string();
-#    endif // BENCH_POINT_WRITE
+    if (bincomp_compare)
+      {
+	log::printf("\nWARNING: Running with binary comparison ON\n\n");
+      output_path = (path(output_path) / string("compare")).to_string();
+      }
+    if (bincomp_write)
+      {
+	log::printf("\nWARNING: Running with binary comparison data write ON\n\n");
+	output_path = (path(output_path) / string("write")).to_string();
+      }
 #endif     // BENCHMARKING
 
 
@@ -941,7 +984,7 @@ int main(int argc, char** argv) {
 
     USE_BENCHMARK();
 
-    INIT_BENCHMARK(X, Grid, output_path_ref);
+    INIT_BENCHMARK(X, Grid, output_path_ref, bincomp_write, bincomp_compare);
 
     BENCH_POINT("0",
                 "Grid",
@@ -1094,6 +1137,9 @@ int main(int argc, char** argv) {
     if (sigaction(SIGINT, &sigint_action, NULL) == -1) {
         log::printf("Error: cannot handle SIGINT\n"); // Should not happen
     }
+
+    // Register clean up function for exit
+    atexit(exit_handler);
 
     //
     //  Writes initial conditions
@@ -1263,6 +1309,15 @@ int main(int argc, char** argv) {
                    duration_to_str(time_left).c_str(),
                    end_time_str.str().c_str(),
                    file_output ? "[saved output]" : "");
+        }
+
+        // Run pressure check
+        double pressure_min = gpu_min_on_device<1024>(X.pressure_d, X.point_num * X.nv);
+        log::printf("\n min pressure : %g Pa\n", pressure_min);
+        if (pressure_min < pressure_check_limit) {
+            log::printf("\n WARNING: min pressure lower than min pressure limit: %g Pa\n", pressure_min);
+            if (exit_on_low_pressure_warning)
+                break;
         }
 
         if (caught_signal != ESIG_NOSIG) {

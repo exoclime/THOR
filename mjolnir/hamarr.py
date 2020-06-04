@@ -155,6 +155,7 @@ class output_new:
             outputs['flw_up'] = 'flw_up'
             outputs['flw_dn'] = 'flw_dn'
             outputs['fsw_dn'] = 'fsw_dn'
+            outputs['DGQheat'] = 'DGqheat'
 
         if input.TSRT:
             outputs['F_up_tot'] = 'f_up_tot'
@@ -162,6 +163,8 @@ class output_new:
             outputs['F_net'] = 'f_net'
             outputs['Alf_Qheat'] = 'TSqheat'
             outputs['col_mu_star'] = 'mustar'
+            outputs['F_up_TOA_spectrum'] = 'spectrum'
+            outputs['lambda_wave'] = 'wavelength'
 
         for t in np.arange(ntsi - 1, nts, stride):
             fileh5 = resultsf + '/esp_output_' + simID + '_' + np.str(t + 1) + '.h5'
@@ -262,6 +265,8 @@ class output_new:
                     elif key == 'tau':
                         self.tau_sw = np.reshape(data[::2],(grid.point_num,grid.nv,tlen))
                         self.tau_lw = np.reshape(data[1::2],(grid.point_num,grid.nv,tlen))
+                    elif key == 'spectrum':
+                        self.spectrum = np.reshape(data, (grid.point_num,-1,tlen))
                     else:
                         setattr(self, key, data)
                 else:
@@ -799,6 +804,7 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
                 source['DGf_net'] = fnet_tmp[:,:-1] + (fnet_tmp[:, 1:] - fnet_tmp[:, :-1]) * interpz[None, :]
                 source['tau_sw'] = output.tau_sw[:, :, 0]
                 source['tau_lw'] = output.tau_lw[:, :, 0]
+                source['DGqheat'] = output.DGqheat[:, :, 0]
                 source['insol'] = output.Insol[:, 0]
                 if surf == 1:
                     source['Tsurface'] = output.Tsurface[:, 0]
@@ -2203,3 +2209,90 @@ def RTbalance(input, grid, output):
     # not finished!
     asr = fsw_dn[:, input.nv - 1, :] * grid.areasT[:, None]
     olr = flw_up[:, input.nv - 1, :] * grid.areasT[:, None]
+
+def spectrum(input, grid, output, z, stride=20, axis=None, save=True):
+    output.load_reshape(grid, ['spectrum'])
+    # get figure and axis
+    if isinstance(axis, axes.SubplotBase):
+        ax = axis
+        fig = plt.gcf()
+    elif (isinstance(axis, tuple)
+          and isinstance(axis[0], plt.Figure)
+          and isinstance(axis[1], axes.SubplotBase)):
+        fig = axis[0]
+        ax = axis[1]
+    elif axis is None:
+        fig, ax = plt.subplots(1, 1, figsize=(5, 4))
+    else:
+        raise IOError("'axis = {}' but {} is neither an axes.SubplotBase instance nor a (axes.SubplotBase, plt.Figure) instance".format(axis, axis))
+
+    fig.set_tight_layout(True)
+    
+    tsp = output.nts - output.ntsi + 1
+
+    
+    col_lon = []
+    col_lat = []
+    col_lor = []
+    
+    for column in np.arange(0, grid.point_num, stride):
+        lamda = output.wavelength[:]*1e6
+        if tsp > 1:
+            spectrum= np.mean(output.spectrum[column, :, :], axis=1)
+        else:
+            spectrum= output.spectrum[column, :, 0]
+
+        #color = hsv_to_rgb([column / grid.point_num, 1.0, 1.0])
+        lon = grid.lon[column]
+        lat = grid.lat[column]
+        lon_norm = lon / (2.0 * math.pi)
+        lat_norm = lat / (math.pi / 2.0)
+        if lat > 0.0:
+            color = hsv_to_rgb([lon_norm, 1.0 - 0.7 * lat_norm, 1.0])
+        else:
+            color = hsv_to_rgb([lon_norm, 1.0, 1.0 + 0.7 * lat_norm])
+
+        col_lon.append(lon)
+        col_lat.append(lat)
+        col_lor.append(color)
+        ax.plot(lamda, spectrum, 'k-', alpha=0.5, lw=1.0,
+                    path_effects=[pe.Stroke(linewidth=1.5, foreground=color), pe.Normal()])
+
+        
+    # add an insert showing the position of columns
+    inset_pos = [0.8, 0.1, 0.18, 0.18]
+    ax_inset = ax.inset_axes(inset_pos)
+    ax_inset.scatter(col_lon, col_lat, c=col_lor, s=1.0)
+    ax_inset.tick_params(axis='both',
+                         which='both',
+                         top=False,
+                         bottom=False,
+                         left=False,
+                         right=False,
+                         labelright=False,
+                         labelleft=False,
+                         labeltop=False,
+                         labelbottom=False)
+
+    # plt.plot(Tad,P/100,'r--')
+    #ax.invert_yaxis()
+    ax.set_xscale('log')
+    ax.set_yscale('linear')
+    ax.set_ylabel('Flux (W m^2)')
+    ax.set_xlabel('Wavelength [um]')
+    ax.set_title('Time = %#.3f - %#.3f days' % (output.time[0], output.time[-1]))
+
+    pfile = None
+    if save == True:
+        output_path = pathlib.Path(input.resultsf) / 'figures'
+        if not output_path.exists():
+            output_path.mkdir()
+
+        fname = f"spectrum_i{output.ntsi}_l{output.nts}"
+        pfile = output_path / (fname.replace(".", "+") + '.pdf')
+        plt.savefig(pfile)
+
+        plt.close()
+        pfile = str(pfile)
+
+    return pfile

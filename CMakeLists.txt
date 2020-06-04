@@ -196,6 +196,35 @@ endif()
 message(STATUS "HDF5 C++libraries " ${HDF5_LIBRARIES})
 include_directories("src/headers")
 
+######################################################################
+# get git version information
+# from https://stackoverflow.com/questions/1435953/how-can-i-pass-git-sha1-to-compiler-as-definition-using-cmake/4318642#4318642
+
+# The 'real' git information file
+SET(GITREV_BARE_FILE git-rev.h)
+# The temporary git information file
+SET(GITREV_BARE_TMP git-rev-tmp.h)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include/ )
+SET(GITREV_FILE ${CMAKE_CURRENT_BINARY_DIR}/include/${GITREV_BARE_FILE})
+SET(GITREV_TMP ${CMAKE_CURRENT_BINARY_DIR}/include/${GITREV_BARE_TMP})
+
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/include/)
+
+set(GIT_BRANCH_COMMAND "git rev-parse --abbrev-ref HEAD | sed \'s/\(.*\)/\"\\1\"/g\'" )
+
+
+ADD_CUSTOM_COMMAND(
+  OUTPUT ${GITREV_TMP}
+  COMMAND echo -n \\\#define GIT_BRANCH_RAW\  > ${GITREV_TMP}
+  COMMAND echo \\\"\$\$\(git rev-parse --abbrev-ref HEAD\)\\\" >> ${GITREV_TMP} 
+  COMMAND echo -n \\\#define GIT_HASH_RAW\  >> ${GITREV_TMP}
+  COMMAND echo \\\"\$\$\(git describe --always --dirty --abbrev=40 --match=\"NoTagWithThisName\"\)\\\" >> ${GITREV_TMP} 
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different ${GITREV_TMP} ${GITREV_FILE}
+#  COMMAND ${CMAKE_COMMAND} -E remove ${GITREV_TMP}
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+#  VERBATIM
+)
+# Finally, the temporary file should be added as a dependency to the target
 
 
 ######################################################################
@@ -217,7 +246,7 @@ set(PHYSICS_LIBRARY_PATH "${MODULES_SRC}/libphy_modules.a")
 
 ######################################################################
 # build application
-add_executable(esp ${SRC})
+add_executable(esp ${SRC} ${GITREV_TMP})
 target_compile_options(esp  PUBLIC -DBUILD_LEVEL="release" -DDEVICE_SM=${SM})
 # options for debugging
 #target_compile_options(esp PUBLIC -DBENCHMARKING -DBENCH_NAN_CHECK)

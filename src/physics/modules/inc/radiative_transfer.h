@@ -74,6 +74,11 @@ public:
         Qheat_scaling = scaling;
     };
 
+    // DEBUG: hack, for debug printout in Alf.
+    double *get_debug_qheat_device_ptr() {
+        return qheat_d;
+    };
+
 private:
     // Scaling of Qheat, for slow ramp up or ramp down.
     double Qheat_scaling = 1.0;
@@ -158,6 +163,9 @@ private:
     double *insol_d;
     double *insol_ann_h;
     double *insol_ann_d;
+
+    double *qheat_d;
+    double *qheat_h;
 
     //  These arrays are for temporary usage in RT code
     double *dtemp;

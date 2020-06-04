@@ -45,6 +45,9 @@
 // 1.0     16/08/2017 Released version  (JM)
 //
 ////////////////////////////////////////////////////////////////////////
+
+#include "debug.h"
+
 __global__ void Vertical_Eq(double *Whs_d,
                             double *Ws_d,
                             double *pressures_d,
@@ -86,8 +89,13 @@ __global__ void Vertical_Eq(double *Whs_d,
     extern __shared__ double mem_shared[];
 
 
-    double *cc = (double *)mem_shared;
-    double *dd = (double *)&mem_shared[blockDim.x * nvi];
+    // Use thomas algorithm to solve vertical equations. 
+    // This computes the aa, bb, cc, dd values in the loop.
+    // cc and dd are stored, and UPDATED by the "modify in place" thomas algorithm.
+    // To avoid storing aa and bb, they are recomputed on the fly. 
+    double *cc = (double *)mem_shared;                    // <- thomas alg vars
+    double *dd = (double *)&mem_shared[blockDim.x * nvi]; // <- thomas alg vars
+
 
     // double Cv = Cp - Rd;
     double C0;
@@ -95,7 +103,7 @@ __global__ void Vertical_Eq(double *Whs_d,
     double intt, intl, inttm, intlm;
     double dSpdz, dPdz;
     double rhohs;
-    double aa, bb;
+    double aa, bb; // <- thomas alg vars
     double t;
     double althl, alth, altht;
     double alt, altl;
@@ -108,6 +116,9 @@ __global__ void Vertical_Eq(double *Whs_d,
     double CRddl, CRddu, CRdd;
     double or2;
     double tor3;
+
+    // For thomas algorithm to be stable, |aa| + |cc| < |bb|, the matrix must be
+    // diagonaly dominant and symetric positive definite 
 
     if (id < num) {
         for (int lev = 1; lev < nv; lev++) {
@@ -251,6 +262,7 @@ __global__ void Vertical_Eq(double *Whs_d,
                 xim = althl;
                 xip = alth;
 
+                // compute coefficients aa, bb, cc of thomas algorithm original matrix
                 inttm = -(xi - xip) * dzm * dzh;
                 intlm = (xi - xim) * dzm * dzh;
 
@@ -266,6 +278,7 @@ __global__ void Vertical_Eq(double *Whs_d,
                     bb = (dzph + dzmh) * h + (intl - inttm) * (g + GCoR);
 
                 aa = -dzmh * hm + intlm * (gm + GCoR);
+                // end of coefficients computation
 
                 dSpdz = (Sp - Spl) * dzh;
                 dPdz  = (p - pl) * dzh;
@@ -321,24 +334,44 @@ __global__ void Vertical_Eq(double *Whs_d,
                 }
             } // End of if (DeepModel) physics computation
 
-
+#ifdef CHECK_THOR_VERTICAL_INT_THOMAS_DIAG_DOM
+            {
+                // check that matrix is diagonaly dominant
+                double cc_s = cc[threadIdx.x * nvi + lev];
+                if (!(fabs(bb) >= THOMAS_DIAG_DOM_FACTOR * (fabs(aa) + fabs(cc_s)))) {
+                    double sum = cc_s + bb + aa;
+                    printf("Thomas Diagonal Dominance Check failed at (grid_idx: %d, level: %d ): "
+                           "a: %g, b: %g, c: %g. sum: %g \n",
+                           id,
+                           lev,
+                           aa,
+                           bb,
+                           cc_s,
+                           sum);
+                }
+            }
+#endif // CHECK_THOR_VERTICAL_INT_THOMAS_DIAG_DOM
+            // Compute dd coefficient of thomas algorithm
             dd[threadIdx.x * nvi + lev] = -C0;
+            // "modify in place" computation of thomas algorithm
             if (lev == 1) {
                 cc[threadIdx.x * nvi + 1] = cc[threadIdx.x * nvi + 1] / bb;
                 dd[threadIdx.x * nvi + 1] = dd[threadIdx.x * nvi + 1] / bb;
             }
             else {
+                // as the previous iteration value is not stored, it's recomputed here
                 t = 1.0 / (bb - cc[threadIdx.x * nvi + lev - 1] * aa);
                 cc[threadIdx.x * nvi + lev] *= t;
                 dd[threadIdx.x * nvi + lev] =
                     (dd[threadIdx.x * nvi + lev] - dd[threadIdx.x * nvi + lev - 1] * aa) * t;
             }
         } //end of loop over levels
+	// end of thomass algorithm
         Whs_d[id * nvi + nv]     = 0.0;
         Whs_d[id * nvi]          = 0.0;
         Whs_d[id * nvi + nv - 1] = dd[threadIdx.x * nvi + nv - 1];
         // Whs_d[id * nvi + nv - 1] = 0.0;
-        // Updates vertical momentum
+        // Updates vertical momentum from output of thomas algorithm.
         for (int lev = nvi - 2; lev > 0; lev--)
             Whs_d[id * nvi + lev] = (-cc[threadIdx.x * nvi + lev] * Whs_d[id * nvi + lev + 1]
                                      + dd[threadIdx.x * nvi + lev]);
