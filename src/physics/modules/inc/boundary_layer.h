@@ -50,6 +50,8 @@
 
 #define LARGERiB 1e8
 
+#define KVONKARMAN 0.4
+
 enum boundary_layer_types { RAYLEIGHHS = 0, MONINOBUKHOV = 1, EKMANSPIRAL = 2 };
 
 
@@ -90,11 +92,16 @@ private:
     // double *dvdz_tmp;
     double *d2vdz2_tmp;
     double *atmp, *btmp, *ctmp, *cpr_tmp, *dtmp, *dpr_tmp;
-    double  zbl;          // altitude of transition from BL to free atmosph
-    int *   bl_top_lev_d; // index of highest level inside BL
-    int *   bl_top_lev_h; // index of highest level inside BL
-    double *RiB_d;        // bulk Richardson number
-    double *RiB_h;        // bulk Richardson number
+    double  zbl; // altitude of transition from BL to free atmosph (ekman scheme)
+
+    int *   bl_top_lev_d;    // index of highest level inside BL
+    int *   bl_top_lev_h;    // index of highest level inside BL
+    double *bl_top_height_d; // height of bl
+    double *bl_top_height_h; // height of bl
+
+    double *RiB_d;  // bulk Richardson number
+    double *RiB_h;  // bulk Richardson number
+    double *zeta_d; // m-o stability parameter
 
     double *KM_d; // momentum diffusivity (turbulence)
     double *KM_h;
@@ -102,12 +109,29 @@ private:
     double *KH_d; // heat diffusivity (turbulence)
     double *KH_h;
 
+    double *CD_d; // surface drag coeff
+    double *CD_h;
+    double *vh_lowest_d; //speed of lowest layer
+
+    double Ri_crit_config      = 1.0;
+    double z_rough_config      = 3.21e-5;
+    double z_therm_config      = 3.21e-5;
+    double f_surf_layer_config = 0.1;
+
+    double Ri_crit;      //critical Richardson number
+    double z_rough;      // roughness length (scale for momentum)
+    double z_therm;      // thermal "roughness" length
+    double f_surf_layer; //fraction of BL in surface layer
 
     void BLSetup(const ESP &            esp,
                  const SimulationSetup &sim,
                  int                    bl_type_,
                  double                 surf_drag_,
-                 double                 bl_sigma_);
+                 double                 bl_sigma_,
+                 double                 Ri_crit_,
+                 double                 z_rough_,
+                 double                 z_therm_,
+                 double                 f_surf_layer_);
 };
 
 __global__ void rayleighHS(double *Mh_d,
@@ -160,6 +184,31 @@ __global__ void CalcRiB(double *pressure_d,
                         double  Cp,
                         double  P_Ref,
                         double  Gravit,
+                        double  Ri_crit,
+                        double  z_rough,
+                        double  z_therm,
                         double *RiB_d,
+                        int *   bl_top_lev_d,
+                        double *bl_top_height_d,
+                        double *CD_d,
+                        double *zeta_d,
+                        double *vh_lowest_d,
                         int     num,
                         int     nv);
+
+__device__ double RiB_2_zeta(double RiB, double Ri_crit, double z_z0, double z_zT);
+
+__global__ void CalcKM(double *RiB_d,
+                       double *zeta_d,
+                       double *CD_d,
+                       double *bl_top_height_d,
+                       int *   bl_top_lev_d,
+                       double *vh_lowest_d,
+                       double *Altitude_d,
+                       double *Altitudeh_d,
+                       double  Ri_crit,
+                       double  z_rough,
+                       double  z_therm,
+                       double  f_surf_layer,
+                       double *KM_d,
+                       int     num);

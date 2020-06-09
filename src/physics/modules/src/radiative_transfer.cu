@@ -360,8 +360,8 @@ bool radiative_transfer::store(const ESP &esp, storage &s) {
     cudaMemcpy(qheat_h, qheat_d, esp.nv * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
     s.append_table(qheat_h, esp.nv * esp.point_num, "/DGQheat", " ", "Double Gray Qheat");
 
-    cudaMemcpy(Tsurface_h, Tsurface_d, esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
-    s.append_table(Tsurface_h, esp.point_num, "/Tsurface", "K", "surface temperature");
+    // cudaMemcpy(Tsurface_h, Tsurface_d, esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
+    // s.append_table(Tsurface_h, esp.point_num, "/Tsurface", "K", "surface temperature");
     return true;
 }
 
