@@ -47,6 +47,8 @@
 #include "esp.h"
 #include "insolation.h"
 
+#include "debug_helpers.h"
+
 // ***************************************************************************************************
 //** Kernels doing the real computation work
 
@@ -161,26 +163,17 @@ calc_zenith(double*      lonlat_d, //latitude/longitude grid
     return coszrs; //zenith angle
 }
 
-__global__ void annual_insol(double* insol_ann_d, double* insol_d, int nstep, int num) {
-
-    int id = blockIdx.x * blockDim.x + threadIdx.x;
-
-    if (id < num) {
-        insol_ann_d[id] = insol_ann_d[id] * (nstep - 1) / nstep + insol_d[id] / nstep;
-    }
-}
-
 // compute zenith angle for a full grid of lat/lon data
-__global__ void compute_zenith_angle_star(double* col_zenith_angles,
-                                          double* lonlat_d,
-                                          double  alpha,
-                                          double  alpha_i,
-                                          double  sin_decl,
-                                          double  cos_decl,
-                                          double  ecc,
-                                          double  obliquity,
-                                          bool    sync_rot,
-                                          int     num_points) {
+__global__ void compute_zenith_angles(double* col_zenith_angles,
+                                      double* lonlat_d,
+                                      double  alpha,
+                                      double  alpha_i,
+                                      double  sin_decl,
+                                      double  cos_decl,
+                                      double  ecc,
+                                      double  obliquity,
+                                      bool    sync_rot,
+                                      int     num_points) {
     // helios_angle_star = pi - zenith_angle
     // cos(helios_angle_star) = mu_star = cos(pi - zenith_angle) = -cos(zenith_angle)
     // Zenith angle is only positive.
@@ -203,19 +196,6 @@ __global__ void compute_zenith_angle_star(double* col_zenith_angles,
             col_zenith_angles[column_idx] = 0.0;
         else
             col_zenith_angles[column_idx] = coszrs;
-    }
-}
-
-void cuda_check_status_or_exit(const char* filename, const int& line) {
-    cudaError_t err = cudaGetLastError();
-
-    // Check device query
-    if (err != cudaSuccess) {
-        log::printf("[%s:%d] CUDA error check reports error: %s\n",
-                    filename,
-                    line,
-                    cudaGetErrorString(err));
-        exit(EXIT_FAILURE);
     }
 }
 
@@ -242,11 +222,6 @@ bool Insolation::initialise_memory(const ESP&               esp,
     if (enabled) {
         zenith_angles.allocate(esp.point_num);
         zenith_angles.zero();
-
-        annual_insol.allocate(esp.point_num);
-        annual_insol.zero();
-        insol.allocate(esp.point_num);
-        insol.zero();
     }
 
     return true;
@@ -318,26 +293,12 @@ bool Insolation::phy_loop(ESP&                   esp,
                                                                                 esp.point_num);
         cudaDeviceSynchronize();
         cuda_check_status_or_exit(__FILE__, __LINE__);
-
-        compute_annual_insolation(nstep, time_step);
     }
 
 
     return true;
 }
 
-
-void Insolation::compute_annual_insolation(int    nstep, // Step number
-                                           double time_step) {
-    TODO if (nstep * time_step < (2 * M_PI / mean_motion)) {
-        // stationary orbit/obliquity
-        // calculate annually average of insolation for the first orbit
-        annual_insol<<<NBRT, NTH>>>(*annual_insol, *insol, nstep, esp.point_num);
-        cudaDeviceSynchronize();
-    }
-
-    cuda_check_status_or_exit(__FILE__, __LINE__);
-}
 
 bool Insolation::store_init(storage& s) {
     if (enabled) {
@@ -372,17 +333,6 @@ bool Insolation::store(const ESP& esp, storage& s) {
                        "/zenith_angles",
                        "-",
                        "zenith_angles per column");
-
-        std::shared_ptr<double[]> insol_h = insol.get_host_data();
-        s.append_table(
-            insol_h.get(), insol_h.get_size(), "/insol", "W m^-2", "insolation (instantaneous)");
-
-        std::shared_ptr<double[]> insol_ann_h = annual_insol.get_host_data();
-        s.append_table(insol_ann_h.get(),
-                       insol_ann_h.get_size(),
-                       "/insol_annual",
-                       "W m^-2",
-                       "insolation (annual/orbit averaged)");
     }
 
     return true;

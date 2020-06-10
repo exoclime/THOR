@@ -163,10 +163,10 @@ private:
     // double alpha          = 0; // right asc of host star (relative to long = 0)
     // double longp          = 0; // longitude of periastron (rad)
 
-    // double *insol_h;
-    // double *insol_d;
-    // double *insol_ann_h;
-    // double *insol_ann_d;
+    double *insol_h;
+    double *insol_d;
+    double *insol_ann_h;
+    double *insol_ann_d;
 
     double *qheat_d;
     double *qheat_h;
@@ -201,7 +201,7 @@ private:
                     bool   surface,
                     double Csurf,
                     bool   rt1Dmode,
-                    double Tmean,
+                    double Tmean
                     //int    point_num
        );
 

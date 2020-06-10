@@ -134,14 +134,14 @@
 //     return coszrs; //zenith angle
 // }
 
-// __global__ void annual_insol(double *insol_ann_d, double *insol_d, int nstep, int num) {
+__global__ void annual_insol(double *insol_ann_d, double *insol_d, int nstep, int num) {
 
-//     int id = blockIdx.x * blockDim.x + threadIdx.x;
+    int id = blockIdx.x * blockDim.x + threadIdx.x;
 
-//     if (id < num) {
-//         insol_ann_d[id] = insol_ann_d[id] * (nstep - 1) / nstep + insol_d[id] / nstep;
-//     }
-// }
+    if (id < num) {
+        insol_ann_d[id] = insol_ann_d[id] * (nstep - 1) / nstep + insol_d[id] / nstep;
+    }
+}
 
 __device__ void radcsw(double *phtemp,
                        double  coszrs,

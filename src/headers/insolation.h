@@ -82,16 +82,23 @@ public:
 
     bool store(const ESP &esp, storage &s);
 
-  // get pointer to data on device
-  double *get_device_zenith_angles() {
-    return *zenith_angles;
-  };
+    // get pointer to data on device
+    double *get_device_zenith_angles() {
+        return *zenith_angles;
+    };
 
-  // fetch data to host and get pointer to data
-  double *get_host_zenith_angles() {
-    return zenith_angles.get_host_data_ptr();
-  }
+    // fetch data to host and get pointer to data
+    std::shared_ptr<double[]> get_host_zenith_angles() {
+        return zenith_angles.get_host_data_ptr();
+    }
 
+    double get_r_orb() {
+        return r_orb;
+    }
+
+    double get_mean_motion() {
+        return mean_motion;
+    }
 
 private:
     bool enabled = false;
@@ -122,11 +129,6 @@ private:
     double longp_config       = 0;        // longitude of periastron (rad)
 
     cuda_device_memory<double> zenith_angles;
-    cuda_device_memory<double> insol;
-    cuda_device_memory<double> annual_insol;
 
     void update_spin_orbit(double time, double Omega);
-
-    void compute_annual_insolation(int    nstep, // Step number
-                                   double time_step);
 };

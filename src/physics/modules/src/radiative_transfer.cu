@@ -180,11 +180,11 @@ bool radiative_transfer::initial_conditions(const ESP &            esp,
             // ecc_config,
             // alpha_i_config,
             // obliquity_config,
-            sim.Omega,
+            // sim.Omega,
             surface_config,
             Csurf_config,
             rt1Dmode_config,
-            sim.Tmean,
+            sim.Tmean
             //            esp.point_num
     );
 
@@ -272,7 +272,7 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                                  esp.nv,
                                  esp.nvi,
                                  sim.A,
-                                 r_orb,
+                                 esp.insolation.get_r_orb(),
                                  // alpha, //current RA of star (relative to zero long on planet)
                                  // alpha_i,
                                  // sin_decl, //declination of star
@@ -293,11 +293,11 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                                  sim.gcm_off,
                                  rt1Dmode);
 
-    // if (nstep * time_step < (2 * M_PI / mean_motion)) {
-    //     // stationary orbit/obliquity
-    //     // calculate annually average of insolation for the first orbit
-    //     annual_insol<<<NBRT, NTH>>>(insol_ann_d, insol_d, nstep, esp.point_num);
-    // }
+    if (nstep * time_step < (2 * M_PI / esp.insolation.get_mean_motion())) {
+        // stationary orbit/obliquity
+        // calculate annually average of insolation for the first orbit
+        annual_insol<<<NBRT, NTH>>>(insol_ann_d, insol_d, nstep, esp.point_num);
+    }
     return true;
 }
 
@@ -384,14 +384,14 @@ bool radiative_transfer::store_init(storage &s) {
     s.append_value(albedo, "/albedo", "-", "bond albedo of planet");
     s.append_value(tausw, "/tausw", "-", "shortwave optical depth of deepest layer");
     s.append_value(taulw, "/taulw", "-", "longwave optical depth of deepest layer");
-    s.append_value(sync_rot ? 1.0 : 0.0, "/sync_rot", "-", "enforce synchronous rotation");
-    s.append_value(mean_motion, "/mean_motion", "rad/s", "Orbital mean motion");
-    s.append_value(alpha_i * 180 / M_PI, "/alpha_i", "deg", "initial RA of host star");
-    s.append_value(
-        true_long_i * 180 / M_PI, "/true_long_i", "deg", "initial orbital position of planet");
-    s.append_value(ecc, "/ecc", "-", "orbital eccentricity");
-    s.append_value(obliquity * 180 / M_PI, "/obliquity", "deg", "tilt of spin axis");
-    s.append_value(longp * 180 / M_PI, "/longp", "deg", "longitude of periastron");
+    // s.append_value(sync_rot ? 1.0 : 0.0, "/sync_rot", "-", "enforce synchronous rotation");
+    // s.append_value(mean_motion, "/mean_motion", "rad/s", "Orbital mean motion");
+    // s.append_value(alpha_i * 180 / M_PI, "/alpha_i", "deg", "initial RA of host star");
+    // s.append_value(
+    //     true_long_i * 180 / M_PI, "/true_long_i", "deg", "initial orbital position of planet");
+    // s.append_value(ecc, "/ecc", "-", "orbital eccentricity");
+    // s.append_value(obliquity * 180 / M_PI, "/obliquity", "deg", "tilt of spin axis");
+    // s.append_value(longp * 180 / M_PI, "/longp", "deg", "longitude of periastron");
 
     s.append_value(latf_lw ? 1.0 : 0.0, "/latf_lw", "-", "use lat dependent opacity");
     s.append_value(
@@ -432,7 +432,7 @@ void radiative_transfer::RTSetup(double Tstar_,
                                  bool   surface_,
                                  double Csurf_,
                                  bool   rt1Dmode_,
-                                 double Tmean,
+                                 double Tmean
                                  // int    point_num
 ) {
 
