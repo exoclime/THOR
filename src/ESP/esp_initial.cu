@@ -61,6 +61,8 @@
 // physical modules
 #include "phy_modules.h"
 
+#include "insolation.h"
+
 __host__ ESP::ESP(int *                 point_local_,
                   int *                 maps_,
                   double *              lonlat_,
@@ -111,7 +113,8 @@ __host__ ESP::ESP(int *                 point_local_,
                   double                bv_freq_,
                   uh_thermo_types       ultrahot_thermo_,
                   uh_heating_types      ultrahot_heating_,
-                  thermo_equation_types thermo_equation_) :
+                  thermo_equation_types thermo_equation_,
+                  Insolation &          insolation_) :
     nl_region(nl_region_),
     nr(nr_),
     point_num(point_num_),
@@ -131,7 +134,8 @@ __host__ ESP::ESP(int *                 point_local_,
     ultrahot_thermo(ultrahot_thermo_),
     ultrahot_heating(ultrahot_heating_),
     thermo_equation(thermo_equation_),
-    shrink_sponge(shrink_sponge_) {
+    shrink_sponge(shrink_sponge_),
+    insolation(insolation_) {
 
     point_local_h = point_local_;
     maps_h        = maps_;
@@ -343,9 +347,9 @@ __host__ void ESP::alloc_data(bool globdiag, bool output_mean) {
     cudaMalloc((void **)&diffv_d1, 6 * nv * point_num * sizeof(double));
     cudaMalloc((void **)&diffv_d2, 6 * nv * point_num * sizeof(double));
 
-    
+
     profx_Qheat_h = (double *)malloc(nv * point_num * sizeof(double));
-    
+
     cudaMalloc((void **)&profx_Qheat_d, nv * point_num * sizeof(double));
     cudaMalloc((void **)&profx_dMh_d, 3 * nv * point_num * sizeof(double));
     cudaMalloc((void **)&profx_dWh_d, nvi * point_num * sizeof(double));
@@ -1009,6 +1013,12 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
             phy_modules_init_data(*this, sim, &s);
         }
+
+        // Initialise insolation here. At this point other modules will have requested insolation if
+        // it's necessary in their inisialisation.
+        insolation.initialise_memory(*this, phy_modules_core_arrays);
+        // TODO check if we need to reload from file or if initial setup and number of steps is enough
+        insolation.initial_conditions(*this, sim, nullptr);
     }
 
 
@@ -1164,7 +1174,7 @@ __host__ ESP::~ESP() {
     cudaFree(Ttmp);
 
     free(profx_Qheat_h);
-    
+
     cudaFree(profx_Qheat_d);
     cudaFree(profx_dMh_d);
     cudaFree(profx_dWh_d);

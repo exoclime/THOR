@@ -128,6 +128,7 @@ set(SRC
   src/ESP/esp_output.cu
   src/ESP/profx_driver.cu
   src/ESP/thor_driver.cu
+  src/ESP/insolation.cu
   src/utils/binary_test.cpp
   src/utils/debug_helpers.cu
   src/utils/storage.cpp

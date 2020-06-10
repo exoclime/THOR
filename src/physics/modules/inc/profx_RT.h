@@ -23,125 +23,125 @@
 // 1.0
 //
 ////////////////////////////////////////////////////////////////////////
-__host__ double sign(double val) {
-    if (val < 0.0)
-        return -1.0;
-    else
-        return 1.0;
-}
+// __host__ double sign(double val) {
+//     if (val < 0.0)
+//         return -1.0;
+//     else
+//         return 1.0;
+// }
 
-__host__ double solve_kepler(double mean_anomaly, double ecc) {
+// __host__ double solve_kepler(double mean_anomaly, double ecc) {
 
-    // Solve Kepler's equation (see Murray & Dermott 1999)
-    // Get eccentric anomaly from mean anomaly and eccentricity
+//     // Solve Kepler's equation (see Murray & Dermott 1999)
+//     // Get eccentric anomaly from mean anomaly and eccentricity
 
-    double ecc_anomaly, fi, fi_1, fi_2, fi_3, di_1, di_2, di_3;
+//     double ecc_anomaly, fi, fi_1, fi_2, fi_3, di_1, di_2, di_3;
 
-    ecc_anomaly = mean_anomaly + sign(sin(mean_anomaly)) * 0.85 * ecc;
-    di_3        = 1.0;
+//     ecc_anomaly = mean_anomaly + sign(sin(mean_anomaly)) * 0.85 * ecc;
+//     di_3        = 1.0;
 
-    while (di_3 > 1e-15) {
-        fi          = ecc_anomaly - ecc * sin(ecc_anomaly) - mean_anomaly;
-        fi_1        = 1.0 - ecc * cos(ecc_anomaly);
-        fi_2        = ecc * sin(ecc_anomaly);
-        fi_3        = ecc * cos(ecc_anomaly);
-        di_1        = -fi / fi_1;
-        di_2        = -fi / (fi_1 + 0.5 * di_1 * fi_2);
-        di_3        = -fi / (fi_1 + 0.5 * di_2 * fi_2 + 1. / 6. * di_2 * di_2 * fi_3);
-        ecc_anomaly = ecc_anomaly + di_3;
-    }
-    return ecc_anomaly;
-}
+//     while (di_3 > 1e-15) {
+//         fi          = ecc_anomaly - ecc * sin(ecc_anomaly) - mean_anomaly;
+//         fi_1        = 1.0 - ecc * cos(ecc_anomaly);
+//         fi_2        = ecc * sin(ecc_anomaly);
+//         fi_3        = ecc * cos(ecc_anomaly);
+//         di_1        = -fi / fi_1;
+//         di_2        = -fi / (fi_1 + 0.5 * di_1 * fi_2);
+//         di_3        = -fi / (fi_1 + 0.5 * di_2 * fi_2 + 1. / 6. * di_2 * di_2 * fi_3);
+//         ecc_anomaly = ecc_anomaly + di_3;
+//     }
+//     return ecc_anomaly;
+// }
 
-__host__ double calc_r_orb(double ecc_anomaly, double ecc) {
+// __host__ double calc_r_orb(double ecc_anomaly, double ecc) {
 
-    // Calc relative distance between planet and star (units of semi-major axis)
+//     // Calc relative distance between planet and star (units of semi-major axis)
 
-    double r = 1.0 - ecc * cos(ecc_anomaly);
-    return r;
-}
+//     double r = 1.0 - ecc * cos(ecc_anomaly);
+//     return r;
+// }
 
-__host__ double ecc2true_anomaly(double ecc_anomaly, double ecc) {
+// __host__ double ecc2true_anomaly(double ecc_anomaly, double ecc) {
 
-    // Convert from eccentric to true anomaly
+//     // Convert from eccentric to true anomaly
 
-    double tanf2, true_anomaly;
-    tanf2        = sqrt((1.0 + ecc) / (1.0 - ecc)) * tan(ecc_anomaly / 2.0);
-    true_anomaly = 2.0 * atan(tanf2);
-    if (true_anomaly < 0.0)
-        true_anomaly += 2 * M_PI;
-    return true_anomaly;
-}
+//     double tanf2, true_anomaly;
+//     tanf2        = sqrt((1.0 + ecc) / (1.0 - ecc)) * tan(ecc_anomaly / 2.0);
+//     true_anomaly = 2.0 * atan(tanf2);
+//     if (true_anomaly < 0.0)
+//         true_anomaly += 2 * M_PI;
+//     return true_anomaly;
+// }
 
-__host__ double true2ecc_anomaly(double true_anomaly, double ecc) {
+// __host__ double true2ecc_anomaly(double true_anomaly, double ecc) {
 
-    // Convert from true to eccentric anomaly
+//     // Convert from true to eccentric anomaly
 
-    double cosE, ecc_anomaly;
-    while (true_anomaly < 0.0)
-        true_anomaly += 2 * M_PI;
-    while (true_anomaly >= 2 * M_PI)
-        true_anomaly -= 2 * M_PI;
-    cosE = (cos(true_anomaly) + ecc) / (1.0 + ecc * cos(true_anomaly));
-    if (true_anomaly < M_PI) {
-        ecc_anomaly = acos(cosE);
-    }
-    else {
-        ecc_anomaly = 2 * M_PI - acos(cosE);
-    }
-    return ecc_anomaly;
-}
+//     double cosE, ecc_anomaly;
+//     while (true_anomaly < 0.0)
+//         true_anomaly += 2 * M_PI;
+//     while (true_anomaly >= 2 * M_PI)
+//         true_anomaly -= 2 * M_PI;
+//     cosE = (cos(true_anomaly) + ecc) / (1.0 + ecc * cos(true_anomaly));
+//     if (true_anomaly < M_PI) {
+//         ecc_anomaly = acos(cosE);
+//     }
+//     else {
+//         ecc_anomaly = 2 * M_PI - acos(cosE);
+//     }
+//     return ecc_anomaly;
+// }
 
-__device__ double
-calc_zenith(double *     lonlat_d, //latitude/longitude grid
-            const double alpha,    //current RA of star (relative to zero long on planet)
-            const double alpha_i,
-            const double sin_decl, //declination of star
-            const double cos_decl,
-            const bool   sync_rot,
-            const double ecc,
-            const double obliquity,
-            const int    id) {
+// __device__ double
+// calc_zenith(double *     lonlat_d, //latitude/longitude grid
+//             const double alpha,    //current RA of star (relative to zero long on planet)
+//             const double alpha_i,
+//             const double sin_decl, //declination of star
+//             const double cos_decl,
+//             const bool   sync_rot,
+//             const double ecc,
+//             const double obliquity,
+//             const int    id) {
 
-    // Calculate the insolation (scaling) at a point on the surface
+//     // Calculate the insolation (scaling) at a point on the surface
 
-    double coszrs;
+//     double coszrs;
 
-    if (sync_rot) {
-        if (ecc < 1e-10) {
-            if (obliquity < 1e-10) { //standard sync, circular, zero obl case
-                coszrs = cos(lonlat_d[id * 2 + 1]) * cos(lonlat_d[id * 2] - alpha_i);
-            }
-            else { //sync, circular, but some obliquity
-                coszrs = (sin(lonlat_d[id * 2 + 1]) * sin_decl
-                          + cos(lonlat_d[id * 2 + 1]) * cos_decl * cos(lonlat_d[id * 2] - alpha_i));
-            }
-        }
-        else {                       //in below cases, watch out for numerical drift of mean(alpha)
-            if (obliquity < 1e-10) { // sync, zero obliquity, but ecc orbit
-                coszrs = cos(lonlat_d[id * 2 + 1]) * cos(lonlat_d[id * 2] - alpha);
-            }
-            else { // sync, non-zero obliquity, ecc orbit (full calculation applies)
-                coszrs = (sin(lonlat_d[id * 2 + 1]) * sin_decl
-                          + cos(lonlat_d[id * 2 + 1]) * cos_decl * cos(lonlat_d[id * 2] - alpha));
-            }
-        }
-    }
-    else {
-        coszrs = (sin(lonlat_d[id * 2 + 1]) * sin_decl
-                  + cos(lonlat_d[id * 2 + 1]) * cos_decl * cos(lonlat_d[id * 2] - alpha));
-    }
-    return coszrs; //zenith angle
-}
+//     if (sync_rot) {
+//         if (ecc < 1e-10) {
+//             if (obliquity < 1e-10) { //standard sync, circular, zero obl case
+//                 coszrs = cos(lonlat_d[id * 2 + 1]) * cos(lonlat_d[id * 2] - alpha_i);
+//             }
+//             else { //sync, circular, but some obliquity
+//                 coszrs = (sin(lonlat_d[id * 2 + 1]) * sin_decl
+//                           + cos(lonlat_d[id * 2 + 1]) * cos_decl * cos(lonlat_d[id * 2] - alpha_i));
+//             }
+//         }
+//         else {                       //in below cases, watch out for numerical drift of mean(alpha)
+//             if (obliquity < 1e-10) { // sync, zero obliquity, but ecc orbit
+//                 coszrs = cos(lonlat_d[id * 2 + 1]) * cos(lonlat_d[id * 2] - alpha);
+//             }
+//             else { // sync, non-zero obliquity, ecc orbit (full calculation applies)
+//                 coszrs = (sin(lonlat_d[id * 2 + 1]) * sin_decl
+//                           + cos(lonlat_d[id * 2 + 1]) * cos_decl * cos(lonlat_d[id * 2] - alpha));
+//             }
+//         }
+//     }
+//     else {
+//         coszrs = (sin(lonlat_d[id * 2 + 1]) * sin_decl
+//                   + cos(lonlat_d[id * 2 + 1]) * cos_decl * cos(lonlat_d[id * 2] - alpha));
+//     }
+//     return coszrs; //zenith angle
+// }
 
-__global__ void annual_insol(double *insol_ann_d, double *insol_d, int nstep, int num) {
+// __global__ void annual_insol(double *insol_ann_d, double *insol_d, int nstep, int num) {
 
-    int id = blockIdx.x * blockDim.x + threadIdx.x;
+//     int id = blockIdx.x * blockDim.x + threadIdx.x;
 
-    if (id < num) {
-        insol_ann_d[id] = insol_ann_d[id] * (nstep - 1) / nstep + insol_d[id] / nstep;
-    }
-}
+//     if (id < num) {
+//         insol_ann_d[id] = insol_ann_d[id] * (nstep - 1) / nstep + insol_d[id] / nstep;
+//     }
+// }
 
 __device__ void radcsw(double *phtemp,
                        double  coszrs,
@@ -361,62 +361,64 @@ __device__ void computetau(double *tau_d,
     }
 }
 
-__global__ void rtm_dual_band(double *pressure_d,
-                              double *Rho_d,
-                              double *temperature_d,
-                              double *flw_up_d,
-                              double *flw_dn_d,
-                              double *fsw_up_d,
-                              double *fsw_dn_d,
-                              double *tau_d,
-                              double  gravit,
-                              double *Cp_d,
-                              double *lonlat_d,
-                              double *Altitude_d,
-                              double *Altitudeh_d,
-                              double *phtemp,
-                              double *dtemp,
-                              double *ttemp,
-                              double *thtemp,
-                              double  timestep,
-                              double  tstar,
-                              double  planet_star_dist,
-                              double  radius_star,
-                              double  diff_ang,
-                              double  tint,
-                              double  alb,
-                              double  tausw,
-                              double  taulw,
-                              bool    latf_lw,
-                              double  taulw_pole,
-                              double  n_sw,
-                              double  n_lw,
-                              double  f_lw,
-                              double  incflx,
-                              double  ps0,
-                              int     num,
-                              int     nv,
-                              int     nvi,
-                              double  A,
-                              double  r_orb,
-                              double  alpha, //current RA of star (relative to zero long on planet)
-                              double  alpha_i,
-                              double  sin_decl, //declination of star
-                              double  cos_decl,
-                              bool    sync_rot,
-                              double  ecc,
-                              double  obliquity,
-                              double *insol_d,
-                              bool    surface,
-                              double  Csurf,
-                              double *Tsurface_d,
-                              double *surf_flux_d,
-                              double *profx_Qheat_d,
-			      double *DG_Qheat_d, // internal qheat for debugging
-                              double *Rd_d,
-			      double  Qheat_scaling,
-                              bool    gcm_off,
-                              bool    rt1Dmode) {
+__global__ void
+rtm_dual_band(double *pressure_d,
+              double *Rho_d,
+              double *temperature_d,
+              double *flw_up_d,
+              double *flw_dn_d,
+              double *fsw_up_d,
+              double *fsw_dn_d,
+              double *tau_d,
+              double  gravit,
+              double *Cp_d,
+              double *lonlat_d,
+              double *Altitude_d,
+              double *Altitudeh_d,
+              double *phtemp,
+              double *dtemp,
+              double *ttemp,
+              double *thtemp,
+              double  timestep,
+              double  tstar,
+              double  planet_star_dist,
+              double  radius_star,
+              double  diff_ang,
+              double  tint,
+              double  alb,
+              double  tausw,
+              double  taulw,
+              bool    latf_lw,
+              double  taulw_pole,
+              double  n_sw,
+              double  n_lw,
+              double  f_lw,
+              double  incflx,
+              double  ps0,
+              int     num,
+              int     nv,
+              int     nvi,
+              double  A,
+              double  r_orb,
+              // double  alpha, //current RA of star (relative to zero long on planet)
+              // double  alpha_i,
+              // double  sin_decl, //declination of star
+              // double  cos_decl,
+              // bool    sync_rot,
+              // double  ecc,
+              // double  obliquity,
+              double *zenith_angles,
+              double *insol_d,
+              bool    surface,
+              double  Csurf,
+              double *Tsurface_d,
+              double *surf_flux_d,
+              double *profx_Qheat_d,
+              double *DG_Qheat_d, // internal qheat for debugging
+              double *Rd_d,
+              double  Qheat_scaling,
+              bool    gcm_off,
+              bool    rt1Dmode) {
 
 
     //
@@ -486,15 +488,16 @@ __global__ void rtm_dual_band(double *pressure_d,
             coszrs = 0.5;
         }
         else {
-            coszrs = calc_zenith(lonlat_d, //latitude/longitude grid
-                                 alpha,    //current RA of star (relative to zero long on planet)
-                                 alpha_i,
-                                 sin_decl, //declination of star
-                                 cos_decl,
-                                 sync_rot,
-                                 ecc,
-                                 obliquity,
-                                 id);
+            coszrs = zenith_angles[id];
+            // coszrs = calc_zenith(lonlat_d, //latitude/longitude grid
+            //                      alpha,    //current RA of star (relative to zero long on planet)
+            //                      alpha_i,
+            //                      sin_decl, //declination of star
+            //                      cos_decl,
+            //                      sync_rot,
+            //                      ecc,
+            //                      obliquity,
+            //                      id);
         }
 
         // Compute opacities
@@ -587,8 +590,8 @@ __global__ void rtm_dual_band(double *pressure_d,
                     //trying to prevent too much cooling resulting in negative pressure in dyn core
                     dtemp[id * nv + lev] = -pressure_d[id * nv + lev] / timestep;
                 }
-		DG_Qheat_d[id * nv + lev] = dtemp[id * nv + lev];
-                profx_Qheat_d[id * nv + lev] = Qheat_scaling*dtemp[id * nv + lev];
+                DG_Qheat_d[id * nv + lev]    = dtemp[id * nv + lev];
+                profx_Qheat_d[id * nv + lev] = Qheat_scaling * dtemp[id * nv + lev];
             }
         }
     }

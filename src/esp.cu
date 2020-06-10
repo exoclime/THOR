@@ -86,6 +86,8 @@ using std::string;
 
 #include "reduction_min.h"
 
+#include "insolation.h"
+
 #include "git-rev.h"
 
 enum e_sig { ESIG_NOSIG = 0, ESIG_SIGTERM = 1, ESIG_SIGINT = 2 };
@@ -401,9 +403,14 @@ int main(int argc, char** argv) {
 
 
     //*****************************************************************
-    // read configs for modules
+    // set configs for modules
     phy_modules_generate_config(config_reader);
 
+    // Create insolation object
+    Insolation insolation;
+    // set config for insolation
+    // insolation will be enabled on demand by modules needing it.
+    insolation.configure(config_reader);
 
     //*****************************************************************
     // Read config file
@@ -975,7 +982,8 @@ int main(int argc, char** argv) {
           bv_freq,
           ultrahot_thermo,
           ultrahot_heating,
-          thermo_equation);
+          thermo_equation,
+	  insolation);
 
 
     USE_BENCHMARK();
@@ -1083,6 +1091,7 @@ int main(int argc, char** argv) {
         log::printf("    \n");
         phy_modules_print_config();
         log::printf("    \n");
+	insolation.print_config();
     }
 
     log::printf("   ********** \n");

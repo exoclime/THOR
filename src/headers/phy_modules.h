@@ -52,6 +52,8 @@
 #include "simulation_setup.h"
 #include "storage.h"
 
+class ESP;
+
 // return name of module for storage to output files
 std::string phy_modules_get_name();
 
