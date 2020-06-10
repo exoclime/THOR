@@ -260,6 +260,8 @@ __host__ void ESP::output(int                    fidx, // Index of output file
 
         if (phy_modules_execute) {
             phy_modules_store_init(s);
+
+	    insolation.store_init(s);
         }
     }
 
@@ -345,7 +347,10 @@ __host__ void ESP::output(int                    fidx, // Index of output file
 
 
     if (phy_modules_execute)
+      { 
         phy_modules_store(*this, s);
+	insolation.store(*this, s);
+      }
 
     char buf[256];
 

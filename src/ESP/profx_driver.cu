@@ -351,6 +351,10 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
     // here is where we call all "external" physics modules
     if (phy_modules_execute) {
         cudaDeviceSynchronize();
+	insolation.phy_loop(*this,
+                             sim,
+                             current_step, // Step number
+                             timestep);    // Time-step [s]
         phy_modules_phy_loop(*this,
                              sim,
                              current_step, // Step number

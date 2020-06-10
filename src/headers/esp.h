@@ -63,6 +63,8 @@
 
 #include "dyn/phy_modules_device.h"
 
+#include "insolation.h"
+
 class ESP
 {
 
@@ -317,6 +319,11 @@ public:
     double *GibbsdG_d;
 
     ///////////////////////////
+    // insolation computation helper class
+
+    Insolation & insolation;
+  
+    ///////////////////////////
 
     //  Functions
     // Constructor, receives all grid parameters
@@ -370,7 +377,8 @@ public:
         double                bv_freq_,
         uh_thermo_types       ultrahot_thermo_,
         uh_heating_types      ultrahot_heating_,
-        thermo_equation_types thermo_equation_);
+        thermo_equation_types thermo_equation_,
+	Insolation & insolation_);
 
     ~ESP();
 
