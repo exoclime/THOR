@@ -114,6 +114,20 @@ bool boundary_layer::free_memory() {
 
     // cudaFree(dvdz_tmp);
     cudaFree(d2vdz2_tmp);
+    cudaFree(atmp);
+    cudaFree(btmp);
+    cudaFree(ctmp);
+    cudaFree(cpr_tmp);
+    cudaFree(dtmp);
+    cudaFree(dpr_tmp);
+    cudaFree(RiB_d);
+    cudaFree(KM_d);
+    cudaFree(KH_d);
+    cudaFree(CD_d);
+    cudaFree(vh_lowest_d);
+    cudaFree(bl_top_lev_d);
+    cudaFree(zeta_d);
+    cudaFree(bl_top_height_d);
 
     return true;
 }
@@ -330,6 +344,20 @@ bool boundary_layer::configure(config_file &config_reader) {
 }
 
 bool boundary_layer::store(const ESP &esp, storage &s) {
+    if (bl_type == MONINOBUKHOV) {
+        cudaMemcpy(RiB_h, RiB_d, esp.point_num * esp.nvi * sizeof(double), cudaMemcpyDeviceToHost);
+        s.append_table(RiB_h, esp.point_num * esp.nvi, "/RiB", " ", "bulk Richardson number");
+
+        cudaMemcpy(CD_h, CD_d, esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
+        s.append_table(CD_h, esp.point_num, "/CD", " ", "surface drag coefficient");
+
+        cudaMemcpy(KM_h, KM_d, esp.point_num * esp.nvi * sizeof(double), cudaMemcpyDeviceToHost);
+        s.append_table(KM_h,
+                       esp.point_num * esp.nvi,
+                       "/KM",
+                       "m^2/s",
+                       "turbulent diffusion coefficient for momentum");
+    }
 
     return true;
 }
