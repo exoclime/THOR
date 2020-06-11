@@ -21,6 +21,7 @@ $(info CC compile flag: $(CC_comp_flag))
 $(info arch: $(arch))
 $(info MODE: $(MODE))
 
+
 ######################################################################
 # Directories
 THOR_ROOT = ../../../../
@@ -30,6 +31,16 @@ LOCAL_INCLUDE = inc
 
 # shared modules
 SHARED_MODULES_INCLUDE = $(THOR_ROOT)src/physics/modules/inc/
+
+ifeq ($(wildcard $(THOR_ROOT)Alfrodull),)
+	ALFRODULL_FLAGS =
+	ALFCLASS = 
+else 
+	ALFRODULL_FLAGS = -DHAS_ALFRODULL=1 -I$(THOR_ROOT)Alfrodull/thor_module/inc/ -I$(THOR_ROOT)Alfrodull/src/inc/
+	ALFCLASS = $(THOR_ROOT)Alfrodull/thor_module/inc/two_stream_radiative_transfer.h
+endif 
+
+
 
 # thor root include if we want to use code from there
 THOR_INCLUDE = $(THOR_ROOT)src/headers
@@ -94,15 +105,17 @@ $(BUILDDIR)/${OUTPUTDIR}/boundary_layer.o: boundary_layer.cu boundary_layer.h ph
 	@echo -e '$(YELLOW)creating object file for $@ $(END)'
 	$(CC) $(CC_comp_flag) $(arch)  $(cuda_flags) $(h5include) -I$(includedir) $(INCLUDE_DIRS) $(CDB)  -o $@ $<
 
-$(BUILDDIR)/${OUTPUTDIR}/phy_modules.o: phy_modules.cu phy_modules.h phy_module_base.h | $(BUILDDIR)/${OUTPUTDIR} $(BUILDDIR) 
+$(BUILDDIR)/${OUTPUTDIR}/phy_modules.o: phy_modules.cu phy_modules.h phy_module_base.h $(ALFCLASS) | $(BUILDDIR)/${OUTPUTDIR} $(BUILDDIR) 
 	@echo -e '$(YELLOW)creating object file for $@ $(END)'
-	$(CC) $(CC_comp_flag) $(arch)  $(cuda_flags) $(h5include) -I$(includedir) $(INCLUDE_DIRS) $(CDB)  -o $@ $<
+	$(CC) $(CC_comp_flag) $(arch)  $(cuda_flags) $(h5include) -I$(includedir) $(INCLUDE_DIRS) $(CDB) $(ALFRODULL_FLAGS) -o $@ $<
 
 
 libphy_modules.a: $(BUILDDIR)/${OUTPUTDIR}/chemistry.o $(BUILDDIR)/${OUTPUTDIR}/radiative_transfer.o $(BUILDDIR)/${OUTPUTDIR}/boundary_layer.o $(BUILDDIR)/${OUTPUTDIR}/phy_modules.o | $(BUILDDIR)/${OUTPUTDIR} $(BUILDDIR)
 	@echo -e '$(YELLOW)creating $@ $(END)'
 	@echo -e '$(GREEN)Linking Modules into static lib $(END)'
 	ar rcs $@ $(BUILDDIR)/${OUTPUTDIR}/phy_modules.o $(BUILDDIR)/${OUTPUTDIR}/radiative_transfer.o $(BUILDDIR)/${OUTPUTDIR}/boundary_layer.o $(BUILDDIR)/${OUTPUTDIR}/chemistry.o
+
+$(ALFCLASS): ;
 
 #######################################################################
 # Cleanup
