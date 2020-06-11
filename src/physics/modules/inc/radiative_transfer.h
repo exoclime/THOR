@@ -170,6 +170,4 @@ private:
                     double Csurf,
                     bool   rt1Dmode,
                     double Tmean);
-
-    //void update_spin_orbit(double time, double Omega);
 };

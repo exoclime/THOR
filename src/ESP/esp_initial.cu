@@ -1017,7 +1017,6 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
         // Initialise insolation here. At this point other modules will have requested insolation if
         // it's necessary in their inisialisation.
         insolation.initialise_memory(*this, phy_modules_core_arrays);
-        // TODO check if we need to reload from file or if initial setup and number of steps is enough
         insolation.initial_conditions(*this, sim, nullptr);
     }
 

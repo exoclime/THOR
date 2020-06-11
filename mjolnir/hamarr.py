@@ -56,7 +56,6 @@ class input_new:
 
         #special cases (things we test on a lot, etc)
         self.RT = "radiative_transfer" in openh5
-        self.RT = False
         self.TSRT = "two_streams_radiative_transfer" in openh5
         self.chemistry = "chemistry" in openh5
         if not hasattr(self,'surface'):
