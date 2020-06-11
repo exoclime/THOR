@@ -63,7 +63,9 @@
 
 #include "dyn/phy_modules_device.h"
 
-#include "insolation.h"
+// forward declaration of Insolation used only as reference
+// to break circuilar dependency of insolation.h and esp.h
+class Insolation;
 
 class ESP
 {
@@ -177,7 +179,7 @@ public:
 
     // physics module Qheat, for output
     double *profx_Qheat_h;
-  
+
     ///////////////////////////
     //  Device
     int *point_local_d;
@@ -321,8 +323,8 @@ public:
     ///////////////////////////
     // insolation computation helper class
 
-    Insolation & insolation;
-  
+    Insolation &insolation;
+
     ///////////////////////////
 
     //  Functions
@@ -378,7 +380,7 @@ public:
         uh_thermo_types       ultrahot_thermo_,
         uh_heating_types      ultrahot_heating_,
         thermo_equation_types thermo_equation_,
-	Insolation & insolation_);
+        Insolation &          insolation_);
 
     ~ESP();
 
@@ -565,7 +567,10 @@ public:
         return string_stream.str();
     }
 
-  std::string get_output_dir() { return output_dir; };
+    std::string get_output_dir() {
+        return output_dir;
+    };
+
 private:
     // store if we run benchmarks
     benchmark_types core_benchmark;

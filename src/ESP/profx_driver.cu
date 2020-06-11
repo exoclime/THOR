@@ -64,6 +64,8 @@
 
 #include "reduction_add.h"
 
+#include "insolation.h"
+
 __host__ void ESP::ProfX(const SimulationSetup& sim,
                          int                    n_out) { // output step (triggers globdiag calc)
     USE_BENCHMARK()
@@ -72,8 +74,8 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
     const int NTH = 256;
 
     //  Specify the block sizes.
-    dim3      NB((point_num / NTH) + 1, nv, 1);
-    dim3      NBRT((point_num / NTH) + 1, 1, 1);
+    dim3 NB((point_num / NTH) + 1, nv, 1);
+    dim3 NBRT((point_num / NTH) + 1, 1, 1);
 
     cudaMemset(profx_Qheat_d, 0, sizeof(double) * point_num * nv);
 
@@ -173,15 +175,13 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
                                     profx_dW_d,
                                     profx_Qheat_d);
 
-        BENCH_POINT_I(current_step,
-                      "phy_Sponge",
-                      (),
-                      ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "W_d"))
+        BENCH_POINT_I(
+            current_step, "phy_Sponge", (), ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "W_d"))
     }
 
 
     //  Computes the initial temperature.
-    bool      calcT = true;
+    bool calcT = true;
     if (ultrahot_thermo == VARY_R_CP) {
         check_h = false;
         cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
@@ -351,10 +351,10 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
     // here is where we call all "external" physics modules
     if (phy_modules_execute) {
         cudaDeviceSynchronize();
-	insolation.phy_loop(*this,
-                             sim,
-                             current_step, // Step number
-                             timestep);    // Time-step [s]
+        insolation.phy_loop(*this,
+                            sim,
+                            current_step, // Step number
+                            timestep);    // Time-step [s]
         phy_modules_phy_loop(*this,
                              sim,
                              current_step, // Step number

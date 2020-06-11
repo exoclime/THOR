@@ -45,6 +45,8 @@
 
 #include "profx_RT.h"
 
+#include "insolation.h"
+
 radiative_transfer::radiative_transfer() {
 }
 
