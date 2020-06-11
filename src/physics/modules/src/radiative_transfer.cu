@@ -104,10 +104,10 @@ bool radiative_transfer::initialise_memory(const ESP &              esp,
     cudaMalloc((void **)&qheat_d, esp.nv * esp.point_num * sizeof(double));
     qheat_h = (double *)malloc(esp.point_num * esp.nv * sizeof(double));
 
-    // insol_h = (double *)malloc(esp.point_num * sizeof(double));
-    // cudaMalloc((void **)&insol_d, esp.point_num * sizeof(double));
-    // insol_ann_h = (double *)malloc(esp.point_num * sizeof(double));
-    // cudaMalloc((void **)&insol_ann_d, esp.point_num * sizeof(double));
+    insol_h = (double *)malloc(esp.point_num * sizeof(double));
+    cudaMalloc((void **)&insol_d, esp.point_num * sizeof(double));
+    insol_ann_h = (double *)malloc(esp.point_num * sizeof(double));
+    cudaMalloc((void **)&insol_ann_d, esp.point_num * sizeof(double));
 
     flw_up_h = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
     flw_dn_h = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
@@ -139,8 +139,8 @@ bool radiative_transfer::free_memory() {
     cudaFree(qheat_d);
     free(qheat_h);
 
-    // cudaFree(insol_d);
-    // cudaFree(insol_ann_d);
+    cudaFree(insol_d);
+    cudaFree(insol_ann_d);
 
     free(flw_up_h);
     free(flw_dn_h);
