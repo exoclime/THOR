@@ -83,13 +83,13 @@ public:
     bool store(const ESP &esp, storage &s);
 
     // get pointer to data on device
-    double *get_device_zenith_angles() {
-        return *zenith_angles;
+    double *get_device_cos_zenith_angles() {
+        return *cos_zenith_angles;
     };
 
     // fetch data to host and get pointer to data
-    std::shared_ptr<double[]> get_host_zenith_angles() {
-        return zenith_angles.get_host_data_ptr();
+    std::shared_ptr<double[]> get_host_cos_zenith_angles() {
+        return cos_zenith_angles.get_host_data_ptr();
     }
 
     double get_r_orb() {
@@ -128,7 +128,7 @@ private:
     double alpha_i_config     = 0;        // initial right asc of host star (relative to long = 0)
     double longp_config       = 0;        // longitude of periastron (rad)
 
-    cuda_device_memory<double> zenith_angles;
+    cuda_device_memory<double> cos_zenith_angles;
 
     void update_spin_orbit(double time, double Omega);
 };

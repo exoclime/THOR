@@ -164,16 +164,16 @@ calc_zenith(double*      lonlat_d, //latitude/longitude grid
 }
 
 // compute zenith angle for a full grid of lat/lon data
-__global__ void compute_zenith_angles(double* col_zenith_angles,
-                                      double* lonlat_d,
-                                      double  alpha,
-                                      double  alpha_i,
-                                      double  sin_decl,
-                                      double  cos_decl,
-                                      double  ecc,
-                                      double  obliquity,
-                                      bool    sync_rot,
-                                      int     num_points) {
+__global__ void compute_cos_zenith_angles(double* cos_zenith_angles,
+                                          double* lonlat_d,
+                                          double  alpha,
+                                          double  alpha_i,
+                                          double  sin_decl,
+                                          double  cos_decl,
+                                          double  ecc,
+                                          double  obliquity,
+                                          bool    sync_rot,
+                                          int     num_points) {
     // helios_angle_star = pi - zenith_angle
     // cos(helios_angle_star) = mu_star = cos(pi - zenith_angle) = -cos(zenith_angle)
     // Zenith angle is only positive.
@@ -193,9 +193,9 @@ __global__ void compute_zenith_angles(double* col_zenith_angles,
                                     column_idx);
 
         if (coszrs < 0.0)
-            col_zenith_angles[column_idx] = 0.0;
+            cos_zenith_angles[column_idx] = 0.0;
         else
-            col_zenith_angles[column_idx] = coszrs;
+            cos_zenith_angles[column_idx] = coszrs;
     }
 }
 
@@ -220,8 +220,8 @@ bool Insolation::configure(config_file& config_reader) {
 bool Insolation::initialise_memory(const ESP&               esp,
                                    device_RK_array_manager& phy_modules_core_arrays) {
     if (enabled) {
-        zenith_angles.allocate(esp.point_num);
-        zenith_angles.zero();
+        cos_zenith_angles.allocate(esp.point_num);
+        cos_zenith_angles.zero();
     }
 
     return true;
@@ -281,16 +281,17 @@ bool Insolation::phy_loop(ESP&                   esp,
         }
 
 
-        compute_zenith_angles<<<(esp.point_num / num_blocks) + 1, num_blocks>>>(*zenith_angles,
-                                                                                esp.lonlat_d,
-                                                                                alpha,
-                                                                                alpha_i,
-                                                                                sin_decl,
-                                                                                cos_decl,
-                                                                                ecc,
-                                                                                obliquity,
-                                                                                sync_rot,
-                                                                                esp.point_num);
+        compute_cos_zenith_angles<<<(esp.point_num / num_blocks) + 1, num_blocks>>>(
+            *cos_zenith_angles,
+            esp.lonlat_d,
+            alpha,
+            alpha_i,
+            sin_decl,
+            cos_decl,
+            ecc,
+            obliquity,
+            sync_rot,
+            esp.point_num);
         cudaDeviceSynchronize();
         cuda_check_status_or_exit(__FILE__, __LINE__);
     }
@@ -327,12 +328,12 @@ bool Insolation::store_init(storage& s) {
 
 bool Insolation::store(const ESP& esp, storage& s) {
     if (enabled) {
-        std::shared_ptr<double[]> zenith_angles_h = zenith_angles.get_host_data();
-        s.append_table(zenith_angles_h.get(),
-                       zenith_angles.get_size(),
-                       "/zenith_angles",
+        std::shared_ptr<double[]> cos_zenith_angles_h = cos_zenith_angles.get_host_data();
+        s.append_table(cos_zenith_angles_h.get(),
+                       cos_zenith_angles.get_size(),
+                       "/cos_zenith_angles",
                        "-",
-                       "zenith_angles per column");
+                       "cos_zenith_angles per column");
     }
 
     return true;
