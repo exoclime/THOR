@@ -213,6 +213,26 @@ release: symlink
 prof: symlink
 cdb:
 
+#######################################################################
+# test for alfrodull
+ifeq ($(wildcard Alfrodull),)
+	ALFRODULL_FLAGS =
+	ALFRODULL_LINK_FLAGS =
+else 
+
+	ALFRODULL_FLAGS = -DHAS_ALFRODULL -IAlfrodull/thor_module/inc/
+    ALFRODULL_LINK_FLAGS =  -LAlfrodull -lalfrodull
+	ALFRODULL_TARGET = Alfrodull/libalfrodull.a
+export
+# always call submakefile for alf
+.PHONY: Alfrodull/libalfrodull.a
+Alfrodull/libalfrodull.a:
+	@echo -e '$(MAGENTA)Creating Alfrodull from subdir Alfrodull$(END)'
+	$(MAKE) -f Makefile -C Alfrodull
+
+endif 
+
+
 
 
 #######################################################################
@@ -268,30 +288,30 @@ $(OBJDIR)/${OUTPUTDIR}/$(DEPDIR): $(OBJDIR)/${OUTPUTDIR} $(OBJDIR)
 # CUDA files
 $(OBJDIR)/${OUTPUTDIR}/esp.o: esp.cu $(OBJDIR)/${OUTPUTDIR}/${DEPDIR}/esp.d $(GITREV_FILE) | $(OBJDIR)/${OUTPUTDIR}/$(DEPDIR) $(OBJDIR)/$(OUTPUTDIR) $(OBJDIR)
 	@echo -e '$(BLUE)creating dependencies for $@ $(END)'
-	$(CC) $(cuda_dependencies_flags) $(CC_comp_flag) $(arch)  $(cuda_flags) $(h5include) -I$(includedir) -I$(OBJDIR)/$(OUTPUTDIR) $(CDB)  -o $@ $<
+	$(CC) $(cuda_dependencies_flags) $(CC_comp_flag) $(arch)  $(cuda_flags) $(h5include) -I$(includedir)  -I$(OBJDIR)/$(OUTPUTDIR) $(CDB) $(ALFRODULL_FLAGS) -o $@ $<
 	@echo -e '$(YELLOW)creating object file for $@ $(END)'
-	$(CC) $(CC_comp_flag) $(arch)  $(cuda_flags) $(h5include) -I$(includedir) -I$(OBJDIR)/$(OUTPUTDIR) $(CDB)  -o $@ $<
+	$(CC) $(CC_comp_flag) $(arch)  $(cuda_flags) $(h5include) -I$(includedir) -I$(OBJDIR)/$(OUTPUTDIR) $(CDB) $(ALFRODULL_FLAGS) -o $@ $<
 
 
 $(OBJDIR)/${OUTPUTDIR}/%.o: %.cu $(OBJDIR)/${OUTPUTDIR}/${DEPDIR}/%.d  | $(OBJDIR)/${OUTPUTDIR}/$(DEPDIR) $(OBJDIR)/$(OUTPUTDIR) $(OBJDIR) 
 	@echo -e '$(BLUE)creating dependencies for $@ $(END)'
-	$(CC) $(cuda_dependencies_flags) $(CC_comp_flag) $(arch)  $(cuda_flags) $(h5include) -I$(includedir) $(CDB) -o $@ $<
+	$(CC) $(cuda_dependencies_flags) $(CC_comp_flag) $(arch)  $(cuda_flags) $(h5include) -I$(includedir) $(CDB) $(ALFRODULL_FLAGS) -o $@ $<
 	@echo -e '$(YELLOW)creating object file for $@ $(END)'
-	$(CC) $(CC_comp_flag) $(arch)  $(cuda_flags) $(h5include) -I$(includedir) $(CDB) -o $@ $<
+	$(CC) $(CC_comp_flag) $(arch)  $(cuda_flags) $(h5include) -I$(includedir) $(CDB) $(ALFRODULL_FLAGS) -o $@ $<
 
 # C++ files
 $(OBJDIR)/${OUTPUTDIR}/%.o: %.cpp $(OBJDIR)/${OUTPUTDIR}/${DEPDIR}/%.d  | $(OBJDIR)/${OUTPUTDIR}/$(DEPDIR) $(OBJDIR)/$(OUTPUTDIR) $(OBJDIR)
 	@echo -e '$(YELLOW)creating dependencies and object file for $@  $(END)'
-	$(CC) $(dependencies_flags) $(CC_comp_flag) $(arch) $(cpp_flags) $(h5include) -I$(includedir) $(CDB) -o $@ $<
+	$(CC) $(dependencies_flags) $(CC_comp_flag) $(arch) $(cpp_flags) $(h5include) -I$(includedir) $(CDB) $(ALFRODULL_FLAGS) -o $@ $<
 
 # Target for dependencies, so that they are always defined
 $(OBJDIR)/${OUTPUTDIR}/${DEPDIR}/%.d: ;
 
 # link *.o objects
 .PHONY: 
-$(BINDIR)/${OUTPUTDIR}/esp: $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj)) $(MODULES_SRC)/libphy_modules.a  | $(BINDIR) $(RESDIR) $(BINDIR)/$(OUTPUTDIR)  $(OBJDIR)
+$(BINDIR)/${OUTPUTDIR}/esp: $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj)) $(MODULES_SRC)/libphy_modules.a $(ALFRODULL_TARGET) | $(BINDIR) $(RESDIR) $(BINDIR)/$(OUTPUTDIR)  $(OBJDIR)
 	@echo -e '$(YELLOW)creating $@ $(END)'
-	$(CC) -o $(BINDIR)/$(OUTPUTDIR)/esp $(arch) $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj)) -L$(MODULES_SRC) -lphy_modules $(h5libdir) $(h5libs) $(link_flags)
+	$(CC) -o $(BINDIR)/$(OUTPUTDIR)/esp $(arch) $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj)) -L$(MODULES_SRC) -lphy_modules $(h5libdir) $(h5libs) $(link_flags) $(ALFRODULL_LINK_FLAGS)
 	if [ "$(HAS_CDB)" = "-MJ" ] ; then \
 		rm -f compile_commands.json; \
 		sed -e '1s/^/[\n/' -e '$$s/,$$/\n]/' $(OBJDIR)/$(OUTPUTDIR)/*.o.json $(MODULES_SRC)/obj/*.o.json > compile_commands.json; \
