@@ -296,6 +296,16 @@ bool radiative_transfer::configure(config_file &config_reader) {
 }
 
 bool radiative_transfer::store(const ESP &esp, storage &s) {
+    cudaMemcpy(insol_h, insol_d, esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
+    s.append_table(insol_h, esp.point_num, "/insol", "W m^-2", "insolation (instantaneous)");
+
+    cudaMemcpy(insol_ann_h, insol_ann_d, esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
+    s.append_table(insol_ann_h,
+                   esp.point_num,
+                   "/insol_annual",
+                   "W m^-2",
+                   "insolation (annual/orbit averaged)");
+
     cudaMemcpy(
         flw_up_h, flw_up_d, esp.nvi * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
     s.append_table(flw_up_h, esp.nvi * esp.point_num, "/flw_up", "W m^-2", "upward flux (LW)");
