@@ -283,24 +283,41 @@ sync_rot = true
 
 
 #-- Alfrodull options --------------------------------------------------------#
+# also uses variables from general config and radiative transfer:
+# * Tstar: star temperature (if not using a stellar spectrum)
+# * Tint: internal temperature
+# * planet_star_dist
+# * ... insolation stuff
+# 
+
 two_streams_radiative_transfer = true
 
 # Isothermal or non-isothermal treatment of layers for two stream RT
 Alf_iso = false
 
+# use Thomas algorithm for solver instead of iterative solver.
+Alf_thomas = true
+
+# if not using Thomas, run in single walk mode. 
+Alf_scat_single_walk = true
+
 # use real star spectrum or planck spectrum
 Alf_real_star = false
+# if using real star, give stellar spectrum here
+Alf_stellar_spectrum = ./Alfrodull/input/stellar_spectrum.h5 
+
+# fake opacity when hitting opacity limit. 
 Alf_fake_opac = 0.0
-Alf_T_surf = 100.0
-# surface albedo
-Alf_albedo = 0.1
+
 # asymmetry factor
 # (values: [-1, 1]. 0: isotropic scattering. 1: pure forward, -1: pure backward.)
 Alf_g_0 = 0.0
 # diffusivity factor (usually set to 2)
 Alf_diffusivity = 2.0
 
+# scattering
 Alf_scat = true
+# scattering correction
 Alf_scat_corr = true
 
 # direct irradiation beam
@@ -312,10 +329,22 @@ Alf_geom_zenith_corr = true
 Alf_i2s_transition = 0.1
 
 Alf_opacities_file = ./Alfrodull/input/opac_sample_r5.h5
+#Alf_opacities_file = ./Alfrodull/input/opac_sample_r500.h5
+#Alf_opacities_file = ./Alfrodull/input/opac_sample_r5.h5
+
+# G_+/- limits to protect against exploding value
+# Alf_G_pm_max_limiter =
+# Alf_G_pm_denom_limit
+# Alf_G_pm_mu_star_increment
 
 # compute radiative transfer every n step
 Alf_compute_every_nstep = 1
 
+# number of double gray radiative transfer spinup steps before shifting progressivelly to two stream
+Alf_dgrt_spinup_steps = 0
+
+# number of steps to spinup from 0 to full Qheat
+Alf_spinup_steps = 0
 
 #-- Boundary layer options (core_benchmark = NoBenchmark) --------------------#
 boundary_layer = false
