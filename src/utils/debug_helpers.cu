@@ -137,3 +137,30 @@ void check_last_cuda_error(std::string ref_name) {
         log::printf("'%s' cuda error: %s\n", ref_name.c_str(), cudaGetErrorString(err));
     }
 }
+
+
+void cuda_check_status_or_exit() {
+    cudaError_t err = cudaGetLastError();
+
+    // Check device query
+    if (err != cudaSuccess) {
+        log::printf("[%s:%d] CUDA error check reports error: %s\n",
+                    __FILE__,
+                    __LINE__,
+                    cudaGetErrorString(err));
+        exit(EXIT_FAILURE);
+    }
+}
+
+void cuda_check_status_or_exit(const char *filename, const int &line) {
+    cudaError_t err = cudaGetLastError();
+
+    // Check device query
+    if (err != cudaSuccess) {
+        log::printf("[%s:%d] CUDA error check reports error: %s\n",
+                    filename,
+                    line,
+                    cudaGetErrorString(err));
+        exit(EXIT_FAILURE);
+    }
+}

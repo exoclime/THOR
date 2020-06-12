@@ -159,6 +159,7 @@ class output_new:
         if input.TSRT:
             outputs['F_up_tot'] = 'f_up_tot'
             outputs['F_down_tot'] = 'f_down_tot'
+            outputs['F_dir_tot'] = 'f_dir_tot'
             outputs['F_net'] = 'f_net'
             outputs['Alf_Qheat'] = 'TSqheat'
             outputs['col_mu_star'] = 'mustar'
