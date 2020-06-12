@@ -98,7 +98,6 @@ private:
     double n_sw_config          = 1.0;   // power law dependence for mixed/unmixed absorbers in SW
     // double f_lw_config       = 0.5;    // fraction of taulw in well-mixed absorber
 
-    bool   surface_config  = false; // use solid/liquid surface at altitude 0
     double Csurf_config    = 1e7;   // heat capacity of surface (J K^-1 m^-2)
     bool   rt1Dmode_config = false; // 1D mode=all columns are irradiated identically
 
