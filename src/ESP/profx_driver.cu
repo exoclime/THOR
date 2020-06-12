@@ -64,6 +64,8 @@
 
 #include "reduction_add.h"
 
+#include "insolation.h"
+
 __host__ void ESP::ProfX(const SimulationSetup& sim,
                          int                    n_out) { // output step (triggers globdiag calc)
     USE_BENCHMARK()
@@ -173,10 +175,8 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
                                     profx_dW_d,
                                     profx_Qheat_d);
 
-        BENCH_POINT_I(current_step,
-                      "phy_Sponge",
-                      (),
-                      ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "W_d"))
+        BENCH_POINT_I(
+            current_step, "phy_Sponge", (), ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "W_d"))
     }
 
 
@@ -351,6 +351,10 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
     // here is where we call all "external" physics modules
     if (phy_modules_execute) {
         cudaDeviceSynchronize();
+        insolation.phy_loop(*this,
+                            sim,
+                            current_step, // Step number
+                            timestep);    // Time-step [s]
         phy_modules_phy_loop(*this,
                              sim,
                              current_step, // Step number

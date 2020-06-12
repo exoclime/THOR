@@ -63,6 +63,10 @@
 
 #include "dyn/phy_modules_device.h"
 
+// forward declaration of Insolation used only as reference
+// to break circuilar dependency of insolation.h and esp.h
+class Insolation;
+
 class ESP
 {
 
@@ -322,6 +326,11 @@ public:
     double *GibbsdG_d;
 
     ///////////////////////////
+    // insolation computation helper class
+
+    Insolation &insolation;
+
+    ///////////////////////////
 
     //  Functions
     // Constructor, receives all grid parameters
@@ -376,7 +385,8 @@ public:
         uh_thermo_types       ultrahot_thermo_,
         uh_heating_types      ultrahot_heating_,
         thermo_equation_types thermo_equation_,
-        bool                  surface_config);
+        bool                  surface_config,
+        Insolation &          insolation_);
 
     ~ESP();
 
@@ -563,7 +573,10 @@ public:
         return string_stream.str();
     }
 
-  std::string get_output_dir() { return output_dir; };
+    std::string get_output_dir() {
+        return output_dir;
+    };
+
 private:
     // store if we run benchmarks
     benchmark_types core_benchmark;

@@ -61,6 +61,8 @@
 // physical modules
 #include "phy_modules.h"
 
+#include "insolation.h"
+
 __host__ ESP::ESP(int *                 point_local_,
                   int *                 maps_,
                   double *              lonlat_,
@@ -112,7 +114,8 @@ __host__ ESP::ESP(int *                 point_local_,
                   uh_thermo_types       ultrahot_thermo_,
                   uh_heating_types      ultrahot_heating_,
                   thermo_equation_types thermo_equation_,
-                  bool                  surface_config) :
+                  bool                  surface_config,
+                  Insolation &          insolation_) :
     nl_region(nl_region_),
     nr(nr_),
     point_num(point_num_),
@@ -133,7 +136,8 @@ __host__ ESP::ESP(int *                 point_local_,
     ultrahot_heating(ultrahot_heating_),
     thermo_equation(thermo_equation_),
     shrink_sponge(shrink_sponge_),
-    surface(surface_config) {
+    surface(surface_config),
+    insolation(insolation_) {
 
     point_local_h = point_local_;
     maps_h        = maps_;
@@ -1036,6 +1040,11 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
             phy_modules_init_data(*this, sim, &s);
         }
+
+        // Initialise insolation here. At this point other modules will have requested insolation if
+        // it's necessary in their inisialisation.
+        insolation.initialise_memory(*this, phy_modules_core_arrays);
+        insolation.initial_conditions(*this, sim, nullptr);
     }
 
 
@@ -1220,6 +1229,7 @@ __host__ ESP::~ESP() {
 
     cudaFree(Tsurface_d);
 
+    free(Tsurface_h);
 
     if (phy_modules_execute)
         phy_modules_free_mem();

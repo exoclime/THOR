@@ -70,3 +70,6 @@ void crash_report(const output_def &def, std::string output_dir, const std::stri
 #endif
 
 void check_last_cuda_error(string ref_name);
+
+void cuda_check_status_or_exit();
+void cuda_check_status_or_exit(const char *filename, const int &line);

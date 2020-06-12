@@ -160,6 +160,7 @@ class output_new:
         if input.TSRT:
             outputs['F_up_tot'] = 'f_up_tot'
             outputs['F_down_tot'] = 'f_down_tot'
+            outputs['F_dir_tot'] = 'f_dir_tot'
             outputs['F_net'] = 'f_net'
             outputs['Alf_Qheat'] = 'TSqheat'
             outputs['col_mu_star'] = 'mustar'
@@ -2227,14 +2228,14 @@ def spectrum(input, grid, output, z, stride=20, axis=None, save=True):
         raise IOError("'axis = {}' but {} is neither an axes.SubplotBase instance nor a (axes.SubplotBase, plt.Figure) instance".format(axis, axis))
 
     fig.set_tight_layout(True)
-    
+
     tsp = output.nts - output.ntsi + 1
 
-    
+
     col_lon = []
     col_lat = []
     col_lor = []
-    
+
     for column in np.arange(0, grid.point_num, stride):
         lamda = output.wavelength[:]*1e6
         if tsp > 1:
@@ -2258,7 +2259,7 @@ def spectrum(input, grid, output, z, stride=20, axis=None, save=True):
         ax.plot(lamda, spectrum, 'k-', alpha=0.5, lw=1.0,
                     path_effects=[pe.Stroke(linewidth=1.5, foreground=color), pe.Normal()])
 
-        
+
     # add an insert showing the position of columns
     inset_pos = [0.8, 0.1, 0.18, 0.18]
     ax_inset = ax.inset_axes(inset_pos)

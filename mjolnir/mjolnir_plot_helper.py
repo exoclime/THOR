@@ -48,9 +48,9 @@ def make_plot(args, save=True, axis=None):
     valid = ['uver', 'ulonver', 'vver', 'wver', 'wlonver', 'wprof', 'Tver', 'Tlonver', 'Tulev', 'PTver', 'PTlonver', 'ulev', 'PVver', 'PVlev',
              'TP', 'RVlev', 'cons', 'stream', 'pause', 'tracer', 'PTP', 'regrid', 'KE',
              'SR', 'uprof', 'cfl', 'bvprof', 'TSfluxprof', 'Tsurf', 'insol', 'massf', 'pause_rg', 'DGfluxprof', 'qheat',
-             'DGfutprof', 'DGfdtprof', 'DGfnetprof', 'mustar', 'DGfuptot', 'DGfdowntot', 'DGfnet', 'DGqheat',  # alf stuff
-             'TSfutprof', 'TSfdtprof', 'TSfnetprof', 'mustar', 'TSfuptot', 'TSfdowntot', 'TSfnet', 'TSqheat',
-             'DGqheatprof', 'TSqheatprof', 'qheatprof',
+             'DGfutprof', 'DGfdtprof', 'mustar', 'DGfuptot', 'DGfdowntot', 'DGfnet', 'DGqheat',  # alf stuff
+             'TSfutprof', 'TSfdtprof', 'mustar', 'TSfuptot', 'TSfdowntot', 'TSfnet', 'TSqheat',
+             'DGqheatprof', 'TSqheatprof', 'qheatprof', 'TSfdirprof',
              'spectrum',
              'phase','all']
 
@@ -485,7 +485,7 @@ def make_plot(args, save=True, axis=None):
         z = {'label': r'spectrum ', 'name': 'spectrum',
              'cmap': 'magma', 'mt': maketable}
         pfile = call_plot('spectrum',ham.spectrum, input, grid, output, z, save=save, axis=axis)
-        plots_created.append(pfile)   
+        plots_created.append(pfile)
 
     # --- Pressure profile types-------------------------------
     if 'TP' in pview or 'all' in pview:
@@ -580,6 +580,16 @@ def make_plot(args, save=True, axis=None):
             (grid.Altitudeh[None, 1:, None] - grid.Altitudeh[None, :-1, None])
         z = {'value': fup, 'label': r'Two Stream Total Upward flux (W m$^{-2}$)', 'name': 'TSfuptot'}
         pfile = call_plot('TSfutprof',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
+        plots_created.append(pfile)
+
+    if ('TSfdirprof' in pview or 'all' in pview) and input.TSRT:
+        output.load_reshape(grid,['f_dir_tot'])
+        fdir_int = output.f_dir_tot
+        fdir = fdir_int[:, :-1, :] + (fdir_int[:, 1:, :] - fdir_int[:, :-1, :]) *\
+            (grid.Altitude[None, :, None] - grid.Altitudeh[None, :-1, None]) /\
+            (grid.Altitudeh[None, 1:, None] - grid.Altitudeh[None, :-1, None])
+        z = {'value': fdir, 'label': r'Two Stream Total Directional flux (W m$^{-2}$)', 'name': 'TSfdirprof'}
+        pfile = call_plot('TSfdirprof',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
         plots_created.append(pfile)
 
     if ('DGfdtprof' in pview or 'all' in pview) and input.RT:

@@ -123,7 +123,7 @@ public:
         return device_ptr;
     };
 
-  T*& ptr_ref() {
+    T*& ptr_ref() {
         return device_ptr;
     };
 
@@ -165,20 +165,19 @@ public:
         get_host_data_ptr();
 
         bool out = fetch_to_host();
-	if (!out)
-	  printf("fetch_to_host failed\n");
+        if (!out)
+            printf("fetch_to_host failed\n");
         return host_ptr;
     }
 
     // zero out device memory
     bool zero() {
-      if (device_ptr != nullptr && size > 0)
-	{
-        cudaError_t ret = cudaMemset(device_ptr, 0, sizeof(T) * size);
-        return ret == cudaSuccess;
-	}
-      else
-	return true;
+        if (device_ptr != nullptr && size > 0) {
+            cudaError_t ret = cudaMemset(device_ptr, 0, sizeof(T) * size);
+            return ret == cudaSuccess;
+        }
+        else
+            return true;
     };
 
     // copy data from device to local member array
@@ -206,8 +205,8 @@ public:
         return ret == cudaSuccess;
     };
 
-  // copy data from local array passed as argument to device
-  bool put(T * data_ptr) {
+    // copy data from local array passed as argument to device
+    bool put(T* data_ptr) {
         cudaError_t ret =
             cudaMemcpy(device_ptr, data_ptr, size * sizeof(T), cudaMemcpyHostToDevice);
         return ret == cudaSuccess;
