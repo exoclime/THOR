@@ -1834,32 +1834,35 @@ def profile(input, grid, output, z, stride=50, axis=None, save=True):
     col_lon = []
     col_lat = []
     col_lor = []
-    for column in np.arange(0, grid.point_num, stride):
-        if tsp > 1:
-            P = np.mean(output.Pressure[column, :, :], axis=1)
-            x = np.mean(z['value'][column, :, :], axis=1)
-        else:
-            P = output.Pressure[column, :, 0]
-            x = z['value'][column, :, 0]
+    #for column in np.arange(0, grid.point_num, stride):
+    for column in np.arange(0,grid.point_num,1):     #hack
+        if (grid.lon[column] > 85*np.pi/180 and grid.lon[column] < 95*np.pi/180)\
+            or (grid.lon[column] > 265*np.pi/180 and grid.lon[column] < 275*np.pi/180):  #hack hack hack
+            if tsp > 1:
+                P = np.mean(output.Pressure[column, :, :], axis=1)
+                x = np.mean(z['value'][column, :, :], axis=1)
+            else:
+                P = output.Pressure[column, :, 0]
+                x = z['value'][column, :, 0]
 
-        #color = hsv_to_rgb([column / grid.point_num, 1.0, 1.0])
-        lon = grid.lon[column]
-        lat = grid.lat[column]
-        lon_norm = lon / (2.0 * math.pi)
-        lat_norm = lat / (math.pi / 2.0)
-        if lat > 0.0:
-            color = hsv_to_rgb([lon_norm, 1.0 - 0.7 * lat_norm, 1.0])
-        else:
-            color = hsv_to_rgb([lon_norm, 1.0, 1.0 + 0.7 * lat_norm])
+            #color = hsv_to_rgb([column / grid.point_num, 1.0, 1.0])
+            lon = grid.lon[column]
+            lat = grid.lat[column]
+            lon_norm = lon / (2.0 * math.pi)
+            lat_norm = lat / (math.pi / 2.0)
+            if lat > 0.0:
+                color = hsv_to_rgb([lon_norm, 1.0 - 0.7 * lat_norm, 1.0])
+            else:
+                color = hsv_to_rgb([lon_norm, 1.0, 1.0 + 0.7 * lat_norm])
 
-        col_lon.append(lon)
-        col_lat.append(lat)
-        col_lor.append(color)
-        ax.semilogy(x, P / 1e5, 'k-', alpha=0.5, lw=1.0,
-                    path_effects=[pe.Stroke(linewidth=1.5, foreground=color), pe.Normal()])
+            col_lon.append(lon)
+            col_lat.append(lat)
+            col_lor.append(color)
+            ax.semilogy(x, P / 1e5, 'k-', alpha=0.5, lw=1.0,
+                        path_effects=[pe.Stroke(linewidth=1.5, foreground=color), pe.Normal()])
 
-        rp, = ax.plot(x[np.int(np.floor(grid.nv / 2))], P[np.int(np.floor(grid.nv / 2))] / 100000, 'k+', ms=5, alpha=0.5)
-        gp, = ax.plot(x[np.int(np.floor(grid.nv * 0.75))], P[np.int(np.floor(grid.nv * 0.75))] / 100000, 'k*', ms=5, alpha=0.5)
+            rp, = ax.plot(x[np.int(np.floor(grid.nv / 2))], P[np.int(np.floor(grid.nv / 2))] / 100000, 'k+', ms=5, alpha=0.5)
+            gp, = ax.plot(x[np.int(np.floor(grid.nv * 0.75))], P[np.int(np.floor(grid.nv * 0.75))] / 100000, 'k*', ms=5, alpha=0.5)
 
     # add an insert showing the position of
     inset_pos = [0.8, 0.8, 0.18, 0.18]
@@ -2226,14 +2229,14 @@ def spectrum(input, grid, output, z, stride=20, axis=None, save=True):
         raise IOError("'axis = {}' but {} is neither an axes.SubplotBase instance nor a (axes.SubplotBase, plt.Figure) instance".format(axis, axis))
 
     fig.set_tight_layout(True)
-    
+
     tsp = output.nts - output.ntsi + 1
 
-    
+
     col_lon = []
     col_lat = []
     col_lor = []
-    
+
     for column in np.arange(0, grid.point_num, stride):
         lamda = output.wavelength[:]*1e6
         if tsp > 1:
@@ -2257,7 +2260,7 @@ def spectrum(input, grid, output, z, stride=20, axis=None, save=True):
         ax.plot(lamda, spectrum, 'k-', alpha=0.5, lw=1.0,
                     path_effects=[pe.Stroke(linewidth=1.5, foreground=color), pe.Normal()])
 
-        
+
     # add an insert showing the position of columns
     inset_pos = [0.8, 0.1, 0.18, 0.18]
     ax_inset = ax.inset_axes(inset_pos)
