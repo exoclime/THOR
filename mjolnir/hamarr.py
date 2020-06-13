@@ -57,7 +57,8 @@ class input_new:
         #special cases (things we test on a lot, etc)
         self.RT = "radiative_transfer" in openh5
         self.TSRT = "two_streams_radiative_transfer" in openh5
-        self.chemistry = "chemistry" in openh5
+        if "chemistry" in openh5:
+            self.chemistry = openh5['chemistry'][0]
         if not hasattr(self,'surface'):
             self.surface = False
         #some bw compatibility things
@@ -2227,14 +2228,14 @@ def spectrum(input, grid, output, z, stride=20, axis=None, save=True):
         raise IOError("'axis = {}' but {} is neither an axes.SubplotBase instance nor a (axes.SubplotBase, plt.Figure) instance".format(axis, axis))
 
     fig.set_tight_layout(True)
-    
+
     tsp = output.nts - output.ntsi + 1
 
-    
+
     col_lon = []
     col_lat = []
     col_lor = []
-    
+
     for column in np.arange(0, grid.point_num, stride):
         lamda = output.wavelength[:]*1e6
         if tsp > 1:
@@ -2258,7 +2259,7 @@ def spectrum(input, grid, output, z, stride=20, axis=None, save=True):
         ax.plot(lamda, spectrum, 'k-', alpha=0.5, lw=1.0,
                     path_effects=[pe.Stroke(linewidth=1.5, foreground=color), pe.Normal()])
 
-        
+
     # add an insert showing the position of columns
     inset_pos = [0.8, 0.1, 0.18, 0.18]
     ax_inset = ax.inset_axes(inset_pos)

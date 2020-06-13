@@ -48,8 +48,8 @@ def make_plot(args, save=True, axis=None):
     valid = ['uver', 'ulonver', 'vver', 'wver', 'wlonver', 'wprof', 'Tver', 'Tlonver', 'Tulev', 'PTver', 'PTlonver', 'ulev', 'PVver', 'PVlev',
              'TP', 'RVlev', 'cons', 'stream', 'pause', 'tracer', 'PTP', 'regrid', 'KE',
              'SR', 'uprof', 'cfl', 'bvprof', 'TSfluxprof', 'Tsurf', 'insol', 'massf', 'pause_rg', 'DGfluxprof', 'qheat',
-             'DGfutprof', 'DGfdtprof', 'DGfnetprof', 'mustar', 'DGfuptot', 'DGfdowntot', 'DGfnet', 'DGqheat',  # alf stuff
-             'TSfutprof', 'TSfdtprof', 'TSfnetprof', 'mustar', 'TSfuptot', 'TSfdowntot', 'TSfnet', 'TSqheat',
+             'DGfutprof', 'DGfdtprof', 'mustar', 'DGfuptot', 'DGfdowntot', 'DGfnet', 'DGqheat',  # alf stuff
+             'TSfutprof', 'TSfdtprof', 'mustar', 'TSfuptot', 'TSfdowntot', 'TSfnet', 'TSqheat',
              'DGqheatprof', 'TSqheatprof', 'qheatprof', 'TSfdirprof',
              'spectrum',
              'phase','all']
@@ -193,7 +193,7 @@ def make_plot(args, save=True, axis=None):
         sigmaref = ham.Get_Prange(input, grid, rg, args, xtype='lat', use_p=use_p)
         pfile = call_plot('Tlonver',ham.vertical_lon,input, grid, output, rg, sigmaref, z, slice=args.slice, use_p=use_p, csp=[0], clevs=args.clevels, save=save, axis=axis)
         plots_created.append(pfile)
-        
+
     if 'PTver' in pview or 'all' in pview:
         rg.load(['Temperature','Pressure'])
         kappa_ad = input.Rd / input.Cp  # adiabatic coefficient
@@ -485,7 +485,7 @@ def make_plot(args, save=True, axis=None):
         z = {'label': r'spectrum ', 'name': 'spectrum',
              'cmap': 'magma', 'mt': maketable}
         pfile = call_plot('spectrum',ham.spectrum, input, grid, output, z, save=save, axis=axis)
-        plots_created.append(pfile)   
+        plots_created.append(pfile)
 
     # --- Pressure profile types-------------------------------
     if 'TP' in pview or 'all' in pview:
