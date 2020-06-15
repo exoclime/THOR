@@ -220,26 +220,27 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
     bool run      = true;
     Qheat_scaling = 1.0;
 
+
     if (spinup_start_step > -1 && spinup_stop_step > -1) {
         if (nstep < spinup_start_step) // before spinup
         {
             run           = false;
             Qheat_scaling = 0.0;
         }
-        else if (nstep >= spinup_start_step && nstep < spinup_stop_step) // during spinup
+        else if ((nstep >= spinup_start_step) && (nstep <= spinup_stop_step)) // during spinup
         {
             double x = (double)(nstep - spinup_start_step)
-                       / (double)(spinup_stop_step - spinup_start_step + 1);
+                       / (double)(spinup_stop_step - spinup_start_step);
             Qheat_scaling = (1 + sin(M_PI * x - M_PI / 2.0)) / 2.0;
             run           = true;
         }
     }
 
     if (spindown_start_step > -1 && spindown_stop_step > -1) {
-        if (nstep >= spindown_start_step && nstep < spindown_stop_step) {
-            double x = (double)(spindown_stop_step - nstep)
+        if ((nstep >= spindown_start_step) && (nstep <= spindown_stop_step)) {
+            double x = (double)(nstep - spindown_start_step)
                        / (double)(spindown_stop_step - spindown_start_step);
-            Qheat_scaling = (1 + sin(M_PI * x - M_PI / 2.0)) / 2.0;
+            Qheat_scaling = 1.0 - (1 + sin(M_PI * x - M_PI / 2.0)) / 2.0;
             run           = true;
         }
         else if (nstep >= spindown_stop_step) {
