@@ -1294,6 +1294,17 @@ int main(int argc, char** argv) {
             size_t free_bytes;
             get_cuda_mem_usage(total_bytes, free_bytes);
 
+
+            // Run pressure check
+            double pressure_min = gpu_min_on_device<1024>(X.pressure_d, X.point_num * X.nv);
+            log::printf("\n min pressure : %g Pa\n", pressure_min);
+            if (pressure_min < pressure_check_limit) {
+                log::printf("\n WARNING: min pressure lower than min pressure limit: %g Pa\n",
+                            pressure_min);
+                if (exit_on_low_pressure_warning)
+                    break;
+            }
+
             // flush log output to file for security
             log::flush();
 
@@ -1316,17 +1327,18 @@ int main(int argc, char** argv) {
                    duration_to_str(time_left).c_str(),
                    end_time_str.str().c_str(),
                    file_output ? "[saved output]" : "");
+
+            // Run pressure check
+            double pressure_min = gpu_min_on_device<1024>(X.pressure_d, X.point_num * X.nv);
+            printf("\n min pressure : %g Pa\n", pressure_min);
+            if (pressure_min < pressure_check_limit) {
+                printf("\n WARNING: min pressure lower than min pressure limit: %g Pa\n",
+                       pressure_min);
+                if (exit_on_low_pressure_warning)
+                    break;
+            }
         }
 
-        // Run pressure check
-        double pressure_min = gpu_min_on_device<1024>(X.pressure_d, X.point_num * X.nv);
-        log::printf("\n min pressure : %g Pa\n", pressure_min);
-        if (pressure_min < pressure_check_limit) {
-            log::printf("\n WARNING: min pressure lower than min pressure limit: %g Pa\n",
-                        pressure_min);
-            if (exit_on_low_pressure_warning)
-                break;
-        }
 
         if (caught_signal != ESIG_NOSIG) {
             //exit loop and application after save on SIGTERM or SIGINT
