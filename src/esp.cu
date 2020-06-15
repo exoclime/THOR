@@ -163,7 +163,7 @@ int main(int argc, char** argv) {
     // argparser.add_arg("d", "double", 1e-5, "this is a double");
     // argparser.add_arg("s", "string", string("value"), "this is a string");
 
-    // for bool, the default value given is the value that will be returned if the option is present. 
+    // for bool, the default value given is the value that will be returned if the option is present.
 
     string default_config_filename("ifile/earth.thr");
 
@@ -187,7 +187,7 @@ int main(int argc, char** argv) {
     argparser.add_arg("bw", "binwrite", true, "binary comparison write");
     argparser.add_arg("bc", "bincompare", true, "binary comparison compare");
 #endif // BENCHMARKING
-    
+
     // Parse arguments, exit on fail
     bool parse_ok = argparser.parse(argc, argv);
     if (!parse_ok) {
@@ -203,22 +203,22 @@ int main(int argc, char** argv) {
     argparser.get_positional_arg(config_filename);
 
 #ifdef BENCHMARKING
-     // binary comparison reading
-    bool bincomp_write = false;
+    // binary comparison reading
+    bool bincomp_write     = false;
     bool bincomp_write_arg = false;
     if (argparser.get_arg("binwrite", bincomp_write_arg))
-      bincomp_write = bincomp_write_arg;
+        bincomp_write = bincomp_write_arg;
 
-    bool bincomp_compare = false;
+    bool bincomp_compare     = false;
     bool bincomp_compare_arg = false;
     if (argparser.get_arg("bincompare", bincomp_compare_arg))
-      bincomp_compare = bincomp_compare_arg;
+        bincomp_compare = bincomp_compare_arg;
 
-    if (bincomp_compare && bincomp_write)
-      {
-	log::printf("ARGUMENT ERROR: binwrite and bincompare can't be set to true at the same time\n");
-	exit(-1);
-      }
+    if (bincomp_compare && bincomp_write) {
+        log::printf(
+            "ARGUMENT ERROR: binwrite and bincompare can't be set to true at the same time\n");
+        exit(-1);
+    }
 #endif // BENCHMARKING
 
     //*****************************************************************
@@ -230,7 +230,7 @@ int main(int argc, char** argv) {
 
     log::printf(" git branch: %s\n", GIT_BRANCH_RAW);
     log::printf(" git hash: %s\n", GIT_HASH_RAW);
-    
+
 
     //*****************************************************************
     // Initial conditions
@@ -692,17 +692,15 @@ int main(int argc, char** argv) {
 
 #ifdef BENCHMARKING
     string output_path_ref = path(output_path).to_string();
-    if (bincomp_compare)
-      {
-	log::printf("\nWARNING: Running with binary comparison ON\n\n");
-      output_path = (path(output_path) / string("compare")).to_string();
-      }
-    if (bincomp_write)
-      {
-	log::printf("\nWARNING: Running with binary comparison data write ON\n\n");
-	output_path = (path(output_path) / string("write")).to_string();
-      }
-#endif     // BENCHMARKING
+    if (bincomp_compare) {
+        log::printf("\nWARNING: Running with binary comparison ON\n\n");
+        output_path = (path(output_path) / string("compare")).to_string();
+    }
+    if (bincomp_write) {
+        log::printf("\nWARNING: Running with binary comparison data write ON\n\n");
+        output_path = (path(output_path) / string("write")).to_string();
+    }
+#endif // BENCHMARKING
 
 
     // check output config directory
@@ -983,7 +981,7 @@ int main(int argc, char** argv) {
           ultrahot_thermo,
           ultrahot_heating,
           thermo_equation,
-	  insolation);
+          insolation);
 
 
     USE_BENCHMARK();
@@ -1091,7 +1089,7 @@ int main(int argc, char** argv) {
         log::printf("    \n");
         phy_modules_print_config();
         log::printf("    \n");
-	insolation.print_config();
+        insolation.print_config();
     }
 
     log::printf("   ********** \n");
@@ -1291,6 +1289,16 @@ int main(int argc, char** argv) {
             size_t free_bytes;
             get_cuda_mem_usage(total_bytes, free_bytes);
 
+            // Run pressure check
+            double pressure_min = gpu_min_on_device<1024>(X.pressure_d, X.point_num * X.nv);
+            log::printf("\n min pressure : %g Pa\n", pressure_min);
+            if (pressure_min < pressure_check_limit) {
+                log::printf("\n WARNING: min pressure lower than min pressure limit: %g Pa\n",
+                            pressure_min);
+                if (exit_on_low_pressure_warning)
+                    break;
+            }
+
             // flush log output to file for security
             log::flush();
 
@@ -1313,16 +1321,18 @@ int main(int argc, char** argv) {
                    duration_to_str(time_left).c_str(),
                    end_time_str.str().c_str(),
                    file_output ? "[saved output]" : "");
+
+            // Run pressure check
+            double pressure_min = gpu_min_on_device<1024>(X.pressure_d, X.point_num * X.nv);
+            printf("\n min pressure : %g Pa\n", pressure_min);
+            if (pressure_min < pressure_check_limit) {
+                printf("\n WARNING: min pressure lower than min pressure limit: %g Pa\n",
+                       pressure_min);
+                if (exit_on_low_pressure_warning)
+                    break;
+            }
         }
 
-        // Run pressure check
-        double pressure_min = gpu_min_on_device<1024>(X.pressure_d, X.point_num * X.nv);
-        log::printf("\n min pressure : %g Pa\n", pressure_min);
-        if (pressure_min < pressure_check_limit) {
-            log::printf("\n WARNING: min pressure lower than min pressure limit: %g Pa\n", pressure_min);
-            if (exit_on_low_pressure_warning)
-                break;
-        }
 
         if (caught_signal != ESIG_NOSIG) {
             //exit loop and application after save on SIGTERM or SIGINT
