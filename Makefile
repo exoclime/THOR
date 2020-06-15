@@ -220,9 +220,8 @@ ifeq ($(wildcard Alfrodull),)
 	ALFRODULL_LINK_FLAGS =
 else 
 
-	ALFRODULL_FLAGS = -DHAS_ALFRODULL -IAlfrodull/thor_module/inc/
-    ALFRODULL_LINK_FLAGS =  -LAlfrodull -lalfrodull
-	ALFRODULL_TARGET = Alfrodull/libalfrodull.a
+ALFRODULL_LINK_FLAGS =  -LAlfrodull -lalfrodull
+ALFRODULL_TARGET = Alfrodull/libalfrodull.a
 export
 # always call submakefile for alf
 .PHONY: Alfrodull/libalfrodull.a
@@ -233,7 +232,7 @@ Alfrodull/libalfrodull.a:
 endif 
 
 
-
+$(info alf flags: $(ALFRODULL_FLAGS))
 
 #######################################################################
 # main binary
