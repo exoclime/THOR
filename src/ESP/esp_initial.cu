@@ -115,6 +115,7 @@ __host__ ESP::ESP(int *                 point_local_,
                   uh_heating_types      ultrahot_heating_,
                   thermo_equation_types thermo_equation_,
                   bool                  surface_config,
+                  double                Csurf_config,
                   Insolation &          insolation_) :
     nl_region(nl_region_),
     nr(nr_),
@@ -186,6 +187,7 @@ __host__ ESP::ESP(int *                 point_local_,
     else
         phy_modules_execute = false;
 
+    Csurf = Csurf_config;
     //
     //  Allocate Data
     alloc_data(globdiag, output_mean);

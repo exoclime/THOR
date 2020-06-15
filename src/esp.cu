@@ -403,6 +403,9 @@ int main(int argc, char** argv) {
 
     bool surface_config = false; // use solid/liquid surface at altitude 0
     config_reader.append_config_var("surface", surface_config, surface_config);
+    // properties for a solid/liquid surface
+    double Csurf_config = 1e7; // heat capacity of surface (J K^-1 m^-2)
+    config_reader.append_config_var("Csurf", Csurf_config, Csurf_config);
 
 
     //*****************************************************************
@@ -985,6 +988,7 @@ int main(int argc, char** argv) {
           ultrahot_heating,
           thermo_equation,
           surface_config,
+          Csurf_config,
           insolation);
 
 
@@ -1075,7 +1079,9 @@ int main(int argc, char** argv) {
     log::printf("   Time integration =  %d s.\n", nsmax * timestep);
     log::printf("   Large time-step  =  %d s.\n", timestep);
     log::printf("   Start time       =  %f s.\n", simulation_start_time);
+    // surface parameters
     log::printf("   Surface          = %s.\n", surface_config ? "true" : "false");
+    log::printf("   Surface Heat Capacity       = %f J/K/m^2.\n", Csurf_config);
 
     log::printf("    \n");
 
@@ -1293,7 +1299,6 @@ int main(int argc, char** argv) {
             size_t total_bytes;
             size_t free_bytes;
             get_cuda_mem_usage(total_bytes, free_bytes);
-
 
             // Run pressure check
             double pressure_min = gpu_min_on_device<1024>(X.pressure_d, X.point_num * X.nv);

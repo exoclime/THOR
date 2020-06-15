@@ -184,6 +184,7 @@ public:
     bool    surface;
     double *Tsurface_d;
     double *Tsurface_h;
+    double  Csurf;
 
     ///////////////////////////
     //  Device
@@ -386,6 +387,7 @@ public:
         uh_heating_types      ultrahot_heating_,
         thermo_equation_types thermo_equation_,
         bool                  surface_config,
+        double                Csurf_config,
         Insolation &          insolation_);
 
     ~ESP();

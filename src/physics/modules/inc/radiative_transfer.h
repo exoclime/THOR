@@ -98,8 +98,8 @@ private:
     double n_sw_config          = 1.0;   // power law dependence for mixed/unmixed absorbers in SW
     // double f_lw_config       = 0.5;    // fraction of taulw in well-mixed absorber
 
-    double Csurf_config    = 1e7;   // heat capacity of surface (J K^-1 m^-2)
-    bool   rt1Dmode_config = false; // 1D mode=all columns are irradiated identically
+    // double Csurf_config    = 1e7;   // heat capacity of surface (J K^-1 m^-2)
+    bool rt1Dmode_config = false; // 1D mode=all columns are irradiated identically
 
     // Rad trans
     double Tstar            = 4520;  // Star effective temperature [K]
@@ -117,8 +117,8 @@ private:
     double n_sw    = 1.0; // power law dependence for mixed/unmixed absorbers in SW
     // double f_lw       = 0.5; // fraction of taulw in well-mixed absorber
 
-    bool    rt1Dmode;
-    double  Csurf;
+    bool rt1Dmode;
+    // double  Csurf;
     double *surf_flux_d;
 
 
@@ -163,7 +163,6 @@ private:
                     double n_lw_,
                     double n_sw_,
                     double f_lw,
-                    double Csurf,
                     bool   rt1Dmode,
                     double Tmean);
 };

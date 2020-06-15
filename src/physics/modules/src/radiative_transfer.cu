@@ -72,8 +72,7 @@ void radiative_transfer::print_config() {
     log::printf("    Power law index of SW       = %f.\n", n_sw_config);
     log::printf("\n");
 
-    // surface parameters
-    log::printf("    Surface Heat Capacity       = %f J/K/m^2.\n", Csurf_config);
+
     log::printf("    1D mode                     = %s.\n", rt1Dmode_config ? "true" : "false");
 }
 
@@ -160,7 +159,6 @@ bool radiative_transfer::initial_conditions(const ESP &            esp,
             n_lw_config,
             n_sw_config,
             esp.f_lw,
-            Csurf_config,
             rt1Dmode_config,
             sim.Tmean);
 
@@ -244,7 +242,7 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                                  esp.insolation.get_device_cos_zenith_angles(),
                                  insol_d,
                                  esp.surface,
-                                 Csurf,
+                                 esp.Csurf,
                                  esp.Tsurface_d,
                                  surf_flux_d,
                                  esp.profx_Qheat_d,
@@ -282,8 +280,6 @@ bool radiative_transfer::configure(config_file &config_reader) {
     config_reader.append_config_var("n_lw", n_lw_config, n_lw_config);
     // config_reader.append_config_var("f_lw", f_lw_config, f_lw_config);
 
-    // properties for a solid/liquid surface
-    config_reader.append_config_var("Csurf", Csurf_config, Csurf_config);
 
     config_reader.append_config_var("rt1Dmode", rt1Dmode_config, rt1Dmode_config);
 
@@ -352,8 +348,6 @@ bool radiative_transfer::store_init(storage &s) {
     s.append_value(n_sw, "/n_sw", "-", "power law exponent for mixed/unmixed absorber in SW");
     // s.append_value(f_lw, "/f_lw", "-", "fraction of taulw in well-mixed absorber");
 
-    s.append_value(Csurf, "/Csurf", "J/K/m^2", "heat capacity of surface by area");
-
 
     return true;
 }
@@ -372,7 +366,6 @@ void radiative_transfer::RTSetup(double Tstar_,
                                  double n_lw_,
                                  double n_sw_,
                                  double f_lw,
-                                 double Csurf_,
                                  bool   rt1Dmode_,
                                  double Tmean) {
 
@@ -394,8 +387,6 @@ void radiative_transfer::RTSetup(double Tstar_,
 
     double resc_flx = pow(radius_star / planet_star_dist, 2.0);
     incflx          = resc_flx * bc * Tstar * Tstar * Tstar * Tstar;
-
-    Csurf = Csurf_;
 
     rt1Dmode = rt1Dmode_;
 }

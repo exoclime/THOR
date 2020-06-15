@@ -262,6 +262,8 @@ __host__ void ESP::output(int                    fidx, // Index of output file
         s.append_value(0.0, "/phy_module", "-", phy_modules_get_name());
 
         s.append_value(surface ? 1.0 : 0.0, "/surface", "-", "include solid/liquid surface");
+        s.append_value(Csurf, "/Csurf", "J/K/m^2", "heat capacity of surface by area");
+
 
         if (phy_modules_execute) {
             phy_modules_store_init(s);
