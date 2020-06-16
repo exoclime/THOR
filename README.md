@@ -4,7 +4,9 @@
 
 *THOR* is a GCM that solves the three-dimensional non-hydrostatic Euler equations on an icosahedral grid. *THOR* was designed to run on Graphics Processing Units (GPUs).
 
-If you use this code please cite: [Mendonca, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016](http://iopscience.iop.org/article/10.3847/0004-637X/829/2/115/meta)
+If you use this code please cite: [Mendonça, J.M., Grimm, S.L., Grosheintz, L., & Heng, K., ApJ, 829, 115, 2016](http://iopscience.iop.org/article/10.3847/0004-637X/829/2/115/meta)
+
+If using version 2.0 or later, please also cite: [Deitrick, R, Mendonça, J.M., Schroffenegger, U., Grimm, S.L., Tsai, S.-M., & Heng, K., ApJS, 248, 2, 2020](https://iopscience.iop.org/article/10.3847/1538-4365/ab930e)
 
 Current code owners: Joao Mendonca: joao.mendonca@space.dtu.dk, Russell Deitrick: russell.deitrick@csh.unibe.ch, Urs Schroffenegger: urs.schroffenegger@csh.unibe.ch
 
