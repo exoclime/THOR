@@ -48,7 +48,7 @@ COMP ?= nvcc
 
 
 # objects
-obj_cuda   := esp.o grid.o esp_initial.o simulation_setup.o thor_driver.o profx_driver.o esp_output.o debug_helpers.o profx_globdiag.o reduction_add.o phy_modules_device.o ultrahot_thermo.o profx_sponge.o cuda_device_memory.o insolation.o
+obj_cuda   := esp.o grid.o esp_initial.o simulation_setup.o thor_driver.o profx_driver.o esp_output.o debug_helpers.o profx_globdiag.o reduction_add.o phy_modules_device.o ultrahot_thermo.o profx_sponge.o cuda_device_memory.o insolation.o chemistry.o phy_modules.o radiative_transfer.o boundary_layer.o 
 
 obj_cpp := storage.o binary_test.o config_file.o cmdargs.o directories.o log_writer.o iteration_timer.o
 obj := $(obj_cpp) $(obj_cuda)
@@ -67,7 +67,7 @@ obj_tests_reduction_add := reduction_add_test.o reduction_add.o  directories.o l
 #######################################################################
 # flags
 
-
+# for compilation with clang
 CUDA_PATH := /usr/lib/cuda/
 CUDA_LIBS := /usr/lib/x86-64-linux-gnu/
 
@@ -93,7 +93,7 @@ ifeq ($(COMP), nvcc)
 	cuda_dep_flags := $(ccbin) -std=c++14
 	link_flags = $(ccbin)
 else
-	# Compiolatiopn with clang to create compilation database for external tools
+	# Compilation with clang to create compilation database for external tools
 	# need to compile with clang for compilation database
 	CC := $(COMP)
 	CC_comp_flag = -c
@@ -128,8 +128,11 @@ profiling_flags := -pg -lineinfo --default-stream per-thread
 #######################################################################
 # define where to find sources
 source_dirs := src src/ESP src/utils src/test
+phy_module_source_dirs := src/physics/modules/src/ src/physics/managers/multi/src/
+phy_module_header_dirs := src/physics/modules/inc/ src/physics/managers/multi/inc/ 
 
 vpath %.cu $(source_dirs)
+vpath %.cu $(phy_module_source_dirs) 
 vpath %.cpp $(source_dirs)
 
 # Path where the hdf5 lib was installed,
@@ -142,7 +145,7 @@ $(info h5include="$(h5include)")
 
 includehdf = $(h5include)
 includedir = src/headers
-
+includeflags = $(addprefix -I,$(includedir) $(phy_module_header_dirs))
 #######################################################################
 # directory names
 OBJDIR = obj
@@ -150,11 +153,6 @@ BINDIR = bin
 RESDIR = results
 TESTDIR = tests
 DEPDIR = deps
-# modules search directory.
-# set if not set from command line or config file
-# will run the Makefile in that directory, passing it this makefile's
-# variables
-MODULES_SRC ?= src/physics/managers/empty/
 
 .PHONY: all clean
 
@@ -214,27 +212,6 @@ prof: symlink
 cdb:
 
 #######################################################################
-# test for alfrodull
-ifeq ($(wildcard Alfrodull),)
-	ALFRODULL_FLAGS =
-	ALFRODULL_LINK_FLAGS =
-else 
-
-ALFRODULL_LINK_FLAGS =  -LAlfrodull -lalfrodull
-ALFRODULL_TARGET = Alfrodull/libalfrodull.a
-export
-# always call submakefile for alf
-.PHONY: Alfrodull/libalfrodull.a
-Alfrodull/libalfrodull.a:
-	@echo -e '$(MAGENTA)Creating Alfrodull from subdir Alfrodull$(END)'
-	$(MAKE) -f Makefile -C Alfrodull
-
-endif 
-
-
-$(info alf flags: $(ALFRODULL_FLAGS))
-
-#######################################################################
 # main binary
 all: symlink
 
@@ -246,18 +223,52 @@ $(info cuda_flags: $(cuda_flags) )
 $(info cpp_flags: $(cpp_flags) )
 $(info link_flags: $(link_flags) )
 $(info arch: $(arch) )
-$(info MODULES_SRC: $(MODULES_SRC))
 $(info CC compile flag: $(CC_comp_flag))
+
+
+#######################################################################
+# test for alfrodull radiative transfer physics class
+ifeq ($(wildcard Alfrodull),)
+	ALFRODULL_FLAGS =
+	ALFCLASS = 
+	ALFRODULL_LINK_FLAGS =
+	ALFRODULL_TARGET = 
+else
+	ALFRODULL_FLAGS = -DHAS_ALFRODULL=1 -IAlfrodull/thor_module/inc/ -IAlfrodull/src/inc
+	ALFCLASS = Alfrodull/thor_module/inc/two_stream_radiative_transfer.h
+	ALFRODULL_LINK_FLAGS =  -LAlfrodull -lalfrodull
+	ALFRODULL_TARGET = Alfrodull/libalfrodull.a
+	ALFRODULL_DEP = Alfrodull
+	ALFRODULL_CLEAN_DEP = Alfrodull_clean
+export
+# always call submakefile for alf
+.PHONY: Alfrodull
+Alfrodull:
+	@echo -e '$(MAGENTA)Creating Alfrodull from subdir Alfrodull$(END)'
+	$(MAKE) -f Makefile -C Alfrodull
+
+.PHONY: Alfrodull_clean
+Alfrodull_clean:
+	@echo -e '$(MAGENTA)Cleaning Alfrodull$(END)'
+	$(MAKE) -f Makefile -C Alfrodull clean
+endif 
+
+
+$(info alf flags: $(ALFRODULL_FLAGS))
+
+#######################################################################
 
 ifndef VERBOSE
 .SILENT:
 endif
 
-GITREV_FILE = $(OBJDIR)/$(OUTPUTDIR)/git-rev.h
+#######################################################################
+# generate header containing version info at each compilation
+GITREV_FILE = $(OBJDIR)/git-rev.h
 
 
 .PHONY: $(GITREV_FILE)
-$(GITREV_FILE): | $(OBJDIR)/$(OUTPUTDIR) $(OBJDIR)
+$(GITREV_FILE): | $(OBJDIR)
 	@echo -e '$(GREEN)Creating version file $(END)'
 	@echo -n "#define GIT_BRANCH_RAW " > $(GITREV_FILE)
 	@echo \"$(shell git rev-parse --abbrev-ref HEAD)\" >> $(GITREV_FILE)
@@ -287,33 +298,33 @@ $(OBJDIR)/${OUTPUTDIR}/$(DEPDIR): $(OBJDIR)/${OUTPUTDIR} $(OBJDIR)
 # CUDA files
 $(OBJDIR)/${OUTPUTDIR}/esp.o: esp.cu $(OBJDIR)/${OUTPUTDIR}/${DEPDIR}/esp.d $(GITREV_FILE) | $(OBJDIR)/${OUTPUTDIR}/$(DEPDIR) $(OBJDIR)/$(OUTPUTDIR) $(OBJDIR)
 	@echo -e '$(BLUE)creating dependencies for $@ $(END)'
-	$(CC) $(cuda_dependencies_flags) $(CC_comp_flag) $(arch)  $(cuda_flags) $(h5include) -I$(includedir)  -I$(OBJDIR)/$(OUTPUTDIR) $(CDB) $(ALFRODULL_FLAGS) -o $@ $<
+	$(CC) $(cuda_dependencies_flags) $(CC_comp_flag) $(arch)  $(cuda_flags) $(h5include) -I$(includedir)  -I$(OBJDIR) $(CDB) $(ALFRODULL_FLAGS) -o $@ $<
 	@echo -e '$(YELLOW)creating object file for $@ $(END)'
-	$(CC) $(CC_comp_flag) $(arch)  $(cuda_flags) $(h5include) -I$(includedir) -I$(OBJDIR)/$(OUTPUTDIR) $(CDB) $(ALFRODULL_FLAGS) -o $@ $<
+	$(CC) $(CC_comp_flag) $(arch)  $(cuda_flags) $(h5include) -I$(includedir) -I$(OBJDIR) $(CDB) $(ALFRODULL_FLAGS) -o $@ $<
 
 
 $(OBJDIR)/${OUTPUTDIR}/%.o: %.cu $(OBJDIR)/${OUTPUTDIR}/${DEPDIR}/%.d  | $(OBJDIR)/${OUTPUTDIR}/$(DEPDIR) $(OBJDIR)/$(OUTPUTDIR) $(OBJDIR) 
 	@echo -e '$(BLUE)creating dependencies for $@ $(END)'
-	$(CC) $(cuda_dependencies_flags) $(CC_comp_flag) $(arch)  $(cuda_flags) $(h5include) -I$(includedir) $(CDB) $(ALFRODULL_FLAGS) -o $@ $<
+	$(CC) $(cuda_dependencies_flags) $(CC_comp_flag) $(arch)  $(cuda_flags) $(h5include) $(includeflags) $(CDB) $(ALFRODULL_FLAGS) -o $@ $<
 	@echo -e '$(YELLOW)creating object file for $@ $(END)'
-	$(CC) $(CC_comp_flag) $(arch)  $(cuda_flags) $(h5include) -I$(includedir) $(CDB) $(ALFRODULL_FLAGS) -o $@ $<
+	$(CC) $(CC_comp_flag) $(arch)  $(cuda_flags) $(h5include) $(includeflags) $(CDB) $(ALFRODULL_FLAGS) -o $@ $<
 
 # C++ files
 $(OBJDIR)/${OUTPUTDIR}/%.o: %.cpp $(OBJDIR)/${OUTPUTDIR}/${DEPDIR}/%.d  | $(OBJDIR)/${OUTPUTDIR}/$(DEPDIR) $(OBJDIR)/$(OUTPUTDIR) $(OBJDIR)
 	@echo -e '$(YELLOW)creating dependencies and object file for $@  $(END)'
-	$(CC) $(dependencies_flags) $(CC_comp_flag) $(arch) $(cpp_flags) $(h5include) -I$(includedir) $(CDB) $(ALFRODULL_FLAGS) -o $@ $<
+	$(CC) $(dependencies_flags) $(CC_comp_flag) $(arch) $(cpp_flags) $(h5include) $(includeflags) $(CDB) $(ALFRODULL_FLAGS) -o $@ $<
 
 # Target for dependencies, so that they are always defined
 $(OBJDIR)/${OUTPUTDIR}/${DEPDIR}/%.d: ;
 
 # link *.o objects
 .PHONY: 
-$(BINDIR)/${OUTPUTDIR}/esp: $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj)) $(MODULES_SRC)/libphy_modules.a $(ALFRODULL_TARGET) | $(BINDIR) $(RESDIR) $(BINDIR)/$(OUTPUTDIR)  $(OBJDIR)
+$(BINDIR)/${OUTPUTDIR}/esp: $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj)) $(ALFRODULL_DEP) | $(BINDIR) $(RESDIR) $(BINDIR)/$(OUTPUTDIR)  $(OBJDIR)
 	@echo -e '$(YELLOW)creating $@ $(END)'
-	$(CC) -o $(BINDIR)/$(OUTPUTDIR)/esp $(arch) $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj)) -L$(MODULES_SRC) -lphy_modules $(h5libdir) $(h5libs) $(link_flags) $(ALFRODULL_LINK_FLAGS)
+	$(CC) -o $(BINDIR)/$(OUTPUTDIR)/esp $(arch) $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj)) $(h5libdir) $(h5libs) $(link_flags) $(ALFRODULL_LINK_FLAGS)
 	if [ "$(HAS_CDB)" = "-MJ" ] ; then \
 		rm -f compile_commands.json; \
-		sed -e '1s/^/[\n/' -e '$$s/,$$/\n]/' $(OBJDIR)/$(OUTPUTDIR)/*.o.json $(MODULES_SRC)/obj/*.o.json > compile_commands.json; \
+		sed -e '1s/^/[\n/' -e '$$s/,$$/\n]/' $(OBJDIR)/$(OUTPUTDIR)/*.o.json > compile_commands.json; \
 		sed -i.bak s/-xcuda/-xc++/g compile_commands.json; \
 		rm -f compile_commands.json.bak; \
 	fi
@@ -329,16 +340,6 @@ symlink: $(BINDIR)/$(OUTPUTDIR)/esp   | $(OBJDIR) $(GITREV_FILE)
 # dependencies
 DEPFILES := $($(obj):%.o=$(OBJDIR)/$(OUTPUTDIR)/$(DEPDIR)/%.d)
 $(DEPFILES):
-
-#######################################################################
-# include physics modules
-
-export
-# always call submakefile for modules
-.PHONY: $(MODULES_SRC)/libphy_modules.a
-$(MODULES_SRC)/libphy_modules.a:
-	@echo -e '$(MAGENTA)Creating physics module from subdir $(MODULES_SRC)$(END)'
-	$(MAKE) -f Makefile -C $(MODULES_SRC)
 
 #######################################################################
 # Build Tests
@@ -376,7 +377,7 @@ $(BINDIR)/$(TESTDIR)/reduction_add_test:  $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(
 #######################################################################
 # Cleanup
 .phony: clean,ar
-clean:
+clean: $(ALFRODULL_CLEAN_DEP)
 	@echo -e '$(CYAN)clean up binaries $(END)'
 	-$(RM) $(BINDIR)/debug/esp
 	-$(RM) $(BINDIR)/release/esp
@@ -385,6 +386,7 @@ clean:
 	-$(RM) $(OBJDIR)/debug/*.o $(OBJDIR)/debug/$(DEPDIR)/*.d $(OBJDIR)/debug/$(DEPDIR)/*.d.* $(OBJDIR)/debug/*.o.json
 	-$(RM) $(OBJDIR)/release/*.o $(OBJDIR)/release/$(DEPDIR)/*.d $(OBJDIR)/release/$(DEPDIR)/*.d.* $(OBJDIR)/release/*.o.json
 	-$(RM) $(OBJDIR)/prof/*.o $(OBJDIR)/prof/$(DEPDIR)/*.d $(OBJDIR)/prof/$(DEPDIR)/*.d.* $(OBJDIR)/prof/*.o.json
+	@echo -e '$(CYAN)clean up revision file $(GITREV_FILE)$(END)'
 	-$(RM) $(GITREV_FILE)
 	@echo -e '$(CYAN)clean up tests binaries $(END)'
 	-$(RM) $(BINDIR)/tests/cmdargs_test
@@ -395,8 +397,6 @@ clean:
 	-$(RM) $(BINDIR)/tests/test_reduction_add
 	@echo -e '$(CYAN)clean up symlink $(END)'
 	-$(RM) $(BINDIR)/esp
-	@echo -e '$(CYAN)clean up modules directory $(END)'
-	$(MAKE) -C $(MODULES_SRC) clean
 	@echo -e '$(CYAN)clean up directories $(END)'
 	-$(RM) -d $(BINDIR)/debug $(BINDIR)/release $(BINDIR)/prof
 	-$(RM) -d $(OBJDIR)/debug/$(DEPDIR)
