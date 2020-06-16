@@ -33,6 +33,15 @@ const bool boundary_layer_enabled_default = false;
 
 boundary_layer bl;
 
+#ifdef HAS_ALFRODULL
+#    include "two_streams_radiative_transfer.h"
+
+bool       alfrodull_enabled         = false;
+const bool alfrodull_enabled_default = false;
+
+two_streams_radiative_transfer tsrt;
+#endif // HAS_ALFRODULL
+
 std::string phy_modules_get_name() {
     return std::string("multi");
 }
@@ -52,6 +61,13 @@ void phy_modules_print_config() {
         chem.print_config();
     if (boundary_layer_enabled)
         bl.print_config();
+
+#ifdef HAS_ALFRODULL
+    log::printf("   Two Stream Radiative Transfer module: %s.\n",
+                alfrodull_enabled ? "true" : "false");
+    if (alfrodull_enabled)
+        tsrt.print_config();
+#endif // HAS_ALFRODULL
 }
 
 
@@ -67,6 +83,11 @@ bool phy_modules_init_mem(const ESP& esp, device_RK_array_manager& phy_modules_c
         chem.initialise_memory(esp, phy_modules_core_arrays);
     if (boundary_layer_enabled)
         bl.initialise_memory(esp, phy_modules_core_arrays);
+
+#ifdef HAS_ALFRODULL
+    if (alfrodull_enabled)
+        tsrt.initialise_memory(esp, phy_modules_core_arrays);
+#endif // HAS_ALFRODULL
 
     return out;
 }
@@ -87,6 +108,12 @@ bool phy_modules_init_data(const ESP& esp, const SimulationSetup& sim, storage* 
 
     if (chemistry_enabled)
         out &= chem.initial_conditions(esp, sim, s);
+
+#ifdef HAS_ALFRODULL
+    if (alfrodull_enabled)
+        out &= tsrt.initial_conditions(esp, sim, s);
+#endif // HAS_ALFRODULL
+
     return out;
 }
 
@@ -106,6 +133,14 @@ bool phy_modules_generate_config(config_file& config_reader) {
         "boundary_layer", boundary_layer_enabled, boundary_layer_enabled_default);
 
     bl.configure(config_reader);
+
+
+#ifdef HAS_ALFRODULL
+    config_reader.append_config_var(
+        "two_streams_radiative_transfer", alfrodull_enabled, alfrodull_enabled_default);
+
+    tsrt.configure(config_reader);
+#endif // HAS_ALFRODULL
 
     return out;
 }
@@ -159,8 +194,14 @@ bool phy_modules_phy_loop(ESP& esp, const SimulationSetup& sim, int nstep, doubl
     if (radiative_transfer_enabled)
         rt.phy_loop(esp, sim, nstep, time_step);
 
+#ifdef HAS_ALFRODULL
+    if (alfrodull_enabled)
+        tsrt.phy_loop(esp, sim, nstep, time_step);
+#endif // HAS_ALFRODULL
+
     if (boundary_layer_enabled)
         bl.phy_loop(esp, sim, nstep, time_step);
+
 
     return out;
 }
@@ -185,6 +226,16 @@ bool phy_modules_store_init(storage& s) {
 
     bl.store_init(s);
 
+#ifdef HAS_ALFRODULL
+
+    s.append_value(alfrodull_enabled ? 1.0 : 0.0,
+                   "/two_streams_radiative_transfer",
+                   "-",
+                   "Using two stream radiative transfer");
+
+    tsrt.store_init(s);
+#endif // HAS_ALFRODULL
+
     return true;
 }
 
@@ -198,6 +249,11 @@ bool phy_modules_store(const ESP& esp, storage& s) {
 
     if (boundary_layer_enabled)
         bl.store(esp, s);
+
+#ifdef HAS_ALFRODULL
+    if (alfrodull_enabled)
+        tsrt.store(esp, s);
+#endif // HAS_ALFRODULL
 
     return true;
 }
@@ -214,6 +270,11 @@ bool phy_modules_free_mem() {
         chem.free_memory();
     if (boundary_layer_enabled)
         bl.free_memory();
+
+#ifdef HAS_ALFRODULL
+    if (alfrodull_enabled)
+        tsrt.free_memory();
+#endif // HAS_ALFRODULL
 
     return out;
 }

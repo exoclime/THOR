@@ -281,6 +281,15 @@ sync_rot = true
 #longp = 0
 #########################################################
 
+#########################################################
+# spin up and spin down start and stop. Set to negative value to ignore and run at full power
+# spins up/down with a multiplication factor following a sine from 0 to 1 from
+# start to stop of spin up time
+dgrt_spinup_start = 0
+dgrt_spinup_stop = 9
+dgrt_spindown_start = 10
+dgrt_spindown_stop = 20
+
 
 #-- Alfrodull options --------------------------------------------------------#
 # also uses variables from general config and radiative transfer:
@@ -335,16 +344,21 @@ Alf_opacities_file = ./Alfrodull/input/opac_sample_r5.h5
 # G_+/- limits to protect against exploding value
 # Alf_G_pm_max_limiter =
 # Alf_G_pm_denom_limit
-# Alf_G_pm_mu_star_increment
+# wiggle increment in degrees to add to zenith angle if G_+/- explodes
+Alf_G_pm_mu_star_increment = 1.0
 
 # compute radiative transfer every n step
 Alf_compute_every_nstep = 1
 
-# number of double gray radiative transfer spinup steps before shifting progressivelly to two stream
-Alf_dgrt_spinup_steps = 0
+#########################################################
+# spin up and spin down start and stop. Set to negative value to ignore and run at full power
+# spins up/down with a multiplication factor following a sine from 0 to 1 from
+# start to stop of spin up time
+Alf_spinup_start = 10
+Alf_spinup_stop = 20
+Alf_spindown_start = -1
+Alf_spindown_stop = -1
 
-# number of steps to spinup from 0 to full Qheat
-Alf_spinup_steps = 0
 
 #-- Boundary layer options (core_benchmark = NoBenchmark) --------------------#
 boundary_layer = false

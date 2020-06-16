@@ -76,6 +76,12 @@ void radiative_transfer::print_config() {
     log::printf("    Surface                     = %s.\n", surface_config ? "true" : "false");
     log::printf("    Surface Heat Capacity       = %f J/K/m^2.\n", Csurf_config);
     log::printf("    1D mode                     = %s.\n", rt1Dmode_config ? "true" : "false");
+
+    // spinup-spindown parameters
+    log::printf("    Spin up start step          = %d.\n", spinup_start_step);
+    log::printf("    Spin up stop step           = %d.\n", spinup_stop_step);
+    log::printf("    Spin down start step        = %d.\n", spindown_start_step);
+    log::printf("    Spin down stop step         = %d.\n", spindown_stop_step);
 }
 
 bool radiative_transfer::initialise_memory(const ESP &              esp,
@@ -152,6 +158,18 @@ bool radiative_transfer::initial_conditions(const ESP &            esp,
                                             const SimulationSetup &sim,
                                             storage *              s) {
 
+    if (spinup_start_step > -1 || spinup_stop_step > -1) {
+        if (spinup_stop_step < spinup_start_step)
+            printf("DGRT: inconsistent spinup_start (%d) and spinup_stop (%d) values\n",
+                   spinup_start_step,
+                   spinup_stop_step);
+    }
+    if (spindown_start_step > -1 || spindown_stop_step > -1) {
+        if (spindown_stop_step < spindown_start_step)
+            printf("DGRT: inconsistent spindown_start (%d) and spindown_stop (%d) values\n",
+                   spindown_start_step,
+                   spindown_stop_step);
+    }
     RTSetup(Tstar_config,
             planet_star_dist_config,
             radius_star_config,
@@ -199,69 +217,103 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                                   const SimulationSetup &sim,
                                   int                    nstep, // Step number
                                   double                 time_step) {           // Time-step [s]
-    //
-    //  Number of threads per block.
-    const int NTH = 256;
+    bool run      = true;
+    Qheat_scaling = 1.0;
 
-    //  Specify the block sizes.
-    dim3 NB((esp.point_num / NTH) + 1, esp.nv, 1);
-    dim3 NBRT((esp.point_num / NTH) + 1, 1, 1);
 
-    rtm_dual_band<<<NBRT, NTH>>>(esp.pressure_d,
-                                 esp.Rho_d,
-                                 esp.temperature_d,
-                                 flw_up_d,
-                                 flw_dn_d,
-                                 fsw_up_d,
-                                 fsw_dn_d,
-                                 tau_d,
-                                 sim.Gravit,
-                                 esp.Cp_d,
-                                 esp.lonlat_d,
-                                 esp.Altitude_d,
-                                 esp.Altitudeh_d,
-                                 phtemp,
-                                 dtemp,
-                                 ttemp,
-                                 thtemp,
-                                 time_step,
-                                 Tstar,
-                                 planet_star_dist,
-                                 radius_star,
-                                 diff_ang,
-                                 esp.Tint,
-                                 albedo,
-                                 tausw,
-                                 taulw,
-                                 latf_lw,
-                                 taulw_pole,
-                                 n_sw,
-                                 n_lw,
-                                 esp.f_lw,
-                                 incflx,
-                                 sim.P_Ref,
-                                 esp.point_num,
-                                 esp.nv,
-                                 esp.nvi,
-                                 sim.A,
-                                 esp.insolation.get_r_orb(),
-                                 esp.insolation.get_device_cos_zenith_angles(),
-                                 insol_d,
-                                 surface,
-                                 Csurf,
-                                 Tsurface_d,
-                                 surf_flux_d,
-                                 esp.profx_Qheat_d,
-                                 qheat_d,
-                                 esp.Rd_d,
-                                 Qheat_scaling,
-                                 sim.gcm_off,
-                                 rt1Dmode);
+    if (spinup_start_step > -1 && spinup_stop_step > -1) {
+        if (nstep < spinup_start_step) // before spinup
+        {
+            run           = false;
+            Qheat_scaling = 0.0;
+        }
+        else if ((nstep >= spinup_start_step) && (nstep <= spinup_stop_step)) // during spinup
+        {
+            double x = (double)(nstep - spinup_start_step)
+                       / (double)(spinup_stop_step - spinup_start_step);
+            Qheat_scaling = (1 + sin(M_PI * x - M_PI / 2.0)) / 2.0;
+            run           = true;
+        }
+    }
 
-    if (nstep * time_step < (2 * M_PI / esp.insolation.get_mean_motion())) {
-        // stationary orbit/obliquity
-        // calculate annually average of insolation for the first orbit
-        annual_insol<<<NBRT, NTH>>>(insol_ann_d, insol_d, nstep, esp.point_num);
+    if (spindown_start_step > -1 && spindown_stop_step > -1) {
+        if ((nstep >= spindown_start_step) && (nstep <= spindown_stop_step)) {
+            double x = (double)(nstep - spindown_start_step)
+                       / (double)(spindown_stop_step - spindown_start_step);
+            Qheat_scaling = 1.0 - (1 + sin(M_PI * x - M_PI / 2.0)) / 2.0;
+            run           = true;
+        }
+        else if (nstep >= spindown_stop_step) {
+            run           = false;
+            Qheat_scaling = 0.0;
+        }
+    }
+
+    if (run) {
+        //
+        //  Number of threads per block.
+        const int NTH = 256;
+
+        //  Specify the block sizes.
+        dim3 NB((esp.point_num / NTH) + 1, esp.nv, 1);
+        dim3 NBRT((esp.point_num / NTH) + 1, 1, 1);
+
+        rtm_dual_band<<<NBRT, NTH>>>(esp.pressure_d,
+                                     esp.Rho_d,
+                                     esp.temperature_d,
+                                     flw_up_d,
+                                     flw_dn_d,
+                                     fsw_up_d,
+                                     fsw_dn_d,
+                                     tau_d,
+                                     sim.Gravit,
+                                     esp.Cp_d,
+                                     esp.lonlat_d,
+                                     esp.Altitude_d,
+                                     esp.Altitudeh_d,
+                                     phtemp,
+                                     dtemp,
+                                     ttemp,
+                                     thtemp,
+                                     time_step,
+                                     Tstar,
+                                     planet_star_dist,
+                                     radius_star,
+                                     diff_ang,
+                                     esp.Tint,
+                                     albedo,
+                                     tausw,
+                                     taulw,
+                                     latf_lw,
+                                     taulw_pole,
+                                     n_sw,
+                                     n_lw,
+                                     esp.f_lw,
+                                     incflx,
+                                     sim.P_Ref,
+                                     esp.point_num,
+                                     esp.nv,
+                                     esp.nvi,
+                                     sim.A,
+                                     esp.insolation.get_r_orb(),
+                                     esp.insolation.get_device_cos_zenith_angles(),
+                                     insol_d,
+                                     surface,
+                                     Csurf,
+                                     Tsurface_d,
+                                     surf_flux_d,
+                                     esp.profx_Qheat_d,
+                                     qheat_d,
+                                     esp.Rd_d,
+                                     Qheat_scaling,
+                                     sim.gcm_off,
+                                     rt1Dmode);
+
+        if (nstep * time_step < (2 * M_PI / esp.insolation.get_mean_motion())) {
+            // stationary orbit/obliquity
+            // calculate annually average of insolation for the first orbit
+            annual_insol<<<NBRT, NTH>>>(insol_ann_d, insol_d, nstep, esp.point_num);
+        }
     }
     return true;
 }
@@ -291,6 +343,13 @@ bool radiative_transfer::configure(config_file &config_reader) {
     config_reader.append_config_var("Csurf", Csurf_config, Csurf_config);
 
     config_reader.append_config_var("rt1Dmode", rt1Dmode_config, rt1Dmode_config);
+
+    // spin up spin down
+    config_reader.append_config_var("dgrt_spinup_start", spinup_start_step, spinup_start_step);
+    config_reader.append_config_var("dgrt_spinup_stop", spinup_stop_step, spinup_stop_step);
+    config_reader.append_config_var(
+        "dgrt_spindown_start", spindown_start_step, spindown_start_step);
+    config_reader.append_config_var("dgrt_spindown_stop", spindown_stop_step, spindown_stop_step);
 
     return true;
 }
@@ -334,6 +393,8 @@ bool radiative_transfer::store(const ESP &esp, storage &s) {
 
     cudaMemcpy(Tsurface_h, Tsurface_d, esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
     s.append_table(Tsurface_h, esp.point_num, "/Tsurface", "K", "surface temperature");
+
+    s.append_value(Qheat_scaling, "/dgrt_qheat_scaling", " ", "Qheat scaling applied to DG");
     return true;
 }
 
