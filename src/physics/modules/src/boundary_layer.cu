@@ -687,7 +687,7 @@ __global__ void Momentum_Diff_Impl(double *Mh_d,
             }
             if (fabs(btmp[id * nv + lev])
                 < (fabs(atmp[id * nv + lev]) + fabs(ctmp[id * nv + lev]))) {
-                printf("Warning! Thomas algorithm in boundary layer unstable\n");
+                printf("Warning! Thomas algorithm in boundary layer mom. equation unstable\n");
             }
         }
         // if (id == 1000) {
@@ -816,7 +816,7 @@ __global__ void Heat_Diff_Impl(double *pt_d,
             }
         }
         if (fabs(btmp[id * nv + lev]) < (fabs(atmp[id * nv + lev]) + fabs(ctmp[id * nv + lev]))) {
-            printf("Warning! Thomas algorithm in boundary layer unstable\n");
+            printf("Warning! Thomas algorithm in boundary layer heat equation unstable\n");
         }
 
         // if (id == 1000) {
