@@ -80,11 +80,8 @@ ifeq ($(COMP), nvcc)
 	CDB :=
 	HAS_CBD := none
 	arch := -arch sm_$(SM)
-	dependencies_flags = --compiler-options -MMD,-MP,"-MT $(OBJDIR)/$(OUTPUTDIR)/$(notdir $(basename $@)).o","-MF $(OBJDIR)/$(OUTPUTDIR)/$(DEPDIR)/$(notdir $(basename $@)).d"
-
-	cuda_dependencies_flags = --generate-nonsystem-dependencies -MF $(OBJDIR)/$(OUTPUTDIR)/$(DEPDIR)/$(notdir $(basename $@)).d -MT "$(OBJDIR)/$(OUTPUTDIR)/$(notdir $(basename $@)).o $(OBJDIR)/$(OUTPUTDIR)/$(DEPDIR)/$(notdir $(basename $@)).d" 
-
-
+	dependencies_flags = --generate-dependencies
+	cuda_dependencies_flags = --generate-dependencies
 	# define common flags
 	cpp_flags := $(ccbin)  --compiler-options  -Wall -std=c++14 -DDEVICE_SM=$(SM)
 	cuda_flags := $(ccbin) --compiler-options  -Wall -std=c++14 -DDEVICE_SM=$(SM)
@@ -298,21 +295,32 @@ $(OBJDIR)/${OUTPUTDIR}/$(DEPDIR): $(OBJDIR)/${OUTPUTDIR} $(OBJDIR)
 # CUDA files
 $(OBJDIR)/${OUTPUTDIR}/esp.o: esp.cu $(OBJDIR)/${OUTPUTDIR}/${DEPDIR}/esp.d $(GITREV_FILE) | $(OBJDIR)/${OUTPUTDIR}/$(DEPDIR) $(OBJDIR)/$(OUTPUTDIR) $(OBJDIR)
 	@echo -e '$(BLUE)creating dependencies for $@ $(END)'
-	$(CC) $(cuda_dependencies_flags) $(CC_comp_flag) $(arch)  $(cuda_flags) $(h5include) -I$(includedir)  -I$(OBJDIR) $(CDB) $(ALFRODULL_FLAGS) -o $@ $<
+	set -e; rm -f $(OBJDIR)/${OUTPUTDIR}/${DEPDIR}/esp.d; \
+	$(CC) $(cuda_dependencies_flags) $(CC_comp_flag) $(arch)  $(cuda_flags) $(h5include) -I$(includedir)  -I$(OBJDIR) $(CDB) $(ALFRODULL_FLAGS) $< > $(OBJDIR)/${OUTPUTDIR}/${DEPDIR}/esp.d.$$$$; \
+	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $(OBJDIR)/${OUTPUTDIR}/${DEPDIR}/esp.d.$$$$ > $(OBJDIR)/${OUTPUTDIR}/${DEPDIR}/esp.d; \
+	rm -f $(OBJDIR)/${OUTPUTDIR}/${DEPDIR}/esp.d.$$$$
 	@echo -e '$(YELLOW)creating object file for $@ $(END)'
 	$(CC) $(CC_comp_flag) $(arch)  $(cuda_flags) $(h5include) -I$(includedir) -I$(OBJDIR) $(CDB) $(ALFRODULL_FLAGS) -o $@ $<
 
 
 $(OBJDIR)/${OUTPUTDIR}/%.o: %.cu $(OBJDIR)/${OUTPUTDIR}/${DEPDIR}/%.d  | $(OBJDIR)/${OUTPUTDIR}/$(DEPDIR) $(OBJDIR)/$(OUTPUTDIR) $(OBJDIR) 
 	@echo -e '$(BLUE)creating dependencies for $@ $(END)'
-	$(CC) $(cuda_dependencies_flags) $(CC_comp_flag) $(arch)  $(cuda_flags) $(h5include) $(includeflags) $(CDB) $(ALFRODULL_FLAGS) -o $@ $<
+	set -e; rm -f $(OBJDIR)/${OUTPUTDIR}/${DEPDIR}/$*.d; \
+	$(CC) $(cuda_dependencies_flags) $(CC_comp_flag) $(arch)  $(cuda_flags) $(h5include) $(includeflags) $(CDB) $(ALFRODULL_FLAGS) $< > $(OBJDIR)/${OUTPUTDIR}/${DEPDIR}/$*.d.$$$$; \
+	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $(OBJDIR)/${OUTPUTDIR}/${DEPDIR}/$*.d.$$$$ > $(OBJDIR)/${OUTPUTDIR}/${DEPDIR}/$*.d; \
+	rm -f $(OBJDIR)/${OUTPUTDIR}/${DEPDIR}/$*.d.$$$$
 	@echo -e '$(YELLOW)creating object file for $@ $(END)'
 	$(CC) $(CC_comp_flag) $(arch)  $(cuda_flags) $(h5include) $(includeflags) $(CDB) $(ALFRODULL_FLAGS) -o $@ $<
 
 # C++ files
 $(OBJDIR)/${OUTPUTDIR}/%.o: %.cpp $(OBJDIR)/${OUTPUTDIR}/${DEPDIR}/%.d  | $(OBJDIR)/${OUTPUTDIR}/$(DEPDIR) $(OBJDIR)/$(OUTPUTDIR) $(OBJDIR)
-	@echo -e '$(YELLOW)creating dependencies and object file for $@  $(END)'
-	$(CC) $(dependencies_flags) $(CC_comp_flag) $(arch) $(cpp_flags) $(h5include) $(includeflags) $(CDB) $(ALFRODULL_FLAGS) -o $@ $<
+	@echo -e '$(BLUE)creating dependencies for $@ $(END)'
+	set -e; rm -f $(OBJDIR)/${OUTPUTDIR}/${DEPDIR}/$*.d; \
+	$(CC) $(dependencies_flags) $(CC_comp_flag) $(arch)  $(cpp_flags) $(h5include) $(includeflags) $(CDB) $(ALFRODULL_FLAGS) $< > $(OBJDIR)/${OUTPUTDIR}/${DEPDIR}/$*.d.$$$$; \
+	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $(OBJDIR)/${OUTPUTDIR}/${DEPDIR}/$*.d.$$$$ > $(OBJDIR)/${OUTPUTDIR}/${DEPDIR}/$*.d; \
+	rm -f $(OBJDIR)/${OUTPUTDIR}/${DEPDIR}/$*.d.$$$$
+	@echo -e '$(YELLOW)creating object file for $@  $(END)'
+	$(CC) $(CC_comp_flag) $(arch) $(cpp_flags) $(h5include) $(includeflags) $(CDB) $(ALFRODULL_FLAGS) -o $@ $<
 
 # link *.o objects
 .PHONY: 
