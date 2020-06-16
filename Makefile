@@ -314,9 +314,6 @@ $(OBJDIR)/${OUTPUTDIR}/%.o: %.cpp $(OBJDIR)/${OUTPUTDIR}/${DEPDIR}/%.d  | $(OBJD
 	@echo -e '$(YELLOW)creating dependencies and object file for $@  $(END)'
 	$(CC) $(dependencies_flags) $(CC_comp_flag) $(arch) $(cpp_flags) $(h5include) $(includeflags) $(CDB) $(ALFRODULL_FLAGS) -o $@ $<
 
-# Target for dependencies, so that they are always defined
-$(OBJDIR)/${OUTPUTDIR}/${DEPDIR}/%.d: ;
-
 # link *.o objects
 .PHONY: 
 $(BINDIR)/${OUTPUTDIR}/esp: $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj)) $(ALFRODULL_DEP) | $(BINDIR) $(RESDIR) $(BINDIR)/$(OUTPUTDIR)  $(OBJDIR)
@@ -338,7 +335,7 @@ symlink: $(BINDIR)/$(OUTPUTDIR)/esp   | $(OBJDIR) $(GITREV_FILE)
 	ln -s $(BINDIR)/$(OUTPUTDIR)/esp -r -t bin
 
 # dependencies
-DEPFILES := $($(obj):%.o=$(OBJDIR)/$(OUTPUTDIR)/$(DEPDIR)/%.d)
+DEPFILES := $(obj:%.o=$(OBJDIR)/$(OUTPUTDIR)/$(DEPDIR)/%.d)
 $(DEPFILES):
 
 #######################################################################
