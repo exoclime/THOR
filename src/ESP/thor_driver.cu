@@ -343,11 +343,8 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                                energy_equation);
             cudaDeviceSynchronize();
 
-            BENCH_POINT_I_S(current_step,
-                            rk,
-                            "Diffusion_Op1",
-                            (),
-                            ("diffmh_d", "diffw_d", "diffrh_d", "diffpr_d", "diff_d"))
+            BENCH_POINT_I_S(current_step, rk, "Diffusion_Op1", (), ("diff_d"))
+            //  ("diffmh_d", "diffw_d", "diffrh_d", "diffpr_d", "diff_d"))
 
 
             cudaMemset(diffrh_d, 0, sizeof(double) * point_num * nv);
