@@ -423,7 +423,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                             ("diffmh_d", "diffw_d", "diffrh_d", "diffpr_d", "diff_d"))
 
 
-            Correct_Horizontal<<<NBALL, NTH>>>(diffmh_d, diffmv_d, func_r_d, point_num);
+            Correct_Horizontal<<<NBALL1, NTH>>>(diffmh_d, diffmv_d, func_r_d, point_num);
 
             cudaDeviceSynchronize();
 

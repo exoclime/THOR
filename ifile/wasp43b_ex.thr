@@ -280,8 +280,15 @@ sync_rot = true
 # (stupid Earth convention applies)
 #longp = 0
 #########################################################
+# spin up and spin down start and stop. Set to negative value to ignore and run at full power
+# spins up/down with a multiplication factor following a sine from 0 to 1 from
+# start to stop of spin up time
+#dgrt_spinup_start = -1
+#dgrt_spinup_stop = -1
+#dgrt_spindown_start = -1
+#dgrt_spindown_stop = -1
 
-
+#########################################################
 #-- Boundary layer options (core_benchmark = NoBenchmark) --------------------#
 boundary_layer = false
 

@@ -101,6 +101,11 @@ private:
     // double Csurf_config    = 1e7;   // heat capacity of surface (J K^-1 m^-2)
     bool rt1Dmode_config = false; // 1D mode=all columns are irradiated identically
 
+    int spinup_start_step = -1;
+    int spinup_stop_step  = -1;
+
+    int spindown_start_step = -1;
+    int spindown_stop_step  = -1;
     // Rad trans
     double Tstar            = 4520;  // Star effective temperature [K]
     double planet_star_dist = 0.015; // Planet-star distance [au]

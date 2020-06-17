@@ -55,10 +55,10 @@ class input_new:
             setattr(self,key,openh5[key][...])
 
         #special cases (things we test on a lot, etc)
-        self.RT = "radiative_transfer" in openh5
-        self.TSRT = "two_streams_radiative_transfer" in openh5
-        if "chemistry" in openh5:
-            self.chemistry = openh5['chemistry'][0]
+        self.RT = "radiative_transfer" in openh5 and openh5["radiative_transfer"][0] == 1.0
+        self.TSRT = "two_streams_radiative_transfer" in openh5 and openh5["two_streams_radiative_transfer"][0] == 1.0
+        self.chemistry = "chemistry" in openh5 and openh5["chemistry" ][0] == 1
+
         if not hasattr(self,'surface'):
             self.surface = False
         #some bw compatibility things
@@ -163,7 +163,10 @@ class output_new:
             outputs['F_dir_tot'] = 'f_dir_tot'
             outputs['F_net'] = 'f_net'
             outputs['Alf_Qheat'] = 'TSqheat'
-            outputs['col_mu_star'] = 'mustar'
+            # for rename transition of col_mu_star, can be removed later
+            #outputs['zenith_angles'] = 'mustar'
+            outputs['cos_zenith_angles'] = 'mustar'
+            #outputs['col_mu_star'] = 'mustar'
             outputs['F_up_TOA_spectrum'] = 'spectrum'
             outputs['lambda_wave'] = 'wavelength'
 
