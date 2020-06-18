@@ -224,34 +224,41 @@ $(info CC compile flag: $(CC_comp_flag))
 
 
 #######################################################################
-# test for alfrodull radiative transfer physics class
-ifeq ($(wildcard Alfrodull),)
-	ALFRODULL_FLAGS =
-	ALFCLASS = 
-	ALFRODULL_LINK_FLAGS =
-	ALFRODULL_TARGET = 
-else
-	ALFRODULL_FLAGS = -DHAS_ALFRODULL=1 -IAlfrodull/thor_module/inc/ -IAlfrodull/src/inc
-	ALFCLASS = Alfrodull/thor_module/inc/two_stream_radiative_transfer.h
-	ALFRODULL_LINK_FLAGS =  -LAlfrodull -lalfrodull
-	ALFRODULL_TARGET = Alfrodull/libalfrodull.a
-	ALFRODULL_DEP = Alfrodull
-	ALFRODULL_CLEAN_DEP = Alfrodull_clean
-export
-# always call submakefile for alf
-.PHONY: Alfrodull
-Alfrodull:
-	@echo -e '$(MAGENTA)Creating Alfrodull from subdir Alfrodull$(END)'
-	$(MAKE) -f Makefile -C Alfrodull
+# Test for alfrodull radiative transfer physics class
+# Defining Alfrodull build variables if present
+ifneq ($(wildcard Alfrodull/*),)
+    $(info Alfrodull directory not empty, try to build with Alfrodull)
+    ALFRODULL_FLAGS = -DHAS_ALFRODULL=1 -IAlfrodull/thor_module/inc/ -IAlfrodull/src/inc
+    ALFCLASS = Alfrodull/thor_module/inc/two_stream_radiative_transfer.h
+    ALFRODULL_LINK_FLAGS =  -LAlfrodull -lalfrodull
+    ALFRODULL_TARGET = Alfrodull/libalfrodull.a
+    ALFRODULL_DEP = Alfrodull
+    ALFRODULL_CLEAN_DEP = Alfrodull_clean
 
-.PHONY: Alfrodull_clean
-Alfrodull_clean:
-	@echo -e '$(MAGENTA)Cleaning Alfrodull$(END)'
-	$(MAKE) -f Makefile -C Alfrodull clean
+    export
+
+    # always call submakefile for alf
+    .PHONY: Alfrodull
+    Alfrodull:
+		@echo -e '$(MAGENTA)Creating Alfrodull from subdir Alfrodull$(END)'
+		$(MAKE) -f Makefile -C Alfrodull
+
+    .PHONY: Alfrodull_clean
+    Alfrodull_clean:
+		@echo -e '$(MAGENTA)Cleaning Alfrodull$(END)'
+		$(MAKE) -f Makefile -C Alfrodull clean
+else
+    $(info No Alfrodull directory or empty directory, building without Alfrodull)
+    ALFRODULL_FLAGS =
+    ALFCLASS = 
+    ALFRODULL_LINK_FLAGS =
+    ALFRODULL_TARGET =
+    ALFRODULL_DEP =
+    ALFRODULL_CLEAN_DEP =
 endif 
 
 
-$(info alf flags: $(ALFRODULL_FLAGS))
+$(info alf flags: $(ALFRODULL_FLAGS) deps $(ALFRODULL_CLEAN_DEP))
 
 #######################################################################
 
@@ -381,7 +388,7 @@ $(BINDIR)/$(TESTDIR)/reduction_add_test:  $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(
 
 #######################################################################
 # Cleanup
-.phony: clean,ar
+.PHONY: clean,ar
 clean: $(ALFRODULL_CLEAN_DEP)
 	@echo -e '$(CYAN)clean up binaries $(END)'
 	-$(RM) $(BINDIR)/debug/esp
