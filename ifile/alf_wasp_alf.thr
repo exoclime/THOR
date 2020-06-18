@@ -353,7 +353,8 @@ Alf_compute_every_nstep = 1
 #########################################################
 # spin up and spin down start and stop. Set to negative value to ignore and run at full power
 # spins up/down with a multiplication factor following a sine from 0 to 1 from
-# start to stop of spin up time
+# start to stop of spin up time and a sine from 1 to 0 for spin down
+# can be used in parallel with double grey radiative transfer above for faster spinup
 Alf_spinup_start = 10
 Alf_spinup_stop = 20
 Alf_spindown_start = -1
