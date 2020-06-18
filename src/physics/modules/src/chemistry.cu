@@ -506,9 +506,12 @@ bool chemistry::phy_loop(ESP &                  esp,
                          const SimulationSetup &sim,
                          int                    nstep, // Step number
                          double                 time_step) {
+
+    USE_BENCHMARK()
     const int NTH = 256;
     dim3      NBTR((esp.point_num / NTH) + 1, esp.nv, ntr);
 
+    BENCH_POINT_I(nstep, "phy_chem_begin", (), ("tracer_d"))
     //
     ////////////////////////
     // Simple chemistry
@@ -553,6 +556,7 @@ bool chemistry::phy_loop(ESP &                  esp,
                                            ntr,
                                            esp.point_num);
 
+    BENCH_POINT_I(nstep, "phy_chem_end", (), ("tracer_d"))
 
     return true;
 }
