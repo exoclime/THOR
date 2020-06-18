@@ -74,8 +74,8 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
     const int NTH = 256;
 
     //  Specify the block sizes.
-    dim3 NB((point_num / NTH) + 1, nv, 1);
-    dim3 NBRT((point_num / NTH) + 1, 1, 1);
+    dim3      NB((point_num / NTH) + 1, nv, 1);
+    dim3      NBRT((point_num / NTH) + 1, 1, 1);
 
     cudaMemset(profx_Qheat_d, 0, sizeof(double) * point_num * nv);
 
@@ -181,7 +181,7 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
 
 
     //  Computes the initial temperature.
-    bool calcT = true;
+    bool      calcT = true;
     if (ultrahot_thermo == VARY_R_CP) {
         check_h = false;
         cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
