@@ -253,49 +253,57 @@ bool chemistry::initial_conditions(const ESP &esp, const SimulationSetup &sim, s
         P_che_h[j] = log(P_che_h[j]);
     fclose(infile1);
 
+    bool returnstatus = true;
 
-    for (int lev = 0; lev < esp.nv; lev++) {
-        for (int i = 0; i < esp.point_num; i++) {
-            // CH4
-            tracer_h[i * esp.nv * ntr + lev * ntr + 0] =
-                Compute_tracer_host(ch4eq_h,
-                                    P_che_h,
-                                    T_che_h,
-                                    esp.temperature_h[i * esp.nv + lev],
-                                    esp.pressure_h[i * esp.nv + lev])
-                * esp.Rho_h[i * esp.nv + lev];
-            // CO
-            tracer_h[i * esp.nv * ntr + lev * ntr + 1] =
-                Compute_tracer_host(coeq_h,
-                                    P_che_h,
-                                    T_che_h,
-                                    esp.temperature_h[i * esp.nv + lev],
-                                    esp.pressure_h[i * esp.nv + lev])
-                * esp.Rho_h[i * esp.nv + lev];
-            // H2O
-            tracer_h[i * esp.nv * ntr + lev * ntr + 2] =
-                Compute_tracer_host(h2oeq_h,
-                                    P_che_h,
-                                    T_che_h,
-                                    esp.temperature_h[i * esp.nv + lev],
-                                    esp.pressure_h[i * esp.nv + lev])
-                * esp.Rho_h[i * esp.nv + lev];
-            // CO2
-            tracer_h[i * esp.nv * ntr + lev * ntr + 3] =
-                Compute_tracer_host(co2eq_h,
-                                    P_che_h,
-                                    T_che_h,
-                                    esp.temperature_h[i * esp.nv + lev],
-                                    esp.pressure_h[i * esp.nv + lev])
-                * esp.Rho_h[i * esp.nv + lev];
-            // NH3
-            tracer_h[i * esp.nv * ntr + lev * ntr + 4] =
-                Compute_tracer_host(nh3eq_h,
-                                    P_che_h,
-                                    T_che_h,
-                                    esp.temperature_h[i * esp.nv + lev],
-                                    esp.pressure_h[i * esp.nv + lev])
-                * esp.Rho_h[i * esp.nv + lev];
+    if (s != nullptr) {
+        // load initialisation data from storage s
+        returnstatus &= (*s).read_table_to_ptr("/tracer", tracer_h, esp.nv * esp.point_num * ntr);
+    }
+    else {
+        //initialize from equilibrium (VULCAN) values
+        for (int lev = 0; lev < esp.nv; lev++) {
+            for (int i = 0; i < esp.point_num; i++) {
+                // CH4
+                tracer_h[i * esp.nv * ntr + lev * ntr + 0] =
+                    Compute_tracer_host(ch4eq_h,
+                                        P_che_h,
+                                        T_che_h,
+                                        esp.temperature_h[i * esp.nv + lev],
+                                        esp.pressure_h[i * esp.nv + lev])
+                    * esp.Rho_h[i * esp.nv + lev];
+                // CO
+                tracer_h[i * esp.nv * ntr + lev * ntr + 1] =
+                    Compute_tracer_host(coeq_h,
+                                        P_che_h,
+                                        T_che_h,
+                                        esp.temperature_h[i * esp.nv + lev],
+                                        esp.pressure_h[i * esp.nv + lev])
+                    * esp.Rho_h[i * esp.nv + lev];
+                // H2O
+                tracer_h[i * esp.nv * ntr + lev * ntr + 2] =
+                    Compute_tracer_host(h2oeq_h,
+                                        P_che_h,
+                                        T_che_h,
+                                        esp.temperature_h[i * esp.nv + lev],
+                                        esp.pressure_h[i * esp.nv + lev])
+                    * esp.Rho_h[i * esp.nv + lev];
+                // CO2
+                tracer_h[i * esp.nv * ntr + lev * ntr + 3] =
+                    Compute_tracer_host(co2eq_h,
+                                        P_che_h,
+                                        T_che_h,
+                                        esp.temperature_h[i * esp.nv + lev],
+                                        esp.pressure_h[i * esp.nv + lev])
+                    * esp.Rho_h[i * esp.nv + lev];
+                // NH3
+                tracer_h[i * esp.nv * ntr + lev * ntr + 4] =
+                    Compute_tracer_host(nh3eq_h,
+                                        P_che_h,
+                                        T_che_h,
+                                        esp.temperature_h[i * esp.nv + lev],
+                                        esp.pressure_h[i * esp.nv + lev])
+                    * esp.Rho_h[i * esp.nv + lev];
+            }
         }
     }
 
@@ -321,7 +329,7 @@ bool chemistry::initial_conditions(const ESP &esp, const SimulationSetup &sim, s
     cudaMemset(tracerk_d, 0, sizeof(double) * esp.nv * esp.point_num * ntr);
 
 
-    return true;
+    return returnstatus;
 }
 
 bool chemistry::dyn_core_loop_init(const ESP &esp) {
@@ -498,9 +506,12 @@ bool chemistry::phy_loop(ESP &                  esp,
                          const SimulationSetup &sim,
                          int                    nstep, // Step number
                          double                 time_step) {
+
+    USE_BENCHMARK()
     const int NTH = 256;
     dim3      NBTR((esp.point_num / NTH) + 1, esp.nv, ntr);
 
+    BENCH_POINT_I(nstep, "phy_chem_begin", (), ("tracer_d"))
     //
     ////////////////////////
     // Simple chemistry
@@ -545,6 +556,7 @@ bool chemistry::phy_loop(ESP &                  esp,
                                            ntr,
                                            esp.point_num);
 
+    BENCH_POINT_I(nstep, "phy_chem_end", (), ("tracer_d"))
 
     return true;
 }
