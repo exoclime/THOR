@@ -49,6 +49,10 @@
 
 #include "debug_helpers.h"
 
+#include "binary_test.h"
+#include "debug.h"
+
+
 // ***************************************************************************************************
 //** Kernels doing the real computation work
 
@@ -222,6 +226,22 @@ bool Insolation::initialise_memory(const ESP&               esp,
     if (enabled) {
         cos_zenith_angles.allocate(esp.point_num);
         cos_zenith_angles.zero();
+
+        USE_BENCHMARK();
+
+#ifdef BENCHMARKING
+        std::map<string, output_def> debug_arrays = {
+            {"coszs",
+             {cos_zenith_angles.ptr_ref(),
+              (int)cos_zenith_angles.get_size(),
+              "coszs",
+              "cz",
+              true,
+              dummy}},
+        };
+
+        BENCH_POINT_REGISTER_PHY_VARS(debug_arrays, (), ());
+#endif // BENCHMARKING
     }
 
     return true;
@@ -270,6 +290,8 @@ bool Insolation::phy_loop(ESP&                   esp,
 
     const int num_blocks = 256;
     if (enabled) {
+        USE_BENCHMARK();
+
         //  update global insolation properties if necessary
         if (sync_rot) {
             if (ecc > 1e-10) {
@@ -294,6 +316,8 @@ bool Insolation::phy_loop(ESP&                   esp,
             esp.point_num);
         cudaDeviceSynchronize();
         cuda_check_status_or_exit(__FILE__, __LINE__);
+
+        BENCH_POINT_I_PHY(nstep, "Insolation", (), ("coszs"));
     }
 
 
