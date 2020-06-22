@@ -89,7 +89,7 @@ public:
 
     // fetch data to host and get pointer to data
     std::shared_ptr<double[]> get_host_cos_zenith_angles() {
-        return cos_zenith_angles.get_host_data_ptr();
+        return cos_zenith_angles.get_host_data();
     }
 
     double get_r_orb() {

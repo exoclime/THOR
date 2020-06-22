@@ -343,10 +343,10 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
     }
 
 
-    BENCH_POINT_I_PHY(current_step,
-                      "phy_core_benchmark",
-                      (),
-                      ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"))
+    BENCH_POINT_I(current_step,
+                  "phy_core_benchmark",
+                  (),
+                  ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"))
 
     // here is where we call all "external" physics modules
     if (phy_modules_execute) {
@@ -361,10 +361,10 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
                              timestep);    // Time-step [s]
     }
 
-    BENCH_POINT_I_PHY(current_step,
-                      "phy_module",
-                      (),
-                      ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d", "Qheat"))
+    BENCH_POINT_I(current_step,
+                  "phy_module",
+                  (),
+                  ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d", "Qheat"))
     //  Computes the new pressures.
     cudaDeviceSynchronize();
     Compute_pressure<<<NB, NTH>>>(pressure_d, temperature_d, Rho_d, Rd_d, point_num);

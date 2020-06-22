@@ -106,7 +106,7 @@ args.initial_file = [59]
 args.last_file = [60]
 args.vcoord = ['height']  #check height plotting/files
 args.lev = [1e6]
-args.pview = ['uver','ulonver','Tulev','qheat']
+args.pview = ['uver','ulonver','Tulev','qheat','tracer']
 plots = mph.make_plot(args)
 for p in plots:   # move to destination folder for easy viewing
     moveit(p,prefix,fig_destination)
