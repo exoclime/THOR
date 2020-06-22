@@ -4,6 +4,8 @@ import numpy as np
 import sys
 import traceback
 
+import math
+
 class mjol_args:
     # make_plot args, populate with defaults
     def __init__(self, file):
@@ -24,6 +26,7 @@ class mjol_args:
         self.vcoord = ['pressure']
         self.pgrid_ref = ['auto']
         self.clevels = [40]
+        self.band = None
 
 def call_plot(name, func, *args, **kwargs):
     try:
@@ -51,7 +54,7 @@ def make_plot(args, save=True, axis=None):
              'DGfutprof', 'DGfdtprof', 'mustar', 'DGfuptot', 'DGfdowntot', 'DGfnet', 'DGqheat',  # alf stuff
              'TSfutprof', 'TSfdtprof', 'mustar', 'TSfuptot', 'TSfdowntot', 'TSfnet', 'TSqheat',
              'DGqheatprof', 'TSqheatprof', 'qheatprof', 'TSfdirprof',
-             'spectrum',
+             'w0prof', 'g0prof', 'spectrum',
              'phase','all']
 
     rg_needed = ['Tver', 'Tlonver', 'uver', 'ulonver', 'vver', 'wver', 'wlonver', 'Tulev', 'PTver', 'PTlonver', 'ulev', 'PVver', 'PVlev',
@@ -633,6 +636,42 @@ def make_plot(args, save=True, axis=None):
         z = {'value': qheat, 'label': r'Q heat (W m$^{-2}$)', 'name': 'qheatprof'}
         pfile = call_plot('qheatprof',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
         plots_created.append(pfile)
+
+    if ('w0prof' in pview or 'all' in pview) and input.TSRT: # and input.has_w0_g0:
+        output.load_reshape(grid,['w0_band'])
+        num_bands = output.w0_band.shape[2]
+
+        num_plot_band_y = num_bands//4
+        if num_plot_band_y > 4:
+            num_plot_band_y = 4
+        num_plots = num_plot_band_y*4
+        stride = num_bands//num_plots
+        all_ax = axis[0].subplots(4, num_plot_band_y)
+        axes = [ax for sax in all_ax for ax in sax]
+        for i in range(num_plots):
+            
+            w0 =  output.w0_band[:,:,i*stride,:]
+            z = {'value': w0, 'label': f"w0 - band {i*stride}", 'name': 'w0'}
+            pfile = call_plot('w0',ham.profile,input, grid, output, z, stride=20, save=save, axis=(axis[0], axes[i]))
+            plots_created.append(pfile)
+
+    if ('g0prof' in pview or 'all' in pview) and input.TSRT: # and input.has_w0_g0:
+        output.load_reshape(grid,['g0_band'])
+        num_bands = output.g0_band.shape[2]
+        
+        num_plot_band_y = num_bands//4
+        if num_plot_band_y > 4:
+            num_plot_band_y = 4
+        num_plots = num_plot_band_y*4
+        stride = num_bands//num_plots
+        all_ax = axis[0].subplots(4, num_plot_band_y)
+        axes = [ax for sax in all_ax for ax in sax]
+        for i in range(num_plots):
+            
+            g0 =  output.g0_band[:,:,i*stride,:]
+            z = {'value': g0, 'label': f"g0 - band {i*stride}", 'name': 'g0'}
+            pfile = call_plot('g0',ham.profile,input, grid, output, z, stride=20, save=save, axis=(axis[0], axes[i]))
+            plots_created.append(pfile)
     # --- Global diagnostics -----------------------------------
     if 'cons' in pview:  # RD: needs some work!
         if args.split_layer[0] == 'no_split':

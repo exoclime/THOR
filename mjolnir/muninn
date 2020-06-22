@@ -70,8 +70,8 @@ config_dict = dict(
     data_path=str(base_folder),
     mjolnir_path=str(notebook_folder),
     output_path="./",
-    FIGSIZE_x=10,
-    FIGSIZE_y=7
+    FIGSIZE_x=15,
+    FIGSIZE_y=12
 )
 
 params = parameter_values(orig_parameters,
