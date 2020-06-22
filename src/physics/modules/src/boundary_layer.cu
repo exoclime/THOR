@@ -839,6 +839,7 @@ __global__ void Heat_Diff_Impl(double *pt_d,
         //compute new surface temperature
         pt_surf_d[id]  = (dpr_tmp[id * nv + 0] - cpr_tmp[id * nv + 0] * pt_d[id * nv + 1]);
         Tsurface_d[id] = pt_surf_d[id] * pow(p_surf_d[id] / P_Ref, kappa);
+        // printf("%f\n", Tsurface_d[id]);
         // if (id == 0) {
         //     printf("%f\n", Mh_d[id * nv * 3 + 0]);
         // }
@@ -897,7 +898,8 @@ __global__ void CalcRiB(double *pressure_d,
                     + extrap_surf * (pressure_d[id * nv + lev] - pressure_d[id * nv + lev + 1]);
                 p_surf_d[id] = p_surf;
 
-                pt_surf = Tsurface_d[id] * pow(p_surf / P_Ref, -kappa);
+                pt_surf       = Tsurface_d[id] * pow(p_surf / P_Ref, -kappa);
+                pt_surf_d[id] = pt_surf;
 
                 // calculate pt and horizontal velocity of layer
                 pt_layer = pow(P_Ref, kappa) * pow(pressure_d[id * nv + lev], 1.0 - kappa)
