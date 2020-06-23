@@ -48,29 +48,31 @@
 
 #include "debug.h"
 
-__global__ void Vertical_Eq(double *Whs_d,
-                            double *Ws_d,
-                            double *pressures_d,
-                            double *h_d,
-                            double *hh_d,
-                            double *Rhos_d,
-                            double *gtil_d,
-                            double *gtilh_d,
-                            double *Sp_d,
-                            double *Sd_d,
-                            double *Srh_d,
-                            double *Cp_d,
-                            double *Rd_d,
-                            double  deltat,
-                            double  Gravit,
-                            double *Altitude_d,
-                            double *Altitudeh_d,
-                            double  A,
-                            bool    NonHydro,
-                            int     num,
-                            int     nv,
-                            int     nvi,
-                            bool    DeepModel) {
+__global__ void Vertical_Eq(double *      Whs_d,
+                            double *      Ws_d,
+                            double *      pressures_d,
+                            double *      h_d,
+                            double *      hh_d,
+                            double *      Rhos_d,
+                            double *      gtil_d,
+                            double *      gtilh_d,
+                            double *      Sp_d,
+                            double *      Sd_d,
+                            double *      Srh_d,
+                            double *      Cp_d,
+                            double *      Rd_d,
+                            double        deltat,
+                            double        Gravit,
+                            double *      Altitude_d,
+                            double *      Altitudeh_d,
+                            double        A,
+                            bool          NonHydro,
+                            int           num,
+                            int           nv,
+                            int           nvi,
+                            bool          DeepModel,
+                            unsigned int *diagnostics_flag,
+                            diag_data *   diagnostics_data) {
 
     //
     //  Integration-> y'' = c3 y' + c2 y + c1
@@ -89,10 +91,10 @@ __global__ void Vertical_Eq(double *Whs_d,
     extern __shared__ double mem_shared[];
 
 
-    // Use thomas algorithm to solve vertical equations. 
+    // Use thomas algorithm to solve vertical equations.
     // This computes the aa, bb, cc, dd values in the loop.
     // cc and dd are stored, and UPDATED by the "modify in place" thomas algorithm.
-    // To avoid storing aa and bb, they are recomputed on the fly. 
+    // To avoid storing aa and bb, they are recomputed on the fly.
     double *cc = (double *)mem_shared;                    // <- thomas alg vars
     double *dd = (double *)&mem_shared[blockDim.x * nvi]; // <- thomas alg vars
 
@@ -118,7 +120,7 @@ __global__ void Vertical_Eq(double *Whs_d,
     double tor3;
 
     // For thomas algorithm to be stable, |aa| + |cc| < |bb|, the matrix must be
-    // diagonaly dominant and symetric positive definite 
+    // diagonaly dominant and symetric positive definite
 
     if (id < num) {
         for (int lev = 1; lev < nv; lev++) {
@@ -334,23 +336,33 @@ __global__ void Vertical_Eq(double *Whs_d,
                 }
             } // End of if (DeepModel) physics computation
 
-#ifdef CHECK_THOR_VERTICAL_INT_THOMAS_DIAG_DOM
+#ifdef DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_DIAG_DOM
             {
                 // check that matrix is diagonaly dominant
                 double cc_s = cc[threadIdx.x * nvi + lev];
+                // reset current value
+                diagnostics_data[threadIdx.x * nvi + lev].flag = 0;
+                diagnostics_data[threadIdx.x * nvi + lev].data = make_double4(0.0, 0.0, 0.0, 0.0);
                 if (!(fabs(bb) >= THOMAS_DIAG_DOM_FACTOR * (fabs(aa) + fabs(cc_s)))) {
-                    double sum = cc_s + bb + aa;
-                    printf("Thomas Diagonal Dominance Check failed at (grid_idx: %d, level: %d ): "
-                           "a: %g, b: %g, c: %g. sum: %g \n",
-                           id,
-                           lev,
-                           aa,
-                           bb,
-                           cc_s,
-                           sum);
+                    double sum                                       = cc_s + bb + aa;
+                    diagnostics_data[threadIdx.x * nvi + lev].flag   = THOMAS_NOT_DD;
+                    diagnostics_data[threadIdx.x * nvi + lev].data.x = aa;
+                    diagnostics_data[threadIdx.x * nvi + lev].data.y = bb;
+                    diagnostics_data[threadIdx.x * nvi + lev].data.z = cc_s;
+                    diagnostics_data[threadIdx.x * nvi + lev].data.w = sum;
+
+                    // printf("Thomas Diagonal Dominance Check failed at (grid_idx: %d, level: %d ): "
+                    //        "a: %g, b: %g, c: %g. sum: %g \n",
+                    //        id,
+                    //        lev,
+                    //        aa,
+                    //        bb,
+                    //        cc_s,
+                    //        sum);
                 }
             }
-#endif // CHECK_THOR_VERTICAL_INT_THOMAS_DIAG_DOM
+#endif // DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_DIAG_DOM
+
             // Compute dd coefficient of thomas algorithm
             dd[threadIdx.x * nvi + lev] = -C0;
             // "modify in place" computation of thomas algorithm
@@ -366,7 +378,7 @@ __global__ void Vertical_Eq(double *Whs_d,
                     (dd[threadIdx.x * nvi + lev] - dd[threadIdx.x * nvi + lev - 1] * aa) * t;
             }
         } //end of loop over levels
-	// end of thomass algorithm
+          // end of thomass algorithm
         Whs_d[id * nvi + nv]     = 0.0;
         Whs_d[id * nvi]          = 0.0;
         Whs_d[id * nvi + nv - 1] = dd[threadIdx.x * nvi + nv - 1];

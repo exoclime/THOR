@@ -64,9 +64,10 @@
 #include "phy/ultrahot_thermo.h"
 #include "reduction_add.h"
 
+#include "diagnostics.h"
 #include "phy_modules.h"
 
-__host__ void ESP::Thor(const SimulationSetup& sim) {
+__host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
     const int NTH = 256;
 
     // Vertical Eq only works on vertical stack of data, can run independently, only uses shared
@@ -975,6 +976,8 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
 
 
             cudaDeviceSynchronize();
+
+
             // Updates: Sp_d, Sd_d
             Prepare_Implicit_Vertical_Poles<6><<<2, 1>>>(Mhs_d,
                                                          h_d,
@@ -996,33 +999,39 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                 current_step, rk, ns, "Prepare_Implicit_Vertical", (), ("Sp_d", "Sd_d"))
 
             cudaDeviceSynchronize();
+#ifdef DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_DIAG_DOM
+            diag.reset_flag();
+#endif // DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_DIAG_DOM
 
             // Updates: Whs_d, Ws_d
             Vertical_Eq<<<(point_num / num_th_vertical_eq) + 1,
                           num_th_vertical_eq,
-                          2 * num_th_vertical_eq * nvi * sizeof(double)>>>(Whs_d,
-                                                                           Ws_d,
-                                                                           pressures_d,
-                                                                           h_d,
-                                                                           hh_d,
-                                                                           Rhos_d,
-                                                                           gtil_d,
-                                                                           gtilh_d,
-                                                                           Sp_d,
-                                                                           Sd_d,
-                                                                           SlowWh_d,
-                                                                           Cp_d,
-                                                                           Rd_d,
-                                                                           times,
-                                                                           sim.Gravit,
-                                                                           Altitude_d,
-                                                                           Altitudeh_d,
-                                                                           sim.A,
-                                                                           sim.NonHydro,
-                                                                           point_num,
-                                                                           nv,
-                                                                           nvi,
-                                                                           sim.DeepModel);
+                          2 * num_th_vertical_eq * nvi * sizeof(double)>>>(
+                Whs_d,
+                Ws_d,
+                pressures_d,
+                h_d,
+                hh_d,
+                Rhos_d,
+                gtil_d,
+                gtilh_d,
+                Sp_d,
+                Sd_d,
+                SlowWh_d,
+                Cp_d,
+                Rd_d,
+                times,
+                sim.Gravit,
+                Altitude_d,
+                Altitudeh_d,
+                sim.A,
+                sim.NonHydro,
+                point_num,
+                nv,
+                nvi,
+                sim.DeepModel,
+                *diag.diagnostics_global_flag,
+                *diag.diagnostics);
 
             //          Pressure and density equations.
             cudaDeviceSynchronize();
@@ -1032,6 +1041,14 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                  "Vertical_Eq",
                                  (),
                                  ("Whs_d", "Ws_d", "pressures_d", "h_d", "hh_d", "Rhos_d"));
+
+#ifdef DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_DIAG_DOM
+            if (diag.check_flag()) {
+                diag.dump_data("vertical_eq", current_step, rk, ns, *this, point_num, nv);
+                // warn, but do not quit.
+                log::printf("Non diagonaly dominant matrix for thomas algorithm in Vertical_Eq\n");
+            }
+#endif // DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_DIAG_DOM
 
             cudaError_t err = cudaGetLastError();
 
@@ -1056,6 +1073,9 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                  (),
                                  ("Whs_d", "Ws_d", "pressures_d", "h_d", "hh_d", "Rhos_d"))
 
+#if defined(DIAG_CHECK_DENSITY_PRESSURE_EQ_AUX) || defined(DIAG_CHECK_DENSITY_PRESSURE_EQ_P_NAN)
+            diag.reset_flag();
+#endif
             // Updates: pressures_d, Rhos_d
             Density_Pressure_Eqs<LN, LN><<<NB, NT>>>(pressures_d,
                                                      pressurek_d,
@@ -1090,9 +1110,13 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                                      maps_d,
                                                      nl_region,
                                                      sim.DeepModel,
-                                                     energy_equation);
+                                                     energy_equation,
+                                                     *diag.diagnostics_global_flag,
+                                                     *diag.diagnostics);
+
 
             cudaDeviceSynchronize();
+
             BENCH_POINT_I_SS(
                 current_step, rk, ns, "Density_Pressure_Eqs", (), ("pressures_d", "Rhos_d"))
             // Updates: pressures_d, Rhos_d
@@ -1130,10 +1154,20 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                                     point_num,
                                                     nv,
                                                     sim.DeepModel,
-                                                    energy_equation);
+                                                    energy_equation,
+                                                    *diag.diagnostics_global_flag,
+                                                    *diag.diagnostics);
 
             BENCH_POINT_I_SS(
                 current_step, rk, ns, "Density_Pressure_Eqs_Poles", (), ("pressures_d", "Rhos_d"))
+
+#if defined(DIAG_CHECK_DENSITY_PRESSURE_EQ_AUX) || defined(DIAG_CHECK_DENSITY_PRESSURE_EQ_P_NAN)
+            if (diag.check_flag()) {
+                diag.dump_data("density_pressure_eq", current_step, rk, ns, *this, point_num, nv);
+                log::printf("NaN value or Negative AUX in Density_Pressure_Eqs, EXITING\n");
+                exit(EXIT_FAILURE);
+            }
+#endif
         }
         BENCH_POINT_I_S_PHY(
             current_step,

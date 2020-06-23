@@ -72,6 +72,7 @@
 #include "phy_modules.h"
 
 #include "debug.h"
+#include "diagnostics.h"
 #ifdef BENCHMARKING
 #    warning "Compiling with benchmarktest enabled"
 #endif
@@ -840,7 +841,6 @@ int main(int argc, char** argv) {
         logwriter.prepare_diagnostics_file(continue_sim);
     }
 
-
     //*****************************************************************
     //  Set the GPU device.
     cudaError_t error;
@@ -982,7 +982,6 @@ int main(int argc, char** argv) {
           ultrahot_heating,
           thermo_equation,
           insolation);
-
 
     USE_BENCHMARK();
 
@@ -1181,6 +1180,9 @@ int main(int argc, char** argv) {
         step_idx += 1;
     }
 
+    // Create diagnostics tool
+    kernel_diagnostics diag(X);
+
     // *********************************************************************************************
     //  Starting model Integration.
     log::printf(" Starting the model integration.\n\n");
@@ -1203,12 +1205,12 @@ int main(int argc, char** argv) {
 
         //
         //     Physical Core Integration (ProfX)
-        X.ProfX(sim, n_out);
+        X.ProfX(sim, n_out, diag);
 
         if (!sim.gcm_off) {
             //
             //        Dynamical Core Integration (THOR)
-            X.Thor(sim); // simulationt parameters
+            X.Thor(sim, diag); // simulationt parameters
         }
 
         //
