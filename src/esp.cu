@@ -729,6 +729,8 @@ int main(int argc, char** argv) {
     log::printf_logonly(" Compiled on %s at %s.\n", __DATE__, __TIME__);
 
     log::printf_logonly(" build level: %s\n\n", BUILD_LEVEL);
+    log::printf_logonly(" git branch: %s\n", GIT_BRANCH_RAW);
+    log::printf_logonly(" git hash: %s\n", GIT_HASH_RAW);
 
 
     // Data logger
