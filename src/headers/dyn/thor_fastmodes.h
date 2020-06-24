@@ -335,12 +335,6 @@ __global__ void Density_Pressure_Eqs(double *      pressure_d,
 
     Cv = Cp_d[id * nv + lev] - Rd_d[id * nv + lev];
 
-#ifdef DIAGNOSTICS_LEVEL1
-    // clear diagnostics memory
-    diagnostics_data[id * nv + lev].flag = 0;
-    diagnostics_data[id * nv + lev].data = make_double4(0.0, 0.0, 0.0, 0.0);
-#endif // DIAGNOSTICS_LEVEL1
-
     // Load shared memory
 
     // horizontal momentum deviation
@@ -531,6 +525,14 @@ __global__ void Density_Pressure_Eqs(double *      pressure_d,
         // negative aux can get wrongly negative here and cause NaN in fractional power computation.
         // r: current density
         aux += pt * r;
+
+#if defined(DIAG_CHECK_DENSITY_PRESSURE_EQ_AUX) || defined(DIAG_CHECK_DENSITY_PRESSURE_EQ_AUX_P_NAN)
+        // clear diagnostics memory
+        diagnostics_data[id * nv + lev].flag = 0;
+        diagnostics_data[id * nv + lev].data = make_double4(0.0, 0.0, 0.0, 0.0);
+#endif // defined(DIAG_CHECK_DENSITY_PRESSURE_EQ_AUX) || defined(DIAG_CHECK_DENSITY_PRESSURE_EQ_AUX_P_NAN)
+
+
 #ifdef DIAG_CHECK_DENSITY_PRESSURE_EQ_AUX
         if (aux < 0.0) {
             atomicOr(diagnostics_flag, NEGATIVE_VALUE);
