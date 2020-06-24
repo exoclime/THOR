@@ -56,7 +56,6 @@ class input_new:
 
         #special cases (things we test on a lot, etc)
         self.RT = "radiative_transfer" in openh5 and openh5["radiative_transfer"][0] == 1.0
-        self.RT = False
         self.TSRT = "two_streams_radiative_transfer" in openh5 and openh5["two_streams_radiative_transfer"][0] == 1.0
         if self.TSRT:
             if 'alf_w0_g0_per_band' in openh5 and openh5['alf_w0_g0_per_band'][0] == 1.0:
