@@ -999,7 +999,8 @@ __host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
                 current_step, rk, ns, "Prepare_Implicit_Vertical", (), ("Sp_d", "Sd_d"))
 
             cudaDeviceSynchronize();
-#ifdef DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_DIAG_DOM
+#if defined(DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_DIAG_DOM) \
+    || defined(DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_RESULT)
             diag.reset_flag();
 #endif // DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_DIAG_DOM
 
@@ -1042,11 +1043,17 @@ __host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
                                  (),
                                  ("Whs_d", "Ws_d", "pressures_d", "h_d", "hh_d", "Rhos_d"));
 
-#ifdef DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_DIAG_DOM
+#if defined(DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_DIAG_DOM) \
+    || defined(DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_RESULT)
             if (diag.check_flag()) {
-                diag.dump_data("vertical_eq", current_step, rk, ns, *this, point_num, nv);
+                diag.dump_data("vertical_eq", current_step, rk, ns, *this, point_num, nvi);
                 // warn, but do not quit.
-                log::printf("Non diagonaly dominant matrix for thomas algorithm in Vertical_Eq\n");
+                unsigned int flag = diag.get_flag();
+                if (flag == THOMAS_NOT_DD)
+                    log::printf(
+                        "Non diagonaly dominant matrix for thomas algorithm in Vertical_Eq\n");
+                if (flag == THOMAS_BAD_SOLUTION)
+                    log::printf("Bad thomas algorithm solution in Vertical_Eq\n");
             }
 #endif // DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_DIAG_DOM
 

@@ -35,12 +35,13 @@ public:
     void                             reset_flag();
     void                             reset();
 
-    bool check_flag();
-    void dump_data(string name,
-                   int    iteration,
-                   int    subiteration,
-                   int    subsubiteration,
-                   ESP&   esp,
-                   int    grid_num_points,
-                   int    vertical_num_points);
+    bool         check_flag();
+    unsigned int get_flag();
+    void         dump_data(string name,
+                           int    iteration,
+                           int    subiteration,
+                           int    subsubiteration,
+                           ESP&   esp,
+                           int    grid_num_points,
+                           int    vertical_num_points);
 };

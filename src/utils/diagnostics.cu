@@ -23,6 +23,12 @@ bool kernel_diagnostics::check_flag() {
     return global_flag_h[0] != 0;
 }
 
+unsigned int kernel_diagnostics::get_flag() {
+    std::shared_ptr<unsigned int[]> global_flag_h = diagnostics_global_flag.get_host_data();
+    return global_flag_h[0];
+}
+
+
 // Dump data for grid, following grid config passed as argument
 void kernel_diagnostics::dump_data(string name,
                                    int    iteration,
@@ -64,8 +70,15 @@ void kernel_diagnostics::dump_data(string name,
                             diag_data_h[idx].data.y,
                             diag_data_h[idx].data.z,
                             diag_data_h[idx].data.w);
-                if ((diag_data_h[idx].flag & THOMAS_BAD_SOLUTION) != 0)
-                    fprintf(pFile, "THOMAS_BAD_SOLUTION - idx: %d - lev: %d\n", p, lev);
+                if ((diag_data_h[idx].flag & THOMAS_BAD_SOLUTION) != 0) {
+                    fprintf(
+                        pFile,
+                        "THOMAS_BAD_SOLUTION - idx: %d - lev: %d, DDvalue: %g, DDcomputed: %g \n",
+                        p,
+                        lev,
+                        diag_data_h[idx].data.x,
+                        diag_data_h[idx].data.y);
+                }
             }
         }
     }

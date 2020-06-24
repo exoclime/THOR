@@ -98,7 +98,6 @@ __global__ void Vertical_Eq(double *      Whs_d,
     double *cc = (double *)mem_shared;                    // <- thomas alg vars
     double *dd = (double *)&mem_shared[blockDim.x * nvi]; // <- thomas alg vars
 
-
     // double Cv = Cp - Rd;
     double C0;
     double xi, xim, xip;
@@ -123,6 +122,26 @@ __global__ void Vertical_Eq(double *      Whs_d,
     // diagonaly dominant and symetric positive definite
 
     if (id < num) {
+
+#ifdef DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_RESULT
+        // diagnosis check of thomas computation result
+        // redo the matrix operation in the reverse order
+        // here, we store the original matrix value
+        // inefficient, do not use in production, only for debug.
+        double *aa_check = new double[nvi];
+        double *bb_check = new double[nvi];
+        double *cc_check = new double[nvi];
+        double *dd_check = new double[nvi];
+#endif // DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_RESULT
+
+#if defined(DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_DIAG_DOM) \
+    || defined(DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_RESULT)
+        // those seem to not be used, they are on boundaries
+        diagnostics_data[threadIdx.x * nvi + 0].flag  = 0;
+        diagnostics_data[threadIdx.x * nvi + nv].data = make_double4(0.0, 0.0, 0.0, 0.0);
+#endif // defined(DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_DIAG_DOM) || defined(DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_RESULT)
+
+
         for (int lev = 1; lev < nv; lev++) {
             if (lev == 1) { // Fetch data for first layer
                 altht = Altitudeh_d[lev + 1];
@@ -335,36 +354,46 @@ __global__ void Vertical_Eq(double *      Whs_d,
                             / Rd_d[id * nv + lev + 1];
                 }
             } // End of if (DeepModel) physics computation
+#if defined(DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_DIAG_DOM) \
+    || defined(DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_RESULT)
+            // reset current value
+            diagnostics_data[threadIdx.x * nvi + lev].flag = 0;
+            diagnostics_data[threadIdx.x * nvi + lev].data = make_double4(0.0, 0.0, 0.0, 0.0);
+#endif // defined(DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_DIAG_DOM) || defined(DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_RESULT)
 
 #ifdef DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_DIAG_DOM
             {
                 // check that matrix is diagonaly dominant
                 double cc_s = cc[threadIdx.x * nvi + lev];
-                // reset current value
-                diagnostics_data[threadIdx.x * nvi + lev].flag = 0;
-                diagnostics_data[threadIdx.x * nvi + lev].data = make_double4(0.0, 0.0, 0.0, 0.0);
+
                 if (!(fabs(bb) >= THOMAS_DIAG_DOM_FACTOR * (fabs(aa) + fabs(cc_s)))) {
-                    double sum                                       = cc_s + bb + aa;
-                    diagnostics_data[threadIdx.x * nvi + lev].flag   = THOMAS_NOT_DD;
+
+                    atomicOr(diagnostics_flag, THOMAS_NOT_DD);
+                    diagnostics_data[threadIdx.x * nvi + lev].flag = THOMAS_NOT_DD;
+#    ifndef DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_RESULT
+                    double sum = cc_s + bb + aa;
+                    // only store if we don't also store the result afterwards
                     diagnostics_data[threadIdx.x * nvi + lev].data.x = aa;
                     diagnostics_data[threadIdx.x * nvi + lev].data.y = bb;
                     diagnostics_data[threadIdx.x * nvi + lev].data.z = cc_s;
                     diagnostics_data[threadIdx.x * nvi + lev].data.w = sum;
-
-                    // printf("Thomas Diagonal Dominance Check failed at (grid_idx: %d, level: %d ): "
-                    //        "a: %g, b: %g, c: %g. sum: %g \n",
-                    //        id,
-                    //        lev,
-                    //        aa,
-                    //        bb,
-                    //        cc_s,
-                    //        sum);
+#    endif // DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_RESULT
                 }
             }
 #endif // DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_DIAG_DOM
 
             // Compute dd coefficient of thomas algorithm
             dd[threadIdx.x * nvi + lev] = -C0;
+
+
+#ifdef DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_RESULT
+            // Store the values for verification
+            aa_check[lev] = aa;
+            bb_check[lev] = bb;
+            cc_check[lev] = cc[threadIdx.x * nvi + lev];
+            dd_check[lev] = dd[threadIdx.x * nvi + lev];
+#endif // DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_RESULT
+
             // "modify in place" computation of thomas algorithm
             if (lev == 1) {
                 cc[threadIdx.x * nvi + 1] = cc[threadIdx.x * nvi + 1] / bb;
@@ -387,8 +416,47 @@ __global__ void Vertical_Eq(double *      Whs_d,
         for (int lev = nvi - 2; lev > 0; lev--)
             Whs_d[id * nvi + lev] = (-cc[threadIdx.x * nvi + lev] * Whs_d[id * nvi + lev + 1]
                                      + dd[threadIdx.x * nvi + lev]);
-        // Whs_d[id * nvi + lev] = 0.0;
+            // Whs_d[id * nvi + lev] = 0.0;
 
+
+#ifdef DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_RESULT
+        // here we check the result of the thomas algorithm
+
+        // boundaries
+        aa_check[0]  = 0.0;
+        bb_check[0]  = 0.0;
+        cc_check[0]  = 0.0;
+        dd_check[0]  = 0.0;
+        aa_check[nv] = 0.0;
+        bb_check[nv] = 0.0;
+        cc_check[nv] = 0.0;
+        dd_check[nv] = 0.0;
+
+        double epsilon = 1e-8;
+        for (int lev = 1; lev < nvi; lev++) {
+            if (lev == 1) {
+                // no check, boundary
+            }
+            else if (lev == nv) {
+                // no check, boundary
+            }
+            else {
+                double dd_out = aa_check[lev] * Whs_d[id * nvi + (lev - 1)]
+                                + bb_check[lev] * Whs_d[id * nvi + lev]
+                                + cc_check[lev] * Whs_d[id * nvi + (lev + 1)];
+                bool ineq = ((dd_check[lev] == 0.0) && (fabs(dd_out - dd_check[lev]) > epsilon))
+                            || ((dd_check[lev] != 0.0)
+                                && (fabs((dd_out - dd_check[lev]) / dd_check[lev]) > epsilon));
+
+                if (ineq) {
+                    atomicOr(diagnostics_flag, THOMAS_BAD_SOLUTION);
+                    diagnostics_data[threadIdx.x * nvi + lev].flag |= THOMAS_BAD_SOLUTION;
+                    diagnostics_data[threadIdx.x * nvi + lev].data.x = dd_out;
+                    diagnostics_data[threadIdx.x * nvi + lev].data.y = dd_check[lev];
+                }
+            }
+        }
+#endif // DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_RESULT
         for (int lev = 0; lev < nv; lev++) {
 
             if (lev == 0) {
@@ -413,6 +481,18 @@ __global__ void Vertical_Eq(double *      Whs_d,
                 wht   = Whs_d[id * (nv + 1) + lev + 2];
             }
         }
+
+
+#ifdef DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_RESULT
+        // diagnosis check of thomas computation result
+        // redo the matrix operation in the reverse order
+        // here, we store the original matrix value
+        // inefficient, do not use in production, only for debug.
+        delete[] aa_check;
+        delete[] bb_check;
+        delete[] cc_check;
+        delete[] dd_check;
+#endif // DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_RESULT
     }
 }
 
