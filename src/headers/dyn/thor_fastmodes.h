@@ -526,11 +526,11 @@ __global__ void Density_Pressure_Eqs(double *      pressure_d,
         // r: current density
         aux += pt * r;
 
-#if defined(DIAG_CHECK_DENSITY_PRESSURE_EQ_AUX) || defined(DIAG_CHECK_DENSITY_PRESSURE_EQ_AUX_P_NAN)
+#if defined(DIAG_CHECK_DENSITY_PRESSURE_EQ_AUX) || defined(DIAG_CHECK_DENSITY_PRESSURE_EQ_P_NAN)
         // clear diagnostics memory
         diagnostics_data[id * nv + lev].flag = 0;
         diagnostics_data[id * nv + lev].data = make_double4(0.0, 0.0, 0.0, 0.0);
-#endif // defined(DIAG_CHECK_DENSITY_PRESSURE_EQ_AUX) || defined(DIAG_CHECK_DENSITY_PRESSURE_EQ_AUX_P_NAN)
+#endif // defined(DIAG_CHECK_DENSITY_PRESSURE_EQ_AUX) || defined(DIAG_CHECK_DENSITY_PRESSURE_EQ_P_NAN)
 
 
 #ifdef DIAG_CHECK_DENSITY_PRESSURE_EQ_AUX
@@ -546,12 +546,12 @@ __global__ void Density_Pressure_Eqs(double *      pressure_d,
 
         // fractional power that returns a NaN
         p = P_Ref * pow(Rd_d[id * nv + lev] * aux / P_Ref, Cp_d[id * nv + lev] / Cv);
-#ifdef DIAG_CHECK_DENSITY_PRESSURE_EQ_AUX_P_NAN
+#ifdef DIAG_CHECK_DENSITY_PRESSURE_EQ_P_NAN
         if (isnan(p)) {
             atomicOr(diagnostics_flag, NAN_VALUE);
             diagnostics_data[id * nv + lev].flag |= NAN_VALUE;
         }
-#endif // DIAG_CHECK_DENSITY_PRESSURE_EQ_AUX_P_NAN
+#endif // DIAG_CHECK_DENSITY_PRESSURE_EQ_P_NAN
         pressure_d[id * nv + lev] = p - pressurek_d[id * nv + lev]
                                     + (diffpr_d[id * nv + lev] + diffprv_d[id * nv + lev]) * dt
                                     + Rd_d[id * nv + lev] / Cv * profx_Qheat_d[id * nv + lev] * dt;
@@ -764,7 +764,7 @@ __global__ void Density_Pressure_Eqs_Poles(double *      pressure_d,
                      * pow((ptmp + pressurek_d[id * nv + lev]) / P_Ref, Cv / Cp_d[id * nv + lev]);
 
                 aux += pt * r;
-#if defined(DIAG_CHECK_DENSITY_PRESSURE_EQ_AUX) || defined(DIAG_CHECK_DENSITY_PRESSURE_EQ_AUX_P_NAN)
+#if defined(DIAG_CHECK_DENSITY_PRESSURE_EQ_AUX) || defined(DIAG_CHECK_DENSITY_PRESSURE_EQ_P_NAN)
                 // clear diagnostics memory
                 diagnostics_data[id * nv + lev].flag = 0;
                 diagnostics_data[id * nv + lev].data = make_double4(0.0, 0.0, 0.0, 0.0);
@@ -782,13 +782,13 @@ __global__ void Density_Pressure_Eqs_Poles(double *      pressure_d,
 #endif // DIAG_CHECK_DENSITY_PRESSURE_EQ_AUX
 
                 p = P_Ref * pow(Rd_d[id * nv + lev] * aux / P_Ref, Cp_d[id * nv + lev] / Cv); //
-#ifdef DIAG_CHECK_DENSITY_PRESSURE_EQ_AUX_P_NAN
+#ifdef DIAG_CHECK_DENSITY_PRESSURE_EQ_P_NAN
                 if (isnan(p)) {
                     // set our second flag
                     atomicOr(diagnostics_flag, NAN_VALUE);
                     diagnostics_data[id * nv + lev].flag |= NAN_VALUE;
                 }
-#endif // DIAG_CHECK_DENSITY_PRESSURE_EQ_AUX_P_NAN
+#endif // DIAG_CHECK_DENSITY_PRESSURE_EQ_P_NAN
 
 
                 // Updates pressure
