@@ -535,8 +535,11 @@ __global__ void Density_Pressure_Eqs(double *      pressure_d,
 
 #ifdef DIAG_CHECK_DENSITY_PRESSURE_EQ_AUX
         if (aux < 0.0) {
+            // set global diagnostics flag atomically.
             atomicOr(diagnostics_flag, NEGATIVE_VALUE);
+            // add the element diagnostics flag to diag array
             diagnostics_data[id * nv + lev].flag |= NEGATIVE_VALUE;
+            // store aux value in diagnostics data array
             diagnostics_data[id * nv + lev].data.x = aux;
         }
 #endif // DIAG_CHECK_DENSITY_PRESSURE_EQ_AUX
@@ -770,6 +773,8 @@ __global__ void Density_Pressure_Eqs_Poles(double *      pressure_d,
 #ifdef DIAG_CHECK_DENSITY_PRESSURE_EQ_AUX
 
                 if (aux < 0.0) {
+                    // set flags. Use binary OR operator to enable the flag
+                    // without overwriting other flags that could be present
                     atomicOr(diagnostics_flag, NEGATIVE_VALUE);
                     diagnostics_data[id * nv + lev].flag |= NEGATIVE_VALUE;
                     diagnostics_data[id * nv + lev].data.x = aux;
@@ -779,6 +784,7 @@ __global__ void Density_Pressure_Eqs_Poles(double *      pressure_d,
                 p = P_Ref * pow(Rd_d[id * nv + lev] * aux / P_Ref, Cp_d[id * nv + lev] / Cv); //
 #ifdef DIAG_CHECK_DENSITY_PRESSURE_EQ_AUX_P_NAN
                 if (isnan(p)) {
+                    // set our second flag
                     atomicOr(diagnostics_flag, NAN_VALUE);
                     diagnostics_data[id * nv + lev].flag |= NAN_VALUE;
                 }

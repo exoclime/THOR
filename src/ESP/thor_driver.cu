@@ -1001,6 +1001,9 @@ __host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
             cudaDeviceSynchronize();
 #if defined(DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_DIAG_DOM) \
     || defined(DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_RESULT)
+            // reset diagnostics flag
+            // diagnostics array is reset inside kernel
+            // could also be reset here with diag.reset();
             diag.reset_flag();
 #endif // DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_DIAG_DOM
 
@@ -1031,7 +1034,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
                 nv,
                 nvi,
                 sim.DeepModel,
-                *diag.diagnostics_global_flag,
+                *diag.diagnostics_global_flag, // Pass the diagnostics arrays device pointers
                 *diag.diagnostics);
 
             //          Pressure and density equations.
@@ -1046,13 +1049,15 @@ __host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
 #if defined(DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_DIAG_DOM) \
     || defined(DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_RESULT)
             if (diag.check_flag()) {
+                // dump the data
                 diag.dump_data("vertical_eq", current_step, rk, ns, *this, point_num, nvi);
                 // warn, but do not quit.
                 unsigned int flag = diag.get_flag();
-                if (flag == THOMAS_NOT_DD)
+                // Check for global flags
+                if (flag & THOMAS_NOT_DD == THOMAS_NOT_DD)
                     log::printf(
                         "Non diagonaly dominant matrix for thomas algorithm in Vertical_Eq\n");
-                if (flag == THOMAS_BAD_SOLUTION)
+                if (flag & THOMAS_BAD_SOLUTION == THOMAS_BAD_SOLUTION)
                     log::printf("Bad thomas algorithm solution in Vertical_Eq\n");
             }
 #endif // DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_DIAG_DOM
