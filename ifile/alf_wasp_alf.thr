@@ -200,7 +200,7 @@ order_diff_sponge = 2
 
 #-- Radiative transfer (gray) options (core_benchmark = NoBenchmark) -------------------#
 ## RT parameters #######################################
-radiative_transfer = true
+radiative_transfer = false
 
 # stellar temperature (K)
 Tstar = 4300
@@ -285,10 +285,10 @@ sync_rot = true
 # spin up and spin down start and stop. Set to negative value to ignore and run at full power
 # spins up/down with a multiplication factor following a sine from 0 to 1 from
 # start to stop of spin up time
-dgrt_spinup_start = 0
-dgrt_spinup_stop = 143999
-dgrt_spindown_start = 144000
-dgrt_spindown_stop = 172800
+# dgrt_spinup_start = 0
+# dgrt_spinup_stop = 143999
+# dgrt_spindown_start = 144000
+# dgrt_spindown_stop = 172800
 
 
 #-- Alfrodull options --------------------------------------------------------#
@@ -355,6 +355,10 @@ Alf_store_w0_g0 = true
 # wiggle increment in degrees to add to zenith angle if G_+/- explodes
 Alf_G_pm_mu_star_increment = 1.0
 
+# limit in degree of zenith angle, if angle of incoming beam is smaller than that
+# to horizontal, set direct beam to 0.0.
+Alf_zenith_angle_limit = 2.0
+
 # compute radiative transfer every n step
 Alf_compute_every_nstep = 1
 
@@ -366,10 +370,10 @@ Alf_compute_every_nstep = 1
 # spins up/down with a multiplication factor following a sine from 0 to 1 from
 # start to stop of spin up time and a sine from 1 to 0 for spin down
 # can be used in parallel with double grey radiative transfer above for faster spinup
-Alf_spinup_start = 144000
-Alf_spinup_stop = 172800
-Alf_spindown_start = -1
-Alf_spindown_stop = -1
+# Alf_spinup_start = 144000
+# Alf_spinup_stop = 172800
+# Alf_spindown_start = -1
+# Alf_spindown_stop = -1
 
 
 #-- Boundary layer options (core_benchmark = NoBenchmark) --------------------#
