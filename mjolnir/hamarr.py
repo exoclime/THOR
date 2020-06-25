@@ -57,6 +57,14 @@ class input_new:
         #special cases (things we test on a lot, etc)
         self.RT = "radiative_transfer" in openh5 and openh5["radiative_transfer"][0] == 1.0
         self.TSRT = "two_streams_radiative_transfer" in openh5 and openh5["two_streams_radiative_transfer"][0] == 1.0
+        if self.TSRT:
+            if 'alf_w0_g0_per_band' in openh5 and openh5['alf_w0_g0_per_band'][0] == 1.0:
+                self.has_w0_g0 = True
+            else:
+                self.has_w0_g0 = False
+        else:
+            self.has_w0_g0 = False
+                
         self.chemistry = "chemistry" in openh5 and openh5["chemistry" ][0] == 1
 
         if not hasattr(self,'surface'):
@@ -163,12 +171,9 @@ class output_new:
             outputs['F_dir_tot'] = 'f_dir_tot'
             outputs['F_net'] = 'f_net'
             outputs['Alf_Qheat'] = 'TSqheat'
-            # for rename transition of col_mu_star, can be removed later
-            #outputs['zenith_angles'] = 'mustar'
-            outputs['cos_zenith_angles'] = 'mustar'
-            #outputs['col_mu_star'] = 'mustar'
             outputs['F_up_TOA_spectrum'] = 'spectrum'
             outputs['lambda_wave'] = 'wavelength'
+
 
         for t in np.arange(ntsi - 1, nts, stride):
             fileh5 = resultsf + '/esp_output_' + simID + '_' + np.str(t + 1) + '.h5'
@@ -190,7 +195,7 @@ class output_new:
                 else:
                     print('Warning: conservation diagnostics not available in file %s' % fileh5)
                     self.ConvData[t-ntsi+1] = False
-
+                    
                 if 'insol' in openh5.keys():
                     outputs['insol'] = 'Insol'
                 if 'tracer' in openh5.keys():
@@ -203,6 +208,20 @@ class output_new:
                     outputs['Cp'] = 'Cp'
                 else:
                     self.ConstRdCp = True
+
+                # for rename transition of col_mu_star, can be removed later
+                if 'cos_zenith_angles' in openh5.keys():
+                    outputs['cos_zenith_angles'] = 'mustar'
+                elif 'zenith_angles' in openh5.keys():
+                    outputs['zenith_angles'] = 'mustar'
+                elif 'col_mu_star' in openh5.keys():
+                    outputs['col_mu_star'] = 'mustar'
+
+                if input.TSRT:
+                    if 'w0_band' in openh5.keys():
+                        outputs['w0_band'] = 'w0_band'
+                    if 'g0_band' in openh5.keys():
+                        outputs['g0_band'] = 'g0_band'                
 
                 #create VDS layout shape
                 for key in outputs.keys():
@@ -271,6 +290,10 @@ class output_new:
                         self.tau_lw = np.reshape(data[1::2],(grid.point_num,grid.nv,tlen))
                     elif key == 'spectrum':
                         self.spectrum = np.reshape(data, (grid.point_num,-1,tlen))
+                    elif key == 'w0_band':
+                        self.w0_band = np.reshape(data, (grid.point_num,grid.nv,-1,tlen))
+                    elif key == 'g0_band':
+                        self.g0_band = np.reshape(data, (grid.point_num,grid.nv,-1,tlen))
                     else:
                         setattr(self, key, data)
                 else:
@@ -1887,7 +1910,8 @@ def profile(input, grid, output, z, stride=50, axis=None, save=True):
     ax.set_xlabel(z['label'])
     ax.legend([rp, gp], ['z=0.5*ztop', 'z=0.75*ztop'], loc="lower right", fontsize='xx-small')
     ax.set_title('Time = %#.3f - %#.3f days' % (output.time[0], output.time[-1]))
-
+    ax.get_xaxis().get_major_formatter().set_useOffset(False)
+    ax.tick_params(axis='x', labelrotation=45 )
     pfile = None
     if save == True:
         output_path = pathlib.Path(input.resultsf) / 'figures'
