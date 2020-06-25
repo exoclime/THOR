@@ -94,8 +94,10 @@ private:
     double *atmp, *btmp, *ctmp, *cpr_tmp, *dtmp, *dpr_tmp;
     double  zbl; // altitude of transition from BL to free atmosph (ekman scheme)
 
-    int *   bl_top_lev_d;    // index of highest level inside BL
-    int *   bl_top_lev_h;    // index of highest level inside BL
+    int *   bl_top_lev_d;    // index of highest level (center) inside BL
+    int *   bl_top_lev_h;    // index of highest level (center) inside BL
+    int *   sl_top_lev_d;    // index of highest level (center) inside surface layer
+    int *   sl_top_lev_h;    // index of highest level (center) inside surface layer
     double *bl_top_height_d; // height of bl
     double *bl_top_height_h; // height of bl
 
@@ -218,6 +220,8 @@ __global__ void CalcRiB(double *pressure_d,
                         double *RiB_d,
                         int *   bl_top_lev_d,
                         double *bl_top_height_d,
+                        int *   sl_top_lev_d,
+                        double  f_surf_layer,
                         double *pt_surf_d,
                         double *p_surf_d,
                         double *CD_d,
@@ -235,6 +239,7 @@ __global__ void CalcKM_KH(double *RiB_d,
                           double *CH_d,
                           double *bl_top_height_d,
                           int *   bl_top_lev_d,
+                          int *   sl_top_lev_d,
                           double *vh_lowest_d,
                           double *Altitude_d,
                           double *Altitudeh_d,

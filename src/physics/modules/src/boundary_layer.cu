@@ -85,13 +85,15 @@ bool boundary_layer::initialise_memory(const ESP &              esp,
     cudaMalloc((void **)&zeta_d, esp.nvi * esp.point_num * sizeof(double));
 
     cudaMalloc((void **)&bl_top_lev_d, esp.point_num * sizeof(int));
+    cudaMalloc((void **)&sl_top_lev_d, esp.point_num * sizeof(int));
     cudaMalloc((void **)&bl_top_height_d, esp.point_num * sizeof(double));
 
     RiB_h           = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
     KM_h            = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
     KH_h            = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
     bl_top_lev_h    = (int *)malloc(esp.point_num * sizeof(int));
-    bl_top_height_h = (double *)malloc(esp.point_num * sizeof(int));
+    sl_top_lev_h    = (int *)malloc(esp.point_num * sizeof(int));
+    bl_top_height_h = (double *)malloc(esp.point_num * sizeof(double));
     CD_h            = (double *)malloc(esp.point_num * sizeof(double));
     CH_h            = (double *)malloc(esp.point_num * sizeof(double));
 
@@ -105,7 +107,8 @@ bool boundary_layer::initialise_memory(const ESP &              esp,
     cudaMemset(KM_d, 0, sizeof(double) * esp.point_num * esp.nvi);
     cudaMemset(KH_d, 0, sizeof(double) * esp.point_num * esp.nvi);
     cudaMemset(bl_top_lev_d, 0, sizeof(int) * esp.point_num);
-    cudaMemset(bl_top_height_h, 0, sizeof(double) * esp.point_num);
+    cudaMemset(sl_top_lev_d, 0, sizeof(int) * esp.point_num);
+    cudaMemset(bl_top_height_d, 0, sizeof(double) * esp.point_num);
     cudaMemset(CD_d, 0, sizeof(double) * esp.point_num);
     cudaMemset(CH_d, 0, sizeof(double) * esp.point_num);
     cudaMemset(vh_lowest_d, 0, sizeof(double) * esp.point_num);
@@ -138,6 +141,7 @@ bool boundary_layer::free_memory() {
     cudaFree(bl_top_lev_d);
     cudaFree(zeta_d);
     cudaFree(bl_top_height_d);
+    cudaFree(sl_top_lev_d);
 
     return true;
 }
@@ -223,6 +227,8 @@ bool boundary_layer::phy_loop(ESP &                  esp,
                                 RiB_d,
                                 bl_top_lev_d,
                                 bl_top_height_d,
+                                sl_top_lev_d,
+                                f_surf_layer,
                                 pt_surf_d,
                                 p_surf_d,
                                 CD_d,
@@ -238,6 +244,7 @@ bool boundary_layer::phy_loop(ESP &                  esp,
                                 CH_d,
                                 bl_top_height_d,
                                 bl_top_lev_d,
+                                sl_top_lev_d,
                                 vh_lowest_d,
                                 esp.Altitude_d,
                                 esp.Altitudeh_d,
@@ -418,6 +425,20 @@ bool boundary_layer::store(const ESP &esp, storage &s) {
                        "/KH",
                        "m^2/s",
                        "turbulent diffusion coefficient for heat");
+
+        cudaMemcpy(bl_top_height_h,
+                   bl_top_height_d,
+                   esp.point_num * sizeof(double),
+                   cudaMemcpyDeviceToHost);
+        s.append_table(
+            bl_top_height_h, esp.point_num, "/bl_top_height", "m", "Height of boundary layer");
+
+        cudaMemcpy(bl_top_lev_h, bl_top_lev_d, esp.point_num * sizeof(int), cudaMemcpyDeviceToHost);
+        s.append_table(bl_top_lev_h,
+                       esp.point_num,
+                       "/bl_top_lev",
+                       " ",
+                       "Index of highest level in boundary layer");
     }
 
     return true;
@@ -864,6 +885,8 @@ __global__ void CalcRiB(double *pressure_d,
                         double *RiB_d,
                         int *   bl_top_lev_d,
                         double *bl_top_height_d,
+                        int *   sl_top_lev_d,
+                        double  f_surf_layer,
                         double *pt_surf_d,
                         double *p_surf_d,
                         double *CD_d,
@@ -1009,6 +1032,12 @@ __global__ void CalcRiB(double *pressure_d,
         //take the bl height to be the height of the interface above the top bl layer
         bl_top_height_d[id] = Altitudeh_d[bl_top_lev_d[id] + 1];
         // printf("bl top = %f\n", bl_top_height_d[id]);
+        // sl_top_lev_d[id] = 0;
+        // for (lev = 0; lev <= bl_top_lev_d[id]; lev++) {
+        //     if (Altitudeh_d[lev + 1] <= f_surf_layer * bl_top_height_d[id]) {
+        //         sl_top_lev_d[id] = lev;
+        //     }
+        // }
     }
 }
 
@@ -1031,6 +1060,7 @@ __global__ void CalcKM_KH(double *RiB_d,
                           double *CH_d,
                           double *bl_top_height_d,
                           int *   bl_top_lev_d,
+                          int *   sl_top_lev_d,
                           double *vh_lowest_d,
                           double *Altitude_d,
                           double *Altitudeh_d,
@@ -1100,17 +1130,22 @@ __global__ void CalcKM_KH(double *RiB_d,
                                              * z_scale; //scales with CD, not CH
                 }
                 else { //stable  (zeta at f*h)
-                    KM_d[id * (nvi) + lev] =
-                        KVONKARMAN * f_surf_layer * bl_top_height_d[id] * sqrt(CD_d[id])
-                        * vh_lowest_d[id] * z_scale
-                        / (1 + zeta_d[id * (nvi) + bl_top_lev_d[id] + 1] / Ri_crit);
+                    KM_d[id * (nvi) + lev] = KVONKARMAN * f_surf_layer * bl_top_height_d[id]
+                                             * sqrt(CD_d[id]) * vh_lowest_d[id] * z_scale
+                                             / (1
+                                                + zeta_d[id * (nvi) + sl_top_lev_d[id] + 1]
+                                                      / Ri_crit); ///bl_top_lev_d is wrong!!
                     KH_d[id * (nvi) + lev] = KVONKARMAN * f_surf_layer * bl_top_height_d[id]
                                              * sqrt(CD_d[id]) * vh_lowest_d[id] * z_scale
                                              / (1
-                                                + zeta_d[id * (nvi) + bl_top_lev_d[id] + 1]
+                                                + zeta_d[id * (nvi) + sl_top_lev_d[id] + 1]
                                                       / Ri_crit); //scales with CD, not CH
                 }
+                if (KM_d[id * (nvi) + lev] < 0) {
+                    printf("Stop here! %f \n", z_scale);
+                }
             }
+
             else {
                 KM_d[id * (nvi) + lev] = 0.0;
                 KH_d[id * (nvi) + lev] = 0.0;
