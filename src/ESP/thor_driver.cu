@@ -1054,10 +1054,10 @@ __host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
                 // warn, but do not quit.
                 unsigned int flag = diag.get_flag();
                 // Check for global flags
-                if (flag & THOMAS_NOT_DD == THOMAS_NOT_DD)
+                if ((flag & THOMAS_NOT_DD) == THOMAS_NOT_DD)
                     log::printf(
                         "Non diagonaly dominant matrix for thomas algorithm in Vertical_Eq\n");
-                if (flag & THOMAS_BAD_SOLUTION == THOMAS_BAD_SOLUTION)
+                if ((flag & THOMAS_BAD_SOLUTION) == THOMAS_BAD_SOLUTION)
                     log::printf("Bad thomas algorithm solution in Vertical_Eq\n");
             }
 #endif // DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_DIAG_DOM
