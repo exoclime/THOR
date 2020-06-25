@@ -7,6 +7,7 @@
 #include <vector>
 
 #include <algorithm>
+#include <stdexcept>
 
 using std::vector;
 
@@ -165,8 +166,11 @@ public:
         get_host_data_ptr();
 
         bool out = fetch_to_host();
-        if (!out)
+        if (!out) {
             printf("fetch_to_host failed\n");
+            // Throw exception on failure, makes it easier to find what call failed
+            throw std::runtime_error("fetch_to_host failed\n");
+        }
         return host_ptr;
     }
 

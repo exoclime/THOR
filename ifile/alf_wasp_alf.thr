@@ -23,7 +23,7 @@ log_n_out = 1000
 
 # output directory (relative to current working directory)
 # defaults to 'results'
-results_path = wasp43b_example
+results_path = waspalf
 
 # output global diagnostics (energy, mass, momentum, entropy)
 globdiag = true
@@ -302,7 +302,7 @@ sync_rot = true
 two_streams_radiative_transfer = true
 
 # Isothermal or non-isothermal treatment of layers for two stream RT
-Alf_iso = false
+Alf_iso = true
 
 # use Thomas algorithm for solver instead of iterative solver.
 Alf_thomas = true
@@ -351,13 +351,13 @@ Alf_store_w0_g0 = true
 
 # G_+/- limits to protect against exploding value
 # Alf_G_pm_max_limiter =
-# Alf_G_pm_denom_limit
+Alf_G_pm_denom_limit = 0.0
 # wiggle increment in degrees to add to zenith angle if G_+/- explodes
 Alf_G_pm_mu_star_increment = 1.0
 
-# limit in degree of zenith angle, if angle of incoming beam is smaller than that
+# limit in degree of direct beam, if angle of incoming beam is smaller than that
 # to horizontal, set direct beam to 0.0.
-Alf_zenith_angle_limit = 2.0
+Alf_direct_beam_angle_limit = 2.0
 
 # compute radiative transfer every n step
 Alf_compute_every_nstep = 1
