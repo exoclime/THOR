@@ -63,9 +63,11 @@
 
 #include "dyn/phy_modules_device.h"
 
+
 // forward declaration of Insolation used only as reference
 // to break circuilar dependency of insolation.h and esp.h
 class Insolation;
+class kernel_diagnostics;
 
 class ESP
 {
@@ -403,10 +405,11 @@ public:
 
     // double chi_H_equilibrium(double, double);
 
-    void Thor(const SimulationSetup &sim);
+    void Thor(const SimulationSetup &sim, kernel_diagnostics &diag);
 
     void ProfX(const SimulationSetup &sim,
-               int                    n_out); // output step (triggers globdiag calc)
+               int                    n_out,
+               kernel_diagnostics &   diag); // output step (triggers globdiag calc)
 
 
     void output(int                    fidx, // Index of output file

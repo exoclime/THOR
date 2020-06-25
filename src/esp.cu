@@ -72,6 +72,7 @@
 #include "phy_modules.h"
 
 #include "debug.h"
+#include "diagnostics.h"
 #ifdef BENCHMARKING
 #    warning "Compiling with benchmarktest enabled"
 #endif
@@ -728,6 +729,8 @@ int main(int argc, char** argv) {
     log::printf_logonly(" Compiled on %s at %s.\n", __DATE__, __TIME__);
 
     log::printf_logonly(" build level: %s\n\n", BUILD_LEVEL);
+    log::printf_logonly(" git branch: %s\n", GIT_BRANCH_RAW);
+    log::printf_logonly(" git hash: %s\n", GIT_HASH_RAW);
 
 
     // Data logger
@@ -839,7 +842,6 @@ int main(int argc, char** argv) {
         logwriter.prepare_globdiag_file(continue_sim);
         logwriter.prepare_diagnostics_file(continue_sim);
     }
-
 
     //*****************************************************************
     //  Set the GPU device.
@@ -982,7 +984,6 @@ int main(int argc, char** argv) {
           ultrahot_heating,
           thermo_equation,
           insolation);
-
 
     USE_BENCHMARK();
 
@@ -1181,6 +1182,9 @@ int main(int argc, char** argv) {
         step_idx += 1;
     }
 
+    // Create diagnostics tool
+    kernel_diagnostics diag(X);
+
     // *********************************************************************************************
     //  Starting model Integration.
     log::printf(" Starting the model integration.\n\n");
@@ -1203,12 +1207,12 @@ int main(int argc, char** argv) {
 
         //
         //     Physical Core Integration (ProfX)
-        X.ProfX(sim, n_out);
+        X.ProfX(sim, n_out, diag);
 
         if (!sim.gcm_off) {
             //
             //        Dynamical Core Integration (THOR)
-            X.Thor(sim); // simulationt parameters
+            X.Thor(sim, diag); // simulationt parameters
         }
 
         //
