@@ -137,8 +137,10 @@ __global__ void Vertical_Eq(double *      Whs_d,
 #if defined(DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_DIAG_DOM) \
     || defined(DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_RESULT)
         // those seem to not be used, they are on boundaries
-        diagnostics_data[threadIdx.x * nvi + 0].flag  = 0;
-        diagnostics_data[threadIdx.x * nvi + nv].data = make_double4(0.0, 0.0, 0.0, 0.0);
+        diagnostics_data[id * nvi + 0].flag  = 0;
+        diagnostics_data[id * nvi + 0].data  = make_double4(0.0, 0.0, 0.0, 0.0);
+        diagnostics_data[id * nvi + nv].flag = 0;
+        diagnostics_data[id * nvi + nv].data = make_double4(0.0, 0.0, 0.0, 0.0);
 #endif // defined(DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_DIAG_DOM) || defined(DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_RESULT)
 
 
@@ -354,11 +356,12 @@ __global__ void Vertical_Eq(double *      Whs_d,
                             / Rd_d[id * nv + lev + 1];
                 }
             } // End of if (DeepModel) physics computation
+
 #if defined(DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_DIAG_DOM) \
     || defined(DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_RESULT)
             // reset current value
-            diagnostics_data[threadIdx.x * nvi + lev].flag = 0;
-            diagnostics_data[threadIdx.x * nvi + lev].data = make_double4(0.0, 0.0, 0.0, 0.0);
+            diagnostics_data[id * nvi + lev].flag = 0;
+            diagnostics_data[id * nvi + lev].data = make_double4(0.0, 0.0, 0.0, 0.0);
 #endif // defined(DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_DIAG_DOM) || defined(DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_RESULT)
 
 #ifdef DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_DIAG_DOM
@@ -369,14 +372,15 @@ __global__ void Vertical_Eq(double *      Whs_d,
                 if (!(fabs(bb) >= THOMAS_DIAG_DOM_FACTOR * (fabs(aa) + fabs(cc_s)))) {
 
                     atomicOr(diagnostics_flag, THOMAS_NOT_DD);
-                    diagnostics_data[threadIdx.x * nvi + lev].flag = THOMAS_NOT_DD;
+                    diagnostics_data[id * nvi + lev].flag = THOMAS_NOT_DD;
+
 #    ifndef DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_RESULT
                     double sum = cc_s + bb + aa;
                     // only store if we don't also store the result afterwards
-                    diagnostics_data[threadIdx.x * nvi + lev].data.x = aa;
-                    diagnostics_data[threadIdx.x * nvi + lev].data.y = bb;
-                    diagnostics_data[threadIdx.x * nvi + lev].data.z = cc_s;
-                    diagnostics_data[threadIdx.x * nvi + lev].data.w = sum;
+                    diagnostics_data[id * nvi + lev].data.x = aa;
+                    diagnostics_data[id * nvi + lev].data.y = bb;
+                    diagnostics_data[id * nvi + lev].data.z = cc_s;
+                    diagnostics_data[id * nvi + lev].data.w = sum;
 #    endif // DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_RESULT
                 }
             }
@@ -450,9 +454,9 @@ __global__ void Vertical_Eq(double *      Whs_d,
 
                 if (ineq) {
                     atomicOr(diagnostics_flag, THOMAS_BAD_SOLUTION);
-                    diagnostics_data[threadIdx.x * nvi + lev].flag |= THOMAS_BAD_SOLUTION;
-                    diagnostics_data[threadIdx.x * nvi + lev].data.x = dd_out;
-                    diagnostics_data[threadIdx.x * nvi + lev].data.y = dd_check[lev];
+                    diagnostics_data[id * nvi + lev].flag |= THOMAS_BAD_SOLUTION;
+                    diagnostics_data[id * nvi + lev].data.x = dd_out;
+                    diagnostics_data[id * nvi + lev].data.y = dd_check[lev];
                 }
             }
         }
