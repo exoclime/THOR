@@ -456,6 +456,9 @@ bool boundary_layer::store_init(storage &s) {
 
     s.append_value(f_surf_layer, "/f_surf_layer", " ", "surface layer fraction");
 
+    //      bl type  option
+    s.append_value(int(bl_type), "/bl_type", "-", "Type of boundary layer physics");
+
     return true;
 }
 

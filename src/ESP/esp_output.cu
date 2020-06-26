@@ -224,8 +224,7 @@ __host__ void ESP::output(int                    fidx, // Index of output file
         s.append_value(sim.rest ? 1.0 : 0.0, "/rest", "-", "Starting from rest");
 
         //      core_benchmark  option
-        s.append_value(
-            int(core_benchmark), "/core_benchmark", "-", "Using benchmark forcing or RT");
+        s.append_value(int(core_benchmark), "/core_benchmark", "-", "Using benchmark forcing");
         if (sim.RayleighSponge) {
             //      nlat
             s.append_value(

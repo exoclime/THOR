@@ -64,7 +64,7 @@ class input_new:
                 self.has_w0_g0 = False
         else:
             self.has_w0_g0 = False
-                
+
         self.chemistry = "chemistry" in openh5 and openh5["chemistry" ][0] == 1
 
         if not hasattr(self,'surface'):
@@ -74,6 +74,10 @@ class input_new:
             self.chemistry = self.vulcan
         if hasattr(self,'diff_fac'):
             self.diff_ang = self.diff_fac
+
+        self.BL = "boundary_layer" in openh5 and openh5["boundary_layer"][0] == 1.0
+        if self.BL:
+            self.BL_type = openh5["bl_type"][0]
         openh5.close()
 
 def LatLong2Cart(lat, lon):
@@ -155,7 +159,7 @@ class output_new:
         # key is the key in h5 file, value is desired attribute name in this class
         outputs = {'Rho': 'Rho', 'Pressure': 'Pressure', 'Mh': 'Mh', 'Wh': 'Wh',
                     'Rho_mean': 'Rho_mean', 'Pressure_mean': 'Pressure_mean',
-                    'Mh_mean': 'Mh_mean', 'Wh_mean': 'Wh_mean'}#, 'Qheat': 'qheat'}
+                    'Mh_mean': 'Mh_mean', 'Wh_mean': 'Wh_mean', 'Qheat': 'qheat'}
 
         #add things to outputs that can be checked for in input or grid
         if input.RT:
@@ -174,6 +178,14 @@ class output_new:
             outputs['F_up_TOA_spectrum'] = 'spectrum'
             outputs['lambda_wave'] = 'wavelength'
 
+        if input.BL and input.BL_type == 1:
+            outputs['RiB'] = 'RiB'
+            outputs['bl_top_height'] = 'bl_top_height'
+            outputs['bl_top_lev'] = 'bl_top_lev'
+            outputs['KH'] = 'KH'
+            outputs['KM'] = 'KM'
+            outputs['CD'] = 'CD'
+            outputs['CH'] = 'CH'
 
         for t in np.arange(ntsi - 1, nts, stride):
             fileh5 = resultsf + '/esp_output_' + simID + '_' + np.str(t + 1) + '.h5'
@@ -195,7 +207,7 @@ class output_new:
                 else:
                     print('Warning: conservation diagnostics not available in file %s' % fileh5)
                     self.ConvData[t-ntsi+1] = False
-                    
+
                 if 'insol' in openh5.keys():
                     outputs['insol'] = 'Insol'
                 if 'tracer' in openh5.keys():
@@ -221,7 +233,7 @@ class output_new:
                     if 'w0_band' in openh5.keys():
                         outputs['w0_band'] = 'w0_band'
                     if 'g0_band' in openh5.keys():
-                        outputs['g0_band'] = 'g0_band'                
+                        outputs['g0_band'] = 'g0_band'
 
                 #create VDS layout shape
                 for key in outputs.keys():
