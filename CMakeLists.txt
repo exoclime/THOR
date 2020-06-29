@@ -232,6 +232,9 @@ ADD_CUSTOM_COMMAND(
 )
 # Finally, the temporary file should be added as a dependency to the target
 
+######################################################################
+# define main application to build 
+add_executable(esp ${SRC} ${GITREV_TMP})
 
 ######################################################################
 # physics modules subdirectory
@@ -248,11 +251,29 @@ ADD_CUSTOM_COMMAND(
 
 
 # set(PHYSICS_LIBRARY_PATH "${MODULES_SRC}/libphy_modules.a")
-
+if (EXISTS "${PROJECT_SOURCE_DIR}/Alfrodull" AND EXISTS "${PROJECT_SOURCE_DIR}/Alfrodull/CMakeLists.txt")
+  message("Alfrodull library detected")
+  set(THOR_MODULE "1")
+  file(RELATIVE_PATH THOR_ROOT "${PROJECT_SOURCE_DIR}/${MODULES_SRC}" "${PROJECT_SOURCE_DIR}/" )
+  message("Relative path to THOR root from physics module: " ${THOR_ROOT})
+  set(THOR_ROOT_INCLUDES "${THOR_ROOT}src/headers" )
+  set(SHARED_PHY_MODULES_INC_DIR "${THOR_ROOT}src/physics/modules/inc" )
+  set(SHARED_PHY_MODULES_SRC_DIR "${THOR_ROOT}src/physics/modules/src" )
+  add_subdirectory(Alfrodull)
+  set(ALFRODULL_INCLUDE_DIRS
+    ${PROJECT_SOURCE_DIR}/Alfrodull/thor_module/inc/
+    ${PROJECT_SOURCE_DIR}/Alfrodull/src/inc/)
+  include_directories(${ALFRODULL_INCLUDE_DIRS})
+  target_compile_definitions(esp PRIVATE "HAS_ALFRODULL")
+  target_link_libraries (esp alfrodull)
+  target_link_directories (esp PRIVATE Alfrodull)
+else()
+  message("Alfrodull library not detected")
+endif()
 
 ######################################################################
 # build application
-add_executable(esp ${SRC} ${GITREV_TMP})
+
 target_compile_options(esp  PUBLIC -DBUILD_LEVEL="release" -DDEVICE_SM=${SM})
 # options for debugging
 #target_compile_options(esp PUBLIC -DBENCHMARKING -DBENCH_NAN_CHECK)
