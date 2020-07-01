@@ -1264,11 +1264,13 @@ int main(int argc, char** argv) {
 
         // Timing information
         double      mean_delta_per_step = 0.0;
+        double      this_step_delta     = 0.0;
         double      elapsed_time        = 0.0;
         double      time_left           = 0.0;
         std::time_t end_time;
 
-        ittimer.iteration(nstep, mean_delta_per_step, elapsed_time, time_left, end_time);
+        ittimer.iteration(
+            nstep, mean_delta_per_step, this_step_delta, elapsed_time, time_left, end_time);
         // format end time
         std::ostringstream end_time_str;
         char               str_time[256];
@@ -1287,6 +1289,11 @@ int main(int argc, char** argv) {
                 duration_to_str(time_left).c_str(),
                 end_time_str.str().c_str(),
                 file_output ? "[saved output]" : "");
+#ifdef STEP_TIMING_INFO
+            log::printf("\n\t Step duration: %f s || Mean step duration %f s",
+                        this_step_delta,
+                        mean_delta_per_step);
+#endif // STEP_TIMING_INFO
 
             // get memory statistics
             size_t total_bytes;
@@ -1325,6 +1332,11 @@ int main(int argc, char** argv) {
                    duration_to_str(time_left).c_str(),
                    end_time_str.str().c_str(),
                    file_output ? "[saved output]" : "");
+#ifdef STEP_TIMING_INFO
+            printf("\n\t Step duration: %f s || Mean step duration %f s",
+                   this_step_delta,
+                   mean_delta_per_step);
+#endif // STEP_TIMING_INFO
 
             // Run pressure check
             double pressure_min = gpu_min_on_device<1024>(X.pressure_d, X.point_num * X.nv);
@@ -1343,6 +1355,8 @@ int main(int argc, char** argv) {
             break;
         }
         n_since_output++;
+        // Marker to see to what step this output belongs
+        log::printf("--\n");
     }
     //
     //  Prints the duration of the integration.
