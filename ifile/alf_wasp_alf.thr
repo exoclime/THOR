@@ -302,12 +302,14 @@ sync_rot = true
 two_streams_radiative_transfer = true
 
 # Isothermal or non-isothermal treatment of layers for two stream RT
-Alf_iso = true
+Alf_iso = false
 
 # use Thomas algorithm for solver instead of iterative solver.
-Alf_thomas = true
+Alf_thomas = false
 
-# if not using Thomas, run in single walk mode. 
+# if not using Thomas, run in single walk mode.
+# true -> 200 iterations, HELIOS "post-processing" code
+# false -> 4 iterations HELIOS code runing inside convection loop
 Alf_scat_single_walk = true
 
 # use real star spectrum or planck spectrum
@@ -339,7 +341,7 @@ Alf_i2s_transition = 0.1
 
 Alf_opacities_file = ./Alfrodull/input/opac_sample_r5.h5
 #Alf_opacities_file = ./Alfrodull/input/opac_sample_r500.h5
-#Alf_opacities_file = ./Alfrodull/input/opac_sample_r5.h5
+#Alf_opacities_file = ./Alfrodull/input/opac_sample_r50.h5
 
 # clouds
 Alf_clouds = false
@@ -347,11 +349,11 @@ Alf_fcloud = 1.0
 Alf_cloudfile = ./Alfrodull/input/cloud_sample_r5.h5
 
 # store w0 and g0 per wavelength (optional, to avoid storing a giant amount of data
-Alf_store_w0_g0 = true
+Alf_store_w0_g0 = false
 
 # G_+/- limits to protect against exploding value
 # Alf_G_pm_max_limiter =
-Alf_G_pm_denom_limit = 0.0
+Alf_G_pm_denom_limit = 1e-5
 # wiggle increment in degrees to add to zenith angle if G_+/- explodes
 Alf_G_pm_mu_star_increment = 1.0
 
@@ -362,6 +364,10 @@ Alf_direct_beam_angle_limit = 2.0
 # compute radiative transfer every n step
 Alf_compute_every_nstep = 1
 
+# number of columns to compute in parallel
+# (Adjust this depending on memory usage, more parallel column: faster integration)
+# Total number of points on grid is 4^(glevel - 4)*16^2*10 + 2. 
+Alf_num_parallel_columns = 2562
 
 
 
