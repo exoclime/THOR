@@ -261,7 +261,6 @@ if (EXISTS "${PROJECT_SOURCE_DIR}/Alfrodull" AND EXISTS "${PROJECT_SOURCE_DIR}/A
   set(SHARED_PHY_MODULES_SRC_DIR "${THOR_ROOT}src/physics/modules/src" )
   add_subdirectory(Alfrodull)
   set(ALFRODULL_INCLUDE_DIRS
-    ${PROJECT_SOURCE_DIR}/Alfrodull/thor_module/inc/
     ${PROJECT_SOURCE_DIR}/Alfrodull/src/inc/)
   include_directories(${ALFRODULL_INCLUDE_DIRS})
   target_compile_definitions(esp PRIVATE "HAS_ALFRODULL")
