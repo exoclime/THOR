@@ -197,11 +197,7 @@ ns_diff_sponge = 0.75
 # order of diffusion operator in diff sponge (2 or 4)
 order_diff_sponge = 2
 
-
-#-- Radiative transfer (gray) options (core_benchmark = NoBenchmark) -------------------#
-## RT parameters #######################################
-radiative_transfer = false
-
+#-- Radiative transfer (double gray and two streams ) common options -------------------#
 # stellar temperature (K)
 Tstar = 4300
 
@@ -210,6 +206,38 @@ planet_star_dist = 0.015
 
 # radius of host star (R_sun)
 radius_star = 0.667
+
+# temperature of internal heat flux (bottom boundary) (K)
+Tint = 100
+
+
+## insolation (orbit + spin-state) parameters ###########
+# synchronous rotation (tidally-locking at 1:1)
+sync_rot = true
+
+# mean motion of orbit (if sync_rot=false and ecc>0) (rad/s)
+#mean_motion = 1.98e-7
+
+# initial substellar longitude (deg)
+#alpha_i = 0
+
+# initial orbital position (deg)
+#true_long_i = 0
+
+# eccentricity of orbit
+#ecc = 0
+
+# obliquity (axial-tilt) (deg)
+#obliquity = 0
+
+# longitude of periastron (relative to equinox) (deg)
+# (stupid Earth convention applies)
+#longp = 0
+#########################################################
+
+#-- Radiative transfer (gray) options (core_benchmark = NoBenchmark) -------------------#
+## RT parameters #######################################
+radiative_transfer = false
 
 # bond albedo of planet
 albedo = 0.18
@@ -238,8 +266,7 @@ kappa_sw = 0.00125
 # strength of unmixed absorbers in lw
 f_lw = 0.5
 
-# temperature of internal heat flux (bottom boundary) (K)
-Tint = 100
+# Tint
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 # add sin(lat)^2 dependence to tau lw (advanced)
@@ -256,32 +283,6 @@ Csurf = 1e7
 rt1Dmode = false
 
 #########################################################
-
-## insolation (orbit + spin-state) parameters ###########
-# synchronous rotation (tidally-locking at 1:1)
-sync_rot = true
-
-# mean motion of orbit (if sync_rot=false and ecc>0) (rad/s)
-#mean_motion = 1.98e-7
-
-# initial substellar longitude (deg)
-#alpha_i = 0
-
-# initial orbital position (deg)
-#true_long_i = 0
-
-# eccentricity of orbit
-#ecc = 0
-
-# obliquity (axial-tilt) (deg)
-#obliquity = 0
-
-# longitude of periastron (relative to equinox) (deg)
-# (stupid Earth convention applies)
-#longp = 0
-#########################################################
-
-#########################################################
 # spin up and spin down start and stop. Set to negative value to ignore and run at full power
 # spins up/down with a multiplication factor following a sine from 0 to 1 from
 # start to stop of spin up time
@@ -296,16 +297,17 @@ sync_rot = true
 # * Tstar: star temperature (if not using a stellar spectrum)
 # * Tint: internal temperature
 # * planet_star_dist
+# * radius_star
 # * ... insolation stuff
 # 
 
 two_streams_radiative_transfer = true
 
 # Isothermal or non-isothermal treatment of layers for two stream RT
-Alf_iso = false
+Alf_iso = true
 
 # use Thomas algorithm for solver instead of iterative solver.
-Alf_thomas = false
+Alf_thomas = true
 
 # if not using Thomas, run in single walk mode.
 # true -> 200 iterations, HELIOS "post-processing" code
@@ -353,7 +355,7 @@ Alf_store_w0_g0 = false
 
 # G_+/- limits to protect against exploding value
 # Alf_G_pm_max_limiter =
-Alf_G_pm_denom_limit = 1e-5
+Alf_G_pm_limit = 100
 # wiggle increment in degrees to add to zenith angle if G_+/- explodes
 Alf_G_pm_mu_star_increment = 1.0
 
@@ -367,7 +369,7 @@ Alf_compute_every_nstep = 1
 # number of columns to compute in parallel
 # (Adjust this depending on memory usage, more parallel column: faster integration)
 # Total number of points on grid is 4^(glevel - 4)*16^2*10 + 2. 
-Alf_num_parallel_columns = 2562
+Alf_num_parallel_columns = 1284
 
 
 
