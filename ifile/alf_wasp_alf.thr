@@ -371,7 +371,7 @@ Alf_compute_every_nstep = 1
 # number of columns to compute in parallel
 # (Adjust this depending on memory usage, more parallel column: faster integration)
 # Total number of points on grid is 4^(glevel - 4)*16^2*10 + 2. 
-Alf_num_parallel_columns = 1284
+Alf_num_parallel_columns = 2562
 
 
 

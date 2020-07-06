@@ -30,7 +30,7 @@ parser.add_argument('-j', '--jupnb',
                     help="jupyter notebook to run")
 parser.add_argument('--title',
                     default="Report", action='store',
-                    type=int,
+                    type=str,
                     help="notebook title appearing in browser")
 parser.add_argument('-t', '--timeout',
                     default=5400, action='store',
@@ -54,7 +54,14 @@ print(f"started {notebook_file} on {start_time}")
 notebook_code = notebook_file.open().read()
 
 notebook = nbformat.reads(notebook_code, as_version=4)
-notebook['metadata']['title'] = args.title
+if args.title == "Report":
+    try:
+        notebook['metadata']['title'] = base_folder.resolve().parts[-1]
+    except:
+        print("Failed guessing target directory name for title, using default")
+        notebook['metadata']['title'] = args.title
+else:
+    notebook['metadata']['title'] = args.title
 
 c = Config({'ExecutePreprocessor': {'enabled': True,
                                     'timeout': nb_timeout},
