@@ -341,9 +341,11 @@ Alf_geom_zenith_corr = true
 # transition in w0. only above this value I2S is used.
 Alf_i2s_transition = 0.1
 
-Alf_opacities_file = ./Alfrodull/input/opac_sample_r5.h5
+Alf_opacities_file = ./Alfrodull/input/opac_sample_SI_r5.h5
 #Alf_opacities_file = ./Alfrodull/input/opac_sample_r500.h5
 #Alf_opacities_file = ./Alfrodull/input/opac_sample_r50.h5
+# set to true to use opacities file in CGS, output from HELIOS
+Alf_opacities_file_in_CGS = false
 
 # clouds
 Alf_clouds = false
