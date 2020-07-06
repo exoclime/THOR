@@ -14,7 +14,7 @@ timestep = 300
 
 # output
 # output every n steps
-n_out = 1
+n_out = 288
 
 # write to log file at a different cadence from n_out
 custom_log_n_out = false
@@ -42,13 +42,13 @@ output_mean = true
 simulation_ID = Wasp43b
 
 # Radius [m]
-radius = 72427000.0
+radius = 66487560.0
 
 # Rotation rate [rad s^-1]
-rotation_rate = 9.09E-5
+rotation_rate = 8.940E-5
 
 # Gravitational acceleration [m/s^2]
-gravitation = 47
+gravitation = 46.99
 
 # Gas constant [J/(Kg K)]
 Rd = 3714
@@ -199,10 +199,10 @@ order_diff_sponge = 2
 
 #-- Radiative transfer (double gray and two streams ) common options -------------------#
 # stellar temperature (K)
-Tstar = 4300
+Tstar = 4798 
 
 # orbital distance or semi-major axis (au)
-planet_star_dist = 0.015
+planet_star_dist = 0.01420
 
 # radius of host star (R_sun)
 radius_star = 0.667
@@ -380,10 +380,10 @@ Alf_num_parallel_columns = 2562
 # spins up/down with a multiplication factor following a sine from 0 to 1 from
 # start to stop of spin up time and a sine from 1 to 0 for spin down
 # can be used in parallel with double grey radiative transfer above for faster spinup
-# Alf_spinup_start = 144000
-# Alf_spinup_stop = 172800
-# Alf_spindown_start = -1
-# Alf_spindown_stop = -1
+Alf_spinup_start = 0
+Alf_spinup_stop = 144000
+Alf_spindown_start = -1
+Alf_spindown_stop = -1
 
 
 #-- Boundary layer options (core_benchmark = NoBenchmark) --------------------#
