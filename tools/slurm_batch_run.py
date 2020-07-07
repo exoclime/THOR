@@ -208,7 +208,7 @@ if args.report:
     
     sbatch_args = ['sbatch',
                    '-D', working_dir,
-                   '-J', job_name,
+                   '-J', job_name + "-munnin",
                    '-n', str(1),
                    '--gres', config_data['gpu_key'],
                    '-p', config_data['partition'],
