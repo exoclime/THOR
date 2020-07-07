@@ -1321,6 +1321,7 @@ int main(int argc, char** argv) {
                                          time_left,
                                          mean_delta_per_step,
                                          end_time);
+            log::printf("--\n");
         }
         else {
             printf("\n Time step number = %d/%d || Time = %f days. \n\t Elapsed %s || Left: %s || "
@@ -1347,6 +1348,7 @@ int main(int argc, char** argv) {
                 if (exit_on_low_pressure_warning)
                     break;
             }
+            printf("--\n");
         }
 
 
@@ -1356,7 +1358,6 @@ int main(int argc, char** argv) {
         }
         n_since_output++;
         // Marker to see to what step this output belongs
-        log::printf("--\n");
     }
     //
     //  Prints the duration of the integration.
