@@ -111,3 +111,8 @@ for k, v in resources['outputs'].items():
 
 output_file = output_path / "mjolnyr_report.html"
 output_file.open("w").write(body)
+stop_time = datetime.datetime.now()
+
+delta = stop_time - start_time
+
+print(f"ran munnin in {delta}")
