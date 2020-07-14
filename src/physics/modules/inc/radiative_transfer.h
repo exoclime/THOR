@@ -57,6 +57,7 @@ public:
 
     bool phy_loop(ESP &                  esp,
                   const SimulationSetup &sim,
+                  kernel_diagnostics &   diag,
                   int                    nstep, // Step number
                   double                 time_step);            // Time-step [s]
 
@@ -112,10 +113,10 @@ private:
     double radius_star      = 0.667; // Star radius [Rsun]
     double diff_ang         = 0.5;   // Diffusivity factor: 0.5-1.0
     // double Tint   = 0; // Lower boundary temperature: upward flux coming from the planet's interior
-    double albedo = 0.18;   // Bond albedo
-    double tausw  = 532.0;  // Absorption coefficient for the shortwaves
-    double taulw  = 1064.0; // Absorption coefficient for the longwaves
-    double taulw_pole;
+    double albedo   = 0.18;  // Bond albedo
+    double kappa_sw = 0.001; // Absorption coefficient for the shortwaves
+    double kappa_lw = 0.002; // Absorption coefficient for the longwaves
+    double kappa_lw_pole;
     // double kappa_lw_pole = 0.002;
     bool   latf_lw = false;
     double n_lw    = 2.0; // power law dependence for unmixed absorbers in LW

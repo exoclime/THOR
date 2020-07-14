@@ -187,6 +187,7 @@ public:
     double *Tsurface_d;
     double *Tsurface_h;
     double  Csurf;
+    double *dTsurf_dt_d; // store change in temp to update all at once in profx
 
     ///////////////////////////
     //  Device

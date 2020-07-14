@@ -79,6 +79,14 @@ void kernel_diagnostics::dump_data(string name,
                         diag_data_h[idx].data.x,
                         diag_data_h[idx].data.y);
                 }
+                if ((diag_data_h[idx].flag & BL_THOMAS_NOT_DD) != 0)
+                    fprintf(pFile,
+                            "BL_THOMAS_NOT_DD - idx: %d - lev: %d - a: %g - b: %g - c: %g\n",
+                            p,
+                            lev,
+                            diag_data_h[idx].data.x,
+                            diag_data_h[idx].data.y,
+                            diag_data_h[idx].data.z);
             }
         }
     }

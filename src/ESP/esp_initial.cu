@@ -394,6 +394,8 @@ __host__ void ESP::alloc_data(bool globdiag, bool output_mean) {
 
     cudaMalloc((void **)&Tsurface_d, point_num * sizeof(double));
     Tsurface_h = (double *)malloc(point_num * sizeof(double));
+    cudaMalloc((void **)&dTsurf_dt_d, point_num * sizeof(double));
+
 
     // PHY modules
     log::printf("  Dynamical core memory initialised.\n");
@@ -1230,6 +1232,7 @@ __host__ ESP::~ESP() {
     free(boundary_flux_h);
 
     cudaFree(Tsurface_d);
+    cudaFree(dTsurf_dt_d);
 
     free(Tsurface_h);
 

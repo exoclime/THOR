@@ -20,7 +20,8 @@ typedef enum {
     NAN_VALUE           = 1 << 0,
     NEGATIVE_VALUE      = 1 << 1,
     THOMAS_NOT_DD       = 1 << 2,
-    THOMAS_BAD_SOLUTION = 1 << 3
+    THOMAS_BAD_SOLUTION = 1 << 3,
+    BL_THOMAS_NOT_DD    = 1 << 4
 } sim_error_flag;
 
 const int DIAG_NUM_FLAGS = 3;

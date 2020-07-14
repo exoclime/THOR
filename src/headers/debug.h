@@ -46,7 +46,7 @@
 
 // benchmarking
 // if defined run benchmark functions?
-// #define BENCHMARKING
+#define BENCHMARKING
 
 // ***************************************
 // * binary comparison
@@ -63,7 +63,7 @@
 // #define BENCH_COMPARE_EPSILON_VALUE 1e-7
 // ***************************************
 // * check for NaNs
-// #define BENCH_NAN_CHECK
+#define BENCH_NAN_CHECK
 // * below adds checks on device functions (useful for device memory bugs)
 // #define BENCH_CHECK_LAST_CUDA_ERROR
 
@@ -84,9 +84,9 @@
 // diagnostics levels
 // general enabler of checks
 #define DIAGNOSTICS_LEVEL1
-//#define DIAGNOSTICS_LEVEL2
+// #define DIAGNOSTICS_LEVEL2
 //#define DIAGNOSTICS_LEVEL3
-//#define DIAGNOSTICS_LEVEL4
+// #define DIAGNOSTICS_LEVEL4
 
 #ifdef DIAGNOSTICS_LEVEL4
 #    define DIAGNOSTICS_LEVEL3
@@ -106,4 +106,5 @@
 
 #ifdef DIAGNOSTICS_LEVEL1
 #    define DIAG_CHECK_DENSITY_PRESSURE_EQ_P_NAN
+#    define DIAG_CHECK_BL_THOMAS_DIAG_DOM
 #endif // DIAGNOSTICS_LEVEL1

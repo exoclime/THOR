@@ -77,7 +77,10 @@ class input_new:
 
         self.BL = "boundary_layer" in openh5 and openh5["boundary_layer"][0] == 1.0
         if self.BL:
-            self.BL_type = openh5["bl_type"][0]
+            try:
+                self.BL_type = openh5["bl_type"][0]
+            except:
+                self.BL_type = 0
         openh5.close()
 
 def LatLong2Cart(lat, lon):
@@ -1874,13 +1877,16 @@ def profile(input, grid, output, z, stride=50, axis=None, save=True):
     col_lon = []
     col_lat = []
     col_lor = []
-    for column in np.arange(0, grid.point_num, stride):
+    for column in np.arange(0, grid.point_num,stride):
         if tsp > 1:
             P = np.mean(output.Pressure[column, :, :], axis=1)
             x = np.mean(z['value'][column, :, :], axis=1)
         else:
             P = output.Pressure[column, :, 0]
             x = z['value'][column, :, 0]
+            if z['name'] == 'T' and input.surface:
+                x = np.concatenate([np.array([output.Tsurface[column,0]]),x])
+                P = np.concatenate([np.array(input.P_Ref),P])
 
         #color = hsv_to_rgb([column / grid.point_num, 1.0, 1.0])
         lon = grid.lon[column]

@@ -47,6 +47,7 @@
 ////////////////////////////////////////////////////////////////////////
 
 #include "debug.h"
+#include "diagnostics.h"
 
 __global__ void Vertical_Eq(double *      Whs_d,
                             double *      Ws_d,

@@ -44,6 +44,7 @@
 
 #pragma once
 
+#include "diagnostics.h"
 #include "phy_module_base.h"
 
 #define bl_type_default "RayleighHS"
@@ -66,6 +67,7 @@ public:
 
     bool phy_loop(ESP &                  esp,
                   const SimulationSetup &sim,
+                  kernel_diagnostics &   diag,
                   int                    nstep, // Step number
                   double                 time_step);            // Time-step [s]
 
@@ -107,6 +109,7 @@ private:
 
     double *KM_d; // momentum diffusivity (turbulence)
     double *KM_h;
+    double *Rho_int_d; //density at interfaces
 
     double *KH_d; // heat diffusivity (turbulence)
     double *KH_h;
@@ -117,7 +120,8 @@ private:
     double *CH_h;
     double *vh_lowest_d; //speed of lowest layer
     double *pt_surf_d;   //pt of surface
-    double *p_surf_d;
+    double *p_surf_d;    //pressure at surface
+    double *Rho_surf_d;  //density at surface
 
     double Ri_crit_config      = 1.0;
     double z_rough_config      = 3.21e-5;
@@ -162,46 +166,53 @@ __global__ void ConstKMEkman(double *Mh_d,
                              int     num,
                              int     nv);
 
-__global__ void Momentum_Diff_Impl(double *Mh_d,
-                                   double *pressure_d,
-                                   double *Rho_d,
-                                   double *Altitude_d,
-                                   double *Altitudeh_d,
-                                   double *atmp,
-                                   double *btmp,
-                                   double *ctmp,
-                                   double *cpr_tmp,
-                                   double *dtmp,
-                                   double *dpr_tmp,
-                                   double *KM_d,
-                                   double  time_step,
-                                   int     num,
-                                   int     nv,
-                                   int *   bl_top_lev_d);
+__global__ void Momentum_Diff_Impl(double *      Mh_d,
+                                   double *      pressure_d,
+                                   double *      Rho_d,
+                                   double *      Altitude_d,
+                                   double *      Altitudeh_d,
+                                   double *      atmp,
+                                   double *      btmp,
+                                   double *      ctmp,
+                                   double *      cpr_tmp,
+                                   double *      dtmp,
+                                   double *      dpr_tmp,
+                                   double *      KM_d,
+                                   double *      Rho_int_d,
+                                   double        time_step,
+                                   int           num,
+                                   int           nv,
+                                   int *         bl_top_lev_d,
+                                   unsigned int *diagnostics_flag,
+                                   diag_data *   diagnostics_data);
 
-__global__ void Heat_Diff_Impl(double *pt_d,
-                               double *pressure_d,
-                               double *Rho_d,
-                               double *Altitude_d,
-                               double *Altitudeh_d,
-                               double *Tsurface_d,
-                               double *atmp,
-                               double *btmp,
-                               double *ctmp,
-                               double *cpr_tmp,
-                               double *dtmp,
-                               double *dpr_tmp,
-                               double *KH_d,
-                               double *pt_surf_d,
-                               double *p_surf_d,
-                               double  time_step,
-                               double  Rd,
-                               double  Cp,
-                               double  P_Ref,
-                               double  Csurf,
-                               int     num,
-                               int     nv,
-                               int *   bl_top_lev_d);
+__global__ void Heat_Diff_Impl(double *      pt_d,
+                               double *      pressure_d,
+                               double *      Rho_d,
+                               double *      Altitude_d,
+                               double *      Altitudeh_d,
+                               double *      Tsurface_d,
+                               double *      atmp,
+                               double *      btmp,
+                               double *      ctmp,
+                               double *      cpr_tmp,
+                               double *      dtmp,
+                               double *      dpr_tmp,
+                               double *      KH_d,
+                               double *      Rho_int_d,
+                               double *      pt_surf_d,
+                               double *      p_surf_d,
+                               double *      Rho_surf_d,
+                               double        time_step,
+                               double        Rd,
+                               double        Cp,
+                               double        P_Ref,
+                               double        Csurf,
+                               int           num,
+                               int           nv,
+                               int *         bl_top_lev_d,
+                               unsigned int *diagnostics_flag,
+                               diag_data *   diagnostics_data);
 
 __global__ void CalcRiB(double *pressure_d,
                         double *Rho_d,
@@ -224,10 +235,12 @@ __global__ void CalcRiB(double *pressure_d,
                         double  f_surf_layer,
                         double *pt_surf_d,
                         double *p_surf_d,
+                        double *Rho_surf_d,
                         double *CD_d,
                         double *CH_d,
                         double *zeta_d,
                         double *vh_lowest_d,
+                        double *Rho_int_d,
                         int     num,
                         int     nv);
 
@@ -250,3 +263,24 @@ __global__ void CalcKM_KH(double *RiB_d,
                           double *KM_d,
                           double *KH_d,
                           int     num);
+
+__global__ void Heat_Diff_Expl(double *pt_d,
+                               double *Rho_d,
+                               double *Altitude_d,
+                               double *Altitudeh_d,
+                               double *Tsurface_d,
+                               double *dTsurf_dt_d,
+                               double *KH_d,
+                               double *Rho_int_d,
+                               double *pt_surf_d,
+                               double *Rho_surf_d,
+                               double *p_surf_d,
+                               double  time_step,
+                               double  Rd,
+                               double  Cp,
+                               double  P_Ref,
+                               double  Csurf,
+                               double *profx_Qheat_d,
+                               int     num,
+                               int     nv,
+                               int *   bl_top_lev_d);

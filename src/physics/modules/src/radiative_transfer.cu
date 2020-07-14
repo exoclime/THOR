@@ -207,6 +207,7 @@ bool radiative_transfer::initial_conditions(const ESP &            esp,
 
 bool radiative_transfer::phy_loop(ESP &                  esp,
                                   const SimulationSetup &sim,
+                                  kernel_diagnostics &   diag,
                                   int                    nstep, // Step number
                                   double                 time_step) {           // Time-step [s]
 
@@ -275,10 +276,10 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                                      diff_ang,
                                      esp.Tint,
                                      albedo,
-                                     tausw,
-                                     taulw,
+                                     kappa_sw,
+                                     kappa_lw,
                                      latf_lw,
-                                     taulw_pole,
+                                     kappa_lw_pole,
                                      n_sw,
                                      n_lw,
                                      esp.f_lw,
@@ -294,6 +295,7 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                                      esp.surface,
                                      esp.Csurf,
                                      esp.Tsurface_d,
+                                     esp.dTsurf_dt_d,
                                      surf_flux_d,
                                      esp.profx_Qheat_d,
                                      qheat_d,
@@ -419,10 +421,10 @@ void radiative_transfer::RTSetup(double Tstar_,
                                  double P_Ref,
                                  double Gravit,
                                  double albedo_,
-                                 double kappa_sw,
-                                 double kappa_lw,
+                                 double kappa_sw_,
+                                 double kappa_lw_,
                                  bool   latf_lw_,
-                                 double kappa_lw_pole,
+                                 double kappa_lw_pole_,
                                  double n_lw_,
                                  double n_sw_,
                                  double f_lw,
@@ -436,13 +438,17 @@ void radiative_transfer::RTSetup(double Tstar_,
     radius_star      = radius_star_ * 695508;           //conv to km
     diff_ang         = diff_ang_;
     // Tint             = Tint_;
-    albedo     = albedo_;
-    tausw      = kappa_sw * P_Ref / Gravit;
-    taulw      = kappa_lw * P_Ref / (f_lw * Gravit);
-    taulw_pole = kappa_lw_pole * P_Ref / (f_lw * Gravit);
-    latf_lw    = latf_lw_;
-    n_sw       = n_sw_;
-    n_lw       = n_lw_;
+    albedo = albedo_;
+    //tausw      = kappa_sw * P_Ref / Gravit;
+    //taulw      = kappa_lw * P_Ref / (f_lw * Gravit);
+    //taulw_pole = kappa_lw_pole * P_Ref / (f_lw * Gravit);
+    kappa_sw      = kappa_sw_;
+    kappa_lw      = kappa_lw_;
+    kappa_lw_pole = kappa_lw_pole_;
+
+    latf_lw = latf_lw_;
+    n_sw    = n_sw_;
+    n_lw    = n_lw_;
     // f_lw             = f_lw_;
 
     double resc_flx = pow(radius_star / planet_star_dist, 2.0);
