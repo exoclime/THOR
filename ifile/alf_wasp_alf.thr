@@ -357,9 +357,13 @@ Alf_store_w0_g0 = false
 
 # G_+/- limits to protect against exploding value
 # Alf_G_pm_max_limiter =
-Alf_G_pm_limit = 100
+# apply limit on full G_pm (true) or only on denom (false)
+Alf_G_pm_limit_on_G_pm = true
+# for full G_pm limit, values between 100 - 10000 work, check how much it iterates
+#  for G_pm limit on denominator, 1e-5 works
+Alf_G_pm_limit = 300
 # wiggle increment in degrees to add to zenith angle if G_+/- explodes
-Alf_G_pm_mu_star_increment = 0.5
+Alf_G_pm_mu_star_increment = 1.0
 Alf_mu_star_iteration_max = 10
 
 # limit in degree of direct beam, if angle of incoming beam is smaller than that

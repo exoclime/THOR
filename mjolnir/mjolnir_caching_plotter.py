@@ -161,7 +161,7 @@ class caching_plotter:
 
         # arguments and arguments override
         args = copy.deepcopy(self.args)
-        for k, v in override_args:
+        for k, v in override_args.items():
             if hasattr(args, k):
                 setattr(args, k, v)
             
