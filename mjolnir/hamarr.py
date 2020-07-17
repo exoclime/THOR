@@ -1,3 +1,5 @@
+#---- code by Russell Deitrick and Urs Schroffenegger -------------------------
+
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
@@ -64,7 +66,7 @@ class input_new:
                 self.has_w0_g0 = False
         else:
             self.has_w0_g0 = False
-                
+
         self.chemistry = "chemistry" in openh5 and openh5["chemistry" ][0] == 1
 
         if not hasattr(self,'surface'):
@@ -196,7 +198,7 @@ class output_new:
                 else:
                     print('Warning: conservation diagnostics not available in file %s' % fileh5)
                     self.ConvData[t-ntsi+1] = False
-                    
+
                 if 'insol' in openh5.keys():
                     outputs['insol'] = 'Insol'
                 if 'tracer' in openh5.keys():
@@ -222,7 +224,7 @@ class output_new:
                     if 'w0_band' in openh5.keys():
                         outputs['w0_band'] = 'w0_band'
                     if 'g0_band' in openh5.keys():
-                        outputs['g0_band'] = 'g0_band'                
+                        outputs['g0_band'] = 'g0_band'
 
                 #create VDS layout shape
                 for key in outputs.keys():
@@ -2326,7 +2328,7 @@ def spectrum(input, grid, output, z, stride=20, axis=None, save=True):
     ax.set_xlabel('Wavelength [um]')
     ax.set_title('Time = %#.3f - %#.3f days' % (output.time[0], output.time[-1]))
     ax.grid(True)
-    
+
     pfile = None
     if save == True:
         output_path = pathlib.Path(input.resultsf) / 'figures'

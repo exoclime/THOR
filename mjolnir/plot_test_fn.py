@@ -1,3 +1,6 @@
+#---- Runs through a subset of simulations to test functionality of plot code -
+#---- code by Russell Deitrick ------------------------------------------------
+
 import subprocess as sub
 import mjolnir_plot_helper as mph
 import argparse

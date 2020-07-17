@@ -1,3 +1,5 @@
+#---- code by Russell Deitrick and Urs Schroffenegger---------------------------
+
 import hamarr as ham
 import subprocess as spr
 import numpy as np
@@ -649,7 +651,7 @@ def make_plot(args, save=True, axis=None):
         all_ax = axis[0].subplots(4, num_plot_band_y)
         axes = [ax for sax in all_ax for ax in sax]
         for i in range(num_plots):
-            
+
             w0 =  output.w0_band[:,:,i*stride,:]
             z = {'value': w0, 'label': f"w0 - band {i*stride}", 'name': 'w0'}
             pfile = call_plot('w0',ham.profile,input, grid, output, z, stride=20, save=save, axis=(axis[0], axes[i]))
@@ -658,7 +660,7 @@ def make_plot(args, save=True, axis=None):
     if ('g0prof' in pview or 'all' in pview) and input.TSRT: # and input.has_w0_g0:
         output.load_reshape(grid,['g0_band'])
         num_bands = output.g0_band.shape[2]
-        
+
         num_plot_band_y = num_bands//4
         if num_plot_band_y > 4:
             num_plot_band_y = 4
@@ -667,7 +669,7 @@ def make_plot(args, save=True, axis=None):
         all_ax = axis[0].subplots(4, num_plot_band_y)
         axes = [ax for sax in all_ax for ax in sax]
         for i in range(num_plots):
-            
+
             g0 =  output.g0_band[:,:,i*stride,:]
             z = {'value': g0, 'label': f"g0 - band {i*stride}", 'name': 'g0'}
             pfile = call_plot('g0',ham.profile,input, grid, output, z, stride=20, save=save, axis=(axis[0], axes[i]))
