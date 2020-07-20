@@ -72,6 +72,9 @@
 #define BENCHMARK_DUMP_BASENAME "bindata_"
 
 //*****************************************************************************
+//#define STEP_TIMING_INFO
+
+//*****************************************************************************
 // diagnostics tests
 // test that matrix used in vertical implicit solver in thor_vertical_int.h is
 // diagonaly dominant

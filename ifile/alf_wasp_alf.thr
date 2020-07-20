@@ -14,7 +14,7 @@ timestep = 300
 
 # output
 # output every n steps
-n_out = 1
+n_out = 288
 
 # write to log file at a different cadence from n_out
 custom_log_n_out = false
@@ -23,7 +23,7 @@ log_n_out = 1000
 
 # output directory (relative to current working directory)
 # defaults to 'results'
-results_path = wasp43b_example
+results_path = waspalf
 
 # output global diagnostics (energy, mass, momentum, entropy)
 globdiag = true
@@ -42,13 +42,13 @@ output_mean = true
 simulation_ID = Wasp43b
 
 # Radius [m]
-radius = 72427000.0
+radius = 66487560.0
 
 # Rotation rate [rad s^-1]
-rotation_rate = 9.09E-5
+rotation_rate = 8.940E-5
 
 # Gravitational acceleration [m/s^2]
-gravitation = 47
+gravitation = 46.99
 
 # Gas constant [J/(Kg K)]
 Rd = 3714
@@ -197,19 +197,47 @@ ns_diff_sponge = 0.75
 # order of diffusion operator in diff sponge (2 or 4)
 order_diff_sponge = 2
 
-
-#-- Radiative transfer (gray) options (core_benchmark = NoBenchmark) -------------------#
-## RT parameters #######################################
-radiative_transfer = true
-
+#-- Radiative transfer (double gray and two streams ) common options -------------------#
 # stellar temperature (K)
-Tstar = 4300
+Tstar = 4798 
 
 # orbital distance or semi-major axis (au)
-planet_star_dist = 0.015
+planet_star_dist = 0.01420
 
 # radius of host star (R_sun)
 radius_star = 0.667
+
+# temperature of internal heat flux (bottom boundary) (K)
+Tint = 100
+
+
+## insolation (orbit + spin-state) parameters ###########
+# synchronous rotation (tidally-locking at 1:1)
+sync_rot = true
+
+# mean motion of orbit (if sync_rot=false and ecc>0) (rad/s)
+#mean_motion = 1.98e-7
+
+# initial substellar longitude (deg)
+#alpha_i = 0
+
+# initial orbital position (deg)
+#true_long_i = 0
+
+# eccentricity of orbit
+#ecc = 0
+
+# obliquity (axial-tilt) (deg)
+#obliquity = 0
+
+# longitude of periastron (relative to equinox) (deg)
+# (stupid Earth convention applies)
+#longp = 0
+#########################################################
+
+#-- Radiative transfer (gray) options (core_benchmark = NoBenchmark) -------------------#
+## RT parameters #######################################
+radiative_transfer = false
 
 # bond albedo of planet
 albedo = 0.18
@@ -238,8 +266,7 @@ kappa_sw = 0.00125
 # strength of unmixed absorbers in lw
 f_lw = 0.5
 
-# temperature of internal heat flux (bottom boundary) (K)
-Tint = 100
+# Tint
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 # add sin(lat)^2 dependence to tau lw (advanced)
@@ -256,39 +283,13 @@ Csurf = 1e7
 rt1Dmode = false
 
 #########################################################
-
-## insolation (orbit + spin-state) parameters ###########
-# synchronous rotation (tidally-locking at 1:1)
-sync_rot = true
-
-# mean motion of orbit (if sync_rot=false and ecc>0) (rad/s)
-#mean_motion = 1.98e-7
-
-# initial substellar longitude (deg)
-#alpha_i = 0
-
-# initial orbital position (deg)
-#true_long_i = 0
-
-# eccentricity of orbit
-#ecc = 0
-
-# obliquity (axial-tilt) (deg)
-#obliquity = 0
-
-# longitude of periastron (relative to equinox) (deg)
-# (stupid Earth convention applies)
-#longp = 0
-#########################################################
-
-#########################################################
 # spin up and spin down start and stop. Set to negative value to ignore and run at full power
 # spins up/down with a multiplication factor following a sine from 0 to 1 from
 # start to stop of spin up time
-dgrt_spinup_start = 0
-dgrt_spinup_stop = 143999
-dgrt_spindown_start = 144000
-dgrt_spindown_stop = 172800
+# dgrt_spinup_start = 0
+# dgrt_spinup_stop = 143999
+# dgrt_spindown_start = 144000
+# dgrt_spindown_stop = 172800
 
 
 #-- Alfrodull options --------------------------------------------------------#
@@ -296,18 +297,21 @@ dgrt_spindown_stop = 172800
 # * Tstar: star temperature (if not using a stellar spectrum)
 # * Tint: internal temperature
 # * planet_star_dist
+# * radius_star
 # * ... insolation stuff
 # 
 
 two_streams_radiative_transfer = true
 
 # Isothermal or non-isothermal treatment of layers for two stream RT
-Alf_iso = false
+Alf_iso = true
 
 # use Thomas algorithm for solver instead of iterative solver.
 Alf_thomas = true
 
-# if not using Thomas, run in single walk mode. 
+# if not using Thomas, run in single walk mode.
+# true -> 200 iterations, HELIOS "post-processing" code
+# false -> 4 iterations HELIOS code runing inside convection loop
 Alf_scat_single_walk = true
 
 # use real star spectrum or planck spectrum
@@ -337,9 +341,11 @@ Alf_geom_zenith_corr = true
 # transition in w0. only above this value I2S is used.
 Alf_i2s_transition = 0.1
 
-Alf_opacities_file = ./Alfrodull/input/opac_sample_r5.h5
+Alf_opacities_file = ./Alfrodull/input/opac_sample_SI_r5.h5
 #Alf_opacities_file = ./Alfrodull/input/opac_sample_r500.h5
-#Alf_opacities_file = ./Alfrodull/input/opac_sample_r5.h5
+#Alf_opacities_file = ./Alfrodull/input/opac_sample_r50.h5
+# set to true to use opacities file in CGS, output from HELIOS
+Alf_opacities_file_in_CGS = false
 
 # clouds
 Alf_clouds = false
@@ -347,27 +353,43 @@ Alf_fcloud = 1.0
 Alf_cloudfile = ./Alfrodull/input/cloud_sample_r5.h5
 
 # store w0 and g0 per wavelength (optional, to avoid storing a giant amount of data
-Alf_store_w0_g0 = true
+Alf_store_w0_g0 = false
 
 # G_+/- limits to protect against exploding value
 # Alf_G_pm_max_limiter =
-# Alf_G_pm_denom_limit
+# apply limit on full G_pm (true) or only on denom (false)
+Alf_G_pm_limit_on_G_pm = true
+# for full G_pm limit, values between 100 - 10000 work, check how much it iterates
+#  for G_pm limit on denominator, 1e-5 works
+Alf_G_pm_limit = 300
 # wiggle increment in degrees to add to zenith angle if G_+/- explodes
 Alf_G_pm_mu_star_increment = 1.0
+Alf_mu_star_iteration_max = 10
+
+# limit in degree of direct beam, if angle of incoming beam is smaller than that
+# to horizontal, set direct beam to 0.0.
+Alf_direct_beam_angle_limit = 2.0
 
 # compute radiative transfer every n step
 Alf_compute_every_nstep = 1
 
+# number of columns to compute in parallel
+# (Adjust this depending on memory usage, more parallel column: faster integration)
+# Total number of points on grid is 4^(glevel - 4)*16^2*10 + 2. 
+Alf_num_parallel_columns = 2562
 
 
+# debug output
+# enables various informational outputs for debugging 
+Alf_debug = false
 
 #########################################################
 # spin up and spin down start and stop. Set to negative value to ignore and run at full power
 # spins up/down with a multiplication factor following a sine from 0 to 1 from
 # start to stop of spin up time and a sine from 1 to 0 for spin down
 # can be used in parallel with double grey radiative transfer above for faster spinup
-Alf_spinup_start = 144000
-Alf_spinup_stop = 172800
+Alf_spinup_start = 0
+Alf_spinup_stop = 144000
 Alf_spindown_start = -1
 Alf_spindown_stop = -1
 

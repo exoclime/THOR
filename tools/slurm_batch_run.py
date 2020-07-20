@@ -152,15 +152,15 @@ output_file = str(log_dir / f"slurm-esp-{job_name}-%j.out")  # %j for job index
 
 
 sbatch_args = ['sbatch',
-        '-D', working_dir,
-        '-n', str(1),
-        '--gres', config_data['gpu_key'],
-        '-p', config_data['partition'],
-        '--time', time_limit,
-        '--mail-type=ALL',
-        '--mail-user=' + mail,
-        '--output=' + output_file,
-        '--signal=INT@60']
+               '-D', working_dir,
+               '-n', str(1),
+               '--gres', config_data['gpu_key'],
+               '-p', config_data['partition'],
+               '--time', time_limit,
+               '--mail-type=ALL',
+               '--mail-user=' + mail,
+               '--output=' + output_file,
+               '--signal=INT@60']
 esp_command = "bin/esp"
 esp_args = f'-b {output_arg}'
 
@@ -202,13 +202,12 @@ def start_muninn(args, muninn_command):
 
 
 if args.report:
-    
-    output_file = str(log_dir / f"slurm-muninn-{job_name}-%j.out")  # %j for job index                                   
 
-    
+    output_file = str(log_dir / f"slurm-muninn-{job_name}-%j.out")  # %j for job index
+
     sbatch_args = ['sbatch',
                    '-D', working_dir,
-                   '-J', job_name,
+                   '-J', job_name + "-muninn",
                    '-n', str(1),
                    '--gres', config_data['gpu_key'],
                    '-p', config_data['partition'],
@@ -217,7 +216,7 @@ if args.report:
                    '--mail-user=' + mail,
                    '--output=' + output_file,
                    '--signal=INT@60']
-    
+
     if args.output is not None:
         muninn_output_arg = f"{args.output}"
     else:

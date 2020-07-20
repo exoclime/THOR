@@ -179,6 +179,7 @@ class output_new:
             outputs['F_net'] = 'f_net'
             outputs['Alf_Qheat'] = 'TSqheat'
             outputs['F_up_TOA_spectrum'] = 'spectrum'
+            outputs['alf_spectrum'] = 'incoming_spectrum'
             outputs['lambda_wave'] = 'wavelength'
 
         if input.BL and input.BL_type == 1:
@@ -260,7 +261,7 @@ class output_new:
 
             openh5.close()
 
-        fileVDS = resultsf+'/esp_output_'+simID+'_VDS.h5'
+        fileVDS = resultsf+'/esp_output_'+simID+'_'+str(ntsi)+'_'+str(nts)+'_VDS.h5'
         self.openVDS = h5py.File(fileVDS,'w',libver='latest')
 
         #create data sets.
@@ -305,6 +306,8 @@ class output_new:
                         self.tau_lw = np.reshape(data[1::2],(grid.point_num,grid.nv,tlen))
                     elif key == 'spectrum':
                         self.spectrum = np.reshape(data, (grid.point_num,-1,tlen))
+                    elif key == 'incoming_spectrum':
+                        self.incoming_spectrum = np.reshape(data, (-1,tlen))
                     elif key == 'w0_band':
                         self.w0_band = np.reshape(data, (grid.point_num,grid.nv,-1,tlen))
                     elif key == 'g0_band':
@@ -376,7 +379,7 @@ class rg_out_new:
                     else:
                         raise IOError('Property %s with unknown dimensions in regrid file'%key)
 
-        fileVDS = resultsf+'/regrid_'+simID+'_VDS.h5'
+        fileVDS = resultsf+'/regrid_'+simID+'_'+str(ntsi)+'_'+str(nts)+'_VDS.h5'
         self.openVDS = h5py.File(fileVDS,'w',libver='latest')
 
         for key in openh5.keys():
@@ -1930,6 +1933,8 @@ def profile(input, grid, output, z, stride=50, axis=None, save=True):
     ax.set_title('Time = %#.3f - %#.3f days' % (output.time[0], output.time[-1]))
     ax.get_xaxis().get_major_formatter().set_useOffset(False)
     ax.tick_params(axis='x', labelrotation=45 )
+
+    ax.grid(True)
     pfile = None
     if save == True:
         output_path = pathlib.Path(input.resultsf) / 'figures'
@@ -2257,7 +2262,7 @@ def RTbalance(input, grid, output):
     olr = flw_up[:, input.nv - 1, :] * grid.areasT[:, None]
 
 def spectrum(input, grid, output, z, stride=20, axis=None, save=True):
-    output.load_reshape(grid, ['spectrum'])
+    output.load_reshape(grid, ['spectrum', 'incoming_spectrum'])
     # get figure and axis
     if isinstance(axis, axes.SubplotBase):
         ax = axis
@@ -2304,7 +2309,18 @@ def spectrum(input, grid, output, z, stride=20, axis=None, save=True):
         ax.plot(lamda, spectrum, 'k-', alpha=0.5, lw=1.0,
                     path_effects=[pe.Stroke(linewidth=1.5, foreground=color), pe.Normal()])
 
-
+    lamda = output.wavelength[:]*1e6
+    if tsp > 1:
+        incoming_spectrum= np.mean(output.incoming_spectrum[:, :], axis=1)
+    else:
+        incoming_spectrum= output.incoming_spectrum[:, 0]
+    R_SUN   = 695700000.0
+    AU       = 149597870700.0
+    flx_cst = pow((input.radius_star*R_SUN)/(input.planet_star_dist*AU), 2.0)*math.pi
+    ax_twin = ax.twinx()
+    ax_twin.plot(lamda, incoming_spectrum*flx_cst, 'k-', alpha=0.5, lw=1.0,
+            path_effects=[pe.Stroke(linewidth=1.5, foreground='black'), pe.Normal()])
+    ax_twin.set_ylabel('Incoming stellar flux [$W m^2$]')
     # add an insert showing the position of columns
     inset_pos = [0.8, 0.1, 0.18, 0.18]
     ax_inset = ax.inset_axes(inset_pos)
@@ -2324,10 +2340,11 @@ def spectrum(input, grid, output, z, stride=20, axis=None, save=True):
     #ax.invert_yaxis()
     ax.set_xscale('log')
     ax.set_yscale('linear')
-    ax.set_ylabel('Flux (W m^2)')
+    ax.set_ylabel('Flux [$W m^2$]')
     ax.set_xlabel('Wavelength [um]')
     ax.set_title('Time = %#.3f - %#.3f days' % (output.time[0], output.time[-1]))
-
+    ax.grid(True)
+    
     pfile = None
     if save == True:
         output_path = pathlib.Path(input.resultsf) / 'figures'

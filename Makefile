@@ -228,8 +228,8 @@ $(info CC compile flag: $(CC_comp_flag))
 # Defining Alfrodull build variables if present
 ifneq ($(wildcard Alfrodull/*),)
     $(info Alfrodull directory not empty, try to build with Alfrodull)
-    ALFRODULL_FLAGS = -DHAS_ALFRODULL=1 -IAlfrodull/thor_module/inc/ -IAlfrodull/src/inc
-    ALFCLASS = Alfrodull/thor_module/inc/two_stream_radiative_transfer.h
+    ALFRODULL_FLAGS = -DHAS_ALFRODULL=1 -IAlfrodull/src/inc
+    ALFCLASS = Alfrodull/src/inc/two_stream_radiative_transfer.h
     ALFRODULL_LINK_FLAGS =  -LAlfrodull -lalfrodull
     ALFRODULL_TARGET = Alfrodull/libalfrodull.a
     ALFRODULL_DEP = Alfrodull
