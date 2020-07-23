@@ -1,3 +1,5 @@
+#---- code by Russell Deitrick and Urs Schroffenegger---------------------------
+
 import hamarr as ham
 import subprocess as spr
 import numpy as np
@@ -48,11 +50,9 @@ def make_plot(args, save=True, axis=None):
     if args.no_pressure_log:
         plog = False
 
-    valid = ['uver', 'ulonver', 'vver', 'wver', 'wlonver', 'wprof', 'Tver', 'Tlonver', 'Tulev',
-             'PTver', 'PTlonver', 'ulev', 'PVver', 'PVlev',
+    valid = ['uver', 'ulonver', 'vver', 'wver', 'wlonver', 'wprof', 'Tver', 'Tlonver', 'Tulev', 'PTver', 'PTlonver', 'ulev', 'PVver', 'PVlev',
              'TP', 'RVlev', 'cons', 'stream', 'pause', 'tracer', 'PTP', 'regrid', 'KE',
-             'SR', 'uprof', 'cfl', 'bvprof', 'TSfluxprof', 'Tsurf', 'insol', 'massf', 'pause_rg',
-             'DGfluxprof', 'qheat',
+             'SR', 'uprof', 'cfl', 'bvprof', 'TSfluxprof', 'Tsurf', 'insol', 'massf', 'pause_rg', 'DGfluxprof', 'qheat',
              'DGfutprof', 'DGfdtprof', 'mustar', 'DGfuptot', 'DGfdowntot', 'DGfnet', 'DGqheat',  # alf stuff
              'TSfutprof', 'TSfdtprof', 'mustar', 'TSfuptot', 'TSfdowntot', 'TSfnet', 'TSqheat',
              'DGqheatprof', 'TSqheatprof', 'qheatprof', 'TSfdirprof',
@@ -200,21 +200,29 @@ def make_plot(args, save=True, axis=None):
         plots_created.append(pfile)
 
     if 'PTver' in pview or 'all' in pview:
-        rg.load(['Temperature','Pressure'])
+        rg.load(['Temperature'])
         kappa_ad = input.Rd / input.Cp  # adiabatic coefficient
-        pt = rg.Temperature * (rg.Pressure / input.P_Ref)**(-kappa_ad)
+        if use_p:
+            pt = rg.Temperature * (rg.Pressure[None,None,:,None] / input.P_Ref)**(-kappa_ad)
+        else:
+            rg.load(['Rho'])
+            pt = rg.Temperature * (rg.Rho*input.Rd*rg.Temperature / input.P_Ref)**(-kappa_ad)
         z = {'value': pt, 'label': r'Potential Temperature (K)', 'name': 'potential_temp',
-             'cmap': 'plasma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'plog': plog}
+             'cmap': 'plasma_r', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'plog': plog}
         sigmaref = ham.Get_Prange(input, grid, rg, args, xtype='lat', use_p=use_p)
         pfile = call_plot('PTver',ham.vertical_lat,input, grid, output, rg, sigmaref, z, slice=args.slice, use_p=use_p, csp=5000, clevs=args.clevels, save=save, axis=axis)
         plots_created.append(pfile)
 
     if 'PTlonver' in pview or 'all' in pview:
-        rg.load(['Temperature','Pressure'])
+        rg.load(['Temperature'])
         kappa_ad = input.Rd / input.Cp  # adiabatic coefficient
-        pt = rg.Temperature * (rg.Pressure / input.P_Ref)**(-kappa_ad)
+        if use_p:
+            pt = rg.Temperature * (rg.Pressure[None,None,:,None] / input.P_Ref)**(-kappa_ad)
+        else:
+            rg.load(['Rho'])
+            pt = rg.Temperature * (rg.Rho*input.Rd*rg.Temperature / input.P_Ref)**(-kappa_ad)
         z = {'value': pt, 'label': r'Potential Temperature (K)', 'name': 'potential_temp',
-             'cmap': 'plasma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'plog': plog}
+             'cmap': 'plasma_r', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'plog': plog}
         sigmaref = ham.Get_Prange(input, grid, rg, args, xtype='lat', use_p=use_p)
         pfile = call_plot('PTlonver',ham.vertical_lon,input, grid, output, rg, sigmaref, z, slice=args.slice, use_p=use_p, csp=5000, clevs=args.clevels, save=save, axis=axis)
         plots_created.append(pfile)

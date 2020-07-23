@@ -43,7 +43,7 @@ __device__ void radcsw(double *phtemp,
                        double *Altitudeh_d,
                        double  incflx,
                        double  alb,
-                       double  tausw,
+                       double  kappa_sw,
                        double  ps0,
                        double  gravit,
                        int     id,
@@ -54,7 +54,8 @@ __device__ void radcsw(double *phtemp,
     //  Downward Directed Radiation
 
     // double gocp;
-    double tau      = (tausw / ps0) * (phtemp[id * (nv + 1) + nv]);
+    //double tau      = (tausw / ps0) * (phtemp[id * (nv + 1) + nv]);
+    double tau      = (kappa_sw / gravit) * (phtemp[id * (nv + 1) + nv]);
     insol_d[id]     = incflx * pow(r_orb, -2) * coszrs;
     double flux_top = insol_d[id] * (1.0 - alb);
 
@@ -253,7 +254,7 @@ __device__ void computetau(double *tau_d,
         //     * (pow(phtemp[id * (nv + 1) + lev], n_sw) - pow(phtemp[id * (nv + 1) + lev + 1], n_sw));
         // the above relation breaks if pressure is not monotonic
         tau_d[id * 2 * nv + lev * 2] =
-            n_sw * kappa_sw * pow(pressure_d[id * nv + lev] / ps0, nsw - 1) * Rho_d[id * nv + lev]
+            n_sw * kappa_sw * pow(pressure_d[id * nv + lev] / ps0, n_sw - 1) * Rho_d[id * nv + lev]
             * (Altitudeh_d[lev + 1] - Altitudeh_d[lev]);
 
         //***longwave optical depth across layer***
@@ -397,7 +398,8 @@ __global__ void rtm_dual_band(double *pressure_d,
         double kappa_lw_lat;
         if (latf_lw) {
             //latitude dependence of opacity, for e.g., earth
-            kappa_lw_lat = kappa_lw + (kappa_lw_pole - kapa_lw) * pow(sin(lonlat_d[id * 2 + 1]), 2);
+            kappa_lw_lat =
+                kappa_lw + (kappa_lw_pole - kappa_lw) * pow(sin(lonlat_d[id * 2 + 1]), 2);
         }
         else {
             kappa_lw_lat = kappa_lw;
@@ -434,7 +436,7 @@ __global__ void rtm_dual_band(double *pressure_d,
                    Altitudeh_d,
                    incflx,
                    alb,
-                   tausw,
+                   kappa_sw,
                    ps0,
                    gravit,
                    id,

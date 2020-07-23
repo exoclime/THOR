@@ -2344,7 +2344,7 @@ def spectrum(input, grid, output, z, stride=20, axis=None, save=True):
     ax.set_xlabel('Wavelength [um]')
     ax.set_title('Time = %#.3f - %#.3f days' % (output.time[0], output.time[-1]))
     ax.grid(True)
-    
+
     pfile = None
     if save == True:
         output_path = pathlib.Path(input.resultsf) / 'figures'

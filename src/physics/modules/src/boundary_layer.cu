@@ -1018,9 +1018,9 @@ __global__ void Heat_Diff_Impl(double *      pt_d,
             pressure_d[id * nv + lev] =
                 P_Ref * pow(Rd * Rho_d[id * nv + lev] * pt_d[id * nv + lev] / P_Ref, Cp / Cv);
         }
-        if (id == 2027) {
-            printf("stop");
-        }
+        // if (id == 2027) {
+        //     printf("stop");
+        // }
         //compute new surface temperature
         // // break here...
         // if (id == 2561) {
