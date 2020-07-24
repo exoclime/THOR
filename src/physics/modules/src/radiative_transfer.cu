@@ -400,8 +400,8 @@ bool radiative_transfer::store_init(storage &s) {
     s.append_value(radius_star / 695508, "/radius_star", "R_sun", "radius of host star");
     s.append_value(diff_ang, "/diff_ang", "-", "diffusivity factor");
     s.append_value(albedo, "/albedo", "-", "bond albedo of planet");
-    s.append_value(kappa_sw, "/kappa_sw", "-", "gray opacity of shortwave");
-    s.append_value(kappa_lw, "/kappa_lw", "-", "gray opacity of longwave");
+    //  s.append_value(kappa_sw, "/kappa_sw", "-", "gray opacity of shortwave");
+    //  s.append_value(kappa_lw, "/kappa_lw", "-", "gray opacity of longwave");
 
     s.append_value(latf_lw ? 1.0 : 0.0, "/latf_lw", "-", "use lat dependent opacity");
     s.append_value(kappa_lw_pole, "/kappa_lw_pole", "-", "gray opacity of longwave at poles");
