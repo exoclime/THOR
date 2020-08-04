@@ -157,9 +157,12 @@ class output_new:
         # key is the key in h5 file, value is desired attribute name in this class
         outputs = {'Rho': 'Rho', 'Pressure': 'Pressure', 'Mh': 'Mh', 'Wh': 'Wh',
                     'Rho_mean': 'Rho_mean', 'Pressure_mean': 'Pressure_mean',
-                    'Mh_mean': 'Mh_mean', 'Wh_mean': 'Wh_mean', 'Qheat': 'qheat'}
+                    'Mh_mean': 'Mh_mean', 'Wh_mean': 'Wh_mean'}
 
         #add things to outputs that can be checked for in input or grid
+        if input.RT or input.TSRT:
+            outputs['Qheat'] = 'qheat'
+
         if input.RT:
             outputs['tau'] = 'tau'  #have to be careful about slicing this (sw = ::2, lw = 1::2)
             outputs['flw_up'] = 'flw_up'
@@ -826,7 +829,8 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
                       'Mh_mean': output.Mh_mean[:, :, :, 0],
                       'Pressure_mean': output.Pressure_mean[:, :, 0]}
 
-            source['qheat'] = output.qheat[:, :, 0]
+            if input.RT or input.TSRT:
+                source['qheat'] = output.qheat[:, :, 0]
 
             if input.RT == 1:
                 source['flw_up'] = output.flw_up[:, :-1, 0] + (output.flw_up[:, 1:, 0] - output.flw_up[:, :-1, 0]) * interpz[None, :]
