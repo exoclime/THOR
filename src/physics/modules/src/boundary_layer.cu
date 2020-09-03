@@ -74,7 +74,7 @@ bool boundary_layer::initialise_memory(const ESP &              esp,
     cudaMalloc((void **)&cpr_tmp, esp.nv * esp.point_num * sizeof(double));
     cudaMalloc((void **)&dtmp, 3 * esp.nv * esp.point_num * sizeof(double));
     cudaMalloc((void **)&dpr_tmp, 3 * esp.nv * esp.point_num * sizeof(double));
-    cudaMalloc((void **)&RiB_d, esp.nvi * esp.point_num * sizeof(double));
+    cudaMalloc((void **)&RiB_d, esp.point_num * sizeof(double));
     cudaMalloc((void **)&KM_d, esp.nvi * esp.point_num * sizeof(double));
     cudaMalloc((void **)&KH_d, esp.nvi * esp.point_num * sizeof(double));
     cudaMalloc((void **)&CD_d, esp.point_num * sizeof(double));
@@ -82,20 +82,22 @@ bool boundary_layer::initialise_memory(const ESP &              esp,
     cudaMalloc((void **)&vh_lowest_d, esp.point_num * sizeof(double));
     cudaMalloc((void **)&pt_surf_d, esp.point_num * sizeof(double));
     cudaMalloc((void **)&p_surf_d, esp.point_num * sizeof(double));
-    cudaMalloc((void **)&Rho_surf_d, esp.point_num * sizeof(double));
-    cudaMalloc((void **)&zeta_d, esp.nvi * esp.point_num * sizeof(double));
+    //cudaMalloc((void **)&Rho_surf_d, esp.point_num * sizeof(double));
+    // cudaMalloc((void **)&zeta_d, esp.nvi * esp.point_num * sizeof(double));
+    cudaMalloc((void **)&L_MO_d, esp.point_num * sizeof(double));
+    cudaMalloc((void **)&F_sens_d, esp.point_num * sizeof(double));
 
     cudaMalloc((void **)&bl_top_lev_d, esp.point_num * sizeof(int));
-    cudaMalloc((void **)&sl_top_lev_d, esp.point_num * sizeof(int));
+    // cudaMalloc((void **)&sl_top_lev_d, esp.point_num * sizeof(int));
     cudaMalloc((void **)&bl_top_height_d, esp.point_num * sizeof(double));
 
     cudaMalloc((void **)&Rho_int_d, esp.nvi * esp.point_num * sizeof(double));
 
-    RiB_h           = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
-    KM_h            = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
-    KH_h            = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
-    bl_top_lev_h    = (int *)malloc(esp.point_num * sizeof(int));
-    sl_top_lev_h    = (int *)malloc(esp.point_num * sizeof(int));
+    RiB_h        = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
+    KM_h         = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
+    KH_h         = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
+    bl_top_lev_h = (int *)malloc(esp.point_num * sizeof(int));
+    // sl_top_lev_h    = (int *)malloc(esp.point_num * sizeof(int));
     bl_top_height_h = (double *)malloc(esp.point_num * sizeof(double));
     CD_h            = (double *)malloc(esp.point_num * sizeof(double));
     CH_h            = (double *)malloc(esp.point_num * sizeof(double));
@@ -106,19 +108,21 @@ bool boundary_layer::initialise_memory(const ESP &              esp,
     cudaMemset(cpr_tmp, 0, sizeof(double) * esp.point_num * esp.nv);
     cudaMemset(dtmp, 0, sizeof(double) * 3 * esp.point_num * esp.nv);
     cudaMemset(dpr_tmp, 0, sizeof(double) * 3 * esp.point_num * esp.nv);
-    cudaMemset(RiB_d, 0, sizeof(double) * esp.point_num * esp.nvi);
+    cudaMemset(RiB_d, 0, sizeof(double) * esp.point_num);
+    cudaMemset(L_MO_d, 0, sizeof(double) * esp.point_num);
+    cudaMemset(F_sens_d, 0, sizeof(double) * esp.point_num);
     cudaMemset(KM_d, 0, sizeof(double) * esp.point_num * esp.nvi);
     cudaMemset(KH_d, 0, sizeof(double) * esp.point_num * esp.nvi);
     cudaMemset(bl_top_lev_d, 0, sizeof(int) * esp.point_num);
-    cudaMemset(sl_top_lev_d, 0, sizeof(int) * esp.point_num);
+    // cudaMemset(sl_top_lev_d, 0, sizeof(int) * esp.point_num);
     cudaMemset(bl_top_height_d, 0, sizeof(double) * esp.point_num);
     cudaMemset(CD_d, 0, sizeof(double) * esp.point_num);
     cudaMemset(CH_d, 0, sizeof(double) * esp.point_num);
     cudaMemset(vh_lowest_d, 0, sizeof(double) * esp.point_num);
     cudaMemset(pt_surf_d, 0, sizeof(double) * esp.point_num);
     cudaMemset(p_surf_d, 0, sizeof(double) * esp.point_num);
-    cudaMemset(Rho_surf_d, 0, sizeof(double) * esp.point_num);
-    cudaMemset(zeta_d, 0, sizeof(double) * esp.point_num * esp.nvi);
+    // cudaMemset(Rho_surf_d, 0, sizeof(double) * esp.point_num);
+    // cudaMemset(zeta_d, 0, sizeof(double) * esp.point_num * esp.nvi);
     cudaMemset(Rho_int_d, 0, sizeof(double) * esp.point_num * esp.nvi);
 
     return true;
@@ -131,7 +135,7 @@ bool boundary_layer::free_memory() {
     free(KH_h);
     free(bl_top_lev_h);
     free(bl_top_height_h);
-    free(sl_top_lev_h);
+    // free(sl_top_lev_h);
     free(CD_h);
     free(CH_h);
 
@@ -151,11 +155,13 @@ bool boundary_layer::free_memory() {
     cudaFree(vh_lowest_d);
     cudaFree(pt_surf_d);
     cudaFree(p_surf_d);
-    cudaFree(Rho_surf_d);
+    // cudaFree(Rho_surf_d);
     cudaFree(bl_top_lev_d);
-    cudaFree(zeta_d);
+    // cudaFree(zeta_d);
+    cudaFree(L_MO_d);
+    cudaFree(F_sens_d);
     cudaFree(bl_top_height_d);
-    cudaFree(sl_top_lev_d);
+    // cudaFree(sl_top_lev_d);
     cudaFree(Rho_int_d);
 
     return true;
@@ -226,45 +232,74 @@ bool boundary_layer::phy_loop(ESP &                  esp,
                                 esp.point_num);
     }
     else if (bl_type == MONINOBUKHOV) {
-        CalcRiB<<<NBLEV, NTH>>>(esp.pressure_d,
-                                esp.Rho_d,
-                                esp.Mh_d,
-                                esp.Tsurface_d,
-                                esp.pt_d,
-                                esp.Altitude_d,
-                                esp.Altitudeh_d,
-                                sim.Rd,
-                                sim.Cp,
-                                sim.P_Ref,
-                                sim.Gravit,
-                                Ri_crit,
-                                z_rough,
-                                z_therm,
-                                RiB_d,
-                                bl_top_lev_d,
-                                bl_top_height_d,
-                                sl_top_lev_d,
-                                f_surf_layer,
-                                pt_surf_d,
-                                p_surf_d,
-                                Rho_surf_d,
-                                CD_d,
-                                CH_d,
-                                zeta_d,
-                                vh_lowest_d,
-                                Rho_int_d,
-                                esp.point_num,
-                                esp.nv);
+        // CalcRiB<<<NBLEV, NTH>>>(esp.pressure_d,
+        //                         esp.Rho_d,
+        //                         esp.Mh_d,
+        //                         esp.Tsurface_d,
+        //                         esp.pt_d,
+        //                         esp.Altitude_d,
+        //                         esp.Altitudeh_d,
+        //                         sim.Rd,
+        //                         sim.Cp,
+        //                         sim.P_Ref,
+        //                         sim.Gravit,
+        //                         Ri_crit,
+        //                         z_rough,
+        //                         z_therm,
+        //                         RiB_d,
+        //                         bl_top_lev_d,
+        //                         bl_top_height_d,
+        //                         sl_top_lev_d,
+        //                         f_surf_layer,
+        //                         pt_surf_d,
+        //                         p_surf_d,
+        //                         Rho_surf_d,
+        //                         CD_d,
+        //                         CH_d,
+        //                         zeta_d,
+        //                         vh_lowest_d,
+        //                         Rho_int_d,
+        //                         esp.point_num,
+        //                         esp.nv);
+
+        Calc_MOlength_Cdrag_BLdepth<<<NBLEV, NTH>>>(esp.pressure_d,
+                                                    esp.Rho_d,
+                                                    esp.Mh_d,
+                                                    esp.Tsurface_d,
+                                                    esp.pt_d,
+                                                    esp.Altitude_d,
+                                                    esp.Altitudeh_d,
+                                                    sim.Rd,
+                                                    sim.Cp,
+                                                    sim.P_Ref,
+                                                    sim.Gravit,
+                                                    Ri_crit,
+                                                    z_rough,
+                                                    z_therm,
+                                                    RiB_d,
+                                                    bl_top_lev_d,
+                                                    bl_top_height_d,
+                                                    f_surf_layer,
+                                                    pt_surf_d,
+                                                    p_surf_d,
+                                                    CD_d,
+                                                    CH_d,
+                                                    L_MO_d,
+                                                    F_sens_d,
+                                                    vh_lowest_d,
+                                                    Rho_int_d,
+                                                    esp.point_num,
+                                                    esp.nv);
 
         cudaDeviceSynchronize();
 
         CalcKM_KH<<<NBi, NTH>>>(RiB_d,
-                                zeta_d,
+                                L_MO_d,
                                 CD_d,
                                 CH_d,
                                 bl_top_height_d,
                                 bl_top_lev_d,
-                                sl_top_lev_d,
+                                F_sens_d,
                                 vh_lowest_d,
                                 esp.Altitude_d,
                                 esp.Altitudeh_d,
@@ -272,8 +307,10 @@ bool boundary_layer::phy_loop(ESP &                  esp,
                                 z_rough,
                                 z_therm,
                                 f_surf_layer,
+                                pt_surf_d,
                                 KM_d,
                                 KH_d,
+                                sim.Gravit,
                                 esp.point_num);
 
         // TO DO
@@ -355,7 +392,6 @@ bool boundary_layer::phy_loop(ESP &                  esp,
                                        Rho_int_d,
                                        pt_surf_d,
                                        p_surf_d,
-                                       Rho_surf_d,
                                        time_step,
                                        sim.Rd,
                                        sim.Cp,
@@ -493,8 +529,8 @@ bool boundary_layer::configure(config_file &config_reader) {
 
 bool boundary_layer::store(const ESP &esp, storage &s) {
     if (bl_type == MONINOBUKHOV) {
-        cudaMemcpy(RiB_h, RiB_d, esp.point_num * esp.nvi * sizeof(double), cudaMemcpyDeviceToHost);
-        s.append_table(RiB_h, esp.point_num * esp.nvi, "/RiB", " ", "bulk Richardson number");
+        cudaMemcpy(RiB_h, RiB_d, esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
+        s.append_table(RiB_h, esp.point_num, "/RiB", " ", "bulk Richardson number");
 
         cudaMemcpy(CD_h, CD_d, esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
         s.append_table(CD_h, esp.point_num, "/CD", " ", "surface drag coefficient");
@@ -873,7 +909,6 @@ __global__ void Heat_Diff_Impl(double *      pt_d,
                                double *      Rho_int_d,
                                double *      pt_surf_d,
                                double *      p_surf_d,
-                               double *      Rho_surf_d,
                                double        time_step,
                                double        Rd,
                                double        Cp,
@@ -898,10 +933,10 @@ __global__ void Heat_Diff_Impl(double *      pt_d,
             if (lev == -1) { //treat surface in matrix solution (need to offset abcd arrays by +1)
                 atmp[id * nv + lev + 1] = 0;
                 btmp[id * nv + lev + 1] =
-                    -(Rho_surf_d[id] * Cp / Csurf * KH_d[id * (nv + 1) + lev + 1]
+                    -(Rho_int_d[id * (nv + 1)] * Cp / Csurf * KH_d[id * (nv + 1) + lev + 1]
                           / Altitude_d[lev + 1]
                       + 1.0 / time_step);
-                ctmp[id * nv + lev + 1] = Rho_surf_d[id] * Cp / Csurf
+                ctmp[id * nv + lev + 1] = Rho_int_d[id * (nv + 1)] * Cp / Csurf
                                           * KH_d[id * (nv + 1) + lev + 1] / Altitude_d[lev + 1];
                 cpr_tmp[id * nv + lev + 1] = ctmp[id * nv + lev + 1] / btmp[id * nv + lev + 1];
                 dtmp[id * nv + lev + 1]    = -pt_surf_d[id] / time_step;
@@ -998,7 +1033,7 @@ __global__ void Heat_Diff_Impl(double *      pt_d,
         //     printf("stop");
         // }
 
-        double aux;
+        // double aux;
         for (lev = bl_top_lev_d[id]; lev >= 0; lev--) {
             //backward sweep
             if (lev == bl_top_lev_d[id]) {
@@ -1073,8 +1108,8 @@ __global__ void Heat_Diff_Expl(double *pt_d,
     int lev;
 
     if (id < num) {
-        double Cv    = Cp - Rd;
-        double kappa = Rd / Cp;
+        // double Cv    = Cp - Rd;
+        // double kappa = Rd / Cp;
 
         for (lev = 0; lev < bl_top_lev_d[id] + 1; lev++) {
             if (lev == 0) {
@@ -1127,6 +1162,155 @@ __global__ void Heat_Diff_Expl(double *pt_d,
     }
 }
 
+__global__ void Calc_MOlength_Cdrag_BLdepth(double *pressure_d,
+                                            double *Rho_d,
+                                            double *Mh_d,
+                                            double *Tsurface_d,
+                                            double *pt_d,
+                                            double *Altitude_d,
+                                            double *Altitudeh_d,
+                                            double  Rd,
+                                            double  Cp,
+                                            double  P_Ref,
+                                            double  Gravit,
+                                            double  Ri_crit,
+                                            double  z_rough,
+                                            double  z_therm,
+                                            double *RiB_d,
+                                            int *   bl_top_lev_d,
+                                            double *bl_top_height_d,
+                                            double  f_surf_layer,
+                                            double *pt_surf_d,
+                                            double *p_surf_d,
+                                            double *CD_d,
+                                            double *CH_d,
+                                            double *L_MO_d,
+                                            double *F_sens_d,
+                                            double *vh_lowest_d,
+                                            double *Rho_int_d,
+                                            int     num,
+                                            int     nv) {
+
+    //first get bulk Ri number of first layer
+    //convert to zeta and compute L (MO length) for column
+    //then zeta for layers above = z/L
+    //from zeta, compute drag coefficients, BL depth, add'l quantities
+
+    int id = blockIdx.x * blockDim.x + threadIdx.x;
+    int lev;
+
+    if (id < num) {
+        double kappa = Rd / Cp;
+        double extrap_surf, pt_interface;
+        double vh_layer, vh_layer_below, vh_interface;
+        double zeta_surf, RiB;
+
+        //extrapolate some quantities to surface
+        extrap_surf = -Altitude_d[1] / (Altitude_d[0] - Altitude_d[1]);
+        p_surf_d[id] =
+            pressure_d[id * nv + 1] + extrap_surf * (pressure_d[id * nv] - pressure_d[id * nv + 1]);
+        pt_surf_d[id] = Tsurface_d[id] * pow(p_surf_d[id] / P_Ref, -kappa);
+        Rho_int_d[id * (nv + 1)] =
+            Rho_d[id * nv + 1] + extrap_surf * (Rho_d[id * nv] - Rho_d[id * nv + 1]);
+
+        //things we need a center of lowest layer
+        pt_d[id * nv] =
+            pow(P_Ref, kappa) * pow(pressure_d[id * nv], 1.0 - kappa) / (Rho_d[id * nv] * Rd);
+        vh_lowest_d[id] = sqrt((pow(Mh_d[id * nv * 3 + 0], 2) + pow(Mh_d[id * nv * 3 + 1], 2)
+                                + pow(Mh_d[id * nv * 3 + 2], 2)))
+                          / Rho_d[id * nv];
+
+        if (pow(vh_lowest_d[id], 2) == 0) { //zero velocity, RiB = large +number
+            RiB_d[id] = LARGERiB;
+        }
+        else { // bulk Richardson number, wrt to surface
+            RiB_d[id] = Gravit * Altitude_d[0] * (pt_d[id * nv] - pt_surf_d[id])
+                        / (pt_surf_d[id] * pow(vh_lowest_d[id], 2));
+        }
+        zeta_surf = RiB_2_zeta(
+            RiB_d[id * (nv + 1) + 0], Ri_crit, Altitude_d[0] / z_rough, Altitude_d[0] / z_therm);
+
+        if (RiB_d[id] > Ri_crit) { //super-critical, set L to zero
+            L_MO_d[id] = 0.0;
+        }
+        else {
+            L_MO_d[id] = Altitude_d[0] / zeta_surf; //monin-obukhov length for this column
+        }
+
+        //surface drag coefficient
+        if (RiB_d[id] < 0) { //unstable (temporarily model as neutral)
+            CD_d[id] = pow(KVONKARMAN, 2) * pow(log(Altitude_d[0] / z_rough), -2);
+            CH_d[id] = pow(KVONKARMAN, 2) * pow(log(Altitude_d[0] / z_rough), -1)
+                       * pow(log(Altitude_d[0] / z_therm), -1);
+        }
+        else if (RiB_d[id] == 0) { //neutral
+            CD_d[id] = pow(KVONKARMAN, 2) * pow(log(Altitude_d[0] / z_rough), -2);
+            CH_d[id] = pow(KVONKARMAN, 2) * pow(log(Altitude_d[0] / z_rough), -1)
+                       * pow(log(Altitude_d[0] / z_therm), -1);
+        }
+        else if (RiB_d[id] <= Ri_crit) { //stable
+            CD_d[id] =
+                pow(KVONKARMAN, 2) * pow(log(Altitude_d[0] / z_rough) + zeta_surf / Ri_crit, -2);
+            CH_d[id] = pow(KVONKARMAN, 2)
+                       * pow(log(Altitude_d[0] / z_rough) + zeta_surf / Ri_crit, -1)
+                       * pow(log(Altitude_d[0] / z_therm) + zeta_surf / Ri_crit, -1);
+        }
+        else { //super-critical
+            CD_d[id] = 0;
+            CH_d[id] = 0;
+        }
+
+        //sensible heat flux from surface to lowest layer of atmos
+        F_sens_d[id] = CH_d[id] * vh_lowest_d[id] * (pt_surf_d[id] - pt_d[id * nv]);
+
+        //loop over layers above to determine height
+        RiB              = RiB_d[id]; //temporarily store RiB of layer below
+        bl_top_lev_d[id] = 0;
+        for (lev = 1; lev <= nv; lev++) {
+            if (RiB <= Ri_crit) { //stop if we've crossed Ri_crit at the top of previous layer
+                //compute vh and pt of top interface
+                vh_layer_below = vh_layer;
+                vh_layer       = sqrt((pow(Mh_d[id * nv * 3 + lev * 3 + 0], 2)
+                                 + pow(Mh_d[id * nv * 3 + lev * 3 + 1], 2)
+                                 + pow(Mh_d[id * nv * 3 + lev * 3 + 2], 2)))
+                           / Rho_d[id * nv + lev];
+                vh_interface = vh_layer_below
+                               + (vh_layer - vh_layer_below)
+                                     * (Altitudeh_d[lev] - Altitude_d[lev - 1])
+                                     / (Altitude_d[lev] - Altitude_d[lev - 1]);
+                pt_d[id * nv + lev] = pow(P_Ref, kappa)
+                                      * pow(pressure_d[id * nv + lev], 1.0 - kappa)
+                                      / (Rho_d[id * nv + lev] * Rd);
+                pt_interface = pt_d[id * nv + lev - 1]
+                               + (pt_d[id * nv + lev] - pt_d[id * nv + lev - 1])
+                                     * (Altitudeh_d[lev] - Altitude_d[lev - 1])
+                                     / (Altitude_d[lev] - Altitude_d[lev - 1]);
+
+                Rho_int_d[id * (nv + 1) + lev] = Rho_d[id * nv + lev - 1]
+                                                 + (Rho_d[id * nv + lev] - Rho_d[id * nv + lev - 1])
+                                                       * (Altitudeh_d[lev] - Altitude_d[lev - 1])
+                                                       / (Altitude_d[lev] - Altitude_d[lev - 1]);
+                //calc RiB at top interface of layer (lev-1)
+                if (pow(vh_interface, 2) == 0) { //zero velocity, set RiB to a big +number
+                    RiB = LARGERiB;
+                }
+                else {
+                    if (RiB_d[id] < 0) { //unstable part
+                        // later! include effect of thermals here
+                        RiB = Gravit * Altitudeh_d[lev] * (pt_interface - pt_d[id * nv + 0])
+                              / (pt_d[id * nv + 0] * pow(vh_interface, 2));
+                    }
+                    else { //stable & neutral
+                        RiB = Gravit * Altitudeh_d[lev] * (pt_interface - pt_d[id * nv + 0])
+                              / (pt_d[id * nv + 0] * pow(vh_interface, 2));
+                    }
+                }
+                bl_top_lev_d[id] = lev - 1; //layer below this interface is in BL
+            }
+        }
+        bl_top_height_d[id] = Altitudeh_d[bl_top_lev_d[id] + 1];
+    }
+}
 
 __global__ void CalcRiB(double *pressure_d,
                         double *Rho_d,
@@ -1317,8 +1501,59 @@ __global__ void CalcRiB(double *pressure_d,
     }
 }
 
+__device__ double phi_M_unstable(double zeta) {
+    //phi_M for unstable conditions
+    double gamma = GAMMA_M;
+    return pow(1 - gamma * zeta, -1. / 3);
+}
+
+__device__ double int_phi_M_unstable(double zeta, double z_z0) {
+    //integral of phi_M/zeta for unstable conditions
+    double gamma = GAMMA_M;
+    double x     = pow(1 - gamma * zeta, 1. / 3);
+    double x0    = pow(1 - gamma * zeta / z_z0, 1. / 3);
+    return sqrt(3.0) * atan((1 + 2 * x) / sqrt(3.0)) - sqrt(3.0) * atan((1 + 2 * x0) / sqrt(3.0))
+           + log((1 - x) / (1 - x0)) - 0.5 * log((1 + x + x * x) / (1 + x0 + x0 * x0));
+}
+
+__device__ double phi_H_unstable(double zeta) {
+    //phi_H for unstable conditions
+    double gamma = GAMMA_H;
+    return pow(1 - gamma * zeta, -1. / 2);
+}
+
+__device__ double int_phi_H_unstable(double zeta, double z_zT) {
+    //integral of phi_H/zeta for unstable conditions
+    double gamma = GAMMA_H;
+    return -2 * asinh(1. / sqrt(-gamma * zeta)) + 2 * asinh(1. / sqrt(-gamma * zeta / z_zT));
+}
+
+__device__ double f_newton_RiB_zeta(double RiB, double zeta, double z_z0, double z_zT) {
+    //function relating RiB and zeta. we're finding the root (zeta value) that makes this = 0
+    return RiB - zeta * int_phi_H_unstable(zeta, z_zT) / pow(int_phi_M_unstable(zeta, z_z0), 2);
+}
+
+__device__ double fpr_newton_RiB_zeta(double zeta, double z_z0, double z_zT) {
+    //derivative in zeta of the above function
+    return -int_phi_H_unstable(zeta, z_zT) / pow(int_phi_M_unstable(zeta, z_z0), 2)
+           - phi_H_unstable(zeta) / pow(int_phi_M_unstable(zeta, z_z0), 2)
+           + 2 * int_phi_H_unstable(zeta, z_zT) / pow(int_phi_M_unstable(zeta, z_z0), 3)
+                 * phi_M_unstable(zeta);
+}
+
 __device__ double RiB_2_zeta(double RiB, double Ri_crit, double z_z0, double z_zT) {
-    if (RiB <= 0) {
+    if (RiB < 0) {
+        double eps  = 1e-8; //convergence for newton scheme
+        double zeta = RiB, zetaf = zeta + 2 * eps;
+        while (fabs(zetaf - zeta) > eps) {
+            zeta = zetaf;
+            zetaf =
+                zeta
+                - f_newton_RiB_zeta(RiB, zeta, z_z0, z_zT) / fpr_newton_RiB_zeta(zeta, z_z0, z_zT);
+        }
+        return zetaf;
+    }
+    else if (RiB == 0) {
         return 0.0; // for now, treating unstable part as neutral
     }
     else {
@@ -1331,12 +1566,12 @@ __device__ double RiB_2_zeta(double RiB, double Ri_crit, double z_z0, double z_z
 }
 
 __global__ void CalcKM_KH(double *RiB_d,
-                          double *zeta_d,
+                          double *L_MO_d,
                           double *CD_d,
                           double *CH_d,
                           double *bl_top_height_d,
                           int *   bl_top_lev_d,
-                          int *   sl_top_lev_d,
+                          double *F_sens_d,
                           double *vh_lowest_d,
                           double *Altitude_d,
                           double *Altitudeh_d,
@@ -1344,9 +1579,119 @@ __global__ void CalcKM_KH(double *RiB_d,
                           double  z_rough,
                           double  z_therm,
                           double  f_surf_layer,
+                          double *pt_surf_d,
                           double *KM_d,
                           double *KH_d,
+                          double  Gravit,
                           int     num) {
+    int id  = blockIdx.x * blockDim.x + threadIdx.x;
+    int nvi = gridDim.y;
+    int lev = blockIdx.y;
+
+    if (id < num) {
+        if (lev == 0) { // coefficient at surface
+            KM_d[id * (nvi) + lev] = CD_d[id] * vh_lowest_d[id] * Altitude_d[lev];
+            // this is the only place CH is used?
+            KH_d[id * (nvi) + lev] = CH_d[id] * vh_lowest_d[id] * Altitude_d[lev];
+        }
+        else {
+            //factor common to all coeffs above first layer
+            double kvk_z_scale = KVONKARMAN * Altitudeh_d[lev]
+                                 * pow(1.0 - Altitudeh_d[lev] / bl_top_height_d[id], 2);
+            if (Altitude_d[lev] <= f_surf_layer * bl_top_height_d[id]) { //inner layer
+                //condition on surface layer stability as in Frierson
+                if (RiB_d[id * (nvi) + 0] < 0) { //unstable
+                    KM_d[id * (nvi) + lev] = kvk_z_scale * sqrt(CD_d[id]) * vh_lowest_d[id]
+                                             / phi_M_unstable(Altitudeh_d[lev] / L_MO_d[id]);
+                    KH_d[id * (nvi) + lev] = kvk_z_scale * sqrt(CD_d[id]) * vh_lowest_d[id]
+                                             / phi_H_unstable(Altitudeh_d[lev] / L_MO_d[id]);
+                }
+                else if (RiB_d[id * (nvi) + 0] == 0) { //neutral
+                    KM_d[id * (nvi) + lev] = kvk_z_scale * sqrt(CD_d[id]) * vh_lowest_d[id];
+                    KH_d[id * (nvi) + lev] =
+                        kvk_z_scale * sqrt(CD_d[id]) * vh_lowest_d[id]; //scales with CD, not CH
+                }
+                else { //stable
+                    if (L_MO_d[id] == 0) {
+                        KM_d[id * nvi + lev] = 0.0;
+                        KH_d[id * nvi + lev] = 0.0;
+                    }
+                    else {
+                        KM_d[id * (nvi) + lev] = kvk_z_scale * sqrt(CD_d[id]) * vh_lowest_d[id]
+                                                 / (1 + Altitudeh_d[lev] / L_MO_d[id] / Ri_crit);
+                        KH_d[id * (nvi) + lev] =
+                            kvk_z_scale * sqrt(CD_d[id]) * vh_lowest_d[id]
+                            / (1
+                               + Altitudeh_d[lev] / L_MO_d[id] / Ri_crit); //scales with CD, not CH
+                    }
+                }
+            }
+            else if (Altitude_d[lev] <= bl_top_height_d[id]) { //outer layer
+                if (RiB_d[id * (nvi) + 0] < 0) {               //unstable
+                    //trickiest part of the whole damn thing
+                    double wstar, wm, wt, Pr;
+                    //convective velocity scale above inner layer
+                    wstar =
+                        pow(Gravit / pt_surf_d[id] * F_sens_d[id] * bl_top_height_d[id], 1. / 3);
+                    //total velocity scale including surface friction velocity
+                    wm = pow(pow(sqrt(CD_d[id]) * vh_lowest_d[id], 3)
+                                 + GAMMA_H * f_surf_layer * KVONKARMAN * pow(wstar, 3),
+                             1. / 3);
+                    //Prandtl number at top of inner layer
+                    Pr = phi_H_unstable(f_surf_layer * bl_top_height_d[id] / L_MO_d[id])
+                             / phi_M_unstable(f_surf_layer * bl_top_height_d[id] / L_MO_d[id])
+                         + A_THERM * KVONKARMAN * f_surf_layer * wstar / wm;
+                    //velocity scale for heat mixing
+                    wt = wm / Pr;
+
+                    KM_d[id * nvi + lev] = kvk_z_scale * wm;
+                    KH_d[id * nvi + lev] = kvk_z_scale * wt;
+                }
+                else if (RiB_d[id * (nvi) + 0] == 0) { //neutral (same as inner layer)
+                    KM_d[id * (nvi) + lev] = kvk_z_scale * sqrt(CD_d[id]) * vh_lowest_d[id];
+                    KH_d[id * (nvi) + lev] =
+                        kvk_z_scale * sqrt(CD_d[id]) * vh_lowest_d[id]; //scales with CD, not CH
+                }
+                else { //stable (same as inner layer)
+                    if (L_MO_d[id] == 0) {
+                        KM_d[id * nvi + lev] = 0.0;
+                        KH_d[id * nvi + lev] = 0.0;
+                    }
+                    else {
+                        KM_d[id * (nvi) + lev] = kvk_z_scale * sqrt(CD_d[id]) * vh_lowest_d[id]
+                                                 / (1 + Altitudeh_d[lev] / L_MO_d[id] / Ri_crit);
+                        KH_d[id * (nvi) + lev] =
+                            kvk_z_scale * sqrt(CD_d[id]) * vh_lowest_d[id]
+                            / (1
+                               + Altitudeh_d[lev] / L_MO_d[id] / Ri_crit); //scales with CD, not CH
+                    }
+                }
+            }
+            else {
+                KM_d[id * (nvi) + lev] = 0.0;
+                KH_d[id * (nvi) + lev] = 0.0;
+            }
+        }
+    }
+}
+
+__global__ void CalcKM_KH_old(double *RiB_d,
+                              double *zeta_d,
+                              double *CD_d,
+                              double *CH_d,
+                              double *bl_top_height_d,
+                              int *   bl_top_lev_d,
+                              int *   sl_top_lev_d,
+                              double *vh_lowest_d,
+                              double *Altitude_d,
+                              double *Altitudeh_d,
+                              double  Ri_crit,
+                              double  z_rough,
+                              double  z_therm,
+                              double  f_surf_layer,
+                              double *KM_d,
+                              double *KH_d,
+                              int     num) {
     int id  = blockIdx.x * blockDim.x + threadIdx.x;
     int nvi = gridDim.y;
     int lev = blockIdx.y;

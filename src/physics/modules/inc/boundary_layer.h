@@ -20,7 +20,7 @@
 //
 //
 //
-// Method: Radiative transfer physics module
+// Method: Boundary layer (surface friction) physics module
 //
 //
 // Known limitations: - Runs in a single GPU.
@@ -52,6 +52,12 @@
 #define LARGERiB 1e8
 
 #define KVONKARMAN 0.4
+#define GAMMA_M 15.0
+#define GAMMA_H 15.0
+
+//tuning parameters for thermals
+#define A_THERM 0.0
+#define B_THERM 0.0
 
 enum boundary_layer_types { RAYLEIGHHS = 0, MONINOBUKHOV = 1, EKMANSPIRAL = 2 };
 
@@ -96,16 +102,18 @@ private:
     double *atmp, *btmp, *ctmp, *cpr_tmp, *dtmp, *dpr_tmp;
     double  zbl; // altitude of transition from BL to free atmosph (ekman scheme)
 
-    int *   bl_top_lev_d;    // index of highest level (center) inside BL
-    int *   bl_top_lev_h;    // index of highest level (center) inside BL
-    int *   sl_top_lev_d;    // index of highest level (center) inside surface layer
-    int *   sl_top_lev_h;    // index of highest level (center) inside surface layer
+    int *bl_top_lev_d; // index of highest level (center) inside BL
+    int *bl_top_lev_h; // index of highest level (center) inside BL
+    // int *   sl_top_lev_d;    // index of highest level (center) inside surface layer
+    // int *   sl_top_lev_h;    // index of highest level (center) inside surface layer
     double *bl_top_height_d; // height of bl
     double *bl_top_height_h; // height of bl
 
-    double *RiB_d;  // bulk Richardson number
-    double *RiB_h;  // bulk Richardson number
-    double *zeta_d; // m-o stability parameter
+    double *RiB_d; // bulk Richardson number for surface
+    double *RiB_h; // bulk Richardson number
+    // double *zeta_d; // m-o stability parameter
+    double *L_MO_d;   //m-o length for column
+    double *F_sens_d; //surface to atmos sensible heat flux
 
     double *KM_d; // momentum diffusivity (turbulence)
     double *KM_h;
@@ -121,7 +129,7 @@ private:
     double *vh_lowest_d; //speed of lowest layer
     double *pt_surf_d;   //pt of surface
     double *p_surf_d;    //pressure at surface
-    double *Rho_surf_d;  //density at surface
+    // double *Rho_surf_d;  //density at surface
 
     double Ri_crit_config      = 1.0;
     double z_rough_config      = 3.21e-5;
@@ -202,7 +210,6 @@ __global__ void Heat_Diff_Impl(double *      pt_d,
                                double *      Rho_int_d,
                                double *      pt_surf_d,
                                double *      p_surf_d,
-                               double *      Rho_surf_d,
                                double        time_step,
                                double        Rd,
                                double        Cp,
@@ -244,15 +251,22 @@ __global__ void CalcRiB(double *pressure_d,
                         int     num,
                         int     nv);
 
+__device__ double phi_M_unstable(double zeta);
+__device__ double int_phi_M_unstable(double zeta, double z_z0);
+__device__ double phi_H_unstable(double zeta);
+__device__ double int_phi_H_unstable(double zeta, double z_zT);
+__device__ double f_newton_RiB_zeta(double RiB, double zeta, double z_z0, double z_zT);
+__device__ double fpr_newton_RiB_zeta(double zeta, double z_z0, double z_zT);
+
 __device__ double RiB_2_zeta(double RiB, double Ri_crit, double z_z0, double z_zT);
 
 __global__ void CalcKM_KH(double *RiB_d,
-                          double *zeta_d,
+                          double *L_MO_d,
                           double *CD_d,
                           double *CH_d,
                           double *bl_top_height_d,
                           int *   bl_top_lev_d,
-                          int *   sl_top_lev_d,
+                          double *F_sens_d,
                           double *vh_lowest_d,
                           double *Altitude_d,
                           double *Altitudeh_d,
@@ -260,8 +274,10 @@ __global__ void CalcKM_KH(double *RiB_d,
                           double  z_rough,
                           double  z_therm,
                           double  f_surf_layer,
+                          double *pt_surf_d,
                           double *KM_d,
                           double *KH_d,
+                          double  Gravit,
                           int     num);
 
 __global__ void Heat_Diff_Expl(double *pt_d,
@@ -284,3 +300,50 @@ __global__ void Heat_Diff_Expl(double *pt_d,
                                int     num,
                                int     nv,
                                int *   bl_top_lev_d);
+
+__global__ void Calc_MOlength_Cdrag_BLdepth(double *pressure_d,
+                                            double *Rho_d,
+                                            double *Mh_d,
+                                            double *Tsurface_d,
+                                            double *pt_d,
+                                            double *Altitude_d,
+                                            double *Altitudeh_d,
+                                            double  Rd,
+                                            double  Cp,
+                                            double  P_Ref,
+                                            double  Gravit,
+                                            double  Ri_crit,
+                                            double  z_rough,
+                                            double  z_therm,
+                                            double *RiB_d,
+                                            int *   bl_top_lev_d,
+                                            double *bl_top_height_d,
+                                            double  f_surf_layer,
+                                            double *pt_surf_d,
+                                            double *p_surf_d,
+                                            double *CD_d,
+                                            double *CH_d,
+                                            double *L_MO_d,
+                                            double *F_sens_d,
+                                            double *vh_lowest_d,
+                                            double *Rho_int_d,
+                                            int     num,
+                                            int     nv);
+
+__global__ void CalcKM_KH_old(double *RiB_d,
+                              double *zeta_d,
+                              double *CD_d,
+                              double *CH_d,
+                              double *bl_top_height_d,
+                              int *   bl_top_lev_d,
+                              int *   sl_top_lev_d,
+                              double *vh_lowest_d,
+                              double *Altitude_d,
+                              double *Altitudeh_d,
+                              double  Ri_crit,
+                              double  z_rough,
+                              double  z_therm,
+                              double  f_surf_layer,
+                              double *KM_d,
+                              double *KH_d,
+                              int     num);
