@@ -57,14 +57,14 @@ def make_plot(args, save=True, axis=None):
              'TSfutprof', 'TSfdtprof', 'mustar', 'TSfuptot', 'TSfdowntot', 'TSfnet', 'TSqheat',
              'DGqheatprof', 'TSqheatprof', 'qheatprof', 'TSfdirprof',
              'w0prof', 'g0prof', 'spectrum',
-             'phase','all']
+             'phase','all','Kdiffprof', 'RiB','BLheight']
 
     rg_needed = ['Tver', 'Tlonver', 'uver', 'ulonver', 'vver', 'wver', 'wlonver', 'Tulev', 'PTver', 'PTlonver', 'ulev', 'PVver', 'PVlev',
                  'RVlev', 'stream', 'tracer', 'Tsurf', 'insol', 'massf', 'pause_rg',
                  'mustar', 'qheat',
                  'TSfuptot', 'TSfdowntot', 'TSfnet', 'TSqheat',
                  'DGfuptot', 'DGfdowntot', 'DGfnet', 'DGqheat',
-                 'all']  # these types need regrid
+                 'all', 'RiB','BLheight']  # these types need regrid
 
     openrg = 0
 
@@ -360,6 +360,22 @@ def make_plot(args, save=True, axis=None):
         z = {'value': rg.Tsurface, 'label': r'Surface Temperature (K)', 'name': 'Tsurf',
              'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
         pfile = call_plot('Tsurf',ham.horizontal_lev,input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
+        plots_created.append(pfile)
+
+    if ('RiB' in pview or 'all' in pview) and input.BL and input.BL_type == 1:
+        rg.load(['RiB'])
+        PR_LV = np.max(output.Pressure)  # not important here
+        z = {'value': rg.RiB, 'label': r'Surface Richardson number', 'name': 'RiB',
+             'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
+        pfile = call_plot('RiB',ham.horizontal_lev,input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
+        plots_created.append(pfile)
+
+    if ('BLheight' in pview or 'all' in pview) and input.BL and input.BL_type == 1:
+        rg.load(['bl_top_height'])
+        PR_LV = np.max(output.Pressure)  # not important here
+        z = {'value': rg.bl_top_height, 'label': r'BL height (m)', 'name': 'BLh',
+             'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
+        pfile = call_plot('BLh',ham.horizontal_lev,input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
         plots_created.append(pfile)
 
     if ('DGfuptot' in pview or 'all' in pview) and input.RT:
@@ -682,6 +698,23 @@ def make_plot(args, save=True, axis=None):
             z = {'value': g0, 'label': f"g0 - band {i*stride}", 'name': 'g0'}
             pfile = call_plot('g0',ham.profile,input, grid, output, z, stride=20, save=save, axis=(axis[0], axes[i]))
             plots_created.append(pfile)
+
+    if ('Kdiffprof' in pview or 'all' in pview) and input.BL and input.BL_type == 1:
+        output.load_reshape(grid,['KH','KM'])
+        KH = output.KH[:, :-1, :] + (output.KH[:, 1:, :] - output.KH[:, :-1, :]) *\
+            (grid.Altitude[None, :, None] - grid.Altitudeh[None, :-1, None]) /\
+            (grid.Altitudeh[None, 1:, None] - grid.Altitudeh[None, :-1, None])
+        z = {'value': KH, 'label': r'boundary layer K$_H$ (m$^2$ s$^{-1}$)', 'name': 'KH'}
+        pfile = call_plot('KH',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis, use_p=False)
+        plots_created.append(pfile)
+
+        KM = output.KM[:, :-1, :] + (output.KM[:, 1:, :] - output.KM[:, :-1, :]) *\
+            (grid.Altitude[None, :, None] - grid.Altitudeh[None, :-1, None]) /\
+            (grid.Altitudeh[None, 1:, None] - grid.Altitudeh[None, :-1, None])
+        z = {'value': KM, 'label': r'boundary layer K$_M$ (m$^2$ s$^{-1}$)', 'name': 'KM'}
+        pfile = call_plot('KM',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis, use_p=False)
+        plots_created.append(pfile)
+
     # --- Global diagnostics -----------------------------------
     if 'cons' in pview:  # RD: needs some work!
         if args.split_layer[0] == 'no_split':

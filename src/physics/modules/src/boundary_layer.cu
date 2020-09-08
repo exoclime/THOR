@@ -93,7 +93,7 @@ bool boundary_layer::initialise_memory(const ESP &              esp,
 
     cudaMalloc((void **)&Rho_int_d, esp.nvi * esp.point_num * sizeof(double));
 
-    RiB_h        = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
+    RiB_h        = (double *)malloc(esp.point_num * sizeof(double));
     KM_h         = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
     KH_h         = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
     bl_top_lev_h = (int *)malloc(esp.point_num * sizeof(int));
@@ -1071,6 +1071,9 @@ __global__ void Heat_Diff_Impl(double *      pt_d,
         Tsurface_d[id] = pt_surf_d[id] * pow(p_surf_d[id] / P_Ref, kappa);
         // Rho_surf_d[id] = p_surf_d[id] / (Rd * Tsurface_d[id]);
 
+        if (isnan(Tsurface_d[id])) {
+            printf("stop");
+        }
         // if (id == 2561) {
         //     printf("T = %f, p = %f, rho = %f, pt = %f\n",
         //            Tsurface_d[id],
@@ -1227,8 +1230,8 @@ __global__ void Calc_MOlength_Cdrag_BLdepth(double *pressure_d,
             RiB_d[id] = Gravit * Altitude_d[0] * (pt_d[id * nv] - pt_surf_d[id])
                         / (pt_surf_d[id] * pow(vh_lowest_d[id], 2));
         }
-        zeta_surf = RiB_2_zeta(
-            RiB_d[id * (nv + 1) + 0], Ri_crit, Altitude_d[0] / z_rough, Altitude_d[0] / z_therm);
+        zeta_surf =
+            RiB_2_zeta(RiB_d[id], Ri_crit, Altitude_d[0] / z_rough, Altitude_d[0] / z_therm);
 
         if (RiB_d[id] > Ri_crit) { //super-critical, set L to zero
             L_MO_d[id] = 0.0;
@@ -1305,7 +1308,7 @@ __global__ void Calc_MOlength_Cdrag_BLdepth(double *pressure_d,
                               / (pt_d[id * nv + 0] * pow(vh_interface, 2));
                     }
                 }
-                bl_top_lev_d[id] = lev - 1; //layer below this interface is in BL
+                bl_top_lev_d[id] = lev; //layer above this interface is in BL
             }
         }
         bl_top_height_d[id] = Altitudeh_d[bl_top_lev_d[id] + 1];
@@ -1530,7 +1533,7 @@ __device__ double int_phi_H_unstable(double zeta, double z_zT) {
 
 __device__ double f_newton_RiB_zeta(double RiB, double zeta, double z_z0, double z_zT) {
     //function relating RiB and zeta. we're finding the root (zeta value) that makes this = 0
-    return RiB - zeta * int_phi_H_unstable(zeta, z_zT) / pow(int_phi_M_unstable(zeta, z_z0), 2);
+    return RiB - zeta * int_phi_H_unstable(zeta, z_zT) / pow(int_phi_M_unstable(zeta, z_z0), 2.0);
 }
 
 __device__ double fpr_newton_RiB_zeta(double zeta, double z_z0, double z_zT) {
@@ -1541,15 +1544,36 @@ __device__ double fpr_newton_RiB_zeta(double zeta, double z_z0, double z_zT) {
                  * phi_M_unstable(zeta);
 }
 
-__device__ double RiB_2_zeta(double RiB, double Ri_crit, double z_z0, double z_zT) {
+__device__ double RiB_2_zeta(double RiB,
+                             double Ri_crit,
+                             double
+
+
+                                    z_z0,
+                             double z_zT) {
     if (RiB < 0) {
-        double eps  = 1e-8; //convergence for newton scheme
+        double eps  = 1e-8 * fabs(RiB); //convergence for newton scheme
         double zeta = RiB, zetaf = zeta + 2 * eps;
-        while (fabs(zetaf - zeta) > eps) {
+        double f, fp;
+        int    iter = 0;
+        while (fabs(zetaf - zeta) > eps && iter < 100) {
             zeta = zetaf;
             zetaf =
                 zeta
                 - f_newton_RiB_zeta(RiB, zeta, z_z0, z_zT) / fpr_newton_RiB_zeta(zeta, z_z0, z_zT);
+            // f  = f_newton_RiB_zeta(RiB, zeta, z_z0, z_zT);
+            // fp = fpr_newton_RiB_zeta(zeta, z_z0, z_zT);
+            // printf("RiB = %f, zeta = %f, f = %e, fp = %f\n", RiB, zeta, f, fp);
+            // printf("zeta = %f, phiH = %f, phiM = %f, intphiH = %f, intphiM = %f\n",
+            //        zeta,
+            //        phi_H_unstable(zeta),
+            //        phi_M_unstable(zeta),
+            //        int_phi_H_unstable(zeta, z_zT),
+            //        int_phi_M_unstable(zeta, z_z0));
+            iter++;
+        }
+        if (iter == 100) {
+            printf("exceeded limit in newton iteration");
         }
         return zetaf;
     }
@@ -1598,15 +1622,15 @@ __global__ void CalcKM_KH(double *RiB_d,
             //factor common to all coeffs above first layer
             double kvk_z_scale = KVONKARMAN * Altitudeh_d[lev]
                                  * pow(1.0 - Altitudeh_d[lev] / bl_top_height_d[id], 2);
-            if (Altitude_d[lev] <= f_surf_layer * bl_top_height_d[id]) { //inner layer
+            if (Altitudeh_d[lev] <= f_surf_layer * bl_top_height_d[id]) { //inner layer
                 //condition on surface layer stability as in Frierson
-                if (RiB_d[id * (nvi) + 0] < 0) { //unstable
+                if (RiB_d[id] < 0) { //unstable
                     KM_d[id * (nvi) + lev] = kvk_z_scale * sqrt(CD_d[id]) * vh_lowest_d[id]
                                              / phi_M_unstable(Altitudeh_d[lev] / L_MO_d[id]);
                     KH_d[id * (nvi) + lev] = kvk_z_scale * sqrt(CD_d[id]) * vh_lowest_d[id]
                                              / phi_H_unstable(Altitudeh_d[lev] / L_MO_d[id]);
                 }
-                else if (RiB_d[id * (nvi) + 0] == 0) { //neutral
+                else if (RiB_d[id] == 0) { //neutral
                     KM_d[id * (nvi) + lev] = kvk_z_scale * sqrt(CD_d[id]) * vh_lowest_d[id];
                     KH_d[id * (nvi) + lev] =
                         kvk_z_scale * sqrt(CD_d[id]) * vh_lowest_d[id]; //scales with CD, not CH
@@ -1626,8 +1650,8 @@ __global__ void CalcKM_KH(double *RiB_d,
                     }
                 }
             }
-            else if (Altitude_d[lev] <= bl_top_height_d[id]) { //outer layer
-                if (RiB_d[id * (nvi) + 0] < 0) {               //unstable
+            else if (Altitudeh_d[lev] <= bl_top_height_d[id]) { //outer layer
+                if (RiB_d[id] < 0) {                            //unstable
                     //trickiest part of the whole damn thing
                     double wstar, wm, wt, Pr;
                     //convective velocity scale above inner layer
@@ -1646,8 +1670,11 @@ __global__ void CalcKM_KH(double *RiB_d,
 
                     KM_d[id * nvi + lev] = kvk_z_scale * wm;
                     KH_d[id * nvi + lev] = kvk_z_scale * wt;
+                    if (isnan(KH_d[id * nvi + lev]) || isnan(KM_d[id * nvi + lev])) {
+                        printf("%f %f %f %f", wstar, wm, Pr, wt);
+                    }
                 }
-                else if (RiB_d[id * (nvi) + 0] == 0) { //neutral (same as inner layer)
+                else if (RiB_d[id] == 0) { //neutral (same as inner layer)
                     KM_d[id * (nvi) + lev] = kvk_z_scale * sqrt(CD_d[id]) * vh_lowest_d[id];
                     KH_d[id * (nvi) + lev] =
                         kvk_z_scale * sqrt(CD_d[id]) * vh_lowest_d[id]; //scales with CD, not CH
@@ -1671,6 +1698,9 @@ __global__ void CalcKM_KH(double *RiB_d,
                 KM_d[id * (nvi) + lev] = 0.0;
                 KH_d[id * (nvi) + lev] = 0.0;
             }
+        }
+        if (isnan(KH_d[id * nvi + lev]) || isnan(KM_d[id * nvi + lev])) {
+            printf("stopppp");
         }
     }
 }

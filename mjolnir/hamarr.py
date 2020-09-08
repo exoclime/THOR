@@ -868,6 +868,14 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
                 source['co2'] = output.co2[:, :, 0]/ output.Rho[:,:,0]
                 source['nh3'] = output.nh3[:, :, 0]/ output.Rho[:,:,0]
 
+            if input.BL and input.BL_type == 1:
+                source['RiB'] = output.RiB[:, 0]
+                source['bl_top_height'] = output.bl_top_height[:,0]
+                source['KH'] = output.KH[:,:-1,0] + (output.KH[:,1:,0]-output.KH[:,:-1,0])*interpz[None,:]
+                source['KM'] = output.KM[:,:-1,0] + (output.KM[:,1:,0]-output.KM[:,:-1,0])*interpz[None,:]
+                source['CD'] = output.CD[:,0]
+                source['CH'] = output.CH[:,0]
+
             # calculate zonal and meridional velocity (special step for Mh)
             source['U'] = (-source['Mh'][0]*np.sin(grid.lon[:,None])+\
                            source['Mh'][1]*np.cos(grid.lon[:, None]))/source['Rho']
@@ -898,7 +906,10 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
                     interm[key][:, :] = tmp.reshape((d_lon[0], d_lon[1]))
                 else:
                     tmp = np.sum(weight3[:, :, None] * source[key][near3], axis=1)
-                    interm[key][:, :] = tmp.reshape((d_lon[0], d_lon[1], grid.nv))
+                    try:
+                        interm[key][:, :] = tmp.reshape((d_lon[0], d_lon[1], grid.nv))
+                    except:
+                        pdb.set_trace()
 
             # dealing with RV and PV
             # potential temp (only for constant Rd and Cp, currently)
@@ -1852,7 +1863,7 @@ def streamf_moc_plot(input, grid, output, rg, sigmaref, save=True, axis=False, w
     return pfile
 
 
-def profile(input, grid, output, z, stride=50, axis=None, save=True):
+def profile(input, grid, output, z, stride=50, axis=None, save=True, use_p=True, ylog=True):
     # Pref = input.P_Ref*sigmaref
     # d_sig = np.size(sigmaref)
 
@@ -1882,14 +1893,23 @@ def profile(input, grid, output, z, stride=50, axis=None, save=True):
     col_lor = []
     for column in np.arange(0, grid.point_num,stride):
         if tsp > 1:
-            P = np.mean(output.Pressure[column, :, :], axis=1)
+            if use_p:
+                y = np.mean(output.Pressure[column, :, :], axis=1)
+            else:
+                y = grid.Altitude
             x = np.mean(z['value'][column, :, :], axis=1)
         else:
-            P = output.Pressure[column, :, 0]
+            if use_p:
+                y = output.Pressure[column, :, 0]
+            else:
+                y = grid.Altitude
             x = z['value'][column, :, 0]
             if z['name'] == 'T' and input.surface:
                 x = np.concatenate([np.array([output.Tsurface[column,0]]),x])
-                P = np.concatenate([np.array(input.P_Ref),P])
+                if use_p:
+                    y = np.concatenate([np.array(input.P_Ref),y])
+                else:
+                    y = np.concatenate([np.array([0.0]),y])
 
         #color = hsv_to_rgb([column / grid.point_num, 1.0, 1.0])
         lon = grid.lon[column]
@@ -1904,11 +1924,18 @@ def profile(input, grid, output, z, stride=50, axis=None, save=True):
         col_lon.append(lon)
         col_lat.append(lat)
         col_lor.append(color)
-        ax.semilogy(x, P / 1e5, 'k-', alpha=0.5, lw=1.0,
+        if use_p:
+            unit = 1./1e5
+        else:
+            unit = 1.0
+        ax.plot(x, y*unit, 'k-', alpha=0.5, lw=1.0,
                     path_effects=[pe.Stroke(linewidth=1.5, foreground=color), pe.Normal()])
 
-        rp, = ax.plot(x[np.int(np.floor(grid.nv / 2))], P[np.int(np.floor(grid.nv / 2))] / 100000, 'k+', ms=5, alpha=0.5)
-        gp, = ax.plot(x[np.int(np.floor(grid.nv * 0.75))], P[np.int(np.floor(grid.nv * 0.75))] / 100000, 'k*', ms=5, alpha=0.5)
+        rp, = ax.plot(x[np.int(np.floor(grid.nv / 2))], y[np.int(np.floor(grid.nv / 2))] * unit, 'k+', ms=5, alpha=0.5)
+        gp, = ax.plot(x[np.int(np.floor(grid.nv * 0.75))], y[np.int(np.floor(grid.nv * 0.75))] * unit, 'k*', ms=5, alpha=0.5)
+
+    if ylog:
+        ax.set_yscale("log")
 
     # add an insert showing the position of
     inset_pos = [0.8, 0.8, 0.18, 0.18]
@@ -1926,8 +1953,11 @@ def profile(input, grid, output, z, stride=50, axis=None, save=True):
                          labelbottom=False)
 
     # plt.plot(Tad,P/100,'r--')
-    ax.invert_yaxis()
-    ax.set_ylabel('Pressure (bar)')
+    if use_p:
+        ax.invert_yaxis()
+        ax.set_ylabel('Pressure (bar)')
+    else:
+        ax.set_ylabel('Altitude (m)')
     ax.set_xlabel(z['label'])
     ax.legend([rp, gp], ['z=0.5*ztop', 'z=0.75*ztop'], loc="lower right", fontsize='xx-small')
     ax.set_title('Time = %#.3f - %#.3f days' % (output.time[0], output.time[-1]))
@@ -1941,7 +1971,11 @@ def profile(input, grid, output, z, stride=50, axis=None, save=True):
         if not output_path.exists():
             output_path.mkdir()
 
-        fname = f"{z['name']}Pprofile_i{output.ntsi}_l{output.nts}"
+        if use_p:
+            ycoord = "P"
+        else:
+            ycoord = "z"
+        fname = f"{z['name']}{ycoord}profile_i{output.ntsi}_l{output.nts}"
         pfile = output_path / (fname.replace(".", "+") + '.pdf')
         plt.savefig(pfile)
 
