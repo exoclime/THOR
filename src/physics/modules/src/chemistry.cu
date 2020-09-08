@@ -504,6 +504,7 @@ bool chemistry::dyn_core_loop_end(const ESP &esp) {
 
 bool chemistry::phy_loop(ESP &                  esp,
                          const SimulationSetup &sim,
+                         kernel_diagnostics &   diag,
                          int                    nstep, // Step number
                          double                 time_step) {
 

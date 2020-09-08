@@ -1,3 +1,6 @@
+#---- example of creating custom plots with the mjolnir library----------------
+#---- code by Russell Deitrick ------------------------------------------------
+
 import hamarr as ham
 import matplotlib.pyplot as plt
 import numpy as np

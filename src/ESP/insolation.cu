@@ -203,6 +203,31 @@ __global__ void compute_cos_zenith_angles(double* cos_zenith_angles,
     }
 }
 
+// add to zenith angle average (trapz rule)
+__global__ void trapz_step_daily_avg(double* cos_zenith_daily,
+                                     double* cos_zenith_angles,
+                                     double  dtstep,
+                                     double  Pday,
+                                     int     iday,
+                                     int     istep,
+                                     int     n_day_steps,
+                                     int     num_points) {
+
+    int column_idx = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (column_idx < num_points) {
+        if (istep == 0 || istep == n_day_steps) { //endpoints of trapz integral
+            cos_zenith_daily[iday * num_points + column_idx] +=
+                0.5 * dtstep * cos_zenith_angles[column_idx] / Pday;
+        }
+        else { //interior points
+            cos_zenith_daily[iday * num_points + column_idx] +=
+                dtstep * cos_zenith_angles[column_idx] / Pday;
+        }
+    }
+}
+
+
 // ***************************************************************************************************
 // ** Insolation class doing the management stuff
 Insolation::Insolation() {
@@ -218,6 +243,7 @@ bool Insolation::configure(config_file& config_reader) {
     config_reader.append_config_var("obliquity", obliquity_config, obliquity_config);
     config_reader.append_config_var("longp", longp_config, longp_config);
 
+    config_reader.append_config_var("insol_avg", insol_avg_str, string(insol_avg_default));
     return true;
 }
 
@@ -258,9 +284,11 @@ void Insolation::print_config() {
     log::printf("    Orbital eccentricity        = %f.\n", ecc_config);
     log::printf("    Obliquity                   = %f deg.\n", obliquity_config);
     log::printf("    Longitude of periastron     = %f deg.\n", longp_config);
+    log::printf("    Use averaged insolation     = %s \n", insol_avg_str.c_str());
 }
 
 bool Insolation::initial_conditions(const ESP& esp, const SimulationSetup& sim, storage* s) {
+    bool config_OK = true;
     if (enabled) {
         sync_rot = sync_rot_config;
         if (sync_rot) {
@@ -278,6 +306,106 @@ bool Insolation::initial_conditions(const ESP& esp, const SimulationSetup& sim, 
         mean_anomaly_i        = fmod(ecc_anomaly_i - ecc * sin(ecc_anomaly_i), (2 * M_PI));
         alpha_i               = alpha_i_config * M_PI / 180.0;
         obliquity             = obliquity_config * M_PI / 180.0;
+
+        insol_avg = NO_INSOL_AVG;
+        if (insol_avg_str == "NoInsolAvg") {
+            insol_avg = NO_INSOL_AVG;
+            config_OK &= true;
+        }
+        else if (insol_avg_str == "DiurnalAvg" || insol_avg_str == "Diurnal") {
+            //average over mean "day" (Pday = 2 PI/(Omega - n_orb))
+            if (sync_rot) {
+                printf("Diurnal average insolation cannot be used with synchronous rotation\n");
+                config_OK &= false;
+            }
+            else {
+                insol_avg = DIURNAL_AVG;
+                config_OK &= true;
+            }
+        }
+        else if (insol_avg_str == "AnnualAvg" || insol_avg_str == "Annual") {
+            //average over orbit (Porb = 2 PI/n_orb)
+            insol_avg = ANNUAL_AVG;
+            printf("Annual average insolation option not ready yet...\n");
+            config_OK &= false; //not ready yet!!
+        }
+        else {
+            log::printf("insol_avg config item not recognised: [%s]\n", insol_avg_str.c_str());
+            config_OK &= false;
+        }
+
+        // compute averages if necessary---------------------------------------
+        const int num_blocks = 256;
+        if (insol_avg == DIURNAL_AVG) {
+            if (sim.Omega != mean_motion) {
+                Pday = 2 * M_PI / (sim.Omega - mean_motion); //what do i do in case of Omega < 0 ??
+            }
+            else {
+                printf("Rotation and orbital periods cannot be equal with diurnal avg forcing\n");
+                config_OK &= false;
+            }
+            if (config_OK) {
+                Porb       = 2 * M_PI / mean_motion;
+                n_days_orb = int(Porb / Pday); //hmm what to do with remaining fraction of day??
+                cos_zenith_daily.allocate(n_days_orb * esp.point_num);
+                cos_zenith_daily.zero();
+                day_start_time.allocate(n_days_orb);
+                day_start_time.zero();
+
+                std::shared_ptr<double[]> day_start_time_h = day_start_time.get_host_data_ptr();
+                double                    dtstep           = Pday / n_day_steps;
+                for (int iday = 0; iday < n_days_orb; iday++) {
+                    //loop over days and compute avg insolation/zenith angle
+                    //compute day start time
+                    day_start_time_h[iday] = iday * Pday;
+
+                    for (int istep = 0; istep <= n_day_steps; istep++) {
+                        //trapezoidal rule here
+                        update_spin_orbit(day_start_time_h[iday] + istep * dtstep, sim.Omega);
+
+                        compute_cos_zenith_angles<<<(esp.point_num / num_blocks) + 1, num_blocks>>>(
+                            *cos_zenith_angles,
+                            esp.lonlat_d,
+                            alpha,
+                            alpha_i,
+                            sin_decl,
+                            cos_decl,
+                            ecc,
+                            obliquity,
+                            sync_rot,
+                            esp.point_num);
+                        cudaDeviceSynchronize();
+                        cuda_check_status_or_exit(__FILE__, __LINE__);
+
+                        trapz_step_daily_avg<<<(esp.point_num / num_blocks) + 1, num_blocks>>>(
+                            *cos_zenith_daily,
+                            *cos_zenith_angles,
+                            dtstep,
+                            Pday,
+                            iday,
+                            istep,
+                            n_day_steps,
+                            esp.point_num);
+
+                        cudaDeviceSynchronize();
+                        cuda_check_status_or_exit(__FILE__, __LINE__);
+                    }
+                    printf("day = %d, time = %f, M = %f\n",
+                           iday,
+                           day_start_time_h[iday],
+                           mean_anomaly);
+                }
+                //reset orbit to original position
+                update_spin_orbit(0.0, sim.Omega);
+
+                day_start_time.put();
+            }
+        }
+
+        if (!config_OK) {
+            log::printf("Error in configuration file\n");
+            exit(-1);
+        }
     }
 
     return true;

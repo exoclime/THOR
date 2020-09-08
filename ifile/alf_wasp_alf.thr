@@ -2,7 +2,7 @@
 # config format version
 config_version = 1
 
-# WASP-43b with grey RT and sponge layer (Mendonca+ 2018)
+# WASP-43b with HELIOS RT and sponge layer (Mendonca+ 2018)
 
 
 #-- Time stepping and output options -----------------------------------------#
@@ -199,7 +199,7 @@ order_diff_sponge = 2
 
 #-- Radiative transfer (double gray and two streams ) common options -------------------#
 # stellar temperature (K)
-Tstar = 4798 
+Tstar = 4798
 
 # orbital distance or semi-major axis (au)
 planet_star_dist = 0.01420
@@ -299,7 +299,7 @@ rt1Dmode = false
 # * planet_star_dist
 # * radius_star
 # * ... insolation stuff
-# 
+#
 
 two_streams_radiative_transfer = true
 
@@ -317,9 +317,9 @@ Alf_scat_single_walk = true
 # use real star spectrum or planck spectrum
 Alf_real_star = false
 # if using real star, give stellar spectrum here
-Alf_stellar_spectrum = ./Alfrodull/input/stellar_spectrum.h5 
+Alf_stellar_spectrum = ./Alfrodull/input/stellar_spectrum.h5
 
-# fake opacity when hitting opacity limit. 
+# fake opacity when hitting opacity limit.
 Alf_fake_opac = 0.0
 
 # asymmetry factor
@@ -375,12 +375,12 @@ Alf_compute_every_nstep = 1
 
 # number of columns to compute in parallel
 # (Adjust this depending on memory usage, more parallel column: faster integration)
-# Total number of points on grid is 4^(glevel - 4)*16^2*10 + 2. 
+# Total number of points on grid is 4^(glevel - 4)*16^2*10 + 2.
 Alf_num_parallel_columns = 2562
 
 
 # debug output
-# enables various informational outputs for debugging 
+# enables various informational outputs for debugging
 Alf_debug = false
 
 #########################################################

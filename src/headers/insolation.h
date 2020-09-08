@@ -54,6 +54,9 @@
 #include "simulation_setup.h"
 #include "storage.h"
 
+#define insol_avg_default "NoInsolAvg"
+enum insolation_average_types { NO_INSOL_AVG = 0, DIURNAL_AVG = 1, ANNUAL_AVG = 2 };
+
 class ESP;
 
 class Insolation
@@ -106,19 +109,25 @@ private:
 
     // insolation computation vars from rt module
     // orbit/insolation properties
-    bool   sync_rot       = true;     // is planet syncronously rotating?
-    double mean_motion    = 1.991e-7; // orbital mean motion (rad/s)
-    double mean_anomaly_i = 0;        // initial mean anomaly at start (rad)
-    double mean_anomaly   = 0;        // current mean anomaly of planet (rad)
-    double true_long_i    = 0;        // initial true longitude of planet (rad)
-    double ecc            = 0;        // orbital eccentricity
-    double obliquity      = 0;        // obliquity (tilt of spin axis) (rad)
-    double r_orb          = 1;        // orbital distance/semi-major axis
-    double sin_decl       = 0;        // declination of host star (relative to equator)
-    double cos_decl       = 1;
-    double alpha_i        = 0; // initial right asc of host star (relative to long = 0)
-    double alpha          = 0; // right asc of host star (relative to long = 0)
-    double longp          = 0; // longitude of periastron (rad)
+    bool                       sync_rot       = true;     // is planet syncronously rotating?
+    double                     mean_motion    = 1.991e-7; // orbital mean motion (rad/s)
+    double                     mean_anomaly_i = 0;        // initial mean anomaly at start (rad)
+    double                     mean_anomaly   = 0;        // current mean anomaly of planet (rad)
+    double                     true_long_i    = 0;        // initial true longitude of planet (rad)
+    double                     ecc            = 0;        // orbital eccentricity
+    double                     obliquity      = 0;        // obliquity (tilt of spin axis) (rad)
+    double                     r_orb          = 1;        // orbital distance/semi-major axis
+    double                     sin_decl       = 0; // declination of host star (relative to equator)
+    double                     cos_decl       = 1;
+    double                     alpha_i = 0; // initial right asc of host star (relative to long = 0)
+    double                     alpha   = 0; // right asc of host star (relative to long = 0)
+    double                     longp   = 0; // longitude of periastron (rad)
+    double                     Pday;        //rotation period (s)
+    double                     Porb;        //orbital period (s)
+    int                        n_days_orb;  //number of days per orbit
+    cuda_device_memory<double> cos_zenith_daily; //daily averaged zenith angles
+    cuda_device_memory<double> day_start_time; //start time of each day (relative to start of orbit)
+    int                        n_day_steps = 100; //num of steps to do daily average over
 
     bool   sync_rot_config    = true;     // is planet syncronously rotating?
     double mean_motion_config = 1.991e-7; // orbital mean motion (rad/s)
@@ -127,6 +136,9 @@ private:
     double obliquity_config   = 0;        // obliquity (tilt of spin axis) (rad)
     double alpha_i_config     = 0;        // initial right asc of host star (relative to long = 0)
     double longp_config       = 0;        // longitude of periastron (rad)
+
+    insolation_average_types insol_avg; // use averaging of insolation/stellar forcing
+    string                   insol_avg_str;
 
     cuda_device_memory<double> cos_zenith_angles;
 

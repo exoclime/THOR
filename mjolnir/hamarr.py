@@ -1,3 +1,5 @@
+#---- code by Russell Deitrick and Urs Schroffenegger -------------------------
+
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
@@ -64,7 +66,7 @@ class input_new:
                 self.has_w0_g0 = False
         else:
             self.has_w0_g0 = False
-                
+
         self.chemistry = "chemistry" in openh5 and openh5["chemistry" ][0] == 1
 
         if not hasattr(self,'surface'):
@@ -155,9 +157,12 @@ class output_new:
         # key is the key in h5 file, value is desired attribute name in this class
         outputs = {'Rho': 'Rho', 'Pressure': 'Pressure', 'Mh': 'Mh', 'Wh': 'Wh',
                     'Rho_mean': 'Rho_mean', 'Pressure_mean': 'Pressure_mean',
-                    'Mh_mean': 'Mh_mean', 'Wh_mean': 'Wh_mean', 'Qheat': 'qheat'}
+                    'Mh_mean': 'Mh_mean', 'Wh_mean': 'Wh_mean'}
 
         #add things to outputs that can be checked for in input or grid
+        if input.RT or input.TSRT:
+            outputs['Qheat'] = 'qheat'
+
         if input.RT:
             outputs['tau'] = 'tau'  #have to be careful about slicing this (sw = ::2, lw = 1::2)
             outputs['flw_up'] = 'flw_up'
@@ -196,7 +201,7 @@ class output_new:
                 else:
                     print('Warning: conservation diagnostics not available in file %s' % fileh5)
                     self.ConvData[t-ntsi+1] = False
-                    
+
                 if 'insol' in openh5.keys():
                     outputs['insol'] = 'Insol'
                 if 'tracer' in openh5.keys():
@@ -222,7 +227,7 @@ class output_new:
                     if 'w0_band' in openh5.keys():
                         outputs['w0_band'] = 'w0_band'
                     if 'g0_band' in openh5.keys():
-                        outputs['g0_band'] = 'g0_band'                
+                        outputs['g0_band'] = 'g0_band'
 
                 #create VDS layout shape
                 for key in outputs.keys():
@@ -824,7 +829,8 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
                       'Mh_mean': output.Mh_mean[:, :, :, 0],
                       'Pressure_mean': output.Pressure_mean[:, :, 0]}
 
-            source['qheat'] = output.qheat[:, :, 0]
+            if input.RT or input.TSRT:
+                source['qheat'] = output.qheat[:, :, 0]
 
             if input.RT == 1:
                 source['flw_up'] = output.flw_up[:, :-1, 0] + (output.flw_up[:, 1:, 0] - output.flw_up[:, :-1, 0]) * interpz[None, :]
@@ -2326,7 +2332,7 @@ def spectrum(input, grid, output, z, stride=20, axis=None, save=True):
     ax.set_xlabel('Wavelength [um]')
     ax.set_title('Time = %#.3f - %#.3f days' % (output.time[0], output.time[-1]))
     ax.grid(True)
-    
+
     pfile = None
     if save == True:
         output_path = pathlib.Path(input.resultsf) / 'figures'

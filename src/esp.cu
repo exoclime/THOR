@@ -22,8 +22,8 @@
 //
 // Method: [1] - Builds the icosahedral grid (Mendonca et al., 2016).
 //         Iteration:
-//         [2] - Calls the dynamical core THOR (Mendonca et al., 2016).
-//         [3] - Calls the physical core ProfX.
+//         [2] - Calls the physical core ProfX.
+//         [3] - Calls the dynamical core THOR (Mendonca et al., 2016).
 //         END
 ////
 //

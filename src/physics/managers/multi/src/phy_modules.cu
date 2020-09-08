@@ -184,23 +184,27 @@ bool phy_modules_dyn_core_loop_end(const ESP& esp) {
 }
 
 
-bool phy_modules_phy_loop(ESP& esp, const SimulationSetup& sim, int nstep, double time_step) {
+bool phy_modules_phy_loop(ESP&                   esp,
+                          const SimulationSetup& sim,
+                          kernel_diagnostics&    diag,
+                          int                    nstep,
+                          double                 time_step) {
     // run all the modules main loop
     bool out = true;
 
     if (chemistry_enabled)
-        chem.phy_loop(esp, sim, nstep, time_step);
+        chem.phy_loop(esp, sim, diag, nstep, time_step);
 
     if (radiative_transfer_enabled)
-        rt.phy_loop(esp, sim, nstep, time_step);
+        rt.phy_loop(esp, sim, diag, nstep, time_step);
 
 #ifdef HAS_ALFRODULL
     if (alfrodull_enabled)
-        tsrt.phy_loop(esp, sim, nstep, time_step);
+        tsrt.phy_loop(esp, sim, diag, nstep, time_step);
 #endif // HAS_ALFRODULL
 
     if (boundary_layer_enabled)
-        bl.phy_loop(esp, sim, nstep, time_step);
+        bl.phy_loop(esp, sim, diag, nstep, time_step);
 
 
     return out;
