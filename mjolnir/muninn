@@ -46,9 +46,9 @@ base_folder = pathlib.Path(args.data_folder).resolve()
 notebook_file = pathlib.Path(args.jupnb).resolve()
 
 notebook_folder = notebook_file.parent.resolve()
-output_path = base_folder / "report"
-if not output_path.exists():
-    output_path.mkdir(exist_ok=True, parents=True)
+output_path_abs = base_folder / "report"
+if not output_path_abs.exists():
+    output_path_abs.mkdir(exist_ok=True, parents=True)
 
 nb_timeout = args.timeout
 
@@ -94,7 +94,7 @@ params = parameter_values(orig_parameters,
 # Make a notebook object with these definitions, and execute it.
 new_nb = replace_definitions(notebook, params, execute=False)
 
-os.chdir(output_path)
+os.chdir(output_path_abs)
 (body, resources) = html_exporter.from_notebook_node(new_nb)
 # print("Resources keys")
 # print(resources.keys())
@@ -112,10 +112,10 @@ for k, v in resources['outputs'].items():
     f.close()
 
 
-output_file = output_path / "mjolnyr_report.html"
+output_file = output_path_abs / "mjolnyr_report.html"
 output_file.open("w").write(body)
 stop_time = datetime.datetime.now()
 
 delta = stop_time - start_time
 
-print(f"ran munnin in {delta}")
+print(f"ran muninn in {delta}")
