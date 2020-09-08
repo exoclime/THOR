@@ -72,6 +72,7 @@ public:
 
     bool phy_loop(ESP &                  esp,
                   const SimulationSetup &sim,
+                  kernel_diagnostics &   diag,
                   int                    nstep, // Step number
                   double                 time_step);            // Time-step [s]
 

@@ -215,8 +215,10 @@ bool radiative_transfer::initial_conditions(const ESP &            esp,
 
 bool radiative_transfer::phy_loop(ESP &                  esp,
                                   const SimulationSetup &sim,
+                                  kernel_diagnostics &   diag,
                                   int                    nstep, // Step number
                                   double                 time_step) {           // Time-step [s]
+
     bool run      = true;
     Qheat_scaling = 1.0;
 
