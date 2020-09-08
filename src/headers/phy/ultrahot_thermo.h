@@ -19,7 +19,7 @@
 //
 //
 //
-// Description: dry convective adjustment scheme
+// Description: physics for ultra-hot jupiter thermodynamics
 //
 //
 //

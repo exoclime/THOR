@@ -99,6 +99,7 @@ bool boundary_layer::initial_conditions(const ESP &esp, const SimulationSetup &s
 
 bool boundary_layer::phy_loop(ESP &                  esp,
                               const SimulationSetup &sim,
+                              kernel_diagnostics &   diag,
                               int                    nstep, // Step number
                               double                 time_step) {           // Time-step [s]
 
