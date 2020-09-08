@@ -83,6 +83,7 @@ class caching_plotter:
         valid = ['uver', 'ulonver', 'vver', 'wver', 'wlonver', 'wprof', 'Tver', 'Tlonver', 'Tulev', 'PTver', 'PTlonver', 'ulev', 'PVver', 'PVlev',
              'TP', 'RVlev', 'cons', 'stream', 'pause', 'tracer', 'PTP', 'regrid', 'KE',
              'SR', 'uprof', 'cfl', 'bvprof', 'TSfluxprof', 'Tsurf', 'insol', 'massf', 'pause_rg', 'DGfluxprof', 'qheat',
+                 'Pressure',
              'DGfutprof', 'DGfdtprof', 'mustar', 'DGfuptot', 'DGfdowntot', 'DGfnet', 'DGqheat',  # alf stuff
              'TSfutprof', 'TSfdtprof', 'mustar', 'TSfuptot', 'TSfdowntot', 'TSfnet', 'TSqheat',
              'DGqheatprof', 'TSqheatprof', 'qheatprof', 'TSfdirprof',
@@ -91,6 +92,7 @@ class caching_plotter:
 
         rg_needed = ['Tver', 'Tlonver', 'uver', 'ulonver', 'vver', 'wver', 'wlonver', 'Tulev', 'PTver', 'PTlonver', 'ulev', 'PVver', 'PVlev',
                  'RVlev', 'stream', 'tracer', 'Tsurf', 'insol', 'massf', 'pause_rg',
+                     'Pressure',
                  'mustar', 'qheat',
                  'TSfuptot', 'TSfdowntot', 'TSfnet', 'TSqheat',
                  'DGfuptot', 'DGfdowntot', 'DGfnet', 'DGqheat',
@@ -110,10 +112,18 @@ class caching_plotter:
         if 'regrid' in pview:
             ham.regrid(resultsf, simulation_ID, ntsi, nts, pressure_vert=use_p, pgrid_ref=args.pgrid_ref[0])
             exit()
-        
-        self.outall = ham.GetOutput(self.resultsf, self.simulation_ID, self.ntsi, self.nts, openrg=openrg,
-                                    pressure_vert=self.use_p, pgrid_ref=self.args.pgrid_ref[0])
 
+        if self.use_p:
+            self.outall = ham.GetOutput(self.resultsf, self.simulation_ID, self.ntsi, self.nts, openrg=openrg,
+                                        pressure_vert=self.use_p, pgrid_ref=self.args.pgrid_ref[0])
+            self.outall_h = ham.GetOutput(self.resultsf, self.simulation_ID, self.ntsi, self.nts, openrg=openrg,
+                                          pressure_vert=False, pgrid_ref=self.args.pgrid_ref[0])
+            self.output = self.outall.output
+        else:
+            self.outall = ham.GetOutput(self.resultsf, self.simulation_ID, self.ntsi, self.nts, openrg=openrg,
+                                        pressure_vert=self.use_p, pgrid_ref=self.args.pgrid_ref[0])
+            self.outall_h = self.outall            
+            self.output = self.outall.output
 
 
         ##########
@@ -132,15 +142,19 @@ class caching_plotter:
         # Diagnostics #
         ###############
         
-        self.output = self.outall.output
+
         
         ##################
         # Regridded data #
         ##################
         if openrg == 1:
             self.rg = self.outall.rg
+            self.rg_h = self.outall_h.rg
+            
         else:
             self.rg = None
+            self.rg_h = None
+        
     #########
     # Plots #
     #########
@@ -151,19 +165,28 @@ class caching_plotter:
         use_p = self.use_p
         plog = self.plog
         maketable = self.maketable
+        col_stride = 10
 
         
         simulation_ID = self.simulation_ID
         
         rg = self.rg
+        rg_h = self.rg_h
         input = self.input_data
-        output = self.output
 
+        output = self.output
         # arguments and arguments override
         args = copy.deepcopy(self.args)
         for k, v in override_args.items():
             if hasattr(args, k):
                 setattr(args, k, v)
+
+        if args.vcoord[0] == "height":
+            use_p = False
+        elif args.vcoord[0] == "pressure":
+            use_p = True
+        
+        
             
         
         plots_created = []
@@ -368,6 +391,14 @@ class caching_plotter:
             pfile = call_plot('insol',ham.horizontal_lev,input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
             plots_created.append(pfile)
 
+        if ('Pressure' in pview or 'all' in pview):
+            rg_h.load(['Pressure'])
+            PR_LV = np.max(output.Pressure)  # not important here
+            z = {'value': rg_h.Pressure, 'label': r'Pressure ()', 'name': 'Pressure',
+                 'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
+            pfile = call_plot('Pressure',ham.horizontal_lev,input, grid, output, rg_h, PR_LV, z, wind_vectors=True, use_p=False, clevs=args.clevels, save=save, axis=axis)
+            plots_created.append(pfile)
+            
         if ('Tsurf' in pview or 'all' in pview) and (input.RT or input.TSRT):
             if not hasattr(rg, "Tsurface"):
                 raise ValueError("'Tsurface' not available in regrid file")
@@ -504,7 +535,10 @@ class caching_plotter:
             
             
         if ('mustar' in pview) and (input.TSRT):
-            PR_LV = np.max(output.Pressure)  # not important here
+            if use_p:
+                PR_LV = np.max(output.Pressure)  # not important here
+            else:
+                PR_LV = 0.0
             z = {'value': rg.mustar, 'label': r'mu_star ', 'name': 'mustar',
                  'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
             pfile = call_plot('mustar',ham.horizontal_lev,input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
@@ -521,7 +555,7 @@ class caching_plotter:
             output.load_reshape(grid,['Pressure','Rd','Rho'])
             z = {'value': output.Pressure / output.Rd / output.Rho, 'label': 'Temperature (K)', 'name': 'T'}
             # ham.TPprof(input,grid,output,sigmaref,1902)
-            pfile = call_plot('TP',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
+            pfile = call_plot('TP',ham.profile,input, grid, output, z, stride=col_stride, save=save, axis=axis)
             plots_created.append(pfile)
 
         if 'PTP' in pview or 'all' in pview:
@@ -537,14 +571,14 @@ class caching_plotter:
         if 'wprof' in pview or 'all' in pview:  # RD: needs some work!
             output.load_reshape(grid,['Wh','Pressure', 'Rho'])
             z = {'value': output.Wh[:, 1:, :] / output.Rho, 'label': r'Vertical velocity (m s$^{-1}$)', 'name': 'W'}
-            pfile = call_plot('wprof',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
+            pfile = call_plot('wprof',ham.profile,input, grid, output, z, stride=col_stride, save=save, axis=axis)
             plots_created.append(pfile)
 
         if 'uprof' in pview or 'all' in pview:  # RD: needs some work!
             output.load_reshape(grid,['Mh','Pressure', 'Rho'])
             u = (-output.Mh[0] * np.sin(grid.lon[:, None, None]) + output.Mh[1] * np.cos(grid.lon[:, None, None])) / output.Rho
             z = {'value': u, 'label': r'Zonal velocity (m s$^{-1}$)', 'name': 'U'}
-            pfile = call_plot('uprof',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
+            pfile = call_plot('uprof',ham.profile,input, grid, output, z, stride=col_stride, save=save, axis=axis)
             plots_created.append(pfile)
             
         if 'cfl' in pview or 'all' in pview:
@@ -553,7 +587,7 @@ class caching_plotter:
             dx = np.sqrt(np.min(grid.areasT))
             cs = np.sqrt(input.Cp / (input.Cp - input.Rd) * output.Pressure / output.Rho)
             z = {'value': cs * dt / dx, 'label': 'CFL number for (horizontal) acoustic waves', 'name': 'CFL'}
-            pfile = call_plot('cfl',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
+            pfile = call_plot('cfl',ham.profile,input, grid, output, z, stride=col_stride, save=save, axis=axis)
             plots_created.append(pfile)
         
         if 'bvprof' in pview or 'all' in pview:
@@ -564,7 +598,7 @@ class caching_plotter:
             dptdr = np.gradient(pt, grid.Altitude, axis=1)
             N = np.sqrt(input.Gravit / pt * dptdr)
             z = {'value': N, 'label': r'$N$ (s$^{-1}$)', 'name': 'BVprof'}
-            pfile = call_plot('bvprof',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
+            pfile = call_plot('bvprof',ham.profile,input, grid, output, z, stride=col_stride, save=save, axis=axis)
             plots_created.append(pfile)
 
         if ('DGfluxprof' in pview or 'all' in pview) and input.RT:
@@ -575,7 +609,7 @@ class caching_plotter:
                 (grid.Altitude[None, :, None] - grid.Altitudeh[None, :-1, None]) /\
                 (grid.Altitudeh[None, 1:, None] - grid.Altitudeh[None, :-1, None])
             z = {'value': fnet, 'label': r'Double Gray Net flux (W m$^{-2}$)', 'name': 'DGfnet'}
-            pfile = call_plot('DGfluxprof',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
+            pfile = call_plot('DGfluxprof',ham.profile,input, grid, output, z, stride=col_stride, save=save, axis=axis)
             plots_created.append(pfile)
 
         if ('TSfluxprof' in pview or 'all' in pview) and input.TSRT:
@@ -586,7 +620,7 @@ class caching_plotter:
                 (grid.Altitude[None, :, None] - grid.Altitudeh[None, :-1, None]) /\
             (grid.Altitudeh[None, 1:, None] - grid.Altitudeh[None, :-1, None])
             z = {'value': fnet, 'label': r'Two Stream Net flux (W m$^{-2}$)', 'name': 'TSfnet'}
-            pfile = call_plot('TSfluxprof',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
+            pfile = call_plot('TSfluxprof',ham.profile,input, grid, output, z, stride=col_stride, save=save, axis=axis)
             plots_created.append(pfile)
             
         if ('DGfutprof' in pview or 'all' in pview) and input.RT:
@@ -597,7 +631,7 @@ class caching_plotter:
                 (grid.Altitude[None, :, None] - grid.Altitudeh[None, :-1, None]) /\
                 (grid.Altitudeh[None, 1:, None] - grid.Altitudeh[None, :-1, None])
             z = {'value': fup, 'label': r'Double Gray Total Upward flux (W m$^{-2}$)', 'name': 'DGfuptot'}
-            pfile = call_plot('DGfutprof',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
+            pfile = call_plot('DGfutprof',ham.profile,input, grid, output, z, stride=col_stride, save=save, axis=axis)
             plots_created.append(pfile)
 
 
@@ -608,7 +642,7 @@ class caching_plotter:
                 (grid.Altitude[None, :, None] - grid.Altitudeh[None, :-1, None]) /\
                 (grid.Altitudeh[None, 1:, None] - grid.Altitudeh[None, :-1, None])
             z = {'value': fup, 'label': r'Two Stream Total Upward flux (W m$^{-2}$)', 'name': 'TSfuptot'}
-            pfile = call_plot('TSfutprof',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
+            pfile = call_plot('TSfutprof',ham.profile,input, grid, output, z, stride=col_stride, save=save, axis=axis)
             plots_created.append(pfile)
             
         if ('TSfdirprof' in pview or 'all' in pview) and input.TSRT:
@@ -618,7 +652,7 @@ class caching_plotter:
                 (grid.Altitude[None, :, None] - grid.Altitudeh[None, :-1, None]) /\
                 (grid.Altitudeh[None, 1:, None] - grid.Altitudeh[None, :-1, None])
             z = {'value': fdir, 'label': r'Two Stream Total Directional flux (W m$^{-2}$)', 'name': 'TSfdirprof'}
-            pfile = call_plot('TSfdirprof',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
+            pfile = call_plot('TSfdirprof',ham.profile,input, grid, output, z, stride=col_stride, save=save, axis=axis)
             plots_created.append(pfile)
 
         if ('DGfdtprof' in pview or 'all' in pview) and input.RT:
@@ -628,7 +662,7 @@ class caching_plotter:
             (grid.Altitude[None, :, None] - grid.Altitudeh[None, :-1, None]) /\
             (grid.Altitudeh[None, 1:, None] - grid.Altitudeh[None, :-1, None])
             z = {'value': fdn, 'label': r'Double Gray Total Downward flux (W m$^{-2}$)', 'name': 'DGfdowntot'}
-            pfile = call_plot('DGfdtprof',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
+            pfile = call_plot('DGfdtprof',ham.profile,input, grid, output, z, stride=col_stride, save=save, axis=axis)
             plots_created.append(pfile)
 
         if ('TSfdtprof' in pview or 'all' in pview) and input.TSRT:
@@ -638,21 +672,21 @@ class caching_plotter:
                 (grid.Altitude[None, :, None] - grid.Altitudeh[None, :-1, None]) /\
                 (grid.Altitudeh[None, 1:, None] - grid.Altitudeh[None, :-1, None])
             z = {'value': fdn, 'label': r'Two Stream Total Downward flux (W m$^{-2}$)', 'name': 'TSfdowntot'}
-            pfile = call_plot('TSfdtprof',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
+            pfile = call_plot('TSfdtprof',ham.profile,input, grid, output, z, stride=col_stride, save=save, axis=axis)
             plots_created.append(pfile)
 
         if ('TSqheatprof' in pview or 'all' in pview) and input.TSRT:
             output.load_reshape(grid,['TSqheat'])
             qheat = output.TSqheat
             z = {'value': qheat, 'label': r'Two Stream Q heat (W m$^{-2}$)', 'name': 'TSqheatprof'}
-            pfile = call_plot('TSqheatprof',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
+            pfile = call_plot('TSqheatprof',ham.profile,input, grid, output, z, stride=col_stride, save=save, axis=axis)
             plots_created.append(pfile)
 
         if ('DGqheatprof' in pview or 'all' in pview) and input.RT:
             output.load_reshape(grid,['DGqheat'])
             qheat = output.DGqheat
             z = {'value': qheat, 'label': r'Double Gray Q heat (W m$^{-2}$)', 'name': 'DGqheatprof'}
-            pfile = call_plot('DGqheatprof',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
+            pfile = call_plot('DGqheatprof',ham.profile,input, grid, output, z, stride=col_stride, save=save, axis=axis)
             plots_created.append(pfile)
             
             
@@ -660,7 +694,7 @@ class caching_plotter:
             output.load_reshape(grid,['qheat'])
             qheat = output.qheat
             z = {'value': qheat, 'label': r'Q heat (W m$^{-2}$)', 'name': 'qheatprof'}
-            pfile = call_plot('qheatprof',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
+            pfile = call_plot('qheatprof',ham.profile,input, grid, output, z, stride=col_stride, save=save, axis=axis)
             plots_created.append(pfile)
 
         if ('w0prof' in pview or 'all' in pview) and input.TSRT: # and input.has_w0_g0:
@@ -677,8 +711,10 @@ class caching_plotter:
             for i in range(num_plots):
             
                 w0 =  output.w0_band[:,:,i*stride,:]
-                z = {'value': w0, 'label': f"w0 - band {i*stride}", 'name': 'w0'}
-                pfile = call_plot('w0',ham.profile,input, grid, output, z, stride=20, save=save, axis=(axis[0], axes[i]))
+                lamda = output.wavelength[i][0]*1e6
+                z = {'value': w0, 'label': f"w0 - band {i*stride} - wl {lamda} um", 'name': 'w0'}
+                pfile = call_plot('w0',ham.profile,input, grid, output, z, stride=col_stride, save=save, axis=(axis[0], axes[i]))
+                axes[i].set_xlim(-0.05, 1.05)
                 plots_created.append(pfile)
 
         if ('g0prof' in pview or 'all' in pview) and input.TSRT: # and input.has_w0_g0:
@@ -695,8 +731,10 @@ class caching_plotter:
             for i in range(num_plots):
                 
                 g0 =  output.g0_band[:,:,i*stride,:]
-                z = {'value': g0, 'label': f"g0 - band {i*stride}", 'name': 'g0'}
-                pfile = call_plot('g0',ham.profile,input, grid, output, z, stride=20, save=save, axis=(axis[0], axes[i]))
+                lamda = output.wavelength[i][0]*1e6
+                z = {'value': g0, 'label': f"g0 - band {i*stride} - wl {lamda} um", 'name': 'g0'}
+                pfile = call_plot('g0',ham.profile,input, grid, output, z, stride=col_stride, save=save, axis=(axis[0], axes[i]))
+                axes[i].set_xlim(-1.05, 1.05)
                 plots_created.append(pfile)
         # --- Global diagnostics -----------------------------------
         if 'cons' in pview:  # RD: needs some work!

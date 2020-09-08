@@ -651,7 +651,8 @@ def make_plot(args, save=True, axis=None):
         for i in range(num_plots):
             
             w0 =  output.w0_band[:,:,i*stride,:]
-            z = {'value': w0, 'label': f"w0 - band {i*stride}", 'name': 'w0'}
+            lamda = output.wavelength[i][0]*1e6
+            z = {'value': w0, 'label': f"w0 - band {i*stride} - wl {lamda} um", 'name': 'w0'}
             pfile = call_plot('w0',ham.profile,input, grid, output, z, stride=20, save=save, axis=(axis[0], axes[i]))
             plots_created.append(pfile)
 
@@ -669,7 +670,8 @@ def make_plot(args, save=True, axis=None):
         for i in range(num_plots):
             
             g0 =  output.g0_band[:,:,i*stride,:]
-            z = {'value': g0, 'label': f"g0 - band {i*stride}", 'name': 'g0'}
+            lamda = output.wavelength[i][0]*1e6
+            z = {'value': g0, 'label': f"g0 - band {i*stride} - wl {lamda} um", 'name': 'g0'}
             pfile = call_plot('g0',ham.profile,input, grid, output, z, stride=20, save=save, axis=(axis[0], axes[i]))
             plots_created.append(pfile)
     # --- Global diagnostics -----------------------------------
