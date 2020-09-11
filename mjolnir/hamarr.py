@@ -52,6 +52,8 @@ class input:
             self.spring_dynamics = openh5['spring_dynamics'][...]
         self.resultsf = resultsf
         self.simID = simID
+        self.NonHydro = openh5['NonHydro'][0]
+        self.DeepModel = openh5['DeepModel'][0]
 
         if 'SpongeLayer' in openh5.keys():
             self.SpongeLayer = openh5['SpongeLayer'][...]
@@ -196,6 +198,15 @@ class output:
         self.Rd = np.zeros((grid.point_num, grid.nv, nts - ntsi + 1))
         self.Cp = np.zeros((grid.point_num, grid.nv, nts - ntsi + 1))
 
+        # calc volume element
+        Atot = input.A**2
+        solid_ang = grid.areasT/Atot
+        if input.DeepModel:
+            rint = ((input.A + grid.Altitudeh[1:])**3 - (input.A + grid.Altitudeh[:-1])**3) / 3.0
+        else:
+            rint = Atot*(grid.Altitudeh[1:] - grid.Altitudeh[:-1])
+        Vol0 = solid_ang[:, None] * rint[None, :]
+
         # TSRT quantities
         # TODO: clean up what's only for debug
         self.f_up_tot = np.zeros((grid.point_num, grid.nvi, nts - ntsi + 1))
@@ -283,13 +294,13 @@ class output:
             self.time[t - ntsi + 1] = time
             self.nstep[t - ntsi + 1] = nstep
             if 'Etotali' in locals():
-                self.Etotal[:, :, t - ntsi + 1] = np.reshape(Etotali, (grid.point_num, grid.nv))
-                self.Mass[:, :, t - ntsi + 1] = np.reshape(Massi, (grid.point_num, grid.nv))
-                self.AngMomx[:, :, t - ntsi + 1] = np.reshape(AngMomxi, (grid.point_num, grid.nv))
-                self.AngMomy[:, :, t - ntsi + 1] = np.reshape(AngMomyi, (grid.point_num, grid.nv))
-                self.AngMomz[:, :, t - ntsi + 1] = np.reshape(AngMomzi, (grid.point_num, grid.nv))
+                self.Etotal[:, :, t - ntsi + 1] = np.reshape(Etotali, (grid.point_num, grid.nv))/Vol0
+                self.Mass[:, :, t - ntsi + 1] = np.reshape(Massi, (grid.point_num, grid.nv))/Vol0
+                self.AngMomx[:, :, t - ntsi + 1] = np.reshape(AngMomxi, (grid.point_num, grid.nv))/Vol0
+                self.AngMomy[:, :, t - ntsi + 1] = np.reshape(AngMomyi, (grid.point_num, grid.nv))/Vol0
+                self.AngMomz[:, :, t - ntsi + 1] = np.reshape(AngMomzi, (grid.point_num, grid.nv))/Vol0
             if 'Entropyi' in locals():
-                self.Entropy[:, :, t - ntsi + 1] = np.reshape(Entropyi, (grid.point_num, grid.nv))
+                self.Entropy[:, :, t - ntsi + 1] = np.reshape(Entropyi, (grid.point_num, grid.nv))/Vol0
 
             if 'traceri' in locals():
                 self.ch4[:, :, t - ntsi + 1] = np.reshape(traceri[::5], (grid.point_num, grid.nv)) / self.Rho[:, :, t - ntsi + 1]
@@ -391,6 +402,11 @@ class rg_out:
             else:
                 RVi = openh5['RVw'][...]
 
+            if 'Etotal' in openh5.keys():
+                Etotali = openh5['Etotal'][...]
+                Entropyi = openh5['Entropy'][...]
+                AngMomzi = openh5['AngMomz'][...]
+
             openh5.close()
 
             if t == ntsi - 1:
@@ -428,6 +444,10 @@ class rg_out:
                     self.h2o = np.zeros(np.shape(h2oi) + (nts - ntsi + 1,))
                     self.co2 = np.zeros(np.shape(co2i) + (nts - ntsi + 1,))
                     self.nh3 = np.zeros(np.shape(nh3i) + (nts - ntsi + 1,))
+                if 'Etotali' in locals():
+                    self.Etotal = np.zeros(np.shape(Etotali) + (nts - ntsi + 1,))
+                    self.Entropy = np.zeros(np.shape(Entropyi) + (nts - ntsi + 1,))
+                    self.AngMomz = np.zeros(np.shape(AngMomzi) + (nts - ntsi + 1,))
 
             self.Rho[:, :, :, t - ntsi + 1] = Rhoi
             self.U[:, :, :, t - ntsi + 1] = Ui
@@ -466,7 +486,10 @@ class rg_out:
                 self.h2o[:, :, :, t - ntsi + 1] = h2oi
                 self.co2[:, :, :, t - ntsi + 1] = co2i
                 self.nh3[:, :, :, t - ntsi + 1] = nh3i
-
+            if 'Etotali' in locals():
+                self.Etotal[:, :, :, t - ntsi + 1] = Etotali
+                self.Entropy[:, :, :, t - ntsi + 1] = Entropyi
+                self.AngMomz[:, :, :, t - ntsi + 1] = AngMomzi
 
 class GetOutput:
     def __init__(self, resultsf, simID, ntsi, nts, stride=1, openrg=0, pressure_vert=True, rotation=False, theta_y=0, theta_z=0, pgrid_ref='auto'):
@@ -884,6 +907,11 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
                 if surf == 1:
                     source['Tsurface'] = output.Tsurface[:, 0]
                     source['Psurf'] = Psurf[:, 0]
+
+            if hasattr(output,'Etotal'):
+                source['Etotal'] = output.Etotal[:, :, 0]
+                source['Entropy'] = output.Entropy[:, :, 0]
+                source['AngMomz'] = output.AngMomz[:, :, 0]
 
             if input.TSRT:
                 source['mustar'] = output.mustar[:, 0]
