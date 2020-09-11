@@ -36,12 +36,12 @@ def make_plot(args):
     valid = ['uver', 'ulonver', 'vver', 'wver', 'wlonver', 'wprof', 'Tver', 'Tlonver', 'Tulev', 'PTver', 'PTlonver', 'ulev', 'PVver', 'PVlev',
              'TP', 'RVlev', 'cons', 'stream', 'pause', 'tracer', 'PTP', 'regrid', 'KE',
              'SR', 'uprof', 'cfl', 'bvprof', 'fluxprof', 'Tsurf', 'insol', 'massf',
-             'futprof', 'fdtprof', 'fnetprof', 'mustar', 'fuptot', 'fdowntot', 'fnet', 'qheat'  # alf stuff
-             ]
+             'futprof', 'fdtprof', 'fnetprof', 'mustar', 'fuptot', 'fdowntot', 'fnet', 'qheat',  # alf stuff
+             'pause_rg', 'Etotlev','AngMomlev', 'Entropylev']
 
     rg_needed = ['Tver', 'Tlonver', 'uver', 'ulonver', 'vver', 'wver', 'wlonver', 'Tulev', 'PTver', 'PTlonver', 'ulev', 'PVver', 'PVlev',
                  'RVlev', 'stream', 'tracer', 'Tsurf', 'insol', 'massf',
-                 'mustar', 'fuptot', 'fdowntot', 'fnet', 'qheat']  # these types need regrid
+                 'mustar', 'fuptot', 'fdowntot', 'fnet', 'qheat', 'pause_rg', 'Etotlev', 'AngMomlev', 'Entropylev']  # these types need regrid
 
     openrg = 0
     if 'all' in pview:
@@ -114,7 +114,7 @@ def make_plot(args):
 
     # quick and dirty break point, if you just want to look at the output data
     # does not load regridded data!
-    if 'pause' in pview:
+    if 'pause' in pview or 'pause_rg' in pview:
         import pdb
         pdb.set_trace()
 
@@ -425,6 +425,47 @@ def make_plot(args):
         if pfile:
             print('Created file: ' + pfile)
             plots_created.append(pfile)
+    if 'Etotlev' in pview:
+        # Averaged temperature and wind field (longitude vs latitude)
+        # PR_LV - Pressure level (Pa)
+        if use_p:
+            PR_LV = np.float(args.horizontal_lev[0]) * 100
+        else:
+            PR_LV = np.float(args.horizontal_lev[0]) * 1000
+        z = {'value': rg.Etotal, 'label': r'Total energy (J m$^{-3}$)', 'name': 'Etotal',
+             'cmap': 'magma', 'lat': rg.lat, 'lon': rg.lon, 'mt': maketable, 'llswap': args.latlonswap}
+        pfile = ham.horizontal_lev(input, grid, output, rg, PR_LV, z, wind_vectors=False, use_p=use_p, clevs=args.clevels)
+        if pfile:
+            print('Created file: ' + pfile)
+            plots_created.append(pfile)
+    if 'Entropylev' in pview:
+        # Averaged temperature and wind field (longitude vs latitude)
+        # PR_LV - Pressure level (Pa)
+        if use_p:
+            PR_LV = np.float(args.horizontal_lev[0]) * 100
+        else:
+            PR_LV = np.float(args.horizontal_lev[0]) * 1000
+        z = {'value': rg.Entropy, 'label': r'Entropy (J K$^{-1}$ m$^{-3}$)', 'name': 'Entropy',
+             'cmap': 'magma', 'lat': rg.lat, 'lon': rg.lon, 'mt': maketable, 'llswap': args.latlonswap}
+        pfile = ham.horizontal_lev(input, grid, output, rg, PR_LV, z, wind_vectors=False, use_p=use_p, clevs=args.clevels)
+        if pfile:
+            print('Created file: ' + pfile)
+            plots_created.append(pfile)
+    if 'AngMomlev' in pview:
+        # Averaged temperature and wind field (longitude vs latitude)
+        # PR_LV - Pressure level (Pa)
+        if use_p:
+            PR_LV = np.float(args.horizontal_lev[0]) * 100
+        else:
+            PR_LV = np.float(args.horizontal_lev[0]) * 1000
+        z = {'value': rg.AngMomz, 'label': r'Axial Angular Momentum (kg m$^{-1}$ s$^{-1}$)', 'name': 'AngMomz',
+             'cmap': 'magma', 'lat': rg.lat, 'lon': rg.lon, 'mt': maketable, 'llswap': args.latlonswap}
+        pfile = ham.horizontal_lev(input, grid, output, rg, PR_LV, z, wind_vectors=False, use_p=use_p, clevs=args.clevels)
+        if pfile:
+            print('Created file: ' + pfile)
+            plots_created.append(pfile)
+
+
     # --- Pressure profile types-------------------------------
     if 'TP' in pview:
         z = {'value': output.Pressure / output.Rd / output.Rho, 'label': 'Temperature (K)', 'name': 'T'}
