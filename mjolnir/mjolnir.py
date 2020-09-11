@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+
+#---- code by Russell Deitrick ------------------------------------------------
+
 import numpy as np
 import argparse
 from importlib import reload

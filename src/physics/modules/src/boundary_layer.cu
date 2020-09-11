@@ -1242,9 +1242,11 @@ __global__ void Calc_MOlength_Cdrag_BLdepth(double *pressure_d,
 
         //surface drag coefficient
         if (RiB_d[id] < 0) { //unstable (temporarily model as neutral)
-            CD_d[id] = pow(KVONKARMAN, 2) * pow(log(Altitude_d[0] / z_rough), -2);
-            CH_d[id] = pow(KVONKARMAN, 2) * pow(log(Altitude_d[0] / z_rough), -1)
-                       * pow(log(Altitude_d[0] / z_therm), -1);
+            CD_d[id] = pow(KVONKARMAN, 2)
+                       * pow(int_phi_M_unstable(zeta_surf, Altitude_d[0] / z_rough), -2);
+            CH_d[id] = pow(KVONKARMAN, 2)
+                       * pow(int_phi_M_unstable(zeta_surf, Altitude_d[0] / z_rough), -1)
+                       * pow(int_phi_H_unstable(zeta_surf, Altitude_d[0] / z_therm), -1);
         }
         else if (RiB_d[id] == 0) { //neutral
             CD_d[id] = pow(KVONKARMAN, 2) * pow(log(Altitude_d[0] / z_rough), -2);
@@ -1554,8 +1556,8 @@ __device__ double RiB_2_zeta(double RiB,
     if (RiB < 0) {
         double eps  = 1e-8 * fabs(RiB); //convergence for newton scheme
         double zeta = RiB, zetaf = zeta + 2 * eps;
-        double f, fp;
-        int    iter = 0;
+        // double f, fp;
+        int iter = 0;
         while (fabs(zetaf - zeta) > eps && iter < 100) {
             zeta = zetaf;
             zetaf =

@@ -26,7 +26,7 @@
 //
 //
 // Authors: Joao Mendonca, EEG. joao.mendonca@csh.unibe.ch
-//          Urs Schroffenegger, Russel Deitrick
+//          Urs Schroffenegger, Russell Deitrick
 //
 // If you use this code please cite the following reference:
 //

@@ -1,3 +1,5 @@
+#---- code by Urs Schroffenegger -----------------------------------------------
+
 import re
 import pathlib
 
@@ -41,7 +43,7 @@ def get_path_matching_regex_with_groups(root_dir_, pattern):
 
     Example
     -------
-    in directory with 
+    in directory with
 
       README.txt
       file_00.txt
@@ -49,7 +51,7 @@ def get_path_matching_regex_with_groups(root_dir_, pattern):
       file_42.doc
       file_AA.txt
 
-    calling 
+    calling
 
       get_path_matching_regex_with_groups(".", "file_(\d+).txt")
 
@@ -57,7 +59,7 @@ def get_path_matching_regex_with_groups(root_dir_, pattern):
     returns:
 
 
-      [{'path': PosixPath('/.../files_00.txt'), 'groups': ('00',)}, 
+      [{'path': PosixPath('/.../files_00.txt'), 'groups': ('00',)},
        {'path': PosixPath('/.../files_01.txt'), 'groups': ('01',)}]
 
 

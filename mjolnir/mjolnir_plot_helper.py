@@ -57,14 +57,14 @@ def make_plot(args, save=True, axis=None):
              'TSfutprof', 'TSfdtprof', 'mustar', 'TSfuptot', 'TSfdowntot', 'TSfnet', 'TSqheat',
              'DGqheatprof', 'TSqheatprof', 'qheatprof', 'TSfdirprof',
              'w0prof', 'g0prof', 'spectrum',
-             'phase','all','Kdiffprof', 'RiB','BLheight']
+             'phase','all','Kdiffprof', 'RiB','BLheight','eddyKE','eddyMomMerid','eddyTempMerid','eddyTempVar']
 
     rg_needed = ['Tver', 'Tlonver', 'uver', 'ulonver', 'vver', 'wver', 'wlonver', 'Tulev', 'PTver', 'PTlonver', 'ulev', 'PVver', 'PVlev',
                  'RVlev', 'stream', 'tracer', 'Tsurf', 'insol', 'massf', 'pause_rg',
                  'mustar', 'qheat',
                  'TSfuptot', 'TSfdowntot', 'TSfnet', 'TSqheat',
                  'DGfuptot', 'DGfdowntot', 'DGfnet', 'DGqheat',
-                 'all', 'RiB','BLheight']  # these types need regrid
+                 'all', 'RiB','BLheight','eddyMomMerid','eddyTempMerid','eddyTempVar']  # these types need regrid
 
     openrg = 0
 
@@ -263,6 +263,50 @@ def make_plot(args, save=True, axis=None):
         else:
             pfile = "'massf' plot type requires -vc height; plot not created"
             print(pfile)
+        plots_created.append(pfile)
+
+    if 'eddyKE' in pview or 'all' in pview:
+        rg.load(['U','V','W'])
+        uprime = rg.U - np.mean(rg.U,axis=1)[:,None,:,:]
+        vprime = rg.V - np.mean(rg.V,axis=1)[:,None,:,:]
+        wprime = rg.W - np.mean(rg.W,axis=1)[:,None,:,:]
+        eddyKE = 0.5*(uprime**2+vprime**2+wprime**2)
+        z = {'value': eddyKE, 'label': r'Eddy KE (m$^2$ s$^{-2}$)', 'name': 'eddyKE','cmap': 'viridis',
+            'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'plog': plog}
+        sigmaref = ham.Get_Prange(input, grid, rg, args, xtype='lat', use_p=use_p)
+        pfile = call_plot('eddyKE',ham.vertical_lat,input, grid, output, rg, sigmaref, z, slice=args.slice, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
+        plots_created.append(pfile)
+
+    if 'eddyMomMerid' in pview or 'all' in pview:
+        rg.load(['U','V'])
+        uprime = rg.U - np.mean(rg.U,axis=1)[:,None,:,:]
+        vprime = rg.V - np.mean(rg.V,axis=1)[:,None,:,:]
+        eddyMom = uprime*vprime
+        z = {'value': eddyMom, 'label': r'Merid. Eddy Mom. flux (m$^2$ s$^{-2}$)', 'name': 'eddyMom','cmap': 'viridis',
+            'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'plog': plog}
+        sigmaref = ham.Get_Prange(input, grid, rg, args, xtype='lat', use_p=use_p)
+        pfile = call_plot('eddyMomMerid',ham.vertical_lat,input, grid, output, rg, sigmaref, z, slice=args.slice, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
+        plots_created.append(pfile)
+
+    if 'eddyTempMerid' in pview or 'all' in pview:
+        rg.load(['Temperature','V'])
+        Tprime = rg.Temperature - np.mean(rg.Temperature,axis=1)[:,None,:,:]
+        vprime = rg.V - np.mean(rg.V,axis=1)[:,None,:,:]
+        eddyTemp = Tprime*vprime
+        z = {'value': eddyTemp, 'label': r'Merid. Eddy temp. flux (K m$ s$^{-1}$)', 'name': 'eddyTemp','cmap': 'magma',
+            'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'plog': plog}
+        sigmaref = ham.Get_Prange(input, grid, rg, args, xtype='lat', use_p=use_p)
+        pfile = call_plot('eddyTempMerid',ham.vertical_lat,input, grid, output, rg, sigmaref, z, slice=args.slice, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
+        plots_created.append(pfile)
+
+    if 'eddyTempVar' in pview or 'all' in pview:
+        rg.load(['Temperature'])
+        Tprime = rg.Temperature - np.mean(rg.Temperature,axis=1)[:,None,:,:]
+        eddyTempV = Tprime*Tprime
+        z = {'value': eddyTempV, 'label': r'Eddy temp. variance (K$^{2}$)', 'name': 'eddyTempVar','cmap': 'magma',
+            'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'plog': plog}
+        sigmaref = ham.Get_Prange(input, grid, rg, args, xtype='lat', use_p=use_p)
+        pfile = call_plot('eddyTempVar',ham.vertical_lat,input, grid, output, rg, sigmaref, z, slice=args.slice, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
         plots_created.append(pfile)
 
     # --- Horizontal plot types-------------------------------
@@ -677,7 +721,8 @@ def make_plot(args, save=True, axis=None):
         for i in range(num_plots):
 
             w0 =  output.w0_band[:,:,i*stride,:]
-            z = {'value': w0, 'label': f"w0 - band {i*stride}", 'name': 'w0'}
+            lamda = output.wavelength[i][0]*1e6
+            z = {'value': w0, 'label': f"w0 - band {i*stride} - wl {lamda} um", 'name': 'w0'}
             pfile = call_plot('w0',ham.profile,input, grid, output, z, stride=20, save=save, axis=(axis[0], axes[i]))
             plots_created.append(pfile)
 
@@ -695,7 +740,8 @@ def make_plot(args, save=True, axis=None):
         for i in range(num_plots):
 
             g0 =  output.g0_band[:,:,i*stride,:]
-            z = {'value': g0, 'label': f"g0 - band {i*stride}", 'name': 'g0'}
+            lamda = output.wavelength[i][0]*1e6
+            z = {'value': g0, 'label': f"g0 - band {i*stride} - wl {lamda} um", 'name': 'g0'}
             pfile = call_plot('g0',ham.profile,input, grid, output, z, stride=20, save=save, axis=(axis[0], axes[i]))
             plots_created.append(pfile)
 
