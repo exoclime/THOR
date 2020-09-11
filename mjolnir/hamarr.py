@@ -53,8 +53,11 @@ class input_new:
 
         self.resultsf = resultsf
         self.simID = simID
+
         for key in openh5.keys():
             setattr(self,key,openh5[key][...])
+        self.NonHydro = openh5['NonHydro'][0]
+        self.DeepModel = openh5['DeepModel'][0]
 
         #special cases (things we test on a lot, etc)
         self.RT = "radiative_transfer" in openh5 and openh5["radiative_transfer"][0] == 1.0
@@ -180,6 +183,14 @@ class output_new:
             outputs['alf_spectrum'] = 'incoming_spectrum'
             outputs['lambda_wave'] = 'wavelength'
 
+        # calc volume element
+        Atot = input.A**2
+        solid_ang = grid.areasT/Atot
+        if input.DeepModel:
+            rint = ((input.A + grid.Altitudeh[1:])**3 - (input.A + grid.Altitudeh[:-1])**3) / 3.0
+        else:
+            rint = Atot*(grid.Altitudeh[1:] - grid.Altitudeh[:-1])
+        self.Vol0 = solid_ang[:, None] * rint[None, :]
 
         for t in np.arange(ntsi - 1, nts, stride):
             fileh5 = resultsf + '/esp_output_' + simID + '_' + np.str(t + 1) + '.h5'
@@ -302,6 +313,9 @@ class output_new:
                         self.w0_band = np.reshape(data, (grid.point_num,grid.nv,-1,tlen))
                     elif key == 'g0_band':
                         self.g0_band = np.reshape(data, (grid.point_num,grid.nv,-1,tlen))
+                    elif key == 'Etotal' or key == 'Entropy' or key == 'AngMomz':
+                        data = np.reshape(data,(grid.point_num,grid.nv,tlen))/self.Vol0[:,:,None]
+                        setattr(self, key, data)
                     else:
                         setattr(self, key, data)
                 else:
@@ -845,6 +859,11 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
                 if surf == 1:
                     source['Tsurface'] = output.Tsurface[:, 0]
                     source['Psurf'] = Psurf[:, 0]
+
+            if hasattr(output,'Etotal'):
+                source['Etotal'] = output.Etotal[:, :, 0]
+                source['Entropy'] = output.Entropy[:, :, 0]
+                source['AngMomz'] = output.AngMomz[:, :, 0]
 
             if input.TSRT:
                 source['mustar'] = output.mustar[:, 0]
