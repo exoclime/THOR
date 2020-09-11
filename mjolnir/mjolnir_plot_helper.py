@@ -529,9 +529,7 @@ def make_plot(args, save=True, axis=None):
         z = {'value': rg.mustar, 'label': r'mu_star ', 'name': 'mustar',
              'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
         pfile = call_plot('mustar',ham.horizontal_lev,input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
-        if pfile:
-            print('Created file: ' + pfile)
-            plots_created.append(pfile)
+        plots_created.append(pfile)
 
     if 'Etotlev' in pview:
         # Averaged temperature and wind field (longitude vs latitude)
@@ -543,9 +541,7 @@ def make_plot(args, save=True, axis=None):
         z = {'value': rg.Etotal, 'label': r'Total energy (J m$^{-3}$)', 'name': 'Etotal',
              'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
         pfile = call_plot('Etotlev',ham.horizontal_lev,input, grid, output, rg, PR_LV, z, wind_vectors=False, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
-        if pfile:
-            print('Created file: ' + pfile)
-            plots_created.append(pfile)
+        plots_created.append(pfile)
 
     if 'Entropylev' in pview:
         # Averaged temperature and wind field (longitude vs latitude)
@@ -557,9 +553,7 @@ def make_plot(args, save=True, axis=None):
         z = {'value': rg.Entropy, 'label': r'Entropy (J K$^{-1}$ m$^{-3}$)', 'name': 'Entropy',
              'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
         pfile = call_plot('Entropylev',ham.horizontal_lev,input, grid, output, rg, PR_LV, z, wind_vectors=False, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
-        if pfile:
-            print('Created file: ' + pfile)
-            plots_created.append(pfile)
+        plots_created.append(pfile)
 
     if 'AngMomlev' in pview:
         # Averaged temperature and wind field (longitude vs latitude)
@@ -571,9 +565,7 @@ def make_plot(args, save=True, axis=None):
         z = {'value': rg.AngMomz, 'label': r'Axial Angular Momentum (kg m$^{-1}$ s$^{-1}$)', 'name': 'AngMomz',
              'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
         pfile = call_plot('AngMomlev',ham.horizontal_lev,input, grid, output, rg, PR_LV, z, wind_vectors=False, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
-        if pfile:
-            print('Created file: ' + pfile)
-            plots_created.append(pfile)
+        plots_created.append(pfile)
 
     if ('spectrum' in pview) and (input.TSRT):
         z = {'label': r'spectrum ', 'name': 'spectrum',
