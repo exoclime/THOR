@@ -100,6 +100,9 @@ bool radiative_transfer::initialise_memory(const ESP &              esp,
     cudaMalloc((void **)&ttemp, esp.nv * esp.point_num * sizeof(double));
     cudaMalloc((void **)&dtemp, esp.nv * esp.point_num * sizeof(double));
 
+    cudaMalloc((void **)&qheat_d, esp.nv * esp.point_num * sizeof(double));
+    qheat_h = (double *)malloc(esp.point_num * esp.nv * sizeof(double));
+
     insol_h = (double *)malloc(esp.point_num * sizeof(double));
     cudaMalloc((void **)&insol_d, esp.point_num * sizeof(double));
     insol_ann_h = (double *)malloc(esp.point_num * sizeof(double));
@@ -351,8 +354,13 @@ bool radiative_transfer::store(const ESP &esp, storage &s) {
                    " ",
                    "optical depth across each layer (not total optical depth)");
 
+    cudaMemcpy(qheat_h, qheat_d, esp.nv * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
+    s.append_table(qheat_h, esp.nv * esp.point_num, "/DGQheat", " ", "Double Gray Qheat");
+
     cudaMemcpy(Tsurface_h, Tsurface_d, esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
     s.append_table(Tsurface_h, esp.point_num, "/Tsurface", "K", "surface temperature");
+
+    s.append_value(Qheat_scaling, "/dgrt_qheat_scaling", " ", "Qheat scaling applied to DG");
     return true;
 }
 
