@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+
+#---- code by Russell Deitrick ------------------------------------------------
+
 import numpy as np
 import argparse
 from importlib import reload
@@ -44,7 +47,7 @@ parser.add_argument("-vtop", "--vertical_top", nargs=1, default=['default'], hel
 parser.add_argument("-slay", "--split_layer", nargs=1, default=['no_split'], help='Split conserved quantities into weather and deep layers at this pressure')
 parser.add_argument("-coord", "--coordinate_sys", nargs=1, default=['icoh'], help='For KE spectrum, use either icoh grid or llp grid')
 parser.add_argument("-ladj", "--lmax_adjust", nargs=1, default=[0], help='For KE spectrum, icoh grid, adjust number of wave numbers to fit')
-parser.add_argument("-slice", "--slice", nargs='+', default=[0, 360], help='Plot a long/lat slice or average over all values', type=float)
+parser.add_argument("-slice", "--slice", nargs='+', default=['default'], help='Plot a long/lat slice or average over all values')
 parser.add_argument("-mt", "--maketable", action='store_true', help='Print a table in text file of plot data')
 parser.add_argument("-no-log", "--no_pressure_log", action='store_true', help='Switch off log coordinates in pressure (vertical)')
 parser.add_argument("-llswap", "--latlonswap", action='store_true', help='Swap latitude and longitude axes (horizontal plots)')

@@ -1,8 +1,16 @@
+#---- code by Russell Deitrick and Urs Schroffenegger -------------------------
+
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import matplotlib.axes as axes
 import matplotlib.cm as cm
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+from matplotlib.colors import hsv_to_rgb
+import matplotlib.patheffects as pe
+
+import math
+
 import scipy.interpolate as interp
 import scipy.ndimage as ndimage
 import os
@@ -11,6 +19,10 @@ import time
 import subprocess as spr
 import pyshtools as chairs
 import pdb
+
+import pathlib
+import psutil
+
 try:
     import pycuda.driver as cuda
     import pycuda.autoinit
@@ -26,78 +38,46 @@ plt.rcParams['image.cmap'] = 'magma'
 # plt.rcParams['font.sans-serif'] = 'Helvetica-Normal'
 
 
-class input:
+
+class input_new:
     def __init__(self, resultsf, simID):
         fileh5 = resultsf + '/esp_output_planet_' + simID + '.h5'
         if os.path.exists(fileh5):
-            openh5 = h5py.File(fileh5)
+            openh5 = h5py.File(fileh5,'r')
         else:
             fileh5_old = resultsf + '/esp_output_' + simID + '.h5'
             if os.path.exists(fileh5_old):
-                openh5 = h5py.File(fileh5_old)
+                openh5 = h5py.File(fileh5_old,'r')
             else:
                 raise IOError(fileh5 + ' or ' + fileh5_old + ' not found!')
-        self.A = openh5['A'][...]  # 'A' is the key for this dataset
-        # [...] is syntax for "gimme all the data under this key"
-        self.Rd = openh5['Rd'][...]
-        self.Omega = openh5['Omega'][...]
-        self.P_Ref = openh5['P_Ref'][...]
-        self.Top_altitude = openh5['Top_altitude'][...]
-        self.Cp = openh5['Cp'][...]
-        self.Gravit = openh5['Gravit'][...]
-        if 'spring_beta' in openh5.keys():
-            self.spring_beta = openh5['spring_beta'][...]
-            self.vlevel = openh5['vlevel'][...]
-            self.glevel = openh5['glevel'][...]
-            self.spring_dynamics = openh5['spring_dynamics'][...]
+
         self.resultsf = resultsf
         self.simID = simID
-        self.NonHydro = openh5['NonHydro'][0]
-        self.DeepModel = openh5['DeepModel'][0]
 
-        if 'SpongeLayer' in openh5.keys():
-            self.SpongeLayer = openh5['SpongeLayer'][...]
-            if self.SpongeLayer[0] == 1:
-                self.nlat = openh5['nlat'][...]
-                self.ns_sponge = openh5['ns_sponge'][...]
-                self.Rv_sponge = openh5['Rv_sponge'][...]
-        if 'hstest' in openh5.keys():
-            self.core_benchmark = openh5['hstest'][...]
-        else:
-            self.core_benchmark = openh5['core_benchmark'][...]
+        for key in openh5.keys():
+            setattr(self,key,openh5[key][...])
 
-        self.RT = "radiative_transfer" in openh5
-        if self.RT:
-            self.Tstar = openh5['Tstar'][...]
-            self.planet_star_dist = openh5['planet_star_dist'][...]
-            self.radius_star = openh5['radius_star'][...]
-            if 'diff_fac' in openh5.keys():  # called diff_fac in old versions
-                self.diff_ang = openh5['diff_fac'][...]
-            else:
-                self.diff_ang = openh5['diff_ang'][...]
-            if 'Tint' in openh5.keys():
-                self.Tint = openh5['Tint'][...]
-            self.albedo = openh5['albedo'][...]
-            self.tausw = openh5['tausw'][...]
-            self.taulw = openh5['taulw'][...]
-            if 'surface' in openh5.keys():
-                self.surface = openh5['surface'][0]
-            else:
-                self.surface = 0
-
-        self.TSRT = "two_streams_radiative_transfer" in openh5
+        #special cases (things we test on a lot, etc)
+        self.RT = "radiative_transfer" in openh5 and openh5["radiative_transfer"][0] == 1.0
+        self.TSRT = "two_streams_radiative_transfer" in openh5 and openh5["two_streams_radiative_transfer"][0] == 1.0
         if self.TSRT:
-            self.Tstar = openh5['Tstar'][...]
-            self.planet_star_dist = openh5['planet_star_dist'][...]
-            self.radius_star = openh5['radius_star'][...]
+            if 'alf_w0_g0_per_band' in openh5 and openh5['alf_w0_g0_per_band'][0] == 1.0:
+                self.has_w0_g0 = True
+            else:
+                self.has_w0_g0 = False
+        else:
+            self.has_w0_g0 = False
 
-        if 'vulcan' in openh5.keys():
-            self.chemistry = openh5['vulcan'][...]
-        if 'chemistry' in openh5.keys():
-            self.chemistry = openh5['chemistry'][...]
+        self.chemistry = "chemistry" in openh5 and openh5["chemistry" ][0] == 1
 
+        if not hasattr(self,'surface'):
+            self.surface = False
+        #some bw compatibility things
+        if hasattr(self,'vulcan'):
+            self.chemistry = self.vulcan
+        if hasattr(self,'diff_fac'):
+            self.diff_ang = self.diff_fac
         openh5.close()
-
 
 def LatLong2Cart(lat, lon):
     x = np.cos(lat) * np.cos(lon)
@@ -123,80 +103,87 @@ def Rot_z(phi, x, y, z):
     ynew = np.sin(phi) * x + np.cos(phi) * y
     return xnew, ynew, z
 
-
-class grid:
+class grid_new:
     def __init__(self, resultsf, simID, rotation=False, theta_y=0, theta_z=0):
         fileh5 = resultsf + '/esp_output_grid_' + simID + '.h5'
         if os.path.exists(fileh5):
-            openh5 = h5py.File(fileh5)
+            openh5 = h5py.File(fileh5,'r')
         else:
             raise IOError(fileh5 + ' not found!')
-        self.Altitude = openh5['Altitude'][...]
-        self.Altitudeh = openh5['Altitudeh'][...]
-        self.areasT = openh5['areasT'][...]
-        self.lonlat = openh5['lonlat'][...]
+
         self.point_num = np.int(openh5['point_num'][0])
-        self.pntloc = np.reshape(openh5['pntloc'][...], (self.point_num, 6))  # indices of nearest neighbors
         self.nv = np.int(openh5['nv'][0])
-        if 'grad' in openh5.keys():
-            self.grad = np.reshape(openh5['grad'][...], (self.point_num, 7, 3))
-            self.div = np.reshape(openh5['div'][...], (self.point_num, 7, 3))
-        if 'curlz' in openh5.keys():
-            self.curlz = np.reshape(openh5['curlz'][...], (self.point_num, 7, 3))
-        openh5.close()
         self.nvi = self.nv + 1
-        self.lon = (self.lonlat[::2]) % (2 * np.pi)
-        self.lat = self.lonlat[1::2]
-        if rotation == True:
-            xtmp, ytmp, ztmp = LatLong2Cart(self.lat, self.lon)
-            xtmp1, ytmp1, ztmp1 = Rot_z(theta_z, xtmp, ytmp, ztmp)
-            xtmp2, ytmp2, ztmp2 = Rot_y(theta_y, xtmp1, ytmp1, ztmp1)
-            self.lat, self.lon = Cart2LatLong(xtmp2, ytmp2, ztmp2)
-            self.lon = self.lon % (2 * np.pi)
+        for key in openh5.keys():
+            if key != 'nv' and key != 'point_num':
+                if key == 'pntloc':
+                    setattr(self,key,np.reshape(openh5[key][...],(self.point_num,6)))
+                elif key == 'grad' or key == 'div' or key == 'curlz':
+                    setattr(self,key,np.reshape(openh5[key][...],(self.point_num,7,3)))
+                elif key == 'lonlat':
+                    self.lon = (openh5[key][::2]) % (2*np.pi)
+                    self.lat = openh5[key][1::2]
+                    if rotation == True:
+                        xtmp, ytmp, ztmp = LatLong2Cart(self.lat, self.lon)
+                        xtmp1, ytmp1, ztmp1 = Rot_z(theta_z, xtmp, ytmp, ztmp)
+                        xtmp2, ytmp2, ztmp2 = Rot_y(theta_y, xtmp1, ytmp1, ztmp1)
+                        self.lat, self.lon = Cart2LatLong(xtmp2, ytmp2, ztmp2)
+                        self.lon = self.lon % (2 * np.pi)
+                else:
+                    setattr(self,key,openh5[key][...])
+        openh5.close()
 
-
-class output:
+class output_new:
     def __init__(self, resultsf, simID, ntsi, nts, input, grid, stride=1):
-        # Initialize arrays
-        self.Rho = np.zeros((grid.point_num, grid.nv, nts - ntsi + 1))
-        self.Pressure = np.zeros((grid.point_num, grid.nv, nts - ntsi + 1))
-        self.Mh = np.zeros((3, grid.point_num, grid.nv, nts - ntsi + 1))
-        self.Wh = np.zeros((grid.point_num, grid.nvi, nts - ntsi + 1))
+        #need to test best way to read/create virtual dataset
+        #if I read in source files with "r", I need to close the virtual data file
+        # and then reopen it with "r" to make data visible
+        #if I read in source files with "r+", there is no need to close and reopen
+
+        #some basic info
         self.ntsi = ntsi
         self.nts = nts
+        # 1-D arrays
         self.time = np.zeros(nts - ntsi + 1)
         self.nstep = np.zeros(nts - ntsi + 1)
-        self.Etotal = np.zeros((grid.point_num, grid.nv, nts - ntsi + 1))
-        self.Entropy = np.zeros((grid.point_num, grid.nv, nts - ntsi + 1))
-        self.Mass = np.zeros((grid.point_num, grid.nv, nts - ntsi + 1))
-        self.AngMomx = np.zeros((grid.point_num, grid.nv, nts - ntsi + 1))
-        self.AngMomy = np.zeros((grid.point_num, grid.nv, nts - ntsi + 1))
-        self.AngMomz = np.zeros((grid.point_num, grid.nv, nts - ntsi + 1))
+        self.ConvData = np.zeros(nts - ntsi + 1)
         self.GlobalE = np.zeros(nts - ntsi + 1)
         self.GlobalEnt = np.zeros(nts - ntsi + 1)
         self.GlobalMass = np.zeros(nts - ntsi + 1)
         self.GlobalAMx = np.zeros(nts - ntsi + 1)
         self.GlobalAMy = np.zeros(nts - ntsi + 1)
         self.GlobalAMz = np.zeros(nts - ntsi + 1)
-        self.ConvData = np.zeros(nts - ntsi + 1)
-        self.EntData = np.zeros(nts - ntsi + 1)
-        self.Insol = np.zeros((grid.point_num, nts - ntsi + 1))
-        self.Tsurface = np.zeros((grid.point_num, nts - ntsi + 1))
 
-        self.ch4 = np.zeros((grid.point_num, grid.nv, nts - ntsi + 1))
-        self.co = np.zeros((grid.point_num, grid.nv, nts - ntsi + 1))
-        self.h2o = np.zeros((grid.point_num, grid.nv, nts - ntsi + 1))
-        self.co2 = np.zeros((grid.point_num, grid.nv, nts - ntsi + 1))
-        self.nh3 = np.zeros((grid.point_num, grid.nv, nts - ntsi + 1))
+        # dictionary of field variables (2-D or 3-D arrays)
+        # key is the key in h5 file, value is desired attribute name in this class
+        outputs = {'Rho': 'Rho', 'Pressure': 'Pressure', 'Mh': 'Mh', 'Wh': 'Wh'}
 
-        self.tau_sw = np.zeros((grid.point_num, grid.nv, nts - ntsi + 1))
-        self.tau_lw = np.zeros((grid.point_num, grid.nv, nts - ntsi + 1))
-        self.flw_up = np.zeros((grid.point_num, grid.nvi, nts - ntsi + 1))
-        self.flw_dn = np.zeros((grid.point_num, grid.nvi, nts - ntsi + 1))
-        self.fsw_dn = np.zeros((grid.point_num, grid.nvi, nts - ntsi + 1))
+        if input.output_mean:
+            outputs['Rho_mean'] = 'Rho_mean'
+            outputs['Pressure_mean'] = 'Pressure_mean'
+            outputs['Mh_mean'] = 'Mh_mean'
+            outputs['Wh_mean'] = 'Wh_mean'
 
-        self.Rd = np.zeros((grid.point_num, grid.nv, nts - ntsi + 1))
-        self.Cp = np.zeros((grid.point_num, grid.nv, nts - ntsi + 1))
+        #add things to outputs that can be checked for in input or grid
+        # if input.RT or input.TSRT:
+        #     outputs['Qheat'] = 'qheat'
+
+        if input.RT:
+            outputs['tau'] = 'tau'  #have to be careful about slicing this (sw = ::2, lw = 1::2)
+            outputs['flw_up'] = 'flw_up'
+            outputs['flw_dn'] = 'flw_dn'
+            outputs['fsw_dn'] = 'fsw_dn'
+            # outputs['DGQheat'] = 'DGqheat'
+
+        if input.TSRT:
+            outputs['F_up_tot'] = 'f_up_tot'
+            outputs['F_down_tot'] = 'f_down_tot'
+            outputs['F_dir_tot'] = 'f_dir_tot'
+            outputs['F_net'] = 'f_net'
+            outputs['Alf_Qheat'] = 'TSqheat'
+            outputs['F_up_TOA_spectrum'] = 'spectrum'
+            outputs['alf_spectrum'] = 'incoming_spectrum'
+            outputs['lambda_wave'] = 'wavelength'
 
         # calc volume element
         Atot = input.A**2
@@ -205,126 +192,151 @@ class output:
             rint = ((input.A + grid.Altitudeh[1:])**3 - (input.A + grid.Altitudeh[:-1])**3) / 3.0
         else:
             rint = Atot*(grid.Altitudeh[1:] - grid.Altitudeh[:-1])
-        Vol0 = solid_ang[:, None] * rint[None, :]
+        self.Vol0 = solid_ang[:, None] * rint[None, :]
 
-        # TSRT quantities
-        # TODO: clean up what's only for debug
-        self.f_up_tot = np.zeros((grid.point_num, grid.nvi, nts - ntsi + 1))
-        self.f_down_tot = np.zeros((grid.point_num, grid.nvi, nts - ntsi + 1))
-        self.f_net = np.zeros((grid.point_num, grid.nvi, nts - ntsi + 1))
-        self.q_heat = np.zeros((grid.point_num, grid.nv, nts - ntsi + 1))
-        self.mustar = np.zeros((grid.point_num, nts - ntsi + 1))
-        # Read model results
         for t in np.arange(ntsi - 1, nts, stride):
             fileh5 = resultsf + '/esp_output_' + simID + '_' + np.str(t + 1) + '.h5'
             if os.path.exists(fileh5):
-                openh5 = h5py.File(fileh5)
+                openh5 = h5py.File(fileh5, 'r+')
             else:
                 raise IOError(fileh5 + ' not found!')
 
-            Rhoi = openh5['Rho'][...]
-            Pressurei = openh5['Pressure'][...]
-            Mhi = openh5['Mh'][...]
-            Whi = openh5['Wh'][...]
-            time = openh5['simulation_time'][0] / 86400
-            nstep = openh5['nstep'][0]
+            if t == ntsi - 1:
+                # add things to outputs dictionary that require checking for existence in openh5
+                if 'Qheat' in openh5.keys():
+                    outputs['Qheat'] = 'qheat'
+                if 'DGQheat' in openh5.keys():
+                    outputs['DGQheat'] = 'DGQheat'
+                if 'Etotal' in openh5.keys():
+                    self.ConvData[t-ntsi+1] = True
+                    outputs['Etotal'] = 'Etotal'
+                    outputs['Mass'] = 'Mass'
+                    outputs['AngMomx'] = 'AngMomx'
+                    outputs['AngMomy'] = 'AngMomy'
+                    outputs['AngMomz'] = 'AngMomz'
+                    outputs['Entropy'] = 'Entropy'
+                else:
+                    print('Warning: conservation diagnostics not available in file %s' % fileh5)
+                    self.ConvData[t-ntsi+1] = False
 
-            if 'Rd' in openh5.keys():
-                Rdi = openh5['Rd'][...]
-                Cpi = openh5['Cp'][...]
-            else:
-                Rdi = np.zeros_like(Rhoi) + input.Rd
-                Cpi = np.zeros_like(Rhoi) + input.Cp
+                if 'insol' in openh5.keys():
+                    outputs['insol'] = 'Insol'
+                if 'tracer' in openh5.keys():
+                    outputs['tracer'] = 'tracer' #ch4 ::5, co 1::5, h2o 2::5, co2 3::5, nh3 4::5
+                if 'Tsurface' in openh5.keys():
+                    outputs['Tsurface'] = 'Tsurface'
+                if 'Rd' in openh5.keys():
+                    self.ConstRdCp = False
+                    outputs['Rd'] = 'Rd'
+                    outputs['Cp'] = 'Cp'
+                else:
+                    self.ConstRdCp = True
 
-            if 'Etotal' in openh5.keys():
-                Etotali = openh5['Etotal'][...]
-                Massi = openh5['Mass'][...]
-                AngMomxi = openh5['AngMomx'][...]
-                AngMomyi = openh5['AngMomy'][...]
-                AngMomzi = openh5['AngMomz'][...]
+                # for rename transition of col_mu_star, can be removed later
+                if 'cos_zenith_angles' in openh5.keys():
+                    outputs['cos_zenith_angles'] = 'mustar'
+                elif 'zenith_angles' in openh5.keys():
+                    outputs['zenith_angles'] = 'mustar'
+                elif 'col_mu_star' in openh5.keys():
+                    outputs['col_mu_star'] = 'mustar'
+
+                if input.TSRT:
+                    if 'w0_band' in openh5.keys():
+                        outputs['w0_band'] = 'w0_band'
+                    if 'g0_band' in openh5.keys():
+                        outputs['g0_band'] = 'g0_band'
+
+                #create VDS layout shape
+                for key in outputs.keys():
+                    setattr(self, outputs[key]+'_lo', h5py.VirtualLayout(shape=
+                                (np.shape(openh5[key])[0],nts-ntsi+1),dtype='f8'))
+
+            #shove source reference into layout
+            for key in outputs.keys():
+                getattr(self, outputs[key]+'_lo')[:,t-ntsi+1] = h5py.VirtualSource(openh5[key])
+
+            # 1-D arrays, unlikely to overflow memory
+            self.time[t-ntsi+1] = openh5['simulation_time'][0] / 86400
+            self.nstep[t-ntsi+1] = openh5['nstep'][0]
+            if self.ConvData[t-ntsi+1]:
                 self.GlobalE[t - ntsi + 1] = openh5['GlobalE'][0]
                 self.GlobalMass[t - ntsi + 1] = openh5['GlobalMass'][0]
                 self.GlobalAMx[t - ntsi + 1] = openh5['GlobalAMx'][0]
                 self.GlobalAMy[t - ntsi + 1] = openh5['GlobalAMy'][0]
                 self.GlobalAMz[t - ntsi + 1] = openh5['GlobalAMz'][0]
-                self.ConvData[t - ntsi + 1] = True
-            else:
-                print('Warning: conservation diagnostics not available in file %s' % fileh5)
-                self.ConvData[t - ntsi + 1] = False
-            if 'Entropy' in openh5.keys():
-                Entropyi = openh5['Entropy'][...]
                 self.GlobalEnt[t - ntsi + 1] = openh5['GlobalEnt'][0]
-                self.EntData[t - ntsi + 1] = True
-            else:
-                print('Warning: entropy not available in file %s' % fileh5)
-                self.EntData[t - ntsi + 1] = False
-            if 'insol' in openh5.keys():
-                self.Insol[:, t - ntsi + 1] = openh5['insol'][...]
-            if 'tracer' in openh5.keys():
-                traceri = openh5['tracer'][...]
-            if 'tau' in openh5.keys():
-                taui = openh5['tau'][...]
-                if 'fnet_up' in openh5.keys():  # old version of LW output
-                    fupi = openh5['fnet_up'][...]
-                    fdni = openh5['fnet_dn'][...]
-                    sdni = np.zeros_like(fdni)
-                else:
-                    fupi = openh5['flw_up'][...]
-                    fdni = openh5['flw_dn'][...]
-                    sdni = openh5['fsw_dn'][...]
-            if 'Tsurface' in openh5.keys():
-                self.Tsurface[:, t - ntsi + 1] = openh5['Tsurface'][...]
-            if input.TSRT:
-                f_up_tot_i = openh5['F_up_tot'][...]
-                f_down_tot_i = openh5['F_down_tot'][...]
-                f_net_i = openh5['F_net'][...]
-                q_heat_i = openh5['Alf_Qheat'][...]
-                self.mustar[:, t - ntsi + 1] = openh5['col_mu_star'][...]
+
             openh5.close()
 
-            self.Rho[:, :, t - ntsi + 1] = np.reshape(Rhoi, (grid.point_num, grid.nv))
-            self.Pressure[:, :, t - ntsi + 1] = np.reshape(Pressurei, (grid.point_num, grid.nv))
-            self.Mh[0, :, :, t - ntsi + 1] = np.reshape(Mhi[::3], (grid.point_num, grid.nv))
-            self.Mh[1, :, :, t - ntsi + 1] = np.reshape(Mhi[1::3], (grid.point_num, grid.nv))
-            self.Mh[2, :, :, t - ntsi + 1] = np.reshape(Mhi[2::3], (grid.point_num, grid.nv))
-            self.Wh[:, :, t - ntsi + 1] = np.reshape(Whi, (grid.point_num, grid.nvi))
-            self.Rd[:, :, t - ntsi + 1] = np.reshape(Rdi, (grid.point_num, grid.nv))
-            self.Cp[:, :, t - ntsi + 1] = np.reshape(Cpi, (grid.point_num, grid.nv))
+        fileVDS = resultsf+'/esp_output_'+simID+'_'+str(ntsi)+'_'+str(nts)+'_VDS.h5'
+        self.openVDS = h5py.File(fileVDS,'w',libver='latest')
 
-            self.time[t - ntsi + 1] = time
-            self.nstep[t - ntsi + 1] = nstep
-            if 'Etotali' in locals():
-                self.Etotal[:, :, t - ntsi + 1] = np.reshape(Etotali, (grid.point_num, grid.nv))/Vol0
-                self.Mass[:, :, t - ntsi + 1] = np.reshape(Massi, (grid.point_num, grid.nv))/Vol0
-                self.AngMomx[:, :, t - ntsi + 1] = np.reshape(AngMomxi, (grid.point_num, grid.nv))/Vol0
-                self.AngMomy[:, :, t - ntsi + 1] = np.reshape(AngMomyi, (grid.point_num, grid.nv))/Vol0
-                self.AngMomz[:, :, t - ntsi + 1] = np.reshape(AngMomzi, (grid.point_num, grid.nv))/Vol0
-            if 'Entropyi' in locals():
-                self.Entropy[:, :, t - ntsi + 1] = np.reshape(Entropyi, (grid.point_num, grid.nv))/Vol0
+        #create data sets.
+        #will need to reshape them (grid.point_num,grid.nv,nts-ntsi+1) in mjolnir
+        #self .Pressure = self.openVDS.create_virtual_dataset('Pressure',Pressure_lo,fillvalue=0)
+        for key in outputs.keys():
+            setattr(self, outputs[key], self.openVDS.create_virtual_dataset(outputs[key],getattr(self, outputs[key]+'_lo'),fillvalue=0))
 
-            if 'traceri' in locals():
-                self.ch4[:, :, t - ntsi + 1] = np.reshape(traceri[::5], (grid.point_num, grid.nv)) / self.Rho[:, :, t - ntsi + 1]
-                self.co[:, :, t - ntsi + 1] = np.reshape(traceri[1::5], (grid.point_num, grid.nv)) / self.Rho[:, :, t - ntsi + 1]
-                self.h2o[:, :, t - ntsi + 1] = np.reshape(traceri[2::5], (grid.point_num, grid.nv)) / self.Rho[:, :, t - ntsi + 1]
-                self.co2[:, :, t - ntsi + 1] = np.reshape(traceri[3::5], (grid.point_num, grid.nv)) / self.Rho[:, :, t - ntsi + 1]
-                self.nh3[:, :, t - ntsi + 1] = np.reshape(traceri[4::5], (grid.point_num, grid.nv)) / self.Rho[:, :, t - ntsi + 1]
+    # for use at end of plotting... closes h5 file with virtual data set
+    def closeVDS(self):
+        self.openVDS.close()
 
-            if 'taui' in locals():
-                self.tau_sw[:, :, t - ntsi + 1] = np.reshape(taui[::2], (grid.point_num, grid.nv))
-                self.tau_lw[:, :, t - ntsi + 1] = np.reshape(taui[1::2], (grid.point_num, grid.nv))
-                self.flw_dn[:, :, t - ntsi + 1] = np.reshape(fdni, (grid.point_num, grid.nvi))
-                self.flw_up[:, :, t - ntsi + 1] = np.reshape(fupi, (grid.point_num, grid.nvi))
-                self.fsw_dn[:, :, t - ntsi + 1] = np.reshape(sdni, (grid.point_num, grid.nvi))
+    #loads arrays from disk into memory and reshapes them (destroys reference to virtual data set)
+    def load_reshape(self,grid,keys):
+        tlen = self.nts-self.ntsi+1
+        for key in keys:
+            if key in self.openVDS.keys():
+                data_ref = getattr(self, key)
+                if isinstance(data_ref,h5py.Dataset):
+                    if data_ref.size*8 > psutil.virtual_memory().available:
+                        raise IOError("Dataset %s too large for memory; not loading"%key)
+                    data = data_ref[...]
+                    if np.shape(data) == (grid.point_num*grid.nv,tlen):
+                        data = np.reshape(data,(grid.point_num,grid.nv,tlen))
+                    elif np.shape(data) == (grid.point_num*grid.nvi,tlen):
+                        data = np.reshape(data,(grid.point_num,grid.nvi,tlen))
+                    # need to handle special formats (Mh, tracers...)
+                    elif np.shape(data) == (grid.point_num*grid.nv*3,tlen):
+                        data_new = np.zeros((3,grid.point_num,grid.nv,tlen))
+                        data_new[0] = np.reshape(data[::3],(grid.point_num,grid.nv,tlen))
+                        data_new[1] = np.reshape(data[1::3],(grid.point_num,grid.nv,tlen))
+                        data_new[2] = np.reshape(data[2::3],(grid.point_num,grid.nv,tlen))
+                        data = data_new
+                    if key == 'tracer':  #special case for passive tracers
+                        self.ch4 = np.reshape(data[::5],(grid.point_num,grid.nv,tlen))
+                        self.co = np.reshape(data[1::5],(grid.point_num,grid.nv,tlen))
+                        self.h2o = np.reshape(data[2::5],(grid.point_num,grid.nv,tlen))
+                        self.co2 = np.reshape(data[3::5],(grid.point_num,grid.nv,tlen))
+                        self.nh3 = np.reshape(data[4::5],(grid.point_num,grid.nv,tlen))
+                    elif key == 'tau':
+                        self.tau_sw = np.reshape(data[::2],(grid.point_num,grid.nv,tlen))
+                        self.tau_lw = np.reshape(data[1::2],(grid.point_num,grid.nv,tlen))
+                    elif key == 'spectrum':
+                        self.spectrum = np.reshape(data, (grid.point_num,-1,tlen))
+                    elif key == 'incoming_spectrum':
+                        self.incoming_spectrum = np.reshape(data, (-1,tlen))
+                    elif key == 'w0_band':
+                        self.w0_band = np.reshape(data, (grid.point_num,grid.nv,-1,tlen))
+                    elif key == 'g0_band':
+                        self.g0_band = np.reshape(data, (grid.point_num,grid.nv,-1,tlen))
+                    elif key == 'Etotal' or key == 'Entropy' or key == 'AngMomz':
+                        data = np.reshape(data,(grid.point_num,grid.nv,tlen))/self.Vol0[:,:,None]
+                        setattr(self, key, data)
+                    else:
+                        setattr(self, key, data)
+                else:
+                    print("Dataset %s has already been loaded into memory"%key)
+            else:
+                raise IOError("Invalid data set specified: %s"%key)
 
-            if input.TSRT:
-                self.f_up_tot[:, :, t - ntsi + 1] = np.reshape(f_up_tot_i, (grid.point_num, grid.nvi))
-                self.f_down_tot[:, :, t - ntsi + 1] = np.reshape(f_down_tot_i, (grid.point_num, grid.nvi))
-                self.f_net[:, :, t - ntsi + 1] = np.reshape(f_net_i, (grid.point_num, grid.nvi))
-                self.q_heat[:, :, t - ntsi + 1] = np.reshape(q_heat_i, (grid.point_num, grid.nv))
+    def load_reshape_all(self,grid):
+        keys = self.openVDS.keys()
+        self.load_reshape(grid,keys)
+        self.closeVDS()
 
 
-class rg_out:
-    def __init__(self, resultsf, simID, ntsi, nts, input, output, grid, pressure_vert=True, pgrid_ref='auto'):
+class rg_out_new:
+    def __init__(self, resultsf, simID, ntsi, nts, input, grid, pressure_vert=True, pgrid_ref='auto'):
         RT = False
         if "core_benchmark" in dir(input):
             # need to switch to 'radiative_tranfer' flag
@@ -341,224 +353,144 @@ class rg_out:
             if input.chemistry == 1:
                 chem = 1
 
+        #some basic info
+        self.ntsi = ntsi
+        self.nts = nts
         # Read model results
         for t in np.arange(ntsi - 1, nts):
             if pressure_vert == True:
-                fileh5 = resultsf + '/regrid_' + simID + '_' + np.str(t + 1)
+                if pgrid_ref == 'auto':
+                    pgrid_folder = resultsf + '/pgrid_%d_%d_1'%(ntsi,nts)
+                else:
+                    pgrid_folder = resultsf + '/' + pgrid_ref[:-4]
+                fileh5 = pgrid_folder + '/regrid_' + simID + '_' + np.str(t + 1)
             else:
                 fileh5 = resultsf + '/regrid_height_' + simID + '_' + np.str(t + 1)
             fileh5 += '.h5'
             if os.path.exists(fileh5):
-                openh5 = h5py.File(fileh5)
+                openh5 = h5py.File(fileh5,'r+')
             else:
                 print(fileh5 + ' not found, regridding now with default settings...')
                 regrid(resultsf, simID, ntsi, nts, pgrid_ref=pgrid_ref)
-                openh5 = h5py.File(fileh5)
+                openh5 = h5py.File(fileh5,'r+')
 
-            Rhoi = openh5['Rho'][...]
-            Tempi = openh5['Temperature'][...]
-            Ui = openh5['U'][...]
-            Vi = openh5['V'][...]
-            Wi = openh5['W'][...]
-            if pressure_vert == True:
-                Prei = openh5['Pressure'][...]
-            else:
-                Alti = openh5['Altitude'][...]
-                Prei = np.zeros_like(Alti)
-            lati = openh5['Latitude'][...]
-            loni = openh5['Longitude'][...]
+            for key in openh5.keys():
+                if t == ntsi - 1:  #set up VDS layout shape
+                    if openh5[key].ndim == 1:
+                        setattr(self,key,openh5[key][:])
+                    else:
+                        vars()[key+'_lo'] = h5py.VirtualLayout(shape=
+                                            np.shape(openh5[key])+(nts-ntsi+1,),dtype='f8')
+                if key+'_lo' in vars():
+                    if openh5[key].ndim == 2:
+                        vars()[key+'_lo'][:,:,t-ntsi+1] = h5py.VirtualSource(openh5[key])
+                    elif openh5[key].ndim == 3:
+                        vars()[key+'_lo'][:,:,:,t-ntsi+1] = h5py.VirtualSource(openh5[key])
+                    else:
+                        raise IOError('Property %s with unknown dimensions in regrid file'%key)
 
-            if RT:
-                tau_swi = openh5['tau_sw'][...]
-                tau_lwi = openh5['tau_lw'][...]
-                if 'fnet_up' in openh5.keys():
-                    flw_upi = openh5['fnet_up'][...]
-                    flw_dni = openh5['fnet_dn'][...]
+        fileVDS = resultsf+'/regrid_'+simID+'_'+str(ntsi)+'_'+str(nts)+'_VDS.h5'
+        self.openVDS = h5py.File(fileVDS,'w',libver='latest')
+
+        for key in openh5.keys():
+            if key+'_lo' in vars():
+                setattr(self,key,self.openVDS.create_virtual_dataset(key,vars()[key+'_lo'],fillvalue=0))
+
+    def closeVDS(self):
+        self.openVDS.close()
+
+    def load(self,keys):
+        tlen = self.nts-self.ntsi+1
+        for key in keys:
+            if key in self.openVDS.keys():
+                data_ref = getattr(self, key)
+                if isinstance(data_ref,h5py.Dataset):
+                    if data_ref.size*8 > psutil.virtual_memory().available:
+                        raise IOError("Dataset %s too large for memory; not loading"%key)
+                    data = data_ref[...]
+                    setattr(self,key,data)
                 else:
-                    flw_upi = openh5['flw_up'][...]
-                    flw_dni = openh5['flw_dn'][...]
-                insoli = openh5['insol'][...]
-                if 'Tsurface' in openh5.keys():
-                    Tsurfi = openh5['Tsurface'][...]
-                else:
-                    surf = 0
-            if input.TSRT:
-                mustar_i = openh5['mustar'][...]
-                f_up_tot_i = openh5['f_up_tot'][...]
-                f_down_tot_i = openh5['f_down_tot'][...]
-                f_net_i = openh5['f_net'][...]
-                q_heat_i = openh5['q_heat'][...]
-
-            if chem == 1:
-                ch4i = openh5['ch4'][...]
-                coi = openh5['co'][...]
-                h2oi = openh5['h2o'][...]
-                co2i = openh5['co2'][...]
-                nh3i = openh5['nh3'][...]
-
-            PVi = openh5['PV'][...]
-            if 'RV' in openh5.keys():
-                RVi = openh5['RV'][...][0]
+                    print("Dataset %s has already been loaded into memory"%key)
             else:
-                RVi = openh5['RVw'][...]
+                print("Invalid data set specified: %s; not loading"%key)
 
-            if 'Etotal' in openh5.keys():
-                Etotali = openh5['Etotal'][...]
-                Entropyi = openh5['Entropy'][...]
-                AngMomzi = openh5['AngMomz'][...]
+    def load_all(self):
+        keys = self.openVDS.keys()
+        self.load(keys)
+        self.closeVDS()
 
-            openh5.close()
-
-            if t == ntsi - 1:
-                self.Rho = np.zeros(np.shape(Rhoi) + (nts - ntsi + 1,))
-                self.U = np.zeros(np.shape(Ui) + (nts - ntsi + 1,))
-                self.V = np.zeros(np.shape(Vi) + (nts - ntsi + 1,))
-                self.W = np.zeros(np.shape(Wi) + (nts - ntsi + 1,))
-                self.Temperature = np.zeros(np.shape(Tempi) + (nts - ntsi + 1,))
-                if pressure_vert == True:
-                    self.Pressure = np.zeros(np.shape(Prei) + (nts - ntsi + 1,))
-                else:
-                    self.Altitude = np.zeros(np.shape(Alti) + (nts - ntsi + 1,))
-                self.lat = np.zeros(np.shape(lati) + (nts - ntsi + 1,))
-                self.lon = np.zeros(np.shape(loni) + (nts - ntsi + 1,))
-                self.PV = np.zeros(np.shape(PVi) + (nts - ntsi + 1,))
-                self.RV = np.zeros(np.shape(RVi) + (nts - ntsi + 1,))
-
-                if RT:
-                    self.tau_sw = np.zeros(np.shape(tau_swi) + (nts - ntsi + 1,))
-                    self.tau_lw = np.zeros(np.shape(tau_lwi) + (nts - ntsi + 1,))
-                    self.flw_up = np.zeros(np.shape(flw_upi) + (nts - ntsi + 1,))
-                    self.flw_dn = np.zeros(np.shape(flw_dni) + (nts - ntsi + 1,))
-                    self.insol = np.zeros(np.shape(insoli) + (nts - ntsi + 1,))
-                    if surf:
-                        self.Tsurface = np.zeros(np.shape(Tsurfi) + (nts - ntsi + 1,))
-                if input.TSRT:
-                    self.mustar = np.zeros(np.shape(mustar_i) + (nts - ntsi + 1,))
-                    self.f_up_tot = np.zeros(np.shape(f_up_tot_i) + (nts - ntsi + 1,))
-                    self.f_down_tot = np.zeros(np.shape(f_down_tot_i) + (nts - ntsi + 1,))
-                    self.f_net = np.zeros(np.shape(f_net_i) + (nts - ntsi + 1,))
-                    self.q_heat = np.zeros(np.shape(q_heat_i) + (nts - ntsi + 1,))
-                if chem == 1:
-                    self.ch4 = np.zeros(np.shape(ch4i) + (nts - ntsi + 1,))
-                    self.co = np.zeros(np.shape(coi) + (nts - ntsi + 1,))
-                    self.h2o = np.zeros(np.shape(h2oi) + (nts - ntsi + 1,))
-                    self.co2 = np.zeros(np.shape(co2i) + (nts - ntsi + 1,))
-                    self.nh3 = np.zeros(np.shape(nh3i) + (nts - ntsi + 1,))
-                if 'Etotali' in locals():
-                    self.Etotal = np.zeros(np.shape(Etotali) + (nts - ntsi + 1,))
-                    self.Entropy = np.zeros(np.shape(Entropyi) + (nts - ntsi + 1,))
-                    self.AngMomz = np.zeros(np.shape(AngMomzi) + (nts - ntsi + 1,))
-
-            self.Rho[:, :, :, t - ntsi + 1] = Rhoi
-            self.U[:, :, :, t - ntsi + 1] = Ui
-            self.V[:, :, :, t - ntsi + 1] = Vi
-            self.W[:, :, :, t - ntsi + 1] = Wi
-            self.Temperature[:, :, :, t - ntsi + 1] = Tempi
-            if pressure_vert == True:
-                self.Pressure[:, t - ntsi + 1] = Prei
-                if t > ntsi - 1:
-                    if (Prei == self.Pressure[:, 0]).all() == False:
-                        print('Warning: Pressure grid in file %d does not match file %d' % (t, ntsi))
-            else:
-                self.Altitude[:, t - ntsi + 1] = Alti
-            self.lat[:, t - ntsi + 1] = lati
-            self.lon[:, t - ntsi + 1] = loni
-            self.PV[:, :, :, t - ntsi + 1] = PVi
-            self.RV[:, :, :, t - ntsi + 1] = RVi
-
-            if RT:
-                self.tau_sw[:, :, :, t - ntsi + 1] = tau_swi
-                self.tau_lw[:, :, :, t - ntsi + 1] = tau_lwi
-                self.flw_up[:, :, :, t - ntsi + 1] = flw_upi
-                self.flw_dn[:, :, :, t - ntsi + 1] = flw_dni
-                self.insol[:, :, t - ntsi + 1] = insoli
-                if surf:
-                    self.Tsurface[:, :, t - ntsi + 1] = Tsurfi
-            if input.TSRT:
-                self.mustar[:, :, t - ntsi + 1] = mustar_i
-                self.f_up_tot[:, :, :, t - ntsi + 1] = f_up_tot_i
-                self.f_down_tot[:, :, :, t - ntsi + 1] = f_down_tot_i
-                self.f_net[:, :, :, t - ntsi + 1] = f_net_i
-                self.q_heat[:, :, :, t - ntsi + 1] = q_heat_i
-            if chem == 1:
-                self.ch4[:, :, :, t - ntsi + 1] = ch4i
-                self.co[:, :, :, t - ntsi + 1] = coi
-                self.h2o[:, :, :, t - ntsi + 1] = h2oi
-                self.co2[:, :, :, t - ntsi + 1] = co2i
-                self.nh3[:, :, :, t - ntsi + 1] = nh3i
-            if 'Etotali' in locals():
-                self.Etotal[:, :, :, t - ntsi + 1] = Etotali
-                self.Entropy[:, :, :, t - ntsi + 1] = Entropyi
-                self.AngMomz[:, :, :, t - ntsi + 1] = AngMomzi
 
 class GetOutput:
     def __init__(self, resultsf, simID, ntsi, nts, stride=1, openrg=0, pressure_vert=True, rotation=False, theta_y=0, theta_z=0, pgrid_ref='auto'):
-        self.input = input(resultsf, simID)
-        self.grid = grid(resultsf, simID, rotation=rotation, theta_y=theta_y, theta_z=theta_z)
-        self.output = output(resultsf, simID, ntsi, nts, self.input, self.grid, stride=stride)
-        if openrg == 1:
-            self.rg = rg_out(resultsf, simID, ntsi, nts, self.input, self.output, self.grid,
+        self.input = input_new(resultsf, simID)
+        self.grid = grid_new(resultsf, simID, rotation=rotation, theta_y=theta_y, theta_z=theta_z)
+        if openrg == 1:  #checking for regrid before output prevents file open conflict
+            self.rg = rg_out_new(resultsf, simID, ntsi, nts, self.input, self.grid,
                              pressure_vert=pressure_vert, pgrid_ref=pgrid_ref)
-
+        self.output = output_new(resultsf, simID, ntsi, nts, self.input, self.grid, stride=stride)
 
 def define_Pgrid(resultsf, simID, ntsi, nts, stride, overwrite=False):
-    # first we need the grid size
-    fileh5 = resultsf + '/esp_output_grid_' + simID + '.h5'
-    if os.path.exists(fileh5):
-        openh5 = h5py.File(fileh5)
-    else:
-        raise IOError(fileh5 + ' not found!')
-    nv = np.int(openh5['nv'][0])
-    point_num = np.int(openh5['point_num'][0])
-    Altitude = openh5['Altitude'][...]
-    Altitudeh = openh5['Altitudeh'][...]
-    openh5.close()
-
-    # we also need to know if we included a surface
-    fileh5 = resultsf + '/esp_output_planet_' + simID + '.h5'
-    if os.path.exists(fileh5):
-        openh5 = h5py.File(fileh5)
-    else:
-        raise IOError(fileh5 + ' not found!')
-    if openh5['core_benchmark'][0] > 0:
-        surf = 0
-    else:
-        if "radiative_transfer" in openh5:
-            surf = openh5['surface'][0]
-        else:
-            surf = 0
-
-    openh5.close()
-
-    # now we'll loop over all the files to get the pressure_mean
-    num_out = np.int((nts - ntsi) / stride) + 1
-    pressure_mean = np.zeros((point_num, nv, num_out))
-    for i in np.arange(num_out):
-        t = ntsi + stride * i
-        fileh5 = resultsf + '/esp_output_' + simID + '_' + np.str(t) + '.h5'
-        if os.path.exists(fileh5):
-            openh5 = h5py.File(fileh5)
-        else:
-            raise IOError(fileh5 + ' not found!')
-
-        pressure_mean[:, :, i] = np.reshape(openh5['Pressure_mean'][...], (point_num, nv))
-        openh5.close()
-
-    pgrid = np.mean(np.mean(pressure_mean, axis=0), axis=1)
-    if surf == 1:
-        extrap_low = (Altitudeh[0] - Altitude[1]) / (Altitude[0] - Altitude[1])
-        Psurf = pressure_mean[:, 1, :] + extrap_low * (pressure_mean[:, 0, :] - pressure_mean[:, 1, :])
-        Psurf_mean = np.mean(np.mean(Psurf, axis=0), axis=0)
-        pgrid = np.concatenate((np.array([Psurf_mean]), pgrid))
-
     pfile = 'pgrid_%d_%d_%d.txt' % (ntsi, nts, stride)
     if not os.path.exists(resultsf + '/' + pfile) or overwrite == True:
+        #check for existence of pgrid file
+
+        # first we need the grid size
+        fileh5 = resultsf + '/esp_output_grid_' + simID + '.h5'
+        if os.path.exists(fileh5):
+            openh5 = h5py.File(fileh5,'r')
+        else:
+            raise IOError(fileh5 + ' not found!')
+        nv = np.int(openh5['nv'][0])
+        point_num = np.int(openh5['point_num'][0])
+        Altitude = openh5['Altitude'][...]
+        Altitudeh = openh5['Altitudeh'][...]
+        openh5.close()
+
+        # we also need to know if we included a surface
+        fileh5 = resultsf + '/esp_output_planet_' + simID + '.h5'
+        if os.path.exists(fileh5):
+            openh5 = h5py.File(fileh5,'r')
+        else:
+            raise IOError(fileh5 + ' not found!')
+        if openh5['core_benchmark'][0] > 0:
+            surf = 0
+        else:
+            if "radiative_transfer" in openh5:
+                surf = openh5['surface'][0]
+            else:
+                surf = 0
+
+        openh5.close()
+
+        # now we'll loop over all the files to get the pressure_mean
+        num_out = np.int((nts - ntsi) / stride) + 1
+        pressure_mean = np.zeros((point_num, nv, num_out))
+        for i in np.arange(num_out):
+            t = ntsi + stride * i
+            fileh5 = resultsf + '/esp_output_' + simID + '_' + np.str(t) + '.h5'
+            if os.path.exists(fileh5):
+                openh5 = h5py.File(fileh5,'r')
+            else:
+                raise IOError(fileh5 + ' not found!')
+
+            pressure_mean[:, :, i] = np.reshape(openh5['Pressure_mean'][...], (point_num, nv))
+            openh5.close()
+
+        pgrid = np.mean(np.mean(pressure_mean, axis=0), axis=1)
+        if surf == 1:
+            extrap_low = (Altitudeh[0] - Altitude[1]) / (Altitude[0] - Altitude[1])
+            Psurf = pressure_mean[:, 1, :] + extrap_low * (pressure_mean[:, 0, :] - pressure_mean[:, 1, :])
+            Psurf_mean = np.mean(np.mean(Psurf, axis=0), axis=0)
+            pgrid = np.concatenate((np.array([Psurf_mean]), pgrid))
+
         f = open(resultsf + '/' + pfile, 'w')
         for j in np.arange(len(pgrid)):
             f.write('%d %#.6e\n' % (j, pgrid[j]))
         f.close()
     else:
-        raise IOError(pfile + ' already exists in this directory!')
+        print(pfile + ' already exists in this directory! Skipping...')
+        #raise IOError(pfile + ' already exists in this directory!')
+    return pfile
 
 
 if has_pycuda:
@@ -706,8 +638,8 @@ if has_pycuda:
     """)
 
 
-def create_rg_map(resultsf, simID, rotation=False, theta_z=0, theta_y=0):
-    outall = GetOutput(resultsf, simID, 0, 0, rotation=rotation, theta_z=theta_z, theta_y=theta_y)
+def create_rg_map(resultsf, simID, idx1, idx2, rotation=False, theta_z=0, theta_y=0):
+    outall = GetOutput(resultsf, simID, idx1, idx2, rotation=rotation, theta_z=theta_z, theta_y=theta_y)
     input = outall.input
     grid = outall.grid
 
@@ -793,7 +725,7 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
 
     if not os.path.exists(resultsf + '/regrid_map.npz') or overwrite:
         # if numpy zip file containing weights d.n.e., then create it
-        create_rg_map(resultsf, simID, rotation=rotation, theta_z=theta_z, theta_y=theta_y)
+        create_rg_map(resultsf, simID, ntsi, ntsi, rotation=rotation, theta_z=theta_z, theta_y=theta_y)
 
     # open numpy zip file containing weights
     rg_map = np.load(resultsf + '/regrid_map.npz')
@@ -807,26 +739,32 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
     input = outall.input
     grid = outall.grid
     output = outall.output
+    output.load_reshape_all(grid)
 
     print('Regrid data in folder ' + resultsf + '...\n')
 
     # handling of vertical coordinate
     if pgrid_ref == 'auto':
-        try:
-            files_found = spr.check_output('ls ' + resultsf + '/pgrid_*.txt', shell=True).split()
-        except:
-            raise IOError('No pgrid file found in "%s/", please run "pgrid -i <first> -l <last> %s"' % (resultsf, resultsf))
-        if len(files_found) > 1:
-            raise IOError('Multiple pgrid files found in "%s/", please specify with -pgrid flag' % resultsf)
-        else:
-            pgrid_file = files_found[0].decode()
+        pgrid_file = resultsf+'/'+define_Pgrid(resultsf,simID,ntsi,nts,1,overwrite=overwrite)
+        # try:
+        #     files_found = spr.check_output('ls ' + resultsf + '/pgrid_*.txt', shell=True).split()
+        # except:
+        #     raise IOError('No pgrid file found in "%s/", please run "pgrid -i <first> -l <last> %s"' % (resultsf, resultsf))
+        # if len(files_found) > 1:
+        #     raise IOError('Multiple pgrid files found in "%s/", please specify with -pgrid flag' % resultsf)
+        # else:
+        #     pgrid_file = files_found[0].decode()
     else:
         if os.path.exists(resultsf + '/' + pgrid_ref):
             pgrid_file = resultsf + '/' + pgrid_ref
         else:
             raise IOError('pgrid file %s not found!' % (resultsf + '/' + pgrid_ref))
+    pgrid_folder = pgrid_file[:-4]  #define folder as pgrid without file suffix
     print('Vertical coordinate = pressure from file %s' % pgrid_file)
     Pref = np.loadtxt(pgrid_file, unpack=True, usecols=1)
+    p_output_path = pathlib.Path(pgrid_folder)
+    if not p_output_path.exists():
+        p_output_path.mkdir()
 
     # destination grid and set some dimensions
     loni, lati = np.meshgrid(lon_range, lat_range)
@@ -862,7 +800,8 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
     for t in np.arange(ntsi, nts + 1):
         # check for existing h5 files
         proceed = 0
-        fileh5p = resultsf + '/regrid_' + simID + '_' + np.str(t)
+        skip_height_file = 0
+        fileh5p = pgrid_folder + '/regrid_' + simID + '_' + np.str(t)
 
         fileh5h = resultsf + '/regrid_height_' + simID + '_' + np.str(t)
         if rotation == True:  # tell the user they asked for a rotated grid
@@ -870,13 +809,19 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
                   % (theta_z * 180 / np.pi, theta_y * 180 / np.pi))
         fileh5p += '.h5'
         fileh5h += '.h5'
-        if os.path.exists(fileh5p) or os.path.exists(fileh5h):  # regrid files exist
+        if os.path.exists(fileh5p) and os.path.exists(fileh5h):  # regrid files exist
             if overwrite == True:  # overwrite existing files
                 proceed = 1
             else:  # skip existing files
-                print(fileh5p + 'or ' + fileh5h + ' already present! Skipping time = %d' % t)
-        else:  # no existing regrid files, all clear
+                print(fileh5p + ' and ' + fileh5h + ' already present! Skipping time = %d' % t)
+        else:  # >= one file missing
             proceed = 1
+            if os.path.exists(fileh5h):  #height file already exists
+                if overwrite == True:
+                    skip_height_file = 0
+                else:
+                    print(fileh5h + ' already present! Skipping height file for time = %d' % t)
+                    skip_height_file = 1
 
         # begin regridding
         if proceed == 1:
@@ -885,6 +830,7 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
             # read in one file at a time to prevent mem overflow
             outall = GetOutput(resultsf, simID, t, t, rotation=rotation, theta_z=theta_z, theta_y=theta_y)
             output = outall.output
+            output.load_reshape_all(grid)
 
             # interpolate in z to middle of layers using this
             interpz = (grid.Altitude - grid.Altitudeh[:-1]) / (grid.Altitudeh[1:] - grid.Altitudeh[:-1])
@@ -896,13 +842,25 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
                       'Mh': output.Mh[:, :, :, 0],
                       'Pressure': output.Pressure[:, :, 0],
                       'Rd': output.Rd[:, :, 0],
-                      'Cp': output.Cp[:, :, 0]}
+                      'Cp': output.Cp[:, :, 0],
+                      'Temperature_mean': (output.Pressure_mean/(output.Rd*output.Rho_mean))[:,:,0],
+                      'W_mean': (output.Wh_mean[:, :-1, 0] + (output.Wh_mean[:, 1:, 0]-output.Wh_mean[:, :-1, 0])*interpz[None, :])/output.Rho_mean[:, :, 0],
+                      'Rho_mean': output.Rho_mean[:, :, 0],
+                      'Mh_mean': output.Mh_mean[:, :, :, 0],
+                      'Pressure_mean': output.Pressure_mean[:, :, 0]}
+
+            if input.RT or input.TSRT:
+                source['qheat'] = output.qheat[:, :, 0]
 
             if input.RT == 1:
                 source['flw_up'] = output.flw_up[:, :-1, 0] + (output.flw_up[:, 1:, 0] - output.flw_up[:, :-1, 0]) * interpz[None, :]
                 source['flw_dn'] = output.flw_dn[:, :-1, 0] + (output.flw_dn[:, 1:, 0] - output.flw_dn[:, :-1, 0]) * interpz[None, :]
+                source['fsw_dn'] = output.fsw_dn[:, :-1, 0] + (output.fsw_dn[:, 1:, 0] - output.fsw_dn[:, :-1, 0]) * interpz[None, :]
+                fnet_tmp = output.flw_up[:,:,0] - (output.flw_dn[:,:,0]+output.fsw_dn[:,:,0])
+                source['DGf_net'] = fnet_tmp[:,:-1] + (fnet_tmp[:, 1:] - fnet_tmp[:, :-1]) * interpz[None, :]
                 source['tau_sw'] = output.tau_sw[:, :, 0]
                 source['tau_lw'] = output.tau_lw[:, :, 0]
+                source['DGqheat'] = output.DGqheat[:, :, 0]
                 source['insol'] = output.Insol[:, 0]
                 if surf == 1:
                     source['Tsurface'] = output.Tsurface[:, 0]
@@ -915,28 +873,33 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
 
             if input.TSRT:
                 source['mustar'] = output.mustar[:, 0]
-                source['f_net'] = output.f_net[:, :-1, 0] + (output.f_net[:, 1:, 0] - output.f_net[:, :-1, 0]) * interpz[None, :]
-                source['q_heat'] = output.q_heat[:, :, 0]
+                source['TSf_net'] = output.f_net[:, :-1, 0] + (output.f_net[:, 1:, 0] - output.f_net[:, :-1, 0]) * interpz[None, :]
+                source['TSqheat'] = output.TSqheat[:, :, 0]
                 source['f_up_tot'] = output.f_up_tot[:, :-1, 0] + (output.f_up_tot[:, 1:, 0] - output.f_up_tot[:, :-1, 0]) * interpz[None, :]
                 source['f_down_tot'] = output.f_down_tot[:, :-1, 0] + (output.f_down_tot[:, 1:, 0] - output.f_down_tot[:, :-1, 0]) * interpz[None, :]
             if chem == 1:
-                source['ch4'] = output.ch4[:, :, 0]
-                source['co'] = output.co[:, :, 0]
-                source['h2o'] = output.h2o[:, :, 0]
-                source['co2'] = output.co2[:, :, 0]
-                source['nh3'] = output.nh3[:, :, 0]
+                source['ch4'] = output.ch4[:, :, 0] / output.Rho[:,:,0]
+                source['co'] = output.co[:, :, 0]/ output.Rho[:,:,0]
+                source['h2o'] = output.h2o[:, :, 0]/ output.Rho[:,:,0]
+                source['co2'] = output.co2[:, :, 0]/ output.Rho[:,:,0]
+                source['nh3'] = output.nh3[:, :, 0]/ output.Rho[:,:,0]
 
             # calculate zonal and meridional velocity (special step for Mh)
-            source['U'] = (-source['Mh'][0] * np.sin(grid.lon[:, None]) +
-                           source['Mh'][1] * np.cos(grid.lon[:, None])) / source['Rho']
-            source['V'] = (-source['Mh'][0] * np.sin(grid.lat[:, None]) * np.cos(grid.lon[:, None])
-                           - source['Mh'][1] * np.sin(grid.lat[:, None]) * np.sin(grid.lon[:, None])
-                           + source['Mh'][2] * np.cos(grid.lat[:, None])) / source['Rho']
+            source['U'] = (-source['Mh'][0]*np.sin(grid.lon[:,None])+\
+                           source['Mh'][1]*np.cos(grid.lon[:, None]))/source['Rho']
+            source['V'] = (-source['Mh'][0]*np.sin(grid.lat[:,None])*np.cos(grid.lon[:,None])\
+                      -source['Mh'][1]*np.sin(grid.lat[:,None])*np.sin(grid.lon[:,None])\
+                           + source['Mh'][2]*np.cos(grid.lat[:, None]))/source['Rho']
+            source['U_mean'] = (-source['Mh_mean'][0]*np.sin(grid.lon[:,None])+\
+                           source['Mh_mean'][1]*np.cos(grid.lon[:, None]))/source['Rho_mean']
+            source['V_mean'] = (-source['Mh_mean'][0]*np.sin(grid.lat[:,None])*np.cos(grid.lon[:,None])\
+                      -source['Mh_mean'][1]*np.sin(grid.lat[:,None])*np.sin(grid.lon[:,None])\
+                           + source['Mh_mean'][2]*np.cos(grid.lat[:, None]))/source['Rho_mean']
 
             # set up intermediate arrays (icogrid and pressure)
             interm = {}
             for key in source.keys():
-                if key == 'Mh':
+                if key == 'Mh' or key == 'Mh_mean':
                     pass
                 elif np.shape(source[key]) == (grid.point_num,):
                     # 2D field (e.g., insolation) -> not needed
@@ -974,7 +937,7 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
             # set up destination arrays (lat-lon and pressure/height)
             dest = {}
             for key in interm.keys():
-                if key == 'Mh' or key == 'Pressure':
+                if key == 'Mh' or key == 'Mh_mean' or key == 'Pressure':
                     pass  # don't need these any further
                 elif np.shape(interm[key]) == (d_lon[0], d_lon[1]):
                     # 2D field (e.g., insolation)
@@ -1015,19 +978,20 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
             openh5.close()
 
             # create h5 files (height grid)
-            openh5 = h5py.File(fileh5h, "w")
-            print('Writing file ' + fileh5h + '...')
-            Alt = openh5.create_dataset("Altitude", data=grid.Altitude,
-                                        compression='gzip', compression_opts=comp)
-            Lat = openh5.create_dataset("Latitude", data=lat_range * 180 / np.pi,
-                                        compression='gzip', compression_opts=comp)
-            Lon = openh5.create_dataset("Longitude", data=lon_range * 180 / np.pi,
-                                        compression='gzip', compression_opts=comp)
-            # data
-            for key in dest.keys():
-                tmp_data = openh5.create_dataset(key, data=interm[key],
-                                                 compression='gzip', compression_opts=comp)
-            openh5.close()
+            if not skip_height_file:
+                openh5 = h5py.File(fileh5h, "w")
+                print('Writing file ' + fileh5h + '...')
+                Alt = openh5.create_dataset("Altitude", data=grid.Altitude,
+                                            compression='gzip', compression_opts=comp)
+                Lat = openh5.create_dataset("Latitude", data=lat_range * 180 / np.pi,
+                                            compression='gzip', compression_opts=comp)
+                Lon = openh5.create_dataset("Longitude", data=lon_range * 180 / np.pi,
+                                            compression='gzip', compression_opts=comp)
+                # data
+                for key in dest.keys():
+                    tmp_data = openh5.create_dataset(key, data=interm[key],
+                                                     compression='gzip', compression_opts=comp)
+                openh5.close()
 
 
 def KE_spect(input, grid, output, sigmaref, coord='icoh', lmax_adjust=0):
@@ -1128,7 +1092,7 @@ def maketable(x, y, z, xname, yname, zname, resultsf, fname):
     f.close()
 
 
-def vertical_lat(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True, axis=False, csp=500, wind_vectors=False, use_p=True, clevs=[40]):
+def vertical_lat(input, grid, output, rg, sigmaref, z, slice=['default'], save=True, axis=None, csp=500, wind_vectors=False, use_p=True, clevs=[40]):
     # generic pressure/latitude plot function
 
     # Set the reference pressure
@@ -1141,6 +1105,10 @@ def vertical_lat(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
 
     if not isinstance(slice, list):
         raise IOError("'slice' argument must be a list")
+    if slice[0] == 'default':
+        slice = [0, 360]
+    else:
+        slice = [np.float(slice[0]),np.float(slice[1])]
 
     lat = z['lat']
     lon = z['lon']
@@ -1162,7 +1130,7 @@ def vertical_lat(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
         ##################
         # Averaging in time and longitude
         if tsp > 1:
-            Zonall = np.nanmean(z['value'][:, mask_ind[:, 0], :, :], axis=1)
+            Zonall = np.nanmean(z['value'][:, mask_ind[:], :, :], axis=1)
             # Vl = np.nanmean(rg.V[:,:,:,:],axis=1)
             # Wl = np.nanmean(rg.W[:,:,:,:],axis=1)
             Zonallt = np.nanmean(Zonall[:, :, :], axis=2)
@@ -1170,25 +1138,25 @@ def vertical_lat(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
             # Wlt = np.nanmean(Wl[:,:,:],axis=2)
             del Zonall
             if wind_vectors == True:
-                Vl = np.nanmean(rg.V[:, mask_ind[:, 0], :, :], axis=1)
-                Wl = np.nanmean(rg.W[:, mask_ind[:, 0], :, :], axis=1)
+                Vl = np.nanmean(rg.V[:, mask_ind[:], :, :], axis=1)
+                Wl = np.nanmean(rg.W[:, mask_ind[:], :, :], axis=1)
                 Vlt = np.nanmean(Vl[:, :, :], axis=2)
                 Wlt = np.nanmean(Wl[:, :, :], axis=2)
                 del Vl, Wl
         else:
-            Zonallt = np.nanmean(z['value'][:, :, :, 0][:, mask_ind[:, 0], :], axis=1)
+            Zonallt = np.nanmean(z['value'][:, :, :, 0][:, mask_ind[:], :], axis=1)
             # Vlt = np.nanmean(rg.V[:,:,:,0],axis=1)
             # Wlt = np.nanmean(rg.W[:,:,:,0],axis=1)
             if wind_vectors == True:
-                Vlt = np.nanmean(rg.V[:, :, :, 0][:, mask_ind[:, 0], :], axis=1)
-                Wlt = np.nanmean(rg.W[:, :, :, 0][:, mask_ind[:, 0], :], axis=1)
+                Vlt = np.nanmean(rg.V[:, :, :, 0][:, mask_ind[:], :], axis=1)
+                Wlt = np.nanmean(rg.W[:, :, :, 0][:, mask_ind[:], :], axis=1)
 
     elif len(slice) == 1:
         if slice[0] in lon:
-            Zonall = z['value'][:, lon[:, 0] == slice[0], :, :]
+            Zonall = z['value'][:, lon[:] == slice[0], :, :]
             if wind_vectors == True:
-                Vl = rg.V[:, lon[:, 0] == slice[0], :, :]
-                Wl = rg.W[:, lon[:, 0] == slice[0], :, :]
+                Vl = rg.V[:, lon[:] == slice[0], :, :]
+                Wl = rg.W[:, lon[:] == slice[0], :, :]
         else:
             Zonall = np.zeros((len(lat), 1, d_sig, tsp))
             if wind_vectors == True:
@@ -1223,60 +1191,76 @@ def vertical_lat(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
     # Create figure #
     #################
     # Latitude
-    latp = lat[:, 0] * np.pi / 180
+    latp = lat[:] * np.pi / 180
 
     if use_p:
         # need to set desired pressure range (major PITA!)
         # prange = np.where(np.logical_and(rg.Pressure[:,0]>=np.min(Pref),rg.Pressure[:,0]<=np.max(Pref)))
-        prange = np.where(rg.Pressure[:, 0] >= np.min(Pref))
-        ycoord = rg.Pressure[prange[0], 0] / 1e5
+        prange = np.where(rg.Pressure[:] >= np.min(Pref))
+        ycoord = rg.Pressure[prange[0]] / 1e5
         zvals = Zonallt[:, prange[0]].T
     else:
-        hrange = np.where(np.logical_and(rg.Altitude[:, 0] >= np.min(sigmaref), rg.Altitude[:, 0] <= np.max(sigmaref)))
-        ycoord = rg.Altitude[hrange[0], 0] / 1000
+        hrange = np.where(np.logical_and(rg.Altitude[:] >= np.min(sigmaref), rg.Altitude[:] <= np.max(sigmaref)))
+        ycoord = rg.Altitude[hrange[0]] / 1000
         zvals = Zonallt[:, hrange[0]].T
 
     # Contour plot
     if len(clevs) == 1:
         clevels = np.int(clevs[0])
     elif len(clevs) == 3:
-        clevels = np.linspace(np.int(clevs[0]), np.int(clevs[1]), np.int(clevs[2]))
+        if isinstance(clevs[2],str) and 'log' in clevs[2]:
+            clevels = np.logspace(np.log10(np.float(clevs[0])),np.log10(np.float(clevs[1])),np.int(clevs[2][:-3]))
+        else:
+            clevels = np.linspace(np.int(clevs[0]),np.int(clevs[1]),np.int(clevs[2]))
     else:
         raise IOError("clevs not valid!")
     # print(np.max(zvals))
+
     if isinstance(axis, axes.SubplotBase):
-        C = axis.contourf(latp * 180 / np.pi, ycoord, zvals, clevels, cmap=z['cmap'])
         ax = axis
-    elif axis == False:
-        plt.figure(figsize=(5, 4))
-        C = plt.contourf(latp * 180 / np.pi, ycoord, zvals, clevels, cmap=z['cmap'])
-        ax = plt.gca()
+        fig = plt.gcf()
+    elif (isinstance(axis, tuple)
+          and isinstance(axis[0], plt.Figure)
+          and isinstance(axis[1], axes.SubplotBase)):
+        fig = axis[0]
+        ax = axis[1]
+    elif axis is None:
+        fig, ax = plt.subplots(1, 1, figsize=(5, 4))
     else:
-        raise IOError("'axis = {}' but {} is not an axes.SubplotBase instance".format(axis, axis))
+        raise IOError("'axis = {}' but {} is neither an axes.SubplotBase instance nor a (axes.SubplotBase, plt.Figure) instance".format(axis, axis))
+
+    fig.set_tight_layout(True)
+
+    C = ax.contourf(latp * 180 / np.pi, ycoord, zvals, clevels, cmap=z['cmap'])
 
     if wind_vectors == True:
-        vspacing = np.int(np.shape(rg.lat)[0] / 10)
+        vspacing = np.int(np.shape(rg.Latitude)[0] / 10)
         if use_p:
             wspacing = np.int(np.shape(rg.Pressure)[0] / 10)
             Vlt = Vlt[:, prange[0]]
             Wlt = Wlt[:, prange[0]]
-            yqcoord = rg.Pressure[::wspacing, 0][prange[0]]
+            yqcoord = rg.Pressure[::wspacing][prange[0]]
         else:
             wspacing = np.int(np.shape(rg.Altitude)[0] / 10)
             Vlt = Vlt[:, hrange[0]]
             Wlt = Wlt[:, hrange[0]]
-            yqcoord = rg.Altitude[::wspacing, 0][hrange[0]]
+            yqcoord = rg.Altitude[::wspacing][hrange[0]]
 
         Vq = Vlt[::vspacing, ::wspacing].ravel()
         Wq = Wlt[::vspacing, ::wspacing].ravel()
         #preq = rg.Pressure[:,0][::spacing,::spacing].ravel()
         #latq = lati[::spacing,::spacing].ravel()
-        latq, preq = np.meshgrid(rg.lat[::vspacing, 0], yqcoord)
+        latq, preq = np.meshgrid(rg.Latitude[::vspacing], yqcoord)
         del Vlt, Wlt
-        plt.quiver(latq.ravel(), preq.ravel() / 1e5, Vq, Wq, color='0.5')
+        ax.quiver(latq.ravel(), preq.ravel() / 1e5, Vq, Wq, color='0.5')
 
-    clb = plt.colorbar(C, extend='both', ax=ax)
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    kwargs = {'format': '%#3.4e'}
+    #clb = plt.colorbar(C, extend='both', ax=ax)
+    clb = fig.colorbar(C, cax=cax, extend='both', **kwargs)
     clb.set_label(z['label'])
+
     if isinstance(csp, list) or isinstance(csp, tuple):
         levp = csp
     else:
@@ -1289,7 +1273,7 @@ def vertical_lat(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
                 levp = np.arange(np.ceil(np.nanmin(Zonallt[:, hrange[0]]) / csp) * csp, np.floor(np.nanmax(Zonallt[:, hrange[0]]) / csp) * csp, csp)
 
     c2 = ax.contour(latp * 180 / np.pi, ycoord, zvals, levels=levp, colors='w', linewidths=1)
-    plt.clabel(c2, inline=False, fontsize=6, fmt='%d', use_clabeltext=True)
+    ax.clabel(c2, inline=False, fontsize=6, fmt='%d', use_clabeltext=True)
     for cc in C.collections:
         cc.set_edgecolor("face")  # fixes a stupid bug in matplotlib 2.0
     # ax.invert_yaxis()
@@ -1301,7 +1285,7 @@ def vertical_lat(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
         ax.set_ylabel('Pressure (bar)')
         # ax.plot(latp*180/np.pi,np.zeros_like(latp)+np.max(output.Pressure[:,grid.nv-1,:])/1e5,'r--')
         #ax.set_ylim(np.max(rg.Pressure[prange[0], 0])/1e5, np.min(Pref)/1e5)
-        ax.set_ylim(np.max(rg.Pressure[prange[0], 0]) / 1e5, np.min(rg.Pressure[prange[0], 0]) / 1e5)
+        ax.set_ylim(np.max(rg.Pressure[prange[0]]) / 1e5, np.min(rg.Pressure[prange[0]]) / 1e5)
 
         if ax.get_ylim()[1] > ax.get_ylim()[0]:
             ax.invert_yaxis()
@@ -1313,40 +1297,43 @@ def vertical_lat(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
     else:
         ax.set_title('Time = %#.3f-%#.3f days, Lon = (%#.3f,)' % (output.time[0], output.time[-1], slice[0]), fontsize=10)
 
-    if not os.path.exists(input.resultsf + '/figures'):
-        os.mkdir(input.resultsf + '/figures')
-    plt.tight_layout()
     if use_p:
         z['name'] += '_p'
     else:
         z['name'] += '_h'
-    pfile = False
+
+    pfile = None
     if save == True:
+        output_path = pathlib.Path(input.resultsf) / 'figures'
+        if not output_path.exists():
+            output_path.mkdir()
+
         # save the plot to file designated by z
         if len(slice) == 2:
             fname = '%s_ver_i%d_l%d_lon%#.2f-%#.2f' % (z['name'], output.ntsi, output.nts, slice[0], slice[1])
-            pfile = input.resultsf + '/figures/' + fname.replace(".", "+") + '.pdf'
         else:
             fname = '%s_ver_i%d_l%d_lon%#.2f' % (z['name'], output.ntsi, output.nts, slice[0])
-            pfile = input.resultsf + '/figures/' + fname.replace(".", "+") + '.pdf'
 
+        pfile = output_path / (fname.replace(".", "+") + '.pdf')
         plt.savefig(pfile)
 
         plt.close()
+        pfile = str(pfile)
+
     if z['mt'] == True:
         if len(slice) == 2:
             fname = '%s_ver_i%d_l%d_lon%#.2f-%#.2f.dat' % (z['name'], output.ntsi, output.nts, slice[0], slice[1])
         else:
             fname = '%s_ver_i%d_l%d_lon%#.2f.dat' % (z['name'], output.ntsi, output.nts, slice[0])
         if use_p:
-            maketable(latp * 180 / np.pi, rg.Pressure[prange[0], 0] / 1e5, Zonallt[:, prange[0]], 'Latitude(d)', 'Pressure(bar)', z['name'], input.resultsf, fname)
+            maketable(latp * 180 / np.pi, rg.Pressure[prange[0]] / 1e5, Zonallt[:, prange[0]], 'Latitude(d)', 'Pressure(bar)', z['name'], input.resultsf, fname)
         else:
-            maketable(latp * 180 / np.pi, rg.Altitude[hrange[0], 0], Zonallt[:, hrange[0]], 'Latitude(d)', 'Altitude(m)', z['name'], input.resultsf, fname)
+            maketable(latp * 180 / np.pi, rg.Altitude[hrange[0]], Zonallt[:, hrange[0]], 'Latitude(d)', 'Altitude(m)', z['name'], input.resultsf, fname)
 
     return pfile
 
 
-def vertical_lon(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True, axis=False, csp=500, wind_vectors=False, use_p=True, clevs=[40]):
+def vertical_lon(input, grid, output, rg, sigmaref, z, slice='default', save=True, axis=None, csp=500, wind_vectors=False, use_p=True, clevs=[40]):
     # generic pressure/longitude plot function
 
     # Set the reference pressure
@@ -1359,6 +1346,10 @@ def vertical_lon(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
 
     if not isinstance(slice, list):
         raise IOError("'slice' argument must be a list")
+    if slice[0] == 'default':
+        slice = [-90, 90]
+    else:
+        slice = [np.float(slice[0]),np.float(slice[1])]
 
     lat = z['lat']
     lon = z['lon']
@@ -1382,7 +1373,7 @@ def vertical_lon(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
 
         # Averaging in time and latitude (weighted by a cosine(lat))
         if tsp > 1:
-            Meridl = np.nanmean(z['value'][mask_ind[:, 0], :, :, :] * np.cos(lat[mask_ind[:, 0], 0] * np.pi / 180)[:, None, None, None], axis=0)
+            Meridl = np.nanmean(z['value'][mask_ind[:], :, :, :] * np.cos(lat[mask_ind[:]] * np.pi / 180)[:, None, None, None], axis=0)
             # Vl = np.nanmean(rg.V[:,:,:,:],axis=1)
             # Wl = np.nanmean(rg.W[:,:,:,:],axis=1)
             Meridlt = np.nanmean(Meridl[:, :, :], axis=2)
@@ -1390,25 +1381,25 @@ def vertical_lon(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
             # Wlt = np.nanmean(Wl[:,:,:],axis=2)
             del Meridl
             if wind_vectors == True:
-                Ul = np.nanmean(rg.U[mask_ind[:, 0], :, :, :] * np.cos(lat[mask_ind[:, 0], 0] * np.pi / 180)[:, None, None, None], axis=0)
-                Wl = np.nanmean(rg.W[mask_ind[:, 0], :, :, :] * np.cos(lat[mask_ind[:, 0], 0] * np.pi / 180)[:, None, None, None], axis=0)
+                Ul = np.nanmean(rg.U[mask_ind[:], :, :, :] * np.cos(lat[mask_ind[:], 0] * np.pi / 180)[:, None, None, None], axis=0)
+                Wl = np.nanmean(rg.W[mask_ind[:], :, :, :] * np.cos(lat[mask_ind[:], 0] * np.pi / 180)[:, None, None, None], axis=0)
                 Ult = np.nanmean(Ul[:, :, :], axis=2)
                 Wlt = np.nanmean(Wl[:, :, :], axis=2)
                 del Ul, Wl
         else:
-            Meridlt = np.nanmean(z['value'][:, :, :, 0][mask_ind[:, 0], :, :] * np.cos(lat[mask_ind[:, 0], 0] * np.pi / 180)[:, None, None], axis=0)
+            Meridlt = np.nanmean(z['value'][:, :, :, 0][mask_ind[:], :, :] * np.cos(lat[mask_ind[:]] * np.pi / 180)[:, None, None], axis=0)
             # Ult = np.nanmean(rg.V[:,:,:,0],axis=1)
             # Wlt = np.nanmean(rg.W[:,:,:,0],axis=1)
             if wind_vectors == True:
-                Ult = np.nanmean(rg.U[:, :, :, 0][mask_ind[:, 0], :, :] * np.cos(lat[mask_ind[:, 0], 0] * np.pi / 180)[:, None, None], axis=0)
-                Wlt = np.nanmean(rg.W[:, :, :, 0][mask_ind[:, 0], :, :] * np.cos(lat[mask_ind[:, 0], 0] * np.pi / 180)[:, None, None], axis=0)
+                Ult = np.nanmean(rg.U[:, :, :, 0][mask_ind[:], :, :] * np.cos(lat[mask_ind[:]] * np.pi / 180)[:, None, None], axis=0)
+                Wlt = np.nanmean(rg.W[:, :, :, 0][mask_ind[:], :, :] * np.cos(lat[mask_ind[:]] * np.pi / 180)[:, None, None], axis=0)
 
     elif len(slice) == 1:
         if slice[0] in lat:
-            Meridl = z['value'][lat[:, 0] == slice[0], :, :, :]
+            Meridl = z['value'][lat[:] == slice[0], :, :, :]
             if wind_vectors == True:
-                Ul = rg.U[lat[:, 0] == slice[0], :, :, :]
-                Wl = rg.W[lat[:, 0] == slice[0], :, :, :]
+                Ul = rg.U[lat[:] == slice[0], :, :, :]
+                Wl = rg.W[lat[:] == slice[0], :, :, :]
         else:
             Meridl = np.zeros((1, len(lon), d_sig, tsp))
             if wind_vectors == True:
@@ -1443,17 +1434,17 @@ def vertical_lon(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
     # Create figure #
     #################
     # Longitude
-    lonp = lon[:, 0] * np.pi / 180
+    lonp = lon[:] * np.pi / 180
 
     if use_p:
         # need to set desired pressure range (major PITA!)
         # prange = np.where(np.logical_and(rg.Pressure[:,0]>=np.min(Pref),rg.Pressure[:,0]<=np.max(Pref)))
-        prange = np.where(rg.Pressure[:, 0] >= np.min(Pref))
-        ycoord = rg.Pressure[prange[0], 0] / 1e5
+        prange = np.where(rg.Pressure[:] >= np.min(Pref))
+        ycoord = rg.Pressure[prange[0]] / 1e5
         zvals = Meridlt[:, prange[0]].T
     else:
-        hrange = np.where(np.logical_and(rg.Altitude[:, 0] >= np.min(sigmaref), rg.Altitude[:, 0] <= np.max(sigmaref)))
-        ycoord = rg.Altitude[hrange[0], 0] / 1000
+        hrange = np.where(np.logical_and(rg.Altitude[:] >= np.min(sigmaref), rg.Altitude[:] <= np.max(sigmaref)))
+        ycoord = rg.Altitude[hrange[0]] / 1000
         zvals = Meridlt[:, hrange[0]].T
 
     # Contour plot
@@ -1465,17 +1456,24 @@ def vertical_lon(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
         raise IOError("clevs not valid!")
     # print(np.min(zvals),np.max(zvals))
     if isinstance(axis, axes.SubplotBase):
-        C = axis.contourf(lonp * 180 / np.pi, ycoord, zvals, clevels, cmap=z['cmap'])
         ax = axis
-    elif axis == False:
-        plt.figure(figsize=(5, 4))
-        C = plt.contourf(lonp * 180 / np.pi, ycoord, zvals, clevels, cmap=z['cmap'])
-        ax = plt.gca()
+        fig = plt.gcf()
+    elif (isinstance(axis, tuple)
+          and isinstance(axis[0], plt.Figure)
+          and isinstance(axis[1], axes.SubplotBase)):
+        fig = axis[0]
+        ax = axis[1]
+    elif axis is None:
+        fig, ax = plt.subplots(1, 1, figsize=(5, 4))
     else:
-        raise IOError("'axis = {}' but {} is not an axes.SubplotBase instance".format(axis, axis))
+        raise IOError("'axis = {}' but {} is neither an axes.SubplotBase instance nor a (axes.SubplotBase, plt.Figure) instance".format(axis, axis))
+
+    fig.set_tight_layout(True)
+
+    C = ax.contourf(lonp * 180 / np.pi, ycoord, zvals, clevels, cmap=z['cmap'])
 
     if wind_vectors == True:
-        vspacing = np.int(np.shape(rg.lon)[0] / 10)
+        vspacing = np.int(np.shape(rg.Longitude)[0] / 10)
         if use_p:
             wspacing = np.int(np.shape(rg.Pressure)[0] / 10)
             Ult = Ult[:, prange[0]]
@@ -1485,18 +1483,23 @@ def vertical_lon(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
             wspacing = np.int(np.shape(rg.Altitude)[0] / 10)
             Ult = Ult[:, hrange[0]]
             Wlt = Wlt[:, hrange[0]]
-            yqcoord = rg.Altitude[::wspacing, 0][hrange[0]]
+            yqcoord = rg.Altitude[::wspacing][hrange[0]]
 
         Uq = Ult[::vspacing, ::wspacing].ravel()
         Wq = Wlt[::vspacing, ::wspacing].ravel()
         #preq = rg.Pressure[:,0][::spacing,::spacing].ravel()
         #latq = lati[::spacing,::spacing].ravel()
-        lonq, preq = np.meshgrid(rg.lon[::vspacing, 0], yqcoord)
+        lonq, preq = np.meshgrid(rg.Longitude[::vspacing], yqcoord)
         del Ult, Wlt
-        plt.quiver(lonq.ravel(), preq.ravel() / 1e5, Uq, Wq, color='0.5')
+        ax.quiver(lonq.ravel(), preq.ravel() / 1e5, Uq, Wq, color='0.5')
 
-    clb = plt.colorbar(C, extend='both', ax=ax)
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    kwargs = {'format': '%#3.4e'}
+    #clb = plt.colorbar(C, extend='both', ax=ax)
+    clb = fig.colorbar(C, cax=cax, extend='both', **kwargs)
     clb.set_label(z['label'])
+
     if isinstance(csp, list) or isinstance(csp, tuple):
         levp = csp
     else:
@@ -1509,7 +1512,8 @@ def vertical_lon(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
                 levp = np.arange(np.ceil(np.nanmin(Meridlt[:, hrange[0]]) / csp) * csp, np.floor(np.nanmax(Meridlt[:, hrange[0]]) / csp) * csp, csp)
 
     c2 = ax.contour(lonp * 180 / np.pi, ycoord, zvals, levels=levp, colors='w', linewidths=1)
-    plt.clabel(c2, inline=False, fontsize=6, fmt='%d', use_clabeltext=True)
+    ax.clabel(c2, inline=False, fontsize=6, fmt='%d', use_clabeltext=True)
+
     for cc in C.collections:
         cc.set_edgecolor("face")  # fixes a stupid bug in matplotlib 2.0
     # ax.invert_yaxis()
@@ -1519,8 +1523,9 @@ def vertical_lon(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
     ax.set_xlabel('Longitude (deg)')
     if use_p:
         ax.set_ylabel('Pressure (bar)')
-        ax.plot(lonp * 180 / np.pi, np.zeros_like(lonp) + np.max(output.Pressure[:, grid.nv - 1, :]) / 1e5, 'r--')
-        ax.set_ylim(np.max(rg.Pressure[prange[0], 0]) / 1e5, np.min(Pref) / 1e5)
+        #ax.plot(lonp * 180 / np.pi, np.zeros_like(lonp) + np.max(output.Pressure[:, grid.nv - 1, :]) / 1e5, 'r--')
+        #ax.set_ylim(np.max(rg.Pressure[prange[0]]) / 1e5, np.min(Pref) / 1e5)
+        ax.set_ylim(np.max(rg.Pressure[prange[0]]) / 1e5, np.min(rg.Pressure[prange[0]]) / 1e5)
 
         if ax.get_ylim()[1] > ax.get_ylim()[0]:
             ax.invert_yaxis()
@@ -1534,12 +1539,12 @@ def vertical_lon(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
 
     if not os.path.exists(input.resultsf + '/figures'):
         os.mkdir(input.resultsf + '/figures')
-    plt.tight_layout()
+
     if use_p:
         z['name'] += '_p'
     else:
         z['name'] += '_h'
-    pfile = False
+    pfile = None
     if save == True:
         # save the plot to file designated by z
         if len(slice) == 2:
@@ -1552,22 +1557,25 @@ def vertical_lon(input, grid, output, rg, sigmaref, z, slice=[0, 360], save=True
         plt.savefig(pfile)
 
         plt.close()
+
+        pfile = str(pfile)
+
     if z['mt'] == True:
         if len(slice) == 2:
             fname = '%s_ver_i%d_l%d_lat%#.2f-%#.2f.dat' % (z['name'], output.ntsi, output.nts, slice[0], slice[1])
         else:
             fname = '%s_ver_i%d_l%d_lat%#.2f.dat' % (z['name'], output.ntsi, output.nts, slice[0])
         if use_p:
-            maketable(lonp * 180 / np.pi, rg.Pressure[prange[0], 0] / 1e5, Meridlt[:, prange[0]], 'Longitude(d)', 'Pressure(bar)', z['name'], input.resultsf, fname)
+            maketable(lonp * 180 / np.pi, rg.Pressure[prange[0]] / 1e5, Meridlt[:, prange[0]], 'Longitude(d)', 'Pressure(bar)', z['name'], input.resultsf, fname)
         else:
-            maketable(lonp * 180 / np.pi, rg.Altitude[hrange[0], 0], Meridlt[:, hrange[0]],
+            maketable(lonp * 180 / np.pi, rg.Altitude[hrange[0]], Meridlt[:, hrange[0]],
                       'Longitude(d)', 'Altitude(m)', z['name'], input.resultsf, fname)
     return pfile
 
 
 def horizontal_lev(input, grid, output, rg, Plev, z, save=True, axis=False, wind_vectors=False, use_p=True, clevs=[40]):
     # Set the latitude-longitude grid.
-    loni, lati = np.meshgrid(rg.lon[:, 0], rg.lat[:, 0])
+    loni, lati = np.meshgrid(rg.Longitude[:], rg.Latitude[:])
 
     d_lon = np.shape(loni)
     tsp = output.nts - output.ntsi + 1
@@ -1604,9 +1612,9 @@ def horizontal_lev(input, grid, output, rg, Plev, z, save=True, axis=False, wind
 
         if len(np.shape(z['value'])) == 4:
             # single level of a 3D field
-            zlev[:, :, t] = (z['value'][:, :, below, t] * (vcoord[above, t] - Plev)
-                             + z['value'][:, :, above, t] * (Plev - vcoord[below, t]))\
-                / (vcoord[above, t] - vcoord[below, t])
+            zlev[:, :, t] = (z['value'][:, :, below, t] * (vcoord[above] - Plev)
+                             + z['value'][:, :, above, t] * (Plev - vcoord[below]))\
+                             / (vcoord[above] - vcoord[below])
             if use_p:
                 title = 'Time = %#.3f-%#.3f days, Plev = %#.3f bar' % (output.time[0], output.time[-1], Plev / 1e5)
                 fname = '%s_lev%#.3fmbar_i%d_l%d' % (z['name'], Plev / 100, output.ntsi, output.nts)
@@ -1621,12 +1629,12 @@ def horizontal_lev(input, grid, output, rg, Plev, z, save=True, axis=False, wind
             wind_vectors = False
 
         if wind_vectors == True:
-            Uii[:, :, t] = (rg.U[:, :, below, t] * (vcoord[above, t] - Plev)
-                            + rg.U[:, :, above, t] * (Plev - vcoord[below, t]))\
-                / (vcoord[above, t] - vcoord[below, t])
-            Vii[:, :, t] = (rg.V[:, :, below, t] * (vcoord[above, t] - Plev)
-                            + rg.V[:, :, above, t] * (Plev - vcoord[below, t]))\
-                / (vcoord[above, t] - vcoord[below, t])
+            Uii[:, :, t] = (rg.U[:, :, below, t] * (vcoord[above] - Plev)
+                            + rg.U[:, :, above, t] * (Plev - vcoord[below]))\
+                / (vcoord[above] - vcoord[below])
+            Vii[:, :, t] = (rg.V[:, :, below, t] * (vcoord[above] - Plev)
+                            + rg.V[:, :, above, t] * (Plev - vcoord[below]))\
+                / (vcoord[above] - vcoord[below])
 
     # Averaging in time
     if tsp > 1:
@@ -1651,8 +1659,8 @@ def horizontal_lev(input, grid, output, rg, Plev, z, save=True, axis=False, wind
     # Create Figure #
     #################
 
-    lonp = rg.lon[:, 0]
-    latp = rg.lat[:, 0]
+    lonp = rg.Longitude[:]
+    latp = rg.Latitude[:]
 
     if len(clevs) == 1:
         clevels = np.int(clevs[0])
@@ -1662,20 +1670,24 @@ def horizontal_lev(input, grid, output, rg, Plev, z, save=True, axis=False, wind
         raise IOError("clevs not valid!")
     # clevels = np.linspace(900,1470,58)
     if isinstance(axis, axes.SubplotBase):
-        if z['llswap']:
-            C = axis.contourf(latp, lonp, zlevt.T, clevels, cmap=z['cmap'])
-        else:
-            C = axis.contourf(lonp, latp, zlevt, clevels, cmap=z['cmap'])
         ax = axis
-    elif axis == False:
-        plt.figure(figsize=(5, 4))
-        if z['llswap']:
-            C = plt.contourf(latp, lonp, zlevt.T, clevels, cmap=z['cmap'])
-        else:
-            C = plt.contourf(lonp, latp, zlevt, clevels, cmap=z['cmap'])
-        ax = plt.gca()
+        fig = plt.gcf()
+    elif (isinstance(axis, tuple)
+          and isinstance(axis[0], plt.Figure)
+          and isinstance(axis[1], axes.SubplotBase)):
+        fig = axis[0]
+        ax = axis[1]
+    elif axis is None:
+        fig, ax = plt.subplots(1, 1, figsize=(5, 4))
     else:
-        raise IOError("'axis = {}' but {} is not an axes.SubplotBase instance".format(axis, axis))
+        raise IOError("'axis = {}' but {} is neither an axes.SubplotBase instance nor a (axes.SubplotBase, plt.Figure) instance".format(axis, axis))
+
+    fig.set_tight_layout(True)
+
+    if z['llswap']:
+        C = ax.contourf(latp, lonp, zlevt.T, clevels, cmap=z['cmap'])
+    else:
+        C = ax.contourf(lonp, latp, zlevt, clevels, cmap=z['cmap'])
 
     for cc in C.collections:
         cc.set_edgecolor("face")  # fixes a stupid bug in matplotlib 2.0
@@ -1698,23 +1710,31 @@ def horizontal_lev(input, grid, output, rg, Plev, z, save=True, axis=False, wind
         latq = lati[::spacing, ::spacing].ravel()
         del Uiii, Viii
         if z['llswap']:
-            q = plt.quiver(latq, lonq, V, U, color='0.5')
+            q = ax.quiver(latq, lonq, V, U, color='0.5')
         else:
-            q = plt.quiver(lonq, latq, U, V, color='0.5')
+            q = ax.quiver(lonq, latq, U, V, color='0.5')
         ax.quiverkey(q, X=0.85, Y=-0.1, U=np.max(np.sqrt(U**2 + V**2)), label='%#.2f m/s' % np.max(np.sqrt(U**2 + V**2)), labelpos='E')
 
-    clb = plt.colorbar(C)
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    kwargs = {'format': '%#3.4e'}
+    clb = fig.colorbar(C, cax=cax, orientation='vertical', **kwargs)
     clb.set_label(z['label'])
 
-    if not os.path.exists(input.resultsf + '/figures'):
-        os.mkdir(input.resultsf + '/figures')
-    plt.tight_layout()
-    pfile = False
+
+    pfile = None
     if save == True:
-        pfile = input.resultsf + '/figures/' + fname.replace(".", "+") + '.pdf'
+        output_path = pathlib.Path(input.resultsf) / 'figures'
+        if not output_path.exists():
+            output_path.mkdir()
+
+        pfile = output_path / (fname.replace(".", "+") + '.pdf')
         plt.savefig(pfile)
 
         plt.close()
+
+        pfile = str(pfile)
+
     if z['mt'] == True:
         dname = fname + '.dat'
         if z['name'] == 'temperature-uv':
@@ -1757,28 +1777,28 @@ def streamf_moc_plot(input, grid, output, rg, sigmaref, save=True, axis=False, w
     tsp = output.nts - output.ntsi + 1
 
     if tsp > 1:
-        Vavgl = np.mean(rg.V, axis=1)
-        Vavglt = np.mean(Vavgl, axis=2)
+        Vavgl = np.nanmean(rg.V, axis=1)
+        Vavglt = np.nanmean(Vavgl, axis=2)
         if wind_vectors == True:
-            Wavgl = np.mean(rg.W, axis=1)
-            Wavglt = np.mean(Wavgl, axis=2)
+            Wavgl = np.nanmean(rg.W, axis=1)
+            Wavglt = np.nanmean(Wavgl, axis=2)
     else:
-        Vavglt = np.mean(rg.V[:, :, :, 0], axis=1)
+        Vavglt = np.nanmean(rg.V[:, :, :, 0], axis=1)
         if wind_vectors == True:
-            Wavglt = np.mean(rg.V[:, :, :, 0], axis=1)
+            Wavglt = np.nanmean(rg.V[:, :, :, 0], axis=1)
 
     sf = np.zeros_like(Vavglt)
-    arg = 2 * np.pi * input.A * np.cos(rg.lat[:, 0][:, None] * np.pi / 180) / input.Gravit * Vavglt
+    arg = 2 * np.pi * input.A * np.cos(rg.Latitude[:, None] * np.pi / 180) / input.Gravit * Vavglt
     for ilat in np.arange(np.shape(Vavglt)[0]):
         for ilev in np.arange(np.shape(Vavglt)[1]):
             if ilev == 0:
-                sf[ilat, -1] = arg[ilat, -1] * rg.Pressure[-1, 0]
+                sf[ilat, -1] = arg[ilat, -1] * rg.Pressure[-1]
             else:
-                sf[ilat, -(ilev + 1)] = np.trapz(arg[ilat, -1:-(ilev + 2):-1], x=rg.Pressure[-1:-(ilev + 2):-1][:, 0])
+                sf[ilat, -(ilev + 1)] = np.trapz(arg[ilat, -1:-(ilev + 2):-1], x=rg.Pressure[-1:-(ilev + 2):-1][:])
 
     # need to set desired pressure range (major PITA!)
     # prange = np.where(np.logical_and(rg.Pressure>=np.min(Pref),rg.Pressure<=np.max(Pref)))
-    prange = np.where(rg.Pressure[:, 0] >= np.min(Pref))
+    prange = np.where(rg.Pressure[:] >= np.min(Pref))
 
     # Contour plot
     if len(clevs) == 1:
@@ -1789,11 +1809,11 @@ def streamf_moc_plot(input, grid, output, rg, sigmaref, save=True, axis=False, w
         raise IOError("clevs not valid!")
 
     if isinstance(axis, axes.SubplotBase):
-        C = axis.contourf(rg.lat[:, 0], rg.Pressure[prange[0], 0] / 1e5, sf[:, prange[0]].T, clevels, cmap='viridis')
+        C = axis.contourf(rg.Latitude[:], rg.Pressure[prange[0]] / 1e5, sf[:, prange[0]].T, clevels, cmap='viridis')
         ax = axis
     elif axis == False:
         plt.figure(figsize=(5, 4))
-        C = plt.contourf(rg.lat[:, 0], rg.Pressure[prange[0], 0] / 1e5, sf[:, prange[0]].T, clevels, cmap='viridis')
+        C = plt.contourf(rg.Latitude[:], rg.Pressure[prange[0]] / 1e5, sf[:, prange[0]].T, clevels, cmap='viridis')
 
         ax = plt.gca()
     else:
@@ -1803,7 +1823,7 @@ def streamf_moc_plot(input, grid, output, rg, sigmaref, save=True, axis=False, w
         cc.set_edgecolor("face")  # fixes a stupid bug in matplotlib 2.0
 
     if wind_vectors == True:
-        vspacing = np.int(np.shape(rg.lat)[0] / 10)
+        vspacing = np.int(np.shape(rg.Latitude)[0] / 10)
         wspacing = np.int(np.shape(rg.Pressure)[0] / 10)
         Vlt = Vavglt[:, prange[0]]
         Wlt = Wavglt[:, prange[0]]
@@ -1811,21 +1831,21 @@ def streamf_moc_plot(input, grid, output, rg, sigmaref, save=True, axis=False, w
         Wq = Wlt[::vspacing, ::wspacing].ravel()
         #preq = rg.Pressure[:,0][::spacing,::spacing].ravel()
         #latq = lati[::spacing,::spacing].ravel()
-        latq, preq = np.meshgrid(rg.lat[::vspacing, 0], rg.Pressure[::wspacing, 0][prange[0]])
+        latq, preq = np.meshgrid(rg.Latitude[::vspacing], rg.Pressure[::wspacing][prange[0]])
         del Vlt, Wlt
         plt.quiver(latq.ravel(), preq.ravel() / 1e5, Vq, Wq, color='0.5')
 
     ax.invert_yaxis()
-    c2 = ax.contour(rg.lat[:, 0], rg.Pressure[:, 0] / 1e5, sf.T, levels=[0.0], colors='w', linewidths=1)
+    c2 = ax.contour(rg.Latitude[:], rg.Pressure[:] / 1e5, sf.T, levels=[0.0], colors='w', linewidths=1)
     clb = plt.colorbar(C)
     clb.set_label(r'Eulerian streamfunction (kg s$^{-1}$)')
     if plog == True:
         ax.set_yscale("log")
     ax.set_xlabel('Latitude (deg)')
     ax.set_ylabel('Pressure (bar)')
-    # ax.plot(rg.lat[:,0],np.zeros_like(rg.lat[:,0])+np.max(output.Pressure[:,grid.nv-1,:])/1e5,'r--')
+    # ax.plot(rg.Latitude[:,0],np.zeros_like(rg.Latitude[:,0])+np.max(output.Pressure[:,grid.nv-1,:])/1e5,'r--')
     # if np.min(rg.Pressure[prange[0],0]) < np.max(output.Pressure[:,grid.nv-1,:]):
-    ax.set_ylim(np.max(rg.Pressure[prange[0], 0]) / 1e5, np.min(rg.Pressure[prange[0], 0]) / 1e5)
+    ax.set_ylim(np.max(rg.Pressure[prange[0]]) / 1e5, np.min(rg.Pressure[prange[0]]) / 1e5)
 
     # else:
     #     ax.set_ylim(np.max(rg.Pressure[prange[0],0])/1e5,np.max(output.Pressure[:,grid.nv-1,:])/1e5)
@@ -1833,24 +1853,49 @@ def streamf_moc_plot(input, grid, output, rg, sigmaref, save=True, axis=False, w
     if not os.path.exists(input.resultsf + '/figures'):
         os.mkdir(input.resultsf + '/figures')
     plt.tight_layout()
-    pfile = False
+    pfile = None
     if save == True:
         pfile = input.resultsf + '/figures/streamf_ver_i%d_l%d.pdf' % (output.ntsi, output.nts)
         plt.savefig(pfile)
         plt.close()
+
+        pfile = str(pfile)
+
     if mt == True:
         fname = 'streamf_ver_i%d_l%d.dat' % (output.ntsi, output.nts)
-        maketable(latp * 180 / np.pi, rg.Pressure[prange[0], 0] / 1e5, Zonallt[:, prange[0]],
+        maketable(latp * 180 / np.pi, rg.Pressure[prange[0]] / 1e5, Zonallt[:, prange[0]],
                   'Latitude(d)', 'Pressure(bar)', 'streamfunc', input.resultsf, fname)
     return pfile
 
 
-def profile(input, grid, output, z, stride=50):
+def profile(input, grid, output, z, stride=50, axis=None, save=True):
     # Pref = input.P_Ref*sigmaref
     # d_sig = np.size(sigmaref)
 
+    # prepare pressure array
+    output.load_reshape(grid, ['Pressure'])
+
+    # get figure and axis
+    if isinstance(axis, axes.SubplotBase):
+        ax = axis
+        fig = plt.gcf()
+    elif (isinstance(axis, tuple)
+          and isinstance(axis[0], plt.Figure)
+          and isinstance(axis[1], axes.SubplotBase)):
+        fig = axis[0]
+        ax = axis[1]
+    elif axis is None:
+        fig, ax = plt.subplots(1, 1, figsize=(5, 4))
+    else:
+        raise IOError("'axis = {}' but {} is neither an axes.SubplotBase instance nor a (axes.SubplotBase, plt.Figure) instance".format(axis, axis))
+
+    fig.set_tight_layout(True)
+
     tsp = output.nts - output.ntsi + 1
 
+    col_lon = []
+    col_lat = []
+    col_lor = []
     for column in np.arange(0, grid.point_num, stride):
         if tsp > 1:
             P = np.mean(output.Pressure[column, :, :], axis=1)
@@ -1859,20 +1904,64 @@ def profile(input, grid, output, z, stride=50):
             P = output.Pressure[column, :, 0]
             x = z['value'][column, :, 0]
 
-        plt.semilogy(x, P / 1e5, 'k-', alpha=0.5, lw=1)
-        rp, = plt.plot(x[np.int(np.floor(grid.nv / 2))], P[np.int(np.floor(grid.nv / 2))] / 100000, 'r+', ms=5, alpha=0.5)
-        gp, = plt.plot(x[np.int(np.floor(grid.nv * 0.75))], P[np.int(np.floor(grid.nv * 0.75))] / 100000, 'g+', ms=5, alpha=0.5)
+        #color = hsv_to_rgb([column / grid.point_num, 1.0, 1.0])
+        lon = grid.lon[column]
+        lat = grid.lat[column]
+        lon_norm = lon / (2.0 * math.pi)
+        lat_norm = lat / (math.pi / 2.0)
+        if lat > 0.0:
+            color = hsv_to_rgb([lon_norm, 1.0 - 0.7 * lat_norm, 1.0])
+        else:
+            color = hsv_to_rgb([lon_norm, 1.0, 1.0 + 0.7 * lat_norm])
+
+        col_lon.append(lon)
+        col_lat.append(lat)
+        col_lor.append(color)
+        ax.semilogy(x, P / 1e5, 'k-', alpha=0.5, lw=1.0,
+                    path_effects=[pe.Stroke(linewidth=1.5, foreground=color), pe.Normal()])
+
+        rp, = ax.plot(x[np.int(np.floor(grid.nv / 2))], P[np.int(np.floor(grid.nv / 2))] / 100000, 'k+', ms=5, alpha=0.5)
+        gp, = ax.plot(x[np.int(np.floor(grid.nv * 0.75))], P[np.int(np.floor(grid.nv * 0.75))] / 100000, 'k*', ms=5, alpha=0.5)
+
+    # add an insert showing the position of
+    inset_pos = [0.8, 0.8, 0.18, 0.18]
+    ax_inset = ax.inset_axes(inset_pos)
+    ax_inset.scatter(col_lon, col_lat, c=col_lor, s=1.0)
+    ax_inset.tick_params(axis='both',
+                         which='both',
+                         top=False,
+                         bottom=False,
+                         left=False,
+                         right=False,
+                         labelright=False,
+                         labelleft=False,
+                         labeltop=False,
+                         labelbottom=False)
 
     # plt.plot(Tad,P/100,'r--')
-    plt.gca().invert_yaxis()
-    plt.ylabel('Pressure (bar)')
-    plt.xlabel(z['label'])
-    plt.legend([rp, gp], ['z=0.5*ztop', 'z=0.75*ztop'])
-    plt.title('Time = %#.3f - %#.3f days' % (output.time[0], output.time[-1]))
-    if not os.path.exists(input.resultsf + '/figures'):
-        os.mkdir(input.resultsf + '/figures')
-    plt.savefig(input.resultsf + '/figures/%sPprofile_i%d_l%d.pdf' % (z['name'], output.ntsi, output.nts))
-    plt.close()
+    ax.invert_yaxis()
+    ax.set_ylabel('Pressure (bar)')
+    ax.set_xlabel(z['label'])
+    ax.legend([rp, gp], ['z=0.5*ztop', 'z=0.75*ztop'], loc="lower right", fontsize='xx-small')
+    ax.set_title('Time = %#.3f - %#.3f days' % (output.time[0], output.time[-1]))
+    ax.get_xaxis().get_major_formatter().set_useOffset(False)
+    ax.tick_params(axis='x', labelrotation=45 )
+
+    ax.grid(True)
+    pfile = None
+    if save == True:
+        output_path = pathlib.Path(input.resultsf) / 'figures'
+        if not output_path.exists():
+            output_path.mkdir()
+
+        fname = f"{z['name']}Pprofile_i{output.ntsi}_l{output.nts}"
+        pfile = output_path / (fname.replace(".", "+") + '.pdf')
+        plt.savefig(pfile)
+
+        plt.close()
+        pfile = str(pfile)
+
+    return pfile
 
 
 def CalcE_M_AM(input, grid, output, split):
@@ -2109,6 +2198,54 @@ def SRindex(input, grid, output):
     plt.savefig(input.resultsf + '/figures/SRindex_i%d_l%d.pdf' % (output.ntsi, output.nts))
     plt.close()
 
+def phase_curve(input, grid, output, axis=None, save=True):
+    #plot phase curve, averaged over output times
+
+    # get figure and axis
+    if isinstance(axis, axes.SubplotBase):
+        ax = axis
+        fig = plt.gcf()
+    elif (isinstance(axis, tuple)
+          and isinstance(axis[0], plt.Figure)
+          and isinstance(axis[1], axes.SubplotBase)):
+        fig = axis[0]
+        ax = axis[1]
+    elif axis is None:
+        fig, ax = plt.subplots(1, 1, figsize=(5, 4))
+    else:
+        raise IOError("'axis = {}' but {} is neither an axes.SubplotBase instance nor a (axes.SubplotBase, plt.Figure) instance".format(axis, axis))
+
+    angle = np.linspace(0,2*np.pi,100)
+
+    pc = np.zeros_like(angle)
+    for j in np.arange(len(output.time)):
+        olr = output.flw_up[:,-1,j]
+        for i in np.arange(len(angle)):
+            mu = np.cos(grid.lat)*np.cos(grid.lon-angle[i])
+            mu[mu<0] = 0
+            los_flux = mu*olr
+            pc_tmp = np.sum(los_flux*grid.areasT)/np.sum(grid.areasT)
+            pc[i] = pc_tmp/(j+1)+pc[i]*(j)/(j+1)
+
+    xx = 360-((np.pi+angle)%(2*np.pi))*180/np.pi
+    ax.plot(np.sort(xx),pc[np.argsort(xx)])
+
+    ax.set_title('Time = %#.3f - %#.3f days' % (output.time[0], output.time[-1]))
+
+    ax.axvline(180,ls='--',c = 'k')
+    ax.set_xlabel('Angle relative to transit (deg)')
+    ax.set_ylabel(r'Flux (W m$^{-2}$)')
+    fig.tight_layout()
+    if save == True:
+        output_path = pathlib.Path(input.resultsf) / 'figures'
+        if not output_path.exists():
+            output_path.mkdir()
+
+        fname = f"phase_curve_i{output.ntsi}_l{output.nts}.pdf"
+        pfile = output_path / (fname.replace(".", "+") + '.pdf')
+        plt.savefig(pfile)
+
+        plt.close()
 
 def Get_Prange(input, grid, rg, args, xtype='lat', use_p=True):
     # Sigma (normalized pressure) values for the plotting
@@ -2136,3 +2273,102 @@ def RTbalance(input, grid, output):
     # not finished!
     asr = fsw_dn[:, input.nv - 1, :] * grid.areasT[:, None]
     olr = flw_up[:, input.nv - 1, :] * grid.areasT[:, None]
+
+def spectrum(input, grid, output, z, stride=20, axis=None, save=True):
+    output.load_reshape(grid, ['spectrum', 'incoming_spectrum'])
+    # get figure and axis
+    if isinstance(axis, axes.SubplotBase):
+        ax = axis
+        fig = plt.gcf()
+    elif (isinstance(axis, tuple)
+          and isinstance(axis[0], plt.Figure)
+          and isinstance(axis[1], axes.SubplotBase)):
+        fig = axis[0]
+        ax = axis[1]
+    elif axis is None:
+        fig, ax = plt.subplots(1, 1, figsize=(5, 4))
+    else:
+        raise IOError("'axis = {}' but {} is neither an axes.SubplotBase instance nor a (axes.SubplotBase, plt.Figure) instance".format(axis, axis))
+
+    fig.set_tight_layout(True)
+
+    tsp = output.nts - output.ntsi + 1
+
+
+    col_lon = []
+    col_lat = []
+    col_lor = []
+
+    for column in np.arange(0, grid.point_num, stride):
+        lamda = output.wavelength[:]*1e6
+        if tsp > 1:
+            spectrum= np.mean(output.spectrum[column, :, :], axis=1)
+        else:
+            spectrum= output.spectrum[column, :, 0]
+
+        #color = hsv_to_rgb([column / grid.point_num, 1.0, 1.0])
+        lon = grid.lon[column]
+        lat = grid.lat[column]
+        lon_norm = lon / (2.0 * math.pi)
+        lat_norm = lat / (math.pi / 2.0)
+        if lat > 0.0:
+            color = hsv_to_rgb([lon_norm, 1.0 - 0.7 * lat_norm, 1.0])
+        else:
+            color = hsv_to_rgb([lon_norm, 1.0, 1.0 + 0.7 * lat_norm])
+
+        col_lon.append(lon)
+        col_lat.append(lat)
+        col_lor.append(color)
+        ax.plot(lamda, spectrum, 'k-', alpha=0.5, lw=1.0,
+                    path_effects=[pe.Stroke(linewidth=1.5, foreground=color), pe.Normal()])
+
+    lamda = output.wavelength[:]*1e6
+    if tsp > 1:
+        incoming_spectrum= np.mean(output.incoming_spectrum[:, :], axis=1)
+    else:
+        incoming_spectrum= output.incoming_spectrum[:, 0]
+    R_SUN   = 695700000.0
+    AU       = 149597870700.0
+    flx_cst = pow((input.radius_star*R_SUN)/(input.planet_star_dist*AU), 2.0)*math.pi
+    ax_twin = ax.twinx()
+    ax_twin.plot(lamda, incoming_spectrum*flx_cst, 'k-', alpha=0.5, lw=1.0,
+            path_effects=[pe.Stroke(linewidth=1.5, foreground='black'), pe.Normal()])
+    ax_twin.set_ylabel('Incoming stellar flux [$W m^2$]')
+    # add an insert showing the position of columns
+    inset_pos = [0.8, 0.1, 0.18, 0.18]
+    ax_inset = ax.inset_axes(inset_pos)
+    ax_inset.scatter(col_lon, col_lat, c=col_lor, s=1.0)
+    ax_inset.tick_params(axis='both',
+                         which='both',
+                         top=False,
+                         bottom=False,
+                         left=False,
+                         right=False,
+                         labelright=False,
+                         labelleft=False,
+                         labeltop=False,
+                         labelbottom=False)
+
+    # plt.plot(Tad,P/100,'r--')
+    #ax.invert_yaxis()
+    ax.set_xscale('log')
+    ax.set_yscale('linear')
+    ax.set_ylabel('Flux [$W m^2$]')
+    ax.set_xlabel('Wavelength [um]')
+    ax.set_title('Time = %#.3f - %#.3f days' % (output.time[0], output.time[-1]))
+    ax.grid(True)
+
+    pfile = None
+    if save == True:
+        output_path = pathlib.Path(input.resultsf) / 'figures'
+        if not output_path.exists():
+            output_path.mkdir()
+
+        fname = f"spectrum_i{output.ntsi}_l{output.nts}"
+        pfile = output_path / (fname.replace(".", "+") + '.pdf')
+        plt.savefig(pfile)
+
+        plt.close()
+        pfile = str(pfile)
+
+    return pfile
