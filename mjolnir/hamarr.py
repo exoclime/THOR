@@ -203,6 +203,10 @@ class output_new:
 
             if t == ntsi - 1:
                 # add things to outputs dictionary that require checking for existence in openh5
+                if 'Qheat' in openh5.keys():
+                    outputs['Qheat'] = 'qheat'
+                if 'DGQheat' in openh5.keys():
+                    outputs['DGQheat'] = 'DGQheat'
                 if 'Etotal' in openh5.keys():
                     self.ConvData[t-ntsi+1] = True
                     outputs['Etotal'] = 'Etotal'
