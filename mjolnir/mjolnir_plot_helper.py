@@ -800,11 +800,8 @@ def make_plot(args, save=True, axis=None):
 
     # --- Global diagnostics -----------------------------------
     if 'cons' in pview:  # RD: needs some work!
-        if args.split_layer[0] == 'no_split':
-            split = False
-        else:
-            split = np.float(args.split_layer[0]) * 100
-        ham.conservation(input, grid, output, split)
+        import pdb; pdb.set_trace()
+        ham.conservation(input, grid, output)
 
     if 'KE' in pview:  # RD: needs some work!
         PR_LV = np.float(args.horizontal_lev[0]) * 100  # not actually used here

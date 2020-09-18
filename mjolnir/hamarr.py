@@ -200,7 +200,7 @@ class output_new:
             outputs['KM'] = 'KM'
             outputs['CD'] = 'CD'
             outputs['CH'] = 'CH'
-        
+
         # calc volume element
         Atot = input.A**2
         solid_ang = grid.areasT/Atot
@@ -224,7 +224,7 @@ class output_new:
                 if 'DGQheat' in openh5.keys():
                     outputs['DGQheat'] = 'DGqheat'
                 if 'Etotal' in openh5.keys():
-                    self.ConvData[t-ntsi+1] = True
+                    self.ConvData = True
                     outputs['Etotal'] = 'Etotal'
                     outputs['Mass'] = 'Mass'
                     outputs['AngMomx'] = 'AngMomx'
@@ -233,7 +233,7 @@ class output_new:
                     outputs['Entropy'] = 'Entropy'
                 else:
                     print('Warning: conservation diagnostics not available in file %s' % fileh5)
-                    self.ConvData[t-ntsi+1] = False
+                    self.ConvData = False
 
                 if 'insol' in openh5.keys():
                     outputs['insol'] = 'Insol'
@@ -274,7 +274,7 @@ class output_new:
             # 1-D arrays, unlikely to overflow memory
             self.time[t-ntsi+1] = openh5['simulation_time'][0] / 86400
             self.nstep[t-ntsi+1] = openh5['nstep'][0]
-            if self.ConvData[t-ntsi+1]:
+            if self.ConvData:
                 self.GlobalE[t - ntsi + 1] = openh5['GlobalE'][0]
                 self.GlobalMass[t - ntsi + 1] = openh5['GlobalMass'][0]
                 self.GlobalAMx[t - ntsi + 1] = openh5['GlobalAMx'][0]
@@ -2021,7 +2021,7 @@ def profile(input, grid, output, z, stride=50, axis=None, save=True, use_p=True,
     return pfile
 
 
-def CalcE_M_AM(input, grid, output, split):
+def CalcE_M_AM(input, grid, output, split=False):
     temperature = output.Pressure / (input.Rd * output.Rho)
     # dz = grid.Altitude[1]-grid.Altitude[0]
     # Vol = grid.areasT*dz
@@ -2100,7 +2100,7 @@ def CalcE_M_AM(input, grid, output, split):
             output.DeepAMz[ii] = np.sum(output.AngMomz[output.Pressure[:, :, ii] > split][:, ii])
 
 
-def CalcEntropy(input, grid, output, split):
+def CalcEntropy(input, grid, output, split=False):
     temperature = output.Pressure / (input.Rd * output.Rho)
     # dz = grid.Altitude[1]-grid.Altitude[0]
     # Vol = grid.areasT*dz
@@ -2126,98 +2126,59 @@ def CalcEntropy(input, grid, output, split):
             output.DeepEnt[ii] = np.sum(output.Entropy[output.Pressure[:, :, ii] > split][:, ii])
 
 
-def conservation(input, grid, output, split):
+def conservation(input, grid, output):
     # plot quantities that are interesting for conservation
-    if split == False:
-        if (output.ConvData == False).any():
-            print('Calculating energy, mass, angular momentum...')
-            CalcE_M_AM(input, grid, output, split)
-        if (output.EntData == False).any():
-            print('Calculating entropy...')
-            CalcEntropy(input, grid, output, split)
-        plots = ['global']
-
-    else:
-        CalcE_M_AM(input, grid, output, split)
-        CalcEntropy(input, grid, output, split)
-        plots = ['weather', 'deep']
+    if output.ConvData == False:
+        print('Calculating energy, mass, angular momentum...')
+        CalcE_M_AM(input, grid, output)
+        print('Calculating entropy...')
+        CalcEntropy(input, grid, output)
+    plots = ['global']
 
     for ii in np.arange(len(plots)):
         fig = plt.figure(figsize=(12, 8))
-        fig.suptitle('Time = %#.3f - %#.3f days, split = %e bar' % (output.time[0], output.time[-1], split / 1e5))
+        fig.suptitle('Time = %#.3f - %#.3f days' % (output.time[0], output.time[-1]))
         fig.subplots_adjust(wspace=0.25, left=0.07, right=0.98, top=0.94, bottom=0.07)
         plt.subplot(2, 3, 1)
-        if split == False:
-            plt.plot(output.time, output.GlobalE, 'ko', linestyle='--')
-        else:
-            if plots[ii] == 'weather':
-                plt.plot(output.time, output.WeatherE, 'bo', linestyle='--')
-            elif plots[ii] == 'deep':
-                plt.plot(output.time, output.DeepE, 'ro', linestyle='--')
+        plt.plot(output.time, output.GlobalE, 'ko', linestyle='--')
+
         plt.xlabel('Time (days)')
         plt.ylabel('Total energy of atmosphere (J)')
 
         plt.subplot(2, 3, 2)
-        if split == False:
-            plt.plot(output.time, output.GlobalMass, 'ko', linestyle='--')
-        else:
-            if plots[ii] == 'weather':
-                plt.plot(output.time, output.WeatherMass, 'bo', linestyle='--')
-            elif plots[ii] == 'deep':
-                plt.plot(output.time, output.DeepMass, 'ro', linestyle='--')
+        plt.plot(output.time, output.GlobalMass, 'ko', linestyle='--')
+
         plt.xlabel('Time (days)')
         plt.ylabel('Total mass of atmosphere (kg)')
 
         plt.subplot(2, 3, 3)
-        if split == False:
-            plt.plot(output.time, output.GlobalAMz, 'ko', linestyle='--')
-        else:
-            if plots[ii] == 'weather':
-                plt.plot(output.time, output.WeatherAMz, 'bo', linestyle='--')
-            elif plots[ii] == 'deep':
-                plt.plot(output.time, output.DeepAMz, 'ro', linestyle='--')
+        plt.plot(output.time, output.GlobalAMz, 'ko', linestyle='--')
+
         plt.xlabel('Time (days)')
         plt.ylabel(r'Z angular momentum of atmosphere (kg m$^2$ s$^{-1}$)')
 
         plt.subplot(2, 3, 4)
-        if split == False:
-            plt.plot(output.time, output.GlobalEnt, 'ko', linestyle='--')
-        else:
-            if plots[ii] == 'weather':
-                plt.plot(output.time, output.WeatherEnt, 'bo', linestyle='--')
-            elif plots[ii] == 'deep':
-                plt.plot(output.time, output.DeepEnt, 'ro', linestyle='--')
+        plt.plot(output.time, output.GlobalEnt, 'ko', linestyle='--')
+
         plt.xlabel('Time (days)')
         plt.ylabel('Total entropy of atmosphere (J K$^{-1}$)')
 
         plt.subplot(2, 3, 5)
-        if split == False:
-            plt.plot(output.time, output.GlobalAMx, 'ko', linestyle='--')
-            plt.plot(output.time, output.GlobalAMy, 'o', color='0.5', linestyle='--')
-        else:
-            if plots[ii] == 'weather':
-                plt.plot(output.time, output.WeatherAMx, 'bo', linestyle='--')
-                plt.plot(output.time, output.WeatherAMy, 'co', linestyle='--')
-            elif plots[ii] == 'deep':
-                plt.plot(output.time, output.DeepAMx, 'ro', linestyle='--')
-                plt.plot(output.time, output.DeepAMy, 'o', color='orange', linestyle='--')
+        plt.plot(output.time, output.GlobalAMx, 'ko', linestyle='--')
+        plt.plot(output.time, output.GlobalAMy, 'o', color='0.5', linestyle='--')
+
         plt.xlabel('Time (days)')
         plt.ylabel(r'X, Y angular momentum of atmosphere (kg m$^2$ s$^{-1}$)')
 
         plt.subplot(2, 3, 6)
-        if split == False:
-            plt.plot(output.time, np.sqrt(output.GlobalAMx**2 + output.GlobalAMy**2), 'ko', linestyle='--')
-        else:
-            if plots[ii] == 'weather':
-                plt.plot(output.time, np.sqrt(output.WeatherAMx**2 + output.WeatherAMy**2), 'bo', linestyle='--')
-            elif plots[ii] == 'deep':
-                plt.plot(output.time, np.sqrt(output.DeepAMx**2 + output.DeepAMy**2), 'ro', linestyle='--')
+        plt.plot(output.time, np.sqrt(output.GlobalAMx**2 + output.GlobalAMy**2), 'ko', linestyle='--')
+
         plt.xlabel('Time (days)')
         plt.ylabel(r'Horizontal angular momentum of atmosphere (kg m$^2$ s$^{-1}$)')
 
         if not os.path.exists(input.resultsf + '/figures'):
             os.mkdir(input.resultsf + '/figures')
-        plt.savefig(input.resultsf + '/figures/conservation_s%e_i%d_l%d_%s.pdf' % (split / 100, output.ntsi, output.nts, plots[ii]))
+        plt.savefig(input.resultsf + '/figures/global_i%d_l%d_%s.pdf' % (output.ntsi, output.nts, plots[ii]))
         plt.close()
 
 
