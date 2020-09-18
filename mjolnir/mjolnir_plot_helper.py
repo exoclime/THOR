@@ -54,17 +54,19 @@ def make_plot(args, save=True, axis=None):
              'TP', 'RVlev', 'cons', 'stream', 'pause', 'tracer', 'PTP', 'regrid', 'KE',
              'SR', 'uprof', 'cfl', 'bvprof', 'TSfluxprof', 'Tsurf', 'insol', 'massf', 'pause_rg', 'DGfluxprof', 'qheat',
              'DGfutprof', 'DGfdtprof', 'mustar', 'DGfuptot', 'DGfdowntot', 'DGfnet', 'DGqheat',  # alf stuff
-             'TSfutprof', 'TSfdtprof', 'mustar', 'TSfuptot', 'TSfdowntot', 'TSfnet', 'TSqheat',
+             'TSfutprof', 'TSfdtprof', 'TSfuptot', 'TSfdowntot', 'TSfnet', 'TSqheat',
              'DGqheatprof', 'TSqheatprof', 'qheatprof', 'TSfdirprof',
              'w0prof', 'g0prof', 'spectrum',
-             'phase','all','eddyKE','eddyMomMerid','eddyTempMerid','eddyTempVar']
+             'phase','all','eddyKE','eddyMomMerid','eddyTempMerid','eddyTempVar',
+             'Etotlev','AngMomlev', 'Entropylev']
 
     rg_needed = ['Tver', 'Tlonver', 'uver', 'ulonver', 'vver', 'wver', 'wlonver', 'Tulev', 'PTver', 'PTlonver', 'ulev', 'PVver', 'PVlev',
                  'RVlev', 'stream', 'tracer', 'Tsurf', 'insol', 'massf', 'pause_rg',
                  'mustar', 'qheat',
                  'TSfuptot', 'TSfdowntot', 'TSfnet', 'TSqheat',
                  'DGfuptot', 'DGfdowntot', 'DGfnet', 'DGqheat',
-                 'all','eddyKE','eddyMomMerid','eddyTempMerid','eddyTempVar']  # these types need regrid
+                 'all','eddyKE','eddyMomMerid','eddyTempMerid','eddyTempVar',
+                  'Etotlev', 'AngMomlev', 'Entropylev']  # these types need regrid
 
     openrg = 0
 
@@ -522,12 +524,47 @@ def make_plot(args, save=True, axis=None):
         pfile = call_plot('TSqheat',ham.horizontal_lev,input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
         plots_created.append(pfile)
 
-
     if ('mustar' in pview) and (input.TSRT):
         PR_LV = np.max(output.Pressure)  # not important here
         z = {'value': rg.mustar, 'label': r'mu_star ', 'name': 'mustar',
              'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
         pfile = call_plot('mustar',ham.horizontal_lev,input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
+        plots_created.append(pfile)
+
+    if 'Etotlev' in pview:
+        # Averaged temperature and wind field (longitude vs latitude)
+        # PR_LV - Pressure level (Pa)
+        if use_p:
+            PR_LV = np.float(args.horizontal_lev[0]) * 100
+        else:
+            PR_LV = np.float(args.horizontal_lev[0]) * 1000
+        z = {'value': rg.Etotal, 'label': r'Total energy (J m$^{-3}$)', 'name': 'Etotal',
+             'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
+        pfile = call_plot('Etotlev',ham.horizontal_lev,input, grid, output, rg, PR_LV, z, wind_vectors=False, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
+        plots_created.append(pfile)
+
+    if 'Entropylev' in pview:
+        # Averaged temperature and wind field (longitude vs latitude)
+        # PR_LV - Pressure level (Pa)
+        if use_p:
+            PR_LV = np.float(args.horizontal_lev[0]) * 100
+        else:
+            PR_LV = np.float(args.horizontal_lev[0]) * 1000
+        z = {'value': rg.Entropy, 'label': r'Entropy (J K$^{-1}$ m$^{-3}$)', 'name': 'Entropy',
+             'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
+        pfile = call_plot('Entropylev',ham.horizontal_lev,input, grid, output, rg, PR_LV, z, wind_vectors=False, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
+        plots_created.append(pfile)
+
+    if 'AngMomlev' in pview:
+        # Averaged temperature and wind field (longitude vs latitude)
+        # PR_LV - Pressure level (Pa)
+        if use_p:
+            PR_LV = np.float(args.horizontal_lev[0]) * 100
+        else:
+            PR_LV = np.float(args.horizontal_lev[0]) * 1000
+        z = {'value': rg.AngMomz, 'label': r'Axial Angular Momentum (kg m$^{-1}$ s$^{-1}$)', 'name': 'AngMomz',
+             'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
+        pfile = call_plot('AngMomlev',ham.horizontal_lev,input, grid, output, rg, PR_LV, z, wind_vectors=False, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
         plots_created.append(pfile)
 
     if ('spectrum' in pview) and (input.TSRT):
