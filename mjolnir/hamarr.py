@@ -1897,6 +1897,9 @@ def profile(input, grid, output, z, stride=50, axis=None, save=True, use_p=True,
     col_lon = []
     col_lat = []
     col_lor = []
+    if use_p:
+        extrap_surf = -grid.Altitude[1]/(grid.Altitude[0]-grid.Altitude[1])
+
     for column in np.arange(0, grid.point_num,stride):
         if tsp > 1:
             if use_p:
@@ -1913,7 +1916,8 @@ def profile(input, grid, output, z, stride=50, axis=None, save=True, use_p=True,
             if z['name'] == 'T' and input.surface:
                 x = np.concatenate([np.array([output.Tsurface[column,0]]),x])
                 if use_p:
-                    y = np.concatenate([np.array(input.P_Ref),y])
+                    p_surf = output.Pressure[column,1,0] + extrap_surf*(output.Pressure[column,0,0]-output.Pressure[column,1,0])
+                    y = np.concatenate([np.array([p_surf]),y])
                 else:
                     y = np.concatenate([np.array([0.0]),y])
 
