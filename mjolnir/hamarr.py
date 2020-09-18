@@ -206,7 +206,7 @@ class output_new:
                 if 'Qheat' in openh5.keys():
                     outputs['Qheat'] = 'qheat'
                 if 'DGQheat' in openh5.keys():
-                    outputs['DGQheat'] = 'DGQheat'
+                    outputs['DGQheat'] = 'DGqheat'
                 if 'Etotal' in openh5.keys():
                     self.ConvData[t-ntsi+1] = True
                     outputs['Etotal'] = 'Etotal'
