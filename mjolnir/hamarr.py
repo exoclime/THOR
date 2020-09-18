@@ -56,8 +56,6 @@ class input_new:
 
         for key in openh5.keys():
             setattr(self,key,openh5[key][...])
-        self.NonHydro = openh5['NonHydro'][0]
-        self.DeepModel = openh5['DeepModel'][0]
 
         #special cases (things we test on a lot, etc)
         self.RT = "radiative_transfer" in openh5 and openh5["radiative_transfer"][0] == 1.0
@@ -158,20 +156,24 @@ class output_new:
 
         # dictionary of field variables (2-D or 3-D arrays)
         # key is the key in h5 file, value is desired attribute name in this class
-        outputs = {'Rho': 'Rho', 'Pressure': 'Pressure', 'Mh': 'Mh', 'Wh': 'Wh',
-                    'Rho_mean': 'Rho_mean', 'Pressure_mean': 'Pressure_mean',
-                    'Mh_mean': 'Mh_mean', 'Wh_mean': 'Wh_mean'}
+        outputs = {'Rho': 'Rho', 'Pressure': 'Pressure', 'Mh': 'Mh', 'Wh': 'Wh'}
+
+        if input.output_mean:
+            outputs['Rho_mean'] = 'Rho_mean'
+            outputs['Pressure_mean'] = 'Pressure_mean'
+            outputs['Mh_mean'] = 'Mh_mean'
+            outputs['Wh_mean'] = 'Wh_mean'
 
         #add things to outputs that can be checked for in input or grid
-        if input.RT or input.TSRT:
-            outputs['Qheat'] = 'qheat'
+        # if input.RT or input.TSRT:
+        #     outputs['Qheat'] = 'qheat'
 
         if input.RT:
             outputs['tau'] = 'tau'  #have to be careful about slicing this (sw = ::2, lw = 1::2)
             outputs['flw_up'] = 'flw_up'
             outputs['flw_dn'] = 'flw_dn'
             outputs['fsw_dn'] = 'fsw_dn'
-            outputs['DGQheat'] = 'DGqheat'
+            # outputs['DGQheat'] = 'DGqheat'
 
         if input.TSRT:
             outputs['F_up_tot'] = 'f_up_tot'
@@ -201,6 +203,10 @@ class output_new:
 
             if t == ntsi - 1:
                 # add things to outputs dictionary that require checking for existence in openh5
+                if 'Qheat' in openh5.keys():
+                    outputs['Qheat'] = 'qheat'
+                if 'DGQheat' in openh5.keys():
+                    outputs['DGQheat'] = 'DGQheat'
                 if 'Etotal' in openh5.keys():
                     self.ConvData[t-ntsi+1] = True
                     outputs['Etotal'] = 'Etotal'
