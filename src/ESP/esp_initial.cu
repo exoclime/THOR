@@ -222,6 +222,7 @@ __host__ void ESP::alloc_data(bool globdiag, bool output_mean) {
     AngMomy_h = (double *)malloc(nv * point_num * sizeof(double));
     AngMomz_h = (double *)malloc(nv * point_num * sizeof(double));
     Entropy_h = (double *)malloc(nv * point_num * sizeof(double));
+    Esurf_h   = (double *)malloc(point_num * sizeof(double));
 
     // ultra-hot jupiter stuff
     Rd_h = (double *)malloc(nv * point_num * sizeof(double));
@@ -390,6 +391,9 @@ __host__ void ESP::alloc_data(bool globdiag, bool output_mean) {
         cudaMalloc((void **)&GlobalAMx_d, 1 * sizeof(double));
         cudaMalloc((void **)&GlobalAMy_d, 1 * sizeof(double));
         cudaMalloc((void **)&GlobalAMz_d, 1 * sizeof(double));
+        if (surface) {
+            cudaMalloc((void **)&Esurf_d, point_num * sizeof(double));
+        }
     }
 
     cudaMalloc((void **)&Tsurface_d, point_num * sizeof(double));

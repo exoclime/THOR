@@ -105,6 +105,17 @@ __global__ void CalcTotEnergy(double *Etotal_d,
     }
 }
 
+__global__ void
+EnergySurface(double *Esurf_d, double *Tsurface_d, double *areasT, double Csurf, int num) {
+
+    // calculate thermal energy held by surface
+    int id = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (id < num) {
+        Esurf_d[id] = Csurf * Tsurface_d[id] * areasT[id];
+    }
+}
+
 __global__ void CalcAngMom(double *AngMomx_d,
                            double *AngMomy_d,
                            double *AngMomz_d,

@@ -46,6 +46,7 @@
 #include "profx_RT.h"
 
 #include "insolation.h"
+#include "reduction_add.h"
 
 radiative_transfer::radiative_transfer() {
 }
@@ -113,6 +114,9 @@ bool radiative_transfer::initialise_memory(const ESP &              esp,
 
     cudaMalloc((void **)&surf_flux_d, esp.point_num * sizeof(double));
 
+    cudaMalloc((void **)&ASR_d, esp.point_num * sizeof(double));
+    cudaMalloc((void **)&OLR_d, esp.point_num * sizeof(double));
+
     return true;
 }
 
@@ -143,6 +147,8 @@ bool radiative_transfer::free_memory() {
     free(fsw_dn_h);
 
     cudaFree(surf_flux_d);
+    cudaFree(ASR_d);
+    cudaFree(OLR_d);
 
     return true;
 }
@@ -297,12 +303,18 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                                      esp.Tsurface_d,
                                      esp.dTsurf_dt_d,
                                      surf_flux_d,
+                                     esp.areasT_d,
+                                     ASR_d,
+                                     OLR_d,
                                      esp.profx_Qheat_d,
                                      qheat_d,
                                      esp.Rd_d,
                                      Qheat_scaling,
                                      sim.gcm_off,
                                      rt1Dmode);
+
+        ASR_tot = gpu_sum_on_device<1024>(ASR_d, esp.point_num);
+        OLR_tot = gpu_sum_on_device<1024>(OLR_d, esp.point_num);
 
         if (nstep * time_step < (2 * M_PI / esp.insolation.get_mean_motion())) {
             // stationary orbit/obliquity
@@ -387,6 +399,10 @@ bool radiative_transfer::store(const ESP &esp, storage &s) {
     // s.append_table(Tsurface_h, esp.point_num, "/Tsurface", "K", "surface temperature");
 
     s.append_value(Qheat_scaling, "/dgrt_qheat_scaling", " ", "Qheat scaling applied to DG");
+
+    s.append_value(ASR_tot, "/ASR", "W", "Absorbed Shortwave Radiation (global total)");
+    s.append_value(OLR_tot, "/OLR", "W", "Outgoing Longwave Radiation (global total)");
+
     return true;
 }
 

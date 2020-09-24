@@ -351,8 +351,8 @@ int main(int argc, char** argv) {
     int GPU_ID_N = 0;
     config_reader.append_config_var("GPU_ID_N", GPU_ID_N, GPU_ID_N_default);
 
-    int n_out = 1000;
-    config_reader.append_config_var("n_out", n_out, n_out_default);
+    // int n_out = 1000;
+    config_reader.append_config_var("n_out", sim.n_out, n_out_default);
 
     string output_path = "results";
     config_reader.append_config_var("results_path", output_path, string(output_path_default));
@@ -363,12 +363,12 @@ int main(int argc, char** argv) {
     bool custom_global_n_out;
     config_reader.append_config_var(
         "custom_global_n_out", custom_global_n_out, custom_global_n_out_default);
-    int global_n_out = n_out;
+    int global_n_out = sim.n_out;
     config_reader.append_config_var("global_n_out", global_n_out, global_n_out_default);
 
     bool custom_log_n_out;
     config_reader.append_config_var("custom_log_n_out", custom_log_n_out, custom_log_n_out_default);
-    int log_n_out = n_out;
+    int log_n_out = sim.n_out;
     config_reader.append_config_var("log_n_out", log_n_out, log_n_out_default);
 
     // Init PT profile
@@ -398,9 +398,17 @@ int main(int argc, char** argv) {
 
     // vertical grid refinement in lower atmos (for turbulent BL)
     bool vert_refined = false;
-    int  n_bl_layers  = 9;
+    //int  n_bl_layers  = 9;
     config_reader.append_config_var("vert_refined", vert_refined, vert_refined_default);
-    config_reader.append_config_var("n_bl_layers", n_bl_layers, n_bl_layers_default);
+    //config_reader.append_config_var("n_bl_layers", n_bl_layers, n_bl_layers_default);
+    double transition_altitude = 1000; //height of transition from exponential to linear spacing
+    double lowest_layer_thickness =
+        2; //height of first interface above surface (thickness of lowest layer)
+    config_reader.append_config_var(
+        "transition_altitude", transition_altitude, transition_altitude_default);
+    config_reader.append_config_var(
+        "lowest_layer_thickness", lowest_layer_thickness, lowest_layer_thickness_default);
+
 
     bool surface_config = false; // use solid/liquid surface at altitude 0
     config_reader.append_config_var("surface", surface_config, surface_config);
@@ -520,7 +528,7 @@ int main(int argc, char** argv) {
     config_OK &= check_greater("vlevel", vlevel, 0);
 
     config_OK &= check_greater("GPU_ID_N", GPU_ID_N, -1);
-    config_OK &= check_greater("n_out", n_out, 0);
+    config_OK &= check_greater("n_out", sim.n_out, 0);
 
     if (simulation_ID.length() < 160) {
         sprintf(sim.simulation_ID, "%s", simulation_ID.c_str());
@@ -934,7 +942,8 @@ int main(int argc, char** argv) {
                  initialize_zonal_mean, // Use zonal mean in rayleigh sponge layer?
                  &max_count,
                  vert_refined,
-                 n_bl_layers);
+                 lowest_layer_thickness,
+                 transition_altitude);
 
     //  Define object X.
     ESP X(Grid.point_local,    // First neighbours
@@ -1218,7 +1227,7 @@ int main(int argc, char** argv) {
 
         //
         //     Physical Core Integration (ProfX)
-        X.ProfX(sim, n_out, diag);
+        X.ProfX(sim, sim.n_out, diag);
 
         if (!sim.gcm_off) {
             //
@@ -1236,7 +1245,7 @@ int main(int argc, char** argv) {
 
         if (sim.globdiag == true) {
             if ((custom_global_n_out && nstep % global_n_out == 0)
-                || (custom_global_n_out == false && nstep % n_out == 0)) {
+                || (custom_global_n_out == false && nstep % sim.n_out == 0)) {
                 X.globdiag(sim);
                 logwriter.output_globdiag(nstep,
                                           simulation_time,
@@ -1254,7 +1263,7 @@ int main(int argc, char** argv) {
 
         //
         //      Prints output every nout steps
-        if (nstep % n_out == 0 || caught_signal != ESIG_NOSIG) {
+        if (nstep % sim.n_out == 0 || caught_signal != ESIG_NOSIG) {
             X.copy_to_host();
 
             if (sim.globdiag == true)
@@ -1289,7 +1298,7 @@ int main(int argc, char** argv) {
         end_time_str << str_time;
 
         if ((custom_log_n_out && nstep % log_n_out == 0)
-            || (custom_log_n_out == false && nstep % n_out == 0)) {
+            || (custom_log_n_out == false && nstep % sim.n_out == 0)) {
             log::printf(
                 "\n Time step number = %d/%d || Time = %f days. \n\t Elapsed %s || Left: %s || "
                 "Completion: %s. %s",

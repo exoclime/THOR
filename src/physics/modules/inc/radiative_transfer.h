@@ -80,6 +80,9 @@ public:
         return qheat_d;
     };
 
+    double OLR_tot;
+    double ASR_tot;
+
 private:
     // Scaling of Qheat, for slow ramp up or ramp down.
     double Qheat_scaling = 1.0;
@@ -149,6 +152,10 @@ private:
 
     double *qheat_d;
     double *qheat_h;
+
+    double *ASR_d;
+    double *OLR_d;
+
 
     //  These arrays are for temporary usage in RT code
     double *dtemp;

@@ -197,8 +197,16 @@ bool phy_modules_phy_loop(ESP&                   esp,
     if (boundary_layer_enabled)
         bl.phy_loop(esp, sim, diag, nstep, time_step);
 
-    if (radiative_transfer_enabled)
+    if (radiative_transfer_enabled) {
         rt.phy_loop(esp, sim, diag, nstep, time_step);
+        if (nstep % sim.n_out == 0) {
+            log::printf("\n || ASR = %e W || OLR = %e W ||\n", rt.ASR_tot, rt.OLR_tot);
+        }
+        else {
+            printf("\n || ASR = %e W || OLR = %e W ||\n", rt.ASR_tot, rt.OLR_tot);
+        }
+    }
+
 
 #ifdef HAS_ALFRODULL
     if (alfrodull_enabled)

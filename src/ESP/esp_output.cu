@@ -69,6 +69,9 @@ __host__ void ESP::copy_globdiag_to_host() {
     cudaMemcpy(AngMomx_h, AngMomx_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
     cudaMemcpy(AngMomy_h, AngMomy_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
     cudaMemcpy(AngMomz_h, AngMomz_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+    if (surface) {
+        cudaMemcpy(Esurf_h, Esurf_d, point_num * sizeof(double), cudaMemcpyDeviceToHost);
+    }
 }
 
 __host__ void ESP::copy_global_to_host() {
@@ -328,6 +331,10 @@ __host__ void ESP::output(int                    fidx, // Index of output file
 
         //  GlobalAMz (total angular momentum in y direction over entire planet)
         s.append_value(GlobalAMz_h, "/GlobalAMz", "kg m^2/s", "Global AngMomZ");
+
+        if (surface) {
+            s.append_table(Esurf_h, point_num, "/Esurf", "J", "Thermal energy of surface");
+        }
     }
 
     // profX Qheat from physics modules

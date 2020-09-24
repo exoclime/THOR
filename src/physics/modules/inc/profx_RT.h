@@ -316,6 +316,9 @@ __global__ void rtm_dual_band(double *pressure_d,
                               double *Tsurface_d,
                               double *dTsurf_dt_d,
                               double *surf_flux_d,
+                              double *areasT_d,
+                              double *ASR_d,
+                              double *OLR_d,
                               double *profx_Qheat_d,
                               double *DG_Qheat_d, // internal qheat for debugging
                               double *Rd_d,
@@ -451,6 +454,9 @@ __global__ void rtm_dual_band(double *pressure_d,
             surf_flux_d[id] = fsw_dn_d[id * nvi + 0] - fsw_up_d[id * nvi + 0];
         }
 
+        //calculate ASR for this point
+        ASR_d[id] = insol_d[id] * (1 - alb) * areasT_d[id];
+
         for (int lev = 0; lev <= nv; lev++) {
             flw_up_d[id * nvi + lev] = 0.0;
         }
@@ -481,6 +487,9 @@ __global__ void rtm_dual_band(double *pressure_d,
             if (Tsurface_d[id] < 0)
                 Tsurface_d[id] = 0;
         }
+
+        //calculate OLR for this point
+        OLR_d[id] = flw_up_d[id * nvi + nv] * areasT_d[id];
 
         for (int lev = 0; lev < nv; lev++) {
             if (gcm_off) {

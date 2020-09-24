@@ -171,6 +171,7 @@ public:
     double  GlobalAMz_h;
     double *Entropy_h;   //entropy in control volume
     double  GlobalEnt_h; //entropy over entire atmosphere
+    double *Esurf_h;
 
     // ultra-hot jupiter quantities
     double *Rd_h; //local value of gas constant
@@ -322,6 +323,7 @@ public:
     double *GlobalAMz_d;
     double *Entropy_d; // entropy in control volume
     double *GlobalEnt_d;
+    double *Esurf_d;
 
     // ultra-hot jupiter quantities
     double *Rd_d; //local value of gas constant

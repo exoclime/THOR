@@ -405,6 +405,7 @@ void ESP::globdiag(const SimulationSetup& sim) {
 
     //  Specify the block sizes.
     dim3 NB((point_num / NTH) + 1, nv, 1);
+    dim3 NB1layer((point_num / NTH + 1), 1, 1);
 
     // calculate quantities we hope to conserve!
     cudaMemset(GlobalE_d, 0, sizeof(double));
@@ -413,7 +414,6 @@ void ESP::globdiag(const SimulationSetup& sim) {
     cudaMemset(GlobalAMy_d, 0, sizeof(double));
     cudaMemset(GlobalAMz_d, 0, sizeof(double));
     cudaMemset(GlobalEnt_d, 0, sizeof(double));
-
 
     CalcMass<<<NB, NTH>>>(Mass_d,
                           GlobalMass_d,
@@ -484,6 +484,13 @@ void ESP::globdiag(const SimulationSetup& sim) {
     GlobalAMy_h  = gpu_sum_on_device<1024>(AngMomy_d, point_num * nv);
     GlobalAMz_h  = gpu_sum_on_device<1024>(AngMomz_d, point_num * nv);
     GlobalEnt_h  = gpu_sum_on_device<1024>(Entropy_d, point_num * nv);
+
+    if (surface) {
+        EnergySurface<<<NB1layer, NTH>>>(Esurf_d, Tsurface_d, areasT_d, Csurf, point_num);
+        double GlobalEsurf = 0.0;
+        GlobalEsurf        = gpu_sum_on_device<1024>(Esurf_d, point_num);
+        GlobalE_h += GlobalEsurf;
+    }
 }
 
 __global__ void update_mean(double* pressure_mean_d,
