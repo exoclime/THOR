@@ -160,6 +160,8 @@ class output_new:
         self.GlobalAMx = np.zeros(nts - ntsi + 1)
         self.GlobalAMy = np.zeros(nts - ntsi + 1)
         self.GlobalAMz = np.zeros(nts - ntsi + 1)
+        self.ASR_tot = np.zeros(nts-ntsi+1)
+        self.OLR_tot = np.zeros(nts-ntsi+1)
 
         # dictionary of field variables (2-D or 3-D arrays)
         # key is the key in h5 file, value is desired attribute name in this class
@@ -281,6 +283,10 @@ class output_new:
                 self.GlobalAMy[t - ntsi + 1] = openh5['GlobalAMy'][0]
                 self.GlobalAMz[t - ntsi + 1] = openh5['GlobalAMz'][0]
                 self.GlobalEnt[t - ntsi + 1] = openh5['GlobalEnt'][0]
+
+            if 'ASR' in openh5.keys():
+                self.ASR_tot[t-ntsi+1] = openh5['ASR'][0]
+                self.OLR_tot[t-ntsi+1] = openh5['OLR'][0]
 
             openh5.close()
 
@@ -2289,8 +2295,24 @@ def Get_Prange(input, grid, rg, args, xtype='lat', use_p=True):
 
 def RTbalance(input, grid, output):
     # not finished!
-    asr = fsw_dn[:, input.nv - 1, :] * grid.areasT[:, None]
-    olr = flw_up[:, input.nv - 1, :] * grid.areasT[:, None]
+    rscale = (input.A+grid.Altitudeh[input.vlevel[0]])/input.A
+    asr = output.fsw_dn[:, input.vlevel[0], :] * grid.areasT[:, None]*rscale**2
+    olr = output.flw_up[:, input.vlevel[0], :] * grid.areasT[:, None]*rscale**2
+
+    plt.plot(output.time, np.sum(asr,axis=0),'bs', linestyle='--',label='ASR')
+    #plt.plot(output.time, output.ASR_tot, 'bs', linestyle='--',label='ASR')
+    plt.plot(output.time, np.sum(olr,axis=0), 'rs', linestyle='--',label='OLR')
+    #plt.plot(output.time, output.OLR_tot, 'rs', linestyle='--',label='OLR')
+
+    plt.xlabel('Time (days)')
+    plt.ylabel('Global integrated power (W)')
+    plt.legend(loc='upper right')
+
+    plt.tight_layout()
+    if not os.path.exists(input.resultsf + '/figures'):
+        os.mkdir(input.resultsf + '/figures')
+    plt.savefig(input.resultsf + '/figures/RTbalance_i%d_l%d.pdf' % (output.ntsi, output.nts))
+    plt.close()
 
 def spectrum(input, grid, output, z, stride=20, axis=None, save=True):
     output.load_reshape(grid, ['spectrum', 'incoming_spectrum'])

@@ -324,7 +324,8 @@ __global__ void rtm_dual_band(double *pressure_d,
                               double *Rd_d,
                               double  Qheat_scaling,
                               bool    gcm_off,
-                              bool    rt1Dmode) {
+                              bool    rt1Dmode,
+                              bool    DeepModel) {
 
 
     //
@@ -455,7 +456,14 @@ __global__ void rtm_dual_band(double *pressure_d,
         }
 
         //calculate ASR for this point
-        ASR_d[id] = insol_d[id] * (1 - alb) * areasT_d[id];
+        double rscale;
+        if (DeepModel) {
+            rscale = (A + Altitudeh_d[nv]) / A;
+        }
+        else {
+            rscale = 1.0;
+        }
+        ASR_d[id] = fsw_dn_d[id * nvi + nv] * areasT_d[id] * pow(rscale, 2);
 
         for (int lev = 0; lev <= nv; lev++) {
             flw_up_d[id * nvi + lev] = 0.0;
@@ -489,7 +497,7 @@ __global__ void rtm_dual_band(double *pressure_d,
         }
 
         //calculate OLR for this point
-        OLR_d[id] = flw_up_d[id * nvi + nv] * areasT_d[id];
+        OLR_d[id] = flw_up_d[id * nvi + nv] * areasT_d[id] * pow(rscale, 2);
 
         for (int lev = 0; lev < nv; lev++) {
             if (gcm_off) {

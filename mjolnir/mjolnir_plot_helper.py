@@ -58,7 +58,8 @@ def make_plot(args, save=True, axis=None):
              'DGqheatprof', 'TSqheatprof', 'qheatprof', 'TSfdirprof',
              'w0prof', 'g0prof', 'spectrum',
              'phase','all','eddyKE','eddyMomMerid','eddyTempMerid','eddyTempVar',
-             'Etotlev','AngMomlev', 'Entropylev','Kdiffprof', 'RiB','BLheight']
+             'Etotlev','AngMomlev', 'Entropylev','Kdiffprof', 'RiB','BLheight',
+             'RTbalance']
 
     rg_needed = ['Tver', 'Tlonver', 'uver', 'ulonver', 'vver', 'wver', 'wlonver', 'Tulev', 'PTver', 'PTlonver', 'ulev', 'PVver', 'PVlev',
                  'RVlev', 'stream', 'tracer', 'Tsurf', 'insol', 'massf', 'pause_rg',
@@ -800,7 +801,6 @@ def make_plot(args, save=True, axis=None):
 
     # --- Global diagnostics -----------------------------------
     if 'cons' in pview:  # RD: needs some work!
-        import pdb; pdb.set_trace()
         ham.conservation(input, grid, output)
 
     if 'KE' in pview:  # RD: needs some work!
@@ -811,6 +811,7 @@ def make_plot(args, save=True, axis=None):
         ham.SRindex(input, grid, output)
 
     if 'RTbalance' in pview:
+        output.load_reshape(grid,['fsw_dn','flw_up'])
         ham.RTbalance(input, grid, output)
 
     if 'phase' in pview and input.RT:
