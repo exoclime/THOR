@@ -2295,7 +2295,8 @@ def Get_Prange(input, grid, rg, args, xtype='lat', use_p=True):
 
 def RTbalance(input, grid, output):
     # not finished!
-    rscale = (input.A+grid.Altitudeh[input.vlevel[0]])/input.A
+    #rscale = (input.A+grid.Altitudeh[input.vlevel[0]])/input.A
+    rscale = 1
     asr = output.fsw_dn[:, input.vlevel[0], :] * grid.areasT[:, None]*rscale**2
     olr = output.flw_up[:, input.vlevel[0], :] * grid.areasT[:, None]*rscale**2
 

@@ -346,9 +346,11 @@ bool boundary_layer::phy_loop(ESP &                  esp,
                                            KM_d,
                                            Rho_int_d,
                                            time_step,
+                                           sim.A,
                                            esp.point_num,
                                            esp.nv,
                                            bl_top_lev_d,
+                                           sim.DeepModel,
                                            *diag.diagnostics_global_flag,
                                            *diag.diagnostics);
 
@@ -397,9 +399,11 @@ bool boundary_layer::phy_loop(ESP &                  esp,
                                        sim.Cp,
                                        sim.P_Ref,
                                        esp.Csurf,
+                                       sim.A,
                                        esp.point_num,
                                        esp.nv,
                                        bl_top_lev_d,
+                                       sim.DeepModel,
                                        *diag.diagnostics_global_flag,
                                        *diag.diagnostics);
 
@@ -494,9 +498,11 @@ bool boundary_layer::phy_loop(ESP &                  esp,
                                            KM_d,
                                            Rho_int_d, ///broken!
                                            time_step,
+                                           sim.A,
                                            esp.point_num,
                                            esp.nv,
                                            bl_top_lev_d,
+                                           sim.DeepModel,
                                            *diag.diagnostics_global_flag,
                                            *diag.diagnostics);
     }
@@ -747,25 +753,28 @@ __global__ void ConstKMEkman(double *Mh_d,
     }
 }
 
-__global__ void Momentum_Diff_Impl(double *      Mh_d,
-                                   double *      pressure_d,
-                                   double *      Rho_d,
-                                   double *      Altitude_d,
-                                   double *      Altitudeh_d,
-                                   double *      atmp,
-                                   double *      btmp,
-                                   double *      ctmp,
-                                   double *      cpr_tmp,
-                                   double *      dtmp,
-                                   double *      dpr_tmp,
-                                   double *      KM_d,
-                                   double *      Rho_int_d,
-                                   double        time_step,
-                                   int           num,
-                                   int           nv,
-                                   int *         bl_top_lev_d,
-                                   unsigned int *diagnostics_flag,
-                                   diag_data *   diagnostics_data) {
+__global__ void
+Momentum_Diff_Impl(double *      Mh_d,
+                   double *      pressure_d,
+                   double *      Rho_d,
+                   double *      Altitude_d,
+                   double *      Altitudeh_d,
+                   double *      atmp,
+                   double *      btmp,
+                   double *      ctmp,
+                   double *      cpr_tmp,
+                   double *      dtmp,
+                   double *      dpr_tmp,
+                   double *      KM_d,
+                   double *      Rho_int_d,
+                   double        time_step,
+                   double        A,
+                   int           num,
+                   int           nv,
+                   int *         bl_top_lev_d,
+                   bool          DeepModel,
+                   unsigned int *diagnostics_flag,
+                   diag_data *   diagnostics_data) { //need DeepModel and planet radius here
 
     //should create check on stability of thomas algorithm
 
@@ -773,18 +782,28 @@ __global__ void Momentum_Diff_Impl(double *      Mh_d,
     int lev;
 
     if (id < num) {
+        double rup, rlow; //radii for spherical curvature calculation
         for (lev = 0; lev < bl_top_lev_d[id] + 1; lev++) {
             //forward sweep
+            //r = Altitude_d[lev] + A;
+            if (DeepModel) {
+                rup  = (Altitudeh_d[lev + 1] + A) / (Altitude_d[lev] + A);
+                rlow = (Altitudeh_d[lev] + A) / (Altitude_d[lev] + A);
+            }
+            else {
+                rup  = 1.0;
+                rlow = 1.0;
+            }
             if (lev == 0) { //lowest layer, v at lowest boundary = 0, dz0 = Altitude0
                 atmp[id * nv + lev] = 0;
-                btmp[id * nv + lev] =
-                    -(1.0 / (Altitudeh_d[lev + 1] - Altitudeh_d[lev])
-                          * (Rho_int_d[id * (nv + 1) + lev + 1] * KM_d[id * (nv + 1) + lev + 1]
-                                 / (Altitude_d[lev + 1] - Altitude_d[lev])
-                             + Rho_int_d[id * (nv + 1) + lev] * KM_d[id * (nv + 1) + lev]
-                                   / Altitude_d[lev])
-                      + Rho_d[id * nv + lev] / time_step);
-                ctmp[id * nv + lev] = Rho_int_d[id * (nv + 1) + lev + 1]
+                btmp[id * nv + lev] = -(1.0 / (Altitudeh_d[lev + 1] - Altitudeh_d[lev])
+                                            * (pow(rup, 2) * Rho_int_d[id * (nv + 1) + lev + 1]
+                                                   * KM_d[id * (nv + 1) + lev + 1]
+                                                   / (Altitude_d[lev + 1] - Altitude_d[lev])
+                                               + pow(rlow, 2) * Rho_int_d[id * (nv + 1) + lev]
+                                                     * KM_d[id * (nv + 1) + lev] / Altitude_d[lev])
+                                        + Rho_d[id * nv + lev] / time_step);
+                ctmp[id * nv + lev] = pow(rup, 2) * Rho_int_d[id * (nv + 1) + lev + 1]
                                       * KM_d[id * (nv + 1) + lev + 1]
                                       / ((Altitudeh_d[lev + 1] - Altitudeh_d[lev])
                                          * (Altitude_d[lev + 1] - Altitude_d[lev]));
@@ -796,24 +815,27 @@ __global__ void Momentum_Diff_Impl(double *      Mh_d,
                 }
             }
             else if (lev == bl_top_lev_d[id]) {
-                atmp[id * nv + lev] = Rho_int_d[id * (nv + 1) + lev] * KM_d[id * (nv + 1) + lev]
+                atmp[id * nv + lev] = pow(rlow, 2) * Rho_int_d[id * (nv + 1) + lev]
+                                      * KM_d[id * (nv + 1) + lev]
                                       / ((Altitudeh_d[lev + 1] - Altitudeh_d[lev])
                                          * (Altitude_d[lev] - Altitude_d[lev - 1]));
-                btmp[id * nv + lev] =
-                    -(1.0 / (Altitudeh_d[lev + 1] - Altitudeh_d[lev])
-                          * (Rho_int_d[id * (nv + 1) + lev + 1] * KM_d[id * (nv + 1) + lev + 1]
-                                 / (Altitude_d[lev + 1] - Altitude_d[lev])
-                             + (Rho_int_d[id * (nv + 1) + lev]) * KM_d[id * (nv + 1) + lev]
-                                   / (Altitude_d[lev] - Altitude_d[lev - 1]))
-                      + Rho_d[id * nv + lev] / time_step);
+                btmp[id * nv + lev]    = -(1.0 / (Altitudeh_d[lev + 1] - Altitudeh_d[lev])
+                                            * (pow(rup, 2) * Rho_int_d[id * (nv + 1) + lev + 1]
+                                                   * KM_d[id * (nv + 1) + lev + 1]
+                                                   / (Altitude_d[lev + 1] - Altitude_d[lev])
+                                               + (pow(rlow, 2) * Rho_int_d[id * (nv + 1) + lev])
+                                                     * KM_d[id * (nv + 1) + lev]
+                                                     / (Altitude_d[lev] - Altitude_d[lev - 1]))
+                                        + Rho_d[id * nv + lev] / time_step);
                 ctmp[id * nv + lev]    = 0;
                 cpr_tmp[id * nv + lev] = 0; //not used, i think
                 for (int k = 0; k < 3; k++) {
                     dtmp[id * nv * 3 + lev * 3 + k] =
                         -Mh_d[id * 3 * nv + lev * 3 + k] / time_step
-                        - Rho_int_d[id * (nv + 1) + lev + 1] * KM_d[id * (nv + 1) + lev + 1]
+                        - pow(rup, 2) * Rho_int_d[id * (nv + 1) + lev + 1]
+                              * KM_d[id * (nv + 1) + lev + 1]
                               / (Altitudeh_d[lev + 1] - Altitudeh_d[lev])
-                              * Mh_d[id * 3 * nv + (lev + 1) * 3 + k]
+                              * Mh_d[id * 3 * nv + (lev + 1) * 3 + k] / Rho_d[id * nv + lev + 1]
                               / (Altitude_d[lev + 1] - Altitude_d[lev]);
                     dpr_tmp[id * nv * 3 + lev * 3 + k] =
                         (dtmp[id * nv * 3 + lev * 3 + k]
@@ -822,17 +844,19 @@ __global__ void Momentum_Diff_Impl(double *      Mh_d,
                 }
             }
             else {
-                atmp[id * nv + lev] = Rho_int_d[id * (nv + 1) + lev] * KM_d[id * (nv + 1) + lev]
+                atmp[id * nv + lev] = pow(rlow, 2) * Rho_int_d[id * (nv + 1) + lev]
+                                      * KM_d[id * (nv + 1) + lev]
                                       / ((Altitudeh_d[lev + 1] - Altitudeh_d[lev])
                                          * (Altitude_d[lev] - Altitude_d[lev - 1]));
-                btmp[id * nv + lev] =
-                    -(1.0 / (Altitudeh_d[lev + 1] - Altitudeh_d[lev])
-                          * (Rho_int_d[id * (nv + 1) + lev + 1] * KM_d[id * (nv + 1) + lev + 1]
-                                 / (Altitude_d[lev + 1] - Altitude_d[lev])
-                             + Rho_int_d[id * (nv + 1) + lev] * KM_d[id * (nv + 1) + lev]
-                                   / (Altitude_d[lev] - Altitude_d[lev - 1]))
-                      + Rho_d[id * nv + lev] / time_step);
-                ctmp[id * nv + lev] = Rho_int_d[id * (nv + 1) + lev + 1]
+                btmp[id * nv + lev] = -(1.0 / (Altitudeh_d[lev + 1] - Altitudeh_d[lev])
+                                            * (pow(rup, 2) * Rho_int_d[id * (nv + 1) + lev + 1]
+                                                   * KM_d[id * (nv + 1) + lev + 1]
+                                                   / (Altitude_d[lev + 1] - Altitude_d[lev])
+                                               + pow(rlow, 2) * Rho_int_d[id * (nv + 1) + lev]
+                                                     * KM_d[id * (nv + 1) + lev]
+                                                     / (Altitude_d[lev] - Altitude_d[lev - 1]))
+                                        + Rho_d[id * nv + lev] / time_step);
+                ctmp[id * nv + lev] = pow(rup, 2) * Rho_int_d[id * (nv + 1) + lev + 1]
                                       * KM_d[id * (nv + 1) + lev + 1]
                                       / ((Altitudeh_d[lev + 1] - Altitudeh_d[lev])
                                          * (Altitude_d[lev + 1] - Altitude_d[lev]));
@@ -914,9 +938,11 @@ __global__ void Heat_Diff_Impl(double *      pt_d,
                                double        Cp,
                                double        P_Ref,
                                double        Csurf,
+                               double        A,
                                int           num,
                                int           nv,
                                int *         bl_top_lev_d,
+                               bool          DeepModel,
                                unsigned int *diagnostics_flag,
                                diag_data *   diagnostics_data) {
 
@@ -928,8 +954,23 @@ __global__ void Heat_Diff_Impl(double *      pt_d,
     if (id < num) {
         double Cv    = Cp - Rd;
         double kappa = Rd / Cp;
+        double rup, rlow;
         for (lev = -1; lev < bl_top_lev_d[id] + 1; lev++) {
             //forward sweep
+            if (DeepModel) {
+                if (lev == -1) {
+                    rup  = 1.0;
+                    rlow = 1.0;
+                }
+                else {
+                    rup  = (Altitudeh_d[lev + 1] + A) / (Altitude_d[lev] + A);
+                    rlow = (Altitudeh_d[lev] + A) / (Altitude_d[lev] + A);
+                }
+            }
+            else {
+                rup  = 1.0;
+                rlow = 1.0;
+            }
             if (lev == -1) { //treat surface in matrix solution (need to offset abcd arrays by +1)
                 atmp[id * nv + lev + 1] = 0;
                 btmp[id * nv + lev + 1] =
@@ -943,17 +984,18 @@ __global__ void Heat_Diff_Impl(double *      pt_d,
                 dpr_tmp[id * nv + lev + 1] = dtmp[id * nv + lev + 1] / btmp[id * nv + lev + 1];
             }
             else if (lev == 0) { //lowest layer, v at lowest boundary = 0, dz0 = Altitude0
-                atmp[id * nv + lev + 1] = Rho_int_d[id * (nv + 1) + lev] * KH_d[id * (nv + 1) + lev]
-                                          / (Altitudeh_d[lev + 1] - Altitudeh_d[lev])
-                                          / Altitude_d[lev];
+                atmp[id * nv + lev + 1] =
+                    pow(rlow, 2) * Rho_int_d[id * (nv + 1) + lev] * KH_d[id * (nv + 1) + lev]
+                    / (Altitudeh_d[lev + 1] - Altitudeh_d[lev]) / Altitude_d[lev];
                 btmp[id * nv + lev + 1] =
                     -(1.0 / (Altitudeh_d[lev + 1] - Altitudeh_d[lev])
-                          * (Rho_int_d[id * (nv + 1) + lev + 1] * KH_d[id * (nv + 1) + lev + 1]
+                          * (pow(rup, 2) * Rho_int_d[id * (nv + 1) + lev + 1]
+                                 * KH_d[id * (nv + 1) + lev + 1]
                                  / (Altitude_d[lev + 1] - Altitude_d[lev])
-                             + Rho_int_d[id * (nv + 1) + lev] * KH_d[id * (nv + 1) + lev]
-                                   / Altitude_d[lev])
+                             + pow(rlow, 2) * Rho_int_d[id * (nv + 1) + lev]
+                                   * KH_d[id * (nv + 1) + lev] / Altitude_d[lev])
                       + Rho_d[id * nv + lev] / time_step);
-                ctmp[id * nv + lev + 1] = Rho_int_d[id * (nv + 1) + lev + 1]
+                ctmp[id * nv + lev + 1] = pow(rlow, 2) * Rho_int_d[id * (nv + 1) + lev + 1]
                                           * KH_d[id * (nv + 1) + lev + 1]
                                           / ((Altitudeh_d[lev + 1] - Altitudeh_d[lev])
                                              * (Altitude_d[lev + 1] - Altitude_d[lev]));
@@ -964,39 +1006,44 @@ __global__ void Heat_Diff_Impl(double *      pt_d,
                     / (btmp[id * nv + lev + 1] - atmp[id * nv + lev + 1] * cpr_tmp[id * nv + lev]);
             }
             else if (lev == bl_top_lev_d[id]) {
-                atmp[id * nv + lev + 1] = Rho_int_d[id * (nv + 1) + lev] * KH_d[id * (nv + 1) + lev]
+                atmp[id * nv + lev + 1] = pow(rlow, 2) * Rho_int_d[id * (nv + 1) + lev]
+                                          * KH_d[id * (nv + 1) + lev]
                                           / ((Altitudeh_d[lev + 1] - Altitudeh_d[lev])
                                              * (Altitude_d[lev] - Altitude_d[lev - 1]));
-                btmp[id * nv + lev + 1] =
-                    -(1.0 / (Altitudeh_d[lev + 1] - Altitudeh_d[lev])
-                          * (Rho_int_d[id * (nv + 1) + lev + 1] * KH_d[id * (nv + 1) + lev + 1]
-                                 / (Altitude_d[lev + 1] - Altitude_d[lev])
-                             + Rho_int_d[id * (nv + 1) + lev] * KH_d[id * (nv + 1) + lev]
-                                   / (Altitude_d[lev] - Altitude_d[lev - 1]))
-                      + Rho_d[id * nv + lev] / time_step);
+                btmp[id * nv + lev + 1]    = -(1.0 / (Altitudeh_d[lev + 1] - Altitudeh_d[lev])
+                                                * (pow(rup, 2) * Rho_int_d[id * (nv + 1) + lev + 1]
+                                                       * KH_d[id * (nv + 1) + lev + 1]
+                                                       / (Altitude_d[lev + 1] - Altitude_d[lev])
+                                                   + pow(rlow, 2) * Rho_int_d[id * (nv + 1) + lev]
+                                                         * KH_d[id * (nv + 1) + lev]
+                                                         / (Altitude_d[lev] - Altitude_d[lev - 1]))
+                                            + Rho_d[id * nv + lev] / time_step);
                 ctmp[id * nv + lev + 1]    = 0;
                 cpr_tmp[id * nv + lev + 1] = 0; //not used, i think
-                dtmp[id * nv + lev + 1] =
-                    -Rho_d[id * nv + lev] * pt_d[id * nv + lev] / time_step
-                    - Rho_int_d[id * (nv + 1) + lev + 1] * KH_d[id * (nv + 1) + lev + 1]
-                          / (Altitudeh_d[lev + 1] - Altitudeh_d[lev]) * pt_d[id * nv + (lev + 1)]
-                          / (Altitude_d[lev + 1] - Altitude_d[lev]);
+                dtmp[id * nv + lev + 1]    = -Rho_d[id * nv + lev] * pt_d[id * nv + lev] / time_step
+                                          - pow(rup, 2) * Rho_int_d[id * (nv + 1) + lev + 1]
+                                                * KH_d[id * (nv + 1) + lev + 1]
+                                                / (Altitudeh_d[lev + 1] - Altitudeh_d[lev])
+                                                * pt_d[id * nv + (lev + 1)]
+                                                / (Altitude_d[lev + 1] - Altitude_d[lev]);
                 dpr_tmp[id * nv + lev + 1] =
                     (dtmp[id * nv + lev + 1] - atmp[id * nv + lev + 1] * dpr_tmp[id * nv + (lev)])
                     / (btmp[id * nv + lev + 1] - atmp[id * nv + lev + 1] * cpr_tmp[id * nv + lev]);
             }
             else {
-                atmp[id * nv + lev + 1] = Rho_int_d[id * (nv + 1) + lev] * KH_d[id * (nv + 1) + lev]
+                atmp[id * nv + lev + 1] = pow(rlow, 2) * Rho_int_d[id * (nv + 1) + lev]
+                                          * KH_d[id * (nv + 1) + lev]
                                           / ((Altitudeh_d[lev + 1] - Altitudeh_d[lev])
                                              * (Altitude_d[lev] - Altitude_d[lev - 1]));
-                btmp[id * nv + lev + 1] =
-                    -(1.0 / (Altitudeh_d[lev + 1] - Altitudeh_d[lev])
-                          * (Rho_int_d[id * (nv + 1) + lev + 1] * KH_d[id * (nv + 1) + lev + 1]
-                                 / (Altitude_d[lev + 1] - Altitude_d[lev])
-                             + Rho_int_d[id * (nv + 1) + lev] * KH_d[id * (nv + 1) + lev]
-                                   / (Altitude_d[lev] - Altitude_d[lev - 1]))
-                      + Rho_d[id * nv + lev] / time_step);
-                ctmp[id * nv + lev + 1] = Rho_int_d[id * (nv + 1) + lev + 1]
+                btmp[id * nv + lev + 1] = -(1.0 / (Altitudeh_d[lev + 1] - Altitudeh_d[lev])
+                                                * (pow(rup, 2) * Rho_int_d[id * (nv + 1) + lev + 1]
+                                                       * KH_d[id * (nv + 1) + lev + 1]
+                                                       / (Altitude_d[lev + 1] - Altitude_d[lev])
+                                                   + pow(rlow, 2) * Rho_int_d[id * (nv + 1) + lev]
+                                                         * KH_d[id * (nv + 1) + lev]
+                                                         / (Altitude_d[lev] - Altitude_d[lev - 1]))
+                                            + Rho_d[id * nv + lev] / time_step);
+                ctmp[id * nv + lev + 1] = pow(rup, 2) * Rho_int_d[id * (nv + 1) + lev + 1]
                                           * KH_d[id * (nv + 1) + lev + 1]
                                           / ((Altitudeh_d[lev + 1] - Altitudeh_d[lev])
                                              * (Altitude_d[lev + 1] - Altitude_d[lev]));

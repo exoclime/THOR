@@ -188,9 +188,11 @@ __global__ void Momentum_Diff_Impl(double *      Mh_d,
                                    double *      KM_d,
                                    double *      Rho_int_d,
                                    double        time_step,
+                                   double        A,
                                    int           num,
                                    int           nv,
                                    int *         bl_top_lev_d,
+                                   bool          DeepModel,
                                    unsigned int *diagnostics_flag,
                                    diag_data *   diagnostics_data);
 
@@ -215,9 +217,11 @@ __global__ void Heat_Diff_Impl(double *      pt_d,
                                double        Cp,
                                double        P_Ref,
                                double        Csurf,
+                               double        A,
                                int           num,
                                int           nv,
                                int *         bl_top_lev_d,
+                               bool          DeepModel,
                                unsigned int *diagnostics_flag,
                                diag_data *   diagnostics_data);
 
