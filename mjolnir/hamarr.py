@@ -850,7 +850,8 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
                       'Pressure_mean': output.Pressure_mean[:, :, 0]}
 
             if input.RT or input.TSRT:
-                source['qheat'] = output.qheat[:, :, 0]
+                if hasattr(output,'qheat'):
+                    source['qheat'] = output.qheat[:, :, 0]
 
             if input.RT == 1:
                 source['flw_up'] = output.flw_up[:, :-1, 0] + (output.flw_up[:, 1:, 0] - output.flw_up[:, :-1, 0]) * interpz[None, :]
@@ -860,7 +861,8 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
                 source['DGf_net'] = fnet_tmp[:,:-1] + (fnet_tmp[:, 1:] - fnet_tmp[:, :-1]) * interpz[None, :]
                 source['tau_sw'] = output.tau_sw[:, :, 0]
                 source['tau_lw'] = output.tau_lw[:, :, 0]
-                source['DGqheat'] = output.DGqheat[:, :, 0]
+                if hasattr(output,'DGqheat'):
+                    source['DGqheat'] = output.DGqheat[:, :, 0]
                 source['insol'] = output.Insol[:, 0]
                 if surf == 1:
                     source['Tsurface'] = output.Tsurface[:, 0]
