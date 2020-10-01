@@ -974,13 +974,13 @@ __global__ void Heat_Diff_Impl(double *      pt_d,
             if (lev == -1) { //treat surface in matrix solution (need to offset abcd arrays by +1)
                 atmp[id * nv + lev + 1] = 0;
                 btmp[id * nv + lev + 1] =
-                    -(Rho_int_d[id * (nv + 1)] * Cp / Csurf * KH_d[id * (nv + 1) + lev + 1]
+                    -(Rho_int_d[id * (nv + 1)] * Cp * KH_d[id * (nv + 1) + lev + 1]
                           / Altitude_d[lev + 1]
-                      + 1.0 / time_step);
-                ctmp[id * nv + lev + 1] = Rho_int_d[id * (nv + 1)] * Cp / Csurf
+                      + Csurf / time_step * pow(p_surf_d[id] / P_Ref, kappa));
+                ctmp[id * nv + lev + 1] = Rho_int_d[id * (nv + 1)] * Cp
                                           * KH_d[id * (nv + 1) + lev + 1] / Altitude_d[lev + 1];
                 cpr_tmp[id * nv + lev + 1] = ctmp[id * nv + lev + 1] / btmp[id * nv + lev + 1];
-                dtmp[id * nv + lev + 1]    = -pt_surf_d[id] / time_step;
+                dtmp[id * nv + lev + 1]    = -Csurf * Tsurface_d[id] / time_step;
                 dpr_tmp[id * nv + lev + 1] = dtmp[id * nv + lev + 1] / btmp[id * nv + lev + 1];
             }
             else if (lev == 0) { //lowest layer, v at lowest boundary = 0, dz0 = Altitude0
