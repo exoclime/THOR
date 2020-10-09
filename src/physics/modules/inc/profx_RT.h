@@ -428,8 +428,6 @@ __global__ void rtm_dual_band(double *pressure_d,
         // Compute opacities
         double kappa_lw_lat;
         if (latf_lw) {
-
-
             //latitude dependence of opacity, for e.g., earth
             kappa_lw_lat =
                 kappa_lw + (kappa_lw_pole - kappa_lw) * pow(sin(lonlat_d[id * 2 + 1]), 2);

@@ -118,6 +118,7 @@ private:
     double *KM_d; // momentum diffusivity (turbulence)
     double *KM_h;
     double *Rho_int_d; //density at interfaces
+    double *p_int_d;   // pressure at interfaces
 
     double *KH_d; // heat diffusivity (turbulence)
     double *KH_h;
@@ -225,6 +226,37 @@ __global__ void Heat_Diff_Impl(double *      pt_d,
                                unsigned int *diagnostics_flag,
                                diag_data *   diagnostics_data);
 
+__global__ void Heat_Diff_Impl_EnergyEq(double *      pt_d,
+                                        double *      pressure_d,
+                                        double *      temperature_d,
+                                        double *      Rho_d,
+                                        double *      Altitude_d,
+                                        double *      Altitudeh_d,
+                                        double *      Tsurface_d,
+                                        double *      atmp,
+                                        double *      btmp,
+                                        double *      ctmp,
+                                        double *      cpr_tmp,
+                                        double *      dtmp,
+                                        double *      dpr_tmp,
+                                        double *      KH_d,
+                                        double *      Rho_int_d,
+                                        double *      pt_surf_d,
+                                        double *      p_surf_d,
+                                        double *      p_int_d,
+                                        double        time_step,
+                                        double        Rd,
+                                        double        Cp,
+                                        double        P_Ref,
+                                        double        Csurf,
+                                        double        A,
+                                        int           num,
+                                        int           nv,
+                                        int *         bl_top_lev_d,
+                                        bool          DeepModel,
+                                        unsigned int *diagnostics_flag,
+                                        diag_data *   diagnostics_data);
+
 __global__ void CalcRiB(double *pressure_d,
                         double *Rho_d,
                         double *Mh_d,
@@ -325,6 +357,7 @@ __global__ void Calc_MOlength_Cdrag_BLdepth(double *pressure_d,
                                             double  f_surf_layer,
                                             double *pt_surf_d,
                                             double *p_surf_d,
+                                            double *p_int_d,
                                             double *CD_d,
                                             double *CH_d,
                                             double *L_MO_d,
