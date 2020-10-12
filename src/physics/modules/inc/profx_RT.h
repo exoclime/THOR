@@ -535,8 +535,9 @@ __global__ void rtm_dual_band(double *pressure_d,
         for (int lev = 0; lev < nv; lev++) {
             if (gcm_off) {
                 temperature_d[id * nv + lev] = ttemp[id * nv + lev]
-                                               + 1.0 / Cp_d[id * nv + lev] * dtemp[id * nv + lev]
-                                                     / Rho_d[id * nv + lev] * timestep;
+                                               + 1.0 / (Cp_d[id * nv + lev] - Rd_d[id * nv + lev])
+                                                     * dtemp[id * nv + lev] / Rho_d[id * nv + lev]
+                                                     * timestep;
                 if (temperature_d[id * nv + lev] < 0)
                     temperature_d[id * nv + lev] = 0;
             }
