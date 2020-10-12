@@ -53,6 +53,7 @@ class input_new:
 
         self.resultsf = resultsf
         self.simID = simID
+
         for key in openh5.keys():
             setattr(self,key,openh5[key][...])
 
@@ -155,20 +156,24 @@ class output_new:
 
         # dictionary of field variables (2-D or 3-D arrays)
         # key is the key in h5 file, value is desired attribute name in this class
-        outputs = {'Rho': 'Rho', 'Pressure': 'Pressure', 'Mh': 'Mh', 'Wh': 'Wh',
-                    'Rho_mean': 'Rho_mean', 'Pressure_mean': 'Pressure_mean',
-                    'Mh_mean': 'Mh_mean', 'Wh_mean': 'Wh_mean'}
+        outputs = {'Rho': 'Rho', 'Pressure': 'Pressure', 'Mh': 'Mh', 'Wh': 'Wh'}
+
+        if input.output_mean:
+            outputs['Rho_mean'] = 'Rho_mean'
+            outputs['Pressure_mean'] = 'Pressure_mean'
+            outputs['Mh_mean'] = 'Mh_mean'
+            outputs['Wh_mean'] = 'Wh_mean'
 
         #add things to outputs that can be checked for in input or grid
-        if input.RT or input.TSRT:
-            outputs['Qheat'] = 'qheat'
+        # if input.RT or input.TSRT:
+        #     outputs['Qheat'] = 'qheat'
 
         if input.RT:
             outputs['tau'] = 'tau'  #have to be careful about slicing this (sw = ::2, lw = 1::2)
             outputs['flw_up'] = 'flw_up'
             outputs['flw_dn'] = 'flw_dn'
             outputs['fsw_dn'] = 'fsw_dn'
-            outputs['DGQheat'] = 'DGqheat'
+            # outputs['DGQheat'] = 'DGqheat'
 
         if input.TSRT:
             outputs['F_up_tot'] = 'f_up_tot'
@@ -180,6 +185,14 @@ class output_new:
             outputs['alf_spectrum'] = 'incoming_spectrum'
             outputs['lambda_wave'] = 'wavelength'
 
+        # calc volume element
+        Atot = input.A**2
+        solid_ang = grid.areasT/Atot
+        if input.DeepModel:
+            rint = ((input.A + grid.Altitudeh[1:])**3 - (input.A + grid.Altitudeh[:-1])**3) / 3.0
+        else:
+            rint = Atot*(grid.Altitudeh[1:] - grid.Altitudeh[:-1])
+        self.Vol0 = solid_ang[:, None] * rint[None, :]
 
         for t in np.arange(ntsi - 1, nts, stride):
             fileh5 = resultsf + '/esp_output_' + simID + '_' + np.str(t + 1) + '.h5'
@@ -190,6 +203,10 @@ class output_new:
 
             if t == ntsi - 1:
                 # add things to outputs dictionary that require checking for existence in openh5
+                if 'Qheat' in openh5.keys():
+                    outputs['Qheat'] = 'qheat'
+                if 'DGQheat' in openh5.keys():
+                    outputs['DGQheat'] = 'DGqheat'
                 if 'Etotal' in openh5.keys():
                     self.ConvData[t-ntsi+1] = True
                     outputs['Etotal'] = 'Etotal'
@@ -302,6 +319,9 @@ class output_new:
                         self.w0_band = np.reshape(data, (grid.point_num,grid.nv,-1,tlen))
                     elif key == 'g0_band':
                         self.g0_band = np.reshape(data, (grid.point_num,grid.nv,-1,tlen))
+                    elif key == 'Etotal' or key == 'Entropy' or key == 'AngMomz':
+                        data = np.reshape(data,(grid.point_num,grid.nv,tlen))/self.Vol0[:,:,None]
+                        setattr(self, key, data)
                     else:
                         setattr(self, key, data)
                 else:
@@ -830,7 +850,8 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
                       'Pressure_mean': output.Pressure_mean[:, :, 0]}
 
             if input.RT or input.TSRT:
-                source['qheat'] = output.qheat[:, :, 0]
+                if hasattr(output,'qheat'):
+                    source['qheat'] = output.qheat[:, :, 0]
 
             if input.RT == 1:
                 source['flw_up'] = output.flw_up[:, :-1, 0] + (output.flw_up[:, 1:, 0] - output.flw_up[:, :-1, 0]) * interpz[None, :]
@@ -840,11 +861,17 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
                 source['DGf_net'] = fnet_tmp[:,:-1] + (fnet_tmp[:, 1:] - fnet_tmp[:, :-1]) * interpz[None, :]
                 source['tau_sw'] = output.tau_sw[:, :, 0]
                 source['tau_lw'] = output.tau_lw[:, :, 0]
-                source['DGqheat'] = output.DGqheat[:, :, 0]
+                if hasattr(output,'DGqheat'):
+                    source['DGqheat'] = output.DGqheat[:, :, 0]
                 source['insol'] = output.Insol[:, 0]
                 if surf == 1:
                     source['Tsurface'] = output.Tsurface[:, 0]
                     source['Psurf'] = Psurf[:, 0]
+
+            if hasattr(output,'Etotal'):
+                source['Etotal'] = output.Etotal[:, :, 0]
+                source['Entropy'] = output.Entropy[:, :, 0]
+                source['AngMomz'] = output.AngMomz[:, :, 0]
 
             if input.TSRT:
                 source['mustar'] = output.mustar[:, 0]
