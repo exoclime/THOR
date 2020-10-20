@@ -1486,6 +1486,10 @@ __global__ void Calc_MOlength_Cdrag_BLdepth(double *pressure_d,
             CH_d[id] = 0;
         }
 
+        if (isnan(L_MO_d[id])) {
+            printf("halt!");
+        }
+
         //sensible heat flux from surface to lowest layer of atmos
         F_sens_d[id] = CH_d[id] * vh_lowest_d[id] * (pt_surf_d[id] - pt_d[id * nv]);
 

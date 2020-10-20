@@ -425,6 +425,9 @@ __global__ void rtm_dual_band(double *pressure_d,
             coszrs = zenith_angles[id];
         }
 
+        //hack for daily averaged insolation
+        coszrs = 0.25 * (1 + 1.4 * 0.25 * (1 - 3 * pow(sin(lonlat_d[id * 2 + 1]), 2)));
+
         // Compute opacities
         double kappa_lw_lat;
         if (latf_lw) {
