@@ -59,6 +59,12 @@
 #define A_THERM 0.0
 #define B_THERM 0.0
 
+//tuning parameters for local diff scheme
+#define TRANSITION_HEIGHT 1000.0
+#define ABL_ASYM_LEN 300.0
+#define FREE_ASYM_LEN 30.0
+#define E_MIN_MIX 1e-6 //no idea what this should be!
+
 enum boundary_layer_types { RAYLEIGHHS = 0, MONINOBUKHOV = 1, EKMANSPIRAL = 2 };
 
 
@@ -127,9 +133,10 @@ private:
     double *CD_h;
     double *CH_d; // surface heat-transfer coeff
     double *CH_h;
-    double *vh_lowest_d; //speed of lowest layer
-    double *pt_surf_d;   //pt of surface
-    double *p_surf_d;    //pressure at surface
+    double *vh_lowest_d;    //speed of lowest layer
+    double *pt_surf_d;      //pt of surface
+    double *p_surf_d;       //pressure at surface
+    double *counter_grad_d; // counter gradient term in heat equation
     // double *Rho_surf_d;  //density at surface
 
     double Ri_crit_config      = 1.0;
@@ -303,6 +310,7 @@ __global__ void CalcKM_KH(double *RiB_d,
                           double *bl_top_height_d,
                           int *   bl_top_lev_d,
                           double *F_sens_d,
+                          double  counter_grad_d,
                           double *vh_lowest_d,
                           double *Altitude_d,
                           double *Altitudeh_d,

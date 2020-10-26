@@ -86,6 +86,7 @@ bool boundary_layer::initialise_memory(const ESP &              esp,
     // cudaMalloc((void **)&zeta_d, esp.nvi * esp.point_num * sizeof(double));
     cudaMalloc((void **)&L_MO_d, esp.point_num * sizeof(double));
     cudaMalloc((void **)&F_sens_d, esp.point_num * sizeof(double));
+    cudaMalloc((void **)&counter_grad_d, esp.nvi * esp.point_num * sizeof(double));
 
     cudaMalloc((void **)&bl_top_lev_d, esp.point_num * sizeof(int));
     // cudaMalloc((void **)&sl_top_lev_d, esp.point_num * sizeof(int));
@@ -112,6 +113,7 @@ bool boundary_layer::initialise_memory(const ESP &              esp,
     cudaMemset(RiB_d, 0, sizeof(double) * esp.point_num);
     cudaMemset(L_MO_d, 0, sizeof(double) * esp.point_num);
     cudaMemset(F_sens_d, 0, sizeof(double) * esp.point_num);
+    cudaMemset(counter_grad_d, 0, sizeof(double) * esp.nvi * esp.point_num);
     cudaMemset(KM_d, 0, sizeof(double) * esp.point_num * esp.nvi);
     cudaMemset(KH_d, 0, sizeof(double) * esp.point_num * esp.nvi);
     cudaMemset(bl_top_lev_d, 0, sizeof(int) * esp.point_num);
@@ -1547,6 +1549,161 @@ __global__ void Calc_MOlength_Cdrag_BLdepth(double *pressure_d,
     }
 }
 
+__device__ double stability_fM_u(CN, Ri, z, z_rough) {
+    return 1.0 - 10.0 * Ri / (1 + 75.0 * CN * sqrt((z + z_rough) / z_rough) * fabs(Ri));
+}
+
+__device__ double stability_fH_u(CN, Ri, z, z_therm) {
+    return 1.0 - 15.0 * Ri / (1 + 75.0 * CN * sqrt((z + z_rough) / z_rough) * fabs(Ri));
+}
+
+__device__ double stability_f_s(Ri) {
+    return 1.0 / (1.0 + 10.0 * Ri * (1 + 8.0 * Ri));
+}
+
+__global__ void CalcGradRi(double *pressure_d,
+                           double *Rho_d,
+                           double *Mh_d,
+                           double *Tsurface_d,
+                           double *pt_d,
+                           double *Altitude_d,
+                           double *Altitudeh_d,
+                           double  Rd,
+                           double  Cp,
+                           double  P_Ref,
+                           double  Gravit,
+                           double  Ri_crit,
+                           double  z_rough,
+                           double  z_therm,
+                           double *RiGrad_d,
+                           double *pt_surf_d,
+                           double *p_surf_d,
+                           double *CD_d,
+                           double *CH_d,
+                           double *vh_lowest_d,
+                           double *Rho_int_d,
+                           int     num,
+                           int     nv) {
+
+    //gradient richardson number at intefaces
+    //need to iterate on level or not?
+
+    int id  = blockIdx.x * blockDim.x + threadIdx.x;
+    int nvi = gridDim.y;
+    int lev = blockIdx.y;
+
+    if (id < num) {
+        double kappa = Rd / Cp;
+        double pt, pt_below, pt_int;
+        double shear2, mix_length, asym_len_scale, e_mix;
+
+        if (lev == 0) {
+            //surface drag coeffs, etc
+            double extrap_surf, CN;
+            extrap_surf = -Altitude_d[lev + 1] / (Altitude_d[lev] - Altitude_d[lev + 1]);
+            p_surf_d[id] =
+                pressure_d[id * nv + lev + 1]
+                + extrap_surf * (pressure_d[id * nv + lev] - pressure_d[id * nv + lev + 1]);
+            pt_surf_d[id] = Tsurface_d[id] * pow(p_surf / P_Ref, -kappa);
+            Rho_int_d[id * nvi + lev] =
+                Rho_d[id * nv + lev + 1]
+                + extrap_surf * (Rho_d[id * nv + lev] - Rho_d[id * nv + lev + 1]);
+            pt = pow(P_Ref, kappa) * pow(pressure_d[id * nv + lev], 1.0 - kappa)
+                 / (Rd * Rho_d[id * nv + lev]);
+            shear2 =
+                pow((Mh_d[id * nv * 3 + lev * 3 + 0]) / Rho_d[id * nv + lev] / (Altitude_d[lev]), 2)
+                + pow((Mh_d[id * nv * 3 + lev * 3 + 1]) / Rho_d[id * nv + lev] / (Altitude_d[lev]),
+                      2)
+                + pow((Mh_d[id * nv * 3 + lev * 3 + 2]) / Rho_d[id * nv + lev] / (Altitude_d[lev]),
+                      2);
+            //gradient Ri number
+            if (shear2 == 0) {
+                RiGrad_d[id * nvi + lev] = LARGERiB;
+            }
+            else {
+                RiGrad_d[id * nvi + lev] =
+                    Gravit / pt * (pt - pt_surf_d[id]) / (Altitude_d[lev]) / shear2;
+            }
+            CN = pow(KVONKARMAN / log((Altitude_d[lev] + z_rough) / z_rough), 2);
+            if (RiGrad_d[id * nvi + lev] < 0) {
+                CD_d[id] =
+                    CN * stability_fM_u(CN, RiGrad_d[id * nvi + lev], Altitude_d[lev], z_rough);
+                CH_d[id] =
+                    CN * stability_fH_u(CN, RiGrad_d[id * nvi + lev], Altitude_d[lev], z_rough);
+            }
+            else {
+                CD_d[id] = CN * stability_f_s(RiGrad_d[id * nvi + lev]);
+                CH_d[id] = CN * stability_f_s(RiGrad_d[id * nvi + lev]);
+            }
+            KM_d[id * nvi + lev] = CD_d[id] * sqrt(shear2) * pow(Altitude_d[lev], 2);
+            KH_d[id * nvi + lev] = Ch_d[id] * sqrt(shear2) * pow(Altitude_d[lev], 2);
+        }
+        else if (lev == nvi) {
+            //top level of model -> K = 0
+            RiGrad_d[id * nvi + lev] = LARGERiB;
+            KH_d[id * nvi + lev]     = 0.0;
+            KM_d[id * nvi + lev]     = 0.0;
+        }
+        else {
+            //levels in between
+            pt = pow(P_Ref, kappa) * pow(pressure_d[id * nv + lev], 1.0 - kappa)
+                 / (Rd * Rho_d[id * nv + lev]);
+            pt_below = pow(P_Ref, kappa) * pow(pressure_d[id * nv + lev - 1], 1.0 - kappa)
+                       / (Rd * Rho_d[id * nv + lev - 1]);
+            pt_int = pt_below
+                     + (pt - pt_below) * (Altitudeh_d[lev] - Altitude_d[lev - 1])
+                           / (Altitude_d[lev] - Altitude_d[lev - 1]);
+            Rho_int_d[id * nvi + lev] = Rho_d[id * nv + lev - 1]
+                                        + (Rho_d[id * nv + lev] - Rho_d[id * nv + lev - 1])
+                                              * (Altitudeh_d[lev] - Altitude_d[lev - 1])
+                                              / (Altitude_d[lev] - Altitude_d[lev - 1]);
+            shear2 = pow((Mh_d[id * nv * 3 + lev * 3 + 0] / Rho_d[id * nv + lev]
+                          - Mh_d[id * nv * 3 + (lev - 1) * 3 + 0] / Rho_d[id * nv + lev - 1])
+                             / (Altitude_d[lev] - Altitude_d[lev - 1]),
+                         2)
+                     + pow((Mh_d[id * nv * 3 + lev * 3 + 1] / Rho_d[id * nv + lev]
+                            - Mh_d[id * nv * 3 + (lev - 1) * 3 + 1] / Rho_d[id * nv + lev - 1])
+                               / (Altitude_d[lev] - Altitude_d[lev - 1]),
+                           2)
+                     + pow((Mh_d[id * nv * 3 + lev * 3 + 2] / Rho_d[id * nv + lev]
+                            - Mh_d[id * nv * 3 + (lev - 1) * 3 + 2] / Rho_d[id * nv + lev - 1])
+                               / (Altitude_d[lev] - Atitude_d[lev - 1]),
+                           2);
+            //gradient Ri number
+            if (shear2 == 0) {
+                RiGrad_d[id * nvi + lev] = LARGERiB;
+            }
+            else {
+                RiGrad_d[id * nvi + lev] = Gravit / pt_int * (pt - pt_below)
+                                           / (Altitude_d[lev] - Altitude_d[lev - 1]) / shear2;
+            }
+
+            //asymptotic length scale (constant in BL, decays to lower constant in free atmosphere)
+            if (Altitudeh_d[lev] <= TRANSITION_HEIGHT) {
+                asym_len_scale = ABL_ASYM_LEN;
+            }
+            else {
+                asym_len_scale = FREE_ASYM_LEN
+                                 + (ABL_ASYM_LEN - FREE_ASYM_LEN)
+                                       * exp(1 - Altitudeh_d[lev] / TRANSITION_HEIGHT);
+            }
+            mix_length = pow(1.0 / KVONKARMAN / Altitudeh_d[lev] + 1.0 / asym_len_scale, -1.0);
+            if (RiGrad_d[id * nvi + lev] < Ri_crit) { // prevent nan value if RiGrad > Ri_crit
+                e_mix = pow(mix_length, 2) * shear2 * (1 - RiGrad_d[id * nvi + lev] / Ri_crit);
+            }
+            else {
+                e_mix = 0.0;
+            }
+            if (e_mix < E_MIN_MIX)
+                e_mix = E_MIN_MIX;
+            //for now, diffusivities are the same. could modify later for convective conditions
+            KH_d[id * nvi + lev] = mix_length * sqrt(e_mix);
+            KM_d[id * nvi + lev] = mix_length * sqrt(e_mix);
+        }
+    }
+}
+
+
 __global__ void CalcRiB(double *pressure_d,
                         double *Rho_d,
                         double *Mh_d,
@@ -1822,6 +1979,7 @@ __global__ void CalcKM_KH(double *RiB_d,
                           double *bl_top_height_d,
                           int *   bl_top_lev_d,
                           double *F_sens_d,
+                          double  counter_grad_d,
                           double *vh_lowest_d,
                           double *Altitude_d,
                           double *Altitudeh_d,
@@ -1842,7 +2000,8 @@ __global__ void CalcKM_KH(double *RiB_d,
         if (lev == 0) { // coefficient at surface
             KM_d[id * (nvi) + lev] = CD_d[id] * vh_lowest_d[id] * Altitude_d[lev];
             // this is the only place CH is used?
-            KH_d[id * (nvi) + lev] = CH_d[id] * vh_lowest_d[id] * Altitude_d[lev];
+            KH_d[id * (nvi) + lev]         = CH_d[id] * vh_lowest_d[id] * Altitude_d[lev];
+            counter_grad_d[id * nvi + lev] = 0.0;
         }
         else {
             //factor common to all coeffs above first layer
@@ -1875,6 +2034,7 @@ __global__ void CalcKM_KH(double *RiB_d,
                                + Altitudeh_d[lev] / L_MO_d[id] / Ri_crit); //scales with CD, not CH
                     }
                 }
+                counter_grad_d[id * nvi + lev] = 0.0;
             }
             else if (Altitudeh_d[lev] <= bl_top_height_d[id]) { //outer layer
                 if (RiB_d[id] < 0) {                            //unstable
@@ -1894,16 +2054,23 @@ __global__ void CalcKM_KH(double *RiB_d,
                     //velocity scale for heat mixing
                     wt = wm / Pr;
 
+                    counter_grad_d[id * nvi + lev] =
+                        A_THERM * wstar * F_sens_d[id] / (pow(wm, 2) * bl_top_height_d[id]);
+
                     KM_d[id * nvi + lev] = kvk_z_scale * wm;
                     KH_d[id * nvi + lev] = kvk_z_scale * wt;
                     if (isnan(KH_d[id * nvi + lev]) || isnan(KM_d[id * nvi + lev])) {
                         printf("%f %f %f %f", wstar, wm, Pr, wt);
+                    }
+                    if (KH_d[id * nvi + lev] > 14000.) {
+                        printf("%f %f %f %f %f", wstar, wm, Pr, wt, kvk_z_scale);
                     }
                 }
                 else if (RiB_d[id] == 0) { //neutral (same as inner layer)
                     KM_d[id * (nvi) + lev] = kvk_z_scale * sqrt(CD_d[id]) * vh_lowest_d[id];
                     KH_d[id * (nvi) + lev] =
                         kvk_z_scale * sqrt(CD_d[id]) * vh_lowest_d[id]; //scales with CD, not CH
+                    counter_grad_d[id * nvi + lev] = 0.0;
                 }
                 else { //stable (same as inner layer)
                     if (L_MO_d[id] == 0) {
@@ -1918,12 +2085,17 @@ __global__ void CalcKM_KH(double *RiB_d,
                             / (1
                                + Altitudeh_d[lev] / L_MO_d[id] / Ri_crit); //scales with CD, not CH
                     }
+                    counter_grad_d[id * nvi + lev] = 0.0;
                 }
             }
             else {
-                KM_d[id * (nvi) + lev] = 0.0;
-                KH_d[id * (nvi) + lev] = 0.0;
+                KM_d[id * (nvi) + lev]         = 0.0;
+                KH_d[id * (nvi) + lev]         = 0.0;
+                counter_grad_d[id * nvi + lev] = 0.0;
             }
+        }
+        if (KH_d[id * nvi + lev] > 14000.) {
+            printf("somethings up here");
         }
         if (isnan(KH_d[id * nvi + lev]) || isnan(KM_d[id * nvi + lev])) {
             printf("stopppp");
