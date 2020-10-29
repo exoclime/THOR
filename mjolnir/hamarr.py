@@ -194,14 +194,17 @@ class output_new:
             outputs['alf_spectrum'] = 'incoming_spectrum'
             outputs['lambda_wave'] = 'wavelength'
 
-        if input.BL and input.BL_type == 1:
-            outputs['RiB'] = 'RiB'
-            outputs['bl_top_height'] = 'bl_top_height'
-            outputs['bl_top_lev'] = 'bl_top_lev'
-            outputs['KH'] = 'KH'
-            outputs['KM'] = 'KM'
-            outputs['CD'] = 'CD'
-            outputs['CH'] = 'CH'
+        if input.BL:
+            if (input.BL_type == 1 or input.BL_type == 2):
+                outputs['RiGrad'] = 'RiGrad'
+                outputs['KH'] = 'KH'
+                outputs['KM'] = 'KM'
+                outputs['CD'] = 'CD'
+                outputs['CH'] = 'CH'
+            if (input.BL_type == 1):
+                outputs['RiB'] = 'RiB'
+                outputs['bl_top_height'] = 'bl_top_height'
+                outputs['bl_top_lev'] = 'bl_top_lev'
 
         # calc volume element
         Atot = input.A**2
@@ -901,6 +904,8 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
                 source['TSqheat'] = output.TSqheat[:, :, 0]
                 source['f_up_tot'] = output.f_up_tot[:, :-1, 0] + (output.f_up_tot[:, 1:, 0] - output.f_up_tot[:, :-1, 0]) * interpz[None, :]
                 source['f_down_tot'] = output.f_down_tot[:, :-1, 0] + (output.f_down_tot[:, 1:, 0] - output.f_down_tot[:, :-1, 0]) * interpz[None, :]
+                source['spectrum'] = output.spectrum[:, :, 0]
+                source['f_dir_tot'] = output.f_dir_tot[:, :-1, 0] + (output.f_dir_tot[:, 1:, 0] - output.f_dir_tot[:, :-1, 0]) * interpz[None, :]
             if chem == 1:
                 source['ch4'] = output.ch4[:, :, 0] / output.Rho[:,:,0]
                 source['co'] = output.co[:, :, 0]/ output.Rho[:,:,0]
@@ -936,6 +941,8 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
                 elif np.shape(source[key]) == (grid.point_num,):
                     # 2D field (e.g., insolation) -> not needed
                     interm[key] = np.zeros((d_lon[0], d_lon[1]))
+                elif key == 'spectrum':
+                    interm[key] = np.zeros((d_lon[0], d_lon[1], np.shape(output.wavelength)[0]))
                 else:
                     interm[key] = np.zeros((d_lon[0], d_lon[1], grid.nv))
 
@@ -944,6 +951,9 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
                     # 2D field (e.g., insolation)
                     tmp = np.sum(weight3[:, :] * source[key][near3], axis=1)
                     interm[key][:, :] = tmp.reshape((d_lon[0], d_lon[1]))
+                elif key == 'spectrum':
+                    tmp = np.sum(weight3[:,:,None] * source[key][near3], axis=1)
+                    interm[key][:,:,:] =  tmp.reshape((d_lon[0],d_lon[1],np.shape(output.wavelength)[0]))
                 else:
                     tmp = np.sum(weight3[:, :, None] * source[key][near3], axis=1)
                     try:
@@ -974,6 +984,8 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
             for key in interm.keys():
                 if key == 'Mh' or key == 'Mh_mean' or key == 'Pressure':
                     pass  # don't need these any further
+                elif key == 'spectrum':
+                    dest[key] = np.zeros((d_lon[0],d_lon[1],np.shape(output.wavelength)[0]))
                 elif np.shape(interm[key]) == (d_lon[0], d_lon[1]):
                     # 2D field (e.g., insolation)
                     dest[key] = np.zeros((d_lon[0], d_lon[1]))
@@ -989,7 +1001,8 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
                 if np.shape(interm[key]) == (d_lon[0], d_lon[1]):
                     # 2D field (e.g., insolation)
                     dest[key] = interm[key]
-
+                elif key == 'spectrum':
+                    dest[key] = interm[key]
                 else:
                     dest[key][:, :, :] = vertical_regrid_field(interm[key][:, :, ::-1], grid.nv, x, xnew)[:, :, ::-1]
                     if surf and mask_surf:

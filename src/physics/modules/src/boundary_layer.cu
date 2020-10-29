@@ -68,12 +68,12 @@ bool boundary_layer::initialise_memory(const ESP &              esp,
     // cudaMalloc((void **)&dvdz_tmp, 3 * esp.nvi * esp.point_num * sizeof(double));
     cudaMalloc((void **)&d2vdz2_tmp, 3 * esp.nv * esp.point_num * sizeof(double));
 
-    cudaMalloc((void **)&atmp, esp.nv * esp.point_num * sizeof(double));
-    cudaMalloc((void **)&btmp, esp.nv * esp.point_num * sizeof(double));
-    cudaMalloc((void **)&ctmp, esp.nv * esp.point_num * sizeof(double));
-    cudaMalloc((void **)&cpr_tmp, esp.nv * esp.point_num * sizeof(double));
-    cudaMalloc((void **)&dtmp, 3 * esp.nv * esp.point_num * sizeof(double));
-    cudaMalloc((void **)&dpr_tmp, 3 * esp.nv * esp.point_num * sizeof(double));
+    cudaMalloc((void **)&atmp, esp.nvi * esp.point_num * sizeof(double));
+    cudaMalloc((void **)&btmp, esp.nvi * esp.point_num * sizeof(double));
+    cudaMalloc((void **)&ctmp, esp.nvi * esp.point_num * sizeof(double));
+    cudaMalloc((void **)&cpr_tmp, esp.nvi * esp.point_num * sizeof(double));
+    cudaMalloc((void **)&dtmp, 3 * esp.nvi * esp.point_num * sizeof(double));
+    cudaMalloc((void **)&dpr_tmp, 3 * esp.nvi * esp.point_num * sizeof(double));
     cudaMalloc((void **)&RiB_d, esp.point_num * sizeof(double));
     cudaMalloc((void **)&KM_d, esp.nvi * esp.point_num * sizeof(double));
     cudaMalloc((void **)&KH_d, esp.nvi * esp.point_num * sizeof(double));
@@ -81,12 +81,15 @@ bool boundary_layer::initialise_memory(const ESP &              esp,
     cudaMalloc((void **)&CH_d, esp.point_num * sizeof(double));
     cudaMalloc((void **)&vh_lowest_d, esp.point_num * sizeof(double));
     cudaMalloc((void **)&pt_surf_d, esp.point_num * sizeof(double));
-    cudaMalloc((void **)&p_surf_d, esp.point_num * sizeof(double));
+    // cudaMalloc((void **)&p_surf_d, esp.point_num * sizeof(double));
     //cudaMalloc((void **)&Rho_surf_d, esp.point_num * sizeof(double));
     // cudaMalloc((void **)&zeta_d, esp.nvi * esp.point_num * sizeof(double));
     cudaMalloc((void **)&L_MO_d, esp.point_num * sizeof(double));
     cudaMalloc((void **)&F_sens_d, esp.point_num * sizeof(double));
     cudaMalloc((void **)&counter_grad_d, esp.nvi * esp.point_num * sizeof(double));
+
+    cudaMalloc((void **)&RiGrad_d, esp.nvi * esp.point_num * sizeof(double));
+
 
     cudaMalloc((void **)&bl_top_lev_d, esp.point_num * sizeof(int));
     // cudaMalloc((void **)&sl_top_lev_d, esp.point_num * sizeof(int));
@@ -104,12 +107,14 @@ bool boundary_layer::initialise_memory(const ESP &              esp,
     CD_h            = (double *)malloc(esp.point_num * sizeof(double));
     CH_h            = (double *)malloc(esp.point_num * sizeof(double));
 
-    cudaMemset(atmp, 0, sizeof(double) * esp.point_num * esp.nv);
-    cudaMemset(btmp, 0, sizeof(double) * esp.point_num * esp.nv);
-    cudaMemset(ctmp, 0, sizeof(double) * esp.point_num * esp.nv);
-    cudaMemset(cpr_tmp, 0, sizeof(double) * esp.point_num * esp.nv);
-    cudaMemset(dtmp, 0, sizeof(double) * 3 * esp.point_num * esp.nv);
-    cudaMemset(dpr_tmp, 0, sizeof(double) * 3 * esp.point_num * esp.nv);
+    RiGrad_h = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
+
+    cudaMemset(atmp, 0, sizeof(double) * esp.point_num * esp.nvi);
+    cudaMemset(btmp, 0, sizeof(double) * esp.point_num * esp.nvi);
+    cudaMemset(ctmp, 0, sizeof(double) * esp.point_num * esp.nvi);
+    cudaMemset(cpr_tmp, 0, sizeof(double) * esp.point_num * esp.nvi);
+    cudaMemset(dtmp, 0, sizeof(double) * 3 * esp.point_num * esp.nvi);
+    cudaMemset(dpr_tmp, 0, sizeof(double) * 3 * esp.point_num * esp.nvi);
     cudaMemset(RiB_d, 0, sizeof(double) * esp.point_num);
     cudaMemset(L_MO_d, 0, sizeof(double) * esp.point_num);
     cudaMemset(F_sens_d, 0, sizeof(double) * esp.point_num);
@@ -123,12 +128,13 @@ bool boundary_layer::initialise_memory(const ESP &              esp,
     cudaMemset(CH_d, 0, sizeof(double) * esp.point_num);
     cudaMemset(vh_lowest_d, 0, sizeof(double) * esp.point_num);
     cudaMemset(pt_surf_d, 0, sizeof(double) * esp.point_num);
-    cudaMemset(p_surf_d, 0, sizeof(double) * esp.point_num);
+    // cudaMemset(p_surf_d, 0, sizeof(double) * esp.point_num);
     // cudaMemset(Rho_surf_d, 0, sizeof(double) * esp.point_num);
     // cudaMemset(zeta_d, 0, sizeof(double) * esp.point_num * esp.nvi);
     cudaMemset(Rho_int_d, 0, sizeof(double) * esp.point_num * esp.nvi);
     cudaMemset(p_int_d, 0, sizeof(double) * esp.point_num * esp.nvi);
 
+    cudaMemset(RiGrad_d, 0, sizeof(double) * esp.nvi * esp.point_num);
 
     return true;
 }
@@ -143,6 +149,7 @@ bool boundary_layer::free_memory() {
     // free(sl_top_lev_h);
     free(CD_h);
     free(CH_h);
+    free(RiGrad_h);
 
     // cudaFree(dvdz_tmp);
     cudaFree(d2vdz2_tmp);
@@ -159,7 +166,7 @@ bool boundary_layer::free_memory() {
     cudaFree(CH_d);
     cudaFree(vh_lowest_d);
     cudaFree(pt_surf_d);
-    cudaFree(p_surf_d);
+    // cudaFree(p_surf_d);
     // cudaFree(Rho_surf_d);
     cudaFree(bl_top_lev_d);
     // cudaFree(zeta_d);
@@ -169,6 +176,7 @@ bool boundary_layer::free_memory() {
     // cudaFree(sl_top_lev_d);
     cudaFree(Rho_int_d);
     cudaFree(p_int_d);
+    cudaFree(RiGrad_d);
 
     return true;
 }
@@ -187,6 +195,10 @@ bool boundary_layer::initial_conditions(const ESP &esp, const SimulationSetup &s
     }
     else if (bl_type_str == "EkmanSpiral" || bl_type_str == "Ekman") {
         bl_type = EKMANSPIRAL;
+        config_OK &= true;
+    }
+    else if (bl_type_str == "LocalMixL" || bl_type_str == "Local") {
+        bl_type = LOCALMIXL;
         config_OK &= true;
     }
     else {
@@ -287,7 +299,6 @@ bool boundary_layer::phy_loop(ESP &                  esp,
                                                     bl_top_height_d,
                                                     f_surf_layer,
                                                     pt_surf_d,
-                                                    p_surf_d,
                                                     p_int_d,
                                                     CD_d,
                                                     CH_d,
@@ -307,6 +318,7 @@ bool boundary_layer::phy_loop(ESP &                  esp,
                                 bl_top_height_d,
                                 bl_top_lev_d,
                                 F_sens_d,
+                                counter_grad_d,
                                 vh_lowest_d,
                                 esp.Altitude_d,
                                 esp.Altitudeh_d,
@@ -327,12 +339,12 @@ bool boundary_layer::phy_loop(ESP &                  esp,
         // update pressure (implicitly) here, or add to qheat?
         cudaDeviceSynchronize();
 
-        cudaMemset(atmp, 0, sizeof(double) * esp.point_num * esp.nv);
-        cudaMemset(btmp, 0, sizeof(double) * esp.point_num * esp.nv);
-        cudaMemset(ctmp, 0, sizeof(double) * esp.point_num * esp.nv);
-        cudaMemset(cpr_tmp, 0, sizeof(double) * esp.point_num * esp.nv);
-        cudaMemset(dtmp, 0, sizeof(double) * 3 * esp.point_num * esp.nv);
-        cudaMemset(dpr_tmp, 0, sizeof(double) * 3 * esp.point_num * esp.nv);
+        cudaMemset(atmp, 0, sizeof(double) * esp.point_num * esp.nvi);
+        cudaMemset(btmp, 0, sizeof(double) * esp.point_num * esp.nvi);
+        cudaMemset(ctmp, 0, sizeof(double) * esp.point_num * esp.nvi);
+        cudaMemset(cpr_tmp, 0, sizeof(double) * esp.point_num * esp.nvi);
+        cudaMemset(dtmp, 0, sizeof(double) * 3 * esp.point_num * esp.nvi);
+        cudaMemset(dpr_tmp, 0, sizeof(double) * 3 * esp.point_num * esp.nvi);
 
 #if defined(DIAG_CHECK_BL_THOMAS_DIAG_DOM)
         //checking diagonal dominance in thomas algorithm
@@ -373,12 +385,12 @@ bool boundary_layer::phy_loop(ESP &                  esp,
         }
 #endif
 
-        cudaMemset(atmp, 0, sizeof(double) * esp.point_num * esp.nv);
-        cudaMemset(btmp, 0, sizeof(double) * esp.point_num * esp.nv);
-        cudaMemset(ctmp, 0, sizeof(double) * esp.point_num * esp.nv);
-        cudaMemset(cpr_tmp, 0, sizeof(double) * esp.point_num * esp.nv);
-        cudaMemset(dtmp, 0, sizeof(double) * 3 * esp.point_num * esp.nv);
-        cudaMemset(dpr_tmp, 0, sizeof(double) * 3 * esp.point_num * esp.nv);
+        cudaMemset(atmp, 0, sizeof(double) * esp.point_num * esp.nvi);
+        cudaMemset(btmp, 0, sizeof(double) * esp.point_num * esp.nvi);
+        cudaMemset(ctmp, 0, sizeof(double) * esp.point_num * esp.nvi);
+        cudaMemset(cpr_tmp, 0, sizeof(double) * esp.point_num * esp.nvi);
+        cudaMemset(dtmp, 0, sizeof(double) * 3 * esp.point_num * esp.nvi);
+        cudaMemset(dpr_tmp, 0, sizeof(double) * 3 * esp.point_num * esp.nvi);
 
 #if defined(DIAG_CHECK_BL_THOMAS_DIAG_DOM)
         //checking diagonal dominance in thomas algorithm
@@ -401,7 +413,6 @@ bool boundary_layer::phy_loop(ESP &                  esp,
                                                 KH_d,
                                                 Rho_int_d,
                                                 pt_surf_d,
-                                                p_surf_d,
                                                 p_int_d,
                                                 time_step,
                                                 sim.Rd,
@@ -515,6 +526,134 @@ bool boundary_layer::phy_loop(ESP &                  esp,
                                            *diag.diagnostics_global_flag,
                                            *diag.diagnostics);
     }
+    else if (bl_type == LOCALMIXL) {
+        CalcGradRi<<<NBi, NTH>>>(esp.pressure_d,
+                                 esp.Rho_d,
+                                 esp.Mh_d,
+                                 esp.Tsurface_d,
+                                 esp.pt_d,
+                                 esp.Altitude_d,
+                                 esp.Altitudeh_d,
+                                 sim.Rd,
+                                 sim.Cp,
+                                 sim.P_Ref,
+                                 sim.Gravit,
+                                 Ri_crit,
+                                 z_rough,
+                                 z_therm,
+                                 RiGrad_d,
+                                 pt_surf_d,
+                                 p_int_d,
+                                 CD_d,
+                                 CH_d,
+                                 Rho_int_d,
+                                 KM_d,
+                                 KH_d,
+                                 esp.point_num,
+                                 esp.nv);
+
+        cudaDeviceSynchronize();
+
+        cudaMemset(atmp, 0, sizeof(double) * esp.point_num * esp.nvi);
+        cudaMemset(btmp, 0, sizeof(double) * esp.point_num * esp.nvi);
+        cudaMemset(ctmp, 0, sizeof(double) * esp.point_num * esp.nvi);
+        cudaMemset(cpr_tmp, 0, sizeof(double) * esp.point_num * esp.nvi);
+        cudaMemset(dtmp, 0, sizeof(double) * 3 * esp.point_num * esp.nvi);
+        cudaMemset(dpr_tmp, 0, sizeof(double) * 3 * esp.point_num * esp.nvi);
+
+#if defined(DIAG_CHECK_BL_THOMAS_DIAG_DOM)
+        //checking diagonal dominance in thomas algorithm
+        diag.reset_flag();
+#endif
+
+        Momentum_Diff_Impl<<<NBLEV, NTH>>>(esp.Mh_d,
+                                           esp.pressure_d,
+                                           esp.Rho_d,
+                                           esp.Altitude_d,
+                                           esp.Altitudeh_d,
+                                           atmp,
+                                           btmp,
+                                           ctmp,
+                                           cpr_tmp,
+                                           dtmp,
+                                           dpr_tmp,
+                                           KM_d,
+                                           Rho_int_d,
+                                           time_step,
+                                           sim.A,
+                                           esp.point_num,
+                                           esp.nv,
+                                           bl_top_lev_d, //doesn't mean anything in this case
+                                           sim.DeepModel,
+                                           *diag.diagnostics_global_flag,
+                                           *diag.diagnostics);
+
+        cudaDeviceSynchronize();
+
+#if defined(DIAG_CHECK_BL_THOMAS_DIAG_DOM)
+        if (diag.check_flag()) {
+            diag.dump_data("bl_thomas_momentum", nstep, 0, 0, esp, esp.point_num, esp.nv);
+            unsigned int flag = diag.get_flag();
+            if ((flag & BL_THOMAS_NOT_DD) == BL_THOMAS_NOT_DD)
+                log::printf("Non diagonally dominant matrix for thomas algorithm in boundary layer "
+                            "momentum\n");
+        }
+#endif
+
+        cudaMemset(atmp, 0, sizeof(double) * esp.point_num * esp.nvi);
+        cudaMemset(btmp, 0, sizeof(double) * esp.point_num * esp.nvi);
+        cudaMemset(ctmp, 0, sizeof(double) * esp.point_num * esp.nvi);
+        cudaMemset(cpr_tmp, 0, sizeof(double) * esp.point_num * esp.nvi);
+        cudaMemset(dtmp, 0, sizeof(double) * 3 * esp.point_num * esp.nvi);
+        cudaMemset(dpr_tmp, 0, sizeof(double) * 3 * esp.point_num * esp.nvi);
+
+#if defined(DIAG_CHECK_BL_THOMAS_DIAG_DOM)
+        //checking diagonal dominance in thomas algorithm
+        diag.reset_flag();
+#endif
+
+        Heat_Diff_Impl_EnergyEq<<<NBLEV, NTH>>>(esp.pt_d,
+                                                esp.pressure_d,
+                                                esp.temperature_d,
+                                                esp.Rho_d,
+                                                esp.Altitude_d,
+                                                esp.Altitudeh_d,
+                                                esp.Tsurface_d,
+                                                atmp,
+                                                btmp,
+                                                ctmp,
+                                                cpr_tmp,
+                                                dtmp,
+                                                dpr_tmp,
+                                                KH_d,
+                                                Rho_int_d,
+                                                pt_surf_d,
+                                                p_int_d,
+                                                time_step,
+                                                sim.Rd,
+                                                sim.Cp,
+                                                sim.P_Ref,
+                                                esp.Csurf,
+                                                sim.A,
+                                                esp.point_num,
+                                                esp.nv,
+                                                bl_top_lev_d,
+                                                sim.DeepModel,
+                                                *diag.diagnostics_global_flag,
+                                                *diag.diagnostics);
+
+        cudaDeviceSynchronize();
+
+#if defined(DIAG_CHECK_BL_THOMAS_DIAG_DOM)
+        if (diag.check_flag()) {
+            diag.dump_data("bl_thomas_heateqn", nstep, 0, 0, esp, esp.point_num, esp.nv);
+            unsigned int flag = diag.get_flag();
+            if ((flag & BL_THOMAS_NOT_DD) == BL_THOMAS_NOT_DD)
+                log::printf("Non diagonally dominant matrix for thomas algorithm in boundary layer "
+                            "heat eqn\n");
+        }
+#endif
+    }
 
     return true;
 }
@@ -581,6 +720,32 @@ bool boundary_layer::store(const ESP &esp, storage &s) {
                        " ",
                        "Index of highest level in boundary layer");
     }
+    else if (bl_type == LOCALMIXL) {
+        cudaMemcpy(
+            RiGrad_h, RiGrad_d, esp.nvi * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
+        s.append_table(
+            RiGrad_h, esp.nvi * esp.point_num, "/RiGrad", " ", "gradient Richardson number");
+
+        cudaMemcpy(CD_h, CD_d, esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
+        s.append_table(CD_h, esp.point_num, "/CD", " ", "surface drag coefficient");
+
+        cudaMemcpy(CH_h, CH_d, esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
+        s.append_table(CH_h, esp.point_num, "/CH", " ", "surface heat-transfer coefficient");
+
+        cudaMemcpy(KM_h, KM_d, esp.point_num * esp.nvi * sizeof(double), cudaMemcpyDeviceToHost);
+        s.append_table(KM_h,
+                       esp.point_num * esp.nvi,
+                       "/KM",
+                       "m^2/s",
+                       "turbulent diffusion coefficient for momentum");
+
+        cudaMemcpy(KH_h, KH_d, esp.point_num * esp.nvi * sizeof(double), cudaMemcpyDeviceToHost);
+        s.append_table(KH_h,
+                       esp.point_num * esp.nvi,
+                       "/KH",
+                       "m^2/s",
+                       "turbulent diffusion coefficient for heat");
+    }
 
     return true;
 }
@@ -644,6 +809,15 @@ void boundary_layer::BLSetup(const ESP &            esp,
         z_rough      = z_rough_;
         z_therm      = z_therm_;
         f_surf_layer = f_surf_layer_;
+    }
+    else if (bl_type == LOCALMIXL) {
+        Ri_crit = Ri_crit_;
+        z_rough = z_rough_;
+        z_therm = z_therm_;
+        for (int id = 0; id < esp.point_num; id++) {
+            bl_top_lev_h[id] = esp.nv - 1; //local formulation includes entire column
+        }
+        cudaMemcpy(bl_top_lev_d, bl_top_lev_h, esp.point_num * sizeof(int), cudaMemcpyHostToDevice);
     }
     // printf("%f, %f, %d\n", zbl, esp.Altitude_h[bl_top_lev], bl_top_lev);
 }
@@ -804,80 +978,91 @@ Momentum_Diff_Impl(double *      Mh_d,
                 rlow = 1.0;
             }
             if (lev == 0) { //lowest layer, v at lowest boundary = 0, dz0 = Altitude0
-                atmp[id * nv + lev] = 0;
-                btmp[id * nv + lev] = -(1.0 / (Altitudeh_d[lev + 1] - Altitudeh_d[lev])
-                                            * (pow(rup, 2) * Rho_int_d[id * (nv + 1) + lev + 1]
-                                                   * KM_d[id * (nv + 1) + lev + 1]
-                                                   / (Altitude_d[lev + 1] - Altitude_d[lev])
-                                               + pow(rlow, 2) * Rho_int_d[id * (nv + 1) + lev]
-                                                     * KM_d[id * (nv + 1) + lev] / Altitude_d[lev])
-                                        + Rho_d[id * nv + lev] / time_step);
-                ctmp[id * nv + lev] = pow(rup, 2) * Rho_int_d[id * (nv + 1) + lev + 1]
-                                      * KM_d[id * (nv + 1) + lev + 1]
-                                      / ((Altitudeh_d[lev + 1] - Altitudeh_d[lev])
-                                         * (Altitude_d[lev + 1] - Altitude_d[lev]));
-                cpr_tmp[id * nv + lev] = ctmp[id * nv + lev] / btmp[id * nv + lev];
+                atmp[id * (nv + 1) + lev] = 0;
+                btmp[id * (nv + 1) + lev] =
+                    -(1.0 / (Altitudeh_d[lev + 1] - Altitudeh_d[lev])
+                          * (pow(rup, 2) * Rho_int_d[id * (nv + 1) + lev + 1]
+                                 * KM_d[id * (nv + 1) + lev + 1]
+                                 / (Altitude_d[lev + 1] - Altitude_d[lev])
+                             + pow(rlow, 2) * Rho_int_d[id * (nv + 1) + lev]
+                                   * KM_d[id * (nv + 1) + lev] / Altitude_d[lev])
+                      + Rho_d[id * nv + lev] / time_step);
+                ctmp[id * (nv + 1) + lev] = pow(rup, 2) * Rho_int_d[id * (nv + 1) + lev + 1]
+                                            * KM_d[id * (nv + 1) + lev + 1]
+                                            / ((Altitudeh_d[lev + 1] - Altitudeh_d[lev])
+                                               * (Altitude_d[lev + 1] - Altitude_d[lev]));
+                cpr_tmp[id * (nv + 1) + lev] =
+                    ctmp[id * (nv + 1) + lev] / btmp[id * (nv + 1) + lev];
                 for (int k = 0; k < 3; k++) {
-                    dtmp[id * nv * 3 + lev * 3 + k] = -Mh_d[id * 3 * nv + lev * 3 + k] / time_step;
-                    dpr_tmp[id * nv * 3 + lev * 3 + k] =
-                        dtmp[id * nv * 3 + lev * 3 + k] / btmp[id * nv + lev];
+                    dtmp[id * (nv + 1) * 3 + lev * 3 + k] =
+                        -Mh_d[id * 3 * nv + lev * 3 + k] / time_step;
+                    dpr_tmp[id * (nv + 1) * 3 + lev * 3 + k] =
+                        dtmp[id * (nv + 1) * 3 + lev * 3 + k] / btmp[id * (nv + 1) + lev];
                 }
             }
             else if (lev == bl_top_lev_d[id]) {
-                atmp[id * nv + lev] = pow(rlow, 2) * Rho_int_d[id * (nv + 1) + lev]
-                                      * KM_d[id * (nv + 1) + lev]
-                                      / ((Altitudeh_d[lev + 1] - Altitudeh_d[lev])
-                                         * (Altitude_d[lev] - Altitude_d[lev - 1]));
-                btmp[id * nv + lev]    = -(1.0 / (Altitudeh_d[lev + 1] - Altitudeh_d[lev])
-                                            * (pow(rup, 2) * Rho_int_d[id * (nv + 1) + lev + 1]
-                                                   * KM_d[id * (nv + 1) + lev + 1]
-                                                   / (Altitude_d[lev + 1] - Altitude_d[lev])
-                                               + (pow(rlow, 2) * Rho_int_d[id * (nv + 1) + lev])
-                                                     * KM_d[id * (nv + 1) + lev]
-                                                     / (Altitude_d[lev] - Altitude_d[lev - 1]))
-                                        + Rho_d[id * nv + lev] / time_step);
-                ctmp[id * nv + lev]    = 0;
-                cpr_tmp[id * nv + lev] = 0; //not used, i think
+                atmp[id * (nv + 1) + lev] = pow(rlow, 2) * Rho_int_d[id * (nv + 1) + lev]
+                                            * KM_d[id * (nv + 1) + lev]
+                                            / ((Altitudeh_d[lev + 1] - Altitudeh_d[lev])
+                                               * (Altitude_d[lev] - Altitude_d[lev - 1]));
+                btmp[id * (nv + 1) + lev] =
+                    -(1.0 / (Altitudeh_d[lev + 1] - Altitudeh_d[lev])
+                          * (pow(rup, 2) * Rho_int_d[id * (nv + 1) + lev + 1]
+                                 * KM_d[id * (nv + 1) + lev + 1]
+                                 / (Altitude_d[lev + 1] - Altitude_d[lev])
+                             + (pow(rlow, 2) * Rho_int_d[id * (nv + 1) + lev])
+                                   * KM_d[id * (nv + 1) + lev]
+                                   / (Altitude_d[lev] - Altitude_d[lev - 1]))
+                      + Rho_d[id * nv + lev] / time_step);
+                ctmp[id * (nv + 1) + lev]    = 0;
+                cpr_tmp[id * (nv + 1) + lev] = 0; //not used, i think
                 for (int k = 0; k < 3; k++) {
-                    dtmp[id * nv * 3 + lev * 3 + k] =
+                    dtmp[id * (nv + 1) * 3 + lev * 3 + k] =
                         -Mh_d[id * 3 * nv + lev * 3 + k] / time_step
                         - pow(rup, 2) * Rho_int_d[id * (nv + 1) + lev + 1]
                               * KM_d[id * (nv + 1) + lev + 1]
                               / (Altitudeh_d[lev + 1] - Altitudeh_d[lev])
                               * Mh_d[id * 3 * nv + (lev + 1) * 3 + k] / Rho_d[id * nv + lev + 1]
                               / (Altitude_d[lev + 1] - Altitude_d[lev]);
-                    dpr_tmp[id * nv * 3 + lev * 3 + k] =
-                        (dtmp[id * nv * 3 + lev * 3 + k]
-                         - atmp[id * nv + lev] * dpr_tmp[id * nv * 3 + (lev - 1) * 3 + k])
-                        / (btmp[id * nv + lev] - atmp[id * nv + lev] * cpr_tmp[id * nv + lev - 1]);
+                    dpr_tmp[id * (nv + 1) * 3 + lev * 3 + k] =
+                        (dtmp[id * (nv + 1) * 3 + lev * 3 + k]
+                         - atmp[id * (nv + 1) + lev]
+                               * dpr_tmp[id * (nv + 1) * 3 + (lev - 1) * 3 + k])
+                        / (btmp[id * (nv + 1) + lev]
+                           - atmp[id * (nv + 1) + lev] * cpr_tmp[id * (nv + 1) + lev - 1]);
                 }
             }
             else {
-                atmp[id * nv + lev] = pow(rlow, 2) * Rho_int_d[id * (nv + 1) + lev]
-                                      * KM_d[id * (nv + 1) + lev]
-                                      / ((Altitudeh_d[lev + 1] - Altitudeh_d[lev])
-                                         * (Altitude_d[lev] - Altitude_d[lev - 1]));
-                btmp[id * nv + lev] = -(1.0 / (Altitudeh_d[lev + 1] - Altitudeh_d[lev])
-                                            * (pow(rup, 2) * Rho_int_d[id * (nv + 1) + lev + 1]
-                                                   * KM_d[id * (nv + 1) + lev + 1]
-                                                   / (Altitude_d[lev + 1] - Altitude_d[lev])
-                                               + pow(rlow, 2) * Rho_int_d[id * (nv + 1) + lev]
-                                                     * KM_d[id * (nv + 1) + lev]
-                                                     / (Altitude_d[lev] - Altitude_d[lev - 1]))
-                                        + Rho_d[id * nv + lev] / time_step);
-                ctmp[id * nv + lev] = pow(rup, 2) * Rho_int_d[id * (nv + 1) + lev + 1]
-                                      * KM_d[id * (nv + 1) + lev + 1]
-                                      / ((Altitudeh_d[lev + 1] - Altitudeh_d[lev])
-                                         * (Altitude_d[lev + 1] - Altitude_d[lev]));
-                cpr_tmp[id * nv + lev] =
-                    ctmp[id * nv + lev]
-                    / (btmp[id * nv + lev] - atmp[id * nv + lev] * cpr_tmp[id * nv + lev - 1]);
+                atmp[id * (nv + 1) + lev] = pow(rlow, 2) * Rho_int_d[id * (nv + 1) + lev]
+                                            * KM_d[id * (nv + 1) + lev]
+                                            / ((Altitudeh_d[lev + 1] - Altitudeh_d[lev])
+                                               * (Altitude_d[lev] - Altitude_d[lev - 1]));
+                btmp[id * (nv + 1) + lev] =
+                    -(1.0 / (Altitudeh_d[lev + 1] - Altitudeh_d[lev])
+                          * (pow(rup, 2) * Rho_int_d[id * (nv + 1) + lev + 1]
+                                 * KM_d[id * (nv + 1) + lev + 1]
+                                 / (Altitude_d[lev + 1] - Altitude_d[lev])
+                             + pow(rlow, 2) * Rho_int_d[id * (nv + 1) + lev]
+                                   * KM_d[id * (nv + 1) + lev]
+                                   / (Altitude_d[lev] - Altitude_d[lev - 1]))
+                      + Rho_d[id * nv + lev] / time_step);
+                ctmp[id * (nv + 1) + lev] = pow(rup, 2) * Rho_int_d[id * (nv + 1) + lev + 1]
+                                            * KM_d[id * (nv + 1) + lev + 1]
+                                            / ((Altitudeh_d[lev + 1] - Altitudeh_d[lev])
+                                               * (Altitude_d[lev + 1] - Altitude_d[lev]));
+                cpr_tmp[id * (nv + 1) + lev] =
+                    ctmp[id * (nv + 1) + lev]
+                    / (btmp[id * (nv + 1) + lev]
+                       - atmp[id * (nv + 1) + lev] * cpr_tmp[id * (nv + 1) + lev - 1]);
                 for (int k = 0; k < 3; k++) {
-                    dtmp[id * nv * 3 + lev * 3 + k] = -Mh_d[id * 3 * nv + lev * 3 + k] / time_step;
-                    dpr_tmp[id * nv * 3 + lev * 3 + k] =
-                        (dtmp[id * nv * 3 + lev * 3 + k]
-                         - atmp[id * nv + lev] * dpr_tmp[id * nv * 3 + (lev - 1) * 3 + k])
-                        / (btmp[id * nv + lev] - atmp[id * nv + lev] * cpr_tmp[id * nv + lev - 1]);
+                    dtmp[id * (nv + 1) * 3 + lev * 3 + k] =
+                        -Mh_d[id * 3 * nv + lev * 3 + k] / time_step;
+                    dpr_tmp[id * (nv + 1) * 3 + lev * 3 + k] =
+                        (dtmp[id * (nv + 1) * 3 + lev * 3 + k]
+                         - atmp[id * (nv + 1) + lev]
+                               * dpr_tmp[id * (nv + 1) * 3 + (lev - 1) * 3 + k])
+                        / (btmp[id * (nv + 1) + lev]
+                           - atmp[id * (nv + 1) + lev] * cpr_tmp[id * (nv + 1) + lev - 1]);
                 }
             }
 
@@ -887,14 +1072,15 @@ Momentum_Diff_Impl(double *      Mh_d,
             diagnostics_data[id * nv + lev].data = make_double4(0.0, 0.0, 0.0, 0.0);
             //check if matrix diagonally dominant
             if (lev < bl_top_lev_d[id] + 1) {
-                if (!(fabs(btmp[id * nv + lev])
+                if (!(fabs(btmp[id * (nv + 1) + lev])
                       > THOMAS_DIAG_DOM_FACTOR
-                            * (fabs(atmp[id * nv + lev]) + fabs(ctmp[id * nv + lev])))) {
+                            * (fabs(atmp[id * (nv + 1) + lev])
+                               + fabs(ctmp[id * (nv + 1) + lev])))) {
                     atomicOr(diagnostics_flag, BL_THOMAS_NOT_DD);
                     diagnostics_data[id * nv + lev].flag   = BL_THOMAS_NOT_DD;
-                    diagnostics_data[id * nv + lev].data.x = atmp[id * nv + lev];
-                    diagnostics_data[id * nv + lev].data.y = btmp[id * nv + lev];
-                    diagnostics_data[id * nv + lev].data.z = ctmp[id * nv + lev];
+                    diagnostics_data[id * nv + lev].data.x = atmp[id * (nv + 1) + lev];
+                    diagnostics_data[id * nv + lev].data.y = btmp[id * (nv + 1) + lev];
+                    diagnostics_data[id * nv + lev].data.z = ctmp[id * (nv + 1) + lev];
                     // printf("Warning! Thomas algorithm in boundary layer mom. equation unstable\n");
                 }
             }
@@ -909,12 +1095,12 @@ Momentum_Diff_Impl(double *      Mh_d,
             for (int k = 0; k < 3; k++) {
                 if (lev == bl_top_lev_d[id]) {
                     Mh_d[id * nv * 3 + lev * 3 + k] =
-                        dpr_tmp[id * nv * 3 + lev * 3 + k] * Rho_d[id * nv + lev];
+                        dpr_tmp[id * (nv + 1) * 3 + lev * 3 + k] * Rho_d[id * nv + lev];
                 }
                 else {
                     Mh_d[id * nv * 3 + lev * 3 + k] =
-                        (dpr_tmp[id * nv * 3 + lev * 3 + k]
-                         - cpr_tmp[id * nv + lev] * Mh_d[id * nv * 3 + (lev + 1) * 3 + k]
+                        (dpr_tmp[id * (nv + 1) * 3 + lev * 3 + k]
+                         - cpr_tmp[id * (nv + 1) + lev] * Mh_d[id * nv * 3 + (lev + 1) * 3 + k]
                                / Rho_d[id * nv + lev + 1])
                         * Rho_d[id * nv + lev];
                 }
@@ -1131,7 +1317,6 @@ __global__ void Heat_Diff_Impl_EnergyEq(double *      pt_d,
                                         double *      KH_d,
                                         double *      Rho_int_d,
                                         double *      pt_surf_d,
-                                        double *      p_surf_d,
                                         double *      p_int_d,
                                         double        time_step,
                                         double        Rd,
@@ -1172,56 +1357,66 @@ __global__ void Heat_Diff_Impl_EnergyEq(double *      pt_d,
                 rlow = 1.0;
             }
             if (lev == -1) { //treat surface in matrix solution (need to offset abcd arrays by +1)
-                atmp[id * nv + lev + 1] = 0;
-                btmp[id * nv + lev + 1] =
+                atmp[id * (nv + 1) + lev + 1] = 0;
+                btmp[id * (nv + 1) + lev + 1] =
                     -(Cp / Csurf * Rho_int_d[id * (nv + 1)] * KH_d[id * (nv + 1) + lev + 1]
                           / Altitude_d[lev + 1]
                       + 1.0 / time_step);
-                ctmp[id * nv + lev + 1] = Cp / Csurf * Rho_int_d[id * (nv + 1)]
-                                          * KH_d[id * (nv + 1) + lev + 1] / Altitude_d[lev + 1];
-                cpr_tmp[id * nv + lev + 1] = ctmp[id * nv + lev + 1] / btmp[id * nv + lev + 1];
-                dtmp[id * nv + lev + 1]    = -pt_surf_d[id] / time_step;
-                dpr_tmp[id * nv + lev + 1] = dtmp[id * nv + lev + 1] / btmp[id * nv + lev + 1];
+                ctmp[id * (nv + 1) + lev + 1] = Cp / Csurf * Rho_int_d[id * (nv + 1)]
+                                                * KH_d[id * (nv + 1) + lev + 1]
+                                                / Altitude_d[lev + 1];
+                cpr_tmp[id * (nv + 1) + lev + 1] =
+                    ctmp[id * (nv + 1) + lev + 1] / btmp[id * (nv + 1) + lev + 1];
+                dtmp[id * (nv + 1) + lev + 1] = -pt_surf_d[id] / time_step;
+                dpr_tmp[id * (nv + 1) + lev + 1] =
+                    dtmp[id * (nv + 1) + lev + 1] / btmp[id * (nv + 1) + lev + 1];
             }
             else if (lev == 0) { //lowest layer, v at lowest boundary = 0, dz0 = Altitude0
-                atmp[id * nv + lev + 1] =
+                atmp[id * (nv + 1) + lev + 1] =
                     Cp / Cv * pow(rlow, 2) * Rho_int_d[id * (nv + 1) + lev]
                     * KH_d[id * (nv + 1) + lev] / (Altitudeh_d[lev + 1] - Altitudeh_d[lev])
                     / Altitude_d[lev] * pow(p_int_d[id * (nv + 1) + lev] / P_Ref, kappa);
-                ctmp[id * nv + lev + 1] = Cp / Cv * pow(rup, 2) * Rho_int_d[id * (nv + 1) + lev + 1]
-                                          * KH_d[id * (nv + 1) + lev + 1]
-                                          / ((Altitudeh_d[lev + 1] - Altitudeh_d[lev])
-                                             * (Altitude_d[lev + 1] - Altitude_d[lev]))
-                                          * pow(p_int_d[id * (nv + 1) + lev + 1] / P_Ref, kappa);
-                btmp[id * nv + lev + 1] = -(atmp[id * nv + lev + 1] + ctmp[id * nv + lev + 1]
-                                            + Rho_d[id * nv + lev] / time_step
-                                                  * pow(pressure_d[id * nv + lev] / P_Ref, kappa));
-                cpr_tmp[id * nv + lev + 1] =
-                    ctmp[id * nv + lev + 1]
-                    / (btmp[id * nv + lev + 1] - atmp[id * nv + lev + 1] * cpr_tmp[id * nv + lev]);
-                dtmp[id * nv + lev + 1] = -Rho_d[id * nv + lev] * pt_d[id * nv + lev] / time_step
-                                          * pow(pressure_d[id * nv + lev] / P_Ref, kappa);
-                dpr_tmp[id * nv + lev + 1] =
-                    (dtmp[id * nv + lev + 1] - atmp[id * nv + lev + 1] * dpr_tmp[id * nv + lev])
-                    / (btmp[id * nv + lev + 1] - atmp[id * nv + lev + 1] * cpr_tmp[id * nv + lev]);
+                ctmp[id * (nv + 1) + lev + 1] =
+                    Cp / Cv * pow(rup, 2) * Rho_int_d[id * (nv + 1) + lev + 1]
+                    * KH_d[id * (nv + 1) + lev + 1]
+                    / ((Altitudeh_d[lev + 1] - Altitudeh_d[lev])
+                       * (Altitude_d[lev + 1] - Altitude_d[lev]))
+                    * pow(p_int_d[id * (nv + 1) + lev + 1] / P_Ref, kappa);
+                btmp[id * (nv + 1) + lev + 1] =
+                    -(atmp[id * (nv + 1) + lev + 1] + ctmp[id * (nv + 1) + lev + 1]
+                      + Rho_d[id * nv + lev] / time_step
+                            * pow(pressure_d[id * nv + lev] / P_Ref, kappa));
+                cpr_tmp[id * (nv + 1) + lev + 1] =
+                    ctmp[id * (nv + 1) + lev + 1]
+                    / (btmp[id * (nv + 1) + lev + 1]
+                       - atmp[id * (nv + 1) + lev + 1] * cpr_tmp[id * (nv + 1) + lev]);
+                dtmp[id * (nv + 1) + lev + 1] = -Rho_d[id * nv + lev] * pt_d[id * nv + lev]
+                                                / time_step
+                                                * pow(pressure_d[id * nv + lev] / P_Ref, kappa);
+                dpr_tmp[id * (nv + 1) + lev + 1] =
+                    (dtmp[id * (nv + 1) + lev + 1]
+                     - atmp[id * (nv + 1) + lev + 1] * dpr_tmp[id * (nv + 1) + lev])
+                    / (btmp[id * (nv + 1) + lev + 1]
+                       - atmp[id * (nv + 1) + lev + 1] * cpr_tmp[id * (nv + 1) + lev]);
             }
             else if (lev == bl_top_lev_d[id]) {
-                atmp[id * nv + lev + 1] = Cp / Cv * pow(rlow, 2) * Rho_int_d[id * (nv + 1) + lev]
-                                          * KH_d[id * (nv + 1) + lev]
-                                          / ((Altitudeh_d[lev + 1] - Altitudeh_d[lev])
-                                             * (Altitude_d[lev] - Altitude_d[lev - 1]))
-                                          * pow(p_int_d[id * (nv + 1) + lev] / P_Ref, kappa);
-                btmp[id * nv + lev + 1] =
+                atmp[id * (nv + 1) + lev + 1] = Cp / Cv * pow(rlow, 2)
+                                                * Rho_int_d[id * (nv + 1) + lev]
+                                                * KH_d[id * (nv + 1) + lev]
+                                                / ((Altitudeh_d[lev + 1] - Altitudeh_d[lev])
+                                                   * (Altitude_d[lev] - Altitude_d[lev - 1]))
+                                                * pow(p_int_d[id * (nv + 1) + lev] / P_Ref, kappa);
+                btmp[id * (nv + 1) + lev + 1] =
                     -(Cp / Cv / (Altitudeh_d[lev + 1] - Altitudeh_d[lev]) * pow(rup, 2)
                           * Rho_int_d[id * (nv + 1) + lev + 1] * KH_d[id * (nv + 1) + lev + 1]
                           / (Altitude_d[lev + 1] - Altitude_d[lev])
                           * pow(p_int_d[id * (nv + 1) + lev + 1] / P_Ref, kappa)
-                      + atmp[id * nv + lev + 1]
+                      + atmp[id * (nv + 1) + lev + 1]
                       + Rho_d[id * nv + lev] / time_step
                             * pow(pressure_d[id * nv + lev] / P_Ref, kappa));
-                ctmp[id * nv + lev + 1]    = 0;
-                cpr_tmp[id * nv + lev + 1] = 0; //not used, i think
-                dtmp[id * nv + lev + 1] =
+                ctmp[id * (nv + 1) + lev + 1]    = 0;
+                cpr_tmp[id * (nv + 1) + lev + 1] = 0; //not used, i think
+                dtmp[id * (nv + 1) + lev + 1] =
                     -Rho_d[id * nv + lev] * pt_d[id * nv + lev] / time_step
                         * pow(pressure_d[id * nv + lev] / P_Ref, kappa)
                     - Cp / Cv * pow(rup, 2) * Rho_int_d[id * (nv + 1) + lev + 1]
@@ -1229,32 +1424,41 @@ __global__ void Heat_Diff_Impl_EnergyEq(double *      pt_d,
                           / (Altitudeh_d[lev + 1] - Altitudeh_d[lev]) * pt_d[id * nv + (lev + 1)]
                           / (Altitude_d[lev + 1] - Altitude_d[lev])
                           * pow(p_int_d[id * (nv + 1) + lev + 1] / P_Ref, kappa);
-                dpr_tmp[id * nv + lev + 1] =
-                    (dtmp[id * nv + lev + 1] - atmp[id * nv + lev + 1] * dpr_tmp[id * nv + (lev)])
-                    / (btmp[id * nv + lev + 1] - atmp[id * nv + lev + 1] * cpr_tmp[id * nv + lev]);
+                dpr_tmp[id * (nv + 1) + lev + 1] =
+                    (dtmp[id * (nv + 1) + lev + 1]
+                     - atmp[id * (nv + 1) + lev + 1] * dpr_tmp[id * (nv + 1) + (lev)])
+                    / (btmp[id * (nv + 1) + lev + 1]
+                       - atmp[id * (nv + 1) + lev + 1] * cpr_tmp[id * (nv + 1) + lev]);
             }
             else {
-                atmp[id * nv + lev + 1] = Cp / Cv * pow(rlow, 2) * Rho_int_d[id * (nv + 1) + lev]
-                                          * KH_d[id * (nv + 1) + lev]
-                                          / ((Altitudeh_d[lev + 1] - Altitudeh_d[lev])
-                                             * (Altitude_d[lev] - Altitude_d[lev - 1]))
-                                          * pow(p_int_d[id * (nv + 1) + lev] / P_Ref, kappa);
-                ctmp[id * nv + lev + 1] = Cp / Cv * pow(rup, 2) * Rho_int_d[id * (nv + 1) + lev + 1]
-                                          * KH_d[id * (nv + 1) + lev + 1]
-                                          / ((Altitudeh_d[lev + 1] - Altitudeh_d[lev])
-                                             * (Altitude_d[lev + 1] - Altitude_d[lev]))
-                                          * pow(p_int_d[id * (nv + 1) + lev + 1] / P_Ref, kappa);
-                btmp[id * nv + lev + 1] = -(atmp[id * nv + lev + 1] + ctmp[id * nv + lev + 1]
-                                            + Rho_d[id * nv + lev] / time_step
-                                                  * pow(pressure_d[id * nv + lev] / P_Ref, kappa));
-                cpr_tmp[id * nv + lev + 1] =
-                    ctmp[id * nv + lev + 1]
-                    / (btmp[id * nv + lev + 1] - atmp[id * nv + lev + 1] * cpr_tmp[id * nv + lev]);
-                dtmp[id * nv + lev + 1] = -Rho_d[id * nv + lev] * pt_d[id * nv + lev] / time_step
-                                          * pow(pressure_d[id * nv + lev] / P_Ref, kappa);
-                dpr_tmp[id * nv + lev + 1] =
-                    (dtmp[id * nv + lev + 1] - atmp[id * nv + lev + 1] * dpr_tmp[id * nv + (lev)])
-                    / (btmp[id * nv + lev + 1] - atmp[id * nv + lev + 1] * cpr_tmp[id * nv + lev]);
+                atmp[id * (nv + 1) + lev + 1] = Cp / Cv * pow(rlow, 2)
+                                                * Rho_int_d[id * (nv + 1) + lev]
+                                                * KH_d[id * (nv + 1) + lev]
+                                                / ((Altitudeh_d[lev + 1] - Altitudeh_d[lev])
+                                                   * (Altitude_d[lev] - Altitude_d[lev - 1]))
+                                                * pow(p_int_d[id * (nv + 1) + lev] / P_Ref, kappa);
+                ctmp[id * (nv + 1) + lev + 1] =
+                    Cp / Cv * pow(rup, 2) * Rho_int_d[id * (nv + 1) + lev + 1]
+                    * KH_d[id * (nv + 1) + lev + 1]
+                    / ((Altitudeh_d[lev + 1] - Altitudeh_d[lev])
+                       * (Altitude_d[lev + 1] - Altitude_d[lev]))
+                    * pow(p_int_d[id * (nv + 1) + lev + 1] / P_Ref, kappa);
+                btmp[id * (nv + 1) + lev + 1] =
+                    -(atmp[id * (nv + 1) + lev + 1] + ctmp[id * (nv + 1) + lev + 1]
+                      + Rho_d[id * nv + lev] / time_step
+                            * pow(pressure_d[id * nv + lev] / P_Ref, kappa));
+                cpr_tmp[id * (nv + 1) + lev + 1] =
+                    ctmp[id * (nv + 1) + lev + 1]
+                    / (btmp[id * (nv + 1) + lev + 1]
+                       - atmp[id * (nv + 1) + lev + 1] * cpr_tmp[id * (nv + 1) + lev]);
+                dtmp[id * (nv + 1) + lev + 1] = -Rho_d[id * nv + lev] * pt_d[id * nv + lev]
+                                                / time_step
+                                                * pow(pressure_d[id * nv + lev] / P_Ref, kappa);
+                dpr_tmp[id * (nv + 1) + lev + 1] =
+                    (dtmp[id * (nv + 1) + lev + 1]
+                     - atmp[id * (nv + 1) + lev + 1] * dpr_tmp[id * (nv + 1) + (lev)])
+                    / (btmp[id * (nv + 1) + lev + 1]
+                       - atmp[id * (nv + 1) + lev + 1] * cpr_tmp[id * (nv + 1) + lev]);
             }
 #ifdef DIAG_CHECK_BL_THOMAS_DIAG_DOM
             //reset values
@@ -1262,14 +1466,15 @@ __global__ void Heat_Diff_Impl_EnergyEq(double *      pt_d,
             diagnostics_data[id * nv + lev + 1].data = make_double4(0.0, 0.0, 0.0, 0.0);
             //check if matrix diagonally dominant
             if (lev < bl_top_lev_d[id] + 1) {
-                if (!(fabs(btmp[id * nv + lev + 1])
+                if (!(fabs(btmp[id * (nv + 1) + lev + 1])
                       > THOMAS_DIAG_DOM_FACTOR
-                            * (fabs(atmp[id * nv + lev + 1]) + fabs(ctmp[id * nv + lev + 1])))) {
+                            * (fabs(atmp[id * (nv + 1) + lev + 1])
+                               + fabs(ctmp[id * (nv + 1) + lev + 1])))) {
                     atomicOr(diagnostics_flag, BL_THOMAS_NOT_DD);
                     diagnostics_data[id * nv + lev + 1].flag   = BL_THOMAS_NOT_DD;
-                    diagnostics_data[id * nv + lev + 1].data.x = atmp[id * nv + lev + 1];
-                    diagnostics_data[id * nv + lev + 1].data.y = btmp[id * nv + lev + 1];
-                    diagnostics_data[id * nv + lev + 1].data.z = ctmp[id * nv + lev + 1];
+                    diagnostics_data[id * nv + lev + 1].data.x = atmp[id * (nv + 1) + lev + 1];
+                    diagnostics_data[id * nv + lev + 1].data.y = btmp[id * (nv + 1) + lev + 1];
+                    diagnostics_data[id * nv + lev + 1].data.z = ctmp[id * (nv + 1) + lev + 1];
                 }
             }
 #endif
@@ -1277,11 +1482,12 @@ __global__ void Heat_Diff_Impl_EnergyEq(double *      pt_d,
         for (lev = bl_top_lev_d[id]; lev >= 0; lev--) {
             //backward sweep
             if (lev == bl_top_lev_d[id]) {
-                pt_d[id * nv + lev] = dpr_tmp[id * nv + lev + 1];
+                pt_d[id * nv + lev] = dpr_tmp[id * (nv + 1) + lev + 1];
             }
             else {
-                pt_d[id * nv + lev] = (dpr_tmp[id * nv + lev + 1]
-                                       - cpr_tmp[id * nv + lev + 1] * pt_d[id * nv + (lev + 1)]);
+                pt_d[id * nv + lev] =
+                    (dpr_tmp[id * (nv + 1) + lev + 1]
+                     - cpr_tmp[id * (nv + 1) + lev + 1] * pt_d[id * nv + (lev + 1)]);
             }
             // convert back to pressure
             // pressure_d[id * nv + lev] =
@@ -1295,11 +1501,12 @@ __global__ void Heat_Diff_Impl_EnergyEq(double *      pt_d,
             pressure_d[id * nv + lev] = temperature_d[id * nv + lev] * (Rd * Rho_d[id * nv + lev]);
         }
 
-        pt_surf_d[id] = (dpr_tmp[id * nv + 0] - cpr_tmp[id * nv + 0] * pt_d[id * nv + 0]);
+        pt_surf_d[id] =
+            (dpr_tmp[id * (nv + 1) + 0] - cpr_tmp[id * (nv + 1) + 0] * pt_d[id * nv + 0]);
         //Tsurface_d[id] =
         //pow(Rho_int_d[id * (nv + 1) + 0] * Rd / P_Ref, Rd / Cv) * pow(pt_surf_d[id], Cp / Cv);
         // p_surf_d[id]   = Rho_surf_d[id] * Rd * Tsurface_d[id];
-        Tsurface_d[id] = pt_surf_d[id] * pow(p_surf_d[id] / P_Ref, kappa);
+        Tsurface_d[id] = pt_surf_d[id] * pow(p_int_d[id * (nv + 1) + 0] / P_Ref, kappa);
         // Rho_surf_d[id] = p_surf_d[id] / (Rd * Tsurface_d[id]);
         //Tsurface_d[id] -= Fsen / Csurf * time_step;
     }
@@ -1404,7 +1611,6 @@ __global__ void Calc_MOlength_Cdrag_BLdepth(double *pressure_d,
                                             double *bl_top_height_d,
                                             double  f_surf_layer,
                                             double *pt_surf_d,
-                                            double *p_surf_d,
                                             double *p_int_d,
                                             double *CD_d,
                                             double *CH_d,
@@ -1431,10 +1637,10 @@ __global__ void Calc_MOlength_Cdrag_BLdepth(double *pressure_d,
 
         //extrapolate some quantities to surface
         extrap_surf = -Altitude_d[1] / (Altitude_d[0] - Altitude_d[1]);
-        p_surf_d[id] =
+        p_int_d[id * (nv + 1) + 0] =
             pressure_d[id * nv + 1] + extrap_surf * (pressure_d[id * nv] - pressure_d[id * nv + 1]);
-        p_int_d[id * (nv + 1)] = p_surf_d[id]; //may want to eliminate p_surf_d
-        pt_surf_d[id]          = Tsurface_d[id] * pow(p_surf_d[id] / P_Ref, -kappa);
+        // p_int_d[id * (nv + 1)] = p_surf_d[id]; //may want to eliminate p_surf_d
+        pt_surf_d[id] = Tsurface_d[id] * pow(p_int_d[id * (nv + 1) + 0] / P_Ref, -kappa);
         Rho_int_d[id * (nv + 1)] =
             Rho_d[id * nv + 1] + extrap_surf * (Rho_d[id * nv] - Rho_d[id * nv + 1]);
 
@@ -1549,15 +1755,15 @@ __global__ void Calc_MOlength_Cdrag_BLdepth(double *pressure_d,
     }
 }
 
-__device__ double stability_fM_u(CN, Ri, z, z_rough) {
-    return 1.0 - 10.0 * Ri / (1 + 75.0 * CN * sqrt((z + z_rough) / z_rough) * fabs(Ri));
+__device__ double stability_fM_u(double CN, double Ri, double z, double z_rough) {
+    return 1.0 - 10.0 * Ri / (1 + 75.0 * CN * sqrt((z + z_rough) / z_rough * fabs(Ri)));
 }
 
-__device__ double stability_fH_u(CN, Ri, z, z_therm) {
-    return 1.0 - 15.0 * Ri / (1 + 75.0 * CN * sqrt((z + z_rough) / z_rough) * fabs(Ri));
+__device__ double stability_fH_u(double CN, double Ri, double z, double z_rough) {
+    return 1.0 - 15.0 * Ri / (1 + 75.0 * CN * sqrt((z + z_rough) / z_rough * fabs(Ri)));
 }
 
-__device__ double stability_f_s(Ri) {
+__device__ double stability_f_s(double Ri) {
     return 1.0 / (1.0 + 10.0 * Ri * (1 + 8.0 * Ri));
 }
 
@@ -1577,11 +1783,12 @@ __global__ void CalcGradRi(double *pressure_d,
                            double  z_therm,
                            double *RiGrad_d,
                            double *pt_surf_d,
-                           double *p_surf_d,
+                           double *p_int_d,
                            double *CD_d,
                            double *CH_d,
-                           double *vh_lowest_d,
                            double *Rho_int_d,
+                           double *KM_d,
+                           double *KH_d,
                            int     num,
                            int     nv) {
 
@@ -1594,22 +1801,22 @@ __global__ void CalcGradRi(double *pressure_d,
 
     if (id < num) {
         double kappa = Rd / Cp;
-        double pt, pt_below, pt_int;
+        double pt_below, pt_int;
         double shear2, mix_length, asym_len_scale, e_mix;
 
         if (lev == 0) {
             //surface drag coeffs, etc
             double extrap_surf, CN;
             extrap_surf = -Altitude_d[lev + 1] / (Altitude_d[lev] - Altitude_d[lev + 1]);
-            p_surf_d[id] =
+            p_int_d[id * nvi + lev] =
                 pressure_d[id * nv + lev + 1]
                 + extrap_surf * (pressure_d[id * nv + lev] - pressure_d[id * nv + lev + 1]);
-            pt_surf_d[id] = Tsurface_d[id] * pow(p_surf / P_Ref, -kappa);
+            pt_surf_d[id] = Tsurface_d[id] * pow(p_int_d[id * nvi + lev] / P_Ref, -kappa);
             Rho_int_d[id * nvi + lev] =
                 Rho_d[id * nv + lev + 1]
                 + extrap_surf * (Rho_d[id * nv + lev] - Rho_d[id * nv + lev + 1]);
-            pt = pow(P_Ref, kappa) * pow(pressure_d[id * nv + lev], 1.0 - kappa)
-                 / (Rd * Rho_d[id * nv + lev]);
+            pt_d[id * nv + lev] = pow(P_Ref, kappa) * pow(pressure_d[id * nv + lev], 1.0 - kappa)
+                                  / (Rd * Rho_d[id * nv + lev]);
             shear2 =
                 pow((Mh_d[id * nv * 3 + lev * 3 + 0]) / Rho_d[id * nv + lev] / (Altitude_d[lev]), 2)
                 + pow((Mh_d[id * nv * 3 + lev * 3 + 1]) / Rho_d[id * nv + lev] / (Altitude_d[lev]),
@@ -1621,8 +1828,9 @@ __global__ void CalcGradRi(double *pressure_d,
                 RiGrad_d[id * nvi + lev] = LARGERiB;
             }
             else {
-                RiGrad_d[id * nvi + lev] =
-                    Gravit / pt * (pt - pt_surf_d[id]) / (Altitude_d[lev]) / shear2;
+                RiGrad_d[id * nvi + lev] = Gravit / pt_d[id * nv + lev]
+                                           * (pt_d[id * nv + lev] - pt_surf_d[id])
+                                           / (Altitude_d[lev]) / shear2;
             }
             CN = pow(KVONKARMAN / log((Altitude_d[lev] + z_rough) / z_rough), 2);
             if (RiGrad_d[id * nvi + lev] < 0) {
@@ -1636,27 +1844,33 @@ __global__ void CalcGradRi(double *pressure_d,
                 CH_d[id] = CN * stability_f_s(RiGrad_d[id * nvi + lev]);
             }
             KM_d[id * nvi + lev] = CD_d[id] * sqrt(shear2) * pow(Altitude_d[lev], 2);
-            KH_d[id * nvi + lev] = Ch_d[id] * sqrt(shear2) * pow(Altitude_d[lev], 2);
+            KH_d[id * nvi + lev] = CH_d[id] * sqrt(shear2) * pow(Altitude_d[lev], 2);
         }
-        else if (lev == nvi) {
+        else if (lev == nv) {
             //top level of model -> K = 0
-            RiGrad_d[id * nvi + lev] = LARGERiB;
-            KH_d[id * nvi + lev]     = 0.0;
-            KM_d[id * nvi + lev]     = 0.0;
+            RiGrad_d[id * nvi + lev]  = LARGERiB;
+            KH_d[id * nvi + lev]      = 0.0;
+            KM_d[id * nvi + lev]      = 0.0;
+            Rho_int_d[id * nvi + lev] = Rho_d[id * nv + lev - 1];
+            p_int_d[id * nvi + lev]   = pressure_d[id * nv + lev - 1];
         }
         else {
             //levels in between
-            pt = pow(P_Ref, kappa) * pow(pressure_d[id * nv + lev], 1.0 - kappa)
-                 / (Rd * Rho_d[id * nv + lev]);
+            pt_d[id * nv + lev] = pow(P_Ref, kappa) * pow(pressure_d[id * nv + lev], 1.0 - kappa)
+                                  / (Rd * Rho_d[id * nv + lev]);
             pt_below = pow(P_Ref, kappa) * pow(pressure_d[id * nv + lev - 1], 1.0 - kappa)
                        / (Rd * Rho_d[id * nv + lev - 1]);
             pt_int = pt_below
-                     + (pt - pt_below) * (Altitudeh_d[lev] - Altitude_d[lev - 1])
+                     + (pt_d[id * nv + lev] - pt_below) * (Altitudeh_d[lev] - Altitude_d[lev - 1])
                            / (Altitude_d[lev] - Altitude_d[lev - 1]);
             Rho_int_d[id * nvi + lev] = Rho_d[id * nv + lev - 1]
                                         + (Rho_d[id * nv + lev] - Rho_d[id * nv + lev - 1])
                                               * (Altitudeh_d[lev] - Altitude_d[lev - 1])
                                               / (Altitude_d[lev] - Altitude_d[lev - 1]);
+            p_int_d[id * nvi + lev] = pressure_d[id * nv + lev - 1]
+                                      + (pressure_d[id * nv + lev] - pressure_d[id * nv + lev - 1])
+                                            * (Altitudeh_d[lev] - Altitude_d[lev - 1])
+                                            / (Altitude_d[lev] - Altitude_d[lev - 1]);
             shear2 = pow((Mh_d[id * nv * 3 + lev * 3 + 0] / Rho_d[id * nv + lev]
                           - Mh_d[id * nv * 3 + (lev - 1) * 3 + 0] / Rho_d[id * nv + lev - 1])
                              / (Altitude_d[lev] - Altitude_d[lev - 1]),
@@ -1667,14 +1881,14 @@ __global__ void CalcGradRi(double *pressure_d,
                            2)
                      + pow((Mh_d[id * nv * 3 + lev * 3 + 2] / Rho_d[id * nv + lev]
                             - Mh_d[id * nv * 3 + (lev - 1) * 3 + 2] / Rho_d[id * nv + lev - 1])
-                               / (Altitude_d[lev] - Atitude_d[lev - 1]),
+                               / (Altitude_d[lev] - Altitude_d[lev - 1]),
                            2);
             //gradient Ri number
             if (shear2 == 0) {
                 RiGrad_d[id * nvi + lev] = LARGERiB;
             }
             else {
-                RiGrad_d[id * nvi + lev] = Gravit / pt_int * (pt - pt_below)
+                RiGrad_d[id * nvi + lev] = Gravit / pt_int * (pt_d[id * nv + lev] - pt_below)
                                            / (Altitude_d[lev] - Altitude_d[lev - 1]) / shear2;
             }
 
@@ -1979,7 +2193,7 @@ __global__ void CalcKM_KH(double *RiB_d,
                           double *bl_top_height_d,
                           int *   bl_top_lev_d,
                           double *F_sens_d,
-                          double  counter_grad_d,
+                          double *counter_grad_d,
                           double *vh_lowest_d,
                           double *Altitude_d,
                           double *Altitudeh_d,

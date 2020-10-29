@@ -65,7 +65,7 @@
 #define FREE_ASYM_LEN 30.0
 #define E_MIN_MIX 1e-6 //no idea what this should be!
 
-enum boundary_layer_types { RAYLEIGHHS = 0, MONINOBUKHOV = 1, EKMANSPIRAL = 2 };
+enum boundary_layer_types { RAYLEIGHHS = 0, MONINOBUKHOV = 1, LOCALMIXL = 2, EKMANSPIRAL = 3 };
 
 
 class boundary_layer : public phy_module_base
@@ -133,11 +133,14 @@ private:
     double *CD_h;
     double *CH_d; // surface heat-transfer coeff
     double *CH_h;
-    double *vh_lowest_d;    //speed of lowest layer
-    double *pt_surf_d;      //pt of surface
-    double *p_surf_d;       //pressure at surface
+    double *vh_lowest_d; //speed of lowest layer
+    double *pt_surf_d;   //pt of surface
+    // double *p_surf_d;       //pressure at surface
     double *counter_grad_d; // counter gradient term in heat equation
     // double *Rho_surf_d;  //density at surface
+
+    double *RiGrad_d; //gradient Ri number
+    double *RiGrad_h; //gradient Ri number
 
     double Ri_crit_config      = 1.0;
     double z_rough_config      = 3.21e-5;
@@ -249,7 +252,6 @@ __global__ void Heat_Diff_Impl_EnergyEq(double *      pt_d,
                                         double *      KH_d,
                                         double *      Rho_int_d,
                                         double *      pt_surf_d,
-                                        double *      p_surf_d,
                                         double *      p_int_d,
                                         double        time_step,
                                         double        Rd,
@@ -303,6 +305,10 @@ __device__ double fpr_newton_RiB_zeta(double zeta, double z_z0, double z_zT);
 
 __device__ double RiB_2_zeta(double RiB, double Ri_crit, double z_z0, double z_zT);
 
+__device__ double stability_fM_u(double CN, double Ri, double z, double z_rough);
+__device__ double stability_fM_u(double CN, double Ri, double z, double z_rough);
+__device__ double stability_f_s(double Ri);
+
 __global__ void CalcKM_KH(double *RiB_d,
                           double *L_MO_d,
                           double *CD_d,
@@ -310,7 +316,7 @@ __global__ void CalcKM_KH(double *RiB_d,
                           double *bl_top_height_d,
                           int *   bl_top_lev_d,
                           double *F_sens_d,
-                          double  counter_grad_d,
+                          double *counter_grad_d,
                           double *vh_lowest_d,
                           double *Altitude_d,
                           double *Altitudeh_d,
@@ -364,7 +370,6 @@ __global__ void Calc_MOlength_Cdrag_BLdepth(double *pressure_d,
                                             double *bl_top_height_d,
                                             double  f_surf_layer,
                                             double *pt_surf_d,
-                                            double *p_surf_d,
                                             double *p_int_d,
                                             double *CD_d,
                                             double *CH_d,
@@ -392,3 +397,28 @@ __global__ void CalcKM_KH_old(double *RiB_d,
                               double *KM_d,
                               double *KH_d,
                               int     num);
+
+__global__ void CalcGradRi(double *pressure_d,
+                           double *Rho_d,
+                           double *Mh_d,
+                           double *Tsurface_d,
+                           double *pt_d,
+                           double *Altitude_d,
+                           double *Altitudeh_d,
+                           double  Rd,
+                           double  Cp,
+                           double  P_Ref,
+                           double  Gravit,
+                           double  Ri_crit,
+                           double  z_rough,
+                           double  z_therm,
+                           double *RiGrad_d,
+                           double *pt_surf_d,
+                           double *p_int_d,
+                           double *CD_d,
+                           double *CH_d,
+                           double *Rho_int_d,
+                           double *KM_d,
+                           double *KH_d,
+                           int     num,
+                           int     nv);

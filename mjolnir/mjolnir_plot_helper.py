@@ -783,7 +783,7 @@ def make_plot(args, save=True, axis=None):
             pfile = call_plot('g0',ham.profile,input, grid, output, z, stride=20, save=save, axis=(axis[0], axes[i]))
             plots_created.append(pfile)
 
-    if ('Kdiffprof' in pview or 'all' in pview) and input.BL and input.BL_type == 1:
+    if ('Kdiffprof' in pview or 'all' in pview) and input.BL and (input.BL_type == 1 or input.BL_type == 2):
         output.load_reshape(grid,['KH','KM'])
         KH = output.KH[:, :-1, :] + (output.KH[:, 1:, :] - output.KH[:, :-1, :]) *\
             (grid.Altitude[None, :, None] - grid.Altitudeh[None, :-1, None]) /\
