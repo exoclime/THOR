@@ -390,10 +390,10 @@ bool Insolation::initial_conditions(const ESP& esp, const SimulationSetup& sim, 
                         cudaDeviceSynchronize();
                         cuda_check_status_or_exit(__FILE__, __LINE__);
                     }
-                    printf("day = %d, time = %f, M = %f\n",
-                           iday,
-                           day_start_time_h[iday],
-                           mean_anomaly);
+                    // printf("day = %d, time = %f, M = %f\n",
+                    //        iday,
+                    //        day_start_time_h[iday],
+                    //        mean_anomaly);
                 }
                 //reset orbit to original position
                 update_spin_orbit(0.0, sim.Omega);
@@ -486,6 +486,22 @@ bool Insolation::store(const ESP& esp, storage& s) {
                        "/cos_zenith_angles",
                        "-",
                        "cos_zenith_angles per column");
+
+        if (insol_avg == DIURNAL_AVG) {
+            std::shared_ptr<double[]> cos_zenith_daily_h = cos_zenith_daily.get_host_data();
+            s.append_table(cos_zenith_daily_h.get(),
+                           cos_zenith_daily.get_size(),
+                           "/cos_zenith_daily",
+                           "-",
+                           "cos_zenith (daily avg) per column");
+
+            std::shared_ptr<double[]> day_start_time_h = day_start_time.get_host_data();
+            s.append_table(day_start_time_h.get(),
+                           day_start_time.get_size(),
+                           "/day_start_time",
+                           "s",
+                           "start time of each day");
+        }
     }
 
     return true;
