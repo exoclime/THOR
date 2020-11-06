@@ -1802,7 +1802,8 @@ __global__ void CalcGradRi(double *pressure_d,
     if (id < num) {
         double kappa = Rd / Cp;
         double pt_below, pt_int;
-        double shear2, mix_length, asym_len_scale, e_mix;
+        double shear2, mix_length_m, mix_length_h, asym_len_scale_m, asym_len_scale_h, e_mix_m,
+            e_mix_h;
 
         if (lev == 0) {
             //surface drag coeffs, etc
@@ -1894,25 +1895,38 @@ __global__ void CalcGradRi(double *pressure_d,
 
             //asymptotic length scale (constant in BL, decays to lower constant in free atmosphere)
             if (Altitudeh_d[lev] <= TRANSITION_HEIGHT) {
-                asym_len_scale = ABL_ASYM_LEN;
+                asym_len_scale_m = ABL_ASYM_LEN;
+                asym_len_scale_h = 3 * ABL_ASYM_LEN;
             }
             else {
-                asym_len_scale = FREE_ASYM_LEN
-                                 + (ABL_ASYM_LEN - FREE_ASYM_LEN)
-                                       * exp(1 - Altitudeh_d[lev] / TRANSITION_HEIGHT);
+                asym_len_scale_m = FREE_ASYM_LEN
+                                   + (ABL_ASYM_LEN - FREE_ASYM_LEN)
+                                         * exp(1 - Altitudeh_d[lev] / TRANSITION_HEIGHT);
+                asym_len_scale_h = FREE_ASYM_LEN
+                                   + (3 * ABL_ASYM_LEN - FREE_ASYM_LEN)
+                                         * exp(1 - Altitudeh_d[lev] / TRANSITION_HEIGHT);
             }
-            mix_length = pow(1.0 / KVONKARMAN / Altitudeh_d[lev] + 1.0 / asym_len_scale, -1.0);
-            if (RiGrad_d[id * nvi + lev] < Ri_crit) { // prevent nan value if RiGrad > Ri_crit
-                e_mix = pow(mix_length, 2) * shear2 * (1 - RiGrad_d[id * nvi + lev] / Ri_crit);
+            mix_length_m = pow(1.0 / KVONKARMAN / Altitudeh_d[lev] + 1.0 / asym_len_scale_m, -1.0);
+            mix_length_h = pow(1.0 / KVONKARMAN / Altitudeh_d[lev] + 1.0 / asym_len_scale_h, -1.0);
+            if (RiGrad_d[id * nvi + lev] < 0.0) {
+                e_mix_m = pow(mix_length_m, 2) * shear2 * (1 - 18.0 * RiGrad_d[id * nvi + lev]);
+                e_mix_h = pow(mix_length_h, 2) * shear2 * (1 - 18.0 * RiGrad_d[id * nvi + lev]);
             }
             else {
-                e_mix = 0.0;
+                e_mix_m =
+                    pow(mix_length_m, 2) * shear2
+                    / (1 + 10.0 * RiGrad_d[id * nvi + lev] * (1 + 8.0 * RiGrad_d[id * nvi + lev]));
+                e_mix_h =
+                    pow(mix_length_m, 2) * shear2
+                    / (1 + 10.0 * RiGrad_d[id * nvi + lev] * (1 + 8.0 * RiGrad_d[id * nvi + lev]));
             }
-            if (e_mix < E_MIN_MIX)
-                e_mix = E_MIN_MIX;
+            if (e_mix_m < E_MIN_MIX)
+                e_mix_m = E_MIN_MIX;
+            if (e_mix_h < E_MIN_MIX)
+                e_mix_h = E_MIN_MIX;
             //for now, diffusivities are the same. could modify later for convective conditions
-            KH_d[id * nvi + lev] = mix_length * sqrt(e_mix);
-            KM_d[id * nvi + lev] = mix_length * sqrt(e_mix);
+            KH_d[id * nvi + lev] = mix_length_h * sqrt(e_mix_h);
+            KM_d[id * nvi + lev] = mix_length_m * sqrt(e_mix_m);
         }
     }
 }

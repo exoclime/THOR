@@ -61,9 +61,9 @@
 
 //tuning parameters for local diff scheme
 #define TRANSITION_HEIGHT 1000.0
-#define ABL_ASYM_LEN 300.0
+#define ABL_ASYM_LEN 150.0
 #define FREE_ASYM_LEN 30.0
-#define E_MIN_MIX 1e-6 //no idea what this should be!
+#define E_MIN_MIX 1e-12 //no idea what this should be!
 
 enum boundary_layer_types { RAYLEIGHHS = 0, MONINOBUKHOV = 1, LOCALMIXL = 2, EKMANSPIRAL = 3 };
 
