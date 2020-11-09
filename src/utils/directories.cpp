@@ -107,35 +107,44 @@ bool create_dir(const string &dir) {
 
 
 bool create_output_dir(const string &output_dir) {
+  // cout << "create: "<<  output_dir<<endl;
     vector<string> directories = split(output_dir, '/');
-
+    
     string path = "";
 
+    // check for absolute path
+    if (output_dir[0] == '/')
+      path = "/";
+    
     for (const auto &dir : directories) {
-        // check if directory exists
-        if (path != "")
-            path += string("/");
-        path += dir;
-
-        if (path_exists(path)) {
-            //cout << path << " exists"<<endl;
-
-            // continue
+      //cout << "dir: " << dir << endl;
+      // check for empty dir, happens with absolute path
+      if (dir == "")
+        continue;
+      // check if directory exists
+      if (path != "")
+        path += string("/");
+      path += dir;
+      
+      if (path_exists(path)) {
+        // cout << path << " exists"<<endl;
+        
+        // continue
+      }
+      else {
+        // cout << "[" <<  path << "] does not exist, creating"<<endl;
+        
+        // create directory
+        if (create_dir(path)) {
+          // cout << "created " << path << " path"<<endl;
+          // continue
         }
         else {
-            //cout << path << " does not exist, creating"<<endl;
-
-            // create directory
-            if (create_dir(path)) {
-                //cout << "created " << path << " path"<<endl;
-                // continue
-            }
-            else {
-                // creation failed, failed
-                log::printf("failed creating directory %s.\n", path.c_str());
-                return false;
-            }
+          // creation failed, failed
+          log::printf("failed creating directory %s.\n", path.c_str());
+          return false;
         }
+      }
     }
 
 

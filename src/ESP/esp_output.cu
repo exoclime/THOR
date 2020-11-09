@@ -113,7 +113,7 @@ __host__ void ESP::output(int                    fidx, // Index of output file
     //
     //  Description: Model output.
     //
-    char FILE_NAME1[160];
+    char FILE_NAME1[512];
 
     //  GRID OUTPUT
     if (current_step == 0) {
@@ -352,7 +352,7 @@ __host__ void ESP::output(int                    fidx, // Index of output file
         insolation.store(*this, s);
     }
 
-    char buf[256];
+    char buf[512];
 
     sprintf(buf, "esp_output_%s_%d.h5", simulation_ID.c_str(), fidx);
     // Write to output f

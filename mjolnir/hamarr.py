@@ -182,7 +182,7 @@ class output_new:
             outputs['F_net'] = 'f_net'
             outputs['Alf_Qheat'] = 'TSqheat'
             outputs['F_up_TOA_spectrum'] = 'spectrum'
-            outputs['alf_spectrum'] = 'incoming_spectrum'
+            outputs['alf_stellar_spectrum'] = 'incoming_spectrum'
             outputs['lambda_wave'] = 'wavelength'
 
         # calc volume element
