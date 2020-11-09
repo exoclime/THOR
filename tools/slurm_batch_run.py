@@ -82,7 +82,7 @@ parser.add_argument("-o", "--output", type=str, default=None, help='Output dir n
 parser.add_argument("-r", "--report", action="store_true", default=False, help="Run reporting code at end of sim")
 parser.add_argument("-d", "--dependency", action="store", type=int, default=None, help="Run after this job ID")
 
-parser.add_argument("--pp", action="append", nargs="*", type=str, default=[], help="Post processing to run")
+parser.add_argument("--pp", action="append", type=str, default=[], help="Post processing to run")
 
 args = parser.parse_args()
 initial_file = args.input_file[0]
