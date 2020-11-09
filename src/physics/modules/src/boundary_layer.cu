@@ -1006,24 +1006,25 @@ Momentum_Diff_Impl(double *      Mh_d,
                                             / ((Altitudeh_d[lev + 1] - Altitudeh_d[lev])
                                                * (Altitude_d[lev] - Altitude_d[lev - 1]));
                 btmp[id * (nv + 1) + lev] =
-                    -(1.0 / (Altitudeh_d[lev + 1] - Altitudeh_d[lev])
-                          * (pow(rup, 2) * Rho_int_d[id * (nv + 1) + lev + 1]
-                                 * KM_d[id * (nv + 1) + lev + 1]
-                                 / (Altitude_d[lev + 1] - Altitude_d[lev])
-                             + (pow(rlow, 2) * Rho_int_d[id * (nv + 1) + lev])
-                                   * KM_d[id * (nv + 1) + lev]
-                                   / (Altitude_d[lev] - Altitude_d[lev - 1]))
+                    -(1.0
+                          / (Altitudeh_d[lev + 1] - Altitudeh_d[lev])
+                          // * (pow(rup, 2)
+                          //        // * Rho_int_d[id * (nv + 1) + lev + 1]
+                          //        // * KM_d[id * (nv + 1) + lev + 1]
+                          //        / (Altitude_d[lev + 1] - Altitude_d[lev])
+                          * ((pow(rlow, 2) * Rho_int_d[id * (nv + 1) + lev])
+                             * KM_d[id * (nv + 1) + lev] / (Altitude_d[lev] - Altitude_d[lev - 1]))
                       + Rho_d[id * nv + lev] / time_step);
                 ctmp[id * (nv + 1) + lev]    = 0;
                 cpr_tmp[id * (nv + 1) + lev] = 0; //not used, i think
                 for (int k = 0; k < 3; k++) {
                     dtmp[id * (nv + 1) * 3 + lev * 3 + k] =
-                        -Mh_d[id * 3 * nv + lev * 3 + k] / time_step
-                        - pow(rup, 2) * Rho_int_d[id * (nv + 1) + lev + 1]
-                              * KM_d[id * (nv + 1) + lev + 1]
-                              / (Altitudeh_d[lev + 1] - Altitudeh_d[lev])
-                              * Mh_d[id * 3 * nv + (lev + 1) * 3 + k] / Rho_d[id * nv + lev + 1]
-                              / (Altitude_d[lev + 1] - Altitude_d[lev]);
+                        -Mh_d[id * 3 * nv + lev * 3 + k] / time_step;
+                    // - pow(rup, 2) * Rho_int_d[id * (nv + 1) + lev + 1]
+                    //       * KM_d[id * (nv + 1) + lev + 1]
+                    //       / (Altitudeh_d[lev + 1] - Altitudeh_d[lev])
+                    //       * Mh_d[id * 3 * nv + (lev + 1) * 3 + k] / Rho_d[id * nv + lev + 1]
+                    //       / (Altitude_d[lev + 1] - Altitude_d[lev]);
                     dpr_tmp[id * (nv + 1) * 3 + lev * 3 + k] =
                         (dtmp[id * (nv + 1) * 3 + lev * 3 + k]
                          - atmp[id * (nv + 1) + lev]
@@ -1407,23 +1408,24 @@ __global__ void Heat_Diff_Impl_EnergyEq(double *      pt_d,
                                                    * (Altitude_d[lev] - Altitude_d[lev - 1]))
                                                 * pow(p_int_d[id * (nv + 1) + lev] / P_Ref, kappa);
                 btmp[id * (nv + 1) + lev + 1] =
-                    -(Cp / Cv / (Altitudeh_d[lev + 1] - Altitudeh_d[lev]) * pow(rup, 2)
-                          * Rho_int_d[id * (nv + 1) + lev + 1] * KH_d[id * (nv + 1) + lev + 1]
-                          / (Altitude_d[lev + 1] - Altitude_d[lev])
-                          * pow(p_int_d[id * (nv + 1) + lev + 1] / P_Ref, kappa)
-                      + atmp[id * (nv + 1) + lev + 1]
+                    // -(Cp / Cv / (Altitudeh_d[lev + 1] - Altitudeh_d[lev])
+                    // * pow(rup, 2)
+                    // * Rho_int_d[id * (nv + 1) + lev + 1] * KH_d[id * (nv + 1) + lev + 1]
+                    // / (Altitude_d[lev + 1] - Altitude_d[lev])
+                    // * pow(p_int_d[id * (nv + 1) + lev + 1] / P_Ref, kappa)
+                    -(atmp[id * (nv + 1) + lev + 1]
                       + Rho_d[id * nv + lev] / time_step
                             * pow(pressure_d[id * nv + lev] / P_Ref, kappa));
                 ctmp[id * (nv + 1) + lev + 1]    = 0;
                 cpr_tmp[id * (nv + 1) + lev + 1] = 0; //not used, i think
-                dtmp[id * (nv + 1) + lev + 1] =
-                    -Rho_d[id * nv + lev] * pt_d[id * nv + lev] / time_step
-                        * pow(pressure_d[id * nv + lev] / P_Ref, kappa)
-                    - Cp / Cv * pow(rup, 2) * Rho_int_d[id * (nv + 1) + lev + 1]
-                          * KH_d[id * (nv + 1) + lev + 1]
-                          / (Altitudeh_d[lev + 1] - Altitudeh_d[lev]) * pt_d[id * nv + (lev + 1)]
-                          / (Altitude_d[lev + 1] - Altitude_d[lev])
-                          * pow(p_int_d[id * (nv + 1) + lev + 1] / P_Ref, kappa);
+                dtmp[id * (nv + 1) + lev + 1]    = -Rho_d[id * nv + lev] * pt_d[id * nv + lev]
+                                                / time_step
+                                                * pow(pressure_d[id * nv + lev] / P_Ref, kappa);
+                // - Cp / Cv * pow(rup, 2) * Rho_int_d[id * (nv + 1) + lev + 1]
+                //       * KH_d[id * (nv + 1) + lev + 1]
+                //       / (Altitudeh_d[lev + 1] - Altitudeh_d[lev]) * pt_d[id * nv + (lev + 1)]
+                //       / (Altitude_d[lev + 1] - Altitude_d[lev])
+                //       * pow(p_int_d[id * (nv + 1) + lev + 1] / P_Ref, kappa);
                 dpr_tmp[id * (nv + 1) + lev + 1] =
                     (dtmp[id * (nv + 1) + lev + 1]
                      - atmp[id * (nv + 1) + lev + 1] * dpr_tmp[id * (nv + 1) + (lev)])
