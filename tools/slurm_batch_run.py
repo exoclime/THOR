@@ -261,7 +261,7 @@ def start_postprocessing(args, pp_command):
             return False, -1
 
 for pp in args.pp:
-    output_file = str(log_dir / f"slurm-opstproc-{job_name}-%j.out")  # %j for job index
+    output_file = str(log_dir / f"slurm-postproc-{job_name}-%j.out")  # %j for job index
 
     sbatch_args = ['sbatch',
                    '-D', working_dir,
