@@ -121,6 +121,9 @@ class grid_new:
         self.point_num = np.int(openh5['point_num'][0])
         self.nv = np.int(openh5['nv'][0])
         self.nvi = self.nv + 1
+        self.rotation = rotation
+        self.theta_y = theta_y
+        self.theta_z = theta_z
         for key in openh5.keys():
             if key != 'nv' and key != 'point_num':
                 if key == 'pntloc':
@@ -326,6 +329,11 @@ class output_new:
                         data_new[0] = np.reshape(data[::3],(grid.point_num,grid.nv,tlen))
                         data_new[1] = np.reshape(data[1::3],(grid.point_num,grid.nv,tlen))
                         data_new[2] = np.reshape(data[2::3],(grid.point_num,grid.nv,tlen))
+                        #wind vectors need a little rotation
+                        if grid.rotation:
+                            pdb.set_trace()
+                            datax0, datay0, dataz0 = Rot_z(grid.theta_z,data_new[0],data_new[1],data_new[2])
+                            data_new[0], data_new[1], data_new[2] = Rot_y(grid.theta_y,datax0,datay0,dataz0)
                         data = data_new
                     if key == 'tracer':  #special case for passive tracers
                         self.ch4 = np.reshape(data[::5],(grid.point_num,grid.nv,tlen))
