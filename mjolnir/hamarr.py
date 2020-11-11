@@ -331,7 +331,6 @@ class output_new:
                         data_new[2] = np.reshape(data[2::3],(grid.point_num,grid.nv,tlen))
                         #wind vectors need a little rotation
                         if grid.rotation:
-                            pdb.set_trace()
                             datax0, datay0, dataz0 = Rot_z(grid.theta_z,data_new[0],data_new[1],data_new[2])
                             data_new[0], data_new[1], data_new[2] = Rot_y(grid.theta_y,datax0,datay0,dataz0)
                         data = data_new
