@@ -60,7 +60,7 @@
 // #define BENCH_COMPARE_PRINT_STATISTICS
 // use an epsilon value for fuzzy compare on relative value
 // #define BENCH_COMPARE_USE_EPSILON
-// #define BENCH_COMPARE_EPSILON_VALUE 1e-7
+// #define BENCH_COMPARE_EPSILON_VALUE 1e-14
 // ***************************************
 // * check for NaNs
 // #define BENCH_NAN_CHECK

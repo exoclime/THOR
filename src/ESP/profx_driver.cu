@@ -82,6 +82,10 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
     cudaMemset(profx_Qheat_d, 0, sizeof(double) * point_num * nv);
     cudaMemset(dTsurf_dt_d, 0, sizeof(double) * point_num);
 
+    Recompute_W<<<NB, NTH>>>(
+        W_d, Wh_d, Altitude_d, Altitudeh_d, point_num); //trying to stamp out bincomp issue
+
+    cudaDeviceSynchronize();
     if (sim.RayleighSponge == true && raysp_calc_mode == IMP) {
         dim3 NBT((point_num / NTH) + 1, nv, 1);
 
@@ -210,6 +214,10 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
     Compute_temperature<<<NB, NTH>>>(
         temperature_d, pt_d, pressure_d, Rho_d, sim.P_Ref, Rd_d, Cp_d, point_num, calcT);
 
+    // cudaMemcpy(W_h, W_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+    // for (int lev = 0; lev < nv; lev++) {
+    //     printf("%d %.15e\n", lev, W_h[0 * nv + lev]);
+    // }
     BENCH_POINT_I(
         current_step, "phy_T", (), ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"))
 

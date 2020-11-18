@@ -106,6 +106,28 @@ Compute_pressure(double *pressure_d, double *temperature_d, double *Rho_d, doubl
     }
 }
 
+__global__ void
+Recompute_W(double *W_d, double *Wh_d, double *Altitude_d, double *Altitudeh_d, int num) {
+
+    int id  = blockIdx.x * blockDim.x + threadIdx.x;
+    int nv  = gridDim.y;
+    int lev = blockIdx.y;
+
+    if (id < num) {
+        double xi, xim, xip, whl, wht, intt, intl;
+        whl = Wh_d[id * (nv + 1) + lev];
+        wht = Wh_d[id * (nv + 1) + lev + 1];
+
+        xi  = Altitude_d[lev];
+        xim = Altitudeh_d[lev];
+        xip = Altitudeh_d[lev + 1];
+
+        intt = (xi - xip) / (xim - xip);
+        intl = (xi - xim) / (xip - xim);
+
+        W_d[id * nv + lev] = whl * intt + wht * intl;
+    }
+}
 
 __global__ void isnan_check(double *array, int width, int height, bool *check) {
 

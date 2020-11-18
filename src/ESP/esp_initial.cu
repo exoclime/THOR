@@ -865,6 +865,9 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 double b = (xi - xim1) / (xip1 - xim1);
 
                 W_h[i * nv + lev] = Wh_h[i * (nv + 1) + lev] * a + Wh_h[i * (nv + 1) + lev + 1] * b;
+                // if (i == 0) {
+                //     printf("%d %.15e %.15e %.15e\n", lev, a, b, W_h[i * nv + lev]);
+                // }
             }
         }
     } //end if rest == false
