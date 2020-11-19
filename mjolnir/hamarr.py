@@ -917,11 +917,9 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
                 source['f_down_tot'] = output.f_down_tot[:, :-1, 0] + (output.f_down_tot[:, 1:, 0] - output.f_down_tot[:, :-1, 0]) * interpz[None, :]
                 source['spectrum'] = output.spectrum[:, :, 0]
                 source['f_dir_tot'] = output.f_dir_tot[:, :-1, 0] + (output.f_dir_tot[:, 1:, 0] - output.f_dir_tot[:, :-1, 0]) * interpz[None, :]
-<<<<<<< HEAD
-=======
                 if hasattr(output,'F_dir_band'):
                     source['F_dir_BOA'] = output.F_dir_band[:, 0, :, 0]
->>>>>>> a453ac4bfc4ed481e3c0d8ec837ba85a58503dbe
+
             if chem == 1:
                 source['ch4'] = output.ch4[:, :, 0] / output.Rho[:,:,0]
                 source['co'] = output.co[:, :, 0]/ output.Rho[:,:,0]
@@ -957,11 +955,7 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
                 elif np.shape(source[key]) == (grid.point_num,):
                     # 2D field (e.g., insolation) -> not needed
                     interm[key] = np.zeros((d_lon[0], d_lon[1]))
-<<<<<<< HEAD
-                elif key == 'spectrum':
-=======
                 elif key == 'spectrum' or key == 'F_dir_BOA':
->>>>>>> a453ac4bfc4ed481e3c0d8ec837ba85a58503dbe
                     interm[key] = np.zeros((d_lon[0], d_lon[1], np.shape(output.wavelength)[0]))
                 else:
                     interm[key] = np.zeros((d_lon[0], d_lon[1], grid.nv))
@@ -971,11 +965,7 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
                     # 2D field (e.g., insolation)
                     tmp = np.sum(weight3[:, :] * source[key][near3], axis=1)
                     interm[key][:, :] = tmp.reshape((d_lon[0], d_lon[1]))
-<<<<<<< HEAD
-                elif key == 'spectrum':
-=======
                 elif key == 'spectrum' or key == 'F_dir_BOA':
->>>>>>> a453ac4bfc4ed481e3c0d8ec837ba85a58503dbe
                     tmp = np.sum(weight3[:,:,None] * source[key][near3], axis=1)
                     interm[key][:,:,:] =  tmp.reshape((d_lon[0],d_lon[1],np.shape(output.wavelength)[0]))
                 else:
@@ -1008,11 +998,7 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
             for key in interm.keys():
                 if key == 'Mh' or key == 'Mh_mean' or key == 'Pressure':
                     pass  # don't need these any further
-<<<<<<< HEAD
-                elif key == 'spectrum':
-=======
                 elif key == 'spectrum' or key == 'F_dir_BOA':
->>>>>>> a453ac4bfc4ed481e3c0d8ec837ba85a58503dbe
                     dest[key] = np.zeros((d_lon[0],d_lon[1],np.shape(output.wavelength)[0]))
                 elif np.shape(interm[key]) == (d_lon[0], d_lon[1]):
                     # 2D field (e.g., insolation)
@@ -1029,11 +1015,7 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
                 if np.shape(interm[key]) == (d_lon[0], d_lon[1]):
                     # 2D field (e.g., insolation)
                     dest[key] = interm[key]
-<<<<<<< HEAD
-                elif key == 'spectrum':
-=======
                 elif key == 'spectrum' or key == 'F_dir_BOA':
->>>>>>> a453ac4bfc4ed481e3c0d8ec837ba85a58503dbe
                     dest[key] = interm[key]
                 else:
                     dest[key][:, :, :] = vertical_regrid_field(interm[key][:, :, ::-1], grid.nv, x, xnew)[:, :, ::-1]
