@@ -5,6 +5,7 @@ import subprocess as spr
 import numpy as np
 import sys
 import traceback
+import matplotlib.pyplot as plt
 
 import math
 
@@ -89,9 +90,9 @@ def make_plot(args, save=True, axis=None):
 
     resultsf = args.file[0]
     if args.simulation_ID[0] == 'auto':
-        outname = spr.check_output('ls ' + resultsf + '/esp_output_*_0.h5', shell=True)
+        outname = spr.check_output('ls ' + resultsf + '/esp_output_planet_*.h5', shell=True)
         file0 = outname.decode().split(sep='/')[-1]
-        simulation_ID = file0.split(sep='_')[2]
+        simulation_ID = file0.split(sep='_')[3].split(sep='.')[0]
     else:
         simulation_ID = args.simulation_ID[0]
 
@@ -745,6 +746,7 @@ def make_plot(args, save=True, axis=None):
         pfile = call_plot('qheatprof',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
         plots_created.append(pfile)
 
+    # need a trick to make these work for axis = None (command line plotting)
     if ('w0prof' in pview or 'all' in pview) and input.TSRT: # and input.has_w0_g0:
         output.load_reshape(grid,['w0_band'])
         num_bands = output.w0_band.shape[2]

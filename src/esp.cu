@@ -91,6 +91,8 @@ using std::string;
 
 #include "git-rev.h"
 
+#include "hdf5.h"
+
 enum e_sig { ESIG_NOSIG = 0, ESIG_SIGTERM = 1, ESIG_SIGINT = 2 };
 
 
@@ -144,6 +146,18 @@ void get_cuda_mem_usage(size_t& total_bytes, size_t& free_bytes) {
     if (cudaSuccess != cuda_status) {
         log::printf("Error: cudaMemGetInfo fails, %s \n", cudaGetErrorString(cuda_status));
     }
+}
+
+
+
+void print_hdf_5_version() {
+  unsigned int majnum = 0;
+  unsigned int minnum = 0;
+  unsigned int relnum = 0;
+  
+  H5get_libversion(&majnum,&minnum,&relnum);
+
+  printf("using HDF5 version %d.%d.%d\n", majnum, minnum, relnum);
 }
 
 
@@ -857,6 +871,9 @@ int main(int argc, char** argv) {
         logwriter.prepare_diagnostics_file(continue_sim);
     }
 
+    //*****************************************************************
+    // print HDF5 version
+    print_hdf_5_version();
     //*****************************************************************
     //  Set the GPU device.
     cudaError_t error;
