@@ -194,7 +194,7 @@ class output_new:
             outputs['F_net'] = 'f_net'
             outputs['Alf_Qheat'] = 'TSqheat'
             outputs['F_up_TOA_spectrum'] = 'spectrum'
-            outputs['alf_stellar_spectrum'] = 'incoming_spectrum'
+            # outputs['alf_stellar_spectrum'] = 'incoming_spectrum'
             outputs['lambda_wave'] = 'wavelength'
 
         if input.BL:
@@ -271,6 +271,10 @@ class output_new:
                         outputs['g0_band'] = 'g0_band'
                     if 'F_dir_band' in openh5.keys():
                         outputs['F_dir_band'] = 'F_dir_band'
+                    if 'alf_spectrum' in openh5.keys():  #backwards compat.
+                        outputs['alf_spectrum'] = 'incoming_spectrum'
+                    elif 'alf_stellar_spectrum' in openh5.keys():
+                        outputs['alf_stellar_spectrum'] = 'incoming_spectrum'
 
                 #create VDS layout shape
                 for key in outputs.keys():
