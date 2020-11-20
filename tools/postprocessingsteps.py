@@ -1,7 +1,7 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-#---- code by Urs Schroffenegger ----------------------------------------------
+# ---- code by Urs Schroffenegger ----------------------------------------------
 
 """Tool to rerun THOR on a folder and execute a small amount of postprocessing steps. 
 
@@ -24,15 +24,18 @@ import subprocess
 import sys
 import shutil
 
+
 def search_folder_for_pattern(folder, pattern):
     """Get a list of filenames and regex groups for filename matching pattern in folder."""
     files = folder.glob("*")
 
     return [(fn.name, reg.groups()) for fn, reg in
-            map(lambda x : (x, re.compile(pattern).match(x.name)), files)
-            if reg is not None] 
+            map(lambda x: (x, re.compile(pattern).match(x.name)), files)
+            if reg is not None]
 
-parser = argparse.ArgumentParser(description='execute THOR and alfrodull postprocessing step')
+
+parser = argparse.ArgumentParser(
+    description='execute THOR and alfrodull postprocessing step')
 
 parser.add_argument("data_folder",
                     action='store',
@@ -69,6 +72,12 @@ parser.add_argument('-p', '--noplanck',
                     action='store_true',
                     help="set planck function to zero")
 
+parser.add_argument('-s', '--noscattering',
+                    default=False,
+                    action='store_true',
+                    help="set scattering to zero")
+
+
 parser.add_argument('-n', '--numstep',
                     default=1,
                     type=int,
@@ -87,9 +96,10 @@ base_folder = pathlib.Path(args.data_folder).resolve()
 
 # search for last output file number
 # get output write log
-esp_write_log_list = search_folder_for_pattern(base_folder, r"^esp_write_log_.*\.txt$")
+esp_write_log_list = search_folder_for_pattern(
+    base_folder, r"^esp_write_log_.*\.txt$")
 
-if len(esp_write_log_list) == 0: 
+if len(esp_write_log_list) == 0:
     print(f"Could not find output write log in folder {base_folder}")
     exit(-1)
 elif len(esp_write_log_list) > 1: 
@@ -141,6 +151,9 @@ if args.beam:
 if args.noplanck:
     print("Using null planck function")
     regex_list.append((re.compile("^Alf_null_planck_function\s*=\s*((false)|(true))\s*", flags=re.MULTILINE), f"Alf_null_planck_function = true "))
+
+if args.noscattering:
+    regex_list.append((re.compile("^Alf_scat\s*=\s*((false)|(true))\s*", flags=re.MULTILINE), f"Alf_scat = false "))
     
 if args.hires:
     print("Running hires output")
