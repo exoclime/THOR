@@ -1915,12 +1915,16 @@ __global__ void CalcGradRi(double *pressure_d,
                 e_mix_h = pow(mix_length_h, 2) * shear2 * (1 - 18.0 * RiGrad_d[id * nvi + lev]);
             }
             else {
-                e_mix_m =
-                    pow(mix_length_m, 2) * shear2
-                    / (1 + 10.0 * RiGrad_d[id * nvi + lev] * (1 + 8.0 * RiGrad_d[id * nvi + lev]));
-                e_mix_h =
-                    pow(mix_length_m, 2) * shear2
-                    / (1 + 10.0 * RiGrad_d[id * nvi + lev] * (1 + 8.0 * RiGrad_d[id * nvi + lev]));
+                e_mix_m = pow(mix_length_m, 2) * shear2
+                          / pow((1
+                                 + 10.0 * RiGrad_d[id * nvi + lev]
+                                       * (1 + 8.0 * RiGrad_d[id * nvi + lev])),
+                                2);
+                e_mix_h = pow(mix_length_m, 2) * shear2
+                          / pow((1
+                                 + 10.0 * RiGrad_d[id * nvi + lev]
+                                       * (1 + 8.0 * RiGrad_d[id * nvi + lev])),
+                                2);
             }
             if (e_mix_m < E_MIN_MIX)
                 e_mix_m = E_MIN_MIX;
