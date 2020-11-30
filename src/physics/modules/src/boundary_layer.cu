@@ -1896,7 +1896,7 @@ __global__ void CalcGradRi(double *pressure_d,
             }
 
             //asymptotic length scale (constant in BL, decays to lower constant in free atmosphere)
-            if (Altitudeh_d[lev] <= TRANSITION_HEIGHT) {
+            if ((Altitudeh_d[lev] <= TRANSITION_HEIGHT) || (TRANSITION_HEIGHT < 0)) {
                 asym_len_scale_m = ABL_ASYM_LEN;
                 asym_len_scale_h = 3 * ABL_ASYM_LEN;
             }
