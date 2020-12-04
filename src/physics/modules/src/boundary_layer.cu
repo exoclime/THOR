@@ -89,6 +89,7 @@ bool boundary_layer::initialise_memory(const ESP &              esp,
     bl_top_height_h = (double *)malloc(esp.point_num * sizeof(double));
     CM_h            = (double *)malloc(esp.point_num * sizeof(double));
     CH_h            = (double *)malloc(esp.point_num * sizeof(double));
+    F_sens_h        = (double *)malloc(esp.point_num * sizeof(double));
 
     RiGrad_h = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
 
@@ -122,6 +123,7 @@ bool boundary_layer::free_memory() {
     free(CM_h);
     free(CH_h);
     free(RiGrad_h);
+    free(F_sens_h);
 
     cudaFree(cpr_tmp);
     cudaFree(dpr_tmp);
@@ -355,6 +357,10 @@ bool boundary_layer::store(const ESP &esp, storage &s) {
                        "/KH",
                        "m^2/s",
                        "turbulent diffusion coefficient for heat");
+
+        cudaMemcpy(F_sens_h, F_sens_d, esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
+        s.append_table(
+            F_sens_h, esp.point_num, "/F_sens", "W/m^2", "Surface to atmos sensible heat flux");
     }
 
     return true;

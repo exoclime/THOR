@@ -116,6 +116,7 @@ private:
     double *bl_top_height_h; // height of bl
 
     double *F_sens_d; //surface to atmos sensible heat flux
+    double *F_sens_h;
 
     double *KM_d; // momentum diffusivity (turbulence)
     double *KM_h;
