@@ -106,7 +106,7 @@ private:
     double surf_drag;
     double bl_sigma;
 
-    double *atmp, *btmp, *ctmp, *cpr_tmp, *dtmp, *dpr_tmp;
+    double *cpr_tmp, *dpr_tmp;
     double  zbl; // altitude of transition from BL to free atmosph (ekman scheme)
 
     int *bl_top_lev_d; // index of highest level (center) inside BL
@@ -125,8 +125,8 @@ private:
     double *KH_d; // heat diffusivity (turbulence)
     double *KH_h;
 
-    double *CD_d; // surface drag coeff
-    double *CD_h;
+    double *CM_d; // surface drag coeff
+    double *CM_h;
     double *CH_d; // surface heat-transfer coeff
     double *CH_h;
     double *vh_lowest_d; //speed of lowest layer
@@ -165,11 +165,7 @@ __global__ void Momentum_Diff_Impl(double *      Mh_d,
                                    double *      Rho_d,
                                    double *      Altitude_d,
                                    double *      Altitudeh_d,
-                                   double *      atmp,
-                                   double *      btmp,
-                                   double *      ctmp,
                                    double *      cpr_tmp,
-                                   double *      dtmp,
                                    double *      dpr_tmp,
                                    double *      KM_d,
                                    double *      Rho_int_d,
@@ -189,16 +185,13 @@ __global__ void Heat_Diff_Impl_EnergyEq(double *      pt_d,
                                         double *      Altitude_d,
                                         double *      Altitudeh_d,
                                         double *      Tsurface_d,
-                                        double *      atmp,
-                                        double *      btmp,
-                                        double *      ctmp,
                                         double *      cpr_tmp,
-                                        double *      dtmp,
                                         double *      dpr_tmp,
                                         double *      KH_d,
                                         double *      Rho_int_d,
                                         double *      pt_surf_d,
                                         double *      p_int_d,
+                                        double *      F_sens_d,
                                         double        time_step,
                                         double        Rd,
                                         double        Cp,
@@ -232,10 +225,11 @@ __global__ void CalcGradRi(double *pressure_d,
                            double *RiGrad_d,
                            double *pt_surf_d,
                            double *p_int_d,
-                           double *CD_d,
+                           double *CM_d,
                            double *CH_d,
                            double *Rho_int_d,
                            double *KM_d,
                            double *KH_d,
+                           double *F_sens_d,
                            int     num,
                            int     nv);

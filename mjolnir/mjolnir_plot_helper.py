@@ -743,7 +743,7 @@ def make_plot(args, save=True, axis=None):
         output.load_reshape(grid,['qheat'])
         qheat = output.qheat
         z = {'value': qheat, 'label': r'Q heat (W m$^{-2}$)', 'name': 'qheatprof'}
-        pfile = call_plot('qheatprof',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
+        pfile = call_plot('qheatprof',ham.profile,input, grid, output, z, stride=1, save=save, axis=axis)
         plots_created.append(pfile)
 
     # need a trick to make these work for axis = None (command line plotting)

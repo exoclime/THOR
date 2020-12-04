@@ -198,11 +198,11 @@ class output_new:
             outputs['lambda_wave'] = 'wavelength'
 
         if input.BL:
-            if (input.BL_type == 1 or input.BL_type == 2):
+            if (input.BL_type == 1):
                 outputs['RiGrad'] = 'RiGrad'
                 outputs['KH'] = 'KH'
                 outputs['KM'] = 'KM'
-                outputs['CD'] = 'CD'
+                # outputs['CM'] = 'CM'
                 outputs['CH'] = 'CH'
             if (input.BL_type == 1):
                 outputs['RiB'] = 'RiB'
@@ -255,6 +255,14 @@ class output_new:
                     outputs['Cp'] = 'Cp'
                 else:
                     self.ConstRdCp = True
+
+                if input.BL:
+                    if (input.BL_type == 1):
+                        #dealing with name change bw compat
+                        if 'CD' in openh5.keys():
+                            outputs['CD'] = 'CM'
+                        else:
+                            outputs['CM'] = 'CM'
 
                 # for rename transition of col_mu_star, can be removed later
                 if 'cos_zenith_angles' in openh5.keys():
@@ -936,7 +944,7 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
                 source['bl_top_height'] = output.bl_top_height[:,0]
                 source['KH'] = output.KH[:,:-1,0] + (output.KH[:,1:,0]-output.KH[:,:-1,0])*interpz[None,:]
                 source['KM'] = output.KM[:,:-1,0] + (output.KM[:,1:,0]-output.KM[:,:-1,0])*interpz[None,:]
-                source['CD'] = output.CD[:,0]
+                source['CM'] = output.CM[:,0]
                 source['CH'] = output.CH[:,0]
 
             # calculate zonal and meridional velocity (special step for Mh)
