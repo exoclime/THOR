@@ -62,9 +62,9 @@
 #define B_THERM 0.0
 
 //tuning parameters for local diff scheme
-#define TRANSITION_HEIGHT -1
-#define ABL_ASYM_LEN 150.0
-#define FREE_ASYM_LEN 30.0
+// #define TRANSITION_HEIGHT -1
+// #define ABL_ASYM_LEN 150.0
+// #define FREE_ASYM_LEN 30.0
 #define E_MIN_MIX 0 //no idea what this should be!
 
 enum boundary_layer_types { RAYLEIGHHS = 0, LOCALMIXL = 1 };
@@ -105,6 +105,16 @@ private:
     double bl_sigma_config  = 0.7;           // sigma coord of boundary layer (% of surf pressure)
     double surf_drag;
     double bl_sigma;
+
+    double asl_transition_height_config =
+        -1; //transition height for asymptotic scale length (from BL to free atmos)
+            //  (set to -1 for no transition->use abl_asym_len everywhere)
+    double abl_asym_len_config  = 150.0; //asymptotic scale length (meters) for BL
+    double free_asym_len_config = 30.0;  //asympt. scale length (m) for free atmos
+
+    double asl_transition_height;
+    double abl_asym_len;
+    double free_asym_len;
 
     double *cpr_tmp, *dpr_tmp;
     double  zbl; // altitude of transition from BL to free atmosph (ekman scheme)
@@ -148,7 +158,10 @@ private:
                  double                 surf_drag_,
                  double                 bl_sigma_,
                  double                 Ri_crit_,
-                 double                 z_rough_);
+                 double                 z_rough_,
+                 double                 asl_transition_height_,
+                 double                 abl_asym_len_,
+                 double                 free_asym_len_);
 };
 
 __global__ void rayleighHS(double *Mh_d,
@@ -232,5 +245,8 @@ __global__ void CalcGradRi(double *pressure_d,
                            double *KM_d,
                            double *KH_d,
                            double *F_sens_d,
+                           double  asl_transition_height,
+                           double  abl_asym_len,
+                           double  free_asym_len,
                            int     num,
                            int     nv);

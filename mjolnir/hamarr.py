@@ -204,10 +204,10 @@ class output_new:
                 outputs['KM'] = 'KM'
                 # outputs['CM'] = 'CM'
                 outputs['CH'] = 'CH'
-            if (input.BL_type == 1):
-                outputs['RiB'] = 'RiB'
-                outputs['bl_top_height'] = 'bl_top_height'
-                outputs['bl_top_lev'] = 'bl_top_lev'
+            # if (input.BL_type == 1):
+            #     # outputs['RiB'] = 'RiB'
+            #     outputs['bl_top_height'] = 'bl_top_height'
+            #     outputs['bl_top_lev'] = 'bl_top_lev'
 
         # calc volume element
         Atot = input.A**2
@@ -940,8 +940,8 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
                 source['nh3'] = output.nh3[:, :, 0]/ output.Rho[:,:,0]
 
             if input.BL and input.BL_type == 1:
-                source['RiB'] = output.RiB[:, 0]
-                source['bl_top_height'] = output.bl_top_height[:,0]
+                # source['RiB'] = output.RiB[:, 0]
+                # source['bl_top_height'] = output.bl_top_height[:,0]
                 source['KH'] = output.KH[:,:-1,0] + (output.KH[:,1:,0]-output.KH[:,:-1,0])*interpz[None,:]
                 source['KM'] = output.KM[:,:-1,0] + (output.KM[:,1:,0]-output.KM[:,:-1,0])*interpz[None,:]
                 source['CM'] = output.CM[:,0]

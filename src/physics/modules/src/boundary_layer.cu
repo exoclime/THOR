@@ -56,8 +56,12 @@ void boundary_layer::print_config() {
 
     // basic properties
     log::printf("    bl_type                    = %s \n", bl_type_str.c_str());
-    log::printf("    surf_drag                  = %e 1/s\n", surf_drag_config);
-    log::printf("    bl_sigma                   = %f \n", bl_sigma_config);
+    log::printf("    surf_drag (RayleighHS)     = %e 1/s\n", surf_drag_config);
+    log::printf("    bl_sigma (RayleighHS)      = %f \n", bl_sigma_config);
+    log::printf("    z_rough (LocalMixL)               = %f m\n", z_rough_config);
+    log::printf("    asl_transition_height (LocalMixL) = %f m\n", asl_transition_height_config);
+    log::printf("    abl_asym_len (LocalMixL)          = %f m\n", abl_asym_len_config);
+    log::printf("    free_asym_len (LocalMixL)         = %f m\n", abl_asym_len_config);
 
     log::printf("\n");
 }
@@ -165,7 +169,16 @@ bool boundary_layer::initial_conditions(const ESP &esp, const SimulationSetup &s
         exit(-1);
     }
 
-    BLSetup(esp, sim, bl_type, surf_drag_config, bl_sigma_config, Ri_crit_config, z_rough_config);
+    BLSetup(esp,
+            sim,
+            bl_type,
+            surf_drag_config,
+            bl_sigma_config,
+            Ri_crit_config,
+            z_rough_config,
+            asl_transition_height_config,
+            abl_asym_len,
+            free_asym_len);
 
     return true;
 }
@@ -218,6 +231,9 @@ bool boundary_layer::phy_loop(ESP &                  esp,
                                  KM_d,
                                  KH_d,
                                  F_sens_d,
+                                 asl_transition_height,
+                                 abl_asym_len,
+                                 free_asym_len,
                                  esp.point_num,
                                  esp.nv);
 
@@ -386,14 +402,20 @@ void boundary_layer::BLSetup(const ESP &            esp,
                              double                 surf_drag_,
                              double                 bl_sigma_,
                              double                 Ri_crit_,
-                             double                 z_rough_) {
+                             double                 z_rough_,
+                             double                 asl_transition_height_,
+                             double                 abl_asym_len_,
+                             double                 free_asym_len_) {
     if (bl_type == RAYLEIGHHS) {
         surf_drag = surf_drag_;
         bl_sigma  = bl_sigma_;
     }
     else if (bl_type == LOCALMIXL) {
-        Ri_crit = Ri_crit_;
-        z_rough = z_rough_;
+        Ri_crit               = Ri_crit_;
+        z_rough               = z_rough_;
+        asl_transition_height = asl_transition_height_;
+        abl_asym_len          = abl_asym_len_;
+        free_asym_len         = free_asym_len_;
         for (int id = 0; id < esp.point_num; id++) {
             bl_top_lev_h[id] = esp.nv - 1; //local formulation includes entire column
         }
@@ -777,6 +799,9 @@ __global__ void CalcGradRi(double *pressure_d,
                            double *KM_d,
                            double *KH_d,
                            double *F_sens_d,
+                           double  asl_transition_height,
+                           double  abl_asym_len,
+                           double  free_asym_len,
                            int     num,
                            int     nv) {
 
@@ -886,17 +911,17 @@ __global__ void CalcGradRi(double *pressure_d,
             }
 
             //asymptotic length scale (constant in BL, decays to lower constant in free atmosphere)
-            if ((Altitudeh_d[lev] <= TRANSITION_HEIGHT) || (TRANSITION_HEIGHT < 0)) {
-                asym_len_scale_m = ABL_ASYM_LEN;
-                asym_len_scale_h = 3 * ABL_ASYM_LEN;
+            if ((Altitudeh_d[lev] <= asl_transition_height) || (asl_transition_height < 0)) {
+                asym_len_scale_m = abl_asym_len;
+                asym_len_scale_h = 3 * abl_asym_len;
             }
             else {
-                asym_len_scale_m = FREE_ASYM_LEN
-                                   + (ABL_ASYM_LEN - FREE_ASYM_LEN)
-                                         * exp(1 - Altitudeh_d[lev] / TRANSITION_HEIGHT);
-                asym_len_scale_h = FREE_ASYM_LEN
-                                   + (3 * ABL_ASYM_LEN - FREE_ASYM_LEN)
-                                         * exp(1 - Altitudeh_d[lev] / TRANSITION_HEIGHT);
+                asym_len_scale_m = free_asym_len
+                                   + (abl_asym_len - free_asym_len)
+                                         * exp(1 - Altitudeh_d[lev] / asl_transition_height);
+                asym_len_scale_h = free_asym_len
+                                   + (3 * abl_asym_len - free_asym_len)
+                                         * exp(1 - Altitudeh_d[lev] / asl_transition_height);
             }
             mix_length_m = pow(1.0 / KVONKARMAN / Altitudeh_d[lev] + 1.0 / asym_len_scale_m, -1.0);
             mix_length_h = pow(1.0 / KVONKARMAN / Altitudeh_d[lev] + 1.0 / asym_len_scale_h, -1.0);
