@@ -227,7 +227,7 @@ diff_ang = 1
 # n_lw = 4 approximations water-vapor in Earth troposph.
 n_lw = 4
 
-# optical depth at P_ref isL tau_sw = (kappa_sw/g) * (P_ref)
+# optical depth at P_ref is: tau_sw = (kappa_sw/g) * (P_ref)
 n_sw = 2
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

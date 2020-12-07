@@ -222,13 +222,12 @@ albedo = 0.3
 diff_ang = 0.5
 
 # power law index of unmixed absorbers (lw and sw)
-# tau_lw = f_lw * (kappa_lw/g) * P/P_ref
-#          + (1-f_lw) * (kappa_lw/g) * (P/P_ref)^n_lw
+# optical depth at P_ref is: tau_lw = (kappa_lw/(f_lw*g)) * P_ref
 # n_lw = 2 approximations collision-induced absorption
 # n_lw = 4 approximations water-vapor in Earth troposph.
 n_lw = 4
 
-# tau_sw = (kappa_sw/g) * (P/P_ref)^n_sw
+# optical depth at P_ref is: tau_sw = (kappa_sw/g) * (P_ref)
 n_sw = 2
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
