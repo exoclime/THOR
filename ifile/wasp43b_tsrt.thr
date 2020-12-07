@@ -82,8 +82,11 @@ spring_beta = 1.15
 # use grid refinement in vertical for lower atmos
 vert_refined = false
 
-# number of layers in logarithmic lower region
-n_bl_layers = 9
+#lowest layer thickness (used with vert_refined = true) (meters)
+lowest_layer_thickness = 2
+
+#altitude to transition to linear spacing (used with vert_refined=true) (meters)
+transition_altitude = 1000
 
 
 #-- Model options ------------------------------------------------------------#
@@ -199,7 +202,7 @@ order_diff_sponge = 2
 
 #-- Radiative transfer (double gray and two streams ) common options -------------------#
 # stellar temperature (K)
-Tstar = 4798 
+Tstar = 4798
 
 # orbital distance or semi-major axis (au)
 planet_star_dist = 0.01525
@@ -299,7 +302,7 @@ dgrt_spindown_stop = 172800
 # * planet_star_dist
 # * radius_star
 # * ... insolation stuff
-# 
+#
 
 two_streams_radiative_transfer = true
 
@@ -311,7 +314,7 @@ Alf_real_star = true
 # if using real star, give stellar spectrum here
 Alf_stellar_spectrum = ./Alfrodull/input/stellar_spectrum_wasp43_r50.h5
 
-# fake opacity when hitting opacity limit. 
+# fake opacity when hitting opacity limit.
 Alf_fake_opac = 0.0
 
 # asymmetry factor
@@ -367,17 +370,17 @@ Alf_compute_every_nstep = 1
 
 # number of columns to compute in parallel
 # (Adjust this depending on memory usage, more parallel column: faster integration)
-# Total number of points on grid is 4^(glevel - 4)*16^2*10 + 2. 
+# Total number of points on grid is 4^(glevel - 4)*16^2*10 + 2.
 Alf_num_parallel_columns = 900
 
 
 # debug output
-# enables various informational outputs for debugging 
+# enables various informational outputs for debugging
 Alf_debug = false
 
 #########################################################
 # spin up and spin down start and stop.
-# This represents the step number where spinup/-down starts and ends. 
+# This represents the step number where spinup/-down starts and ends.
 # Set to negative value to ignore and run at full power
 # spins up/down with a multiplication factor following a sine from 0 to 1 from
 # start to stop of spin up time and a sine from 1 to 0 for spin down
@@ -391,15 +394,28 @@ Alf_spindown_stop = -1
 #-- Boundary layer options (core_benchmark = NoBenchmark) --------------------#
 boundary_layer = false
 
-# type of boundary layer drag
+# type of boundary layer drag ('RayleighHS' or 'LocalMixL')
 bl_type = RayleighHS
 
-# strength of drag
+# strength of drag (bl_type = RayleighHS)
 #surf_drag = 1.157407e-5
 
 # boundary layer sigma (drag exist at this % of surface pressure and above)
+# (bl_type = RayleighHS)
 #bl_sigma = 0.7
 
+# surface roughness length (meters) (bl_type = LocalMixL)
+#z_rough = 3.21e-5
+
+# asymptotic scale length (ASL) for BL (meters) (bl_type = LocalMixL)
+#abl_asym_len = 150
+
+# asymptotic scale length (ASL) for free atmos (meters) (bl_type = LocalMixL)
+#free_asym_len = 30
+
+# height to transition from BL to free atmos for ASL (meters) (bl_type = LocalMixL)
+# set to -1 to use abl_asym_len in entire atmosphere
+#asl_transition_height = -1
 
 #-- Device options -----------------------------------------------------------#
 # GPU ID number
