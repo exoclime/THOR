@@ -948,10 +948,6 @@ __global__ void CalcGradRi(double *pressure_d,
 
             KH_d[id * nvi + lev] = mix_length_h * sqrt(e_mix_h);
             KM_d[id * nvi + lev] = mix_length_m * sqrt(e_mix_m);
-
-            if ((isnan(KH_d[id * nvi + lev])) || (isnan(KM_d[id * nvi + lev]))) {
-                printf("%f %f\n", KH_d[id * nvi + lev], KM_d[id * nvi + lev]);
-            }
         }
     }
 }
