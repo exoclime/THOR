@@ -410,22 +410,6 @@ def make_plot(args, save=True, axis=None):
         pfile = call_plot('Tsurf',ham.horizontal_lev,input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
         plots_created.append(pfile)
 
-    if ('RiB' in pview or 'all' in pview) and input.BL and input.BL_type == 1:
-        rg.load(['RiB'])
-        PR_LV = np.max(output.Pressure)  # not important here
-        z = {'value': rg.RiB, 'label': r'Surface Richardson number', 'name': 'RiB',
-             'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
-        pfile = call_plot('RiB',ham.horizontal_lev,input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
-        plots_created.append(pfile)
-
-    if ('BLheight' in pview or 'all' in pview) and input.BL and input.BL_type == 1:
-        rg.load(['bl_top_height'])
-        PR_LV = np.max(output.Pressure)  # not important here
-        z = {'value': rg.bl_top_height, 'label': r'BL height (m)', 'name': 'BLh',
-             'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
-        pfile = call_plot('BLh',ham.horizontal_lev,input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
-        plots_created.append(pfile)
-
     if ('DGfuptot' in pview or 'all' in pview) and input.RT:
         # Averaged temperature and wind field (longitude vs latitude)
         # PR_LV - Pressure level (Pa)
