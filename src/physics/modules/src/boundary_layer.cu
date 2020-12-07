@@ -177,8 +177,8 @@ bool boundary_layer::initial_conditions(const ESP &esp, const SimulationSetup &s
             Ri_crit_config,
             z_rough_config,
             asl_transition_height_config,
-            abl_asym_len,
-            free_asym_len);
+            abl_asym_len_config,
+            free_asym_len_config);
 
     return true;
 }
@@ -948,6 +948,10 @@ __global__ void CalcGradRi(double *pressure_d,
 
             KH_d[id * nvi + lev] = mix_length_h * sqrt(e_mix_h);
             KM_d[id * nvi + lev] = mix_length_m * sqrt(e_mix_m);
+
+            if ((isnan(KH_d[id * nvi + lev])) || (isnan(KM_d[id * nvi + lev]))) {
+                printf("%f %f\n", KH_d[id * nvi + lev], KM_d[id * nvi + lev]);
+            }
         }
     }
 }
