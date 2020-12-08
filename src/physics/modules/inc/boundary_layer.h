@@ -250,3 +250,11 @@ __global__ void CalcGradRi(double *pressure_d,
                            double  free_asym_len,
                            int     num,
                            int     nv);
+
+__global__ void FreeAtmosCutOff(double *KH_d,
+                                double *KM_d,
+                                double *RiGrad_d,
+                                double *Altitudeh_d,
+                                double  Ri_crit,
+                                int     num,
+                                int     nv);

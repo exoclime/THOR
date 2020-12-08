@@ -239,6 +239,10 @@ bool boundary_layer::phy_loop(ESP &                  esp,
 
         cudaDeviceSynchronize();
 
+        FreeAtmosCutOff<<<NBLEV, NTH>>>(
+            KH_d, KM_d, RiGrad_d, esp.Altitudeh_d, Ri_crit, esp.point_num, esp.nv);
+        cudaDeviceSynchronize();
+
         cudaMemset(cpr_tmp, 0, sizeof(double) * esp.point_num * esp.nvi);
         cudaMemset(dpr_tmp, 0, sizeof(double) * 3 * esp.point_num * esp.nvi);
 
@@ -948,6 +952,36 @@ __global__ void CalcGradRi(double *pressure_d,
 
             KH_d[id * nvi + lev] = mix_length_h * sqrt(e_mix_h);
             KM_d[id * nvi + lev] = mix_length_m * sqrt(e_mix_m);
+        }
+    }
+}
+
+__global__ void FreeAtmosCutOff(double *KH_d,
+                                double *KM_d,
+                                double *RiGrad_d,
+                                double *Altitudeh_d,
+                                double  Ri_crit,
+                                int     num,
+                                int     nv) {
+
+    // loop over layers and estimate BL height, then apply exponential cut-off
+    // to diffusitivities to prevent large values in free atmosphere
+
+    int id = blockIdx.x * blockDim.x + threadIdx.x;
+    int lev;
+
+    if (id < num) {
+        double h_bl = Altitudeh_d[1]; //bl height for this column, starting at top of first level
+        for (lev = 1; lev < nv; lev++) {
+            if (RiGrad_d[id * (nv + 1) + lev]
+                < Ri_crit) { //if bottom of level is < Ricrit, keep level in bl
+                h_bl =
+                    Altitudeh_d[lev + 1]; //h_bl will be height of first interface to cross Ricrit
+            }
+            else { //levels are above h_bl, apply cut off
+                KH_d[id * (nv + 1) + lev] *= exp(1 - Altitudeh_d[lev] / h_bl);
+                KM_d[id * (nv + 1) + lev] *= exp(1 - Altitudeh_d[lev] / h_bl);
+            }
         }
     }
 }
