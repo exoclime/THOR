@@ -233,8 +233,9 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
                                     sim.Gravit,    // Gravity [m/s^2]
                                     Altitude_d,    // Altitudes of the layers
                                     Altitudeh_d,   // Altitudes of the interfaces
-                                    point_num,     // Number of columns
-                                    nv);           // number of vertical layers
+                                    sim.conv_adj_iter,
+                                    point_num, // Number of columns
+                                    nv);       // number of vertical layers
     }
 
     BENCH_POINT_I(current_step,

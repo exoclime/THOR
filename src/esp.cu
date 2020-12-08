@@ -149,15 +149,14 @@ void get_cuda_mem_usage(size_t& total_bytes, size_t& free_bytes) {
 }
 
 
-
 void print_hdf_5_version() {
-  unsigned int majnum = 0;
-  unsigned int minnum = 0;
-  unsigned int relnum = 0;
-  
-  H5get_libversion(&majnum,&minnum,&relnum);
+    unsigned int majnum = 0;
+    unsigned int minnum = 0;
+    unsigned int relnum = 0;
 
-  printf("using HDF5 version %d.%d.%d\n", majnum, minnum, relnum);
+    H5get_libversion(&majnum, &minnum, &relnum);
+
+    printf("using HDF5 version %d.%d.%d\n", majnum, minnum, relnum);
 }
 
 
@@ -361,6 +360,7 @@ int main(int argc, char** argv) {
         "core_benchmark", core_benchmark_str, string(core_benchmark_default)); //
 
     config_reader.append_config_var("conv_adj", sim.conv_adj, conv_adj_default);
+    config_reader.append_config_var("conv_adj_iter", sim.conv_adj_iter, conv_adj_iter_default);
 
     int GPU_ID_N = 0;
     config_reader.append_config_var("GPU_ID_N", GPU_ID_N, GPU_ID_N_default);
