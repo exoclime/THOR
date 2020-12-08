@@ -1123,7 +1123,7 @@ int main(int argc, char** argv) {
 
     // make a copy of config file (is there a better way to do this?)
     std::ifstream source(config_filename);
-    char          dest_name[256];
+    char          dest_name[512];
     sprintf(dest_name, "%s/config_copy.%d", output_path.c_str(), output_file_idx);
     std::ofstream destin(dest_name);
 
