@@ -202,6 +202,7 @@ __host__ void ESP::alloc_data(bool globdiag, bool output_mean) {
     pressure_h    = (double *)malloc(nv * point_num * sizeof(double));
     temperature_h = (double *)malloc(nv * point_num * sizeof(double));
     Mh_h          = (double *)malloc(nv * point_num * 3 * sizeof(double));
+    diffmh_h      = (double *)malloc(nv * point_num * 3 * sizeof(double));
     W_h           = (double *)malloc(nv * point_num * sizeof(double));
     Wh_h          = (double *)malloc(nvi * point_num * sizeof(double));
 
@@ -597,6 +598,11 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 Mh_h[i * 3 * nv + 3 * lev + 1] = 0.0;
                 Mh_h[i * 3 * nv + 3 * lev + 2] = 0.0;
 
+                //              Momentum tendency from hyperdiffusion [kg/m3 m/s2]
+                diffmh_h[i * 3 * nv + 3 * lev + 0] = 0.0;
+                diffmh_h[i * 3 * nv + 3 * lev + 1] = 0.0;
+                diffmh_h[i * 3 * nv + 3 * lev + 2] = 0.0;
+
                 //              Vertical momentum [kg/m3 m/s]
                 W_h[i * nv + lev]        = 0.0; // Center of the layer.
                 Wh_h[i * (nv + 1) + lev] = 0.0; // Layers interface.
@@ -911,6 +917,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
     cudaMemcpy(
         temperature_d, temperature_h, point_num * nv * sizeof(double), cudaMemcpyHostToDevice);
     cudaMemcpy(Mh_d, Mh_h, point_num * nv * 3 * sizeof(double), cudaMemcpyHostToDevice);
+    cudaMemcpy(diffmh_d, diffmh_h, point_num * nv * 3 * sizeof(double), cudaMemcpyHostToDevice);
     cudaMemcpy(W_d, W_h, point_num * nv * sizeof(double), cudaMemcpyHostToDevice);
     cudaMemcpy(Wh_d, Wh_h, point_num * nvi * sizeof(double), cudaMemcpyHostToDevice);
     cudaMemcpy(Rho_d, Rho_h, point_num * nv * sizeof(double), cudaMemcpyHostToDevice);
@@ -1037,6 +1044,7 @@ __host__ ESP::~ESP() {
     free(pressure_h);
     free(temperature_h);
     free(Mh_h);
+    free(diffmh_h);
     free(W_h);
     free(Wh_h);
 
