@@ -198,7 +198,7 @@ class output_new:
             outputs['lambda_wave'] = 'wavelength'
 
         if input.BL:
-            if (input.BL_type == 1):
+            if (input.BL_type >= 1):
                 outputs['RiGrad'] = 'RiGrad'
                 outputs['KH'] = 'KH'
                 outputs['KM'] = 'KM'
@@ -257,7 +257,7 @@ class output_new:
                     self.ConstRdCp = True
 
                 if input.BL:
-                    if (input.BL_type == 1):
+                    if (input.BL_type >= 1):
                         #dealing with name change bw compat
                         if 'CD' in openh5.keys():
                             outputs['CD'] = 'CM'
@@ -2021,7 +2021,7 @@ def profile(input, grid, output, z, stride=50, axis=None, save=True, use_p=True,
         ax.set_yscale("log")
 
     # add an insert showing the position of
-    inset_pos = [0.8, 0.8, 0.18, 0.18]
+    inset_pos = [0.8, 0.2, 0.18, 0.18]
     ax_inset = ax.inset_axes(inset_pos)
     ax_inset.scatter(col_lon, col_lat, c=col_lor, s=1.0)
     ax_inset.tick_params(axis='both',

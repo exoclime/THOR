@@ -60,7 +60,7 @@ def make_plot(args, save=True, axis=None):
              'w0prof', 'g0prof', 'spectrum',
              'phase','all','eddyKE','eddyMomMerid','eddyTempMerid','eddyTempVar',
              'Etotlev','AngMomlev', 'Entropylev','Kdiffprof', 'RiB','BLheight',
-             'RTbalance']
+             'RTbalance','Riprof']
 
     rg_needed = ['Tver', 'Tlonver', 'uver', 'ulonver', 'vver', 'wver', 'wlonver', 'Tulev', 'PTver', 'PTlonver', 'ulev', 'PVver', 'PVlev',
                  'RVlev', 'stream', 'tracer', 'Tsurf', 'insol', 'massf', 'pause_rg',
@@ -598,7 +598,7 @@ def make_plot(args, save=True, axis=None):
         T = output.Pressure / input.Rd / output.Rho
         pt = T * (output.Pressure / input.P_Ref)**(-kappa_ad)
         z = {'value': pt, 'label': 'Potential Temperature (K)', 'name': 'PT'}
-        pfile = call_plot('PTP',ham.profile,input, grid, output, z, save=save, axis=axis)
+        pfile = call_plot('PTP',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
         plots_created.append(pfile)
 
     if 'wprof' in pview or 'all' in pview:  # RD: needs some work!
@@ -783,6 +783,15 @@ def make_plot(args, save=True, axis=None):
             (grid.Altitudeh[None, 1:, None] - grid.Altitudeh[None, :-1, None])
         z = {'value': KM, 'label': r'boundary layer K$_M$ (m$^2$ s$^{-1}$)', 'name': 'KM'}
         pfile = call_plot('KM',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis, use_p=False)
+        plots_created.append(pfile)
+
+    if ('Riprof' in pview or 'all' in pview) and input.BL and (input.BL_type == 1):
+        output.load_reshape(grid,['RiGrad'])
+        Ri = output.RiGrad[:, :-1, :] + (output.RiGrad[:, 1:, :] - output.RiGrad[:, :-1, :]) *\
+            (grid.Altitude[None, :, None] - grid.Altitudeh[None, :-1, None]) /\
+            (grid.Altitudeh[None, 1:, None] - grid.Altitudeh[None, :-1, None])
+        z = {'value': Ri, 'label': r'gradient Ri', 'name': 'Ri'}
+        pfile = call_plot('Ri',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis, use_p=False)
         plots_created.append(pfile)
 
     # --- Global diagnostics -----------------------------------

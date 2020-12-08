@@ -61,7 +61,7 @@ void boundary_layer::print_config() {
     log::printf("    z_rough (LocalMixL)               = %f m\n", z_rough_config);
     log::printf("    asl_transition_height (LocalMixL) = %f m\n", asl_transition_height_config);
     log::printf("    abl_asym_len (LocalMixL)          = %f m\n", abl_asym_len_config);
-    log::printf("    free_asym_len (LocalMixL)         = %f m\n", abl_asym_len_config);
+    log::printf("    free_asym_len (LocalMixL)         = %f m\n", free_asym_len_config);
 
     log::printf("\n");
 }
