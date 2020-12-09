@@ -52,9 +52,9 @@
 #include <iostream>
 #include <string>
 
+#include "directories.h"
 #include "hdf5.h"
 #include "storage.h"
-#include "directories.h"
 #include <cmath>
 #include <cstring>
 
@@ -149,57 +149,33 @@ void Output(int                current_step, // Number of integration steps
 
         storage s(FILE_NAME1);
 
-        s.append_table(Grid.Altitude,
-                       Grid.nv,
-                       "/Altitude",
-                       "m",
-                       "Altitude");
+        s.append_table(Grid.Altitude, Grid.nv, "/Altitude", "m", "Altitude");
 
         //      Altitudeh
-        s.append_table(Grid.Altitudeh,
-                       Grid.nv + 1,
-                       "/Altitudeh",
-                       "m",
-                       "Altitude at the interfaces");
+        s.append_table(
+            Grid.Altitudeh, Grid.nv + 1, "/Altitudeh", "m", "Altitude at the interfaces");
 
         //      AreasT
-        s.append_table(Grid.areasT,
-                       Grid.point_num,
-                       "/areasT",
-                       "m^2",
-                       "Main cells areas");
+        s.append_table(Grid.areasT, Grid.point_num, "/areasT", "m^2", "Main cells areas");
 
         //      Lon-lat grid
-        s.append_table(Grid.lonlat,
-                       2 * Grid.point_num,
-                       "/lonlat",
-                       "-",
-                       "Longitudes and latitudes");
+        s.append_table(Grid.lonlat, 2 * Grid.point_num, "/lonlat", "-", "Longitudes and latitudes");
 
         //      Number of horizontal points
-        s.append_value((double)Grid.point_num,
-                       "/point_num",
-                       "-",
-                       "Number of grid points in one level");
+        s.append_value(
+            (double)Grid.point_num, "/point_num", "-", "Number of grid points in one level");
 
         //      Number of vertical layers
-        s.append_value((double)Grid.nv,
-                       "/nv",
-                       "-",
-                       "Number of vertical layers");
+        s.append_value((double)Grid.nv, "/nv", "-", "Number of vertical layers");
         //      point neighbours
-        s.append_table(Grid.point_local,
-                       6 * Grid.point_num,
-                       "/pntloc",
-                       "-",
-                       "Neighbours indexes");
+        s.append_table(Grid.point_local, 6 * Grid.point_num, "/pntloc", "-", "Neighbours indexes");
     }
 
-   
-    
+
     //  PLANET
     if (current_step == 0) {
-        sprintf(FILE_NAME1, "%s/esp_output_planet_%s.h5", output_dir.c_str(), simulation_ID.c_str());
+        sprintf(
+            FILE_NAME1, "%s/esp_output_planet_%s.h5", output_dir.c_str(), simulation_ID.c_str());
         storage s(FILE_NAME1);
 
         // glevel
@@ -225,12 +201,13 @@ void Output(int                current_step, // Number of integration steps
         //      CP
         s.append_value(sim.Cp, "/Cp", "J/(Kg K)", "Specific heat capacity");
         //      SpongeLayer option
-        s.append_value(sim.SpongeLayer ? 1.0 : 0.0, "/SpongeLayer", "-", "Using SpongeLayer?");
+        s.append_value(sim.RayleighSponge ? 1.0 : 0.0, "/SpongeLayer", "-", "Using SpongeLayer?");
         //      DeepModel option
         s.append_value(sim.DeepModel ? 1.0 : 0.0, "/DeepModel", "-", "Using Deep Model");
 
         //      NonHydro option
-        s.append_value(sim.NonHydro ? 1.0 : 0.0, "/NonHydro", "-", "Using Non Hydrostatic parameter");
+        s.append_value(
+            sim.NonHydro ? 1.0 : 0.0, "/NonHydro", "-", "Using Non Hydrostatic parameter");
 
         //      DivDampP option
         s.append_value(sim.DivDampP ? 1.0 : 0.0, "/DivDampP", "-", "Using Divergence-damping");
@@ -254,7 +231,7 @@ void Output(int                current_step, // Number of integration steps
         s.append_value(sim.rest ? 1.0 : 0.0, "/rest", "-", "Starting from rest");
 
         //      TPprof option
-        s.append_value(sim.TPprof, "/TPprof", "-", "Initial TP profile option");
+        // s.append_value(sim.TPprof, "/TPprof", "-", "Initial TP profile option");
     }
 
     //  ESP OUTPUT
@@ -263,44 +240,22 @@ void Output(int                current_step, // Number of integration steps
 
     storage s(FILE_NAME1);
     // step index
-    s.append_value(current_step,
-                   "/nstep",
-                   "-",
-                   "Step number");
+    s.append_value(current_step, "/nstep", "-", "Step number");
 
     //  Simulation time
-    s.append_value(simulation_time,
-                   "/simulation_time",
-                   "s",
-                   "Simulation time");
+    s.append_value(simulation_time, "/simulation_time", "s", "Simulation time");
 
     //  Rho
-    s.append_table(Rho_h,
-                   Grid.nv * Grid.point_num,
-                   "/Rho",
-                   "kg/m^3",
-                   "Density");
+    s.append_table(Rho_h, Grid.nv * Grid.point_num, "/Rho", "kg/m^3", "Density");
 
     //  Pressure
-    s.append_table(pressure_h,
-                   Grid.nv * Grid.point_num,
-                   "/Pressure",
-                   "Pa",
-                   "Pressure");
+    s.append_table(pressure_h, Grid.nv * Grid.point_num, "/Pressure", "Pa", "Pressure");
 
     //  Mh
-    s.append_table(Mh_h,
-                   Grid.nv * Grid.point_num * 3,
-                   "/Mh",
-                   "kg m/s",
-                   "Horizontal Momentum");
+    s.append_table(Mh_h, Grid.nv * Grid.point_num * 3, "/Mh", "kg m/s", "Horizontal Momentum");
 
     //  Wh
-    s.append_table(Wh_h,
-                   Grid.nvi * Grid.point_num,
-                   "/Wh",
-                   "kg m/s",
-                   "Vertical Momentum");
+    s.append_table(Wh_h, Grid.nvi * Grid.point_num, "/Wh", "kg m/s", "Vertical Momentum");
 }
 
 
@@ -312,7 +267,7 @@ int main() {
 
 
         int max_count;
-        
+
         // level 3 grid
         Icogrid Grid(spring_dynamics, // Spring dynamics option
                      spring_beta,     // Parameter beta for spring dynamics
@@ -323,10 +278,10 @@ int main() {
                      36000.0,
                      sponge, // Top of the model's domain
                      &max_count);
-        
+
         string output_dir = "./gen/results_res_6/";
         create_output_dir(output_dir);
-        
+
 
         SimulationSetup sim;
 
@@ -344,8 +299,12 @@ int main() {
             basis_sph local_basis = base_sph_vectors(lat, lon);
             double    Ha          = sim.Rd * sim.Tmean / sim.Gravit;
             printf("e_r: %f %f %f\n", local_basis.e_r.x, local_basis.e_r.y, local_basis.e_r.z);
-            printf("e_theta: %f %f %f\n", local_basis.e_theta.x, local_basis.e_theta.y, local_basis.e_theta.z);
-            printf("e_phi: %f %f %f\n", local_basis.e_phi.x, local_basis.e_phi.y, local_basis.e_phi.z);
+            printf("e_theta: %f %f %f\n",
+                   local_basis.e_theta.x,
+                   local_basis.e_theta.y,
+                   local_basis.e_theta.z);
+            printf(
+                "e_phi: %f %f %f\n", local_basis.e_phi.x, local_basis.e_phi.y, local_basis.e_phi.z);
             for (int lev = 0; lev < Grid.nv; lev++) {
                 double p                      = lat / (M_PI / 2.0);
                 pressure_h[i * Grid.nv + lev] = p;
@@ -383,7 +342,7 @@ int main() {
         //
         //  Writes initial conditions
         double simulation_time = 0.0;
-        
+
         Output(0,
                0,
                spring_dynamics,

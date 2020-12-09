@@ -1,72 +1,293 @@
-"""                                                                                                                                                                              
-Queue multiple tasks for slurm in batch mode. 
+"""
+Queue multiple tasks for slurm in batch mode.
 """
 
 import subprocess
 import re
+import argparse
+
+import configparser
+import pathlib
+
+# Load default configuration
+# create a file slurm.cfg in the directory you run this script from
+# or in ~/.config/THOR-gcm/slurm.cfg.
+# Following *.ini file format, key value pairs without quotes
+# keys in config file will override keys from script
+# ----------------
+# [DEFAULTS]
+# # working directory where slurm is run from
+# working_dir = /path/to/thor/directory/
+# # email address to send slurm report to
+# user_email = thoruser@thorsim.org
+# # where to log data in
+# log_dir = /path/to/log/dir
+# # slurm ressource request
+# gpu_key = gpu:gtx1080ti:1
+# # slurm partition
+# partition = gpu
+
+config_data = {'working_dir': "~/THOR/",             # path to THOR directory
+               'user_email': "thoruser@thorsim.org",
+               'log_dir': "~/",                      # path to log slurm output
+               'gpu_key': 'gpu:1',                   # slurm argument for gpu selection  ( --gres )
+               'partition': 'production'}           # slurm argument for partition ( -p )
 
 
-def start_esp(args, esp_command, esp_args, initial_file):
+def load_config():
+    global config_data
+    config_file = None
+    # open default pathes
+    cwd_config = pathlib.Path("slurm.cfg")
+    # find in home directory, expanding '~'
+    user_config = pathlib.Path("~/.config/THOR-gcm/slurm.cfg").expanduser()
+    sys_config = pathlib.Path("/etc/THOR-gcm/slurm.cfg")
+
+    configs_to_try = [cwd_config, user_config, sys_config]
+
+    for path in configs_to_try:
+        if path.exists():
+            config_file = path
+            break
+
+    if config_file is not None:
+        conf = configparser.ConfigParser()
+
+        conf.read(config_file)
+
+        for k, v in conf['DEFAULTS'].items():
+            # example to convert some keys from text to boolean
+            if (k == 'some_boolean_value'
+                    or k == 'some_other_boolean_value'):
+                config_data[k] = conf.getboolean('DEFAULTS', k)
+            else:
+                # read text keys
+                config_data[k] = v
+
+
+load_config()
+
+print("config: ")
+for k, v in config_data.items():
+    print("\t{}: {}".format(k, v))
+#######################################################################
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument('input_file', metavar='nview', nargs='*', help='Thor config file to run')
+parser.add_argument("-jn", "--job_name", nargs=1, default=['default'], help='Job name for slurm scheduler')
+parser.add_argument("-n", "--num_jobs", nargs=1, default=[2], type=int, help='Number of sequential jobs to run (integer)')
+parser.add_argument("-p", "--prof", action="store_true", default=False, help='Run profiler on job')
+parser.add_argument("-o", "--output", type=str, default=None, help='Output dir name')
+parser.add_argument("-r", "--report", action="store_true", default=False, help="Run reporting code at end of sim")
+parser.add_argument("-d", "--dependency", action="store", type=int, default=None, help="Run after this job ID")
+
+parser.add_argument("--pp", action="append", type=str, default=[], help="Post processing to run")
+
+args = parser.parse_args()
+initial_file = args.input_file[0]
+if args.job_name[0] == 'default':
+    job_name = args.input_file
+else:
+    job_name = args.job_name[0]
+num_jobs = args.num_jobs[0]
+
+if args.prof:
+    profiling = f"{job_name}.prof"
+else:
+    profiling = None
+
+if args.output is not None:
+    output_arg = f"-o {args.output}"
+else:
+    output_arg = ""
+
+if args.dependency is not None:
+    last_id = args.dependency
+else:
+    last_id = None
+
+
+def start_esp(args, esp_command, esp_args, initial_file, index=0, profiling=None):
     batch_id_re = re.compile("Submitted batch job (\d+)\n")
-
+    print(f"Batch job args: {args}")
     with subprocess.Popen(args,
                           stdin=subprocess.PIPE,
                           stdout=subprocess.PIPE,
                           stderr=subprocess.PIPE,
                           universal_newlines=True) as proc:
+        if profiling is not None:
+            prof_cmd = f"nvprof --export-profile {profiling}.{index}"
+        else:
+            prof_cmd = ''
         proc.stdin.write("#!/bin/sh\n")
-        proc.stdin.write("srun {} {} {}\n".format(esp_command,
-                                                  esp_args,
-                                                  initial_file))
+        srun_command = f"srun {prof_cmd} {esp_command} {esp_args} {initial_file}\n"
+        proc.stdin.write(srun_command)
         proc.stdin.close()
         procid_string = proc.stdout.read()
+        print(proc.stderr.read())
         m = batch_id_re.match(procid_string)
         if m is not None:
             batch_id = m.group(1)
-            print("Submitted batch with ID: {}".format(batch_id))
+            print(f"Submitted batch with ID: {batch_id}\nCommand: {srun_command}")
             return True, batch_id
         else:
-            print("Error reading batch id from return: {}".format(procid_string))
+            print(f"Error reading batch id from return: {procid_string}\nCommand: {srun_command}")
 
             return False, -1
 
 
 # Configure batch
-working_dir = "/path/to/thor/directory/"
-job_name = "myjobname"
-initial_file = "ifile/initialfile.thr"
+working_dir = str(pathlib.Path(config_data['working_dir']).expanduser())
+
 # Acceptable  time  formats  include  "minutes", "minutes:seconds",
 # "hours:minutes:seconds", "days-hours",
 # "days-hours:minutes" and "days-hours:minutes:seconds".
-time_limit = "0-0:10"
-mail = "thoruser@thorsim.org"
-output_file = "/path/to/slurm-output-%j.out"  # %j for job index
-args = ['sbatch',
-        '-D', working_dir,
-        '-J', job_name,
-        '-n', str(1),
-        '--gres', 'gpu:1',
-        '-p', 'production',
-        '--time', time_limit,
-        '--mail-type=ALL',
-        '--mail-user='+mail,
-        '--output='+output_file,
-        '--signal=INT@60']  # send interrupt signal 60 seconds before end of job
+time_limit = "0-23:00"
+mail = config_data['user_email']
+log_dir = pathlib.Path(config_data['log_dir']).expanduser()
+if not log_dir.exists():
+    print(f"Creating log output directory: {log_dir}")
+    log_dir.mkdir(parents=True, exist_ok=True)
+
+output_file = str(log_dir / f"slurm-esp-{job_name}-%j.out")  # %j for job index
+
+
+sbatch_args = ['sbatch',
+               '-D', working_dir,
+               '-n', str(1),
+               '--gres', config_data['gpu_key'],
+               '-p', config_data['partition'],
+               '--mem-per-cpu=8G',
+               '--time', time_limit,
+               '--mail-type=ALL',
+               '--mail-user=' + mail,
+               '--output=' + output_file,
+               '--signal=INT@60']
 esp_command = "bin/esp"
-esp_args = '-b'
+esp_args = f'-b {output_arg}'
 
-num_jobs = 10
-
-# launch num_jobs slurm jobs with dependencies to the last job
 last_success = None
-last_id = None
 for i in range(num_jobs):
     if last_id is None:
-        last_success, last_id = start_esp(
-            args, esp_command, esp_args, initial_file)
+        last_success, last_id = start_esp(sbatch_args + ['-J', f'{job_name}-{i}'], esp_command, esp_args, initial_file, index=i, profiling=profiling)
     elif last_success:
-        last_success, last_id = start_esp(
-            args + ['--dependency=afterany:{}'.format(last_id)], esp_command, esp_args, initial_file)
+        last_success, last_id = start_esp(sbatch_args + ['--dependency=afterany:{}'.format(last_id), '-J', f'{job_name}-{i}'], esp_command, esp_args, initial_file, index=i, profiling=profiling)
+    else:
+        print("Error queuing last command")
+        exit(-1)
+
+
+def start_muninn(args, muninn_command):
+    batch_id_re = re.compile("Submitted batch job (\d+)\n")
+    print(f"Batch job args: {args}")
+    with subprocess.Popen(args,
+                          stdin=subprocess.PIPE,
+                          stdout=subprocess.PIPE,
+                          stderr=subprocess.PIPE,
+                          universal_newlines=True) as proc:
+
+        proc.stdin.write("#!/bin/sh\n")
+        srun_command = f"srun {muninn_command}\n"
+        proc.stdin.write(srun_command)
+        proc.stdin.close()
+        procid_string = proc.stdout.read()
+        print(proc.stderr.read())
+        m = batch_id_re.match(procid_string)
+        if m is not None:
+            batch_id = m.group(1)
+            print(f"Submitted muninn batch with ID: {batch_id}\nCommand: {srun_command}")
+            return True, batch_id
+        else:
+            print(f"Error reading batch id from muninn return: {procid_string}\nCommand: {srun_command}")
+
+            return False, -1
+
+
+if args.report:
+
+    output_file = str(log_dir / f"slurm-muninn-{job_name}-%j.out")  # %j for job index
+
+    sbatch_args = ['sbatch',
+                   '-D', working_dir,
+                   '-J', job_name + "-muninn",
+                   '-n', str(1),
+                   '--gres', config_data['gpu_key'],
+                   '-p', config_data['partition'],
+                   '--time', time_limit,
+                   '--mail-type=ALL',
+                   '--mail-user=' + mail,
+                   '--output=' + output_file,
+                   '--signal=INT@60']
+
+    if args.output is not None:
+        muninn_output_arg = f"{args.output}"
+    else:
+        print("need to specify path to output for muninn")
+        exit(-1)
+
+    muninn_command = f"./mjolnir/muninn -j mjolnir/mjolnyr.ipynb {muninn_output_arg}"
+    if last_id is None:
+        last_success, last_id = start_muninn(sbatch_args, muninn_command)
+    elif last_success:
+        last_success, last_id = start_muninn(sbatch_args + ['--dependency=afterany:{}'.format(last_id)], muninn_command)
+    else:
+        print("Error queuing last command")
+        exit(-1)
+
+
+def start_postprocessing(args, pp_command):
+    batch_id_re = re.compile("Submitted batch job (\d+)\n")
+    print(f"Batch job args: {args}")
+    with subprocess.Popen(args,
+                          stdin=subprocess.PIPE,
+                          stdout=subprocess.PIPE,
+                          stderr=subprocess.PIPE,
+                          universal_newlines=True) as proc:
+
+        proc.stdin.write("#!/bin/sh\n")
+        srun_command = f"srun {pp_command}\n"
+        proc.stdin.write(srun_command)
+        proc.stdin.close()
+        procid_string = proc.stdout.read()
+        print(proc.stderr.read())
+        m = batch_id_re.match(procid_string)
+        if m is not None:
+            batch_id = m.group(1)
+            print(f"Submitted pos processing batch with ID: {batch_id}\nCommand: {srun_command}")
+            return True, batch_id
+        else:
+            print(f"Error reading batch id from posprocessing return: {procid_string}\nCommand: {srun_command}")
+
+            return False, -1
+
+for pp in args.pp:
+    output_file = str(log_dir / f"slurm-postproc-{job_name}-%j.out")  # %j for job index
+
+    sbatch_args = ['sbatch',
+                   '-D', working_dir,
+                   '-J', job_name + "-postproc",
+                   '-n', str(1),
+                   '--gres', config_data['gpu_key'],
+                   '-p', config_data['partition'],
+                   '--mem-per-cpu=8G',
+                   '--time', time_limit,
+                   '--mail-type=ALL',
+                   '--mail-user=' + mail,
+                   '--output=' + output_file,
+                   '--signal=INT@60']
+
+    if args.output is not None:
+        postproc_output_arg = f"{args.output}"
+    else:
+        print("need to specify path to directory for postprocessing")
+        exit(-1)
+
+    postproc_command = f"./tools/postprocessingsteps.py {postproc_output_arg} {pp}"
+    if last_id is None:
+        last_success, last_id = start_postprocessing(sbatch_args, postproc_command)
+    elif last_success:
+        last_success, last_id = start_postprocessing(sbatch_args + ['--dependency=afterany:{}'.format(last_id)], postproc_command)
     else:
         print("Error queuing last command")
         exit(-1)

@@ -59,20 +59,17 @@ using std::endl;
 
 // Bool argument is just a switch
 // Number of arguments following this key is 0
-template<>
-int arg<bool>::get_nargs() {
+template<> int arg<bool>::get_nargs() {
     return 0;
-};
+}
 
 // Flag it as set, it will use its predefined value
-template<>
-void arg<bool>::set_default() {
+template<> void arg<bool>::set_default() {
     has_value = true;
-};
+}
 
 
-cmdargs::cmdargs(const string& app_name_,
-                 const string& app_desc_):
+cmdargs::cmdargs(const string& app_name_, const string& app_desc_) :
     app_name(app_name_),
     app_desc(app_desc_) {
 }
@@ -102,10 +99,10 @@ bool cmdargs::parse(int argc, char** argv) {
 arg_interface* cmdargs::operator[](string idx) {
     const string s = idx;
 
-    auto&& it = std::find_if(args.begin(),
-                             args.end(),
-                             [s](const std::unique_ptr<arg_interface>& m)
-                                 -> bool { return m->is_key(s); });
+    auto&& it =
+        std::find_if(args.begin(),
+                     args.end(),
+                     [s](const std::unique_ptr<arg_interface>& m) -> bool { return m->is_key(s); });
 
 
     if (it != args.end()) {
@@ -113,11 +110,8 @@ arg_interface* cmdargs::operator[](string idx) {
     }
     else {
         char error[256];
-        sprintf(error,
-                "%s:(%d) key [%s] not found in argument list",
-                __FILE__,
-                __LINE__,
-                idx.c_str());
+        sprintf(
+            error, "%s:(%d) key [%s] not found in argument list", __FILE__, __LINE__, idx.c_str());
 
         throw std::runtime_error(error);
     }
@@ -155,11 +149,13 @@ bool cmdargs::parser_state_machine(const string& str) {
                     exit(0);
                 }
 
-                current_arg_interface = std::find_if(args.begin(),
-                                                     args.end(),
-                                                     [ma](const std::unique_ptr<arg_interface>& m)
-                                                         -> bool { return m->is_key(ma); });
-                match_key             = true;
+                current_arg_interface =
+                    std::find_if(args.begin(),
+                                 args.end(),
+                                 [ma](const std::unique_ptr<arg_interface>& m) -> bool {
+                                     return m->is_key(ma);
+                                 });
+                match_key = true;
             }
 
             // act for argument
@@ -204,18 +200,19 @@ bool cmdargs::parser_state_machine(const string& str) {
         }
         case GOT_KEY: {
             bool parsed = (*current_arg_interface)->parse_narg(str);
-            
+
             if (!parsed) {
-                cout << "error parsing value " << str << " for key " << (*current_arg_interface)->get_name() << endl;
+                cout << "error parsing value " << str << " for key "
+                     << (*current_arg_interface)->get_name() << endl;
             }
-            
+
             string ma = "";
             if (is_short_cmdargs(str, ma) || is_long_cmdargs(str, ma)) {
-                cout << "received a command switch when expecting an argument"<<endl;
+                cout << "received a command switch when expecting an argument" << endl;
                 parsed = false;
             }
-                
-            
+
+
             parser_state_nargs--;
 
             if (parser_state_nargs == 0)

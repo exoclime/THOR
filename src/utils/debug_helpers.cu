@@ -73,7 +73,9 @@ __global__ void isnan_check_device(double *array, int size, bool *check) {
 
     int idx = threadIdx.x + blockDim.x * blockIdx.x;
 
-    if (idx < size && ::isnan(array[idx])) { *check = true; }
+    if (idx < size && ::isnan(array[idx])) {
+        *check = true;
+    }
 }
 
 
@@ -133,5 +135,32 @@ void check_last_cuda_error(std::string ref_name) {
     // Check device query
     if (err != cudaSuccess) {
         log::printf("'%s' cuda error: %s\n", ref_name.c_str(), cudaGetErrorString(err));
+    }
+}
+
+
+void cuda_check_status_or_exit() {
+    cudaError_t err = cudaGetLastError();
+
+    // Check device query
+    if (err != cudaSuccess) {
+        log::printf("[%s:%d] CUDA error check reports error: %s\n",
+                    __FILE__,
+                    __LINE__,
+                    cudaGetErrorString(err));
+        exit(EXIT_FAILURE);
+    }
+}
+
+void cuda_check_status_or_exit(const char *filename, const int &line) {
+    cudaError_t err = cudaGetLastError();
+
+    // Check device query
+    if (err != cudaSuccess) {
+        log::printf("[%s:%d] CUDA error check reports error: %s\n",
+                    filename,
+                    line,
+                    cudaGetErrorString(err));
+        exit(EXIT_FAILURE);
     }
 }

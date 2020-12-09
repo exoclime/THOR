@@ -16,7 +16,7 @@
 //     <http://www.gnu.org/licenses/>.
 // ==============================================================================
 //
-// Timer helper to measure tome for iterations, elapsed time and time remaining
+// Timer helper to measure time for iterations, elapsed time and time remaining
 //
 
 //
@@ -52,6 +52,7 @@ public:
 
     void iteration(int          nstep,
                    double&      mean_delta_per_step,
+                   double&      step_delta,
                    double&      elapsed_time,
                    double&      time_left,
                    std::time_t& end_time);
@@ -60,4 +61,5 @@ private:
     int                                   max_steps         = 1;
     int                                   initial_num_steps = 0;
     std::chrono::system_clock::time_point start_sim;
+    std::chrono::system_clock::time_point previous_sim_step;
 };

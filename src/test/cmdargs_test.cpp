@@ -73,7 +73,9 @@ int main(int argc, char** argv) {
     // positional args
     string positional_arg_string     = "fart";
     bool   positional_arg_string_set = argparser.get_positional_arg(positional_arg_string);
-    printf("# positional argument - value: %s\tset: %d\n", positional_arg_string.c_str(), positional_arg_string_set);
+    printf("# positional argument - value: %s\tset: %d\n",
+           positional_arg_string.c_str(),
+           positional_arg_string_set);
 
 
     // keyqord args

@@ -93,7 +93,8 @@ __global__ void setup_jet(double *Mh_d,
         int    n_trap;
 
         Fz    = 0.5 * (1 - pow(tanh((z - z0) / dz0), 3)) * sin(M_PI * z / z1);
-        dFzdz = 0.5 * (-3 / dz0 * pow(tanh((z - z0) / dz0), 2)) * (1 - pow(tanh((z - z0) / dz0), 2)) * sin(M_PI * z / z1)
+        dFzdz = 0.5 * (-3 / dz0 * pow(tanh((z - z0) / dz0), 2)) * (1 - pow(tanh((z - z0) / dz0), 2))
+                    * sin(M_PI * z / z1)
                 + 0.5 * (1 - pow(tanh((z - z0) / dz0), 3)) * cos(M_PI * z / z1) * M_PI / z1;
 
         T0 = Tbase; //constant of integration
@@ -116,7 +117,7 @@ __global__ void setup_jet(double *Mh_d,
         //      Update temperature
         temperature_d[id * nv + lev] = T0;
         pressure_d[id * nv + lev]    = pref * exp(-z / H);
-        Rho_d[id * nv + lev]         = pressure_d[id * nv + lev] / (Rd * temperature_d[id * nv + lev]);
+        Rho_d[id * nv + lev] = pressure_d[id * nv + lev] / (Rd * temperature_d[id * nv + lev]);
 
         //      Update momenta
         Mh_d[id * 3 * nv + lev * 3 + 0] = U0 * (-sin(lon)) * Rho_d[id * nv + lev];

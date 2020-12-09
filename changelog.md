@@ -21,3 +21,23 @@
  * added crash_report tool that dumps location of nans when the model crashes
  * further updates to python plotting tools to make them more flexible
  * added "custom_example.py" to mjolnir to demonstrate how to make multipanel plots with the python tools
+ * grid output now contains differential operators grad, div, and vertical component of curl (the latter is not used by the model, but may be useful in post-processing)
+ * added new features to double-grey RT: latitude variations, power law scaling of optical
+ depth, and surface heating
+ * added boundary layer module which calculates drag against the lower surface (rayleigh drag only for now)
+ * changed name of 'diff_fac' input parameter to 'diff_ang' to be more consistent ('diff_ang' = 1/diffusivity factor)
+ * fixed incompatibility with recent versions (> 1.10.1) of hdf5 libraries
+ * updated behavior of NonHydro = false and DeepModel = false model options to be consistent with White+ 2005
+ * smoothed temperature forcing of deep hj test (still is not extremely reliable, however)
+ * added numerous features to Mjolnir python code, including a separate regrid script that takes additional arguments
+ * added option to output mean values of main diagnostics over an output interval
+ * moved sponge layer from profx (end of time step) to dynamical core (slow modes), which allows damping to work more effectively
+ * moved heating from RT into dynamical core (fast modes and slow modes)
+ * added output of sw flux in RT module, which was missing before
+ * fixed bugs in RT module, including an important one that led to spurious extra heating and cooling of surface
+ * deprecated Tlow in favor of Tint, which is treated as an additional flux rather than a boundary condition
+ * corrected heat capacity in RT calculation, as appropriate for updating pressure rather than temperature
+ * added pgrid utility to mjolnir/regrid, which must be used to determine a fixed pressure grid to use for interpolation before doing regrid operation (this ensures that all regrid files are utilizing the same pressure grid)
+ * changed regrid to open only one file at a time to prevent overloading memory
+ * corrected volume calculation for shallow model conservation outputs
+ * computing sponge averages only once per time step to speed up model (testing this!)

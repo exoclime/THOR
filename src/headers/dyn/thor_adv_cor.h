@@ -102,7 +102,6 @@ __global__ void Compute_Advec_Cori1(
     bool load_halo = compute_mem_idx(maps_d, nhl, nhl2, ig, igh, ir, ir2, pent_ind);
     id             = ig;
 
-
     M_s[ir]        = Mh_d[ig * nv + lev];
     rho            = Rho_d[ig * nv + lev];
     w              = W_d[ig * nv + lev];
@@ -235,6 +234,7 @@ __global__ void Compute_Advec_Cori1(
     v_d[id * nv + lev]   = v_s[ir];
 }
 
+
 // Computes the 3D advection terms and the velocities in cartesians.
 // (poles)
 template<int NN>
@@ -273,7 +273,8 @@ __global__ void Compute_Advec_Cori_Poles(double* Adv_d,         //
 
     /////////////////////////////////////////
     if (id < num) {
-        for (int i = 0; i < 5; i++) local_p[i] = point_local_d[id * 6 + i];
+        for (int i = 0; i < 5; i++)
+            local_p[i] = point_local_d[id * 6 + i];
         func_r_p[0] = func_r_d[id * 3 + 0];
         func_r_p[1] = func_r_d[id * 3 + 1];
         func_r_p[2] = func_r_d[id * 3 + 2];
@@ -283,7 +284,8 @@ __global__ void Compute_Advec_Cori_Poles(double* Adv_d,         //
             func_r_p[i * 3 + 2] = func_r_d[local_p[i - 1] * 3 + 2];
         }
         for (int i = 0; i < 7; i++)
-            for (int k = 0; k < 3; k++) div_p[i * 3 + k] = div_d[id * 7 * 3 + i * 3 + k];
+            for (int k = 0; k < 3; k++)
+                div_p[i * 3 + k] = div_d[id * 7 * 3 + i * 3 + k];
 
         for (int lev = 0; lev < nv; lev++) {
             v_p[0] = Mh_d[id * 3 * nv + lev * 3 + 0];
@@ -367,6 +369,7 @@ __global__ void Compute_Advec_Cori2(double* Adv_d,       //
                                     double* Rho_d,       //
                                     double* Altitude_d,  //
                                     double* Altitudeh_d, //
+                                    double* func_r_d,    //
                                     double  Omega,       //
                                     double  A,           //
                                     int     nv,          //
@@ -480,27 +483,53 @@ __global__ void Compute_Advec_Cori2(double* Adv_d,       //
             rho  = Rho_d[id * nv + lev];
 
             // Advection + Coriolis.
-            Adv_d[id * 3 * nv + lev * 3 + 0] += davx - 2.0 * Omega * vy * rho;
-            Adv_d[id * 3 * nv + lev * 3 + 1] += davy + 2.0 * Omega * vx * rho;
-            Adv_d[id * 3 * nv + lev * 3 + 2] += davz;
+            double Cx, Cy, Cz;
+            if (DeepModel) {
+                Cx = -2.0 * Omega * vy * rho;
+                Cy = 2.0 * Omega * vx * rho;
+                Cz = 0.0;
+            }
+            else {
+                Cx = 2 * Omega
+                     * (vz * func_r_d[id * 3 + 2] * func_r_d[id * 3 + 1]
+                        - vy * pow(func_r_d[id * 3 + 2], 2))
+                     * rho;
+                Cy = -2 * Omega
+                     * (vz * func_r_d[id * 3 + 2] * func_r_d[id * 3 + 0]
+                        - vx * pow(func_r_d[id * 3 + 2], 2))
+                     * rho;
+                Cz = 2 * Omega
+                     * (vy * func_r_d[id * 3 + 2] * func_r_d[id * 3 + 0]
+                        - vx * func_r_d[id * 3 + 2] * func_r_d[id * 3 + 1])
+                     * rho;
+            }
+
+            Adv_d[id * 3 * nv + lev * 3 + 0] += davx + Cx;
+            Adv_d[id * 3 * nv + lev * 3 + 1] += davy + Cy;
+            Adv_d[id * 3 * nv + lev * 3 + 2] += davz + Cz;
 
             if (lev < nv - 1) {
                 althl = altht;
                 altht = Altitudeh_d[lev + 2];
                 altl  = alt;
                 alt   = altt;
-                if (lev < nv - 2) altt = Altitude_d[lev + 2];
+                if (lev < nv - 2)
+                    altt = Altitude_d[lev + 2];
                 whl = wht;
-                if (lev < nv - 2) wht = Wh_d[id * (nv + 1) + lev + 2];
+                if (lev < nv - 2)
+                    wht = Wh_d[id * (nv + 1) + lev + 2];
                 vxl = vx;
                 vx  = vxt;
-                if (lev < nv - 2) vxt = v_d[id * 3 * nv + (lev + 2) * 3 + 0];
+                if (lev < nv - 2)
+                    vxt = v_d[id * 3 * nv + (lev + 2) * 3 + 0];
                 vyl = vy;
                 vy  = vyt;
-                if (lev < nv - 2) vyt = v_d[id * 3 * nv + (lev + 2) * 3 + 1];
+                if (lev < nv - 2)
+                    vyt = v_d[id * 3 * nv + (lev + 2) * 3 + 1];
                 vzl = vz;
                 vz  = vzt;
-                if (lev < nv - 2) vzt = v_d[id * 3 * nv + (lev + 2) * 3 + 2];
+                if (lev < nv - 2)
+                    vzt = v_d[id * 3 * nv + (lev + 2) * 3 + 2];
             }
         }
     }

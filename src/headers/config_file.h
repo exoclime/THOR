@@ -48,7 +48,7 @@
 #include <map>
 #include <memory>
 #include <string>
-
+#include <vector>
 
 #include "parser_helpers.h"
 
@@ -70,13 +70,10 @@ public:
 
 // config entry class, storing data, default value  and calling the
 // parsing function
-template<typename T>
-class config_entry: public config_entry_interface
+template<typename T> class config_entry : public config_entry_interface
 {
 public:
-    config_entry(T& target_, T default_val_):
-        target(target_),
-        default_val(default_val_) {
+    config_entry(T& target_, T default_val_) : target(target_), default_val(default_val_) {
     }
 
     bool parse(string value) {
@@ -120,18 +117,16 @@ public:
 
 private:
     // internal parsing function
-    bool append_config_var(const string&                           name,
-                           std::unique_ptr<config_entry_interface> entry);
+    bool append_config_var(const string& name, std::unique_ptr<config_entry_interface> entry);
 
     // Storage map as key value pair
-    map<string, std::unique_ptr<config_entry_interface>> config_vars;
+    map<string, std::vector<std::unique_ptr<config_entry_interface>>> config_vars;
 
     int version = -1;
 };
 
 template<typename T>
-bool config_file::append_config_var(const string& name,
-                                    T&            target_,
-                                    const T&      default_val_) {
-    return append_config_var(name, std::unique_ptr<config_entry<T>>(new config_entry<T>(target_, default_val_)));
+bool config_file::append_config_var(const string& name, T& target_, const T& default_val_) {
+    return append_config_var(
+        name, std::unique_ptr<config_entry<T>>(new config_entry<T>(target_, default_val_)));
 }

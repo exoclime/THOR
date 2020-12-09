@@ -94,8 +94,8 @@ int main() {
 
             f.read_table("Numbers", data_ptr, size_out);
             if (size_out != num_d)
-                cout << "error on size of table. Got: " << size_out
-                     << "\texpected: " << num_d << endl;
+                cout << "error on size of table. Got: " << size_out << "\texpected: " << num_d
+                     << endl;
             else {
                 int cnt = 0;
 
@@ -105,8 +105,7 @@ int main() {
                     if (data_ptr[i] != dat) {
 
                         cout << "wrong data(" << i << ")"
-                             << "\tGot:\t"
-                             << data_ptr[i] << "\texpected:\t" << dat << endl;
+                             << "\tGot:\t" << data_ptr[i] << "\texpected:\t" << dat << endl;
                         cnt++;
                     }
                 }
@@ -122,16 +121,15 @@ int main() {
 
             f.read_table("Indices", data_ptr, size_out);
             if (size_out != num_i)
-                cout << "error on size of table. Got: " << size_out
-                     << "\texpected: " << num_i << endl;
+                cout << "error on size of table. Got: " << size_out << "\texpected: " << num_i
+                     << endl;
             else {
                 int cnt = 0;
 
                 for (int i = 0; i < size_out; i++) {
                     if (data_ptr[i] != i)
                         cout << "wrong data(" << i << ")"
-                             << "\tGot:\t"
-                             << data_ptr[i] << "\texpected:\t" << i << endl;
+                             << "\tGot:\t" << data_ptr[i] << "\texpected:\t" << i << endl;
                 }
                 if (cnt > 0)
                     cout << "got " << cnt << " wrong data points" << endl;

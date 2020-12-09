@@ -48,9 +48,11 @@
 #include "define.h"
 #include "esp.h"
 #include "grid.h"
+#include "log_writer.h"
 #include "simulation_setup.h"
 #include "storage.h"
-#include "log_writer.h"
+
+class ESP;
 
 // return name of module for storage to output files
 std::string phy_modules_get_name();
@@ -63,14 +65,11 @@ bool phy_modules_generate_config(config_file& config_reader);
 
 // allocate and free memory locally and on device for this module
 // register arrays that need to be updated in the dynamical core RK update steps
-bool phy_modules_init_mem(const ESP&               esp,
-                          device_RK_array_manager& phy_modules_core_arrays);
+bool phy_modules_init_mem(const ESP& esp, device_RK_array_manager& phy_modules_core_arrays);
 bool phy_modules_free_mem();
 
 // initialise data
-bool phy_modules_init_data(const ESP&             esp,
-                           const SimulationSetup& sim,
-                           storage*               s);
+bool phy_modules_init_data(const ESP& esp, const SimulationSetup& sim, storage* s);
 
 
 // Dynamical core loop functions
@@ -89,11 +88,11 @@ bool phy_modules_dyn_core_loop_end(const ESP& esp);
 // Physics loop
 bool phy_modules_phy_loop(ESP&                   esp,
                           const SimulationSetup& sim,
+                          kernel_diagnostics&    diag,
                           int                    nstep, // Step number
                           double                 time_step);            // Time-step [s]
 
 
-bool phy_modules_store(const ESP& esp,
-                       storage&   s);
+bool phy_modules_store(const ESP& esp, storage& s);
 
 bool phy_modules_store_init(storage& s);

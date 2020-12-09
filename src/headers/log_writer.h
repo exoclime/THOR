@@ -18,7 +18,7 @@
 //
 //
 //
-// Description: Defines the main model's parameters
+// Description:
 //
 // Method: -
 //
@@ -57,8 +57,7 @@
 class log_writer
 {
 public:
-    log_writer(const std::string& sim_id_,
-               const std::string& output_dir_);
+    log_writer(const std::string& sim_id_, const std::string& output_dir_);
 
 
     // control file log
@@ -66,8 +65,8 @@ public:
     void open_output_log_for_write(bool append);
     void write_output_log(int step_number, int file_number, std::string filename);
 
-    // conservation file log
-    void output_conservation(int    current_step,
+    // globdiag file log
+    void output_globdiag(int    current_step,
                              double simulation_time,
                              double GlobalE_h,
                              double GlobalMass_h,
@@ -75,7 +74,7 @@ public:
                              double GlobalAMy_h,
                              double GlobalAMz_h,
                              double GlobalEnt_h);
-    int  prepare_conservation_file(bool append);
+    int  prepare_globdiag_file(bool append);
 
 
     int  prepare_diagnostics_file(bool append);
@@ -95,7 +94,7 @@ private:
     std::string output_dir;    // output directory
 
     std::fstream fileoutput_output_file;
-    std::fstream conservation_output_file;
+    std::fstream globdiag_output_file;
     std::fstream diagnostics_output_file;
 };
 
@@ -120,8 +119,7 @@ public:
         }
     }
 
-    template<typename... Args>
-    static void printf(Args... args) {
+    template<typename... Args> static void printf(Args... args) {
         // Stop GCC from complaining about format string it can't analyse
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-security"
@@ -132,8 +130,7 @@ public:
 #pragma GCC diagnostic pop
     }
 
-    template<typename... Args>
-    static void printf_logonly(Args... args) {
+    template<typename... Args> static void printf_logonly(Args... args) {
         // Stop GCC from complaining about format string it can't analyse
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-security"

@@ -73,19 +73,20 @@ SimulationSetup::SimulationSetup() {
     P_Ref        = 10000000.0; // Reference surface pressure [Pa]
     Top_altitude = 1235376.0;  // Altitude of the top of the model domain [m]
     Diffc        = 0.009973;   // Strength of diffusion
-    Diffc_v      = 0.0;
     DivDampc     = Diffc;
 
     HyDiff   = true;
     DivDampP = true;
 
-    NonHydro    = true;
-    DeepModel   = true;
-    SpongeLayer = false;
-    conv_adj    = 1;
+    NonHydro        = true;
+    DeepModel       = true;
+    RayleighSponge  = false;
+    RayleighSpongeT = false;
+    DiffSponge      = false;
+    conv_adj        = true;
 
-    gcm_off      = false;
-    conservation = false;
+    gcm_off  = false;
+    globdiag = false;
 
     rest = true;
 }

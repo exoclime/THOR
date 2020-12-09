@@ -48,13 +48,14 @@
 #include "phy/dry_conv_adj.h"
 #include "phy/profx_acoustic_test.h"
 #include "phy/profx_auxiliary.h"
-#include "phy/profx_conservation.h"
 #include "phy/profx_deepHJ.h"
+#include "phy/profx_globdiag.h"
 #include "phy/profx_gwave_test.h"
 #include "phy/profx_held_suarez.h"
 #include "phy/profx_shallowHJ.h"
 #include "phy/profx_sponge.h"
 #include "phy/profx_tidalearth.h"
+#include "phy/ultrahot_thermo.h"
 
 #include "binary_test.h"
 #include "debug_helpers.h"
@@ -63,9 +64,12 @@
 
 #include "reduction_add.h"
 
+#include "diagnostics.h"
+#include "insolation.h"
+
 __host__ void ESP::ProfX(const SimulationSetup& sim,
-                         int                    n_out, // output step (triggers conservation calc)
-                         bool                   shrink_sponge) {         // Shrink sponge after some time
+                         int                    n_out,
+                         kernel_diagnostics&    diag) { // output step (triggers globdiag calc)
     USE_BENCHMARK()
     //
     //  Number of threads per block.
@@ -75,46 +79,44 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
     dim3      NB((point_num / NTH) + 1, nv, 1);
     dim3      NBRT((point_num / NTH) + 1, 1, 1);
 
-    if (sim.SpongeLayer == true) {
+    cudaMemset(profx_Qheat_d, 0, sizeof(double) * point_num * nv);
+
+    if (sim.RayleighSponge == true && raysp_calc_mode == IMP) {
         dim3 NBT((point_num / NTH) + 1, nv, 1);
 
-        cudaMemset(vbar_d, 0, sizeof(double) * 3 * nlat * nv);
-        cudaMemset(utmp, 0, sizeof(double) * nlat * nv * max_count);
-        cudaMemset(vtmp, 0, sizeof(double) * nlat * nv * max_count);
-        cudaMemset(wtmp, 0, sizeof(double) * nlat * nv * max_count);
+        if (damp_uv_to_mean) {
+            cudaMemset(utmp, 0, sizeof(double) * nlat_bins * nv * max_count);
+            cudaMemset(vtmp, 0, sizeof(double) * nlat_bins * nv * max_count);
+            zonal_uv<<<NB, NTH>>>(
+                Mh_d, Rho_d, zonal_mean_tab_d, lonlat_d, point_num, utmp, vtmp, max_count);
 
-        zonal_v<<<NB, NTH>>>(Mh_d,
-                             W_d,
-                             Rho_d,
-                             vbar_d,
-                             zonal_mean_tab_d,
-                             lonlat_d,
-                             point_num,
-                             utmp,
-                             vtmp,
-                             wtmp,
-                             max_count);
-
-        cudaDeviceSynchronize();
-
-        cudaMemcpy(utmp_h, utmp, max_count * nlat * nv * sizeof(double), cudaMemcpyDeviceToHost);
-        cudaMemcpy(vtmp_h, vtmp, max_count * nlat * nv * sizeof(double), cudaMemcpyDeviceToHost);
-        cudaMemcpy(wtmp_h, wtmp, max_count * nlat * nv * sizeof(double), cudaMemcpyDeviceToHost);
-
-        int ilat, lev;
-        for (ilat = 0; ilat < nlat; ilat++) {
-            for (lev = 0; lev < nv; lev++) {
-                vbar_h[ilat * nv * 3 + lev * 3 + 0] = gpu_sum_on_device<1024>(
-                    &(utmp[ilat * nv * max_count + lev * max_count]), max_count);
-                vbar_h[ilat * nv * 3 + lev * 3 + 1] = gpu_sum_on_device<1024>(
-                    &(vtmp[ilat * nv * max_count + lev * max_count]), max_count);
-                vbar_h[ilat * nv * 3 + lev * 3 + 2] = gpu_sum_on_device<1024>(
-                    &(wtmp[ilat * nv * max_count + lev * max_count]), max_count);
-            }
+            cudaDeviceSynchronize();
         }
-        cudaMemcpy(vbar_d, vbar_h, 3 * nlat * nv * sizeof(double), cudaMemcpyHostToDevice);
+        if (damp_w_to_mean) {
+            cudaMemset(wtmp, 0, sizeof(double) * nlat_bins * nv * max_count);
+            zonal_w<<<NB, NTH>>>(W_d, Rho_d, zonal_mean_tab_d, point_num, wtmp, max_count);
 
-        if (sim.TempSponge) {
+            cudaDeviceSynchronize();
+        }
+
+        if (damp_uv_to_mean && damp_w_to_mean) {
+            gpu_sum_on_device_sponge<1024>(utmp, max_count, vbar_h, nv, nlat_bins, 0);
+            gpu_sum_on_device_sponge<1024>(vtmp, max_count, vbar_h, nv, nlat_bins, 1);
+            gpu_sum_on_device_sponge<1024>(wtmp, max_count, vbar_h, nv, nlat_bins, 2);
+        }
+        else if (damp_uv_to_mean) {
+            gpu_sum_on_device_sponge<1024>(utmp, max_count, vbar_h, nv, nlat_bins, 0);
+            gpu_sum_on_device_sponge<1024>(vtmp, max_count, vbar_h, nv, nlat_bins, 1);
+        }
+        else if (damp_w_to_mean) {
+            gpu_sum_on_device_sponge<1024>(wtmp, max_count, vbar_h, nv, nlat_bins, 2);
+        }
+        if (damp_uv_to_mean || damp_w_to_mean) {
+            cudaMemset(vbar_d, 0, sizeof(double) * 3 * nlat_bins * nv);
+            cudaMemcpy(vbar_d, vbar_h, 3 * nlat_bins * nv * sizeof(double), cudaMemcpyHostToDevice);
+        }
+
+        if (sim.RayleighSpongeT) {
             zonal_temp<<<NB, NTH>>>(pressure_d,
                                     Rho_d,
                                     Tbar_d,
@@ -122,29 +124,26 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
                                     lonlat_d,
                                     point_num,
                                     Ttmp,
-                                    sim.Rd,
+                                    Rd_d,
                                     max_count);
 
             cudaDeviceSynchronize();
 
-            cudaMemcpy(
-                Ttmp_h, Ttmp, max_count * nlat * nv * sizeof(double), cudaMemcpyDeviceToHost);
-
             int ilat, lev;
-            for (ilat = 0; ilat < nlat; ilat++) {
+            for (ilat = 0; ilat < nlat_bins; ilat++) {
                 for (lev = 0; lev < nv; lev++) {
                     Tbar_h[ilat * nv + lev] = gpu_sum_on_device<1024>(
                         &(Ttmp[ilat * nv * max_count + lev * max_count]), max_count);
                 }
             }
-            cudaMemcpy(Tbar_d, Tbar_h, nlat * nv * sizeof(double), cudaMemcpyHostToDevice);
+            cudaMemcpy(Tbar_d, Tbar_h, nlat_bins * nv * sizeof(double), cudaMemcpyHostToDevice);
         }
 
         double Rv_fac = 1;
         if (shrink_sponge == true) {
-            if (current_step * timestep >= t_shrink * 86400) {
+            if (current_step * timestep >= t_shrink * timestep) {
                 double shrink_scale = timestep * 1000;
-                Rv_fac = exp(-(current_step * timestep - t_shrink * 86400) / shrink_scale);
+                Rv_fac = exp(-(current_step * timestep - t_shrink * timestep) / shrink_scale);
             }
         }
 
@@ -159,25 +158,56 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
                                     lonlat_d,
                                     Altitude_d,
                                     Altitudeh_d,
-                                    Rv_sponge,
-                                    RvT_sponge,
+                                    Ruv_sponge,
+                                    Rw_sponge,
+                                    RT_sponge,
                                     Rv_fac,
-                                    ns_sponge,
+                                    ns_ray_sponge,
+                                    damp_uv_to_mean,
+                                    damp_w_to_mean,
+                                    true,
                                     timestep,
-                                    sim.Rd,
-                                    nlat,
+                                    Rd_d,
+                                    nlat_bins,
                                     point_num,
                                     nv,
-                                    sim.TempSponge);
+                                    sim.RayleighSpongeT,
+                                    profx_dMh_d,
+                                    profx_dWh_d,
+                                    profx_dW_d,
+                                    profx_Qheat_d);
+
+        BENCH_POINT_I(
+            current_step, "phy_Sponge", (), ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "W_d"))
     }
-    BENCH_POINT_I(current_step,
-                  "phy_Sponge",
-                  (),
-                  ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"))
+
 
     //  Computes the initial temperature.
+    bool      calcT = true;
+    if (ultrahot_thermo == VARY_R_CP) {
+        check_h = false;
+        cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
+        update_temperature_Rd_Cp<<<NB, NTH>>>(temperature_d,
+                                              Rd_d,
+                                              Cp_d,
+                                              pressure_d,
+                                              Rho_d,
+                                              GibbsT_d,
+                                              GibbsdG_d,
+                                              GibbsN,
+                                              point_num,
+                                              check_d);
+
+        cudaDeviceSynchronize();
+        cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
+        if (check_h) {
+            log::printf("\n\n Ridder's method failed for T and Rd\n");
+            exit(EXIT_FAILURE);
+        }
+        calcT = false;
+    }
     Compute_temperature<<<NB, NTH>>>(
-        temperature_d, pt_d, pressure_d, Rho_d, sim.P_Ref, sim.Rd, sim.Cp, point_num);
+        temperature_d, pt_d, pressure_d, Rho_d, sim.P_Ref, Rd_d, Cp_d, point_num, calcT);
 
     BENCH_POINT_I(
         current_step, "phy_T", (), ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"))
@@ -198,13 +228,14 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
                                     temperature_d, // Temperature [K]
                                     pt_d,          // Pot temperature [K]
                                     Rho_d,         // Density [m^3/kg]
-                                    sim.Cp,        // Specific heat capacity [J/kg/K]
-                                    sim.Rd,        // Gas constant [J/kg/K]
+                                    Cp_d,          // Specific heat capacity [J/kg/K]
+                                    Rd_d,          // Gas constant [J/kg/K]
                                     sim.Gravit,    // Gravity [m/s^2]
                                     Altitude_d,    // Altitudes of the layers
                                     Altitudeh_d,   // Altitudes of the interfaces
-                                    point_num,     // Number of columns
-                                    nv);           // number of vertical layers
+                                    sim.conv_adj_iter,
+                                    point_num, // Number of columns
+                                    nv);       // number of vertical layers
     }
 
     BENCH_POINT_I(current_step,
@@ -268,6 +299,7 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
                             pressure_d,
                             Rho_d,
                             temperature_d,
+                            profx_Qheat_d,
                             sim.Gravit,
                             sim.Cp,
                             sim.Rd,
@@ -277,52 +309,69 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
                             timestep,
                             point_num);
     }
-    else if (core_benchmark == ACOUSTIC_TEST) {
-        if (current_step == 1) {
-            acoustic_test<<<NB, NTH>>>(pressure_d,
-                                       Rho_d,
-                                       temperature_d,
-                                       sim.Rd,
-                                       Altitude_d,
-                                       lonlat_d,
-                                       sim.Top_altitude,
-                                       point_num);
-        }
+    // else if (core_benchmark == ACOUSTIC_TEST) {
+    //     if (current_step == 1) {
+    //         acoustic_test<<<NB, NTH>>>(pressure_d,
+    //                                    Rho_d,
+    //                                    temperature_d,
+    //                                    sim.Rd,
+    //                                    Altitude_d,
+    //                                    lonlat_d,
+    //                                    sim.Top_altitude,
+    //                                    point_num);
+    //     }
+    // }
+    // else if (core_benchmark == GWAVE_TEST) {
+    //     if (current_step == 1) {
+    //         gwave_test<<<NB, NTH>>>(pressure_d,
+    //                                 Rho_d,
+    //                                 temperature_d,
+    //                                 sim.Rd,
+    //                                 sim.Cp,
+    //                                 sim.P_Ref,
+    //                                 Altitude_d,
+    //                                 lonlat_d,
+    //                                 sim.Top_altitude,
+    //                                 point_num);
+    //     }
+    // }
+    //always do this nan check so the code doesn't keep computing garbage
+    check_h = false;
+    cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
+    isnan_check<<<16, NTH>>>(temperature_d, nv, point_num, check_d);
+    cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
+    if (check_h) {
+        log::printf("\n\n Error in NAN check before profx::phy_modules_phy_loop!\n");
+        exit(EXIT_FAILURE);
     }
-    else if (core_benchmark == GWAVE_TEST) {
-        if (current_step == 1) {
-            gwave_test<<<NB, NTH>>>(pressure_d,
-                                    Rho_d,
-                                    temperature_d,
-                                    sim.Rd,
-                                    sim.Cp,
-                                    sim.P_Ref,
-                                    Altitude_d,
-                                    lonlat_d,
-                                    sim.Top_altitude,
-                                    point_num);
-        }
-    }
-    BENCH_POINT_I_PHY(current_step,
-                      "phy_core_benchmark",
-                      (),
-                      ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"))
 
+
+    BENCH_POINT_I(current_step,
+                  "phy_core_benchmark",
+                  (),
+                  ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"))
+
+    // here is where we call all "external" physics modules
     if (phy_modules_execute) {
         cudaDeviceSynchronize();
+        insolation.phy_loop(*this,
+                            sim,
+                            current_step, // Step number
+                            timestep);    // Time-step [s]
         phy_modules_phy_loop(*this,
                              sim,
+                             diag,
                              current_step, // Step number
                              timestep);    // Time-step [s]
     }
 
-    BENCH_POINT_I_PHY(current_step,
-                      "phy_module",
-                      (),
-                      ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"))
+    BENCH_POINT_I(current_step,
+                  "phy_module",
+                  (),
+                  ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d", "Qheat"))
     //  Computes the new pressures.
     cudaDeviceSynchronize();
-    Compute_pressure<<<NB, NTH>>>(pressure_d, temperature_d, Rho_d, sim.Rd, point_num);
+    Compute_pressure<<<NB, NTH>>>(pressure_d, temperature_d, Rho_d, Rd_d, point_num);
 
     //always do this nan check so the code doesn't keep computing garbage
     check_h = false;
@@ -336,7 +385,7 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
 
 #ifdef BENCHMARKING
     // recompute temperature from pressure and density, to avoid rounding issues when comparing
-    Compute_temperature_only<<<NB, NTH>>>(temperature_d, pressure_d, Rho_d, sim.Rd, point_num);
+    Compute_temperature_only<<<NB, NTH>>>(temperature_d, pressure_d, Rho_d, Rd_d, point_num);
 #endif // BENCHMARKING
 
     BENCH_POINT_I(current_step,
@@ -349,7 +398,7 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
     //
 }
 
-void ESP::conservation(const SimulationSetup& sim) {
+void ESP::globdiag(const SimulationSetup& sim) {
     //
     //  Number of threads per block.
     const int NTH = 256;
@@ -383,8 +432,8 @@ void ESP::conservation(const SimulationSetup& sim) {
                                Rho_d,
                                temperature_d,
                                sim.Gravit,
-                               sim.Cp,
-                               sim.Rd,
+                               Cp_d,
+                               Rd_d,
                                sim.A,
                                Altitude_d,
                                Altitudeh_d,
@@ -415,8 +464,8 @@ void ESP::conservation(const SimulationSetup& sim) {
     CalcEntropy<<<NB, NTH>>>(Entropy_d,
                              pressure_d,
                              temperature_d,
-                             sim.Cp,
-                             sim.Rd,
+                             Cp_d,
+                             Rd_d,
                              sim.A,
                              sim.P_Ref,
                              Altitude_d,
@@ -427,7 +476,7 @@ void ESP::conservation(const SimulationSetup& sim) {
                              point_num,
                              sim.DeepModel);
 
-    // run conservation on device
+    // run globdiag on device
     // compute globals
     GlobalE_h    = gpu_sum_on_device<1024>(Etotal_d, point_num * nv);
     GlobalMass_h = gpu_sum_on_device<1024>(Mass_d, point_num * nv);
@@ -435,4 +484,71 @@ void ESP::conservation(const SimulationSetup& sim) {
     GlobalAMy_h  = gpu_sum_on_device<1024>(AngMomy_d, point_num * nv);
     GlobalAMz_h  = gpu_sum_on_device<1024>(AngMomz_d, point_num * nv);
     GlobalEnt_h  = gpu_sum_on_device<1024>(Entropy_d, point_num * nv);
+}
+
+__global__ void update_mean(double* pressure_mean_d,
+                            double* pressure_d,
+                            double* Rho_mean_d,
+                            double* Rho_d,
+                            double* Mh_mean_d,
+                            double* Mh_d,
+                            double* Wh_mean_d,
+                            double* Wh_d,
+                            int     n_since_out,
+                            int     num) {
+
+    int id  = blockIdx.x * blockDim.x + threadIdx.x;
+    int nv  = gridDim.y;
+    int lev = blockIdx.y;
+
+    if (id < num) {
+        pressure_mean_d[id * nv + lev] =
+            1.0 / n_since_out
+            * (pressure_mean_d[id * nv + lev] * (n_since_out - 1) + pressure_d[id * nv + lev]);
+        Rho_mean_d[id * nv + lev] =
+            1.0 / n_since_out
+            * (Rho_mean_d[id * nv + lev] * (n_since_out - 1) + Rho_d[id * nv + lev]);
+        Mh_mean_d[3 * id * nv + 3 * lev + 0] =
+            1.0 / n_since_out
+            * (Mh_mean_d[3 * id * nv + 3 * lev + 0] * (n_since_out - 1)
+               + Mh_d[3 * id * nv + 3 * lev] + 0);
+        Mh_mean_d[3 * id * nv + 3 * lev + 1] =
+            1.0 / n_since_out
+            * (Mh_mean_d[3 * id * nv + 3 * lev + 1] * (n_since_out - 1)
+               + Mh_d[3 * id * nv + 3 * lev + 1]);
+        Mh_mean_d[3 * id * nv + 3 * lev + 2] =
+            1.0 / n_since_out
+            * (Mh_mean_d[3 * id * nv + 3 * lev + 2] * (n_since_out - 1)
+               + Mh_d[3 * id * nv + 3 * lev + 2]);
+        Wh_mean_d[id * (nv + 1) + lev] =
+            1.0 / n_since_out
+            * (Wh_mean_d[id * (nv + 1) + lev] * (n_since_out - 1) + Wh_d[id * (nv + 1) + lev]);
+        if (lev == nv - 1) {
+            Wh_mean_d[id * (nv + 1) + lev + 1] =
+                1.0 / n_since_out
+                * (Wh_mean_d[id * (nv + 1) + lev + 1] * (n_since_out - 1)
+                   + Wh_d[id * (nv + 1) + lev + 1]);
+        }
+    }
+}
+
+
+__host__ void ESP::update_mean_outputs(int n_since_out) {
+    //
+    //  Number of threads per block.
+    const int NTH = 256;
+
+    //  Specify the block sizes.
+    dim3 NB((point_num / NTH) + 1, nv, 1);
+
+    update_mean<<<NB, NTH>>>(pressure_mean_d,
+                             pressure_d,
+                             Rho_mean_d,
+                             Rho_d,
+                             Mh_mean_d,
+                             Mh_d,
+                             Wh_mean_d,
+                             Wh_d,
+                             n_since_out,
+                             point_num);
 }

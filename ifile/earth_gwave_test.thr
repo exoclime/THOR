@@ -16,13 +16,25 @@ timestep = 1800
 # output every n steps
 n_out = 4
 
+# write to log file at a different cadence from n_out
+custom_log_n_out = false
+# how often to write to log file (if above = true)
+log_n_out = 1000
+
 # output directory (relative to current working directory)
 # defaults to 'results'
 results_path = gwave_test
 
-# calculate and output quantities we hope to conserve
-# angular momentum, energy, mass, (entropy soon)
-conservation = true
+# output global diagnostics (energy, mass, momentum, entropy)
+globdiag = true
+
+# output global diagnostics (to text file) at a different cadence from n_out
+custom_global_n_out = false
+# how often to output global diag to text (if above = true)
+global_n_out = 1000
+
+# output time mean quantities (averaged over interval between outputs)
+output_mean = true
 
 
 #-- Planetary parameters -----------------------------------------------------#
@@ -50,6 +62,7 @@ Tmean = 300.0
 # Reference surface pressure [Pa] (pressure at bottom of model)
 P_ref = 100000.0
 
+
 #-- Grid options -------------------------------------------------------------#
 # Altitude of the top of the model domain [m]
 Top_altitude = 10000.0
@@ -66,19 +79,11 @@ spring_dynamics = true
 # Parameter beta for spring dynamics
 spring_beta = 1.15
 
-## diffusion ############################################
-# Hyper-diffusion
-HyDiff  =    false
+# use grid refinement in vertical for lower atmos
+vert_refined = false
 
-# Divergence-damping
-DivDampP =    false
-
-# Strength of diffusion
-Diffc = 0.01
-
-# Strength of divergence damping
-DivDampc = 0.01
-#########################################################
+# number of layers in logarithmic lower region
+n_bl_layers = 9
 
 
 #-- Model options ------------------------------------------------------------#
@@ -89,18 +94,32 @@ NonHydro = true
 DeepModel = true
 
 # Initial conditions
-rest = false
+rest = true
 
 # initial conditions file, used if rest is set to false
 # (path relative to current working directory)
 # defaults to 'ifile/esp_initial.h5'
+# 'planet' file must be present with name a la 'ifile/esp_initial_planet.h5'
 initial = ic_special/gen_ic_earth/esp_initial.h5
+
+# initial temperature-pressure profile (isothermal or guillot)
+# overridden if rest = false !
+# if isothermal: T = Tmean
+# if guillot: equations 27 (Guillot 2010)
+#    with Teq = Tmean and mu* = 0.5
+#    also uses the gray RT params Tint, kappa_lw, kappa_sw, f_lw
+#    includes the collision-induced absorption approx. from Heng+ 2011
+#    this can be omitted by setting f_lw = 1
+init_PT_profile = constbv
+bv_freq = 0.01
 
 # Core benchmark tests
 # Held-Suarez test for Earth == HeldSuarez
 # Benchmark test for shallow hot Jupiter == ShallowHotJupiter
 # Benchmark test for deep hot Jupiter == DeepHotJupiter
 # Benchmark test for tidally locked Earth == TidallyLockedEarth
+# Acoustic wave test = AcousticTest
+# Gravity wave test = GWaveTest
 # No benchmark test == NoBenchmark (model is then forced with grey RT by default)
 core_benchmark = GWaveTest
 
@@ -108,33 +127,82 @@ core_benchmark = GWaveTest
 # This is useful for testing/debugging physics modules
 gcm_off = false
 
-# enable convective adjustment scheme
-conv_adj = 0
+# use (dry) convective adjustment scheme
+conv_adj = false
+
+# type of thermodynamic equation = "entropy" (ready) or "energy" (in development!!)
+thermo_equation = entropy
+
+# ultrahot atmosphere options (hydrogen only)
+# under development!!
+# heating due to H/H2 chemisty ('none', 'quasi_eql', or 'relax_chem')
+ultrahot_heating = none
+# variable thermodynamics due to H/H2 chem ('none', 'vary_R_CP', or 'full' )
+ultrahot_thermo = none
+
+## diffusion ############################################
+# Hyper-diffusion
+HyDiff  =    false
+
+# Divergence-damping
+DivDampP =    true
+
+# Strength of diffusion
+Diffc = 0.01
+
+# Strength of divergence damping
+DivDampc = 0.01
+#########################################################
 
 
-#-- Sponge layer (Rayleigh drag) ---------------------------------------------#
+#-- Sponge layer (Rayleigh drag or diffusive sponge) ------------------------#
 # use sponge layer (Rayleigh drag) at top of atmosphere?
-SpongeLayer = false
+RayleighSponge = false
 
-# latitude rings (zonal mean is calculated over these)
-nlat = 20
+# use temperature sponge layer (Rayleigh drag) at top of atmosphere?
+# (not well tested!)
+RayleighSpongeT = false
 
-# bottom of sponge layer (fractional height)
-ns_sponge = 0.75
+# if true, damp to zonal mean (i.e., damp eddy component) (rayleigh sponge)
+# if false, damp to zero
+damp_uv_to_mean = true
+damp_w_to_mean = true
 
-# strength of sponge layer (1/damping time)
-Rv_sponge = 1e-5
+# latitude bins for rayleigh sponge (zonal mean is calculated over these)
+nlat_bins = 20
 
-# shrink sponge by half after some time (experimental)
-#shrink_sponge = true
+# bottom of rayleigh sponge layer (fractional height)
+ns_ray_sponge = 0.75
 
-# when to shrink sponge (days)
-#t_shrink = 1
+# strength of rayleigh sponge layer (1/damping time)
+# horizontal component
+Ruv_sponge = 1e-4
+# vertical component
+Rw_sponge = 1e-4
+
+# Technical setting: change how rayleigh sponge is applied
+# imp = implicitly update momentum in profx, averages computed once per dt
+# exp1 = explicitly add damping to slow modes, averages computed once per dt
+# exp3 = explicitly add damping to slow modes, averages computed 3x per dt
+raysp_calc_mode = imp
+
+# use diffusive sponge layer at top of atmosphere? (in development!!)
+DiffSponge = false
+
+# strength of diffusive sponge layer (unitless)
+Dv_sponge = 0.005
+
+# bottom of diffusive sponge layer (fractional height)
+ns_diff_sponge = 0.75
+
+# order of diffusion operator in diff sponge (2 or 4)
+order_diff_sponge = 2
 
 
-#-- Radiative transfer options (core_benchmark = NoBenchmark) --------------------------#
-radiative_transfer = false
+#-- Radiative transfer (gray) options (core_benchmark = NoBenchmark) --------------------------#
 ## RT parameters #######################################
+radiative_transfer = false
+
 # stellar temperature (k)
 Tstar = 5800
 
@@ -147,17 +215,47 @@ radius_star = 1
 # bond albedo of planet
 albedo = 0.3
 
-# grey opt. depth of thermal wavelengths (at ref pressure)
-taulw = 10
+# diff_ang = 1/(diffusivity factor) for lw radiation
+diff_ang = 0.5
 
-# grey opt. depth of incoming stellar flux (at ref pressure)
-tausw = 1.67
+# power law index of unmixed absorbers (lw and sw)
+# tau_lw = f_lw * (kappa_lw/g) * P/P_ref
+#          + (1-f_lw) * (kappa_lw/g) * (P/P_ref)^n_lw
+# n_lw = 2 approximations collision-induced absorption
+# n_lw = 4 approximations water-vapor in Earth troposph.
+n_lw = 4
+
+# tau_sw = (kappa_sw/g) * (P/P_ref)^n_sw
+n_sw = 2
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# These params are also used if init_PT_profile = guillot
+# grey opacity of thermal wavelengths
+kappa_lw = 0.0025
+
+# grey opacity of incoming stellar flux
+kappa_sw = 0.00125
+
+# strength of unmixed absorbers in lw
+f_lw = 1
 
 # temperature of internal heat flux (bottom boundary) (K)
-Tlow = 50
+Tint = 0
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-# diffusivity factor
-diff_fac = 0.5
+# add sin(lat)^2 dependence to tau lw (advanced)
+latf_lw = true
+# opacity at poles (lw)
+kappa_lw_pole = 0.0025
+
+# include surface heating
+surface = false
+# heat capacity of surface
+Csurf = 1e7
+
+# run gray RT code without GCM, every column identical zenith angle (experimental!)
+rt1Dmode = false
+
 #########################################################
 
 ## insolation (orbit + spin-state) parameters ###########
@@ -183,6 +281,20 @@ sync_rot = true
 # (stupid Earth convention applies)
 #longp = 0
 #########################################################
+
+
+#-- Boundary layer options (core_benchmark = NoBenchmark) --------------------#
+boundary_layer = false
+
+# type of boundary layer drag
+bl_type = RayleighHS
+
+# strength of drag
+#surf_drag = 1.157407e-5
+
+# boundary layer sigma (drag exist at this % of surface pressure and above)
+#bl_sigma = 0.7
+
 
 #-- Device options -----------------------------------------------------------#
 # GPU ID number

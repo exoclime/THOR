@@ -54,6 +54,7 @@
 #include <string>
 
 #include "directories.h"
+#include "insolation.h"
 #include "phy_modules.h"
 
 #include <iomanip>
@@ -61,7 +62,7 @@
 #include <fstream>
 #include <stdexcept>
 
-__host__ void ESP::copy_conservation_to_host() {
+__host__ void ESP::copy_globdiag_to_host() {
     cudaMemcpy(Etotal_h, Etotal_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
     cudaMemcpy(Entropy_h, Entropy_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
     cudaMemcpy(Mass_h, Mass_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
@@ -71,7 +72,7 @@ __host__ void ESP::copy_conservation_to_host() {
 }
 
 __host__ void ESP::copy_global_to_host() {
-    // Transfer global conservation values to host
+    // Transfer global globdiag values to host
     cudaMemcpy(&GlobalE_h, GlobalE_d, sizeof(double), cudaMemcpyDeviceToHost);
     cudaMemcpy(&GlobalEnt_h, GlobalEnt_d, sizeof(double), cudaMemcpyDeviceToHost);
     cudaMemcpy(&GlobalMass_h, GlobalMass_d, sizeof(double), cudaMemcpyDeviceToHost);
@@ -88,6 +89,22 @@ __host__ void ESP::copy_to_host() {
     cudaMemcpy(Wh_h, Wh_d, point_num * nvi * sizeof(double), cudaMemcpyDeviceToHost);
     cudaMemcpy(pressure_h, pressure_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
     cudaMemcpy(Mh_h, Mh_d, 3 * point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+    cudaMemcpy(Rd_h, Rd_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+    cudaMemcpy(Cp_h, Cp_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+
+    cudaMemcpy(
+        profx_Qheat_h, profx_Qheat_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+}
+
+__host__ void ESP::copy_mean_to_host() {
+    //
+    //  Description: Transfer mean of diagnostics from the device to the host.
+    //
+    cudaMemcpy(Rho_mean_h, Rho_mean_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+    cudaMemcpy(Wh_mean_h, Wh_mean_d, point_num * nvi * sizeof(double), cudaMemcpyDeviceToHost);
+    cudaMemcpy(
+        pressure_mean_h, pressure_mean_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+    cudaMemcpy(Mh_mean_h, Mh_mean_d, 3 * point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
 }
 
 __host__ void ESP::output(int                    fidx, // Index of output file
@@ -96,7 +113,7 @@ __host__ void ESP::output(int                    fidx, // Index of output file
     //
     //  Description: Model output.
     //
-    char FILE_NAME1[160];
+    char FILE_NAME1[512];
 
     //  GRID OUTPUT
     if (current_step == 0) {
@@ -164,9 +181,13 @@ __host__ void ESP::output(int                    fidx, // Index of output file
         //      CP
         s.append_value(sim.Cp, "/Cp", "J/(Kg K)", "Specific heat capacity");
         //      SpongeLayer option
-        s.append_value(sim.SpongeLayer ? 1.0 : 0.0, "/SpongeLayer", "-", "Using SpongeLayer?");
         s.append_value(
-            sim.TempSponge ? 1.0 : 0.0, "/TempSponge", "-", "Using thermal SpongeLayer?");
+            sim.RayleighSponge ? 1.0 : 0.0, "/RayleighSponge", "-", "Using Rayleigh SpongeLayer?");
+        s.append_value(
+            sim.RayleighSpongeT ? 1.0 : 0.0, "/RayleighSpongeT", "-", "Using thermal SpongeLayer?");
+
+        s.append_value(
+            sim.DiffSponge ? 1.0 : 0.0, "/DiffSponge", "-", "Using Diffusive SpongeLayer?");
 
         //      DeepModel option
         s.append_value(sim.DeepModel ? 1.0 : 0.0, "/DeepModel", "-", "Using Deep Model");
@@ -174,6 +195,10 @@ __host__ void ESP::output(int                    fidx, // Index of output file
         //      NonHydro option
         s.append_value(
             sim.NonHydro ? 1.0 : 0.0, "/NonHydro", "-", "Using Non Hydrostatic parameter");
+
+        //      output_mean option
+        s.append_value(
+            sim.output_mean ? 1.0 : 0.0, "/output_mean", "-", "outputting mean quantities");
 
         //      DivDampP option
         s.append_value(sim.DivDampP ? 1.0 : 0.0, "/DivDampP", "-", "Using Divergence-damping");
@@ -183,13 +208,12 @@ __host__ void ESP::output(int                    fidx, // Index of output file
 
         //      Hyperdiffusion strength
         s.append_value(sim.Diffc, "/Diffc", "-", "Hyperdiffusion strength");
-        s.append_value(sim.Diffc_v, "/Diffc_v", "-", "Vertical hyperdiffusion strength");
 
         //      Tmean
         s.append_value(sim.Tmean, "/Tmean", "K", "Mean atmospheric temperature");
 
         //      conv adj option
-        s.append_value(sim.conv_adj, "/conv_adj", "-", "Using convection adjustment");
+        s.append_value(sim.conv_adj ? 1.0 : 0.0, "/conv_adj", "-", "Using convection adjustment");
 
         //      GCM on/off option
         s.append_value(sim.gcm_off ? 1.0 : 0.0, "/gcm_off", "-", "GCM off");
@@ -200,19 +224,46 @@ __host__ void ESP::output(int                    fidx, // Index of output file
         //      core_benchmark  option
         s.append_value(
             int(core_benchmark), "/core_benchmark", "-", "Using benchmark forcing or RT");
-        if (sim.SpongeLayer) {
+        if (sim.RayleighSponge) {
             //      nlat
-            s.append_value(nlat, "/nlat", "-", "number of lat rings for sponge layer");
+            s.append_value(
+                nlat_bins, "/nlat_bins", "-", "number of lat rings for Rayleigh sponge layer");
             //      ns
-            s.append_value(ns_sponge, "/ns_sponge", "-", "Bottom of sponge layer");
+            s.append_value(ns_ray_sponge, "/ns_ray_sponge", "-", "Bottom of rayleigh sponge layer");
             //      Rv
-            s.append_value(Rv_sponge, "/Rv_sponge", "1/s", "Strength of sponge layer");
+            s.append_value(Ruv_sponge,
+                           "/Ruv_sponge",
+                           "1/s",
+                           "Strength of Rayleigh sponge layer (uv components)");
+            //      Rv
+            s.append_value(
+                Rw_sponge, "/Rw_sponge", "1/s", "Strength of Rayleigh sponge layer (w component)");
         }
+        // diff_sponge
+        if (sim.DiffSponge) {
+            //      order
+            s.append_value(
+                order_diff_sponge, "order_diff_sponge", "-", "Order of diffusive sponge");
+            //      ns
+            s.append_value(
+                ns_diff_sponge, "/ns_diff_sponge", "-", "Bottom of diffusive sponge layer");
+            //      Rv
+            s.append_value(Dv_sponge, "/Dv_sponge", "-", "Strength of diffusive sponge layer");
+        }
+
+        s.append_value(Tint, "/Tint", "K", "Temperature of interior heat flux");
+        s.append_value(f_lw, "/f_lw", "-", "fraction of taulw in well-mixed absorber");
+        s.append_value(kappa_lw, "/kappa_lw", "-", "longwave opacity");
+        s.append_value(kappa_sw, "/kappa_sw", "-", "shortwave opacity");
 
         // store module name in the description
         s.append_value(0.0, "/phy_module", "-", phy_modules_get_name());
 
-        if (phy_modules_execute) { phy_modules_store_init(s); }
+        if (phy_modules_execute) {
+            phy_modules_store_init(s);
+
+            insolation.store_init(s);
+        }
     }
 
     //  ESP OUTPUT
@@ -238,7 +289,7 @@ __host__ void ESP::output(int                    fidx, // Index of output file
     //  Wh
     s.append_table(Wh_h, nvi * point_num, "/Wh", "kg m/s", "Vertical Momentum");
 
-    if (sim.conservation == true) {
+    if (sim.globdiag == true) {
         //  Etotal at each point
         s.append_table(Etotal_h, nv * point_num, "/Etotal", "kg m^2/s^2", "Total Energy");
 
@@ -274,9 +325,34 @@ __host__ void ESP::output(int                    fidx, // Index of output file
         s.append_value(GlobalAMz_h, "/GlobalAMz", "kg m^2/s", "Global AngMomZ");
     }
 
-    if (phy_modules_execute) phy_modules_store(*this, s);
+    // profX Qheat from physics modules
+    s.append_table(profx_Qheat_h, nv * point_num, "/Qheat", "W m^-3", "Physics module Qheat");
 
-    char buf[256];
+    if (sim.output_mean == true) {
+        //  Rho
+        s.append_table(Rho_mean_h, nv * point_num, "/Rho_mean", "kg/m^3", "Mean Density");
+
+        //  Pressure
+        s.append_table(pressure_mean_h, nv * point_num, "/Pressure_mean", "Pa", "Mean Pressure");
+
+        //  Mh
+        s.append_table(
+            Mh_mean_h, nv * point_num * 3, "/Mh_mean", "kg m/s", "Mean Horizontal Momentum");
+
+        //  Wh
+        s.append_table(Wh_mean_h, nvi * point_num, "/Wh_mean", "kg m/s", "Mean Vertical Momentum");
+    }
+
+    s.append_table(Rd_h, nv * point_num, "/Rd", "J/K/kg", "Local gas constant");
+    s.append_table(Cp_h, nv * point_num, "/Cp", "J/K/kg", "Local heat capacity");
+
+
+    if (phy_modules_execute) {
+        phy_modules_store(*this, s);
+        insolation.store(*this, s);
+    }
+
+    char buf[512];
 
     sprintf(buf, "esp_output_%s_%d.h5", simulation_ID.c_str(), fidx);
     // Write to output f

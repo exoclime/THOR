@@ -68,7 +68,7 @@ using namespace std;
 map<string, output_def> build_definitions(ESP& esp, Icogrid& grid) {
 
     map<string, output_def> out = {
-        // {"map name, {variable pointer, table size, name, short name, on device}}
+        // {"map name, {variable pointer, table size, name, short name, on device, function call back for loc}}
         {"Rho_d",
          {esp.Rho_d,
           esp.nv * esp.point_num,
@@ -451,7 +451,14 @@ map<string, output_def> build_definitions(ESP& esp, Icogrid& grid) {
               {"halo",          { grid.halo, grid.nh, "halo", "halo", false}},
               {"maps",          { grid.maps, (grid.nl_region+2)*(grid.nl_region+2)*grid.nr, "maps", "m", false}},
             */
-
+        {"func_r_d",
+         {esp.func_r_d,
+          3 * grid.point_num,
+          "func_r_d",
+          "fd",
+          true,
+          std::bind(
+              &ESP::index_to_location_3xn, &esp, std::placeholders::_1, std::placeholders::_2)}},
         {"func_r",
          {grid.func_r,
           3 * grid.point_num,
@@ -574,7 +581,16 @@ map<string, output_def> build_definitions(ESP& esp, Icogrid& grid) {
           false,
           std::bind(
               &ESP::index_to_location_3x7xn, &esp, std::placeholders::_1, std::placeholders::_2)}},
-    };
+        {"Qheat",
+         {esp.profx_Qheat_d,
+          esp.nv * esp.point_num,
+          "Qheat",
+          "qh",
+          true,
+          std::bind(&ESP::index_to_location_scalar,
+                    &esp,
+                    std::placeholders::_1,
+                    std::placeholders::_2)}}};
 
     return out;
 }
@@ -587,7 +603,8 @@ binary_test::binary_test(string output_dir_, string output_base_name_) :
     create_output_dir(output_dir);
 }
 binary_test::~binary_test() {
-    if (nan_check_d != nullptr) deinit_device_mem_check(nan_check_d);
+    if (nan_check_d != nullptr)
+        deinit_device_mem_check(nan_check_d);
 }
 // generic data test function
 void binary_test::check_data(const string&         iteration,
@@ -603,33 +620,38 @@ void binary_test::check_data(const string&         iteration,
     vector<output_def> data_output;
     for (auto& name : output_vars) {
         auto&& it = output_definitions.find(name);
-        if (it != output_definitions.end()) { data_output.push_back(it->second); }
+        if (it != output_definitions.end()) {
+            data_output.push_back(it->second);
+        }
     }
 
     if (trace_phy_modules) {
         for (auto& name : phy_modules_data_out) {
             auto&& it = output_definitions.find(name);
-            if (it != output_definitions.end()) { data_output.push_back(it->second); }
+            if (it != output_definitions.end()) {
+                data_output.push_back(it->second);
+            }
         }
     }
 
 
 // Specific debugging functions
-#    ifdef BENCH_POINT_WRITE
-    output_reference(iteration, ref_name, data_output);
-#    endif // BENCH_POINT_WRITE
+    if (use_write)
+      output_reference(iteration, ref_name, data_output);
 
-#    ifdef BENCH_POINT_COMPARE
-    compare_to_reference(iteration, ref_name, data_output);
-
-#    endif // BENCH_POINT_COMPARE
+    if (use_compare)
+      compare_to_reference(iteration, ref_name, data_output);
 
 #    ifdef BENCH_NAN_CHECK
-    if (nan_check_d == nullptr) { nan_check_d = init_device_mem_check(nan_check_d); }
+    if (nan_check_d == nullptr) {
+        nan_check_d = init_device_mem_check(nan_check_d);
+    }
 
     bool out;
     out = check_nan(iteration, ref_name, data_output);
-    if (!out) { exit(-1); }
+    if (!out) {
+        exit(-1);
+    }
 #    endif // BENCH_NAN_CHECK
 }
 // Check for NaNs
@@ -662,7 +684,8 @@ bool binary_test::check_nan(const string&             iteration,
 
 
         for (auto& def : data_output) {
-            if (!path_exists(output_crash)) create_output_dir(output_crash);
+            if (!path_exists(output_crash))
+                create_output_dir(output_crash);
             crash_report(def, output_crash, iteration);
         }
         printf("Crash report output in %s\n", output_crash.c_str());
@@ -678,7 +701,8 @@ void binary_test::output_reference(const string&             iteration,
     // open file
     string output_name = output_dir + "/" + output_base_name + ref_name + "_" + iteration + ".h5";
 
-    if (!path_exists(output_dir)) create_output_dir(output_dir);
+    if (!path_exists(output_dir))
+        create_output_dir(output_dir);
 
 
     storage s(output_name);
@@ -751,10 +775,16 @@ bool binary_test::compare_to_reference(const string&             iteration,
             comp = compare_to_saved_data(s, def.short_name, def.data, def.size, stats);
         }
 #    ifdef BENCH_COMPARE_PRINT_STATISTICS
-        if (comp == false) { stats_table[def.short_name] = stats; }
+        if (comp == false) {
+            stats_table[def.short_name] = stats;
+        }
 #    endif // BENCH_COMPARE_PRINT_STATISTICS
 
-        oss << " " << def.short_name << ": " << comp;
+        oss << " " << def.short_name << ": ";
+	if (comp)
+	  oss << "\033[1;32m" << comp << "\033[0m" ;
+	else
+	  oss << "\033[1;31m" << comp << "\033[0m" ;
         out &= comp;
     }
 
@@ -796,7 +826,8 @@ void binary_test::append_definitions(const map<string, output_def>& defs) {
     output_definitions.insert(defs.begin(), defs.end());
     int memsize = 0;
     for (auto& d : output_definitions) {
-        if (d.second.size > memsize) memsize = d.second.size;
+        if (d.second.size > memsize)
+            memsize = d.second.size;
     }
 
     mem_buf = std::unique_ptr<double[]>(new double[memsize], std::default_delete<double[]>());
@@ -810,6 +841,13 @@ void binary_test::register_phy_modules_variables(const std::map<string, output_d
         phy_modules_data_in.end(), phy_modules_data_in_.begin(), phy_modules_data_in_.end());
     phy_modules_data_out.insert(
         phy_modules_data_out.end(), phy_modules_data_out_.begin(), phy_modules_data_out_.end());
+}
+
+std::string dummy(int i, int first) {
+    //placeholder function to fill the build definitions in binary_test.cpp
+    std::ostringstream string_stream;
+    string_stream << 0;
+    return string_stream.str();
 }
 
 

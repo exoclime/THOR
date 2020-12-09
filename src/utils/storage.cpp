@@ -55,8 +55,7 @@
 using namespace std;
 
 
-storage::storage(const string& filename, const bool& read) :
-    file(nullptr) {
+storage::storage(const string& filename, const bool& read) : file(nullptr) {
     if (read)
         file = std::unique_ptr<H5File>(new H5File(filename, H5F_ACC_RDONLY));
     else
@@ -64,5 +63,4 @@ storage::storage(const string& filename, const bool& read) :
 
     // Avoid H5 to print all its exceptions to the console, as we want to handle them correctly
     Exception::dontPrint();
-
 }

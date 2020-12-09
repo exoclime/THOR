@@ -45,6 +45,9 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
+#include <fstream>
+#include <iostream>
+
 #include "esp.h" // Global parameters.
 
 #include "binary_test.h"
@@ -57,10 +60,14 @@
 #include "dyn/thor_slowmodes.h"    // Slow terms.
 #include "dyn/thor_vertical_int.h" // Vertical momentum.
 #include "log_writer.h"
+#include "phy/profx_sponge.h"
+#include "phy/ultrahot_thermo.h"
+#include "reduction_add.h"
 
+#include "diagnostics.h"
 #include "phy_modules.h"
 
-__host__ void ESP::Thor(const SimulationSetup& sim) {
+__host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
     const int NTH = 256;
 
     // Vertical Eq only works on vertical stack of data, can run independently, only uses shared
@@ -77,7 +84,8 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
 
     dim3 NBALL((point_num / NTH) + 1, nv, 6); //Number of blocks to execute on all grid points
     dim3 NBALL0((point_num / NTH) + 1, 1, 6); //Number of blocks to execute on all grid points
-
+    dim3 NBRT((point_num / NTH) + 1, 1, 1);
+    dim3 NBALL1((point_num / NTH) + 1, nv, 1); //Number of blocks to execute on all grid points
 
     //  Number of Small steps
     double ns_totald = 6; // Maximum number of small steps in a large step (double ).
@@ -99,7 +107,13 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
     cudaMemset(Ws_d, 0, sizeof(double) * point_num * nv);
     cudaMemset(pressures_d, 0, sizeof(double) * point_num * nv);
 
-    if (phy_modules_execute) phy_modules_dyn_core_loop_init(*this);
+    bool energy_equation = false;
+    if (thermo_equation == ENERGY) {
+        energy_equation = true;
+    }
+
+    if (phy_modules_execute)
+        phy_modules_dyn_core_loop_init(*this);
 
     USE_BENCHMARK();
     BENCH_POINT_I(current_step,
@@ -116,13 +130,19 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
     //  Loop for large time integration.
     for (int rk = 0; rk < 3; rk++) {
         //      Local variables to define the length (times) and the number of the small steps (ns_it).
-        if (rk == 0) ns_it = 1;
-        if (rk == 1) ns_it = ns_totali / 2;
-        if (rk == 2) ns_it = ns_totali;
+        if (rk == 0)
+            ns_it = 1;
+        if (rk == 1)
+            ns_it = ns_totali / 2;
+        if (rk == 2)
+            ns_it = ns_totali;
 
-        if (rk == 0) times = timestep / 3.0;
-        if (rk == 1) times = timestep / ns_totald;
-        if (rk == 2) times = timestep / ns_totald;
+        if (rk == 0)
+            times = timestep / 3.0;
+        if (rk == 1)
+            times = timestep / ns_totald;
+        if (rk == 2)
+            times = timestep / ns_totald;
 
         // initialise some memory
 
@@ -170,6 +190,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                                             Rhok_d,
                                                             Altitude_d,
                                                             Altitudeh_d,
+                                                            func_r_d,
                                                             sim.Omega,
                                                             sim.A,
                                                             nv,
@@ -188,9 +209,34 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
             ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d", "Adv_d", "v_d"))
 
         // Updates: temperature_d, h_d, hh_d, pt_d, pth_d, gtil_d, gtilh_d
+        bool calcT = true;
+        if (ultrahot_thermo == VARY_R_CP) {
+            check_h = false;
+            cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
+            update_temperature_Rd_Cp<<<NBALL1, NTH>>>(temperature_d,
+                                                      Rd_d,
+                                                      Cp_d,
+                                                      pressurek_d,
+                                                      Rhok_d,
+                                                      GibbsT_d,
+                                                      GibbsdG_d,
+                                                      GibbsN,
+                                                      point_num,
+                                                      check_d);
+
+            cudaDeviceSynchronize();
+            cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
+            if (check_h) {
+                log::printf("\n\n Ridder's method failed for T and Rd\n");
+                exit(EXIT_FAILURE);
+            }
+            calcT = false;
+        }
+
         Compute_Temperature_H_Pt_Geff<<<(point_num / NTH) + 1, NTH>>>(temperature_d,
                                                                       pressurek_d,
                                                                       Rhok_d,
+                                                                      Mhk_d,
                                                                       h_d,
                                                                       hh_d,
                                                                       pt_d,
@@ -198,14 +244,22 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                                                       gtil_d,
                                                                       gtilh_d,
                                                                       Whk_d,
+                                                                      Wk_d,
+                                                                      epotential_d,
+                                                                      epotentialh_d,
+                                                                      ekinetic_d,
+                                                                      ekinetich_d,
+                                                                      Etotal_d,
                                                                       sim.P_Ref,
                                                                       sim.Gravit,
-                                                                      sim.Cp,
-                                                                      sim.Rd,
+                                                                      Cp_d,
+                                                                      Rd_d,
                                                                       Altitude_d,
                                                                       Altitudeh_d,
                                                                       point_num,
-                                                                      nv);
+                                                                      nv,
+                                                                      calcT,
+                                                                      energy_equation);
 
 
         //      Initializes slow terms.
@@ -221,10 +275,10 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
         cudaMemset(SlowWh_d, 0, sizeof(double) * point_num * nvi);
         cudaMemset(SlowRho_d, 0, sizeof(double) * point_num * nv);
         cudaMemset(Slowpressure_d, 0, sizeof(double) * point_num * nv);
-        //
-        //      Hyper-Diffusion.
+
         if (sim.HyDiff) {
             cudaMemset(diff_d, 0, sizeof(double) * 6 * point_num * nv);
+
             cudaDeviceSynchronize();
             //Updates: diffmh_d, diffw_d, diffrh_d, diffpr_d, diff_d
             Diffusion_Op<LN, LN><<<NBD, NT>>>(diffmh_d,
@@ -237,6 +291,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                               temperature_d,
                                               Wk_d,
                                               areasTr_d,
+                                              areas_d,
                                               nvecoa_d,
                                               nvecti_d,
                                               nvecte_d,
@@ -244,11 +299,18 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                               Kdh4_d,
                                               Altitude_d,
                                               sim.A,
-                                              sim.Rd,
+                                              Rd_d,
+                                              Cp_d,
                                               maps_d,
                                               nl_region,
                                               0,
-                                              sim.DeepModel);
+                                              sim.DeepModel,
+                                              sim.DiffSponge,
+                                              order_diff_sponge,
+                                              Kdh2_d,
+                                              boundary_flux_d,
+                                              energy_equation);
+
             //Updates: diffmh_d, diffw_d, diffrh_d, diffpr_d, diff_d
             Diffusion_Op_Poles<5><<<NBDP, 1>>>(diffmh_d,
                                                diffw_d,
@@ -261,6 +323,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                                Wk_d,
                                                func_r_d,
                                                areasTr_d,
+                                               areas_d,
                                                nvecoa_d,
                                                nvecti_d,
                                                nvecte_d,
@@ -268,12 +331,25 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                                Altitude_d,
                                                Altitudeh_d,
                                                sim.A,
-                                               sim.Rd,
+                                               Rd_d,
+                                               Cp_d,
                                                point_local_d,
                                                point_num,
                                                0,
-                                               sim.DeepModel);
+                                               sim.DeepModel,
+                                               sim.DiffSponge,
+                                               order_diff_sponge,
+                                               Kdh2_d,
+                                               boundary_flux_d,
+                                               energy_equation);
             cudaDeviceSynchronize();
+
+            BENCH_POINT_I_S(current_step, rk, "Diffusion_Op1", (), ("diff_d"))
+            //  ("diffmh_d", "diffw_d", "diffrh_d", "diffpr_d", "diff_d"))
+
+
+            cudaMemset(diffrh_d, 0, sizeof(double) * point_num * nv);
+            cudaMemset(boundary_flux_d, 0, sizeof(double) * 6 * point_num * nv);
             //Updates: diffmh_d, diffw_d, diffrh_d, diffpr_d, diff_d
             Diffusion_Op<LN, LN><<<NBD, NT>>>(diffmh_d,
                                               diffw_d,
@@ -285,6 +361,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                               temperature_d,
                                               Wk_d,
                                               areasTr_d,
+                                              areas_d,
                                               nvecoa_d,
                                               nvecti_d,
                                               nvecte_d,
@@ -292,11 +369,17 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                               Kdh4_d,
                                               Altitude_d,
                                               sim.A,
-                                              sim.Rd,
+                                              Rd_d,
+                                              Cp_d,
                                               maps_d,
                                               nl_region,
                                               1,
-                                              sim.DeepModel);
+                                              sim.DeepModel,
+                                              sim.DiffSponge,
+                                              order_diff_sponge,
+                                              Kdh2_d,
+                                              boundary_flux_d,
+                                              energy_equation);
             //Updates: diffmh_d, diffw_d, diffrh_d, diffpr_d, diff_d
             Diffusion_Op_Poles<5><<<NBDP, 1>>>(diffmh_d,
                                                diffw_d,
@@ -309,6 +392,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                                Wk_d,
                                                func_r_d,
                                                areasTr_d,
+                                               areas_d,
                                                nvecoa_d,
                                                nvecti_d,
                                                nvecte_d,
@@ -316,140 +400,33 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                                Altitude_d,
                                                Altitudeh_d,
                                                sim.A,
-                                               sim.Rd,
+                                               Rd_d,
+                                               Cp_d,
                                                point_local_d,
                                                point_num,
                                                1,
-                                               sim.DeepModel);
+                                               sim.DeepModel,
+                                               sim.DiffSponge,
+                                               order_diff_sponge,
+                                               Kdh2_d,
+                                               boundary_flux_d,
+                                               energy_equation);
 
             cudaDeviceSynchronize();
-            // Diffusion_Op_Vert<<<NBALL, NTH>>>(diffmv_d,
-            //                                   diffwv_d,
-            //                                   diffrv_d,
-            //                                   diffprv_d,
-            //                                   diffv_d1,
-            //                                   diffv_d2,
-            //                                   Mhk_d,
-            //                                   Rhok_d,
-            //                                   temperature_d,
-            //                                   Wk_d,
-            //                                   func_r_d,
-            //                                   Kdv6_d,
-            //                                   Altitude_d,
-            //                                   sim.A,
-            //                                   sim.Rd,
-            //                                   point_num,
-            //                                   0,
-            //                                   sim.DeepModel);
-            //
-            // cudaDeviceSynchronize();
-            // BENCH_POINT_I_S_PHY(current_step,
-            //                     rk,
-            //                     "Diffusion_Op_Vert1",
-            //                     (),
-            //                     ("diffmh_d",
-            //                      "diffw_d",
-            //                      "diffrh_d",
-            //                      "diffpr_d",
-            //                      "diff_d",
-            //                      "diffmv_d",
-            //                      "diffwv_d",
-            //                      "diffrv_d",
-            //                      "diffprv_d",
-            //                      "diffv_d"))
-            //
-            // Diffusion_Op_Vert<<<NBALL, NTH>>>(diffmv_d,
-            //                                   diffwv_d,
-            //                                   diffrv_d,
-            //                                   diffprv_d,
-            //                                   diffv_d1,
-            //                                   diffv_d2,
-            //                                   Mhk_d,
-            //                                   Rhok_d,
-            //                                   temperature_d,
-            //                                   Wk_d,
-            //                                   func_r_d,
-            //                                   Kdv6_d,
-            //                                   Altitude_d,
-            //                                   sim.A,
-            //                                   sim.Rd,
-            //                                   point_num,
-            //                                   1,
-            //                                   sim.DeepModel);
-            // cudaDeviceSynchronize();
-            //
-            // BENCH_POINT_I_S_PHY(current_step,
-            //                     rk,
-            //                     "Diffusion_Op_Vert2",
-            //                     (),
-            //                     ("diffmh_d",
-            //                      "diffw_d",
-            //                      "diffrh_d",
-            //                      "diffpr_d",
-            //                      "diff_d",
-            //                      "diffmv_d",
-            //                      "diffwv_d",
-            //                      "diffrv_d",
-            //                      "diffprv_d",
-            //                      "diffv_d"))
-            //
-            // Diffusion_Op_Vert<<<NBALL, NTH>>>(diffmv_d,
-            //                                   diffwv_d,
-            //                                   diffrv_d,
-            //                                   diffprv_d,
-            //                                   diffv_d1,
-            //                                   diffv_d2,
-            //                                   Mhk_d,
-            //                                   Rhok_d,
-            //                                   temperature_d,
-            //                                   Wk_d,
-            //                                   func_r_d,
-            //                                   Kdv6_d,
-            //                                   Altitude_d,
-            //                                   sim.A,
-            //                                   sim.Rd,
-            //                                   point_num,
-            //                                   2,
-            //                                   sim.DeepModel);
 
-            vertical_diff_joao<40><<<NBALL0, NTH>>>(diffmv_d,      //
-                                                    diffwv_d,      //
-                                                    diffrv_d,      //
-                                                    diffprv_d,     //
-                                                    Mhk_d,         //
-                                                    Rhok_d,        //
-                                                    temperature_d, //
-                                                    Wk_d,          //
-                                                    Kdv6_d,        //
-                                                    Altitude_d,    //
-                                                    Altitudeh_d,
-                                                    sim.A,  //
-                                                    sim.Rd, //
-                                                    sim.DeepModel,
-                                                    point_num);
+            BENCH_POINT_I_S(current_step,
+                            rk,
+                            "Diffusion_Op2",
+                            (),
+                            ("diffmh_d", "diffw_d", "diffrh_d", "diffpr_d", "diff_d"))
+
+
+            Correct_Horizontal<<<NBALL1, NTH>>>(diffmh_d, diffmv_d, func_r_d, point_num);
 
             cudaDeviceSynchronize();
-            Correct_Horizontal<<<NBALL, NTH>>>(diffmh_d, diffmv_d, func_r_d, point_num);
 
-            // double* diff;
-            // diff = (double*)malloc(point_num * nv * sizeof(double));
-            // cudaMemcpy(diff, diffrv_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
-            // for (int i = 0; i < nv; i++) { printf("%d %e\n", i, diff[i]); }
-
-            BENCH_POINT_I_S_PHY(current_step,
-                                rk,
-                                "Diffusion_Op_Vert",
-                                (),
-                                ("diffmh_d",
-                                 "diffw_d",
-                                 "diffrh_d",
-                                 "diffpr_d",
-                                 "diff_d",
-                                 "diffmv_d",
-                                 "diffwv_d",
-                                 "diffrv_d",
-                                 "diffprv_d",
-                                 "diffv_d"))
+            BENCH_POINT_I_S(
+                current_step, rk, "Correct_Horizontal", (), ("diffmh_d", "diffmv_d", "func_r_d"))
         }
 
         if (phy_modules_execute)
@@ -481,6 +458,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                         Whk_d,
                                         Kdhz_d,
                                         areasTr_d,
+                                        areas_d,
                                         nvecoa_d,
                                         nvecti_d,
                                         nvecte_d,
@@ -499,6 +477,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                          Whk_d,
                                          Kdhz_d,
                                          areasTr_d,
+                                         areas_d,
                                          nvecoa_d,
                                          nvecti_d,
                                          nvecte_d,
@@ -519,6 +498,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                         Whk_d,
                                         Kdhz_d,
                                         areasTr_d,
+                                        areas_d,
                                         nvecoa_d,
                                         nvecti_d,
                                         nvecte_d,
@@ -537,6 +517,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                          Whk_d,
                                          Kdhz_d,
                                          areasTr_d,
+                                         areas_d,
                                          nvecoa_d,
                                          nvecti_d,
                                          nvecte_d,
@@ -556,6 +537,152 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
         //      Slow Modes
         cudaDeviceSynchronize();
 
+        if (sim.RayleighSponge == true && raysp_calc_mode != IMP) {
+            cudaMemset(profx_dMh_d, 0, sizeof(double) * 3 * point_num * nv);
+            cudaMemset(profx_dWh_d, 0, sizeof(double) * point_num * nvi);
+            cudaMemset(profx_dW_d, 0, sizeof(double) * point_num * nv);
+            if (rk == 0 || raysp_calc_mode == EXP3) {
+                // dim3 NBT((point_num / NTH) + 1, nv, 1);
+
+                if (damp_uv_to_mean) {
+                    cudaMemset(utmp, 0, sizeof(double) * nlat_bins * nv * max_count);
+                    cudaMemset(vtmp, 0, sizeof(double) * nlat_bins * nv * max_count);
+
+                    zonal_uv<<<NB, NTH>>>(Mhk_d,
+                                          Rhok_d,
+                                          zonal_mean_tab_d,
+                                          lonlat_d,
+                                          point_num,
+                                          utmp,
+                                          vtmp,
+                                          max_count);
+
+                    cudaDeviceSynchronize();
+                }
+                if (damp_w_to_mean) {
+                    cudaMemset(wtmp, 0, sizeof(double) * nlat_bins * nv * max_count);
+                    zonal_w<<<NB, NTH>>>(
+                        Wk_d, Rhok_d, zonal_mean_tab_d, point_num, wtmp, max_count);
+
+                    cudaDeviceSynchronize();
+                }
+
+                if (damp_uv_to_mean && damp_w_to_mean) {
+                    gpu_sum_on_device_sponge<1024>(utmp, max_count, vbar_h, nv, nlat_bins, 0);
+                    gpu_sum_on_device_sponge<1024>(vtmp, max_count, vbar_h, nv, nlat_bins, 1);
+                    gpu_sum_on_device_sponge<1024>(wtmp, max_count, vbar_h, nv, nlat_bins, 2);
+                }
+                else if (damp_uv_to_mean) {
+                    gpu_sum_on_device_sponge<1024>(utmp, max_count, vbar_h, nv, nlat_bins, 0);
+                    gpu_sum_on_device_sponge<1024>(vtmp, max_count, vbar_h, nv, nlat_bins, 1);
+                }
+                else if (damp_w_to_mean) {
+                    gpu_sum_on_device_sponge<1024>(wtmp, max_count, vbar_h, nv, nlat_bins, 2);
+                }
+                if (damp_uv_to_mean || damp_w_to_mean) {
+                    cudaMemset(vbar_d, 0, sizeof(double) * 3 * nlat_bins * nv);
+                    cudaMemcpy(vbar_d,
+                               vbar_h,
+                               3 * nlat_bins * nv * sizeof(double),
+                               cudaMemcpyHostToDevice);
+                }
+
+                if (sim.RayleighSpongeT) {
+                    zonal_temp<<<NB, NTH>>>(pressurek_d,
+                                            Rhok_d,
+                                            Tbar_d,
+                                            zonal_mean_tab_d,
+                                            lonlat_d,
+                                            point_num,
+                                            Ttmp,
+                                            Rd_d,
+                                            max_count);
+
+                    cudaDeviceSynchronize();
+
+                    int ilat, lev;
+                    for (ilat = 0; ilat < nlat_bins; ilat++) {
+                        for (lev = 0; lev < nv; lev++) {
+                            Tbar_h[ilat * nv + lev] = gpu_sum_on_device<1024>(
+                                &(Ttmp[ilat * nv * max_count + lev * max_count]), max_count);
+                        }
+                    }
+                    cudaMemcpy(
+                        Tbar_d, Tbar_h, nlat_bins * nv * sizeof(double), cudaMemcpyHostToDevice);
+                }
+            }
+            double Rv_fac = 1;
+            if (shrink_sponge == true) {
+                if (current_step * timestep >= t_shrink * timestep) {
+                    double shrink_scale = timestep * 1000;
+                    Rv_fac = exp(-(current_step * timestep - t_shrink * timestep) / shrink_scale);
+                }
+            }
+
+
+            sponge_layer<<<NBRT, NTH>>>(Mhk_d,
+                                        Rhok_d,
+                                        Wk_d,
+                                        Whk_d,
+                                        pressurek_d,
+                                        vbar_d,
+                                        Tbar_d,
+                                        zonal_mean_tab_d,
+                                        lonlat_d,
+                                        Altitude_d,
+                                        Altitudeh_d,
+                                        Ruv_sponge,
+                                        Rw_sponge,
+                                        RT_sponge,
+                                        Rv_fac,
+                                        ns_ray_sponge,
+                                        damp_uv_to_mean,
+                                        damp_w_to_mean,
+                                        false,
+                                        timestep,
+                                        Rd_d,
+                                        nlat_bins,
+                                        point_num,
+                                        nv,
+                                        sim.RayleighSpongeT,
+                                        profx_dMh_d,
+                                        profx_dWh_d,
+                                        profx_dW_d,
+                                        profx_Qheat_d);
+
+            BENCH_POINT_I_S(current_step,
+                            rk,
+                            "phy_Sponge",
+                            (),
+                            ("Rhok_d", "pressurek_d", "Mhk_d", "Whk_d", "temperature_d", "Wk_d"))
+
+            cudaDeviceSynchronize();
+        }
+
+        BENCH_POINT_I_S(current_step,
+                        rk,
+                        "phy_before_slow_modews",
+                        (),
+                        ("Mhk_d",
+                         "Whk_d",
+                         "Rhok_d",
+                         "Adv_d",
+                         "DivM_d",
+                         "diffmh_d",
+                         "diffw_d",
+                         "diffrh_d",
+                         "diffpr_d",
+                         "diffmv_d",
+                         "diffwv_d",
+                         "diffrv_d",
+                         "diffprv_d",
+                         "pressurek_d",
+                         "h_d",
+                         "hh_d",
+                         "gtil_d",
+                         "Altitude_d",
+                         "Altitudeh_d",
+                         "Qheat_d"))
 
         // Updates: SlowMh_d, SlowWh_d, SlowRho_d, Slowpressure_d
         Compute_Slow_Modes<LN, LN><<<NB, NT>>>(SlowMh_d,
@@ -585,14 +712,23 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                                Altitudeh_d,
                                                sim.A,
                                                sim.Gravit,
-                                               sim.Cp,
-                                               sim.Rd,
+                                               Cp_d,
+                                               Rd_d,
                                                func_r_d,
                                                maps_d,
                                                nl_region,
                                                sim.DeepModel,
-                                               sim.NonHydro);
+                                               sim.NonHydro,
+                                               profx_dMh_d,
+                                               profx_dWh_d,
+                                               profx_Qheat_d,
+                                               energy_equation);
         cudaDeviceSynchronize();
+        BENCH_POINT_I_S(current_step,
+                        rk,
+                        "Compute_Slow_Modes",
+                        (),
+                        ("SlowMh_d", "SlowWh_d", "SlowRho_d", "Slowpressure_d"))
         // Updates: SlowMh_d, SlowWh_d, SlowRho_d, Slowpressure_d
         Compute_Slow_Modes_Poles<6><<<2, 1>>>(SlowMh_d,
                                               SlowWh_d,
@@ -621,15 +757,19 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                               Altitudeh_d,
                                               sim.A,
                                               sim.Gravit,
-                                              sim.Cp,
-                                              sim.Rd,
+                                              Cp_d,
+                                              Rd_d,
                                               func_r_d,
                                               point_local_d,
                                               nv,
                                               point_num,
                                               sim.DeepModel,
-                                              sim.NonHydro);
-
+                                              sim.NonHydro,
+                                              profx_dMh_d,
+                                              profx_dWh_d,
+                                              profx_Qheat_d,
+                                              energy_equation);
+        cudaDeviceSynchronize();
 
         BENCH_POINT_I_S(current_step,
                         rk,
@@ -691,10 +831,8 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
         }
 
         //
-        //      SMALL-STEPS
-        // printf("\n << nlarge = %d <<<<<<<<<<<<\n",rk);
+        //      SMALL-STEP
         for (int ns = 0; ns < ns_it; ns++) {
-            // printf("// nsmall = %d //////////////////\n",ns);
             cudaMemset(DivM_d, 0, sizeof(double) * point_num * 3 * nv);
             cudaMemset(divg_Mh_d, 0, sizeof(double) * point_num * 3 * nv);
             if (sim.DivDampP) {
@@ -706,6 +844,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                             Whs_d,
                                             Kdhz_d,
                                             areasTr_d,
+                                            areas_d,
                                             nvecoa_d,
                                             nvecti_d,
                                             nvecte_d,
@@ -724,6 +863,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                              Whs_d,
                                              Kdhz_d,
                                              areasTr_d,
+                                             areas_d,
                                              nvecoa_d,
                                              nvecti_d,
                                              nvecte_d,
@@ -744,6 +884,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                             Whs_d,
                                             Kdhz_d,
                                             areasTr_d,
+                                            areas_d,
                                             nvecoa_d,
                                             nvecti_d,
                                             nvecte_d,
@@ -762,6 +903,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                              Whs_d,
                                              Kdhz_d,
                                              areasTr_d,
+                                             areas_d,
                                              nvecoa_d,
                                              nvecti_d,
                                              nvecte_d,
@@ -825,8 +967,8 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                                           Sp_d,
                                                           Sd_d,
                                                           Altitude_d,
-                                                          sim.Cp,
-                                                          sim.Rd,
+                                                          Cp_d,
+                                                          Rd_d,
                                                           sim.A,
                                                           maps_d,
                                                           nl_region,
@@ -834,6 +976,8 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
 
 
             cudaDeviceSynchronize();
+
+
             // Updates: Sp_d, Sd_d
             Prepare_Implicit_Vertical_Poles<6><<<2, 1>>>(Mhs_d,
                                                          h_d,
@@ -843,8 +987,8 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                                          Sp_d,
                                                          Sd_d,
                                                          Altitude_d,
-                                                         sim.Cp,
-                                                         sim.Rd,
+                                                         Cp_d,
+                                                         Rd_d,
                                                          sim.A,
                                                          point_local_d,
                                                          point_num,
@@ -855,44 +999,43 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                 current_step, rk, ns, "Prepare_Implicit_Vertical", (), ("Sp_d", "Sd_d"))
 
             cudaDeviceSynchronize();
+#if defined(DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_DIAG_DOM) \
+    || defined(DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_RESULT)
+            // reset diagnostics flag
+            // diagnostics array is reset inside kernel
+            // could also be reset here with diag.reset();
+            diag.reset_flag();
+#endif // DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_DIAG_DOM
 
             // Updates: Whs_d, Ws_d
             Vertical_Eq<<<(point_num / num_th_vertical_eq) + 1,
                           num_th_vertical_eq,
-                          2 * num_th_vertical_eq * nvi * sizeof(double)>>>(Whs_d,
-                                                                           Ws_d,
-                                                                           pressures_d,
-                                                                           h_d,
-                                                                           hh_d,
-                                                                           Rhos_d,
-                                                                           gtil_d,
-                                                                           gtilh_d,
-                                                                           Sp_d,
-                                                                           Sd_d,
-                                                                           SlowWh_d,
-                                                                           sim.Cp,
-                                                                           sim.Rd,
-                                                                           times,
-                                                                           sim.Gravit,
-                                                                           Altitude_d,
-                                                                           Altitudeh_d,
-                                                                           sim.A,
-                                                                           sim.NonHydro,
-                                                                           point_num,
-                                                                           nv,
-                                                                           nvi,
-                                                                           sim.DeepModel);
-
-            cudaError_t err = cudaGetLastError();
-
-
-            // Check device query
-            if (err != cudaSuccess) {
-                log::printf("[%s:%d] CUDA error check reports error: %s\n",
-                            __FILE__,
-                            __LINE__,
-                            cudaGetErrorString(err));
-            }
+                          2 * num_th_vertical_eq * nvi * sizeof(double)>>>(
+                Whs_d,
+                Ws_d,
+                pressures_d,
+                h_d,
+                hh_d,
+                Rhos_d,
+                gtil_d,
+                gtilh_d,
+                Sp_d,
+                Sd_d,
+                SlowWh_d,
+                Cp_d,
+                Rd_d,
+                times,
+                sim.Gravit,
+                Altitude_d,
+                Altitudeh_d,
+                sim.A,
+                sim.NonHydro,
+                point_num,
+                nv,
+                nvi,
+                sim.DeepModel,
+                *diag.diagnostics_global_flag, // Pass the diagnostics arrays device pointers
+                *diag.diagnostics);
 
             //          Pressure and density equations.
             cudaDeviceSynchronize();
@@ -902,6 +1045,33 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                  "Vertical_Eq",
                                  (),
                                  ("Whs_d", "Ws_d", "pressures_d", "h_d", "hh_d", "Rhos_d"));
+
+#if defined(DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_DIAG_DOM) \
+    || defined(DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_RESULT)
+            if (diag.check_flag()) {
+                // dump the data
+                diag.dump_data("vertical_eq", current_step, rk, ns, *this, point_num, nvi);
+                // warn, but do not quit.
+                unsigned int flag = diag.get_flag();
+                // Check for global flags
+                if ((flag & THOMAS_NOT_DD) == THOMAS_NOT_DD)
+                    log::printf(
+                        "Non diagonaly dominant matrix for thomas algorithm in Vertical_Eq\n");
+                if ((flag & THOMAS_BAD_SOLUTION) == THOMAS_BAD_SOLUTION)
+                    log::printf("Bad thomas algorithm solution in Vertical_Eq\n");
+            }
+#endif // DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_DIAG_DOM
+
+            cudaError_t err = cudaGetLastError();
+
+            // Check device query
+            if (err != cudaSuccess) {
+                log::printf("[%s:%d] CUDA error check reports error: %s\n",
+                            __FILE__,
+                            __LINE__,
+                            cudaGetErrorString(err));
+                exit(EXIT_FAILURE);
+            }
 
             // update the physics modules in fast mode
             if (phy_modules_execute)
@@ -915,6 +1085,9 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                  (),
                                  ("Whs_d", "Ws_d", "pressures_d", "h_d", "hh_d", "Rhos_d"))
 
+#if defined(DIAG_CHECK_DENSITY_PRESSURE_EQ_AUX) || defined(DIAG_CHECK_DENSITY_PRESSURE_EQ_P_NAN)
+            diag.reset_flag();
+#endif
             // Updates: pressures_d, Rhos_d
             Density_Pressure_Eqs<LN, LN><<<NB, NT>>>(pressures_d,
                                                      pressurek_d,
@@ -926,22 +1099,36 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                                      Whk_d,
                                                      pt_d,
                                                      pth_d,
+                                                     epotential_d,
+                                                     epotentialh_d,
+                                                     ekinetic_d,
+                                                     ekinetich_d,
+                                                     Etotal_d,
+                                                     h_d,
+                                                     hh_d,
                                                      SlowRho_d,
+                                                     profx_Qheat_d,
                                                      diffpr_d,
                                                      diffprv_d,
                                                      div_d,
                                                      Altitude_d,
                                                      Altitudeh_d,
-                                                     sim.Cp,
-                                                     sim.Rd,
+                                                     Cp_d,
+                                                     Rd_d,
                                                      sim.A,
                                                      sim.P_Ref,
+                                                     sim.Gravit,
                                                      times,
                                                      maps_d,
                                                      nl_region,
-                                                     sim.DeepModel);
+                                                     sim.DeepModel,
+                                                     energy_equation,
+                                                     *diag.diagnostics_global_flag,
+                                                     *diag.diagnostics);
+
 
             cudaDeviceSynchronize();
+
             BENCH_POINT_I_SS(
                 current_step, rk, ns, "Density_Pressure_Eqs", (), ("pressures_d", "Rhos_d"))
             // Updates: pressures_d, Rhos_d
@@ -955,24 +1142,44 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                                     Whk_d,
                                                     pt_d,
                                                     pth_d,
+                                                    epotential_d,
+                                                    epotentialh_d,
+                                                    ekinetic_d,
+                                                    ekinetich_d,
+                                                    Etotal_d,
+                                                    h_d,
+                                                    hh_d,
                                                     SlowRho_d,
+                                                    profx_Qheat_d,
                                                     diffpr_d,
                                                     diffprv_d,
                                                     div_d,
                                                     Altitude_d,
                                                     Altitudeh_d,
-                                                    sim.Cp,
-                                                    sim.Rd,
+                                                    Cp_d,
+                                                    Rd_d,
                                                     sim.A,
                                                     sim.P_Ref,
+                                                    sim.Gravit,
                                                     times,
                                                     point_local_d,
                                                     point_num,
                                                     nv,
-                                                    sim.DeepModel);
+                                                    sim.DeepModel,
+                                                    energy_equation,
+                                                    *diag.diagnostics_global_flag,
+                                                    *diag.diagnostics);
 
             BENCH_POINT_I_SS(
                 current_step, rk, ns, "Density_Pressure_Eqs_Poles", (), ("pressures_d", "Rhos_d"))
+
+#if defined(DIAG_CHECK_DENSITY_PRESSURE_EQ_AUX) || defined(DIAG_CHECK_DENSITY_PRESSURE_EQ_P_NAN)
+            if (diag.check_flag()) {
+                diag.dump_data("density_pressure_eq", current_step, rk, ns, *this, point_num, nv);
+                log::printf("NaN value or Negative AUX in Density_Pressure_Eqs, EXITING\n");
+                exit(EXIT_FAILURE);
+            }
+#endif
         }
         BENCH_POINT_I_S_PHY(
             current_step,
@@ -997,6 +1204,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
                                                   Altitudeh_d,
                                                   point_num,
                                                   nv);
+        cudaDeviceSynchronize();
 
         BENCH_POINT_I_S_PHY(
             current_step,
@@ -1004,6 +1212,28 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
             "RK2",
             (),
             ("Rhos_d", "Rhok_d", "Mhs_d", "Mhk_d", "Whs_d", "Whk_d", "pressures_d", "pressurek_d"))
+
+        if (ultrahot_thermo == VARY_R_CP) {
+            check_h = false;
+            cudaMemcpy(check_d, &check_h, sizeof(bool), cudaMemcpyHostToDevice);
+            update_temperature_Rd_Cp<<<NBALL1, NTH>>>(temperature_d,
+                                                      Rd_d,
+                                                      Cp_d,
+                                                      pressurek_d,
+                                                      Rhok_d,
+                                                      GibbsT_d,
+                                                      GibbsdG_d,
+                                                      GibbsN,
+                                                      point_num,
+                                                      check_d);
+
+            cudaDeviceSynchronize();
+            cudaMemcpy(&check_h, check_d, sizeof(bool), cudaMemcpyDeviceToHost);
+            if (check_h) {
+                log::printf("\n\n Ridder's method failed for T and Rd\n");
+                exit(EXIT_FAILURE);
+            }
+        }
     }
     //  Update diagnostic variables.
     cudaDeviceSynchronize();
@@ -1017,6 +1247,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim) {
     cudaMemcpy(Rho_d, Rhok_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToDevice);
     cudaMemcpy(pressure_d, pressurek_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToDevice);
 
-    if (phy_modules_execute) phy_modules_dyn_core_loop_end(*this);
+    if (phy_modules_execute)
+        phy_modules_dyn_core_loop_end(*this);
 }
 //END OF THOR!

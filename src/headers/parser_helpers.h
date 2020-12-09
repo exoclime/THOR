@@ -26,7 +26,7 @@
 //
 //
 // Authors: Joao Mendonca, EEG. joao.mendonca@csh.unibe.ch
-//          Urs Schroffenegger, Russel Deitrick
+//          Urs Schroffenegger, Russell Deitrick
 //
 // If you use this code please cite the following reference:
 //
@@ -58,8 +58,7 @@ using std::string;
 // check if we use GCC and if version is below 4.9, define
 // NO_REGEX_SUPPORT
 #ifdef __GNUC__
-#    if ((__GNUC__ == 4 && __GNUC_MINOR__ < 9) \
-         || (__GNUC__ < 4))
+#    if ((__GNUC__ == 4 && __GNUC_MINOR__ < 9) || (__GNUC__ < 4))
 #        define NO_REGEX_SUPPORT
 #    endif // GCC version check
 #endif     // __GNUC__
@@ -215,9 +214,7 @@ inline bool is_long_cmdargs(const string& in, string& out) {
 #ifdef NO_REGEX_SUPPORT
     if (in.length() >= 3 and in[0] == '-' and in[1] == '-') {
         for (size_t i = 2; i < in.length(); i++) {
-            if ((in[i] == ' ')
-                || (in[i] == '-')
-                || (in[i] == '\t'))
+            if ((in[i] == ' ') || (in[i] == '-') || (in[i] == '\t'))
                 return false;
             out += in[i];
         }
@@ -245,9 +242,7 @@ inline bool is_short_cmdargs(const string& in, string& out) {
     if (in.length() == 2 and in[0] == '-') {
         out = in.substr(1, string::npos);
 
-        return (out[0] != ' ')
-               && (out[0] != '-')
-               && (out[0] != '\t');
+        return (out[0] != ' ') && (out[0] != '-') && (out[0] != '\t');
     }
     return false;
 
@@ -270,15 +265,13 @@ inline bool is_short_cmdargs(const string& in, string& out) {
 // Used by config file parser and argument parser
 
 // base function prototype
-template<typename T>
-bool parse_data(const string& value, T& target) {
+template<typename T> bool parse_data(const string& value, T& target) {
 
     return false;
 }
 
 // bool template specialisation
-template<>
-inline bool parse_data(const string& value, bool& target) {
+template<> inline bool parse_data(const string& value, bool& target) {
 #ifdef NO_REGEX_SUPPORT
     if (value == string("true")) {
         target = true;
@@ -305,8 +298,7 @@ inline bool parse_data(const string& value, bool& target) {
 }
 
 // int template specialisation
-template<>
-inline bool parse_data(const string& value, int& target) {
+template<> inline bool parse_data(const string& value, int& target) {
 #ifdef NO_REGEX_SUPPORT
     try {
         target = std::stoi(value);
@@ -333,8 +325,7 @@ inline bool parse_data(const string& value, int& target) {
 }
 
 // double template specialisation
-template<>
-inline bool parse_data(const string& value, double& target) {
+template<> inline bool parse_data(const string& value, double& target) {
 #ifdef NO_REGEX_SUPPORT
     try {
         target = std::stod(value);
@@ -361,47 +352,43 @@ inline bool parse_data(const string& value, double& target) {
 }
 
 // string template specialisation
-template<>
-inline bool parse_data(const string& value, string& target) {
+template<> inline bool parse_data(const string& value, string& target) {
     target = value;
 
     return true;
 }
 
 // Conversion from value to string, recognising input type
-template<typename T>
-inline string to_strg(T& val) {
+template<typename T> inline string to_strg(T& val) {
     return std::to_string(val);
 }
-template<>
-inline string to_strg(string& val) {
+template<> inline string to_strg(string& val) {
     return val;
 }
-template<>
-inline string to_strg(bool& val) {
+template<> inline string to_strg(bool& val) {
     return val ? "1" : "0";
 }
 
 
 // helpers to check coherence of input
-template<typename T>
-bool check_greater(string name, T val, T min_) {
+template<typename T> bool check_greater(string name, T val, T min_) {
     if (val > min_)
         return true;
     else {
-        std::cout << "Bad range for " << name << " (cond: min(" << min_ << ") < " << val << std::endl;
+        std::cout << "Bad range for " << name << " (cond: min(" << min_ << ") < " << val
+                  << std::endl;
 
         return false;
     }
 }
 
 
-template<typename T>
-bool check_range(const string& name, T val, T min_, T max_) {
+template<typename T> bool check_range(const string& name, T val, T min_, T max_) {
     if (val > min_ && val < max_)
         return true;
     else {
-        std::cout << "Bad range for " << name << " (cond: min(" << min_ << ") < " << val << ") < max(" << max_ << "))" << std::endl;
+        std::cout << "Bad range for " << name << " (cond: min(" << min_ << ") < " << val
+                  << ") < max(" << max_ << "))" << std::endl;
 
         return false;
     }
