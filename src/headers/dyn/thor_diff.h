@@ -1017,6 +1017,9 @@ __global__ void vertical_diff(double* diffmv_d,  //
 
     double sign        = 1.0;
     bool   include_rho = false;
+    //order of diffusion: can be changed (minimum = 4, even numbers only) but
+    //the calculation of Kv needs to be adjusted in esp_initial.cu
+    int order = 6;
 
     if (id < num) {
         double dzi, dzup, dzlow;
@@ -1075,7 +1078,8 @@ __global__ void vertical_diff(double* diffmv_d,  //
             }
         }
 
-        for (int l = 0; l < 2; l++) {
+        int max_l = order / 2 - 1;
+        for (int l = 0; l < max_l; l++) {
             for (int lev = 0; lev < nv; lev++) {
                 dzi = 1.0 / (Altitudeh_d[lev + 1] - Altitudeh_d[lev]);
                 if (DeepModel) {
@@ -1111,7 +1115,7 @@ __global__ void vertical_diff(double* diffmv_d,  //
                            * dzlow)
                     * dzi / pow(ri, 2);
             }
-            if (l == 0) {
+            if (l < max_l - 1) {
                 diff2_d[id * (nv + 2) * 6 + 0 * 6 + var] = diff_d[id * nv * 6 + 0 * 6 + var];
                 diff2_d[id * (nv + 2) * 6 + (nv + 1) * 6 + var] =
                     diff_d[id * nv * 6 + (nv - 1) * 6 + var];
@@ -1203,18 +1207,15 @@ __global__ void vertical_diff(double* diffmv_d,  //
                 }
             }
             if (var == 1)
-                diffmv_d[id * nv * 3 + lev * 3 + 0] =
-                    diff_d[id * nv * 6 + lev * 6 + var]; //af[lev];
+                diffmv_d[id * nv * 3 + lev * 3 + 0] = diff_d[id * nv * 6 + lev * 6 + var];
             if (var == 2)
-                diffmv_d[id * nv * 3 + lev * 3 + 1] =
-                    diff_d[id * nv * 6 + lev * 6 + var]; // af[lev];
+                diffmv_d[id * nv * 3 + lev * 3 + 1] = diff_d[id * nv * 6 + lev * 6 + var];
             if (var == 3)
-                diffmv_d[id * nv * 3 + lev * 3 + 2] =
-                    diff_d[id * nv * 6 + lev * 6 + var]; //af[lev];
+                diffmv_d[id * nv * 3 + lev * 3 + 2] = diff_d[id * nv * 6 + lev * 6 + var];
             if (var == 4)
-                diffwv_d[id * nv + lev] = diff_d[id * nv * 6 + lev * 6 + var]; // af[lev];
+                diffwv_d[id * nv + lev] = diff_d[id * nv * 6 + lev * 6 + var];
             if (var == 5)
-                diffprv_d[id * nv + lev] = diff_d[id * nv * 6 + lev * 6 + var]; // af[lev];
+                diffprv_d[id * nv + lev] = diff_d[id * nv * 6 + lev * 6 + var];
         }
     }
 }
