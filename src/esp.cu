@@ -279,6 +279,9 @@ int main(int argc, char** argv) {
 
     // ...and separate div damping
     config_reader.append_config_var("DivDampc", sim.DivDampc, sim.DivDampc);
+    // vertical hyper diffusion
+    config_reader.append_config_var("Diffc_v", sim.Diffc_v, sim.Diffc_v);
+
 
     // grid
     bool   spring_dynamics = true;
@@ -295,6 +298,8 @@ int main(int argc, char** argv) {
 
     config_reader.append_config_var("HyDiff", sim.HyDiff, HyDiff_default);
     config_reader.append_config_var("DivDampP", sim.DivDampP, DivDampP_default);
+    config_reader.append_config_var("VertHyDiff", sim.VertHyDiff, VertHyDiff_default);
+
 
     // Model options
     config_reader.append_config_var("NonHydro", sim.NonHydro, NonHydro_default);

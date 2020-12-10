@@ -420,6 +420,46 @@ __host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
                             (),
                             ("diffmh_d", "diffw_d", "diffrh_d", "diffpr_d", "diff_d"))
 
+            if (sim.VertHyDiff) { //sixth-order vertical hyperdiffusion
+                cudaMemset(diff_d, 0, sizeof(double) * 6 * point_num * nv);
+                cudaMemset(diff2_d, 0, sizeof(double) * 6 * point_num * nv);
+
+                vertical_diff<<<NBALL0, NTH>>>(diffmv_d,  //
+                                               diffwv_d,  //
+                                               diffrv_d,  //
+                                               diffprv_d, //
+                                               diff_d,
+                                               diff2_d,
+                                               Mhk_d,         //
+                                               Rhok_d,        //
+                                               temperature_d, //
+                                               Wk_d,          //
+                                               Kdv6_d,        //
+                                               Altitude_d,    //
+                                               Altitudeh_d,
+                                               sim.A,  //
+                                               sim.Rd, //
+                                               sim.DeepModel,
+                                               point_num,
+                                               nv);
+
+                // vertical_diff_joao<40><<<NBALL0, NTH>>>(diffmv_d,      //
+                //                                         diffwv_d,      //
+                //                                         diffrv_d,      //
+                //                                         diffprv_d,     //
+                //                                         Mhk_d,         //
+                //                                         Rhok_d,        //
+                //                                         temperature_d, //
+                //                                         Wk_d,          //
+                //                                         Kdv6_d,        //
+                //                                         Altitude_d,    //
+                //                                         Altitudeh_d,
+                //                                         sim.A,  //
+                //                                         sim.Rd, //
+                //                                         sim.DeepModel,
+                //                                         point_num);
+                cudaDeviceSynchronize();
+            }
 
             Correct_Horizontal<<<NBALL1, NTH>>>(diffmh_d, diffmv_d, func_r_d, point_num);
 

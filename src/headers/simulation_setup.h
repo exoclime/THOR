@@ -77,14 +77,16 @@ public:
     double P_Ref;
     double Top_altitude;
     double Diffc;
+    double Diffc_v;
     double DivDampc;
 
     // Sim
     bool DeepModel;
-    bool HyDiff;   // Turn on/off hyper-diffusion.
-    bool DivDampP; // Turn on/off divergence damping.
-    bool NonHydro; // Turn on/off non-hydrostatic.
-    bool globdiag; // calc/output globdiag quantities
+    bool HyDiff;     // Turn on/off hyper-diffusion.
+    bool DivDampP;   // Turn on/off divergence damping.
+    bool VertHyDiff; // vertical hyper diffusion
+    bool NonHydro;   // Turn on/off non-hydrostatic.
+    bool globdiag;   // calc/output globdiag quantities
 
     // top sponge layer master switches
     bool RayleighSponge;  // Use sponge layer (rayleigh drag)?
