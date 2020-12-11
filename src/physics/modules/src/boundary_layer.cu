@@ -973,8 +973,8 @@ __global__ void FreeAtmosCutOff(double *KH_d,
     if (id < num) {
         double h_bl = Altitudeh_d[1]; //bl height for this column, starting at top of first level
         for (lev = 1; lev < nv; lev++) {
-            if (RiGrad_d[id * (nv + 1) + lev]
-                < Ri_crit) { //if bottom of level is < Ricrit, keep level in bl
+            if ((RiGrad_d[id * (nv + 1) + lev] < Ri_crit)
+                && (Altitudeh_d[lev] <= h_bl)) { //if bottom of level is < Ricrit, keep level in bl
                 h_bl =
                     Altitudeh_d[lev + 1]; //h_bl will be height of first interface to cross Ricrit
             }
