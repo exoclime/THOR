@@ -8,9 +8,8 @@
 
 #include "boundary_layer.h"
 #include "chemistry.h"
-#include "radiative_transfer.h"
-
 #include "log_writer.h"
+#include "radiative_transfer.h"
 
 #include <math.h>
 #include <memory>
@@ -195,17 +194,24 @@ bool phy_modules_phy_loop(ESP&                   esp,
     if (chemistry_enabled)
         chem.phy_loop(esp, sim, diag, nstep, time_step);
 
-    if (radiative_transfer_enabled)
+    if (boundary_layer_enabled)
+        bl.phy_loop(esp, sim, diag, nstep, time_step);
+
+    if (radiative_transfer_enabled) {
         rt.phy_loop(esp, sim, diag, nstep, time_step);
+        if (nstep % sim.n_out == 0) {
+            log::printf("\n || ASR = %e W || OLR = %e W ||\n", rt.ASR_tot, rt.OLR_tot);
+        }
+        else {
+            printf("\n || ASR = %e W || OLR = %e W ||\n", rt.ASR_tot, rt.OLR_tot);
+        }
+    }
+
 
 #ifdef HAS_ALFRODULL
     if (alfrodull_enabled)
         tsrt.phy_loop(esp, sim, diag, nstep, time_step);
 #endif // HAS_ALFRODULL
-
-    if (boundary_layer_enabled)
-        bl.phy_loop(esp, sim, diag, nstep, time_step);
-
 
     return out;
 }

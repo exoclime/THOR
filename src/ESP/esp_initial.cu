@@ -114,6 +114,8 @@ __host__ ESP::ESP(int *                 point_local_,
                   uh_thermo_types       ultrahot_thermo_,
                   uh_heating_types      ultrahot_heating_,
                   thermo_equation_types thermo_equation_,
+                  bool                  surface_config,
+                  double                Csurf_config,
                   Insolation &          insolation_) :
     nl_region(nl_region_),
     nr(nr_),
@@ -135,6 +137,7 @@ __host__ ESP::ESP(int *                 point_local_,
     ultrahot_heating(ultrahot_heating_),
     thermo_equation(thermo_equation_),
     shrink_sponge(shrink_sponge_),
+    surface(surface_config),
     insolation(insolation_) {
 
     point_local_h = point_local_;
@@ -184,6 +187,7 @@ __host__ ESP::ESP(int *                 point_local_,
     else
         phy_modules_execute = false;
 
+    Csurf = Csurf_config;
     //
     //  Allocate Data
     alloc_data(globdiag, output_mean);
@@ -218,6 +222,7 @@ __host__ void ESP::alloc_data(bool globdiag, bool output_mean) {
     AngMomy_h = (double *)malloc(nv * point_num * sizeof(double));
     AngMomz_h = (double *)malloc(nv * point_num * sizeof(double));
     Entropy_h = (double *)malloc(nv * point_num * sizeof(double));
+    Esurf_h   = (double *)malloc(point_num * sizeof(double));
 
     // ultra-hot jupiter stuff
     Rd_h = (double *)malloc(nv * point_num * sizeof(double));
@@ -386,7 +391,15 @@ __host__ void ESP::alloc_data(bool globdiag, bool output_mean) {
         cudaMalloc((void **)&GlobalAMx_d, 1 * sizeof(double));
         cudaMalloc((void **)&GlobalAMy_d, 1 * sizeof(double));
         cudaMalloc((void **)&GlobalAMz_d, 1 * sizeof(double));
+        if (surface) {
+            cudaMalloc((void **)&Esurf_d, point_num * sizeof(double));
+        }
     }
+
+    cudaMalloc((void **)&Tsurface_d, point_num * sizeof(double));
+    Tsurface_h = (double *)malloc(point_num * sizeof(double));
+    cudaMalloc((void **)&dTsurf_dt_d, point_num * sizeof(double));
+
 
     // PHY modules
     log::printf("  Dynamical core memory initialised.\n");
@@ -592,6 +605,15 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 Rho_h[i * nv + lev] =
                     pressure_h[i * nv + lev] / (temperature_h[i * nv + lev] * Rd_h[i * nv + lev]);
 
+                // if (i == 0) {
+                //     printf("%f\n", Rho_h[i * nv + lev]);
+                // }
+                // hack to check PBL solver xxxxxxx
+                // double u = 10.0;
+                // //              Momentum [kg/m3 m/s]  //should be zero! setting to test PBL
+                // Mh_h[i * 3 * nv + 3 * lev + 0] = -Rho_h[i * nv + lev] * u * (sin(lonlat_h[i * 2]));
+                // Mh_h[i * 3 * nv + 3 * lev + 1] = Rho_h[i * nv + lev] * u * (cos(lonlat_h[i * 2]));
+
                 //              Momentum [kg/m3 m/s]
                 Mh_h[i * 3 * nv + 3 * lev + 0] = 0.0;
                 Mh_h[i * 3 * nv + 3 * lev + 1] = 0.0;
@@ -602,6 +624,9 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 Wh_h[i * (nv + 1) + lev] = 0.0; // Layers interface.
             }
             Wh_h[i * (nv + 1) + nv] = 0.0;
+            if (surface) { // set initial surface temp == bottom layer
+                Tsurface_h[i] = temperature_h[i * nv + 0];
+            }
 
             if (core_benchmark == ACOUSTIC_TEST) {
                 // add density perturbation for acoustic wave test
@@ -803,6 +828,11 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
             //      Simulation start time
             load_OK &= s.read_value("/simulation_time", simulation_start_time);
             log::printf("Reloaded %s: %d.\n", "/simulation_time", load_OK ? 1 : 0);
+            //      Surface temperature
+            if (surface) {
+                load_OK &= s.read_table_to_ptr("/Tsurface", Tsurface_h, point_num);
+                log::printf("Reloaded %s: %d.\n", "/Tsurface", load_OK ? 1 : 0);
+            }
         }
 
 
@@ -835,6 +865,9 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 double b = (xi - xim1) / (xip1 - xim1);
 
                 W_h[i * nv + lev] = Wh_h[i * (nv + 1) + lev] * a + Wh_h[i * (nv + 1) + lev + 1] * b;
+                // if (i == 0) {
+                //     printf("%d %.15e %.15e %.15e\n", lev, a, b, W_h[i * nv + lev]);
+                // }
             }
         }
     } //end if rest == false
@@ -944,6 +977,9 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
     cudaMemcpy(GibbsT_d, GibbsT, GibbsN * sizeof(double), cudaMemcpyHostToDevice);
     cudaMemcpy(GibbsdG_d, GibbsdG, GibbsN * sizeof(double), cudaMemcpyHostToDevice);
 
+    if (surface) {
+        cudaMemcpy(Tsurface_d, Tsurface_h, point_num * sizeof(double), cudaMemcpyHostToDevice);
+    }
     //  Initialize arrays
     cudaMemset(Adv_d, 0, sizeof(double) * 3 * point_num * nv);
     cudaMemset(v_d, 0, sizeof(double) * nv * point_num * 3);
@@ -993,6 +1029,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
     cudaMemset(boundary_flux_d, 0, sizeof(double) * 6 * nv * point_num);
 
+
     cudaMemset(profx_dMh_d, 0, sizeof(double) * 3 * point_num * nv);
     cudaMemset(profx_dWh_d, 0, sizeof(double) * point_num * nvi);
     cudaMemset(profx_dW_d, 0, sizeof(double) * point_num * nv);
@@ -1002,6 +1039,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
     delete[] Kdv6_h;
     delete[] Kdvz_h;
     delete[] Kdh2_h;
+
 
     // modules need to set their initial conditions
     if (phy_modules_execute) {
@@ -1199,6 +1237,11 @@ __host__ ESP::~ESP() {
 
     cudaFree(boundary_flux_d);
     free(boundary_flux_h);
+
+    cudaFree(Tsurface_d);
+    cudaFree(dTsurf_dt_d);
+
+    free(Tsurface_h);
 
     if (phy_modules_execute)
         phy_modules_free_mem();

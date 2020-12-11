@@ -40,23 +40,28 @@ __device__ void radcsw(double *phtemp,
                        double *tau_d,
                        double *fsw_up_d,
                        double *fsw_dn_d,
+                       double *Altitude_d,
                        double *Altitudeh_d,
                        double  incflx,
                        double  alb,
-                       double  tausw,
+                       double  kappa_sw,
                        double  ps0,
                        double  gravit,
+                       double  A,
                        int     id,
                        int     nv,
-                       double *insol_d) {
+                       double *insol_d,
+                       bool    DeepModel) {
 
     //  Calculate upward, downward, and net flux.
     //  Downward Directed Radiation
 
     // double gocp;
-    double tau      = (tausw / ps0) * (phtemp[id * (nv + 1) + nv]);
+    //double tau      = (tausw / ps0) * (phtemp[id * (nv + 1) + nv]);
+    double tau      = (kappa_sw / gravit) * (phtemp[id * (nv + 1) + nv]);
     insol_d[id]     = incflx * pow(r_orb, -2) * coszrs;
     double flux_top = insol_d[id] * (1.0 - alb);
+    double rup, rlow;
 
     // Extra layer to avoid over heating at the top.
     fsw_dn_d[id * (nv + 1) + nv] = flux_top * exp(-(1.0 / coszrs) * tau);
@@ -71,10 +76,19 @@ __device__ void radcsw(double *phtemp,
 
     // Update temperature rates.
     for (int lev = 0; lev < nv; lev++) {
-        // double dtemp2;
+        if (DeepModel) {
+            rup =
+                (Altitudeh_d[lev + 1] + A) / (Altitude_d[lev] + A); //vertical scaling in divergence
+            rlow = (Altitudeh_d[lev] + A) / (Altitude_d[lev] + A);
+        }
+        else {
+            rup  = 1.0;
+            rlow = 1.0;
+        }
         dtemp[id * nv + lev] =
-            -((fsw_up_d[id * (nv + 1) + lev] - fsw_dn_d[id * (nv + 1) + lev])
-              - (fsw_up_d[id * (nv + 1) + lev + 1] - fsw_dn_d[id * (nv + 1) + lev + 1]))
+            -(pow(rlow, 2) * (fsw_up_d[id * (nv + 1) + lev] - fsw_dn_d[id * (nv + 1) + lev])
+              - pow(rup, 2)
+                    * (fsw_up_d[id * (nv + 1) + lev + 1] - fsw_dn_d[id * (nv + 1) + lev + 1]))
             / ((Altitudeh_d[lev] - Altitudeh_d[lev + 1]));
         // gocp = gravit / Cp;
         // dtemp[id * nv + lev] =
@@ -84,6 +98,9 @@ __device__ void radcsw(double *phtemp,
         //     / (phtemp[id * (nv + 1) + lev] - phtemp[id * (nv + 1) + lev + 1]);
 
         // printf("%d %e\n", lev, (dtemp2 - dtemp[id * nv + lev]) / dtemp2);
+        if (isnan(dtemp[id * nv + lev])) {
+            printf("stop here");
+        }
     }
 }
 
@@ -136,18 +153,22 @@ __device__ void radclw(double *phtemp,
                        double *tau_d,
                        double *flw_up_d,
                        double *flw_dn_d,
+                       double *Altitude_d,
                        double *Altitudeh_d,
                        double  diff_ang,
                        double  tint,
                        double  gravit,
                        bool    surface,
                        double  Tsurface,
+                       double  A,
                        int     id,
-                       int     nv) {
+                       int     nv,
+                       bool    DeepModel) {
 
     // double gocp = gravit / Cp;
     double tb, tl, tt;
     double bb, bl, bt;
+    double rup, rlow;
 
     double bc = 5.677036E-8; //Stefan–Boltzmann constant W⋅m−2⋅K−4
 
@@ -211,10 +232,20 @@ __device__ void radclw(double *phtemp,
     }
 
     for (int lev = 0; lev < nv; lev++) {
+        if (DeepModel) {
+            rup =
+                (Altitudeh_d[lev + 1] + A) / (Altitude_d[lev] + A); //vertical scaling in divergence
+            rlow = (Altitudeh_d[lev] + A) / (Altitude_d[lev] + A);
+        }
+        else {
+            rup  = 1.0;
+            rlow = 1.0;
+        }
         dtemp[id * nv + lev] =
             dtemp[id * nv + lev]
-            - ((flw_up_d[id * (nv + 1) + lev] - flw_dn_d[id * (nv + 1) + lev])
-               - (flw_up_d[id * (nv + 1) + lev + 1] - flw_dn_d[id * (nv + 1) + lev + 1]))
+            - (pow(rlow, 2) * (flw_up_d[id * (nv + 1) + lev] - flw_dn_d[id * (nv + 1) + lev])
+               - pow(rup, 2)
+                     * (flw_up_d[id * (nv + 1) + lev + 1] - flw_dn_d[id * (nv + 1) + lev + 1]))
                   / ((Altitudeh_d[lev] - Altitudeh_d[lev + 1]));
         // dtemp[id * nv + lev] =
         //     dtemp[id * nv + lev]
@@ -222,15 +253,19 @@ __device__ void radclw(double *phtemp,
         //           * ((flw_up_d[id * (nv + 1) + lev] - flw_dn_d[id * (nv + 1) + lev])
         //              - (flw_up_d[id * (nv + 1) + lev + 1] - flw_dn_d[id * (nv + 1) + lev + 1]))
         //           / (phtemp[id * (nv + 1) + lev] - phtemp[id * (nv + 1) + lev + 1]);
+        if (isnan(dtemp[id * nv + lev])) {
+            printf("stop here");
+        }
     }
 }
 
 
 __device__ void computetau(double *tau_d,
-                           double *phtemp,
-                           double  cosz,
-                           double  tausw,
-                           double  taulw,
+                           double *pressure_d,
+                           double *Rho_d,
+                           double *Altitudeh_d,
+                           double  kappa_sw,
+                           double  kappa_lw,
                            double  n_sw,
                            double  n_lw,
                            double  f_lw,
@@ -240,14 +275,26 @@ __device__ void computetau(double *tau_d,
 
     // need to update this to use scaling for non-uniform mixing
     for (int lev = 0; lev < nv; lev++) {
+        //***shortwave optical depth across layer***
+        // tau_d[id * 2 * nv + lev * 2] =
+        //     (tausw / pow(ps0, n_sw))
+        //     * (pow(phtemp[id * (nv + 1) + lev], n_sw) - pow(phtemp[id * (nv + 1) + lev + 1], n_sw));
+        // the above relation breaks if pressure is not monotonic
         tau_d[id * 2 * nv + lev * 2] =
-            (tausw / pow(ps0, n_sw))
-            * (pow(phtemp[id * (nv + 1) + lev], n_sw) - pow(phtemp[id * (nv + 1) + lev + 1], n_sw));
+            n_sw * kappa_sw * pow(pressure_d[id * nv + lev] / ps0, n_sw - 1) * Rho_d[id * nv + lev]
+            * (Altitudeh_d[lev + 1] - Altitudeh_d[lev]);
+
+        //***longwave optical depth across layer***
+        // tau_d[id * 2 * nv + lev * 2 + 1] =
+        //     (taulw * f_lw / ps0) * (phtemp[id * (nv + 1) + lev] - phtemp[id * (nv + 1) + lev + 1])
+        //     + (taulw * (1 - f_lw) / pow(ps0, n_lw))
+        //           * (pow(phtemp[id * (nv + 1) + lev], n_lw)
+        //              - pow(phtemp[id * (nv + 1) + lev + 1], n_lw));
+        // above also breaks if pressure is not monotonic
         tau_d[id * 2 * nv + lev * 2 + 1] =
-            (taulw * f_lw / ps0) * (phtemp[id * (nv + 1) + lev] - phtemp[id * (nv + 1) + lev + 1])
-            + (taulw * (1 - f_lw) / pow(ps0, n_lw))
-                  * (pow(phtemp[id * (nv + 1) + lev], n_lw)
-                     - pow(phtemp[id * (nv + 1) + lev + 1], n_lw));
+            kappa_lw
+            * (1 + n_lw * (1 - f_lw) / f_lw * pow(pressure_d[id * nv + lev] / ps0, n_lw - 1))
+            * Rho_d[id * nv + lev] * (Altitudeh_d[lev + 1] - Altitudeh_d[lev]);
     }
 }
 
@@ -275,10 +322,10 @@ __global__ void rtm_dual_band(double *pressure_d,
                               double  diff_ang,
                               double  tint,
                               double  alb,
-                              double  tausw,
-                              double  taulw,
+                              double  kappa_sw,
+                              double  kappa_lw,
                               bool    latf_lw,
-                              double  taulw_pole,
+                              double  kappa_lw_pole,
                               double  n_sw,
                               double  n_lw,
                               double  f_lw,
@@ -294,13 +341,18 @@ __global__ void rtm_dual_band(double *pressure_d,
                               bool    surface,
                               double  Csurf,
                               double *Tsurface_d,
+                              double *dTsurf_dt_d,
                               double *surf_flux_d,
+                              double *areasT_d,
+                              double *ASR_d,
+                              double *OLR_d,
                               double *profx_Qheat_d,
                               double *DG_Qheat_d, // internal qheat for debugging
                               double *Rd_d,
                               double  Qheat_scaling,
                               bool    gcm_off,
-                              bool    rt1Dmode) {
+                              bool    rt1Dmode,
+                              bool    DeepModel) {
 
 
     //
@@ -373,16 +425,32 @@ __global__ void rtm_dual_band(double *pressure_d,
             coszrs = zenith_angles[id];
         }
 
+        //hack for daily averaged insolation
+        // coszrs = 0.25 * (1 + 1.4 * 0.25 * (1 - 3 * pow(sin(lonlat_d[id * 2 + 1]), 2)));
+
         // Compute opacities
-        double taulw_lat;
+        double kappa_lw_lat;
         if (latf_lw) {
             //latitude dependence of opacity, for e.g., earth
-            taulw_lat = taulw + (taulw_pole - taulw) * pow(sin(lonlat_d[id * 2 + 1]), 2);
+            kappa_lw_lat =
+                kappa_lw + (kappa_lw_pole - kappa_lw) * pow(sin(lonlat_d[id * 2 + 1]), 2);
         }
         else {
-            taulw_lat = taulw;
+            kappa_lw_lat = kappa_lw;
         }
-        computetau(tau_d, phtemp, coszrs, tausw, taulw_lat, n_sw, n_lw, f_lw, ps0, id, nv);
+        //computetau(tau_d, phtemp, coszrs, tausw, taulw_lat, n_sw, n_lw, f_lw, ps0, id, nv);
+        computetau(tau_d,
+                   pressure_d,
+                   Rho_d,
+                   Altitudeh_d,
+                   kappa_sw,
+                   kappa_lw_lat,
+                   n_sw,
+                   n_lw,
+                   f_lw,
+                   ps0,
+                   id,
+                   nv);
 
         for (int lev = 0; lev <= nv; lev++) {
             fsw_up_d[id * nvi + lev] = 0.0;
@@ -399,15 +467,18 @@ __global__ void rtm_dual_band(double *pressure_d,
                    tau_d,
                    fsw_up_d,
                    fsw_dn_d,
+                   Altitude_d,
                    Altitudeh_d,
                    incflx,
                    alb,
-                   tausw,
+                   kappa_sw,
                    ps0,
                    gravit,
+                   A,
                    id,
                    nv,
-                   insol_d);
+                   insol_d,
+                   DeepModel);
         }
         else {
             insol_d[id] = 0;
@@ -416,6 +487,16 @@ __global__ void rtm_dual_band(double *pressure_d,
         if (surface == true) {
             surf_flux_d[id] = fsw_dn_d[id * nvi + 0] - fsw_up_d[id * nvi + 0];
         }
+
+        //calculate ASR for this point
+        double rscale;
+        if (DeepModel) {
+            rscale = (A + Altitudeh_d[nv]) / A;
+        }
+        else {
+            rscale = 1.0;
+        }
+        ASR_d[id] = fsw_dn_d[id * nvi + nv] * areasT_d[id] * pow(rscale, 2);
 
         for (int lev = 0; lev <= nv; lev++) {
             flw_up_d[id * nvi + lev] = 0.0;
@@ -431,21 +512,28 @@ __global__ void rtm_dual_band(double *pressure_d,
                tau_d,
                flw_up_d,
                flw_dn_d,
+               Altitude_d,
                Altitudeh_d,
                diff_ang,
                tint,
                gravit,
                surface,
                Tsurface_d[id],
+               A,
                id,
-               nv);
+               nv,
+               DeepModel);
 
         if (surface == true) {
             surf_flux_d[id] += flw_dn_d[id * nvi + 0] - flw_up_d[id * nvi + 0];
-            Tsurface_d[id] += surf_flux_d[id] * timestep / Csurf;
+            Tsurface_d[id] += surf_flux_d[id] * timestep / Csurf
+                              + dTsurf_dt_d[id] * timestep; // put dTsurf here temporarily
             if (Tsurface_d[id] < 0)
                 Tsurface_d[id] = 0;
         }
+
+        //calculate OLR for this point
+        OLR_d[id] = flw_up_d[id * nvi + nv] * areasT_d[id] * pow(rscale, 2);
 
         for (int lev = 0; lev < nv; lev++) {
             if (gcm_off) {
@@ -464,8 +552,11 @@ __global__ void rtm_dual_band(double *pressure_d,
                     //trying to prevent too much cooling resulting in negative pressure in dyn core
                     dtemp[id * nv + lev] = -pressure_d[id * nv + lev] / timestep;
                 }
-                DG_Qheat_d[id * nv + lev]    = dtemp[id * nv + lev];
-                profx_Qheat_d[id * nv + lev] = Qheat_scaling * dtemp[id * nv + lev];
+                DG_Qheat_d[id * nv + lev] = dtemp[id * nv + lev];
+                profx_Qheat_d[id * nv + lev] += Qheat_scaling * dtemp[id * nv + lev];
+                if (isnan(profx_Qheat_d[id * nv + lev])) {
+                    printf("stop here");
+                }
             }
         }
     }
