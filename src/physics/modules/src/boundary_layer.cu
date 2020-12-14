@@ -348,6 +348,12 @@ bool boundary_layer::configure(config_file &config_reader) {
     // roughness length scaling
     config_reader.append_config_var("z_rough", z_rough_config, z_rough_config);
 
+    // options related to asymptotic scale height
+    config_reader.append_config_var(
+        "asl_transition_height", asl_transition_height_config, asl_transition_height_config);
+    config_reader.append_config_var("abl_asym_len", abl_asym_len_config, abl_asym_len_config);
+    config_reader.append_config_var("free_asym_len", free_asym_len_config, free_asym_len_config);
+
     return true;
 }
 
