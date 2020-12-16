@@ -410,11 +410,9 @@ bool radiative_transfer::store(const ESP &esp, storage &s) {
 bool radiative_transfer::store_init(storage &s) {
     s.append_value(Tstar, "/Tstar", "K", "Temperature of host star");
     // s.append_value(Tint, "/Tint", "K", "Temperature of interior heat flux");
-    s.append_value(planet_star_dist / 149597870.7,
-                   "/planet_star_dist",
-                   "au",
-                   "distance b/w host star and planet");
-    s.append_value(radius_star / 695508, "/radius_star", "R_sun", "radius of host star");
+    s.append_value(
+        planet_star_dist_config, "/planet_star_dist", "au", "distance b/w host star and planet");
+    s.append_value(radius_star_config, "/radius_star", "R_sun", "radius of host star");
     s.append_value(diff_ang, "/diff_ang", "-", "diffusivity factor");
     s.append_value(albedo, "/albedo", "-", "bond albedo of planet");
     //  s.append_value(kappa_sw, "/kappa_sw", "-", "gray opacity of shortwave");

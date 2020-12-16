@@ -828,13 +828,13 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
             if input.RT:
                 RT = 1
                 surf = 0
-                if input.surface:
-                    surf = 1
-                    extrap_low = (grid.Altitudeh[0] - grid.Altitude[1]) / (grid.Altitude[0] - grid.Altitude[1])
-                    Psurf = output.Pressure[:, 1, :] + extrap_low * (output.Pressure[:, 0, :] - output.Pressure[:, 1, :])
             else:
                 RT = 0
                 surf = 0
+            if input.surface:
+                surf = 1
+                extrap_low = (grid.Altitudeh[0] - grid.Altitude[1]) / (grid.Altitude[0] - grid.Altitude[1])
+                Psurf = output.Pressure[:, 1, :] + extrap_low * (output.Pressure[:, 0, :] - output.Pressure[:, 1, :])
 
         else:
             surf = 0
@@ -912,9 +912,10 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
                 if hasattr(output,'DGqheat'):
                     source['DGqheat'] = output.DGqheat[:, :, 0]
                 source['insol'] = output.Insol[:, 0]
-                if surf == 1:
-                    source['Tsurface'] = output.Tsurface[:, 0]
-                    source['Psurf'] = Psurf[:, 0]
+
+            if surf == 1:
+                source['Tsurface'] = output.Tsurface[:, 0]
+                source['Psurf'] = Psurf[:, 0]
 
             if hasattr(output,'Etotal'):
                 source['Etotal'] = output.Etotal[:, :, 0]
@@ -2401,7 +2402,7 @@ def spectrum(input, grid, output, z, stride=20, axis=None, save=True):
         col_lon.append(lon)
         col_lat.append(lat)
         col_lor.append(color)
-        ax.plot(lamda, spectrum, 'k-', alpha=0.5, lw=1.0,
+        ax.plot(lamda, spectrum/1e6, 'k-', alpha=0.5, lw=1.0,
                     path_effects=[pe.Stroke(linewidth=1.5, foreground=color), pe.Normal()])
 
     lamda = output.wavelength[:]*1e6
@@ -2413,9 +2414,10 @@ def spectrum(input, grid, output, z, stride=20, axis=None, save=True):
     AU       = 149597870700.0
     flx_cst = pow((input.radius_star*R_SUN)/(input.planet_star_dist*AU), 2.0)*math.pi
     ax_twin = ax.twinx()
-    ax_twin.plot(lamda, incoming_spectrum*flx_cst, 'k-', alpha=0.5, lw=1.0,
+    ax_twin.plot(lamda, incoming_spectrum*flx_cst/1e6, 'k-', alpha=0.5, lw=1.0,
             path_effects=[pe.Stroke(linewidth=1.5, foreground='black'), pe.Normal()])
-    ax_twin.set_ylabel('Incoming stellar flux [$W m^2$]')
+    ax_twin.set_ylabel('Incoming stellar flux [W m$^{-2}$ $\mu$m$^{-1}$]')
+    ax_twin.set_yscale('linear')
     # add an insert showing the position of columns
     inset_pos = [0.8, 0.1, 0.18, 0.18]
     ax_inset = ax.inset_axes(inset_pos)
@@ -2435,8 +2437,8 @@ def spectrum(input, grid, output, z, stride=20, axis=None, save=True):
     #ax.invert_yaxis()
     ax.set_xscale('log')
     ax.set_yscale('linear')
-    ax.set_ylabel('Flux [$W m^2$]')
-    ax.set_xlabel('Wavelength [um]')
+    ax.set_ylabel('Flux [W m$^{-2}$ $\mu$m$^{-1}$]')
+    ax.set_xlabel('Wavelength [$\mu$m]')
     ax.set_title('Time = %#.3f - %#.3f days' % (output.time[0], output.time[-1]))
     ax.grid(True)
 
