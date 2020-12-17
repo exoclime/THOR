@@ -82,7 +82,8 @@ public:
 
     // Sim
     bool DeepModel;
-    bool HyDiff;     // Turn on/off hyper-diffusion.
+    bool HyDiff; // Turn on/off hyper-diffusion.
+    int  HyDiffOrder;
     bool DivDampP;   // Turn on/off divergence damping.
     bool VertHyDiff; // vertical hyper diffusion
     bool NonHydro;   // Turn on/off non-hydrostatic.
