@@ -857,8 +857,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
     Kdh2_h = new double[nv];
     for (int lev = 0; lev < nv; lev++) {
         double dbar = sqrt(2 * M_PI / 5) * sim.A / (pow(2, glevel));
-        Kdh4_h[lev] =
-            (sim.Diffc) * pow(dbar, 4.) / timestep_dyn; // * Altitude_h[lev]/sim.Top_altitude;
+        Kdh4_h[lev] = (sim.Diffc) * pow(dbar, 1.0 * sim.HyDiffOrder)
+                      / timestep_dyn; // * Altitude_h[lev]/sim.Top_altitude;
         Kdhz_h[lev] =
             (sim.DivDampc) * pow(dbar, 4.) / timestep_dyn; // * Altitude_h[lev]/sim.Top_altitude;
         if (sim.DiffSponge) {

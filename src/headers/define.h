@@ -76,7 +76,8 @@
 #define t_shrink_default 144000     // shrink sponge after this many time steps
 
 // Diffusion
-#define HyDiff_default true      // Hyper-diffusion
+#define HyDiff_default true // Hyper-diffusion
+#define HyDiffOrder_default 4
 #define DivDampP_default true    // Divergence-damping
 #define VertHyDiff_default false // Vertical Hyper-diffusion
 

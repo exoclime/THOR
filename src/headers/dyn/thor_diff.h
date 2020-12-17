@@ -74,6 +74,7 @@ __global__ void Diffusion_Op(double* diffmh_d,
                              double* Cp_d,
                              int*    maps_d,
                              int     nl_region,
+                             bool    firststep,
                              bool    laststep,
                              bool    DeepModel,
                              bool    DiffSponge,
@@ -145,16 +146,39 @@ __global__ void Diffusion_Op(double* diffmh_d,
     __syncthreads();
     //////////////////////////////////////////////
     // These set the arguments that the Laplacian will operate on
-    if (laststep) {
-        // second time thru, arg is previous result
-        if (var == 0) {
-            a_s[ir] = diff_d[id * nv * 6 + lev * 6 + var];
-        }
-        else {
-            a_s[ir] = diff_d[id * nv * 6 + lev * 6 + var] * Rho_s[ir];
-        }
-    }
-    else {
+    // if (laststep) {
+    //     // second time thru, arg is previous result
+    //     if (var == 0) {
+    //         a_s[ir] = diff_d[id * nv * 6 + lev * 6 + var];
+    //     }
+    //     else {
+    //         a_s[ir] = diff_d[id * nv * 6 + lev * 6 + var] * Rho_s[ir];
+    //     }
+    // }
+    // else {
+    //     // first time thru, arg is fluid property
+    //     if (var == 0)
+    //         a_s[ir] = Rho_d[id * nv + lev];
+    //     else if (var == 1)
+    //         a_s[ir] = Mh_d[id * nv * 3 + lev * 3 + 0];
+    //     else if (var == 2)
+    //         a_s[ir] = Mh_d[id * nv * 3 + lev * 3 + 1];
+    //     else if (var == 3)
+    //         a_s[ir] = Mh_d[id * nv * 3 + lev * 3 + 2];
+    //     else if (var == 4)
+    //         a_s[ir] = W_d[id * nv + lev];
+    //     else if (var == 5) {
+    //         if (energy_equation) {
+    //             a_s[ir] =
+    //                 (Cp_d[id * nv + lev] - Rd_d[id * nv + lev]) * temperature_d[id * nv + lev];
+    //         }
+    //         else {
+    //             a_s[ir] = Rd_d[id * nv + lev] * temperature_d[id * nv + lev];
+    //         }
+    //     }
+    // }
+
+    if (firststep) {
         // first time thru, arg is fluid property
         if (var == 0)
             a_s[ir] = Rho_d[id * nv + lev];
@@ -176,8 +200,21 @@ __global__ void Diffusion_Op(double* diffmh_d,
             }
         }
     }
+    else if (laststep) {
+        // last time thru, arg is previous result
+        if (var == 0) {
+            a_s[ir] = diff_d[id * nv * 6 + lev * 6 + var];
+        }
+        else {
+            a_s[ir] = diff_d[id * nv * 6 + lev * 6 + var] * Rho_s[ir];
+        }
+    }
+    else {
+        // second time thru, arg is previous result
+        a_s[ir] = diff_d[id * nv * 6 + lev * 6 + var];
+    }
     // we want the velocities, not the momentum
-    if (var >= 1 && var <= 4 && !laststep)
+    if (var >= 1 && var <= 4 && firststep)
         a_s[ir] = a_s[ir] / Rho_s[ir];
 
     ///////////////////////////////
@@ -185,15 +222,36 @@ __global__ void Diffusion_Op(double* diffmh_d,
     ///////////////////////////////
     if (load_halo) {
         if (igh >= 0) {
-            if (laststep) {
-                if (var == 0) {
-                    a_s[ir2] = diff_d[igh * nv * 6 + lev * 6 + var];
-                }
-                else {
-                    a_s[ir2] = diff_d[igh * nv * 6 + lev * 6 + var] * Rho_s[ir2];
-                }
-            }
-            else {
+            // if (laststep) {
+            //     if (var == 0) {
+            //         a_s[ir2] = diff_d[igh * nv * 6 + lev * 6 + var];
+            //     }
+            //     else {
+            //         a_s[ir2] = diff_d[igh * nv * 6 + lev * 6 + var] * Rho_s[ir2];
+            //     }
+            // }
+            // else {
+            //     if (var == 0)
+            //         a_s[ir2] = Rho_d[igh * nv + lev];
+            //     else if (var == 1)
+            //         a_s[ir2] = Mh_d[igh * nv * 3 + lev * 3 + 0];
+            //     else if (var == 2)
+            //         a_s[ir2] = Mh_d[igh * nv * 3 + lev * 3 + 1];
+            //     else if (var == 3)
+            //         a_s[ir2] = Mh_d[igh * nv * 3 + lev * 3 + 2];
+            //     else if (var == 4)
+            //         a_s[ir2] = W_d[igh * nv + lev];
+            //     else if (var == 5) {
+            //         if (energy_equation) {
+            //             a_s[ir2] = (Cp_d[igh * nv + lev] - Rd_d[igh * nv + lev])
+            //                        * temperature_d[igh * nv + lev];
+            //         }
+            //         else {
+            //             a_s[ir2] = Rd_d[igh * nv + lev] * temperature_d[igh * nv + lev];
+            //         }
+            //     }
+            // }
+            if (firststep) {
                 if (var == 0)
                     a_s[ir2] = Rho_d[igh * nv + lev];
                 else if (var == 1)
@@ -214,7 +272,18 @@ __global__ void Diffusion_Op(double* diffmh_d,
                     }
                 }
             }
-            if (var >= 1 && var <= 4 && !laststep)
+            else if (laststep) {
+                if (var == 0) {
+                    a_s[ir2] = diff_d[igh * nv * 6 + lev * 6 + var];
+                }
+                else {
+                    a_s[ir2] = diff_d[igh * nv * 6 + lev * 6 + var] * Rho_s[ir2];
+                }
+            }
+            else {
+                a_s[ir2] = diff_d[igh * nv * 6 + lev * 6 + var];
+            }
+            if (var >= 1 && var <= 4 && firststep)
                 a_s[ir2] = a_s[ir2] / Rho_s[ir2];
         }
         else
@@ -438,6 +507,7 @@ __global__ void Diffusion_Op_Poles(double* diffmh_d,
                                    double* Cp_d,
                                    int*    local_d,
                                    int     num,
+                                   bool    firststep,
                                    bool    laststep,
                                    bool    DeepModel,
                                    bool    DiffSponge,
@@ -500,23 +570,64 @@ __global__ void Diffusion_Op_Poles(double* diffmh_d,
         sdiff = -K_d[lev];
     }
 
-    if (laststep) {
-        if (var == 0) {
-            a_p[0] = diff_d[id * nv * 6 + lev * 6 + var];
-        }
-        else {
-            a_p[0] = diff_d[id * nv * 6 + lev * 6 + var] * Rho_p[0];
-        }
-        for (int i = 1; i < 6; i++) {
-            if (var == 0) {
-                a_p[i] = diff_d[local_p[i - 1] * nv * 6 + lev * 6 + var];
-            }
-            else {
-                a_p[i] = diff_d[local_p[i - 1] * nv * 6 + lev * 6 + var] * Rho_p[i];
-            }
-        }
-    }
-    else {
+    // if (laststep) {
+    //     if (var == 0) {
+    //         a_p[0] = diff_d[id * nv * 6 + lev * 6 + var];
+    //     }
+    //     else {
+    //         a_p[0] = diff_d[id * nv * 6 + lev * 6 + var] * Rho_p[0];
+    //     }
+    //     for (int i = 1; i < 6; i++) {
+    //         if (var == 0) {
+    //             a_p[i] = diff_d[local_p[i - 1] * nv * 6 + lev * 6 + var];
+    //         }
+    //         else {
+    //             a_p[i] = diff_d[local_p[i - 1] * nv * 6 + lev * 6 + var] * Rho_p[i];
+    //         }
+    //     }
+    // }
+    // else {
+    //     if (var == 0) {
+    //         a_p[0] = Rho_p[0];
+    //         for (int i = 1; i < 6; i++)
+    //             a_p[i] = Rho_p[i];
+    //     }
+    //     if (var == 1) {
+    //         a_p[0] = Mh_d[id * 3 * nv + lev * 3 + 0] / Rho_p[0];
+    //         for (int i = 1; i < 6; i++)
+    //             a_p[i] = Mh_d[local_p[i - 1] * 3 * nv + lev * 3 + 0] / Rho_p[i];
+    //     }
+    //     if (var == 2) {
+    //         a_p[0] = Mh_d[id * 3 * nv + lev * 3 + 1] / Rho_p[0];
+    //         for (int i = 1; i < 6; i++)
+    //             a_p[i] = Mh_d[local_p[i - 1] * 3 * nv + lev * 3 + 1] / Rho_p[i];
+    //     }
+    //     if (var == 3) {
+    //         a_p[0] = Mh_d[id * 3 * nv + lev * 3 + 2] / Rho_p[0];
+    //         for (int i = 1; i < 6; i++)
+    //             a_p[i] = Mh_d[local_p[i - 1] * 3 * nv + lev * 3 + 2] / Rho_p[i];
+    //     }
+    //     if (var == 4) {
+    //         a_p[0] = W_d[id * nv + lev] / Rho_p[0];
+    //         for (int i = 1; i < 6; i++)
+    //             a_p[i] = W_d[local_p[i - 1] * nv + lev] / Rho_p[i];
+    //     }
+    //     if (var == 5) {
+    //         if (energy_equation) {
+    //             a_p[0] = (Cp_d[id * nv + lev] - Rd_d[id * nv + lev]) * temperature_d[id * nv + lev];
+    //             for (int i = 1; i < 6; i++)
+    //                 a_p[i] = (Cp_d[local_p[i - 1] * nv + lev] - Rd_d[local_p[i - 1] * nv + lev])
+    //                          * temperature_d[local_p[i - 1] * nv + lev];
+    //         }
+    //         else {
+    //             a_p[0] = Rd_d[id * nv + lev] * temperature_d[id * nv + lev];
+    //             for (int i = 1; i < 6; i++)
+    //                 a_p[i] =
+    //                     Rd_d[local_p[i - 1] * nv + lev] * temperature_d[local_p[i - 1] * nv + lev];
+    //         }
+    //     }
+    // }
+    if (firststep) {
         if (var == 0) {
             a_p[0] = Rho_p[0];
             for (int i = 1; i < 6; i++)
@@ -555,6 +666,28 @@ __global__ void Diffusion_Op_Poles(double* diffmh_d,
                     a_p[i] =
                         Rd_d[local_p[i - 1] * nv + lev] * temperature_d[local_p[i - 1] * nv + lev];
             }
+        }
+    }
+    else if (laststep) {
+        if (var == 0) {
+            a_p[0] = diff_d[id * nv * 6 + lev * 6 + var];
+        }
+        else {
+            a_p[0] = diff_d[id * nv * 6 + lev * 6 + var] * Rho_p[0];
+        }
+        for (int i = 1; i < 6; i++) {
+            if (var == 0) {
+                a_p[i] = diff_d[local_p[i - 1] * nv * 6 + lev * 6 + var];
+            }
+            else {
+                a_p[i] = diff_d[local_p[i - 1] * nv * 6 + lev * 6 + var] * Rho_p[i];
+            }
+        }
+    }
+    else {
+        a_p[0] = diff_d[id * nv * 6 + lev * 6 + var];
+        for (int i = 1; i < 6; i++) {
+            a_p[i] = diff_d[local_p[i - 1] * nv * 6 + lev * 6 + var];
         }
     }
 

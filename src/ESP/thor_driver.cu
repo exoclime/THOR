@@ -126,7 +126,6 @@ __host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
                    "temperature_d",
                    "W_d" /*, "tracer_d", "tracers_d", "tracerk_d"*/));
 
-
     //  Loop for large time integration.
     for (int rk = 0; rk < 3; rk++) {
         //      Local variables to define the length (times) and the number of the small steps (ns_it).
@@ -280,69 +279,78 @@ __host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
             cudaMemset(diff_d, 0, sizeof(double) * 6 * point_num * nv);
 
             cudaDeviceSynchronize();
-            //Updates: diffmh_d, diffw_d, diffrh_d, diffpr_d, diff_d
-            Diffusion_Op<LN, LN><<<NBD, NT>>>(diffmh_d,
-                                              diffw_d,
-                                              diffrh_d,
-                                              diffpr_d,
-                                              diff_d,
-                                              Mhk_d,
-                                              Rhok_d,
-                                              temperature_d,
-                                              Wk_d,
-                                              areasTr_d,
-                                              areas_d,
-                                              nvecoa_d,
-                                              nvecti_d,
-                                              nvecte_d,
-                                              func_r_d,
-                                              Kdh4_d,
-                                              Altitude_d,
-                                              sim.A,
-                                              Rd_d,
-                                              Cp_d,
-                                              maps_d,
-                                              nl_region,
-                                              0,
-                                              sim.DeepModel,
-                                              sim.DiffSponge,
-                                              order_diff_sponge,
-                                              Kdh2_d,
-                                              boundary_flux_d,
-                                              energy_equation);
+            bool firststep;
+            for (int ihyp = 0; ihyp < sim.HyDiffOrder / 2 - 1; ihyp++) {
+                if (ihyp == 0)
+                    firststep = 1;
+                else
+                    firststep = 0;
+                //Updates: diffmh_d, diffw_d, diffrh_d, diffpr_d, diff_d
+                Diffusion_Op<LN, LN><<<NBD, NT>>>(diffmh_d,
+                                                  diffw_d,
+                                                  diffrh_d,
+                                                  diffpr_d,
+                                                  diff_d,
+                                                  Mhk_d,
+                                                  Rhok_d,
+                                                  temperature_d,
+                                                  Wk_d,
+                                                  areasTr_d,
+                                                  areas_d,
+                                                  nvecoa_d,
+                                                  nvecti_d,
+                                                  nvecte_d,
+                                                  func_r_d,
+                                                  Kdh4_d,
+                                                  Altitude_d,
+                                                  sim.A,
+                                                  Rd_d,
+                                                  Cp_d,
+                                                  maps_d,
+                                                  nl_region,
+                                                  firststep,
+                                                  0,
+                                                  sim.DeepModel,
+                                                  sim.DiffSponge,
+                                                  order_diff_sponge,
+                                                  Kdh2_d,
+                                                  boundary_flux_d,
+                                                  energy_equation);
 
-            //Updates: diffmh_d, diffw_d, diffrh_d, diffpr_d, diff_d
-            Diffusion_Op_Poles<5><<<NBDP, 1>>>(diffmh_d,
-                                               diffw_d,
-                                               diffrh_d,
-                                               diffpr_d,
-                                               diff_d,
-                                               Mhk_d,
-                                               Rhok_d,
-                                               temperature_d,
-                                               Wk_d,
-                                               func_r_d,
-                                               areasTr_d,
-                                               areas_d,
-                                               nvecoa_d,
-                                               nvecti_d,
-                                               nvecte_d,
-                                               Kdh4_d,
-                                               Altitude_d,
-                                               Altitudeh_d,
-                                               sim.A,
-                                               Rd_d,
-                                               Cp_d,
-                                               point_local_d,
-                                               point_num,
-                                               0,
-                                               sim.DeepModel,
-                                               sim.DiffSponge,
-                                               order_diff_sponge,
-                                               Kdh2_d,
-                                               boundary_flux_d,
-                                               energy_equation);
-            cudaDeviceSynchronize();
+                //Updates: diffmh_d, diffw_d, diffrh_d, diffpr_d, diff_d
+                Diffusion_Op_Poles<5><<<NBDP, 1>>>(diffmh_d,
+                                                   diffw_d,
+                                                   diffrh_d,
+                                                   diffpr_d,
+                                                   diff_d,
+                                                   Mhk_d,
+                                                   Rhok_d,
+                                                   temperature_d,
+                                                   Wk_d,
+                                                   func_r_d,
+                                                   areasTr_d,
+                                                   areas_d,
+                                                   nvecoa_d,
+                                                   nvecti_d,
+                                                   nvecte_d,
+                                                   Kdh4_d,
+                                                   Altitude_d,
+                                                   Altitudeh_d,
+                                                   sim.A,
+                                                   Rd_d,
+                                                   Cp_d,
+                                                   point_local_d,
+                                                   point_num,
+                                                   firststep,
+                                                   0,
+                                                   sim.DeepModel,
+                                                   sim.DiffSponge,
+                                                   order_diff_sponge,
+                                                   Kdh2_d,
+                                                   boundary_flux_d,
+                                                   energy_equation);
+                cudaDeviceSynchronize();
+            }
 
             BENCH_POINT_I_S(current_step, rk, "Diffusion_Op1", (), ("diff_d"))
             //  ("diffmh_d", "diffw_d", "diffrh_d", "diffpr_d", "diff_d"))
@@ -373,6 +381,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
                                               Cp_d,
                                               maps_d,
                                               nl_region,
+                                              0,
                                               1,
                                               sim.DeepModel,
                                               sim.DiffSponge,
@@ -404,6 +413,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
                                                Cp_d,
                                                point_local_d,
                                                point_num,
+                                               0,
                                                1,
                                                sim.DeepModel,
                                                sim.DiffSponge,
