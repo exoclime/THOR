@@ -546,7 +546,7 @@ int main(int argc, char** argv) {
     }
 
     if (sim.HyDiffOrder <= 2 || sim.HyDiffOrder % 2) {
-        log::printf("Bad value for HyDiffOrder! Must be power of 2 greater than/equal to 4.");
+        log::printf("Bad value for HyDiffOrder! Must be multiple of 2 greater than/equal to 4.");
         config_OK = false;
     }
 
