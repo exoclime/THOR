@@ -81,7 +81,8 @@ __global__ void Diffusion_Op(double* diffmh_d,
                              int     order_diff_sponge,
                              double* Kdh2_d,
                              double* boundary_flux_d,
-                             bool    energy_equation) {
+                             bool    energy_equation,
+                             int     HyDiffOrder) {
 
     int x = threadIdx.x;
     int y = threadIdx.y;
@@ -302,7 +303,7 @@ __global__ void Diffusion_Op(double* diffmh_d,
         rscale = 1.0;
 
     if (laststep) {
-        sdiff = -K_d[lev];
+        sdiff = -K_d[lev] * pow(-1.0, HyDiffOrder / 2);
     }
 
     lap = 0.0;
@@ -514,7 +515,8 @@ __global__ void Diffusion_Op_Poles(double* diffmh_d,
                                    int     order_diff_sponge,
                                    double* Kdh2_d,
                                    double* boundary_flux_d,
-                                   bool    energy_equation) {
+                                   bool    energy_equation,
+                                   int     HyDiffOrder) {
 
     int id = blockIdx.x * blockDim.x + threadIdx.x;
     id += num - 2; // Poles
@@ -567,7 +569,7 @@ __global__ void Diffusion_Op_Poles(double* diffmh_d,
         Rho_p[i] = Rho_d[local_p[i - 1] * nv + lev];
 
     if (laststep) {
-        sdiff = -K_d[lev];
+        sdiff = -K_d[lev] * pow(-1.0, HyDiffOrder / 2);
     }
 
     // if (laststep) {

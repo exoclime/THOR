@@ -315,7 +315,8 @@ __host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
                                                   order_diff_sponge,
                                                   Kdh2_d,
                                                   boundary_flux_d,
-                                                  energy_equation);
+                                                  energy_equation,
+                                                  sim.HyDiffOrder);
 
                 //Updates: diffmh_d, diffw_d, diffrh_d, diffpr_d, diff_d
                 Diffusion_Op_Poles<5><<<NBDP, 1>>>(diffmh_d,
@@ -348,7 +349,8 @@ __host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
                                                    order_diff_sponge,
                                                    Kdh2_d,
                                                    boundary_flux_d,
-                                                   energy_equation);
+                                                   energy_equation,
+                                                   sim.HyDiffOrder);
                 cudaDeviceSynchronize();
             }
 
@@ -388,7 +390,8 @@ __host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
                                               order_diff_sponge,
                                               Kdh2_d,
                                               boundary_flux_d,
-                                              energy_equation);
+                                              energy_equation,
+                                              sim.HyDiffOrder);
             //Updates: diffmh_d, diffw_d, diffrh_d, diffpr_d, diff_d
             Diffusion_Op_Poles<5><<<NBDP, 1>>>(diffmh_d,
                                                diffw_d,
@@ -420,7 +423,8 @@ __host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
                                                order_diff_sponge,
                                                Kdh2_d,
                                                boundary_flux_d,
-                                               energy_equation);
+                                               energy_equation,
+                                               sim.HyDiffOrder);
 
             cudaDeviceSynchronize();
 
