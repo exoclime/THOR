@@ -77,9 +77,11 @@ __device__ void radcsw(double *phtemp,
     // Update temperature rates.
     for (int lev = 0; lev < nv; lev++) {
         if (DeepModel) {
-            rup =
-                (Altitudeh_d[lev + 1] + A) / (Altitude_d[lev] + A); //vertical scaling in divergence
-            rlow = (Altitudeh_d[lev] + A) / (Altitude_d[lev] + A);
+            // rup =
+            //     (Altitudeh_d[lev + 1] + A) / (Altitude_d[lev] + A); //vertical scaling in divergence
+            // rlow = (Altitudeh_d[lev] + A) / (Altitude_d[lev] + A);
+            rup  = 1.0;
+            rlow = 1.0;
         }
         else {
             rup  = 1.0;
@@ -233,9 +235,11 @@ __device__ void radclw(double *phtemp,
 
     for (int lev = 0; lev < nv; lev++) {
         if (DeepModel) {
-            rup =
-                (Altitudeh_d[lev + 1] + A) / (Altitude_d[lev] + A); //vertical scaling in divergence
-            rlow = (Altitudeh_d[lev] + A) / (Altitude_d[lev] + A);
+            // rup =
+            //     (Altitudeh_d[lev + 1] + A) / (Altitude_d[lev] + A); //vertical scaling in divergence
+            // rlow = (Altitudeh_d[lev] + A) / (Altitude_d[lev] + A);
+            rup  = 1.0;
+            rlow = 1.0;
         }
         else {
             rup  = 1.0;
@@ -542,7 +546,7 @@ __global__ void rtm_dual_band(double *pressure_d,
                                                      * dtemp[id * nv + lev] / Rho_d[id * nv + lev]
                                                      * timestep;
                 if (temperature_d[id * nv + lev] < 0)
-                    temperature_d[id * nv + lev] = 0;
+                    temperature_d[id * nv + lev] = 0.0;
             }
             else {
                 if (pressure_d[id * nv + lev]
