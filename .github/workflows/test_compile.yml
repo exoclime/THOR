@@ -44,4 +44,4 @@ jobs:
           LD_LIBRARY_PATH=${CUDA_HOME}/lib64:${LD_LIBRARY_PATH}
           PATH=${CUDA_HOME}/bin:${PATH}
           PATH=${PATH}:${PWD}
-
+          make release
