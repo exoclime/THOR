@@ -29,6 +29,7 @@ jobs:
       # Runs a set of commands using the runners shell
       - name: Test compile
         run: |
+          run: sudo apt-get install libhdf5-dev libhdf5-100 libhdf5-serial-dev libhdf5-cpp-100 cmake
           export CUDA=10.1.105-1
           export CUDA_SHORT=10.1
           export UBUNTU_VERSION=ubuntu1804
