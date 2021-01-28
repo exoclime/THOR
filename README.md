@@ -1,5 +1,7 @@
 # THOR #
-[![Build Status](https://travis-ci.com/exoclime/THOR-dev.svg?token=tGqUSajNhVAPSfPqaERE&branch=master)](https://travis-ci.com/exoclime/THOR-dev)
+
+![CI](https://github.com/exoclime/THOR/workflows/CI/badge.svg)
+
 ### Flexible Global Circulation Model to Explore Planetary Atmospheres
 
 *THOR* is a GCM that solves the three-dimensional non-hydrostatic Euler equations on an icosahedral grid. *THOR* was designed to run on Graphics Processing Units (GPUs).
@@ -8,7 +10,7 @@ If you use this code please cite: [Mendonca, J.M., Grimm, S.L., Grosheintz, L., 
 
 Current code owners: Joao Mendonca: joao.mendonca@space.dtu.dk, Russell Deitrick: russell.deitrick@csh.unibe.ch, Urs Schroffenegger: urs.schroffenegger@csh.unibe.ch
 
-###### Copyright (C) 2017-2018 Exoclimes Simulation Platform ######
+###### Copyright (C) 2017-2021 Exoclimes Simulation Platform ######
 
 ### BUILD & RUN THOR (TL;DR instructions)
 
