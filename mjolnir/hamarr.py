@@ -1006,9 +1006,9 @@ def KE_spect(input, grid, output, sigmaref, coord='icoh', lmax_adjust=0):
         Wy = W * np.cos(grid.lat[:, None, None]) * np.sin(grid.lon[:, None, None])
         Wz = W * np.sin(grid.lat[:, None, None])
 
-        Vx = (output.Mh[0] + Wx)
-        Vy = (output.Mh[1] + Wy)
-        Vz = (output.Mh[2] + Wz)
+        Vx = (output.Mh[0] + Wx)/output.Rho
+        Vy = (output.Mh[1] + Wy)/output.Rho
+        Vz = (output.Mh[2] + Wz)/output.Rho
 
         KE = 0.5 * (Vx**2 + Vy**2 + Vz**2)
         lmax = np.int(lmax_grid + lmax_adjust)  # sets lmax based on grid size
@@ -1026,13 +1026,18 @@ def KE_spect(input, grid, output, sigmaref, coord='icoh', lmax_adjust=0):
         if tsp == 1:
             for lev in np.arange(grid.nv):
                 KE_coeffs[:, :, :, lev, 0], chiz = chairs.expand.SHExpandLSQ(KE[:, lev, 0], grid.lat * 180 / np.pi, grid.lon * 180 / np.pi, lmax)
-                KE_power[:, lev, 0] = chairs.spectralanalysis.spectrum(KE_coeffs, unit='per_lm')
+                KE_power[:, lev, 0] = chairs.spectralanalysis.spectrum(KE_coeffs[:,:,:,lev,0], unit='per_lm')
                 ax.plot(waven, KE_power[:, lev, 0], 'k-', c=cmap(lev / grid.nv), lw=1)
         else:
             for t in np.arange(tsp):
-                KE_coeffs[:, :, :, grid.nv - 1, t], chiz = chairs.expand.SHExpandLSQ(KE[:, grid.nv - 1, t], grid.lat * 180 / np.pi, grid.lon * 180 / np.pi, lmax)
-                KE_power[:, grid.nv - 1, t] = chairs.spectralanalysis.spectrum(KE_coeffs, unit='per_lm')
-                ax.plot(waven, KE_power[:, grid.nv - 1, t], 'k-', c=cmap(t / tsp), lw=1)
+                for lev in np.arange(grid.nv):
+                    KE_coeffs[:, :, :, lev, t], chiz = chairs.expand.SHExpandLSQ(KE[:, lev, t], grid.lat * 180 / np.pi, grid.lon * 180 / np.pi, lmax)
+                    KE_power[:, lev, t] = chairs.spectralanalysis.spectrum(KE_coeffs[:,:,:,lev,t], unit='per_lm')
+                    # ax.plot(waven, KE_power[:, lev, t], 'k-', c=cmap(lev / grid.nv), lw=1)
+
+            KE_power_mean = np.mean(KE_power,axis=2)
+            for lev in np.arange(grid.nv):
+                ax.plot(waven, KE_power_mean[:, lev], 'k-', c=cmap(lev/grid.nv), lw=1)
 
     else:
         raise IOError("Invalid coord option! Valid options are 'icoh'")
@@ -1041,11 +1046,7 @@ def KE_spect(input, grid, output, sigmaref, coord='icoh', lmax_adjust=0):
     ax.set_yscale('log')
     ax.set_xscale('log')
     ax.vlines(lmax_grid, ax.get_ylim()[0], ax.get_ylim()[1], zorder=1000, linestyle='--')
-    ax.set(ylabel='KE density (kg m$^{-1}$ s$^{-2}$)', xlabel='n')
-    # ke3line = ax.get_ylim()[0] + waven**(-3.0)
-    # ke53line = ax.get_ylim()[0] + waven**(-5.0/3)
-    # ax.plot(waven,ke3line,'r:')
-    # ax.plot(waven,ke53line,':',color='r')
+    ax.set(ylabel='KE (m$^2$ s$^{-2}$)', xlabel='Spherical wavenumber $n$')
 
     if not os.path.exists(input.resultsf + '/figures'):
         os.mkdir(input.resultsf + '/figures')
@@ -1053,31 +1054,37 @@ def KE_spect(input, grid, output, sigmaref, coord='icoh', lmax_adjust=0):
     plt.savefig(input.resultsf + '/figures/KEspectrum_%i_%i_%s.pdf' % (output.ntsi, output.nts, coord))
     plt.close()
 
-    norm = colors.Normalize(vmin=np.min(KE[:, 0, 0]), vmax=np.max(KE[:, 0, 0]))
+    lev = 0
+    norm = colors.Normalize(vmin=np.min(KE[:, lev, 0]), vmax=np.max(KE[:, lev, 0]))
 
     fig = plt.figure()
     fig.subplots_adjust(left=0.1, right=0.97)
     plt.subplot(2, 1, 1)
-    if coord == 'llp':
-        plt.imshow(KE[:, :, 0, 0], origin='lower', extent=(0, 360, -90, 90), norm=norm, aspect='auto')
+    # if coord == 'llp':  #not complete
+    #     plt.imshow(KE[:, :, 0, 0], origin='lower', extent=(0, 360, -90, 90), norm=norm, aspect='auto')
     if coord == 'icoh':
-        plt.tricontourf(grid.lon * 180 / np.pi, grid.lat * 180 / np.pi, KE[:, 0, 0], levels=30)
+        cont = plt.tricontourf(grid.lon * 180 / np.pi, grid.lat * 180 / np.pi, KE[:, lev, 0], levels=30)
+        for cc in cont.collections:
+            cc.set_edgecolor("face")  # fixes a stupid bug in matplotlib 2.0
     plt.xlabel('Longitude ($^{\circ}$)')
     plt.ylabel('Latitude ($^{\circ}$)')
+    plt.title("Model output, lowest level")
     clb = plt.colorbar()
-    clb.set_label('Kinetic energy density (kg m$^{-1}$ s$^{-2}$)')
+    clb.set_label('Kinetic energy (m$^2$ s$^{-2}$)')
 
-    KEcomp = chairs.expand.MakeGridDH(KE_coeffs[:, :, :, 0, 0], sampling=2)
+    KEcomp = chairs.expand.MakeGridDH(KE_coeffs[:, :, :, lev, 0], sampling=2)
     lat = np.linspace(-90, 90, np.shape(KEcomp)[0])
     lon = np.linspace(0, 360, np.shape(KEcomp)[1])
 
     plt.subplot(2, 1, 2)
-    plt.imshow(np.real(KEcomp), origin='lower', extent=(0, 360, -90, 90), norm=norm, aspect='auto')
+    plt.imshow(np.real(KEcomp), origin='upper', extent=(0, 360, -90, 90), norm=norm, aspect='auto')
     plt.xlabel('Latitude ($^{\circ}$)')
     plt.ylabel('Longitude ($^{\circ}$)')
-    plt.colorbar()
-    clb.set_label('Kinetic energy density (kg m$^{-1}$ s$^{-2}$)')
+    plt.title("Spherical harmonics reconstruction, lowest level")
+    clb = plt.colorbar()
+    clb.set_label('Kinetic energy (m$^{2}$ s$^{-2}$)')
 
+    plt.tight_layout()
     plt.savefig(input.resultsf + '/figures/KEmap_lowest_%i_%s.pdf' % (output.ntsi, coord))
     plt.close()
 
