@@ -273,7 +273,7 @@ bool boundary_layer::phy_loop(ESP &                  esp,
 
 #if defined(DIAG_CHECK_BL_THOMAS_DIAG_DOM)
         if (diag.check_flag()) {
-            diag.dump_data("bl_thomas_momentum", nstep, 0, 0, esp, esp.point_num, esp.nv);
+            diag.dump_data("bl_thomas_momentum", nstep, 0, 0, esp, esp.point_num, esp.nv + 1);
             unsigned int flag = diag.get_flag();
             if ((flag & BL_THOMAS_NOT_DD) == BL_THOMAS_NOT_DD)
                 log::printf("Non diagonally dominant matrix for thomas algorithm in boundary layer "
@@ -320,7 +320,7 @@ bool boundary_layer::phy_loop(ESP &                  esp,
 
 #if defined(DIAG_CHECK_BL_THOMAS_DIAG_DOM)
         if (diag.check_flag()) {
-            diag.dump_data("bl_thomas_heateqn", nstep, 0, 0, esp, esp.point_num, esp.nv);
+            diag.dump_data("bl_thomas_heateqn", nstep, 0, 0, esp, esp.point_num, esp.nv + 1);
             unsigned int flag = diag.get_flag();
             if ((flag & BL_THOMAS_NOT_DD) == BL_THOMAS_NOT_DD)
                 log::printf("Non diagonally dominant matrix for thomas algorithm in boundary layer "
@@ -585,10 +585,10 @@ Momentum_Diff_Impl(double *      Mh_d,
             if (lev < bl_top_lev_d[id] + 1) {
                 if (!(fabs(btmp) > THOMAS_DIAG_DOM_FACTOR * (fabs(atmp) + fabs(ctmp)))) {
                     atomicOr(diagnostics_flag, BL_THOMAS_NOT_DD);
-                    diagnostics_data[id * nv + lev].flag   = BL_THOMAS_NOT_DD;
-                    diagnostics_data[id * nv + lev].data.x = atmp;
-                    diagnostics_data[id * nv + lev].data.y = btmp;
-                    diagnostics_data[id * nv + lev].data.z = ctmp;
+                    diagnostics_data[id * (nv + 1) + lev].flag   = BL_THOMAS_NOT_DD;
+                    diagnostics_data[id * (nv + 1) + lev].data.x = atmp;
+                    diagnostics_data[id * (nv + 1) + lev].data.y = btmp;
+                    diagnostics_data[id * (nv + 1) + lev].data.z = ctmp;
                     // printf("Warning! Thomas algorithm in boundary layer mom. equation unstable\n");
                 }
             }
@@ -742,10 +742,10 @@ __global__ void Heat_Diff_Impl_EnergyEq(double *      pt_d,
             if (lev < bl_top_lev_d[id] + 1) {
                 if (!(fabs(btmp) > THOMAS_DIAG_DOM_FACTOR * (fabs(atmp) + fabs(ctmp)))) {
                     atomicOr(diagnostics_flag, BL_THOMAS_NOT_DD);
-                    diagnostics_data[id * nv + lev + 1].flag   = BL_THOMAS_NOT_DD;
-                    diagnostics_data[id * nv + lev + 1].data.x = atmp;
-                    diagnostics_data[id * nv + lev + 1].data.y = btmp;
-                    diagnostics_data[id * nv + lev + 1].data.z = ctmp;
+                    diagnostics_data[id * (nv + 1) + lev + 1].flag   = BL_THOMAS_NOT_DD;
+                    diagnostics_data[id * (nv + 1) + lev + 1].data.x = atmp;
+                    diagnostics_data[id * (nv + 1) + lev + 1].data.y = btmp;
+                    diagnostics_data[id * (nv + 1) + lev + 1].data.z = ctmp;
                 }
             }
 #endif

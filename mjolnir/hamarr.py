@@ -1079,11 +1079,11 @@ def KE_spect(input, grid, output, sigmaref, coord='icoh', lmax_adjust=0):
         Wy = W * np.cos(grid.lat[:, None, None]) * np.sin(grid.lon[:, None, None])
         Wz = W * np.sin(grid.lat[:, None, None])
 
-        Vx = (output.Mh[0] + Wx)
-        Vy = (output.Mh[1] + Wy)
-        Vz = (output.Mh[2] + Wz)
+        Vx = (output.Mh[0] + Wx)/ output.Rho
+        Vy = (output.Mh[1] + Wy)/output.Rho
+        Vz = (output.Mh[2] + Wz)/output.Rho
 
-        KE = 0.5 * (Vx**2 + Vy**2 + Vz**2)
+        KE = 0.5 * (Vx**2 + Vy**2 + Vz**2) * output.Rho
         lmax = np.int(lmax_grid + lmax_adjust)  # sets lmax based on grid size
 
         x_coeffs = np.zeros((2, lmax + 1, lmax + 1, grid.nv, tsp), dtype=complex)
@@ -2043,7 +2043,7 @@ def profile(input, grid, output, z, stride=50, axis=None, save=True, use_p=True,
     else:
         ax.set_ylabel('Altitude (m)')
     ax.set_xlabel(z['label'])
-    ax.legend([rp, gp], ['z=0.5*ztop', 'z=0.75*ztop'], loc="lower right", fontsize='xx-small')
+    ax.legend([rp, gp], ['z=0.5*ztop', 'z=0.75*ztop'], loc="upper right", fontsize='xx-small')
     ax.set_title('Time = %#.3f - %#.3f days' % (output.time[0], output.time[-1]))
     ax.get_xaxis().get_major_formatter().set_useOffset(False)
     ax.tick_params(axis='x', labelrotation=45 )
@@ -2341,6 +2341,28 @@ def RTbalance(input, grid, output):
     rscale = 1
     asr = output.fsw_dn[:, input.vlevel[0], :] * grid.areasT[:, None]*rscale**2
     olr = output.flw_up[:, input.vlevel[0], :] * grid.areasT[:, None]*rscale**2
+
+    plt.plot(output.time, np.sum(asr,axis=0),'bs', linestyle='--',label='ASR')
+    #plt.plot(output.time, output.ASR_tot, 'bs', linestyle='--',label='ASR')
+    plt.plot(output.time, np.sum(olr,axis=0), 'rs', linestyle='--',label='OLR')
+    #plt.plot(output.time, output.OLR_tot, 'rs', linestyle='--',label='OLR')
+
+    plt.xlabel('Time (days)')
+    plt.ylabel('Global integrated power (W)')
+    plt.legend(loc='upper right')
+
+    plt.tight_layout()
+    if not os.path.exists(input.resultsf + '/figures'):
+        os.mkdir(input.resultsf + '/figures')
+    plt.savefig(input.resultsf + '/figures/RTbalance_i%d_l%d.pdf' % (output.ntsi, output.nts))
+    plt.close()
+
+def RTbalanceTS(input, grid, output):
+    # not finished!
+    #rscale = (input.A+grid.Altitudeh[input.vlevel[0]])/input.A
+    rscale = 1
+    asr = output.f_down_tot[:, input.vlevel[0], :] * grid.areasT[:, None]*rscale**2
+    olr = output.f_up_tot[:, input.vlevel[0], :] * grid.areasT[:, None]*rscale**2
 
     plt.plot(output.time, np.sum(asr,axis=0),'bs', linestyle='--',label='ASR')
     #plt.plot(output.time, output.ASR_tot, 'bs', linestyle='--',label='ASR')

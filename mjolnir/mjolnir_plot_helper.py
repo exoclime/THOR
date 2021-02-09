@@ -60,7 +60,7 @@ def make_plot(args, save=True, axis=None):
              'w0prof', 'g0prof', 'spectrum',
              'phase','all','eddyKE','eddyMomMerid','eddyTempMerid','eddyTempVar',
              'Etotlev','AngMomlev', 'Entropylev','Kdiffprof', 'RiB','BLheight',
-             'RTbalance','Riprof']
+             'RTbalance','Riprof','RTbalanceTS']
 
     rg_needed = ['Tver', 'Tlonver', 'uver', 'ulonver', 'vver', 'wver', 'wlonver', 'Tulev', 'PTver', 'PTlonver', 'ulev', 'PVver', 'PVlev',
                  'RVlev', 'stream', 'tracer', 'Tsurf', 'insol', 'massf', 'pause_rg',
@@ -727,7 +727,7 @@ def make_plot(args, save=True, axis=None):
         output.load_reshape(grid,['qheat'])
         qheat = output.qheat
         z = {'value': qheat, 'label': r'Q heat (W m$^{-2}$)', 'name': 'qheatprof'}
-        pfile = call_plot('qheatprof',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
+        pfile = call_plot('qheatprof',ham.profile,input, grid, output, z, stride=1, save=save, axis=axis)
         plots_created.append(pfile)
 
     # need a trick to make these work for axis = None (command line plotting)
@@ -799,6 +799,7 @@ def make_plot(args, save=True, axis=None):
         ham.conservation(input, grid, output)
 
     if 'KE' in pview:  # RD: needs some work!
+        output.load_reshape(grid,['Wh','Mh','Rho'])
         PR_LV = np.float(args.horizontal_lev[0]) * 100  # not actually used here
         ham.KE_spect(input, grid, output, PR_LV, coord=args.coordinate_sys[0], lmax_adjust=args.lmax_adjust[0])
 
@@ -808,6 +809,10 @@ def make_plot(args, save=True, axis=None):
     if 'RTbalance' in pview:
         output.load_reshape(grid,['fsw_dn','flw_up'])
         ham.RTbalance(input, grid, output)
+
+    if 'RTbalanceTS' in pview:
+        output.load_reshape(grid,['f_down_tot','f_up_tot'])
+        ham.RTbalanceTS(input, grid, output)
 
     if 'phase' in pview and input.RT:
         ham.phase_curve(input,grid,output)
