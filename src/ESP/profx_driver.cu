@@ -374,6 +374,11 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
                              timestep);    // Time-step [s]
     }
 
+    //apply heating here if gcm_off = true
+    if (sim.gcm_off == true) {
+        //kernel call
+    }
+
     BENCH_POINT_I(current_step,
                   "phy_module",
                   (),
