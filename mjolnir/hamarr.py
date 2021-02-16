@@ -227,6 +227,8 @@ class output_new:
 
             if t == ntsi - 1:
                 # add things to outputs dictionary that require checking for existence in openh5
+                if 'diffmh' in openh5.keys():
+                    outputs['diffmh'] = 'diffmh'
                 if 'Qheat' in openh5.keys():
                     outputs['Qheat'] = 'qheat'
                 if 'DGQheat' in openh5.keys():
@@ -880,6 +882,7 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
                       'W': (output.Wh[:, :-1, 0] + (output.Wh[:, 1:, 0] - output.Wh[:, :-1, 0]) * interpz[None, :]) / output.Rho[:, :, 0],
                       'Rho': output.Rho[:, :, 0],
                       'Mh': output.Mh[:, :, :, 0],
+                      'diffmh': output.diffmh[:, :, :, 0],
                       'Pressure': output.Pressure[:, :, 0],
                       'Rd': output.Rd[:, :, 0],
                       'Cp': output.Cp[:, :, 0],
@@ -951,10 +954,17 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
                       -source['Mh_mean'][1]*np.sin(grid.lat[:,None])*np.sin(grid.lon[:,None])\
                            + source['Mh_mean'][2]*np.cos(grid.lat[:, None]))/source['Rho_mean']
 
+            # calculate zonal and meridional velocity tendencies from hyperdiffusion
+            source['diffmh_U'] = (-source['diffmh'][0]*np.sin(grid.lon[:,None])+\
+                           source['diffmh'][1]*np.cos(grid.lon[:, None]))/source['Rho']
+            source['diffmh_V'] = (-source['diffmh'][0]*np.sin(grid.lat[:,None])*np.cos(grid.lon[:,None])\
+                      -source['diffmh'][1]*np.sin(grid.lat[:,None])*np.sin(grid.lon[:,None])\
+                           + source['diffmh'][2]*np.cos(grid.lat[:, None]))/source['Rho']
+
             # set up intermediate arrays (icogrid and pressure)
             interm = {}
             for key in source.keys():
-                if key == 'Mh' or key == 'Mh_mean':
+                if key == 'Mh' or key == 'Mh_mean' or key == 'diffmh':
                     pass
                 elif np.shape(source[key]) == (grid.point_num,):
                     # 2D field (e.g., insolation) -> not needed
@@ -1000,7 +1010,7 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
             # set up destination arrays (lat-lon and pressure/height)
             dest = {}
             for key in interm.keys():
-                if key == 'Mh' or key == 'Mh_mean' or key == 'Pressure':
+                if key == 'Mh' or key == 'Mh_mean' or key == 'Pressure' or key == 'diffmh':
                     pass  # don't need these any further
                 elif key == 'spectrum' or key == 'F_dir_BOA':
                     dest[key] = np.zeros((d_lon[0],d_lon[1],np.shape(output.wavelength)[0]))

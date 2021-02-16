@@ -89,6 +89,7 @@ __host__ void ESP::copy_to_host() {
     cudaMemcpy(Wh_h, Wh_d, point_num * nvi * sizeof(double), cudaMemcpyDeviceToHost);
     cudaMemcpy(pressure_h, pressure_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
     cudaMemcpy(Mh_h, Mh_d, 3 * point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+    cudaMemcpy(diffmh_h, diffmh_d, 3 * point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
     cudaMemcpy(Rd_h, Rd_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
     cudaMemcpy(Cp_h, Cp_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
 
@@ -208,6 +209,7 @@ __host__ void ESP::output(int                    fidx, // Index of output file
 
         //      Hyperdiffusion strength
         s.append_value(sim.Diffc, "/Diffc", "-", "Hyperdiffusion strength");
+        s.append_value(sim.Diffc_v, "/Diffc_v", "-", "Vertical hyperdiffusion strength");
 
         //      Tmean
         s.append_value(sim.Tmean, "/Tmean", "K", "Mean atmospheric temperature");
@@ -285,6 +287,9 @@ __host__ void ESP::output(int                    fidx, // Index of output file
 
     //  Mh
     s.append_table(Mh_h, nv * point_num * 3, "/Mh", "kg m/s", "Horizontal Momentum");
+    
+    //  Mh
+    s.append_table(diffmh_h, nv * point_num * 3, "/diffmh", "kg m^-2 s^-2", "Horizontal Momentum Tendency from Hyperdiffusion");
 
     //  Wh
     s.append_table(Wh_h, nvi * point_num, "/Wh", "kg m/s", "Vertical Momentum");
