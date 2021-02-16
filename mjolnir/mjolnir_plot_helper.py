@@ -768,6 +768,7 @@ def make_plot(args, save=True, axis=None):
         ham.conservation(input, grid, output, split)
 
     if 'KE' in pview:  # RD: needs some work!
+        output.load_reshape(grid,['Mh','Wh','Rho'])
         PR_LV = np.float(args.horizontal_lev[0]) * 100  # not actually used here
         ham.KE_spect(input, grid, output, PR_LV, coord=args.coordinate_sys[0], lmax_adjust=args.lmax_adjust[0])
 

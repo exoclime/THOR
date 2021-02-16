@@ -276,9 +276,10 @@ public:
     double *diffwv_d;
     double *diffrv_d;
 
-    double *diff_d;
-    double *diffv_d1;
-    double *diffv_d2;
+    double *diff_d;  //temporary array for diffusion calculation
+    double *diff2_d; //second temp array for diff (vertical)
+    // double *diffv_d1;
+    // double *diffv_d2;
     double *divg_Mh_d;
     bool *  check_d;
 
