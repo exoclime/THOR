@@ -126,6 +126,8 @@ public:
     // double *Kdvz_h;
     // double *Kdv6_h;
 
+    double *diffmh_h;
+
     double *flux_vec;
     double *boundary_flux_h;
     double *boundary_flux_d;

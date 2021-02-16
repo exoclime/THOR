@@ -76,7 +76,7 @@ __device__ void radcsw(double *phtemp,
 
     // Update temperature rates.
     for (int lev = 0; lev < nv; lev++) {
-        if (DeepModel) {
+        if (DeepModel) { //this seems to cause strange problems at TOA, set both factors to 1 for now
             // rup =
             //     (Altitudeh_d[lev + 1] + A) / (Altitude_d[lev] + A); //vertical scaling in divergence
             // rlow = (Altitudeh_d[lev] + A) / (Altitude_d[lev] + A);
@@ -234,7 +234,7 @@ __device__ void radclw(double *phtemp,
     }
 
     for (int lev = 0; lev < nv; lev++) {
-        if (DeepModel) {
+        if (DeepModel) { //this seems to cause strange problems at TOA, set both factors to 1 for now
             // rup =
             //     (Altitudeh_d[lev + 1] + A) / (Altitude_d[lev] + A); //vertical scaling in divergence
             // rlow = (Altitudeh_d[lev] + A) / (Altitude_d[lev] + A);

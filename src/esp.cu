@@ -297,6 +297,7 @@ int main(int argc, char** argv) {
     // Diffusion
 
     config_reader.append_config_var("HyDiff", sim.HyDiff, HyDiff_default);
+    config_reader.append_config_var("HyDiffOrder", sim.HyDiffOrder, HyDiffOrder_default);
     config_reader.append_config_var("DivDampP", sim.DivDampP, DivDampP_default);
     config_reader.append_config_var("VertHyDiff", sim.VertHyDiff, VertHyDiff_default);
 
@@ -555,6 +556,11 @@ int main(int argc, char** argv) {
     else {
         log::printf("Bad value for config variable simulation_ID: [%s]\n", simulation_ID.c_str());
 
+        config_OK = false;
+    }
+
+    if (sim.HyDiffOrder <= 2 || sim.HyDiffOrder % 2) {
+        log::printf("Bad value for HyDiffOrder! Must be multiple of 2 greater than/equal to 4.");
         config_OK = false;
     }
 

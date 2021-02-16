@@ -227,6 +227,8 @@ class output_new:
 
             if t == ntsi - 1:
                 # add things to outputs dictionary that require checking for existence in openh5
+                if 'diffmh' in openh5.keys():
+                    outputs['diffmh'] = 'diffmh'
                 if 'Qheat' in openh5.keys():
                     outputs['Qheat'] = 'qheat'
                 if 'DGQheat' in openh5.keys():
@@ -888,6 +890,7 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
                       'W': (output.Wh[:, :-1, 0] + (output.Wh[:, 1:, 0] - output.Wh[:, :-1, 0]) * interpz[None, :]) / output.Rho[:, :, 0],
                       'Rho': output.Rho[:, :, 0],
                       'Mh': output.Mh[:, :, :, 0],
+                      'diffmh': output.diffmh[:, :, :, 0],
                       'Pressure': output.Pressure[:, :, 0],
                       'Rd': output.Rd[:, :, 0],
                       'Cp': output.Cp[:, :, 0],
@@ -960,10 +963,17 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
                       -source['Mh_mean'][1]*np.sin(grid.lat[:,None])*np.sin(grid.lon[:,None])\
                            + source['Mh_mean'][2]*np.cos(grid.lat[:, None]))/source['Rho_mean']
 
+            # calculate zonal and meridional velocity tendencies from hyperdiffusion
+            source['diffmh_U'] = (-source['diffmh'][0]*np.sin(grid.lon[:,None])+\
+                           source['diffmh'][1]*np.cos(grid.lon[:, None]))/source['Rho']
+            source['diffmh_V'] = (-source['diffmh'][0]*np.sin(grid.lat[:,None])*np.cos(grid.lon[:,None])\
+                      -source['diffmh'][1]*np.sin(grid.lat[:,None])*np.sin(grid.lon[:,None])\
+                           + source['diffmh'][2]*np.cos(grid.lat[:, None]))/source['Rho']
+
             # set up intermediate arrays (icogrid and pressure)
             interm = {}
             for key in source.keys():
-                if key == 'Mh' or key == 'Mh_mean':
+                if key == 'Mh' or key == 'Mh_mean' or key == 'diffmh':
                     pass
                 elif np.shape(source[key]) == (grid.point_num,):
                     # 2D field (e.g., insolation) -> not needed
@@ -1009,7 +1019,7 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
             # set up destination arrays (lat-lon and pressure/height)
             dest = {}
             for key in interm.keys():
-                if key == 'Mh' or key == 'Mh_mean' or key == 'Pressure':
+                if key == 'Mh' or key == 'Mh_mean' or key == 'Pressure' or key == 'diffmh':
                     pass  # don't need these any further
                 elif key == 'spectrum' or key == 'F_dir_BOA':
                     dest[key] = np.zeros((d_lon[0],d_lon[1],np.shape(output.wavelength)[0]))
@@ -1079,11 +1089,11 @@ def KE_spect(input, grid, output, sigmaref, coord='icoh', lmax_adjust=0):
         Wy = W * np.cos(grid.lat[:, None, None]) * np.sin(grid.lon[:, None, None])
         Wz = W * np.sin(grid.lat[:, None, None])
 
-        Vx = (output.Mh[0] + Wx)
-        Vy = (output.Mh[1] + Wy)
-        Vz = (output.Mh[2] + Wz)
+        Vx = (output.Mh[0] + Wx)/output.Rho
+        Vy = (output.Mh[1] + Wy)/output.Rho
+        Vz = (output.Mh[2] + Wz)/output.Rho
 
-        KE = 0.5 * (Vx**2 + Vy**2 + Vz**2)
+        KE = 0.5 * (Vx**2 + Vy**2 + Vz**2) * output.Rho
         lmax = np.int(lmax_grid + lmax_adjust)  # sets lmax based on grid size
 
         x_coeffs = np.zeros((2, lmax + 1, lmax + 1, grid.nv, tsp), dtype=complex)
@@ -1099,13 +1109,18 @@ def KE_spect(input, grid, output, sigmaref, coord='icoh', lmax_adjust=0):
         if tsp == 1:
             for lev in np.arange(grid.nv):
                 KE_coeffs[:, :, :, lev, 0], chiz = chairs.expand.SHExpandLSQ(KE[:, lev, 0], grid.lat * 180 / np.pi, grid.lon * 180 / np.pi, lmax)
-                KE_power[:, lev, 0] = chairs.spectralanalysis.spectrum(KE_coeffs, unit='per_lm')
+                KE_power[:, lev, 0] = chairs.spectralanalysis.spectrum(KE_coeffs[:,:,:,lev,0], unit='per_lm')
                 ax.plot(waven, KE_power[:, lev, 0], 'k-', c=cmap(lev / grid.nv), lw=1)
         else:
             for t in np.arange(tsp):
-                KE_coeffs[:, :, :, grid.nv - 1, t], chiz = chairs.expand.SHExpandLSQ(KE[:, grid.nv - 1, t], grid.lat * 180 / np.pi, grid.lon * 180 / np.pi, lmax)
-                KE_power[:, grid.nv - 1, t] = chairs.spectralanalysis.spectrum(KE_coeffs, unit='per_lm')
-                ax.plot(waven, KE_power[:, grid.nv - 1, t], 'k-', c=cmap(t / tsp), lw=1)
+                for lev in np.arange(grid.nv):
+                    KE_coeffs[:, :, :, lev, t], chiz = chairs.expand.SHExpandLSQ(KE[:, lev, t], grid.lat * 180 / np.pi, grid.lon * 180 / np.pi, lmax)
+                    KE_power[:, lev, t] = chairs.spectralanalysis.spectrum(KE_coeffs[:,:,:,lev,t], unit='per_lm')
+                    # ax.plot(waven, KE_power[:, lev, t], 'k-', c=cmap(lev / grid.nv), lw=1)
+
+            KE_power_mean = np.mean(KE_power,axis=2)
+            for lev in np.arange(grid.nv):
+                ax.plot(waven, KE_power_mean[:, lev], 'k-', c=cmap(lev/grid.nv), lw=1)
 
     else:
         raise IOError("Invalid coord option! Valid options are 'icoh'")
@@ -1114,11 +1129,7 @@ def KE_spect(input, grid, output, sigmaref, coord='icoh', lmax_adjust=0):
     ax.set_yscale('log')
     ax.set_xscale('log')
     ax.vlines(lmax_grid, ax.get_ylim()[0], ax.get_ylim()[1], zorder=1000, linestyle='--')
-    ax.set(ylabel='KE density (kg m$^{-1}$ s$^{-2}$)', xlabel='n')
-    # ke3line = ax.get_ylim()[0] + waven**(-3.0)
-    # ke53line = ax.get_ylim()[0] + waven**(-5.0/3)
-    # ax.plot(waven,ke3line,'r:')
-    # ax.plot(waven,ke53line,':',color='r')
+    ax.set(ylabel='KE (m$^2$ s$^{-2}$)', xlabel='Spherical wavenumber $n$')
 
     if not os.path.exists(input.resultsf + '/figures'):
         os.mkdir(input.resultsf + '/figures')
@@ -1126,31 +1137,37 @@ def KE_spect(input, grid, output, sigmaref, coord='icoh', lmax_adjust=0):
     plt.savefig(input.resultsf + '/figures/KEspectrum_%i_%i_%s.pdf' % (output.ntsi, output.nts, coord))
     plt.close()
 
-    norm = colors.Normalize(vmin=np.min(KE[:, 0, 0]), vmax=np.max(KE[:, 0, 0]))
+    lev = 0
+    norm = colors.Normalize(vmin=np.min(KE[:, lev, 0]), vmax=np.max(KE[:, lev, 0]))
 
     fig = plt.figure()
     fig.subplots_adjust(left=0.1, right=0.97)
     plt.subplot(2, 1, 1)
-    if coord == 'llp':
-        plt.imshow(KE[:, :, 0, 0], origin='lower', extent=(0, 360, -90, 90), norm=norm, aspect='auto')
+    # if coord == 'llp':  #not complete
+    #     plt.imshow(KE[:, :, 0, 0], origin='lower', extent=(0, 360, -90, 90), norm=norm, aspect='auto')
     if coord == 'icoh':
-        plt.tricontourf(grid.lon * 180 / np.pi, grid.lat * 180 / np.pi, KE[:, 0, 0], levels=30)
+        cont = plt.tricontourf(grid.lon * 180 / np.pi, grid.lat * 180 / np.pi, KE[:, lev, 0], levels=30)
+        for cc in cont.collections:
+            cc.set_edgecolor("face")  # fixes a stupid bug in matplotlib 2.0
     plt.xlabel('Longitude ($^{\circ}$)')
     plt.ylabel('Latitude ($^{\circ}$)')
+    plt.title("Model output, lowest level")
     clb = plt.colorbar()
-    clb.set_label('Kinetic energy density (kg m$^{-1}$ s$^{-2}$)')
+    clb.set_label('Kinetic energy (m$^2$ s$^{-2}$)')
 
-    KEcomp = chairs.expand.MakeGridDH(KE_coeffs[:, :, :, 0, 0], sampling=2)
+    KEcomp = chairs.expand.MakeGridDH(KE_coeffs[:, :, :, lev, 0], sampling=2)
     lat = np.linspace(-90, 90, np.shape(KEcomp)[0])
     lon = np.linspace(0, 360, np.shape(KEcomp)[1])
 
     plt.subplot(2, 1, 2)
-    plt.imshow(np.real(KEcomp), origin='lower', extent=(0, 360, -90, 90), norm=norm, aspect='auto')
+    plt.imshow(np.real(KEcomp), origin='upper', extent=(0, 360, -90, 90), norm=norm, aspect='auto')
     plt.xlabel('Latitude ($^{\circ}$)')
     plt.ylabel('Longitude ($^{\circ}$)')
-    plt.colorbar()
-    clb.set_label('Kinetic energy density (kg m$^{-1}$ s$^{-2}$)')
+    plt.title("Spherical harmonics reconstruction, lowest level")
+    clb = plt.colorbar()
+    clb.set_label('Kinetic energy (m$^{2}$ s$^{-2}$)')
 
+    plt.tight_layout()
     plt.savefig(input.resultsf + '/figures/KEmap_lowest_%i_%s.pdf' % (output.ntsi, coord))
     plt.close()
 
@@ -2043,7 +2060,7 @@ def profile(input, grid, output, z, stride=50, axis=None, save=True, use_p=True,
     else:
         ax.set_ylabel('Altitude (m)')
     ax.set_xlabel(z['label'])
-    ax.legend([rp, gp], ['z=0.5*ztop', 'z=0.75*ztop'], loc="lower right", fontsize='xx-small')
+    ax.legend([rp, gp], ['z=0.5*ztop', 'z=0.75*ztop'], loc="upper right", fontsize='xx-small')
     ax.set_title('Time = %#.3f - %#.3f days' % (output.time[0], output.time[-1]))
     ax.get_xaxis().get_major_formatter().set_useOffset(False)
     ax.tick_params(axis='x', labelrotation=45 )
@@ -2341,6 +2358,28 @@ def RTbalance(input, grid, output):
     rscale = 1
     asr = output.fsw_dn[:, input.vlevel[0], :] * grid.areasT[:, None]*rscale**2
     olr = output.flw_up[:, input.vlevel[0], :] * grid.areasT[:, None]*rscale**2
+
+    plt.plot(output.time, np.sum(asr,axis=0),'bs', linestyle='--',label='ASR')
+    #plt.plot(output.time, output.ASR_tot, 'bs', linestyle='--',label='ASR')
+    plt.plot(output.time, np.sum(olr,axis=0), 'rs', linestyle='--',label='OLR')
+    #plt.plot(output.time, output.OLR_tot, 'rs', linestyle='--',label='OLR')
+
+    plt.xlabel('Time (days)')
+    plt.ylabel('Global integrated power (W)')
+    plt.legend(loc='upper right')
+
+    plt.tight_layout()
+    if not os.path.exists(input.resultsf + '/figures'):
+        os.mkdir(input.resultsf + '/figures')
+    plt.savefig(input.resultsf + '/figures/RTbalance_i%d_l%d.pdf' % (output.ntsi, output.nts))
+    plt.close()
+
+def RTbalanceTS(input, grid, output):
+    # not finished!
+    #rscale = (input.A+grid.Altitudeh[input.vlevel[0]])/input.A
+    rscale = 1
+    asr = output.f_down_tot[:, input.vlevel[0], :] * grid.areasT[:, None]*rscale**2
+    olr = output.f_up_tot[:, input.vlevel[0], :] * grid.areasT[:, None]*rscale**2
 
     plt.plot(output.time, np.sum(asr,axis=0),'bs', linestyle='--',label='ASR')
     #plt.plot(output.time, output.ASR_tot, 'bs', linestyle='--',label='ASR')
