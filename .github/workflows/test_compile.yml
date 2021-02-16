@@ -1,0 +1,48 @@
+# This is a basic workflow to help you get started with Actions
+
+name: CI
+
+# Controls when the action will run. 
+on:
+  # Triggers the workflow on push or pull request events but only for the main branch
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
+
+
+      # Runs a set of commands using the runners shell
+      - name: Test compile
+        run: |
+          sudo apt-get install libhdf5-dev libhdf5-100 libhdf5-serial-dev libhdf5-cpp-100 cmake
+          export CUDA=10.1.105-1
+          export CUDA_SHORT=10.1
+          export UBUNTU_VERSION=ubuntu1804
+          INSTALLER=cuda-repo-${UBUNTU_VERSION}_${CUDA}_amd64.deb
+          wget http://developer.download.nvidia.com/compute/cuda/repos/${UBUNTU_VERSION}/x86_64/${INSTALLER}
+          sudo dpkg -i ${INSTALLER}
+          wget https://developer.download.nvidia.com/compute/cuda/repos/${UBUNTU_VERSION}/x86_64/7fa2af80.pub
+          sudo apt-key add 7fa2af80.pub
+          sudo apt update -qq
+          sudo apt install -y cuda-core-${CUDA_SHORT/./-} cuda-cudart-dev-${CUDA_SHORT/./-} cuda-cufft-dev-${CUDA_SHORT/./-}
+          sudo apt clean
+          CUDA_HOME=/usr/local/cuda-${CUDA_SHORT}
+          LD_LIBRARY_PATH=${CUDA_HOME}/lib64:${LD_LIBRARY_PATH}
+          PATH=${CUDA_HOME}/bin:${PATH}
+          PATH=${PATH}:${PWD}
+          make release
