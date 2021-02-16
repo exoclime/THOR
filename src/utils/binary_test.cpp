@@ -635,12 +635,12 @@ void binary_test::check_data(const string&         iteration,
     }
 
 
-// Specific debugging functions
+    // Specific debugging functions
     if (use_write)
-      output_reference(iteration, ref_name, data_output);
+        output_reference(iteration, ref_name, data_output);
 
     if (use_compare)
-      compare_to_reference(iteration, ref_name, data_output);
+        compare_to_reference(iteration, ref_name, data_output);
 
 #    ifdef BENCH_NAN_CHECK
     if (nan_check_d == nullptr) {
@@ -781,10 +781,10 @@ bool binary_test::compare_to_reference(const string&             iteration,
 #    endif // BENCH_COMPARE_PRINT_STATISTICS
 
         oss << " " << def.short_name << ": ";
-	if (comp)
-	  oss << "\033[1;32m" << comp << "\033[0m" ;
-	else
-	  oss << "\033[1;31m" << comp << "\033[0m" ;
+        if (comp)
+            oss << "\033[1;32m" << comp << "\033[0m";
+        else
+            oss << "\033[1;31m" << comp << "\033[0m";
         out &= comp;
     }
 
@@ -801,7 +801,7 @@ bool binary_test::compare_to_reference(const string&             iteration,
     for (auto const& v : stats_table) {
         auto const& key   = v.first;
         auto const& value = v.second;
-        log::printf("  %5s - num (fail/tot/fst idx): %8d/%8d - %5d Δabs(mx:%11g,mn:%11g) - "
+        log::printf("  %5s - num (fail/tot/fst idx): %8d/%8d/%5d - Δabs(mx:%11g,mn:%11g) - "
                     "Δrel(mx:%11g,mn:%11g) -ref(mx:%11g,mn:%11g) -val(mx:%11g,mn:%11g)\n",
                     key.c_str(),
                     value.num_failures,

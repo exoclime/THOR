@@ -2,19 +2,19 @@
 # config format version
 config_version = 1
 
-# earth acoustic wave test (Tomita & Satoh 2004)
+# earth RT comparison to held-suarez
 
 
 #-- Time stepping and output options -----------------------------------------#
 # number of steps
-num_steps = 97
+num_steps = 259200
 
 # length of timesteps in seconds
-timestep = 1800
+timestep = 400
 
 # output
 # output every n steps
-n_out = 1
+n_out = 4320
 
 # write to log file at a different cadence from n_out
 custom_log_n_out = false
@@ -23,7 +23,7 @@ log_n_out = 1000
 
 # output directory (relative to current working directory)
 # defaults to 'results'
-results_path = acoustic_test_divdonly
+results_path = local_Ri_sims/earth_localRi_g5_dc
 
 # output global diagnostics (energy, mass, momentum, entropy)
 globdiag = true
@@ -45,7 +45,7 @@ simulation_ID = Earth
 radius = 6371000.0
 
 # Rotation rate [rad s^-1]
-rotation_rate = 0
+rotation_rate = 7.292E-5
 
 # Gravitational acceleration [m/s^2]
 gravitation = 9.8
@@ -65,13 +65,13 @@ P_ref = 100000.0
 
 #-- Grid options -------------------------------------------------------------#
 # Altitude of the top of the model domain [m]
-Top_altitude = 10000.0
+Top_altitude = 36000.0
 
 # Horizontal resolution level.
 glevel = 5
 
 # Number of vertical layers
-vlevel = 20
+vlevel = 32
 
 # Spring dynamics
 spring_dynamics = true
@@ -80,14 +80,13 @@ spring_dynamics = true
 spring_beta = 1.15
 
 # use grid refinement in vertical for lower atmos
-vert_refined = false
+vert_refined = true
 
 #lowest layer thickness (used with vert_refined = true) (meters)
 lowest_layer_thickness = 2
 
 #altitude to transition to linear spacing (used with vert_refined=true) (meters)
 transition_altitude = 1000
-
 
 #-- Model options ------------------------------------------------------------#
 # Non-hydrostatic parameter
@@ -103,7 +102,7 @@ rest = true
 # (path relative to current working directory)
 # defaults to 'ifile/esp_initial.h5'
 # 'planet' file must be present with name a la 'ifile/esp_initial_planet.h5'
-initial = ifile/esp_initial.h5
+initial = ifile/earth_ekman_init.h5
 
 # initial temperature-pressure profile (isothermal or guillot)
 # overridden if rest = false !
@@ -123,14 +122,14 @@ init_PT_profile = isothermal
 # Acoustic wave test = AcousticTest
 # Gravity wave test = GWaveTest
 # No benchmark test == NoBenchmark (model is then forced with grey RT by default)
-core_benchmark = AcousticTest
+core_benchmark = NoBenchmark
 
 # Switch off dynamical core (gcm)
 # This is useful for testing/debugging physics modules
 gcm_off = false
 
-# use (dry) convective adjustment scheme
-conv_adj = false
+# enable convective adjustment scheme
+conv_adj = true
 
 # type of thermodynamic equation = "entropy" (ready) or "energy" (in development!!)
 thermo_equation = entropy
@@ -144,20 +143,25 @@ ultrahot_thermo = none
 
 ## diffusion ############################################
 # Hyper-diffusion
-HyDiff  =  false
+HyDiff  =    true
 
 # Divergence-damping
-DivDampP =   true
+DivDampP =    true
 
 # Strength of diffusion
-Diffc = 0.02
+Diffc = 0.002
 
 # Strength of divergence damping
-DivDampc = 0.02
+DivDampc = 0.002
+
+# Add vertical component to hyperdiffusion (works on momentum and thermo eqn)
+VertHyDiff = false
+Diffc_v = 0.0002
+
 #########################################################
 
 
-#-- Sponge layer (Rayleigh drag or diffusive sponge) ------------------------#
+#-- Sponge layer (Rayleigh drag or diffusive sponge) ----------------------#
 # use sponge layer (Rayleigh drag) at top of atmosphere?
 RayleighSponge = false
 
@@ -201,12 +205,13 @@ ns_diff_sponge = 0.75
 order_diff_sponge = 2
 
 
-#-- Radiative transfer (gray) options (core_benchmark = NoBenchmark) ---------#
+#-- Radiative transfer options (core_benchmark = NoBenchmark) --------------------------#
 ## RT parameters #######################################
-radiative_transfer = false
+radiative_transfer = true
 
-# stellar temperature (K)
-Tstar = 5800
+# stellar temperature (k)
+Tstar = 5777.279
+#tuned to give solar constant at 1 au
 
 # orbital distance or semi-major axis (au)
 planet_star_dist = 1
@@ -215,30 +220,31 @@ planet_star_dist = 1
 radius_star = 1
 
 # bond albedo of planet
-albedo = 0.3
+albedo = 0.3135
 
-# diff_ang = 1/(diffusivity factor) for lw radiation
-diff_ang = 0.5
+# diffusivity factor
+diff_ang = 1
 
 # power law index of unmixed absorbers (lw and sw)
-# optical depth at P_ref is: tau_lw = (kappa_lw/(f_lw*g)) * P_ref
+# tau_lw = f_lw * (kappa_lw/g) * P/P_ref
+#          + (1-f_lw) * (kappa_lw/g) * (P/P_ref)^n_lw
 # n_lw = 2 approximations collision-induced absorption
 # n_lw = 4 approximations water-vapor in Earth troposph.
 n_lw = 4
 
-# optical depth at P_ref is: tau_sw = (kappa_sw/g) * (P_ref)
+# tau_sw = (kappa_sw/g) * (P/P_ref)^n_sw
 n_sw = 2
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # These params are also used if init_PT_profile = guillot
 # grey opacity of thermal wavelengths
-kappa_lw = 0.0025
+kappa_lw = 5.88e-5
 
 # grey opacity of incoming stellar flux
-kappa_sw = 0.00125
+kappa_sw = 1.96e-5
 
 # strength of unmixed absorbers in lw
-f_lw = 1
+f_lw = 0.1
 
 # temperature of internal heat flux (bottom boundary) (K)
 Tint = 0
@@ -247,10 +253,10 @@ Tint = 0
 # add sin(lat)^2 dependence to tau lw (advanced)
 latf_lw = true
 # opacity at poles (lw)
-kappa_lw_pole = 0.0025
+kappa_lw_pole = 1.47e-5
 
 # include surface heating
-surface = false
+surface = true
 # heat capacity of surface
 Csurf = 1e7
 
@@ -261,34 +267,34 @@ rt1Dmode = false
 
 ## insolation (orbit + spin-state) parameters ###########
 # synchronous rotation (tidally-locking at 1:1)
-sync_rot = true
+sync_rot = false
 
 # mean motion of orbit (if sync_rot=false and ecc>0) (rad/s)
-#mean_motion = 1.98e-7
+mean_motion = 1.98e-7
 
 # initial substellar longitude (deg)
-#alpha_i = 0
+alpha_i = 0
 
 # initial orbital position (deg)
-#true_long_i = 0
+true_long_i = 0
 
 # eccentricity of orbit
-#ecc = 0
+ecc = 0
 
 # obliquity (axial-tilt) (deg)
-#obliquity = 0
+obliquity = 0
 
 # longitude of periastron (relative to equinox) (deg)
 # (stupid Earth convention applies)
-#longp = 0
+longp = 0
 #########################################################
 
 
-#-- Boundary layer options (core_benchmark = NoBenchmark) --------------------#
-boundary_layer = false
+#-- Boundary layer options (core_benchmark = NoBenchmark) --------------------------#
+boundary_layer = true
 
 # type of boundary layer drag ('RayleighHS' or 'LocalMixL')
-bl_type = RayleighHS
+bl_type = LocalMixL
 
 # strength of drag (bl_type = RayleighHS)
 #surf_drag = 1.157407e-5
@@ -298,17 +304,20 @@ bl_type = RayleighHS
 #bl_sigma = 0.7
 
 # surface roughness length (meters) (bl_type = LocalMixL)
-#z_rough = 3.21e-5
+z_rough = 3.21e-5
 
 # asymptotic scale length (ASL) for BL (meters) (bl_type = LocalMixL)
-#abl_asym_len = 150
+abl_asym_len = 150
 
 # asymptotic scale length (ASL) for free atmos (meters) (bl_type = LocalMixL)
-#free_asym_len = 30
+free_asym_len = 30
 
 # height to transition from BL to free atmos for ASL (meters) (bl_type = LocalMixL)
 # set to -1 to use abl_asym_len in entire atmosphere
-#asl_transition_height = -1
+asl_transition_height = -1
+
+# critical Ri number (currently only used to limit diffusivities in upper atmosphere)
+Ri_crit = 1
 
 
 #-- Device options -----------------------------------------------------------#

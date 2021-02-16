@@ -198,16 +198,16 @@ class output_new:
             outputs['lambda_wave'] = 'wavelength'
 
         if input.BL:
-            if (input.BL_type == 1 or input.BL_type == 2):
+            if (input.BL_type >= 1):
                 outputs['RiGrad'] = 'RiGrad'
                 outputs['KH'] = 'KH'
                 outputs['KM'] = 'KM'
-                outputs['CD'] = 'CD'
+                # outputs['CM'] = 'CM'
                 outputs['CH'] = 'CH'
-            if (input.BL_type == 1):
-                outputs['RiB'] = 'RiB'
-                outputs['bl_top_height'] = 'bl_top_height'
-                outputs['bl_top_lev'] = 'bl_top_lev'
+            # if (input.BL_type == 1):
+            #     # outputs['RiB'] = 'RiB'
+            #     outputs['bl_top_height'] = 'bl_top_height'
+            #     outputs['bl_top_lev'] = 'bl_top_lev'
 
         # calc volume element
         Atot = input.A**2
@@ -257,6 +257,14 @@ class output_new:
                     outputs['Cp'] = 'Cp'
                 else:
                     self.ConstRdCp = True
+
+                if input.BL:
+                    if (input.BL_type >= 1):
+                        #dealing with name change bw compat
+                        if 'CD' in openh5.keys():
+                            outputs['CD'] = 'CM'
+                        else:
+                            outputs['CM'] = 'CM'
 
                 # for rename transition of col_mu_star, can be removed later
                 if 'cos_zenith_angles' in openh5.keys():
@@ -822,13 +830,13 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
             if input.RT:
                 RT = 1
                 surf = 0
-                if input.surface:
-                    surf = 1
-                    extrap_low = (grid.Altitudeh[0] - grid.Altitude[1]) / (grid.Altitude[0] - grid.Altitude[1])
-                    Psurf = output.Pressure[:, 1, :] + extrap_low * (output.Pressure[:, 0, :] - output.Pressure[:, 1, :])
             else:
                 RT = 0
                 surf = 0
+            if input.surface:
+                surf = 1
+                extrap_low = (grid.Altitudeh[0] - grid.Altitude[1]) / (grid.Altitude[0] - grid.Altitude[1])
+                Psurf = output.Pressure[:, 1, :] + extrap_low * (output.Pressure[:, 0, :] - output.Pressure[:, 1, :])
 
         else:
             surf = 0
@@ -907,9 +915,10 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
                 if hasattr(output,'DGqheat'):
                     source['DGqheat'] = output.DGqheat[:, :, 0]
                 source['insol'] = output.Insol[:, 0]
-                if surf == 1:
-                    source['Tsurface'] = output.Tsurface[:, 0]
-                    source['Psurf'] = Psurf[:, 0]
+
+            if surf == 1:
+                source['Tsurface'] = output.Tsurface[:, 0]
+                source['Psurf'] = Psurf[:, 0]
 
             if hasattr(output,'Etotal'):
                 source['Etotal'] = output.Etotal[:, :, 0]
@@ -935,11 +944,11 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
                 source['nh3'] = output.nh3[:, :, 0]/ output.Rho[:,:,0]
 
             if input.BL and input.BL_type == 1:
-                source['RiB'] = output.RiB[:, 0]
-                source['bl_top_height'] = output.bl_top_height[:,0]
+                # source['RiB'] = output.RiB[:, 0]
+                # source['bl_top_height'] = output.bl_top_height[:,0]
                 source['KH'] = output.KH[:,:-1,0] + (output.KH[:,1:,0]-output.KH[:,:-1,0])*interpz[None,:]
                 source['KM'] = output.KM[:,:-1,0] + (output.KM[:,1:,0]-output.KM[:,:-1,0])*interpz[None,:]
-                source['CD'] = output.CD[:,0]
+                source['CM'] = output.CM[:,0]
                 source['CH'] = output.CH[:,0]
 
             # calculate zonal and meridional velocity (special step for Mh)
@@ -1084,7 +1093,7 @@ def KE_spect(input, grid, output, sigmaref, coord='icoh', lmax_adjust=0):
         Vy = (output.Mh[1] + Wy)/output.Rho
         Vz = (output.Mh[2] + Wz)/output.Rho
 
-        KE = 0.5 * (Vx**2 + Vy**2 + Vz**2)
+        KE = 0.5 * (Vx**2 + Vy**2 + Vz**2) * output.Rho
         lmax = np.int(lmax_grid + lmax_adjust)  # sets lmax based on grid size
 
         x_coeffs = np.zeros((2, lmax + 1, lmax + 1, grid.nv, tsp), dtype=complex)
@@ -2030,7 +2039,7 @@ def profile(input, grid, output, z, stride=50, axis=None, save=True, use_p=True,
         ax.set_yscale("log")
 
     # add an insert showing the position of
-    inset_pos = [0.8, 0.8, 0.18, 0.18]
+    inset_pos = [0.8, 0.2, 0.18, 0.18]
     ax_inset = ax.inset_axes(inset_pos)
     ax_inset.scatter(col_lon, col_lat, c=col_lor, s=1.0)
     ax_inset.tick_params(axis='both',
@@ -2051,7 +2060,7 @@ def profile(input, grid, output, z, stride=50, axis=None, save=True, use_p=True,
     else:
         ax.set_ylabel('Altitude (m)')
     ax.set_xlabel(z['label'])
-    ax.legend([rp, gp], ['z=0.5*ztop', 'z=0.75*ztop'], loc="lower right", fontsize='xx-small')
+    ax.legend([rp, gp], ['z=0.5*ztop', 'z=0.75*ztop'], loc="upper right", fontsize='xx-small')
     ax.set_title('Time = %#.3f - %#.3f days' % (output.time[0], output.time[-1]))
     ax.get_xaxis().get_major_formatter().set_useOffset(False)
     ax.tick_params(axis='x', labelrotation=45 )
@@ -2365,6 +2374,28 @@ def RTbalance(input, grid, output):
     plt.savefig(input.resultsf + '/figures/RTbalance_i%d_l%d.pdf' % (output.ntsi, output.nts))
     plt.close()
 
+def RTbalanceTS(input, grid, output):
+    # not finished!
+    #rscale = (input.A+grid.Altitudeh[input.vlevel[0]])/input.A
+    rscale = 1
+    asr = output.f_down_tot[:, input.vlevel[0], :] * grid.areasT[:, None]*rscale**2
+    olr = output.f_up_tot[:, input.vlevel[0], :] * grid.areasT[:, None]*rscale**2
+
+    plt.plot(output.time, np.sum(asr,axis=0),'bs', linestyle='--',label='ASR')
+    #plt.plot(output.time, output.ASR_tot, 'bs', linestyle='--',label='ASR')
+    plt.plot(output.time, np.sum(olr,axis=0), 'rs', linestyle='--',label='OLR')
+    #plt.plot(output.time, output.OLR_tot, 'rs', linestyle='--',label='OLR')
+
+    plt.xlabel('Time (days)')
+    plt.ylabel('Global integrated power (W)')
+    plt.legend(loc='upper right')
+
+    plt.tight_layout()
+    if not os.path.exists(input.resultsf + '/figures'):
+        os.mkdir(input.resultsf + '/figures')
+    plt.savefig(input.resultsf + '/figures/RTbalance_i%d_l%d.pdf' % (output.ntsi, output.nts))
+    plt.close()
+
 def spectrum(input, grid, output, z, stride=20, axis=None, save=True):
     output.load_reshape(grid, ['spectrum', 'incoming_spectrum'])
     # get figure and axis
@@ -2410,7 +2441,7 @@ def spectrum(input, grid, output, z, stride=20, axis=None, save=True):
         col_lon.append(lon)
         col_lat.append(lat)
         col_lor.append(color)
-        ax.plot(lamda, spectrum, 'k-', alpha=0.5, lw=1.0,
+        ax.plot(lamda, spectrum/1e6, 'k-', alpha=0.5, lw=1.0,
                     path_effects=[pe.Stroke(linewidth=1.5, foreground=color), pe.Normal()])
 
     lamda = output.wavelength[:]*1e6
@@ -2422,9 +2453,10 @@ def spectrum(input, grid, output, z, stride=20, axis=None, save=True):
     AU       = 149597870700.0
     flx_cst = pow((input.radius_star*R_SUN)/(input.planet_star_dist*AU), 2.0)*math.pi
     ax_twin = ax.twinx()
-    ax_twin.plot(lamda, incoming_spectrum*flx_cst, 'k-', alpha=0.5, lw=1.0,
+    ax_twin.plot(lamda, incoming_spectrum*flx_cst/1e6, 'k-', alpha=0.5, lw=1.0,
             path_effects=[pe.Stroke(linewidth=1.5, foreground='black'), pe.Normal()])
-    ax_twin.set_ylabel('Incoming stellar flux [$W m^2$]')
+    ax_twin.set_ylabel('Incoming stellar flux [W m$^{-2}$ $\mu$m$^{-1}$]')
+    ax_twin.set_yscale('linear')
     # add an insert showing the position of columns
     inset_pos = [0.8, 0.1, 0.18, 0.18]
     ax_inset = ax.inset_axes(inset_pos)
@@ -2444,8 +2476,8 @@ def spectrum(input, grid, output, z, stride=20, axis=None, save=True):
     #ax.invert_yaxis()
     ax.set_xscale('log')
     ax.set_yscale('linear')
-    ax.set_ylabel('Flux [$W m^2$]')
-    ax.set_xlabel('Wavelength [um]')
+    ax.set_ylabel('Flux [W m$^{-2}$ $\mu$m$^{-1}$]')
+    ax.set_xlabel('Wavelength [$\mu$m]')
     ax.set_title('Time = %#.3f - %#.3f days' % (output.time[0], output.time[-1]))
     ax.grid(True)
 

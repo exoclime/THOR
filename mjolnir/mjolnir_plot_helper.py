@@ -59,7 +59,8 @@ def make_plot(args, save=True, axis=None):
              'DGqheatprof', 'TSqheatprof', 'qheatprof', 'TSfdirprof',
              'w0prof', 'g0prof', 'spectrum',
              'phase','all','eddyKE','eddyMomMerid','eddyTempMerid','eddyTempVar',
-             'Etotlev','AngMomlev', 'Entropylev']
+             'Etotlev','AngMomlev', 'Entropylev','Kdiffprof', 'RiB','BLheight',
+             'RTbalance','Riprof','RTbalanceTS']
 
     rg_needed = ['Tver', 'Tlonver', 'uver', 'ulonver', 'vver', 'wver', 'wlonver', 'Tulev', 'PTver', 'PTlonver', 'ulev', 'PVver', 'PVlev',
                  'RVlev', 'stream', 'tracer', 'Tsurf', 'insol', 'massf', 'pause_rg',
@@ -67,7 +68,7 @@ def make_plot(args, save=True, axis=None):
                  'TSfuptot', 'TSfdowntot', 'TSfnet', 'TSqheat',
                  'DGfuptot', 'DGfdowntot', 'DGfnet', 'DGqheat',
                  'all','eddyKE','eddyMomMerid','eddyTempMerid','eddyTempVar',
-                  'Etotlev', 'AngMomlev', 'Entropylev']  # these types need regrid
+                  'Etotlev', 'AngMomlev', 'Entropylev','RiB','BLheight',]  # these types need regrid
 
     openrg = 0
 
@@ -203,21 +204,29 @@ def make_plot(args, save=True, axis=None):
         plots_created.append(pfile)
 
     if 'PTver' in pview or 'all' in pview:
-        rg.load(['Temperature','Pressure'])
+        rg.load(['Temperature'])
         kappa_ad = input.Rd / input.Cp  # adiabatic coefficient
-        pt = rg.Temperature * (rg.Pressure / input.P_Ref)**(-kappa_ad)
+        if use_p:
+            pt = rg.Temperature * (rg.Pressure[None,None,:,None] / input.P_Ref)**(-kappa_ad)
+        else:
+            rg.load(['Rho'])
+            pt = rg.Temperature * (rg.Rho*input.Rd*rg.Temperature / input.P_Ref)**(-kappa_ad)
         z = {'value': pt, 'label': r'Potential Temperature (K)', 'name': 'potential_temp',
-             'cmap': 'plasma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'plog': plog}
+             'cmap': 'plasma_r', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'plog': plog}
         sigmaref = ham.Get_Prange(input, grid, rg, args, xtype='lat', use_p=use_p)
         pfile = call_plot('PTver',ham.vertical_lat,input, grid, output, rg, sigmaref, z, slice=args.slice, use_p=use_p, csp=5000, clevs=args.clevels, save=save, axis=axis)
         plots_created.append(pfile)
 
     if 'PTlonver' in pview or 'all' in pview:
-        rg.load(['Temperature','Pressure'])
+        rg.load(['Temperature'])
         kappa_ad = input.Rd / input.Cp  # adiabatic coefficient
-        pt = rg.Temperature * (rg.Pressure / input.P_Ref)**(-kappa_ad)
+        if use_p:
+            pt = rg.Temperature * (rg.Pressure[None,None,:,None] / input.P_Ref)**(-kappa_ad)
+        else:
+            rg.load(['Rho'])
+            pt = rg.Temperature * (rg.Rho*input.Rd*rg.Temperature / input.P_Ref)**(-kappa_ad)
         z = {'value': pt, 'label': r'Potential Temperature (K)', 'name': 'potential_temp',
-             'cmap': 'plasma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'plog': plog}
+             'cmap': 'plasma_r', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'plog': plog}
         sigmaref = ham.Get_Prange(input, grid, rg, args, xtype='lat', use_p=use_p)
         pfile = call_plot('PTlonver',ham.vertical_lon,input, grid, output, rg, sigmaref, z, slice=args.slice, use_p=use_p, csp=5000, clevs=args.clevels, save=save, axis=axis)
         plots_created.append(pfile)
@@ -589,7 +598,7 @@ def make_plot(args, save=True, axis=None):
         T = output.Pressure / input.Rd / output.Rho
         pt = T * (output.Pressure / input.P_Ref)**(-kappa_ad)
         z = {'value': pt, 'label': 'Potential Temperature (K)', 'name': 'PT'}
-        pfile = call_plot('PTP',ham.profile,input, grid, output, z, save=save, axis=axis)
+        pfile = call_plot('PTP',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
         plots_created.append(pfile)
 
     if 'wprof' in pview or 'all' in pview:  # RD: needs some work!
@@ -759,13 +768,35 @@ def make_plot(args, save=True, axis=None):
             z = {'value': g0, 'label': f"g0 - band {i*stride} - wl {lamda} um", 'name': 'g0'}
             pfile = call_plot('g0',ham.profile,input, grid, output, z, stride=20, save=save, axis=(axis[0], axes[i]))
             plots_created.append(pfile)
+
+    if ('Kdiffprof' in pview or 'all' in pview) and input.BL and (input.BL_type == 1 or input.BL_type == 2):
+        output.load_reshape(grid,['KH','KM'])
+        KH = output.KH[:, :-1, :] + (output.KH[:, 1:, :] - output.KH[:, :-1, :]) *\
+            (grid.Altitude[None, :, None] - grid.Altitudeh[None, :-1, None]) /\
+            (grid.Altitudeh[None, 1:, None] - grid.Altitudeh[None, :-1, None])
+        z = {'value': KH, 'label': r'boundary layer K$_H$ (m$^2$ s$^{-1}$)', 'name': 'KH'}
+        pfile = call_plot('KH',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis, use_p=False)
+        plots_created.append(pfile)
+
+        KM = output.KM[:, :-1, :] + (output.KM[:, 1:, :] - output.KM[:, :-1, :]) *\
+            (grid.Altitude[None, :, None] - grid.Altitudeh[None, :-1, None]) /\
+            (grid.Altitudeh[None, 1:, None] - grid.Altitudeh[None, :-1, None])
+        z = {'value': KM, 'label': r'boundary layer K$_M$ (m$^2$ s$^{-1}$)', 'name': 'KM'}
+        pfile = call_plot('KM',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis, use_p=False)
+        plots_created.append(pfile)
+
+    if ('Riprof' in pview or 'all' in pview) and input.BL and (input.BL_type == 1):
+        output.load_reshape(grid,['RiGrad'])
+        Ri = output.RiGrad[:, :-1, :] + (output.RiGrad[:, 1:, :] - output.RiGrad[:, :-1, :]) *\
+            (grid.Altitude[None, :, None] - grid.Altitudeh[None, :-1, None]) /\
+            (grid.Altitudeh[None, 1:, None] - grid.Altitudeh[None, :-1, None])
+        z = {'value': Ri, 'label': r'gradient Ri', 'name': 'Ri'}
+        pfile = call_plot('Ri',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis, use_p=False)
+        plots_created.append(pfile)
+
     # --- Global diagnostics -----------------------------------
     if 'cons' in pview:  # RD: needs some work!
-        if args.split_layer[0] == 'no_split':
-            split = False
-        else:
-            split = np.float(args.split_layer[0]) * 100
-        ham.conservation(input, grid, output, split)
+        ham.conservation(input, grid, output)
 
     if 'KE' in pview:  # RD: needs some work!
         output.load_reshape(grid,['Mh','Wh','Rho'])
@@ -776,7 +807,12 @@ def make_plot(args, save=True, axis=None):
         ham.SRindex(input, grid, output)
 
     if 'RTbalance' in pview:
+        output.load_reshape(grid,['fsw_dn','flw_up'])
         ham.RTbalance(input, grid, output)
+
+    if 'RTbalanceTS' in pview:
+        output.load_reshape(grid,['f_down_tot','f_up_tot'])
+        ham.RTbalanceTS(input, grid, output)
 
     if 'phase' in pview and input.RT:
         ham.phase_curve(input,grid,output)

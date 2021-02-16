@@ -80,7 +80,12 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
     dim3      NBRT((point_num / NTH) + 1, 1, 1);
 
     cudaMemset(profx_Qheat_d, 0, sizeof(double) * point_num * nv);
+    cudaMemset(dTsurf_dt_d, 0, sizeof(double) * point_num);
 
+    Recompute_W<<<NB, NTH>>>(
+        W_d, Wh_d, Altitude_d, Altitudeh_d, point_num); //trying to stamp out bincomp issue
+
+    cudaDeviceSynchronize();
     if (sim.RayleighSponge == true && raysp_calc_mode == IMP) {
         dim3 NBT((point_num / NTH) + 1, nv, 1);
 
@@ -209,6 +214,10 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
     Compute_temperature<<<NB, NTH>>>(
         temperature_d, pt_d, pressure_d, Rho_d, sim.P_Ref, Rd_d, Cp_d, point_num, calcT);
 
+    // cudaMemcpy(W_h, W_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+    // for (int lev = 0; lev < nv; lev++) {
+    //     printf("%d %.15e\n", lev, W_h[0 * nv + lev]);
+    // }
     BENCH_POINT_I(
         current_step, "phy_T", (), ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"))
 
@@ -405,6 +414,7 @@ void ESP::globdiag(const SimulationSetup& sim) {
 
     //  Specify the block sizes.
     dim3 NB((point_num / NTH) + 1, nv, 1);
+    dim3 NB1layer((point_num / NTH + 1), 1, 1);
 
     // calculate quantities we hope to conserve!
     cudaMemset(GlobalE_d, 0, sizeof(double));
@@ -413,7 +423,6 @@ void ESP::globdiag(const SimulationSetup& sim) {
     cudaMemset(GlobalAMy_d, 0, sizeof(double));
     cudaMemset(GlobalAMz_d, 0, sizeof(double));
     cudaMemset(GlobalEnt_d, 0, sizeof(double));
-
 
     CalcMass<<<NB, NTH>>>(Mass_d,
                           GlobalMass_d,
@@ -484,6 +493,13 @@ void ESP::globdiag(const SimulationSetup& sim) {
     GlobalAMy_h  = gpu_sum_on_device<1024>(AngMomy_d, point_num * nv);
     GlobalAMz_h  = gpu_sum_on_device<1024>(AngMomz_d, point_num * nv);
     GlobalEnt_h  = gpu_sum_on_device<1024>(Entropy_d, point_num * nv);
+
+    if (surface) {
+        EnergySurface<<<NB1layer, NTH>>>(Esurf_d, Tsurface_d, areasT_d, Csurf, point_num);
+        double GlobalEsurf = 0.0;
+        GlobalEsurf        = gpu_sum_on_device<1024>(Esurf_d, point_num);
+        GlobalE_h += GlobalEsurf;
+    }
 }
 
 __global__ void update_mean(double* pressure_mean_d,

@@ -69,6 +69,9 @@ __host__ void ESP::copy_globdiag_to_host() {
     cudaMemcpy(AngMomx_h, AngMomx_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
     cudaMemcpy(AngMomy_h, AngMomy_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
     cudaMemcpy(AngMomz_h, AngMomz_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+    if (surface) {
+        cudaMemcpy(Esurf_h, Esurf_d, point_num * sizeof(double), cudaMemcpyDeviceToHost);
+    }
 }
 
 __host__ void ESP::copy_global_to_host() {
@@ -95,6 +98,8 @@ __host__ void ESP::copy_to_host() {
 
     cudaMemcpy(
         profx_Qheat_h, profx_Qheat_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+
+    cudaMemcpy(Tsurface_h, Tsurface_d, point_num * sizeof(double), cudaMemcpyDeviceToHost);
 }
 
 __host__ void ESP::copy_mean_to_host() {
@@ -224,8 +229,7 @@ __host__ void ESP::output(int                    fidx, // Index of output file
         s.append_value(sim.rest ? 1.0 : 0.0, "/rest", "-", "Starting from rest");
 
         //      core_benchmark  option
-        s.append_value(
-            int(core_benchmark), "/core_benchmark", "-", "Using benchmark forcing or RT");
+        s.append_value(int(core_benchmark), "/core_benchmark", "-", "Using benchmark forcing");
         if (sim.RayleighSponge) {
             //      nlat
             s.append_value(
@@ -260,6 +264,10 @@ __host__ void ESP::output(int                    fidx, // Index of output file
 
         // store module name in the description
         s.append_value(0.0, "/phy_module", "-", phy_modules_get_name());
+
+        s.append_value(surface ? 1.0 : 0.0, "/surface", "-", "include solid/liquid surface");
+        s.append_value(Csurf, "/Csurf", "J/K/m^2", "heat capacity of surface by area");
+
 
         if (phy_modules_execute) {
             phy_modules_store_init(s);
@@ -328,6 +336,10 @@ __host__ void ESP::output(int                    fidx, // Index of output file
 
         //  GlobalAMz (total angular momentum in y direction over entire planet)
         s.append_value(GlobalAMz_h, "/GlobalAMz", "kg m^2/s", "Global AngMomZ");
+
+        if (surface) {
+            s.append_table(Esurf_h, point_num, "/Esurf", "J", "Thermal energy of surface");
+        }
     }
 
     // profX Qheat from physics modules
@@ -351,6 +363,9 @@ __host__ void ESP::output(int                    fidx, // Index of output file
     s.append_table(Rd_h, nv * point_num, "/Rd", "J/K/kg", "Local gas constant");
     s.append_table(Cp_h, nv * point_num, "/Cp", "J/K/kg", "Local heat capacity");
 
+    if (surface) {
+        s.append_table(Tsurface_h, point_num, "/Tsurface", "K", "surface temperature");
+    }
 
     if (phy_modules_execute) {
         phy_modules_store(*this, s);

@@ -102,5 +102,7 @@ public:
 
     bool rest;
 
+    int n_out;
+
     SimulationSetup();
 };

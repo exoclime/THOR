@@ -46,6 +46,7 @@
 #include "profx_RT.h"
 
 #include "insolation.h"
+#include "reduction_add.h"
 
 radiative_transfer::radiative_transfer() {
 }
@@ -72,9 +73,7 @@ void radiative_transfer::print_config() {
     log::printf("    Power law index of SW       = %f.\n", n_sw_config);
     log::printf("\n");
 
-    // surface parameters
-    log::printf("    Surface                     = %s.\n", surface_config ? "true" : "false");
-    log::printf("    Surface Heat Capacity       = %f J/K/m^2.\n", Csurf_config);
+
     log::printf("    1D mode                     = %s.\n", rt1Dmode_config ? "true" : "false");
 
     // spinup-spindown parameters
@@ -114,8 +113,9 @@ bool radiative_transfer::initialise_memory(const ESP &              esp,
     fsw_dn_h = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
 
     cudaMalloc((void **)&surf_flux_d, esp.point_num * sizeof(double));
-    cudaMalloc((void **)&Tsurface_d, esp.point_num * sizeof(double));
-    Tsurface_h = (double *)malloc(esp.point_num * sizeof(double));
+
+    cudaMalloc((void **)&ASR_d, esp.point_num * sizeof(double));
+    cudaMalloc((void **)&OLR_d, esp.point_num * sizeof(double));
 
     return true;
 }
@@ -147,9 +147,8 @@ bool radiative_transfer::free_memory() {
     free(fsw_dn_h);
 
     cudaFree(surf_flux_d);
-    cudaFree(Tsurface_d);
-
-    free(Tsurface_h);
+    cudaFree(ASR_d);
+    cudaFree(OLR_d);
 
     return true;
 }
@@ -184,27 +183,26 @@ bool radiative_transfer::initial_conditions(const ESP &            esp,
             n_lw_config,
             n_sw_config,
             esp.f_lw,
-            surface_config,
-            Csurf_config,
             rt1Dmode_config,
             sim.Tmean);
 
+    cudaMemset(surf_flux_d, 0, sizeof(double) * esp.point_num);
 
     bool returnstatus = true;
-    int  id;
-    if (surface == true) {
-        if (s != nullptr) {
-            // load initialisation data from storage s
-            returnstatus &= (*s).read_table_to_ptr("/Tsurface", Tsurface_h, esp.point_num);
-        }
-        else {
-            for (id = 0; id < esp.point_num; id++) {
-                Tsurface_h[id] = sim.Tmean;
-            }
-            cudaMemset(surf_flux_d, 0, sizeof(double) * esp.point_num);
-        }
-        cudaMemcpy(Tsurface_d, Tsurface_h, esp.point_num * sizeof(double), cudaMemcpyHostToDevice);
-    }
+    // int  id;
+    // if (esp.surface == true) {
+    //     if (s != nullptr) {
+    //         // load initialisation data from storage s
+    //         returnstatus &= (*s).read_table_to_ptr("/Tsurface", Tsurface_h, esp.point_num);
+    //     }
+    //     else {
+    //         for (id = 0; id < esp.point_num; id++) {
+    //             Tsurface_h[id] = sim.Tmean;
+    //         }
+    //         cudaMemset(surf_flux_d, 0, sizeof(double) * esp.point_num);
+    //     }
+    //     cudaMemcpy(Tsurface_d, Tsurface_h, esp.point_num * sizeof(double), cudaMemcpyHostToDevice);
+    // }
 
     // ask for insolation computation
     esp.insolation.set_require();
@@ -284,10 +282,10 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                                      diff_ang,
                                      esp.Tint,
                                      albedo,
-                                     tausw,
-                                     taulw,
+                                     kappa_sw,
+                                     kappa_lw,
                                      latf_lw,
-                                     taulw_pole,
+                                     kappa_lw_pole,
                                      n_sw,
                                      n_lw,
                                      esp.f_lw,
@@ -300,16 +298,24 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                                      esp.insolation.get_r_orb(),
                                      esp.insolation.get_device_cos_zenith_angles(),
                                      insol_d,
-                                     surface,
-                                     Csurf,
-                                     Tsurface_d,
+                                     esp.surface,
+                                     esp.Csurf,
+                                     esp.Tsurface_d,
+                                     esp.dTsurf_dt_d,
                                      surf_flux_d,
+                                     esp.areasT_d,
+                                     ASR_d,
+                                     OLR_d,
                                      esp.profx_Qheat_d,
                                      qheat_d,
                                      esp.Rd_d,
                                      Qheat_scaling,
                                      sim.gcm_off,
-                                     rt1Dmode);
+                                     rt1Dmode,
+                                     sim.DeepModel);
+
+        ASR_tot = gpu_sum_on_device<1024>(ASR_d, esp.point_num);
+        OLR_tot = gpu_sum_on_device<1024>(OLR_d, esp.point_num);
 
         if (nstep * time_step < (2 * M_PI / esp.insolation.get_mean_motion())) {
             // stationary orbit/obliquity
@@ -340,9 +346,6 @@ bool radiative_transfer::configure(config_file &config_reader) {
     config_reader.append_config_var("n_lw", n_lw_config, n_lw_config);
     // config_reader.append_config_var("f_lw", f_lw_config, f_lw_config);
 
-    // properties for a solid/liquid surface
-    config_reader.append_config_var("surface", surface_config, surface_config);
-    config_reader.append_config_var("Csurf", Csurf_config, Csurf_config);
 
     config_reader.append_config_var("rt1Dmode", rt1Dmode_config, rt1Dmode_config);
 
@@ -393,35 +396,33 @@ bool radiative_transfer::store(const ESP &esp, storage &s) {
     cudaMemcpy(qheat_h, qheat_d, esp.nv * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
     s.append_table(qheat_h, esp.nv * esp.point_num, "/DGQheat", " ", "Double Gray Qheat");
 
-    cudaMemcpy(Tsurface_h, Tsurface_d, esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
-    s.append_table(Tsurface_h, esp.point_num, "/Tsurface", "K", "surface temperature");
+    // cudaMemcpy(Tsurface_h, Tsurface_d, esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
+    // s.append_table(Tsurface_h, esp.point_num, "/Tsurface", "K", "surface temperature");
 
     s.append_value(Qheat_scaling, "/dgrt_qheat_scaling", " ", "Qheat scaling applied to DG");
+
+    s.append_value(ASR_tot, "/ASR", "W", "Absorbed Shortwave Radiation (global total)");
+    s.append_value(OLR_tot, "/OLR", "W", "Outgoing Longwave Radiation (global total)");
+
     return true;
 }
 
 bool radiative_transfer::store_init(storage &s) {
     s.append_value(Tstar, "/Tstar", "K", "Temperature of host star");
     // s.append_value(Tint, "/Tint", "K", "Temperature of interior heat flux");
-    s.append_value(planet_star_dist / 149597870.7,
-                   "/planet_star_dist",
-                   "au",
-                   "distance b/w host star and planet");
-    s.append_value(radius_star / 695508, "/radius_star", "R_sun", "radius of host star");
+    s.append_value(
+        planet_star_dist_config, "/planet_star_dist", "au", "distance b/w host star and planet");
+    s.append_value(radius_star_config, "/radius_star", "R_sun", "radius of host star");
     s.append_value(diff_ang, "/diff_ang", "-", "diffusivity factor");
     s.append_value(albedo, "/albedo", "-", "bond albedo of planet");
-    s.append_value(tausw, "/tausw", "-", "shortwave optical depth of deepest layer");
-    s.append_value(taulw, "/taulw", "-", "longwave optical depth of deepest layer");
+    //  s.append_value(kappa_sw, "/kappa_sw", "-", "gray opacity of shortwave");
+    //  s.append_value(kappa_lw, "/kappa_lw", "-", "gray opacity of longwave");
 
     s.append_value(latf_lw ? 1.0 : 0.0, "/latf_lw", "-", "use lat dependent opacity");
-    s.append_value(
-        taulw_pole, "/taulw_pole", "-", "longwave optical depth of deepest layer at poles");
+    s.append_value(kappa_lw_pole, "/kappa_lw_pole", "-", "gray opacity of longwave at poles");
     s.append_value(n_lw, "/n_lw", "-", "power law exponent for unmixed absorber in LW");
     s.append_value(n_sw, "/n_sw", "-", "power law exponent for mixed/unmixed absorber in SW");
     // s.append_value(f_lw, "/f_lw", "-", "fraction of taulw in well-mixed absorber");
-
-    s.append_value(surface ? 1.0 : 0.0, "/surface", "-", "include solid/liquid surface");
-    s.append_value(Csurf, "/Csurf", "J/K/m^2", "heat capacity of surface by area");
 
 
     return true;
@@ -434,15 +435,13 @@ void radiative_transfer::RTSetup(double Tstar_,
                                  double P_Ref,
                                  double Gravit,
                                  double albedo_,
-                                 double kappa_sw,
-                                 double kappa_lw,
+                                 double kappa_sw_,
+                                 double kappa_lw_,
                                  bool   latf_lw_,
-                                 double kappa_lw_pole,
+                                 double kappa_lw_pole_,
                                  double n_lw_,
                                  double n_sw_,
                                  double f_lw,
-                                 bool   surface_,
-                                 double Csurf_,
                                  bool   rt1Dmode_,
                                  double Tmean) {
 
@@ -453,20 +452,21 @@ void radiative_transfer::RTSetup(double Tstar_,
     radius_star      = radius_star_ * 695508;           //conv to km
     diff_ang         = diff_ang_;
     // Tint             = Tint_;
-    albedo     = albedo_;
-    tausw      = kappa_sw * P_Ref / Gravit;
-    taulw      = kappa_lw * P_Ref / (f_lw * Gravit);
-    taulw_pole = kappa_lw_pole * P_Ref / (f_lw * Gravit);
-    latf_lw    = latf_lw_;
-    n_sw       = n_sw_;
-    n_lw       = n_lw_;
+    albedo = albedo_;
+    //tausw      = kappa_sw * P_Ref / Gravit;
+    //taulw      = kappa_lw * P_Ref / (f_lw * Gravit);
+    //taulw_pole = kappa_lw_pole * P_Ref / (f_lw * Gravit);
+    kappa_sw      = kappa_sw_;
+    kappa_lw      = kappa_lw_;
+    kappa_lw_pole = kappa_lw_pole_;
+
+    latf_lw = latf_lw_;
+    n_sw    = n_sw_;
+    n_lw    = n_lw_;
     // f_lw             = f_lw_;
 
     double resc_flx = pow(radius_star / planet_star_dist, 2.0);
     incflx          = resc_flx * bc * Tstar * Tstar * Tstar * Tstar;
-
-    surface = surface_;
-    Csurf   = Csurf_;
 
     rt1Dmode = rt1Dmode_;
 }

@@ -80,6 +80,9 @@ public:
         return qheat_d;
     };
 
+    double OLR_tot;
+    double ASR_tot;
+
 private:
     // Scaling of Qheat, for slow ramp up or ramp down.
     double Qheat_scaling = 1.0;
@@ -99,9 +102,8 @@ private:
     double n_sw_config          = 1.0;   // power law dependence for mixed/unmixed absorbers in SW
     // double f_lw_config       = 0.5;    // fraction of taulw in well-mixed absorber
 
-    bool   surface_config  = false; // use solid/liquid surface at altitude 0
-    double Csurf_config    = 1e7;   // heat capacity of surface (J K^-1 m^-2)
-    bool   rt1Dmode_config = false; // 1D mode=all columns are irradiated identically
+    // double Csurf_config    = 1e7;   // heat capacity of surface (J K^-1 m^-2)
+    bool rt1Dmode_config = false; // 1D mode=all columns are irradiated identically
 
     int spinup_start_step = -1;
     int spinup_stop_step  = -1;
@@ -114,22 +116,20 @@ private:
     double radius_star      = 0.667; // Star radius [Rsun]
     double diff_ang         = 0.5;   // Diffusivity factor: 0.5-1.0
     // double Tint   = 0; // Lower boundary temperature: upward flux coming from the planet's interior
-    double albedo = 0.18;   // Bond albedo
-    double tausw  = 532.0;  // Absorption coefficient for the shortwaves
-    double taulw  = 1064.0; // Absorption coefficient for the longwaves
-    double taulw_pole;
+    double albedo   = 0.18;  // Bond albedo
+    double kappa_sw = 0.001; // Absorption coefficient for the shortwaves
+    double kappa_lw = 0.002; // Absorption coefficient for the longwaves
+    double kappa_lw_pole;
     // double kappa_lw_pole = 0.002;
     bool   latf_lw = false;
     double n_lw    = 2.0; // power law dependence for unmixed absorbers in LW
     double n_sw    = 1.0; // power law dependence for mixed/unmixed absorbers in SW
     // double f_lw       = 0.5; // fraction of taulw in well-mixed absorber
 
-    bool    rt1Dmode;
-    bool    surface;
-    double  Csurf;
+    bool rt1Dmode;
+    // double  Csurf;
     double *surf_flux_d;
-    double *Tsurface_d;
-    double *Tsurface_h;
+
 
     double incflx;
     //  Arrays used in RT code
@@ -153,6 +153,10 @@ private:
     double *qheat_d;
     double *qheat_h;
 
+    double *ASR_d;
+    double *OLR_d;
+
+
     //  These arrays are for temporary usage in RT code
     double *dtemp;
     double *phtemp;
@@ -172,8 +176,6 @@ private:
                     double n_lw_,
                     double n_sw_,
                     double f_lw,
-                    bool   surface,
-                    double Csurf,
                     bool   rt1Dmode,
                     double Tmean);
 };

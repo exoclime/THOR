@@ -128,7 +128,9 @@
 #define thermo_equation_default "entropy"
 
 #define vert_refined_default false
-#define n_bl_layers_default 9
+// #define n_bl_layers_default 9
+#define transition_altitude_default 1000.0
+#define lowest_layer_thickness_default 2.0
 
 enum benchmark_types {
     NO_BENCHMARK         = 0,

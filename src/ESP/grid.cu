@@ -90,7 +90,8 @@ __host__ Icogrid::Icogrid(bool   sprd,        // Spring dynamics option
                           bool   sponge,
                           int *  max_count,
                           bool   vert_refined,
-                          int    n_bl_layers) {
+                          double lowest_layer_thickness,
+                          double transition_altitude) {
 
     log::printf("\n\n Building icosahedral grid!");
 
@@ -212,7 +213,9 @@ __host__ Icogrid::Icogrid(bool   sprd,        // Spring dynamics option
     Altitude  = (double *)malloc(nv * sizeof(double));
     Altitudeh = (double *)malloc(nvi * sizeof(double));
     if (vert_refined) {
-        set_altitudes_refined(Altitude, Altitudeh, Top_altitude, nv, n_bl_layers);
+        // set_altitudes_refined(Altitude, Altitudeh, Top_altitude, nv, n_bl_layers);
+        set_altitudes_softplus(
+            Altitude, Altitudeh, Top_altitude, lowest_layer_thickness, transition_altitude, nv);
     }
     else {
         set_altitudes_uniform(Altitude, Altitudeh, Top_altitude, nv);
@@ -1959,6 +1962,49 @@ void Icogrid::set_altitudes_refined(double *Altitude,
         Altitude[lev] = (Altitudeh[lev] + Altitudeh[lev + 1]) / 2.0;
         // printf("Vertical layer, half-layer %d = %f %f\n", lev, Altitude[lev], Altitudeh[lev + 1]);
     }
+}
+
+void Icogrid::set_altitudes_softplus(double *Altitude,
+                                     double *Altitudeh,
+                                     double  Top_altitude,
+                                     double  lowest_layer_thickness,
+                                     double  transition_altitude,
+                                     int     nv) {
+
+
+    //
+    //  Description:
+    //
+    //  Sets the layers and interfaces altitudes using softplus function
+    //  (exponential below transition_altitude, linear above)
+    //
+    //  Input:  - nv - Number of vertical layers.
+    //          - top_altitude - Altitude of the top model domain.
+    //          - lowest_layer_thickness - Thickness of lowest layer
+    //          - transition_altitude - Transition b/w exponential and linear
+    //
+    //  Output: - Altitude  - Layers altitudes.
+    //          - Altitudeh - Interfaces altitudes.
+    //
+
+    //parameters controlling shape of softplus function
+    double alpha, k, xbl, x1;
+    x1 = 1.0 / nv; // fractional index of first layer top
+    // Calculate sharpness and amplitude to match top, bottom, transition altitude
+    alpha = transition_altitude / log(2);
+    k = log((exp(lowest_layer_thickness / alpha) - 1) / (exp(Top_altitude / alpha) - 1)) / (x1 - 1);
+    xbl = -log(exp(lowest_layer_thickness / alpha) - 1) / k + x1; //centering the function
+
+    double x     = 0;
+    Altitudeh[0] = 0.0;
+    for (int lev = 0; lev < nv; lev++) { //interfaces
+        x += x1;                         //next fractional index of layer
+        Altitudeh[lev + 1] = alpha * log(1 + exp(k * (x - xbl)));
+    }
+    for (int lev = 0; lev < nv; lev++) { //centers of layers
+        Altitude[lev] = (Altitudeh[lev] + Altitudeh[lev + 1]) / 2.0;
+    }
+    printf("stop here");
 }
 
 
