@@ -377,6 +377,8 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
     //apply heating here if gcm_off = true
     if (sim.gcm_off == true) {
         //kernel call
+        apply_heating<<<NB, NTH>>>(
+            temperature_d, profx_Qheat_d, Rho_d, Cp_d, Rd_d, timestep, point_num);
     }
 
     BENCH_POINT_I(current_step,

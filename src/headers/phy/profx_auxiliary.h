@@ -154,4 +154,28 @@ __global__ void isnan_check(double *array, int width, int height, bool *check) {
 //       printf("id = %d, lev = %d, t = %f\n",i,0,t[i*nv]);
 //     }
 //   }
-// }
+//
+
+__global__ void apply_heating(double *temperature_d,
+                              double *profx_Qheat_d,
+                              double *Rho_d,
+                              double *Cp_d,
+                              double *Rd_d,
+                              double  timestep,
+                              int     num) {
+    //updates temperature from Qheat in the case that gcm_off = true
+    int id  = blockIdx.x * blockDim.x + threadIdx.x;
+    int nv  = gridDim.y;
+    int lev = blockIdx.y;
+
+    if (id < num) {
+        temperature_d[id * nv + lev] += 1.0 / (Cp_d[id * nv + lev] - Rd_d[id * nv + lev])
+                                        * profx_Qheat_d[id * nv + lev] / Rho_d[id * nv + lev]
+                                        * timestep;
+        if (temperature_d[id * nv + lev] < 0)
+            temperature_d[id * nv + lev] = 0.0;
+        if (isnan(temperature_d[id * nv + lev])) {
+            printf("check\n");
+        }
+    }
+}
