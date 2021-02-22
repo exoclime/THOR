@@ -225,6 +225,9 @@ __host__ void ESP::output(int                    fidx, // Index of output file
         //      GCM on/off option
         s.append_value(sim.gcm_off ? 1.0 : 0.0, "/gcm_off", "-", "GCM off");
 
+        //      single column option
+        s.append_value(sim.single_column ? 1.0 : 0.0, "/single_column", "-", "single column mode");
+
         //      rest option
         s.append_value(sim.rest ? 1.0 : 0.0, "/rest", "-", "Starting from rest");
 
@@ -295,9 +298,13 @@ __host__ void ESP::output(int                    fidx, // Index of output file
 
     //  Mh
     s.append_table(Mh_h, nv * point_num * 3, "/Mh", "kg m/s", "Horizontal Momentum");
-    
+
     //  Mh
-    s.append_table(diffmh_h, nv * point_num * 3, "/diffmh", "kg m^-2 s^-2", "Horizontal Momentum Tendency from Hyperdiffusion");
+    s.append_table(diffmh_h,
+                   nv * point_num * 3,
+                   "/diffmh",
+                   "kg m^-2 s^-2",
+                   "Horizontal Momentum Tendency from Hyperdiffusion");
 
     //  Wh
     s.append_table(Wh_h, nvi * point_num, "/Wh", "kg m/s", "Vertical Momentum");

@@ -99,6 +99,7 @@ public:
     bool conv_adj;
     int  conv_adj_iter;
     bool gcm_off;
+    bool single_column;
 
     bool rest;
 
