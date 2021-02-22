@@ -179,3 +179,44 @@ __global__ void apply_heating(double *temperature_d,
         }
     }
 }
+
+__global__ void Compute_pressure_density_hydrostatic(double *pressure_d,
+                                                     double *Rho_d,
+                                                     double *temperature_d,
+                                                     double *Tsurface_d,
+                                                     double *Rd_d,
+                                                     double *Altitude_d,
+                                                     double  P_Ref,
+                                                     double  Gravit,
+                                                     int     num,
+                                                     int     nv,
+                                                     bool    surface) {
+    int id = blockIdx.x * blockDim.x + threadIdx.x;
+
+    // Computes absolute pressure and density for gcm_off mode (preserving hydrostasy, but not mass)
+    if (id < num) {
+        //holds the bottom at P_Ref
+        if (surface) {
+            pressure_d[id * nv + 0] =
+                P_Ref * (1.0 / (Altitude_d[0]) + Gravit / (Rd_d[id * nv + 0] * 2 * Tsurface_d[id]))
+                / (1.0 / (Altitude_d[0])
+                   + Gravit / (Rd_d[id * nv + 0] * 2 * temperature_d[id * nv + 0]));
+        }
+        else { //bottom temperature = temp of lowest layer, so p = P_Ref
+            pressure_d[id * nv + 0] = P_Ref;
+        }
+        Rho_d[id * nv + 0] =
+            pressure_d[id * nv + 0] / Rd_d[id * nv + 0] / temperature_d[id * nv + 0];
+
+        for (int lev = 1; lev < nv; lev++) {
+            pressure_d[id * nv + lev] =
+                pressure_d[id * nv + lev - 1]
+                * (1.0 / (Altitude_d[lev] - Altitude_d[lev - 1])
+                   + Gravit / (Rd_d[id * nv + lev - 1] * 2 * temperature_d[id * nv + lev - 1]))
+                / (1.0 / (Altitude_d[lev] - Altitude_d[lev - 1])
+                   + Gravit / (Rd_d[id * nv + lev] * 2 * temperature_d[id * nv + lev]));
+            Rho_d[id * nv + lev] =
+                pressure_d[id * nv + lev] / Rd_d[id * nv + lev] / temperature_d[id * nv + lev];
+        }
+    }
+}
