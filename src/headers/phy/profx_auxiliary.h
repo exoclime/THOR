@@ -198,7 +198,7 @@ __global__ void Compute_pressure_density_hydrostatic(double *pressure_d,
         //holds the bottom at P_Ref
         if (surface) {
             pressure_d[id * nv + 0] =
-                P_Ref * (1.0 / (Altitude_d[0]) + Gravit / (Rd_d[id * nv + 0] * 2 * Tsurface_d[id]))
+                P_Ref * (1.0 / (Altitude_d[0]) - Gravit / (Rd_d[id * nv + 0] * 2 * Tsurface_d[id]))
                 / (1.0 / (Altitude_d[0])
                    + Gravit / (Rd_d[id * nv + 0] * 2 * temperature_d[id * nv + 0]));
         }
@@ -212,7 +212,7 @@ __global__ void Compute_pressure_density_hydrostatic(double *pressure_d,
             pressure_d[id * nv + lev] =
                 pressure_d[id * nv + lev - 1]
                 * (1.0 / (Altitude_d[lev] - Altitude_d[lev - 1])
-                   + Gravit / (Rd_d[id * nv + lev - 1] * 2 * temperature_d[id * nv + lev - 1]))
+                   - Gravit / (Rd_d[id * nv + lev - 1] * 2 * temperature_d[id * nv + lev - 1]))
                 / (1.0 / (Altitude_d[lev] - Altitude_d[lev - 1])
                    + Gravit / (Rd_d[id * nv + lev] * 2 * temperature_d[id * nv + lev]));
             Rho_d[id * nv + lev] =
