@@ -220,3 +220,25 @@ __global__ void Compute_pressure_density_hydrostatic(double *pressure_d,
         }
     }
 }
+
+__global__ void Force_temperature(double *temperature_d,
+                                  double *Tsurface_d,
+                                  double *pressure_d,
+                                  double  P_Ref,
+                                  int     num) {
+
+    //for debugging. set temperature to explicit relationship with pressure
+    int id  = blockIdx.x * blockDim.x + threadIdx.x;
+    int nv  = gridDim.y;
+    int lev = blockIdx.y;
+
+    double T0 = 350;
+
+    // Computes absolute and potential temperature
+    if (id < num) {
+        if (lev == 0) {
+            Tsurface_d[id] = T0;
+        }
+        temperature_d[id * nv + lev] = T0 * exp((pressure_d[id * nv + lev] - P_Ref) / P_Ref);
+    }
+}
