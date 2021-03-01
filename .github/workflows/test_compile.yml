@@ -46,3 +46,6 @@ jobs:
           PATH=${CUDA_HOME}/bin:${PATH}
           PATH=${PATH}:${PWD}
           make release
+        env:
+          CC: gcc-8
+          CXX: g++-8
