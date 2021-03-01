@@ -360,8 +360,6 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
                   (),
                   ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"))
 
-    Force_temperature<<<NB, NTH>>>(temperature_d, Tsurface_d, pressure_d, sim.P_Ref, point_num);
-
     // here is where we call all "external" physics modules
     if (phy_modules_execute) {
         cudaDeviceSynchronize();
@@ -386,7 +384,6 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
 
     //apply heating here if gcm_off = true
     if (sim.gcm_off == true) {
-        //kernel call
         apply_heating<<<NB, NTH>>>(
             temperature_d, profx_Qheat_d, Rho_d, Cp_d, Rd_d, timestep, point_num);
         cudaDeviceSynchronize();
