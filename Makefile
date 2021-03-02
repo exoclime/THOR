@@ -75,7 +75,7 @@ ifeq ($(COMP), nvcc)
 	# define specific compiler for nvcc. if if fails on newer installations, get it to use g++-5
 	CC = nvcc
 	CC_comp_flag = -dc
-	ccbin :=
+	ccbin := -ccbin g++-8
 	# ccbin := -ccbin g++-5
 	CDB :=
 	HAS_CBD := none
