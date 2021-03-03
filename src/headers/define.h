@@ -105,7 +105,8 @@
 
 #define output_path_default "results" // Output directory
 
-#define gcm_off_default false //turns off fluid dynamical core for debugging physics
+#define gcm_off_default false       //turns off fluid dynamical core for debugging physics
+#define single_column_default false //run physics on only 1 vertical column for debugging physics
 
 #define globdiag_default false //output energy, mass, angular momentum, etc
 

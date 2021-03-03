@@ -374,13 +374,36 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
                              timestep);    // Time-step [s]
     }
 
+
     BENCH_POINT_I(current_step,
                   "phy_module",
                   (),
                   ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d", "Qheat"))
     //  Computes the new pressures.
     cudaDeviceSynchronize();
-    Compute_pressure<<<NB, NTH>>>(pressure_d, temperature_d, Rho_d, Rd_d, point_num);
+
+    //apply heating here if gcm_off = true
+    if (sim.gcm_off == true) {
+        apply_heating<<<NB, NTH>>>(
+            temperature_d, profx_Qheat_d, Rho_d, Cp_d, Rd_d, timestep, point_num);
+        cudaDeviceSynchronize();
+        Compute_pressure_density_hydrostatic<<<NBRT, NTH>>>(pressure_d,
+                                                            Rho_d,
+                                                            temperature_d,
+                                                            Tsurface_d,
+                                                            Rd_d,
+                                                            Altitude_d,
+                                                            sim.P_Ref,
+                                                            sim.Gravit,
+                                                            point_num,
+                                                            nv,
+                                                            surface);
+    }
+    else {
+        Compute_pressure<<<NB, NTH>>>(pressure_d, temperature_d, Rho_d, Rd_d, point_num);
+    }
+
+    cudaDeviceSynchronize();
 
     //always do this nan check so the code doesn't keep computing garbage
     check_h = false;

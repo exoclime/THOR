@@ -540,28 +540,29 @@ __global__ void rtm_dual_band(double *pressure_d,
         OLR_d[id] = flw_up_d[id * nvi + nv] * areasT_d[id] * pow(rscale, 2);
 
         for (int lev = 0; lev < nv; lev++) {
-            if (gcm_off) {
-                temperature_d[id * nv + lev] = ttemp[id * nv + lev]
-                                               + 1.0 / (Cp_d[id * nv + lev] - Rd_d[id * nv + lev])
-                                                     * dtemp[id * nv + lev] / Rho_d[id * nv + lev]
-                                                     * timestep;
-                if (temperature_d[id * nv + lev] < 0)
-                    temperature_d[id * nv + lev] = 0.0;
+            // if (gcm_off) {
+            //     temperature_d[id * nv + lev] = ttemp[id * nv + lev]
+            //                                    + 1.0 / (Cp_d[id * nv + lev] - Rd_d[id * nv + lev])
+            //                                          * dtemp[id * nv + lev] / Rho_d[id * nv + lev]
+            //                                          * timestep;
+            //     if (temperature_d[id * nv + lev] < 0)
+            //         temperature_d[id * nv + lev] = 0.0;
+            //     profx_Qheat_d[id * nv + lev] += Qheat_scaling * dtemp[id * nv + lev];
+            // }
+            // else {
+            if (pressure_d[id * nv + lev]
+                    + Rd_d[id * nv + lev] / (Cp_d[id * nv + lev] - Rd_d[id * nv + lev])
+                          * dtemp[id * nv + lev] * timestep
+                < 0) {
+                //trying to prevent too much cooling resulting in negative pressure in dyn core
+                dtemp[id * nv + lev] = -pressure_d[id * nv + lev] / timestep;
             }
-            else {
-                if (pressure_d[id * nv + lev]
-                        + Rd_d[id * nv + lev] / (Cp_d[id * nv + lev] - Rd_d[id * nv + lev])
-                              * dtemp[id * nv + lev] * timestep
-                    < 0) {
-                    //trying to prevent too much cooling resulting in negative pressure in dyn core
-                    dtemp[id * nv + lev] = -pressure_d[id * nv + lev] / timestep;
-                }
-                DG_Qheat_d[id * nv + lev] = dtemp[id * nv + lev];
-                profx_Qheat_d[id * nv + lev] += Qheat_scaling * dtemp[id * nv + lev];
-                if (isnan(profx_Qheat_d[id * nv + lev])) {
-                    printf("stop here");
-                }
+            DG_Qheat_d[id * nv + lev] = dtemp[id * nv + lev];
+            profx_Qheat_d[id * nv + lev] += Qheat_scaling * dtemp[id * nv + lev];
+            if (isnan(profx_Qheat_d[id * nv + lev])) {
+                printf("stop here");
             }
+            // }
         }
     }
 }
