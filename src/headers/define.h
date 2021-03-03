@@ -82,9 +82,11 @@
 #define VertHyDiff_default false // Vertical Hyper-diffusion
 
 // Model options
-#define NonHydro_default true    // Non-hydrostatic parameter
-#define DeepModel_default true   // Deep atmosphere
-#define output_mean_default true // output mean quantities
+#define NonHydro_default true             // Non-hydrostatic parameter
+#define DeepModel_default true            // Deep atmosphere
+#define output_mean_default true          // output mean quantities
+#define out_interm_momentum_default false // output intermediate momentum
+#define output_diffusion_default false    // output diffusion operators
 
 // Initial conditions
 #define rest_default true                                 // Starting from rest

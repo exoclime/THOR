@@ -120,13 +120,25 @@ public:
     double *Mh_mean_h;
     double *Wh_mean_h;
 
+    //store and output momentum at start of step and after profx (for momentum analysis)
+    double *Mh_start_dt_h;
+    double *Mh_profx_h;
     //
     // double *Kdhz_h;
     // double *Kdh4_h;
     // double *Kdvz_h;
     // double *Kdv6_h;
 
+    double *DivM_h;
+    double *diffpr_h;
     double *diffmh_h;
+    double *diffw_h;
+    double *diffrh_h;
+
+    double *diffprv_h;
+    double *diffmv_h;
+    double *diffwv_h;
+    double *diffrv_h;
 
     double *flux_vec;
     double *boundary_flux_h;
@@ -230,6 +242,10 @@ public:
     double *pressure_mean_d;
     double *Mh_mean_d;
     double *Wh_mean_d;
+
+    //store and output momentum at start of step and after profx (for momentum analysis)
+    double *Mh_start_dt_d;
+    double *Mh_profx_d;
 
     double *Adv_d;
 
@@ -385,6 +401,8 @@ public:
         log_writer &          logwriter_,
         int                   max_count_,
         bool                  output_mean,
+        bool                  out_interm_momentum,
+        bool                  output_diffusion,
         init_PT_profile_types init_PT_profile_,
         double                Tint_,
         double                kappa_lw_,
@@ -400,7 +418,7 @@ public:
 
     ~ESP();
 
-    void alloc_data(bool, bool);
+    void alloc_data(bool, bool, bool, bool);
 
     bool initial_values(const std::string &initial_conditions_filename,
                         const std::string &planet_filename,
@@ -438,6 +456,8 @@ public:
     void copy_globdiag_to_host();
     void copy_global_to_host();
     void copy_mean_to_host();
+    void copy_interm_mom_to_host();
+    void copy_diff_to_host();
 
     void update_mean_outputs(int);
 

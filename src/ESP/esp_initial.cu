@@ -105,6 +105,8 @@ __host__ ESP::ESP(int *                 point_local_,
                   log_writer &          logwriter_,
                   int                   max_count_,
                   bool                  output_mean,
+                  bool                  out_interm_momentum,
+                  bool                  output_diffusion,
                   init_PT_profile_types init_PT_profile_,
                   double                Tint_,
                   double                kappa_lw_,
@@ -190,10 +192,11 @@ __host__ ESP::ESP(int *                 point_local_,
     Csurf = Csurf_config;
     //
     //  Allocate Data
-    alloc_data(globdiag, output_mean);
+    alloc_data(globdiag, output_mean, out_interm_momentum, output_diffusion);
 }
 
-__host__ void ESP::alloc_data(bool globdiag, bool output_mean) {
+__host__ void
+ESP::alloc_data(bool globdiag, bool output_mean, bool out_interm_momentum, bool output_diffusion) {
 
     //
     //  Description:
@@ -206,7 +209,6 @@ __host__ void ESP::alloc_data(bool globdiag, bool output_mean) {
     pressure_h    = (double *)malloc(nv * point_num * sizeof(double));
     temperature_h = (double *)malloc(nv * point_num * sizeof(double));
     Mh_h          = (double *)malloc(nv * point_num * 3 * sizeof(double));
-    diffmh_h      = (double *)malloc(nv * point_num * 3 * sizeof(double));
     W_h           = (double *)malloc(nv * point_num * sizeof(double));
     Wh_h          = (double *)malloc(nvi * point_num * sizeof(double));
 
@@ -215,6 +217,23 @@ __host__ void ESP::alloc_data(bool globdiag, bool output_mean) {
         pressure_mean_h = (double *)malloc(nv * point_num * sizeof(double));
         Mh_mean_h       = (double *)malloc(nv * point_num * 3 * sizeof(double));
         Wh_mean_h       = (double *)malloc(nvi * point_num * sizeof(double));
+    }
+
+    if (output_diffusion == true) {
+        diffrh_h  = (double *)malloc(nv * point_num * sizeof(double));
+        diffpr_h  = (double *)malloc(nv * point_num * sizeof(double));
+        diffmh_h  = (double *)malloc(nv * point_num * 3 * sizeof(double));
+        diffw_h   = (double *)malloc(nv * point_num * sizeof(double));
+        diffrv_h  = (double *)malloc(nv * point_num * sizeof(double));
+        diffprv_h = (double *)malloc(nv * point_num * sizeof(double));
+        diffmv_h  = (double *)malloc(nv * point_num * 3 * sizeof(double));
+        diffwv_h  = (double *)malloc(nv * point_num * sizeof(double));
+        DivM_h    = (double *)malloc(nv * point_num * 3 * sizeof(double));
+    }
+
+    if (out_interm_momentum == true) {
+        Mh_start_dt_h = (double *)malloc(nv * point_num * 3 * sizeof(double));
+        Mh_profx_h    = (double *)malloc(nv * point_num * 3 * sizeof(double));
     }
 
     Etotal_h  = (double *)malloc(nv * point_num * sizeof(double));
@@ -270,6 +289,12 @@ __host__ void ESP::alloc_data(bool globdiag, bool output_mean) {
         cudaMalloc((void **)&Wh_mean_d, nvi * point_num * sizeof(double));
         cudaMalloc((void **)&Rho_mean_d, nv * point_num * sizeof(double));
         cudaMalloc((void **)&pressure_mean_d, nv * point_num * sizeof(double));
+    }
+
+    if (out_interm_momentum == true) {
+        // Average quantities over output interval
+        cudaMalloc((void **)&Mh_start_dt_d, nv * point_num * 3 * sizeof(double));
+        cudaMalloc((void **)&Mh_profx_d, nv * point_num * 3 * sizeof(double));
     }
 
     // ultra hot
@@ -621,9 +646,9 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 Mh_h[i * 3 * nv + 3 * lev + 2] = 0.0;
 
                 //              Momentum tendency from hyperdiffusion [kg/m3 m/s2]
-                diffmh_h[i * 3 * nv + 3 * lev + 0] = 0.0;
-                diffmh_h[i * 3 * nv + 3 * lev + 1] = 0.0;
-                diffmh_h[i * 3 * nv + 3 * lev + 2] = 0.0;
+                // diffmh_h[i * 3 * nv + 3 * lev + 0] = 0.0;  //i don't think we need to set these
+                // diffmh_h[i * 3 * nv + 3 * lev + 1] = 0.0;
+                // diffmh_h[i * 3 * nv + 3 * lev + 2] = 0.0;
 
                 //              Vertical momentum [kg/m3 m/s]
                 W_h[i * nv + lev]        = 0.0; // Center of the layer.
@@ -950,7 +975,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
     cudaMemcpy(
         temperature_d, temperature_h, point_num * nv * sizeof(double), cudaMemcpyHostToDevice);
     cudaMemcpy(Mh_d, Mh_h, point_num * nv * 3 * sizeof(double), cudaMemcpyHostToDevice);
-    cudaMemcpy(diffmh_d, diffmh_h, point_num * nv * 3 * sizeof(double), cudaMemcpyHostToDevice);
+    //cudaMemcpy(diffmh_d, diffmh_h, point_num * nv * 3 * sizeof(double), cudaMemcpyHostToDevice);// i think this is not needed -RD
     cudaMemcpy(W_d, W_h, point_num * nv * sizeof(double), cudaMemcpyHostToDevice);
     cudaMemcpy(Wh_d, Wh_h, point_num * nvi * sizeof(double), cudaMemcpyHostToDevice);
     cudaMemcpy(Rho_d, Rho_h, point_num * nv * sizeof(double), cudaMemcpyHostToDevice);
@@ -1034,6 +1059,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
     cudaMemset(diff2_d, 0, sizeof(double) * 6 * (nv + 2) * point_num);
     // cudaMemset(diffv_d2, 0, sizeof(double) * 6 * nv * point_num);
 
+    cudaMemset(Mh_start_dt_d, 0, sizeof(double) * nv * point_num * 3);
+    cudaMemset(Mh_profx_d, 0, sizeof(double) * nv * point_num * 3);
     cudaMemset(boundary_flux_d, 0, sizeof(double) * 6 * nv * point_num);
 
 
@@ -1083,6 +1110,14 @@ __host__ ESP::~ESP() {
     free(temperature_h);
     free(Mh_h);
     free(diffmh_h);
+    free(diffrh_h);
+    free(diffpr_h);
+    free(diffw_h);
+    free(diffmv_h);
+    free(diffrv_h);
+    free(diffprv_h);
+    free(diffwv_h);
+    free(DivM_h);
     free(W_h);
     free(Wh_h);
 
