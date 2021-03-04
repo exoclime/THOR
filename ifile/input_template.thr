@@ -1,6 +1,6 @@
 # config file for THOR
 # config format version
-config_version =
+config_version = 1
 
 # This is a template file containing all valid input options
 # Fields are filled with default values if one exists
