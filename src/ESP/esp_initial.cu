@@ -1109,15 +1109,15 @@ __host__ ESP::~ESP() {
     free(pressure_h);
     free(temperature_h);
     free(Mh_h);
-    free(diffmh_h);
-    free(diffrh_h);
-    free(diffpr_h);
-    free(diffw_h);
-    free(diffmv_h);
-    free(diffrv_h);
-    free(diffprv_h);
-    free(diffwv_h);
-    free(DivM_h);
+    // free(diffmh_h);
+    // free(diffrh_h);
+    // free(diffpr_h);
+    // free(diffw_h);
+    // free(diffmv_h);
+    // free(diffrv_h);
+    // free(diffprv_h);
+    // free(diffwv_h);
+    // free(DivM_h);
     free(W_h);
     free(Wh_h);
 

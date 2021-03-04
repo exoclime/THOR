@@ -223,6 +223,18 @@ __host__ void ESP::output(int                    fidx, // Index of output file
         s.append_value(
             sim.output_mean ? 1.0 : 0.0, "/output_mean", "-", "outputting mean quantities");
 
+        //      output_diffusion option
+        s.append_value(sim.output_diffusion ? 1.0 : 0.0,
+                       "/output_diffusion",
+                       "-",
+                       "outputting diffusion terms");
+
+        //      out_interm_momentum option
+        s.append_value(sim.out_interm_momentum ? 1.0 : 0.0,
+                       "/out_interm_momentum",
+                       "-",
+                       "outputting intermediate momentum values");
+
         //      DivDampP option
         s.append_value(sim.DivDampP ? 1.0 : 0.0, "/DivDampP", "-", "Using Divergence-damping");
 
