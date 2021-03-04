@@ -1,6 +1,6 @@
 # config file for THOR
 # config format version
-config_version =
+config_version = 1
 
 # This is a template file containing all valid input options
 # Fields are filled with default values if one exists
@@ -38,6 +38,12 @@ global_n_out = 1000
 
 # output time mean quantities (averaged over interval between outputs)
 output_mean = true
+
+# output intermediate momentum (start of time step & after profx)
+out_interm_momentum = false
+
+# output diffusion terms (may be pretty large!)
+output_diffusion = false
 
 
 #-- Planetary parameters -----------------------------------------------------#
