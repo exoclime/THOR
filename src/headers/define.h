@@ -82,9 +82,11 @@
 #define VertHyDiff_default false // Vertical Hyper-diffusion
 
 // Model options
-#define NonHydro_default true    // Non-hydrostatic parameter
-#define DeepModel_default true   // Deep atmosphere
-#define output_mean_default true // output mean quantities
+#define NonHydro_default true             // Non-hydrostatic parameter
+#define DeepModel_default true            // Deep atmosphere
+#define output_mean_default true          // output mean quantities
+#define out_interm_momentum_default false // output intermediate momentum
+#define output_diffusion_default false    // output diffusion operators
 
 // Initial conditions
 #define rest_default true                                 // Starting from rest
@@ -105,7 +107,8 @@
 
 #define output_path_default "results" // Output directory
 
-#define gcm_off_default false //turns off fluid dynamical core for debugging physics
+#define gcm_off_default false       //turns off fluid dynamical core for debugging physics
+#define single_column_default false //run physics on only 1 vertical column for debugging physics
 
 #define globdiag_default false //output energy, mass, angular momentum, etc
 
@@ -128,7 +131,7 @@
 #define thermo_equation_default "entropy"
 
 #define vert_refined_default false
-// #define n_bl_layers_default 9
+
 #define transition_altitude_default 1000.0
 #define lowest_layer_thickness_default 2.0
 

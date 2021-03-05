@@ -94,11 +94,15 @@ public:
     bool RayleighSpongeT; // include thermal term in sponge layer?
     bool DiffSponge;      // Diffusive sponge
 
-    bool output_mean;
+    bool output_mean; //whether or not to output time mean quantities
+    bool
+         out_interm_momentum; //output intermediate momentum values (start of time step & after profx)
+    bool output_diffusion;    //output hyperdiffusion operators, etc
 
     bool conv_adj;
     int  conv_adj_iter;
     bool gcm_off;
+    bool single_column;
 
     bool rest;
 

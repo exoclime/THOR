@@ -180,6 +180,10 @@ class output_new:
         # if input.RT or input.TSRT:
         #     outputs['Qheat'] = 'qheat'
 
+        if input.out_interm_momentum:
+            outputs['Mh_start_dt'] = 'Mh_start_dt'
+            outputs['Mh_profx'] = 'Mh_profx'
+
         if input.RT:
             outputs['tau'] = 'tau'  #have to be careful about slicing this (sw = ::2, lw = 1::2)
             outputs['flw_up'] = 'flw_up'

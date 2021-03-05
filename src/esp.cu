@@ -306,6 +306,10 @@ int main(int argc, char** argv) {
     config_reader.append_config_var("NonHydro", sim.NonHydro, NonHydro_default);
     config_reader.append_config_var("DeepModel", sim.DeepModel, DeepModel_default);
     config_reader.append_config_var("output_mean", sim.output_mean, output_mean_default);
+    config_reader.append_config_var(
+        "output_diffusion", sim.output_diffusion, output_diffusion_default);
+    config_reader.append_config_var(
+        "out_interm_momentum", sim.out_interm_momentum, out_interm_momentum_default);
 
     // top sponge layer options
     int    nlat_bins;
@@ -379,6 +383,8 @@ int main(int argc, char** argv) {
 
     config_reader.append_config_var("gcm_off", sim.gcm_off, gcm_off_default);
     config_reader.append_config_var("globdiag", sim.globdiag, globdiag_default);
+
+    config_reader.append_config_var("single_column", sim.single_column, single_column_default);
 
     bool custom_global_n_out;
     config_reader.append_config_var(
@@ -724,6 +730,11 @@ int main(int argc, char** argv) {
         }
     }
 
+    if ((sim.single_column == true) && (sim.gcm_off == false)) {
+        log::printf("gcm_off must be true when using single_column\n");
+        config_OK &= false;
+    }
+
     if (!config_OK) {
         log::printf("Error in configuration file\n");
         exit(-1);
@@ -974,6 +985,10 @@ int main(int argc, char** argv) {
                  transition_altitude);
 
     //  Define object X.
+    int point_num_temp = Grid.point_num;
+    if (sim.single_column)
+        point_num_temp = 1;
+
     ESP X(Grid.point_local,    // First neighbours
           Grid.maps,           // Grid domains
           Grid.lonlat,         // Longitude and latitude of the grid points
@@ -1011,12 +1026,14 @@ int main(int argc, char** argv) {
           order_diff_sponge,
           t_shrink, // time to shrink sponge layer
           shrink_sponge,
-          Grid.point_num, // Number of grid points
+          point_num_temp, // Number of grid points
           sim.globdiag,   // compute globdiag values
           core_benchmark, // benchmark test type
           logwriter,      // Log writer
           max_count,
           sim.output_mean,
+          sim.out_interm_momentum,
+          sim.output_diffusion,
           init_PT_profile,
           Tint,
           kappa_lw,
@@ -1219,6 +1236,14 @@ int main(int argc, char** argv) {
             X.copy_mean_to_host();
         }
 
+        if (sim.out_interm_momentum == true) {
+            X.copy_interm_mom_to_host();
+        }
+
+        if (sim.output_diffusion == true) {
+            X.copy_diff_to_host();
+        }
+
         X.output(0, // file index
                  sim);
 
@@ -1299,6 +1324,14 @@ int main(int argc, char** argv) {
 
             if (sim.output_mean == true) {
                 X.copy_mean_to_host();
+            }
+
+            if (sim.out_interm_momentum == true) {
+                X.copy_interm_mom_to_host();
+            }
+
+            if (sim.output_diffusion == true) {
+                X.copy_diff_to_host();
             }
 
             X.output(output_file_idx, sim);
