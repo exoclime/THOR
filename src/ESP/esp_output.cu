@@ -393,7 +393,7 @@ __host__ void ESP::output(int                    fidx, // Index of output file
     }
 
     //  Wh
-    s.append_table(Wh_h, nvi * point_num, "/Wh", "kg m/s", "Vertical Momentum");
+    s.append_table(Wh_h, nvi * point_num, "/Wh", "kg m^-2 s^-1", "Vertical Momentum");
 
     if (sim.globdiag == true) {
         //  Etotal at each point
