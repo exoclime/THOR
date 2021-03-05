@@ -39,6 +39,12 @@ global_n_out = 1000
 # output time mean quantities (averaged over interval between outputs)
 output_mean = true
 
+# output intermediate momentum (start of time step & after profx)
+out_interm_momentum = false
+
+# output diffusion terms (may be pretty large!)
+output_diffusion = false
+
 
 #-- Planetary parameters -----------------------------------------------------#
 # name of simulation for output files

@@ -75,7 +75,7 @@ ifeq ($(COMP), nvcc)
 	# define specific compiler for nvcc. if if fails on newer installations, get it to use g++-5
 	CC = nvcc
 	CC_comp_flag = -dc
-	ccbin :=
+	ccbin := 
 	# ccbin := -ccbin g++-5
 	CDB :=
 	HAS_CBD := none
@@ -126,10 +126,10 @@ profiling_flags := -pg -lineinfo --default-stream per-thread
 # define where to find sources
 source_dirs := src src/ESP src/utils src/test
 phy_module_source_dirs := src/physics/modules/src/ src/physics/managers/multi/src/
-phy_module_header_dirs := src/physics/modules/inc/ src/physics/managers/multi/inc/ 
+phy_module_header_dirs := src/physics/modules/inc/ src/physics/managers/multi/inc/
 
 vpath %.cu $(source_dirs)
-vpath %.cu $(phy_module_source_dirs) 
+vpath %.cu $(phy_module_source_dirs)
 vpath %.cpp $(source_dirs)
 
 # Path where the hdf5 lib was installed,
@@ -250,12 +250,12 @@ ifneq ($(wildcard Alfrodull/*),)
 else
     $(info No Alfrodull directory or empty directory, building without Alfrodull)
     ALFRODULL_FLAGS =
-    ALFCLASS = 
+    ALFCLASS =
     ALFRODULL_LINK_FLAGS =
     ALFRODULL_TARGET =
     ALFRODULL_DEP =
     ALFRODULL_CLEAN_DEP =
-endif 
+endif
 
 
 $(info alf flags: $(ALFRODULL_FLAGS) deps $(ALFRODULL_CLEAN_DEP))
@@ -310,7 +310,7 @@ $(OBJDIR)/${OUTPUTDIR}/esp.o: esp.cu $(OBJDIR)/${OUTPUTDIR}/${DEPDIR}/esp.d $(GI
 	$(CC) $(CC_comp_flag) $(arch)  $(cuda_flags) $(h5include) -I$(includedir) -I$(OBJDIR) $(CDB) $(ALFRODULL_FLAGS) -o $@ $<
 
 
-$(OBJDIR)/${OUTPUTDIR}/%.o: %.cu $(OBJDIR)/${OUTPUTDIR}/${DEPDIR}/%.d  | $(OBJDIR)/${OUTPUTDIR}/$(DEPDIR) $(OBJDIR)/$(OUTPUTDIR) $(OBJDIR) 
+$(OBJDIR)/${OUTPUTDIR}/%.o: %.cu $(OBJDIR)/${OUTPUTDIR}/${DEPDIR}/%.d  | $(OBJDIR)/${OUTPUTDIR}/$(DEPDIR) $(OBJDIR)/$(OUTPUTDIR) $(OBJDIR)
 	@echo -e '$(BLUE)creating dependencies for $@ $(END)'
 	set -e; rm -f $(OBJDIR)/${OUTPUTDIR}/${DEPDIR}/$*.d; \
 	$(CC) $(cuda_dependencies_flags) $(arch)  $(cuda_flags) $(h5include) $(includeflags) $(CDB) $(ALFRODULL_FLAGS) $< > $(OBJDIR)/${OUTPUTDIR}/${DEPDIR}/$*.d.$$$$; \
@@ -330,7 +330,7 @@ $(OBJDIR)/${OUTPUTDIR}/%.o: %.cpp $(OBJDIR)/${OUTPUTDIR}/${DEPDIR}/%.d  | $(OBJD
 	$(CC) $(CC_comp_flag) $(arch) $(cpp_flags) $(h5include) $(includeflags) $(CDB) $(ALFRODULL_FLAGS) -o $@ $<
 
 # link *.o objects
-.PHONY: 
+.PHONY:
 $(BINDIR)/${OUTPUTDIR}/esp: $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj)) $(ALFRODULL_DEP) | $(BINDIR) $(RESDIR) $(BINDIR)/$(OUTPUTDIR)  $(OBJDIR)
 	@echo -e '$(YELLOW)creating $@ $(END)'
 	$(CC) -o $(BINDIR)/$(OUTPUTDIR)/esp $(arch) $(addprefix $(OBJDIR)/$(OUTPUTDIR)/,$(obj)) $(h5libdir) $(h5libs) $(link_flags) $(ALFRODULL_LINK_FLAGS)

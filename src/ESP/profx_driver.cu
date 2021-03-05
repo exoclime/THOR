@@ -82,6 +82,11 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
     cudaMemset(profx_Qheat_d, 0, sizeof(double) * point_num * nv);
     cudaMemset(dTsurf_dt_d, 0, sizeof(double) * point_num);
 
+    if (sim.out_interm_momentum) {
+        cudaMemcpy(
+            Mh_start_dt_d, Mh_d, point_num * nv * 3 * sizeof(double), cudaMemcpyDeviceToDevice);
+    }
+
     Recompute_W<<<NB, NTH>>>(
         W_d, Wh_d, Altitude_d, Altitudeh_d, point_num); //trying to stamp out bincomp issue
 
@@ -425,9 +430,9 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
                   (),
                   ("Rho_d", "pressure_d", "Mh_d", "Wh_d", "temperature_d", "W_d"));
 
-    //
-    //END OF INTEGRATION
-    //
+    if (sim.out_interm_momentum) {
+        cudaMemcpy(Mh_profx_d, Mh_d, point_num * nv * 3 * sizeof(double), cudaMemcpyDeviceToDevice);
+    }
 }
 
 void ESP::globdiag(const SimulationSetup& sim) {

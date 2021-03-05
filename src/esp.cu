@@ -306,6 +306,10 @@ int main(int argc, char** argv) {
     config_reader.append_config_var("NonHydro", sim.NonHydro, NonHydro_default);
     config_reader.append_config_var("DeepModel", sim.DeepModel, DeepModel_default);
     config_reader.append_config_var("output_mean", sim.output_mean, output_mean_default);
+    config_reader.append_config_var(
+        "output_diffusion", sim.output_diffusion, output_diffusion_default);
+    config_reader.append_config_var(
+        "out_interm_momentum", sim.out_interm_momentum, out_interm_momentum_default);
 
     // top sponge layer options
     int    nlat_bins;
@@ -1028,6 +1032,8 @@ int main(int argc, char** argv) {
           logwriter,      // Log writer
           max_count,
           sim.output_mean,
+          sim.out_interm_momentum,
+          sim.output_diffusion,
           init_PT_profile,
           Tint,
           kappa_lw,
@@ -1230,6 +1236,14 @@ int main(int argc, char** argv) {
             X.copy_mean_to_host();
         }
 
+        if (sim.out_interm_momentum == true) {
+            X.copy_interm_mom_to_host();
+        }
+
+        if (sim.output_diffusion == true) {
+            X.copy_diff_to_host();
+        }
+
         X.output(0, // file index
                  sim);
 
@@ -1310,6 +1324,14 @@ int main(int argc, char** argv) {
 
             if (sim.output_mean == true) {
                 X.copy_mean_to_host();
+            }
+
+            if (sim.out_interm_momentum == true) {
+                X.copy_interm_mom_to_host();
+            }
+
+            if (sim.output_diffusion == true) {
+                X.copy_diff_to_host();
             }
 
             X.output(output_file_idx, sim);

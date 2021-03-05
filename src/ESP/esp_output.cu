@@ -92,7 +92,6 @@ __host__ void ESP::copy_to_host() {
     cudaMemcpy(Wh_h, Wh_d, point_num * nvi * sizeof(double), cudaMemcpyDeviceToHost);
     cudaMemcpy(pressure_h, pressure_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
     cudaMemcpy(Mh_h, Mh_d, 3 * point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
-    cudaMemcpy(diffmh_h, diffmh_d, 3 * point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
     cudaMemcpy(Rd_h, Rd_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
     cudaMemcpy(Cp_h, Cp_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
 
@@ -111,6 +110,24 @@ __host__ void ESP::copy_mean_to_host() {
     cudaMemcpy(
         pressure_mean_h, pressure_mean_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
     cudaMemcpy(Mh_mean_h, Mh_mean_d, 3 * point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+}
+
+__host__ void ESP::copy_interm_mom_to_host() {
+    cudaMemcpy(
+        Mh_start_dt_h, Mh_start_dt_d, 3 * point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+    cudaMemcpy(Mh_profx_h, Mh_profx_d, 3 * point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+}
+
+__host__ void ESP::copy_diff_to_host() {
+    cudaMemcpy(diffmh_h, diffmh_d, 3 * point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+    cudaMemcpy(diffw_h, diffw_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+    cudaMemcpy(diffrh_h, diffrh_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+    cudaMemcpy(diffpr_h, diffpr_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+    cudaMemcpy(DivM_h, DivM_d, 3 * point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+    cudaMemcpy(diffmv_h, diffmv_d, 3 * point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+    cudaMemcpy(diffwv_h, diffwv_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+    cudaMemcpy(diffrv_h, diffrv_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+    cudaMemcpy(diffprv_h, diffprv_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
 }
 
 __host__ void ESP::output(int                    fidx, // Index of output file
@@ -206,6 +223,18 @@ __host__ void ESP::output(int                    fidx, // Index of output file
         s.append_value(
             sim.output_mean ? 1.0 : 0.0, "/output_mean", "-", "outputting mean quantities");
 
+        //      output_diffusion option
+        s.append_value(sim.output_diffusion ? 1.0 : 0.0,
+                       "/output_diffusion",
+                       "-",
+                       "outputting diffusion terms");
+
+        //      out_interm_momentum option
+        s.append_value(sim.out_interm_momentum ? 1.0 : 0.0,
+                       "/out_interm_momentum",
+                       "-",
+                       "outputting intermediate momentum values");
+
         //      DivDampP option
         s.append_value(sim.DivDampP ? 1.0 : 0.0, "/DivDampP", "-", "Using Divergence-damping");
 
@@ -297,14 +326,71 @@ __host__ void ESP::output(int                    fidx, // Index of output file
     s.append_table(pressure_h, nv * point_num, "/Pressure", "Pa", "Pressure");
 
     //  Mh
-    s.append_table(Mh_h, nv * point_num * 3, "/Mh", "kg m/s", "Horizontal Momentum");
+    s.append_table(Mh_h, nv * point_num * 3, "/Mh", "kg m^-2 s^-1", "Horizontal Momentum");
 
-    //  Mh
-    s.append_table(diffmh_h,
-                   nv * point_num * 3,
-                   "/diffmh",
-                   "kg m^-2 s^-2",
-                   "Horizontal Momentum Tendency from Hyperdiffusion");
+    //  diffusion
+    if (sim.output_diffusion == true) {
+        s.append_table(diffmh_h,
+                       nv * point_num * 3,
+                       "/diffmh",
+                       "kg m^-2 s^-2",
+                       "Horizontal Momentum Tendency from Hyperdiffusion");
+        s.append_table(diffw_h,
+                       nv * point_num,
+                       "/diffw",
+                       "kg m^-2 s^-2",
+                       "Vertical Momentum Tendency from Hyperdiffusion");
+        s.append_table(diffrh_h,
+                       nv * point_num,
+                       "/diffrh",
+                       "kg m^-3 s^-1",
+                       "Density Tendency from Hyperdiffusion");
+        s.append_table(diffpr_h,
+                       nv * point_num,
+                       "/diffpr",
+                       "Pa s^-1",
+                       "Pressure Tendency from Hyperdiffusion");
+
+        s.append_table(diffmv_h,
+                       nv * point_num * 3,
+                       "/diffmv",
+                       "kg m^-2 s^-2",
+                       "Horizontal Momentum Tendency from Vertical Hyperdiffusion");
+        s.append_table(diffwv_h,
+                       nv * point_num,
+                       "/diffwv",
+                       "kg m^-2 s^-2",
+                       "Vertical Momentum Tendency from Vertical Hyperdiffusion");
+        s.append_table(diffrv_h,
+                       nv * point_num,
+                       "/diffrv",
+                       "kg m^-3 s^-1",
+                       "Density Tendency from Vertical Hyperdiffusion");
+        s.append_table(diffprv_h,
+                       nv * point_num,
+                       "/diffprv",
+                       "Pa s^-1",
+                       "Pressure Tendency from Vertical Hyperdiffusion");
+
+        s.append_table(DivM_h,
+                       nv * point_num * 3,
+                       "/DivM",
+                       "kg m^-2 s^-2",
+                       "Horizontal Momentum Tendency from 3D divergence damping");
+    }
+
+    if (sim.out_interm_momentum == true) {
+        s.append_table(Mh_start_dt_h,
+                       nv * point_num * 3,
+                       "/Mh_start_dt",
+                       "kg m^-2 s^-1",
+                       "Horizontal Momentum at start of time step");
+        s.append_table(Mh_profx_h,
+                       nv * point_num * 3,
+                       "/Mh_profx",
+                       "kg m^-2 s^-1",
+                       "Horizontal Momentum after ProfX, before DynCore");
+    }
 
     //  Wh
     s.append_table(Wh_h, nvi * point_num, "/Wh", "kg m/s", "Vertical Momentum");
