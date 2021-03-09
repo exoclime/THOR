@@ -445,11 +445,11 @@ void radiative_transfer::RTSetup(double Tstar_,
                                  bool   rt1Dmode_,
                                  double Tmean) {
 
-    double bc = 5.677036E-8; // Stefan–Boltzmann constant [W m−2 K−4]
+    double bc = 5.6703744191844314e-08; // Stefan–Boltzmann constant [W m−2 K−4]
 
     Tstar            = Tstar_;
     planet_star_dist = planet_star_dist_ * 149597870.7; //conv to km
-    radius_star      = radius_star_ * 695508;           //conv to km
+    radius_star      = radius_star_ * 695700;           //conv to km
     diff_ang         = diff_ang_;
     // Tint             = Tint_;
     albedo = albedo_;
