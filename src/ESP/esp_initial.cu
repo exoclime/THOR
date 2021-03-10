@@ -774,6 +774,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
             mapValuesDouble["/Top_altitude"] = sim.Top_altitude;
             mapValuesInt["/glevel"]          = glevel;
             mapValuesInt["/vlevel"]          = nv;
+            mapValuesDouble["/surface"]      = (double)surface;
 
             storage s(planet_filename, true);
 
@@ -819,7 +820,6 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                     values_match = false;
                 }
             }
-
 
             if (load_OK == false || values_match == false) {
                 log::printf("Could not reload full configuration.\n");
