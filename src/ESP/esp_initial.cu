@@ -1059,8 +1059,10 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
     cudaMemset(diff2_d, 0, sizeof(double) * 6 * (nv + 2) * point_num);
     // cudaMemset(diffv_d2, 0, sizeof(double) * 6 * nv * point_num);
 
-    cudaMemset(Mh_start_dt_d, 0, sizeof(double) * nv * point_num * 3);
-    cudaMemset(Mh_profx_d, 0, sizeof(double) * nv * point_num * 3);
+    if (sim.out_interm_momentum) {
+        cudaMemset(Mh_start_dt_d, 0, sizeof(double) * nv * point_num * 3);
+        cudaMemset(Mh_profx_d, 0, sizeof(double) * nv * point_num * 3);
+    }
     cudaMemset(boundary_flux_d, 0, sizeof(double) * 6 * nv * point_num);
 
 
