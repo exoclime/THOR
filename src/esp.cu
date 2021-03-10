@@ -300,6 +300,8 @@ int main(int argc, char** argv) {
     config_reader.append_config_var("HyDiffOrder", sim.HyDiffOrder, HyDiffOrder_default);
     config_reader.append_config_var("DivDampP", sim.DivDampP, DivDampP_default);
     config_reader.append_config_var("VertHyDiff", sim.VertHyDiff, VertHyDiff_default);
+    config_reader.append_config_var(
+        "VertHyDiffOrder", sim.VertHyDiffOrder, VertHyDiffOrder_default);
 
 
     // Model options
@@ -567,6 +569,12 @@ int main(int argc, char** argv) {
 
     if (sim.HyDiffOrder <= 2 || sim.HyDiffOrder % 2) {
         log::printf("Bad value for HyDiffOrder! Must be multiple of 2 greater than/equal to 4.");
+        config_OK = false;
+    }
+
+    if (sim.VertHyDiffOrder <= 2 || sim.VertHyDiffOrder % 2) {
+        log::printf(
+            "Bad value for VertHyDiffOrder! Must be multiple of 2 greater than/equal to 4.");
         config_OK = false;
     }
 
