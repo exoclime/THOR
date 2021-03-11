@@ -1453,6 +1453,8 @@ int main(int argc, char** argv) {
     //  Prints the duration of the integration.
     long finishTime = clock();
     log::printf("\n\n Integration time = %f seconds\n\n", elapsed_time);
+    // old method, just in case
+    // log::printf("\n\n Integration time = %f seconds\n\n", double((finishTime-startTime))/double(CLOCKS_PER_SEC));
 
     //
     //  Checks for errors in the device.
