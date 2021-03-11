@@ -1273,6 +1273,8 @@ int main(int argc, char** argv) {
     // Start timer
     iteration_timer ittimer(step_idx, nsmax);
 
+    double elapsed_time = 0.0;
+
     //
     //  Main loop. nstep is the current step of the integration and nsmax the maximum
     //  number of steps in the integration.
@@ -1354,7 +1356,6 @@ int main(int argc, char** argv) {
         // Timing information
         double      mean_delta_per_step = 0.0;
         double      this_step_delta     = 0.0;
-        double      elapsed_time        = 0.0;
         double      time_left           = 0.0;
         std::time_t end_time;
 
@@ -1451,8 +1452,7 @@ int main(int argc, char** argv) {
     //
     //  Prints the duration of the integration.
     long finishTime = clock();
-    log::printf("\n\n Integration time = %f seconds\n\n",
-                double((finishTime - startTime)) / double(CLOCKS_PER_SEC));
+    log::printf("\n\n Integration time = %f seconds\n\n", elapsed_time);
 
     //
     //  Checks for errors in the device.
