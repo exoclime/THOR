@@ -175,6 +175,8 @@ DivDampc =
 VertHyDiff = false
 # Strength of vertical hyperdiffusion
 Diffc_v =
+# Order of vertical hyperdiffusion operator (4,6,8,...)
+VertHyDiffOrder = 6
 #########################################################
 
 # include surface processes (affects RT modules and BL module)

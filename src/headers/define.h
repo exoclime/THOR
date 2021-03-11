@@ -80,6 +80,7 @@
 #define HyDiffOrder_default 4
 #define DivDampP_default true    // Divergence-damping
 #define VertHyDiff_default false // Vertical Hyper-diffusion
+#define VertHyDiffOrder_default 6
 
 // Model options
 #define NonHydro_default true             // Non-hydrostatic parameter

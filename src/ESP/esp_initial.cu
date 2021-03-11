@@ -774,6 +774,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
             mapValuesDouble["/Top_altitude"] = sim.Top_altitude;
             mapValuesInt["/glevel"]          = glevel;
             mapValuesInt["/vlevel"]          = nv;
+            mapValuesDouble["/surface"]      = (double)surface;
 
             storage s(planet_filename, true);
 
@@ -819,7 +820,6 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                     values_match = false;
                 }
             }
-
 
             if (load_OK == false || values_match == false) {
                 log::printf("Could not reload full configuration.\n");
@@ -951,7 +951,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
     for (int lev = 0; lev < nv; lev++) {
         //      Diffusion constant.
         double dz   = Altitudeh_h[lev + 1] - Altitudeh_h[lev];
-        Kdv6_h[lev] = sim.Diffc_v * pow(dz, 6.) / timestep_dyn;
+        Kdv6_h[lev] = sim.Diffc_v * pow(dz, 1.0 * sim.VertHyDiffOrder) / timestep_dyn;
         Kdvz_h[lev] = 0.0; //not used (yet? perhaps in future)
     }
 
@@ -1059,8 +1059,10 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
     cudaMemset(diff2_d, 0, sizeof(double) * 6 * (nv + 2) * point_num);
     // cudaMemset(diffv_d2, 0, sizeof(double) * 6 * nv * point_num);
 
-    cudaMemset(Mh_start_dt_d, 0, sizeof(double) * nv * point_num * 3);
-    cudaMemset(Mh_profx_d, 0, sizeof(double) * nv * point_num * 3);
+    if (sim.out_interm_momentum) {
+        cudaMemset(Mh_start_dt_d, 0, sizeof(double) * nv * point_num * 3);
+        cudaMemset(Mh_profx_d, 0, sizeof(double) * nv * point_num * 3);
+    }
     cudaMemset(boundary_flux_d, 0, sizeof(double) * 6 * nv * point_num);
 
 

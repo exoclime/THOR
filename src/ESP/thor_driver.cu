@@ -453,6 +453,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
                                                Altitudeh_d,
                                                sim.A,  //
                                                sim.Rd, //
+                                               sim.VertHyDiffOrder,
                                                sim.DeepModel,
                                                point_num,
                                                nv);

@@ -1141,6 +1141,7 @@ __global__ void vertical_diff(double* diffmv_d,  //
                               double* Altitudeh_d,
                               double  A,  //
                               double  Rd, //
+                              int     VertHyDiffOrder,
                               bool    DeepModel,
                               int     num,
                               int     nv) { //
@@ -1150,11 +1151,11 @@ __global__ void vertical_diff(double* diffmv_d,  //
     int id  = blockIdx.x * blockDim.x + threadIdx.x;
     int var = blockIdx.z;
 
-    double sign        = 1.0;
-    bool   include_rho = false;
+    bool include_rho = false;
     //order of diffusion: can be changed (minimum = 4, even numbers only) but
     //the calculation of Kv needs to be adjusted in esp_initial.cu
-    int order = 6;
+    int    order = VertHyDiffOrder;
+    double sign  = pow(-1.0, VertHyDiffOrder / 2 + 1);
 
     if (id < num) {
         double dzi, dzup, dzlow;

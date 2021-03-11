@@ -107,44 +107,44 @@ bool create_dir(const string &dir) {
 
 
 bool create_output_dir(const string &output_dir) {
-  // cout << "create: "<<  output_dir<<endl;
+    // cout << "create: "<<  output_dir<<endl;
     vector<string> directories = split(output_dir, '/');
-    
+
     string path = "";
 
     // check for absolute path
     if (output_dir[0] == '/')
-      path = "/";
-    
+        path = "/";
+
     for (const auto &dir : directories) {
-      //cout << "dir: " << dir << endl;
-      // check for empty dir, happens with absolute path
-      if (dir == "")
-        continue;
-      // check if directory exists
-      if (path != "")
-        path += string("/");
-      path += dir;
-      
-      if (path_exists(path)) {
-        // cout << path << " exists"<<endl;
-        
-        // continue
-      }
-      else {
-        // cout << "[" <<  path << "] does not exist, creating"<<endl;
-        
-        // create directory
-        if (create_dir(path)) {
-          // cout << "created " << path << " path"<<endl;
-          // continue
+        //cout << "dir: " << dir << endl;
+        // check for empty dir, happens with absolute path
+        if (dir == "")
+            continue;
+        // check if directory exists
+        if (path != "")
+            path += string("/");
+        path += dir;
+
+        if (path_exists(path)) {
+            // cout << path << " exists"<<endl;
+
+            // continue
         }
         else {
-          // creation failed, failed
-          log::printf("failed creating directory %s.\n", path.c_str());
-          return false;
+            // cout << "[" <<  path << "] does not exist, creating"<<endl;
+
+            // create directory
+            if (create_dir(path)) {
+                // cout << "created " << path << " path"<<endl;
+                // continue
+            }
+            else {
+                // creation failed, failed
+                log::printf("failed creating directory %s.\n", path.c_str());
+                return false;
+            }
         }
-      }
     }
 
 
@@ -324,6 +324,12 @@ bool find_continue_file(string &initial_conditions,
 
     string parent_path = p.parent();
 
+    // check existence of files
+    if (!path_exists(initial_conditions)) {
+        log::printf("initial condition file %s not found.\n", initial_conditions.c_str());
+        return false;
+    }
+
     // Reload correct file if we are continuing from a specific file
     if (continue_sim) {
         if (!match_output_file_numbering_scheme(initial_conditions, basename, file_number)) {
@@ -341,13 +347,14 @@ bool find_continue_file(string &initial_conditions,
         planet_filename = p.parent() + "/esp_output_planet_" + basename + ".h5";
     }
     else {
-        planet_filename = p.parent() + "/" + p.stem() + "_planet.h5";
-    }
-
-    // check existence of files
-    if (!path_exists(initial_conditions)) {
-        log::printf("initial condition file %s not found.\n", initial_conditions.c_str());
-        return false;
+        //test to see if initial file matches standard output naming convention
+        if (match_output_file_numbering_scheme(initial_conditions, basename, file_number)) {
+            //set planet file name based on standard output naming
+            planet_filename = p.parent() + "/esp_output_planet_" + basename + ".h5";
+        }
+        else { //if not, use old naming convention for input files
+            planet_filename = p.parent() + "/" + p.stem() + "_planet.h5";
+        }
     }
 
     if (!path_exists(planet_filename)) {

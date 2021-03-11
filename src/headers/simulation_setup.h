@@ -86,8 +86,9 @@ public:
     int  HyDiffOrder;
     bool DivDampP;   // Turn on/off divergence damping.
     bool VertHyDiff; // vertical hyper diffusion
-    bool NonHydro;   // Turn on/off non-hydrostatic.
-    bool globdiag;   // calc/output globdiag quantities
+    int  VertHyDiffOrder;
+    bool NonHydro; // Turn on/off non-hydrostatic.
+    bool globdiag; // calc/output globdiag quantities
 
     // top sponge layer master switches
     bool RayleighSponge;  // Use sponge layer (rayleigh drag)?
