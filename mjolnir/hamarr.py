@@ -179,10 +179,10 @@ class output_new:
         #add things to outputs that can be checked for in input or grid
         # if input.RT or input.TSRT:
         #     outputs['Qheat'] = 'qheat'
-
-        if input.out_interm_momentum:
-            outputs['Mh_start_dt'] = 'Mh_start_dt'
-            outputs['Mh_profx'] = 'Mh_profx'
+        # 
+        # if input.out_interm_momentum:
+        #     outputs['Mh_start_dt'] = 'Mh_start_dt'
+        #     outputs['Mh_profx'] = 'Mh_profx'
 
         if input.RT:
             outputs['tau'] = 'tau'  #have to be careful about slicing this (sw = ::2, lw = 1::2)
@@ -2043,7 +2043,7 @@ def profile(input, grid, output, z, stride=50, axis=None, save=True, use_p=True,
         ax.set_yscale("log")
 
     # add an insert showing the position of
-    inset_pos = [0.8, 0.2, 0.18, 0.18]
+    inset_pos = [0.1, 0.2, 0.18, 0.18]
     ax_inset = ax.inset_axes(inset_pos)
     ax_inset.scatter(col_lon, col_lat, c=col_lor, s=1.0)
     ax_inset.tick_params(axis='both',

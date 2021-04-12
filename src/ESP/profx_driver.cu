@@ -403,6 +403,7 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
                                                             point_num,
                                                             nv,
                                                             surface);
+        //Compute_pressure<<<NB, NTH>>>(pressure_d, temperature_d, Rho_d, Rd_d, point_num);
     }
     else {
         Compute_pressure<<<NB, NTH>>>(pressure_d, temperature_d, Rho_d, Rd_d, point_num);

@@ -646,7 +646,6 @@ def make_plot(args, save=True, axis=None):
         plots_created.append(pfile)
 
     if ('TSfluxprof' in pview or 'all' in pview) and input.TSRT:
-
         output.load_reshape(grid,['f_net'])
         fnet_int = output.f_net
         fnet = fnet_int[:, :-1, :] + (fnet_int[:, 1:, :] - fnet_int[:, :-1, :]) *\
