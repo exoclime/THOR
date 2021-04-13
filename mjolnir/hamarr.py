@@ -179,7 +179,7 @@ class output_new:
         #add things to outputs that can be checked for in input or grid
         # if input.RT or input.TSRT:
         #     outputs['Qheat'] = 'qheat'
-        # 
+        #
         # if input.out_interm_momentum:
         #     outputs['Mh_start_dt'] = 'Mh_start_dt'
         #     outputs['Mh_profx'] = 'Mh_profx'
@@ -894,7 +894,6 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
                       'W': (output.Wh[:, :-1, 0] + (output.Wh[:, 1:, 0] - output.Wh[:, :-1, 0]) * interpz[None, :]) / output.Rho[:, :, 0],
                       'Rho': output.Rho[:, :, 0],
                       'Mh': output.Mh[:, :, :, 0],
-                      'diffmh': output.diffmh[:, :, :, 0],
                       'Pressure': output.Pressure[:, :, 0],
                       'Rd': output.Rd[:, :, 0],
                       'Cp': output.Cp[:, :, 0],
@@ -928,6 +927,9 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
                 source['Etotal'] = output.Etotal[:, :, 0]
                 source['Entropy'] = output.Entropy[:, :, 0]
                 source['AngMomz'] = output.AngMomz[:, :, 0]
+
+            if hasattr(output,'diffmh'):
+                source['diffmh'] = output.diffmh[:,:,:,0]
 
             if input.TSRT:
                 source['mustar'] = output.mustar[:, 0]
@@ -968,11 +970,12 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
                            + source['Mh_mean'][2]*np.cos(grid.lat[:, None]))/source['Rho_mean']
 
             # calculate zonal and meridional velocity tendencies from hyperdiffusion
-            source['diffmh_U'] = (-source['diffmh'][0]*np.sin(grid.lon[:,None])+\
-                           source['diffmh'][1]*np.cos(grid.lon[:, None]))/source['Rho']
-            source['diffmh_V'] = (-source['diffmh'][0]*np.sin(grid.lat[:,None])*np.cos(grid.lon[:,None])\
-                      -source['diffmh'][1]*np.sin(grid.lat[:,None])*np.sin(grid.lon[:,None])\
-                           + source['diffmh'][2]*np.cos(grid.lat[:, None]))/source['Rho']
+            if hasattr(output,'diffmh'):
+                source['diffmh_U'] = (-source['diffmh'][0]*np.sin(grid.lon[:,None])+\
+                               source['diffmh'][1]*np.cos(grid.lon[:, None]))/source['Rho']
+                source['diffmh_V'] = (-source['diffmh'][0]*np.sin(grid.lat[:,None])*np.cos(grid.lon[:,None])\
+                          -source['diffmh'][1]*np.sin(grid.lat[:,None])*np.sin(grid.lon[:,None])\
+                               + source['diffmh'][2]*np.cos(grid.lat[:, None]))/source['Rho']
 
             # set up intermediate arrays (icogrid and pressure)
             interm = {}
