@@ -1124,6 +1124,9 @@ int main(int argc, char** argv) {
     log::printf("   Rd     = %f J/(Kg K)\n", sim.Rd);
     log::printf("   Cp     = %f J/(Kg K)\n", sim.Cp);
     log::printf("   Tmean  = %f K\n", sim.Tmean);
+    // surface parameters
+    log::printf("   Surface          = %s.\n", surface_config ? "true" : "false");
+    log::printf("   Surface Heat Capacity       = %f J/K/m^2.\n", Csurf_config);
     //
     //  Numerical Methods
     log::printf("\n");
@@ -1136,15 +1139,45 @@ int main(int argc, char** argv) {
     log::printf("   Resolution      = %f deg.\n",
                 (180 / M_PI) * sqrt(2 * M_PI / 5) / pow(2, glevel));
     log::printf("   Vertical layers = %d.\n", Grid.nv);
+    log::printf("   Top altitude    = %g. m\n", sim.Top_altitude);
     log::printf("   ********** \n");
     log::printf("   Split-Explicit / HE-VI \n");
     log::printf("   FV = Central finite volume \n");
     log::printf("   Time integration =  %d s.\n", nsmax * timestep);
     log::printf("   Large time-step  =  %d s.\n", timestep);
     log::printf("   Start time       =  %f s.\n", simulation_start_time);
-    // surface parameters
-    log::printf("   Surface          = %s.\n", surface_config ? "true" : "false");
-    log::printf("   Surface Heat Capacity       = %f J/K/m^2.\n", Csurf_config);
+    log::printf("   Non-Hydro        =  %s.\n", sim.NonHydro ? "true" : "false");
+    log::printf("   Deep Model       =  %s.\n", sim.DeepModel ? "true" : "false");
+    log::printf("   Convective adj.  =  %s.\n", sim.conv_adj ? "true" : "false");
+
+    log::printf("   ********** \n");
+    log::printf("   Numerical diffusion\n");
+    log::printf("   Hyperdiffusion (horizontal)   = %s.\n", sim.HyDiff ? "true" : "false");
+    log::printf("   Hyperdiffusion (horiz) order  = %d.\n", sim.HyDiffOrder);
+    log::printf("   Hyperdiffusion (horiz) coeff. = %g.\n", sim.Diffc);
+    log::printf("   Hyperdiffusion (vertical)     = %s.\n", sim.VertHyDiff ? "true" : "false");
+    log::printf("   Hyperdiffusion (vert) order   = %d.\n", sim.VertHyDiffOrder);
+    log::printf("   Hyperdiffusion (vert) coeff.  = %g.\n", sim.Diffc_v);
+    log::printf("   3D Divergence damping         = %s.\n", sim.DivDampP ? "true" : "false");
+    log::printf("   3D Div damping coeff.         = %g.\n", sim.DivDampc);
+
+    log::printf("   ********** \n");
+    log::printf("   Sponge layer\n");
+    log::printf("   Rayleigh drag sponge layer       = %s.\n",
+                sim.RayleighSponge ? "true" : "false");
+    log::printf("   Rayleigh sponge strength (horiz) = %g.\n", X.Ruv_sponge);
+    log::printf("   Rayleigh sponge strength (vert)  = %g.\n", X.Rw_sponge);
+    log::printf("   Rayleigh sponge latitude bins    = %d.\n", X.nlat_bins);
+    log::printf("   Rayleigh sponge start height     = %f.\n", X.ns_ray_sponge);
+    log::printf("   Damp to zonal mean (horiz/vert)  = (%s/%s).\n",
+                X.damp_uv_to_mean ? "true" : "false",
+                X.damp_w_to_mean ? "true" : "false");
+
+    log::printf("   Diffusive sponge layer (horiz)   = %s.\n", sim.DiffSponge ? "true" : "false");
+    log::printf("   Diff Sponge (horiz) order        = %d.\n", X.order_diff_sponge);
+    log::printf("   Diff sponge strength             = %g.\n", X.Dv_sponge);
+    log::printf("   Diff sponge start height         = %f.\n", X.ns_diff_sponge);
+
 
     log::printf("    \n");
 
