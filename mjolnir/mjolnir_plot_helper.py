@@ -60,7 +60,7 @@ def make_plot(args, save=True, axis=None):
              'w0prof', 'g0prof', 'spectrum',
              'phase','all','eddyKE','eddyMomMerid','eddyTempMerid','eddyTempVar',
              'Etotlev','AngMomlev', 'Entropylev','Kdiffprof', 'RiB','BLheight',
-             'RTbalance','Riprof','RTbalanceTS']
+             'RTbalance','Riprof','RTbalanceTS','tradprof']
 
     rg_needed = ['Tver', 'Tlonver', 'uver', 'ulonver', 'vver', 'wver', 'wlonver', 'Tulev', 'PTver', 'PTlonver', 'ulev', 'PVver', 'PVlev',
                  'RVlev', 'stream', 'tracer', 'Tsurf', 'insol', 'massf', 'pause_rg',
@@ -727,6 +727,15 @@ def make_plot(args, save=True, axis=None):
         qheat = output.qheat
         z = {'value': qheat, 'label': r'Q heat (W m$^{-2}$)', 'name': 'qheatprof'}
         pfile = call_plot('qheatprof',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
+        plots_created.append(pfile)
+
+    if ('tradprof' in pview or 'all' in pview):
+        output.load_reshape(grid,['qheat','Pressure','Cp','Rd'])
+        qheat = output.qheat
+        dpdt = output.Rd/(output.Cp-output.Rd)*qheat
+        trad = output.Pressure/dpdt
+        z = {'value': np.log10(np.abs(trad)), 'label': r'log(Radiative time scale (s))', 'name': 'tradprof'}
+        pfile = call_plot('tradprof',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
         plots_created.append(pfile)
 
     # need a trick to make these work for axis = None (command line plotting)

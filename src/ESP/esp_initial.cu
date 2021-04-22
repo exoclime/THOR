@@ -531,6 +531,10 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 //
                 mu = 0.5;
 
+                // mu = cos(lonlat_h[i * 2]) * cos(lonlat_h[i * 2 + 1]);
+                // if (mu <= cos(85. * M_PI / 180))
+                //     mu = cos(85. * M_PI / 180);
+
                 for (int lev = 0; lev < nv; lev++) {
                     //first, we define thermo quantities of layer below and make
                     //our initial guess for the Newton-Raphson solver
