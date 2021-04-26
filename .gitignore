@@ -1,0 +1,29 @@
+# build files from cmake
+build/*
+# python temporary files
+*.pyc
+*.py~
+*__pycache__/*
+# editor temporary files
+*~
+*#
+# object and binaries
+obj/*
+bin/*
+# local config
+Makefile.conf
+#  submodule binary and object files
+src/physics/managers/empty/libphy_modules.a
+src/physics/managers/empty/obj/*
+src/physics/managers/empty/*.o
+src/physics/managers/multi/libphy_modules.a
+src/physics/managers/multi/obj/*
+src/physics/managers/multi/*.o
+# output data
+results*/
+# profiling data
+profiling/*
+# compile command database
+compile_commands.json
+
+

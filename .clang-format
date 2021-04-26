@@ -1,0 +1,160 @@
+# clang-format configuration file to match THOR's coding conventions
+# following doc from
+#   https://clang.llvm.org/docs/ClangFormatStyleOptions.html
+# should have all arguments from above doc valid for C++
+
+IndentWidth: 4
+
+Language: Cpp
+
+
+AccessModifierOffset: -4
+
+
+AlignAfterOpenBracket: Align
+
+AlignConsecutiveAssignments: true
+AlignConsecutiveDeclarations: true
+AlignEscapedNewlines: Left
+
+AlignOperands: true
+
+AlignTrailingComments: true
+AllowAllParametersOfDeclarationOnNextLine: false
+
+AllowShortBlocksOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: false
+
+AllowShortFunctionsOnASingleLine: None
+
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+
+AlwaysBreakAfterReturnType: None
+
+AlwaysBreakBeforeMultilineStrings: false
+
+# template declaration always on its own line
+#-clang-8 AlwaysBreakTemplateDeclarations: Yes
+
+# arguments and parameters all on one line or all on multiple lines
+BinPackArguments: false
+BinPackParameters: false
+
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterClass: true
+  AfterControlStatement: false
+  AfterEnum: false
+  AfterFunction: false
+  AfterNamespace: true
+  AfterStruct: false
+  AfterUnion: false
+  AfterExternBlock: true
+  BeforeCatch: false
+  BeforeElse: true
+  IndentBraces: false
+  SplitEmptyFunction: false
+  SplitEmptyRecord: false
+  SplitEmptyNamespace: true
+
+BreakBeforeBinaryOperators: NonAssignment
+BreakBeforeTernaryOperators: true
+BreakConstructorInitializers: AfterColon
+#-clang-8 BreakInheritanceList: AfterColon
+
+BreakStringLiterals: true
+
+# limit of lign break
+# 0: no limit
+# the original code, didn't always use it (used for function calls and declarations, not for formulas), should we use one?
+ColumnLimit: 100
+
+# CommentPragmas: str
+CompactNamespaces: true
+ConstructorInitializerAllOnOneLineOrOnePerLine: true
+ConstructorInitializerIndentWidth: 4
+
+# should we indent? we'd like to align on above line
+ContinuationIndentWidth: 4
+
+Cpp11BracedListStyle: true
+DerivePointerAlignment: true
+
+# DisableFormat: false
+
+# experimental, might disappear tries to decide bin (Arguments, params)  packing with
+# what is found in the file.
+# disable if weird behaviour
+ExperimentalAutoDetectBinPacking: true
+
+FixNamespaceComments: true
+
+# ForEachMacros
+
+IncludeBlocks: Preserve
+
+# to use when IncludeBloscks: Regroup
+#IncludeCategories
+
+IndentCaseLabels: true
+
+IndentPPDirectives: AfterHash
+
+
+IndentWrappedFunctionNames: false
+
+KeepEmptyLinesAtTheStartOfBlocks: true
+
+MaxEmptyLinesToKeep: 2
+
+NamespaceIndentation: None
+
+# TODO: not sure how this is used
+# PenaltyBreakAssignment: 0
+# PenaltyBreakBeforeFirstCallParameter: 0
+# PenaltyBreakComment: 0
+# PenaltyBreakFirstLessLess: 0
+# PenaltyBreakString: 0
+# PenaltyBreakTemplateDeclaration: 0
+# PenaltyExcessCharacter: 0
+# PenaltyReturnTypeOnItsOwnLine: 0
+
+PointerAlignment: Right
+
+# not sure what this does
+# RawStringFormats
+
+# should we reflow long comments?
+ReflowComments: false
+
+
+SortIncludes: true
+SortUsingDeclarations: true
+SpaceAfterCStyleCast: false
+SpaceAfterTemplateKeyword: false
+SpaceBeforeAssignmentOperators: true
+#-clang-8 SpaceBeforeCpp11BracedList: true
+#-clang-8 SpaceBeforeCtorInitializerColon: false
+#-clang-8 SpaceBeforeInheritanceColon: false
+
+# looks like if has no space, for has space...
+SpaceBeforeParens: true
+#-clang-8 SpaceBeforeRangeBasedForLoopColon: true
+
+SpaceInEmptyParentheses: false
+
+SpacesBeforeTrailingComments: 1
+
+SpacesInAngles: false
+SpacesInCStyleCastParentheses: false
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+
+Standard: Cpp11
+
+
+# StatementMacros
+
+TabWidth: 4
+UseTab: Never
