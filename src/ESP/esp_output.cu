@@ -54,6 +54,7 @@
 #include <string>
 
 #include "directories.h"
+#include "insolation.h"
 #include "phy_modules.h"
 
 #include <iomanip>
@@ -68,6 +69,9 @@ __host__ void ESP::copy_globdiag_to_host() {
     cudaMemcpy(AngMomx_h, AngMomx_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
     cudaMemcpy(AngMomy_h, AngMomy_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
     cudaMemcpy(AngMomz_h, AngMomz_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+    if (surface) {
+        cudaMemcpy(Esurf_h, Esurf_d, point_num * sizeof(double), cudaMemcpyDeviceToHost);
+    }
 }
 
 __host__ void ESP::copy_global_to_host() {
@@ -93,6 +97,8 @@ __host__ void ESP::copy_to_host() {
 
     cudaMemcpy(
         profx_Qheat_h, profx_Qheat_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+
+    cudaMemcpy(Tsurface_h, Tsurface_d, point_num * sizeof(double), cudaMemcpyDeviceToHost);
 }
 
 __host__ void ESP::copy_mean_to_host() {
@@ -106,13 +112,31 @@ __host__ void ESP::copy_mean_to_host() {
     cudaMemcpy(Mh_mean_h, Mh_mean_d, 3 * point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
 }
 
+__host__ void ESP::copy_interm_mom_to_host() {
+    cudaMemcpy(
+        Mh_start_dt_h, Mh_start_dt_d, 3 * point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+    cudaMemcpy(Mh_profx_h, Mh_profx_d, 3 * point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+}
+
+__host__ void ESP::copy_diff_to_host() {
+    cudaMemcpy(diffmh_h, diffmh_d, 3 * point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+    cudaMemcpy(diffw_h, diffw_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+    cudaMemcpy(diffrh_h, diffrh_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+    cudaMemcpy(diffpr_h, diffpr_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+    cudaMemcpy(DivM_h, DivM_d, 3 * point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+    cudaMemcpy(diffmv_h, diffmv_d, 3 * point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+    cudaMemcpy(diffwv_h, diffwv_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+    cudaMemcpy(diffrv_h, diffrv_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+    cudaMemcpy(diffprv_h, diffprv_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+}
+
 __host__ void ESP::output(int                    fidx, // Index of output file
                           const SimulationSetup& sim) {
 
     //
     //  Description: Model output.
     //
-    char FILE_NAME1[160];
+    char FILE_NAME1[512];
 
     //  GRID OUTPUT
     if (current_step == 0) {
@@ -199,6 +223,18 @@ __host__ void ESP::output(int                    fidx, // Index of output file
         s.append_value(
             sim.output_mean ? 1.0 : 0.0, "/output_mean", "-", "outputting mean quantities");
 
+        //      output_diffusion option
+        s.append_value(sim.output_diffusion ? 1.0 : 0.0,
+                       "/output_diffusion",
+                       "-",
+                       "outputting diffusion terms");
+
+        //      out_interm_momentum option
+        s.append_value(sim.out_interm_momentum ? 1.0 : 0.0,
+                       "/out_interm_momentum",
+                       "-",
+                       "outputting intermediate momentum values");
+
         //      DivDampP option
         s.append_value(sim.DivDampP ? 1.0 : 0.0, "/DivDampP", "-", "Using Divergence-damping");
 
@@ -207,6 +243,7 @@ __host__ void ESP::output(int                    fidx, // Index of output file
 
         //      Hyperdiffusion strength
         s.append_value(sim.Diffc, "/Diffc", "-", "Hyperdiffusion strength");
+        s.append_value(sim.Diffc_v, "/Diffc_v", "-", "Vertical hyperdiffusion strength");
 
         //      Tmean
         s.append_value(sim.Tmean, "/Tmean", "K", "Mean atmospheric temperature");
@@ -217,12 +254,14 @@ __host__ void ESP::output(int                    fidx, // Index of output file
         //      GCM on/off option
         s.append_value(sim.gcm_off ? 1.0 : 0.0, "/gcm_off", "-", "GCM off");
 
+        //      single column option
+        s.append_value(sim.single_column ? 1.0 : 0.0, "/single_column", "-", "single column mode");
+
         //      rest option
         s.append_value(sim.rest ? 1.0 : 0.0, "/rest", "-", "Starting from rest");
 
         //      core_benchmark  option
-        s.append_value(
-            int(core_benchmark), "/core_benchmark", "-", "Using benchmark forcing or RT");
+        s.append_value(int(core_benchmark), "/core_benchmark", "-", "Using benchmark forcing");
         if (sim.RayleighSponge) {
             //      nlat
             s.append_value(
@@ -258,8 +297,14 @@ __host__ void ESP::output(int                    fidx, // Index of output file
         // store module name in the description
         s.append_value(0.0, "/phy_module", "-", phy_modules_get_name());
 
+        s.append_value(surface ? 1.0 : 0.0, "/surface", "-", "include solid/liquid surface");
+        s.append_value(Csurf, "/Csurf", "J/K/m^2", "heat capacity of surface by area");
+
+
         if (phy_modules_execute) {
             phy_modules_store_init(s);
+
+            insolation.store_init(s);
         }
     }
 
@@ -281,10 +326,74 @@ __host__ void ESP::output(int                    fidx, // Index of output file
     s.append_table(pressure_h, nv * point_num, "/Pressure", "Pa", "Pressure");
 
     //  Mh
-    s.append_table(Mh_h, nv * point_num * 3, "/Mh", "kg m/s", "Horizontal Momentum");
+    s.append_table(Mh_h, nv * point_num * 3, "/Mh", "kg m^-2 s^-1", "Horizontal Momentum");
+
+    //  diffusion
+    if (sim.output_diffusion == true) {
+        s.append_table(diffmh_h,
+                       nv * point_num * 3,
+                       "/diffmh",
+                       "kg m^-2 s^-2",
+                       "Horizontal Momentum Tendency from Hyperdiffusion");
+        s.append_table(diffw_h,
+                       nv * point_num,
+                       "/diffw",
+                       "kg m^-2 s^-2",
+                       "Vertical Momentum Tendency from Hyperdiffusion");
+        s.append_table(diffrh_h,
+                       nv * point_num,
+                       "/diffrh",
+                       "kg m^-3 s^-1",
+                       "Density Tendency from Hyperdiffusion");
+        s.append_table(diffpr_h,
+                       nv * point_num,
+                       "/diffpr",
+                       "Pa s^-1",
+                       "Pressure Tendency from Hyperdiffusion");
+
+        s.append_table(diffmv_h,
+                       nv * point_num * 3,
+                       "/diffmv",
+                       "kg m^-2 s^-2",
+                       "Horizontal Momentum Tendency from Vertical Hyperdiffusion");
+        s.append_table(diffwv_h,
+                       nv * point_num,
+                       "/diffwv",
+                       "kg m^-2 s^-2",
+                       "Vertical Momentum Tendency from Vertical Hyperdiffusion");
+        s.append_table(diffrv_h,
+                       nv * point_num,
+                       "/diffrv",
+                       "kg m^-3 s^-1",
+                       "Density Tendency from Vertical Hyperdiffusion");
+        s.append_table(diffprv_h,
+                       nv * point_num,
+                       "/diffprv",
+                       "Pa s^-1",
+                       "Pressure Tendency from Vertical Hyperdiffusion");
+
+        s.append_table(DivM_h,
+                       nv * point_num * 3,
+                       "/DivM",
+                       "kg m^-2 s^-2",
+                       "Horizontal Momentum Tendency from 3D divergence damping");
+    }
+
+    if (sim.out_interm_momentum == true) {
+        s.append_table(Mh_start_dt_h,
+                       nv * point_num * 3,
+                       "/Mh_start_dt",
+                       "kg m^-2 s^-1",
+                       "Horizontal Momentum at start of time step");
+        s.append_table(Mh_profx_h,
+                       nv * point_num * 3,
+                       "/Mh_profx",
+                       "kg m^-2 s^-1",
+                       "Horizontal Momentum after ProfX, before DynCore");
+    }
 
     //  Wh
-    s.append_table(Wh_h, nvi * point_num, "/Wh", "kg m/s", "Vertical Momentum");
+    s.append_table(Wh_h, nvi * point_num, "/Wh", "kg m^-2 s^-1", "Vertical Momentum");
 
     if (sim.globdiag == true) {
         //  Etotal at each point
@@ -320,6 +429,10 @@ __host__ void ESP::output(int                    fidx, // Index of output file
 
         //  GlobalAMz (total angular momentum in y direction over entire planet)
         s.append_value(GlobalAMz_h, "/GlobalAMz", "kg m^2/s", "Global AngMomZ");
+
+        if (surface) {
+            s.append_table(Esurf_h, point_num, "/Esurf", "J", "Thermal energy of surface");
+        }
     }
 
     // profX Qheat from physics modules
@@ -343,11 +456,16 @@ __host__ void ESP::output(int                    fidx, // Index of output file
     s.append_table(Rd_h, nv * point_num, "/Rd", "J/K/kg", "Local gas constant");
     s.append_table(Cp_h, nv * point_num, "/Cp", "J/K/kg", "Local heat capacity");
 
+    if (surface) {
+        s.append_table(Tsurface_h, point_num, "/Tsurface", "K", "surface temperature");
+    }
 
-    if (phy_modules_execute)
+    if (phy_modules_execute) {
         phy_modules_store(*this, s);
+        insolation.store(*this, s);
+    }
 
-    char buf[256];
+    char buf[512];
 
     sprintf(buf, "esp_output_%s_%d.h5", simulation_ID.c_str(), fidx);
     // Write to output f

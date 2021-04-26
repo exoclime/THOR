@@ -473,6 +473,9 @@ __global__ void UpdateRK2(double *M_d,
             intl = (xi - xim) / (xip - xim);
 
             Wk_d[id * nv + lev] = whl * intt + wht * intl;
+            // if (id == 0) {
+            //     printf("%d %.15e %.15e %.15e\n", lev, intt, intl, Wk_d[id * nv + lev]);
+            // }
             if (lev < nv - 1) {
                 althl = altht;
                 altht = Altitudeh_d[lev + 2];

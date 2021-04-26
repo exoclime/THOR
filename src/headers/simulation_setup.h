@@ -71,31 +71,43 @@ public:
     ////////////////
 
     double Rd;
+
     double Cp;
     double Tmean;
     double P_Ref;
     double Top_altitude;
     double Diffc;
+    double Diffc_v;
     double DivDampc;
 
     // Sim
     bool DeepModel;
-    bool HyDiff;       // Turn on/off hyper-diffusion.
-    bool DivDampP;     // Turn on/off divergence damping.
-    bool NonHydro;     // Turn on/off non-hydrostatic.
-    bool globdiag;     // calc/output globdiag quantities
+    bool HyDiff; // Turn on/off hyper-diffusion.
+    int  HyDiffOrder;
+    bool DivDampP;   // Turn on/off divergence damping.
+    bool VertHyDiff; // vertical hyper diffusion
+    int  VertHyDiffOrder;
+    bool NonHydro; // Turn on/off non-hydrostatic.
+    bool globdiag; // calc/output globdiag quantities
 
     // top sponge layer master switches
     bool RayleighSponge;  // Use sponge layer (rayleigh drag)?
     bool RayleighSpongeT; // include thermal term in sponge layer?
     bool DiffSponge;      // Diffusive sponge
 
-    bool output_mean;
+    bool output_mean; //whether or not to output time mean quantities
+    bool
+         out_interm_momentum; //output intermediate momentum values (start of time step & after profx)
+    bool output_diffusion;    //output hyperdiffusion operators, etc
 
     bool conv_adj;
+    int  conv_adj_iter;
     bool gcm_off;
+    bool single_column;
 
     bool rest;
+
+    int n_out;
 
     SimulationSetup();
 };

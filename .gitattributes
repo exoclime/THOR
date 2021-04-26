@@ -1,2 +1,26 @@
-# Auto detect text files and perform LF normalization
-* text=auto
+# from http://timstaley.co.uk/posts/making-git-and-jupyter-notebooks-play-nice/
+# attribute to clean up jupyther notebook with jq before submitting
+# add this to your ~/.gitconfig or .git/config
+#
+#
+
+# [filter "nbstrip_full"]
+# clean = "jq --indent 1 \
+#         '(.cells[] | select(has(\"outputs\")) | .outputs) = []  \
+#         | (.cells[] | select(has(\"execution_count\")) | .execution_count) = null  \
+#         | .metadata = {\"language_info\": {\"name\": \"python\", \"pygments_lexer\": \"ipython3\"}} \
+#         | .cells[].metadata = {} \
+#         '"
+# # use filter file in root dir
+# clean = "jq --indent 1 -f .ipynb_strip_filter "
+# 
+# smudge = cat
+# required = true
+
+#
+# can whitelist specific notebooks in a directory with another .gitattributes file
+# in that dir with
+# *.ipynb -filter
+
+
+*.ipynb filter=nbstrip_full

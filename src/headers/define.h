@@ -76,13 +76,18 @@
 #define t_shrink_default 144000     // shrink sponge after this many time steps
 
 // Diffusion
-#define HyDiff_default true   // Hyper-diffusion
-#define DivDampP_default true // Divergence-damping
+#define HyDiff_default true // Hyper-diffusion
+#define HyDiffOrder_default 4
+#define DivDampP_default true    // Divergence-damping
+#define VertHyDiff_default false // Vertical Hyper-diffusion
+#define VertHyDiffOrder_default 6
 
 // Model options
-#define NonHydro_default true    // Non-hydrostatic parameter
-#define DeepModel_default true   // Deep atmosphere
-#define output_mean_default true // output mean quantities
+#define NonHydro_default true             // Non-hydrostatic parameter
+#define DeepModel_default true            // Deep atmosphere
+#define output_mean_default true          // output mean quantities
+#define out_interm_momentum_default false // output intermediate momentum
+#define output_diffusion_default false    // output diffusion operators
 
 // Initial conditions
 #define rest_default true                                 // Starting from rest
@@ -103,11 +108,15 @@
 
 #define output_path_default "results" // Output directory
 
-#define gcm_off_default false //turns off fluid dynamical core for debugging physics
+#define gcm_off_default false       //turns off fluid dynamical core for debugging physics
+#define single_column_default false //run physics on only 1 vertical column for debugging physics
 
 #define globdiag_default false //output energy, mass, angular momentum, etc
 
 #define conv_adj_default false // use convective adjustment scheme
+// number of times to execute per time step
+// (repeats entire algorithm if > 1)
+#define conv_adj_iter_default 1
 
 #define init_PT_profile_default "isothermal"
 #define kappa_lw_default 0.002 // m^2 kg^-1
@@ -121,6 +130,11 @@
 #define uh_heating_default "none"
 
 #define thermo_equation_default "entropy"
+
+#define vert_refined_default false
+
+#define transition_altitude_default 1000.0
+#define lowest_layer_thickness_default 2.0
 
 enum benchmark_types {
     NO_BENCHMARK         = 0,

@@ -57,6 +57,7 @@ public:
 
     bool phy_loop(ESP &                  esp,
                   const SimulationSetup &sim,
+                  kernel_diagnostics &   diag,
                   int                    nstep, // Step number
                   double                 time_step);            // Time-step [s]
 
@@ -79,6 +80,9 @@ public:
         return qheat_d;
     };
 
+    double OLR_tot;
+    double ASR_tot;
+
 private:
     // Scaling of Qheat, for slow ramp up or ramp down.
     double Qheat_scaling = 1.0;
@@ -98,41 +102,34 @@ private:
     double n_sw_config          = 1.0;   // power law dependence for mixed/unmixed absorbers in SW
     // double f_lw_config       = 0.5;    // fraction of taulw in well-mixed absorber
 
+    // double Csurf_config    = 1e7;   // heat capacity of surface (J K^-1 m^-2)
+    bool rt1Dmode_config = false; // 1D mode=all columns are irradiated identically
 
-    bool   sync_rot_config    = true;     // is planet syncronously rotating?
-    double mean_motion_config = 1.991e-7; // orbital mean motion (rad/s)
-    double true_long_i_config = 0;        // initial true longitude of planet (rad)
-    double ecc_config         = 0;        // orbital eccentricity
-    double obliquity_config   = 0;        // obliquity (tilt of spin axis) (rad)
-    double alpha_i_config     = 0;        // initial right asc of host star (relative to long = 0)
-    double longp_config       = 0;        // longitude of periastron (rad)
+    int spinup_start_step = -1;
+    int spinup_stop_step  = -1;
 
-    bool   surface_config  = false; // use solid/liquid surface at altitude 0
-    double Csurf_config    = 1e7;   // heat capacity of surface (J K^-1 m^-2)
-    bool   rt1Dmode_config = false; // 1D mode=all columns are irradiated identically
-
+    int spindown_start_step = -1;
+    int spindown_stop_step  = -1;
     // Rad trans
     double Tstar            = 4520;  // Star effective temperature [K]
     double planet_star_dist = 0.015; // Planet-star distance [au]
     double radius_star      = 0.667; // Star radius [Rsun]
     double diff_ang         = 0.5;   // Diffusivity factor: 0.5-1.0
     // double Tint   = 0; // Lower boundary temperature: upward flux coming from the planet's interior
-    double albedo = 0.18;   // Bond albedo
-    double tausw  = 532.0;  // Absorption coefficient for the shortwaves
-    double taulw  = 1064.0; // Absorption coefficient for the longwaves
-    double taulw_pole;
+    double albedo   = 0.18;  // Bond albedo
+    double kappa_sw = 0.001; // Absorption coefficient for the shortwaves
+    double kappa_lw = 0.002; // Absorption coefficient for the longwaves
+    double kappa_lw_pole;
     // double kappa_lw_pole = 0.002;
     bool   latf_lw = false;
     double n_lw    = 2.0; // power law dependence for unmixed absorbers in LW
     double n_sw    = 1.0; // power law dependence for mixed/unmixed absorbers in SW
     // double f_lw       = 0.5; // fraction of taulw in well-mixed absorber
 
-    bool    rt1Dmode;
-    bool    surface;
-    double  Csurf;
+    bool rt1Dmode;
+    // double  Csurf;
     double *surf_flux_d;
-    double *Tsurface_d;
-    double *Tsurface_h;
+
 
     double incflx;
     //  Arrays used in RT code
@@ -148,21 +145,6 @@ private:
     double *flw_up_h;
     double *flw_dn_h;
 
-    // orbit/insolation properties
-    bool   sync_rot       = true;     // is planet syncronously rotating?
-    double mean_motion    = 1.991e-7; // orbital mean motion (rad/s)
-    double mean_anomaly_i = 0;        // initial mean anomaly at start (rad)
-    double mean_anomaly   = 0;        // current mean anomaly of planet (rad)
-    double true_long_i    = 0;        // initial true longitude of planet (rad)
-    double ecc            = 0;        // orbital eccentricity
-    double obliquity      = 0;        // obliquity (tilt of spin axis) (rad)
-    double r_orb          = 1;        // orbital distance/semi-major axis
-    double sin_decl       = 0;        // declination of host star (relative to equator)
-    double cos_decl       = 1;
-    double alpha_i        = 0; // initial right asc of host star (relative to long = 0)
-    double alpha          = 0; // right asc of host star (relative to long = 0)
-    double longp          = 0; // longitude of periastron (rad)
-
     double *insol_h;
     double *insol_d;
     double *insol_ann_h;
@@ -170,6 +152,10 @@ private:
 
     double *qheat_d;
     double *qheat_h;
+
+    double *ASR_d;
+    double *OLR_d;
+
 
     //  These arrays are for temporary usage in RT code
     double *dtemp;
@@ -190,19 +176,6 @@ private:
                     double n_lw_,
                     double n_sw_,
                     double f_lw,
-                    bool   sync_rot_,
-                    double mean_motion_,
-                    double true_long_i_,
-                    double longp_,
-                    double ecc_,
-                    double alpha_i_,
-                    double obliquity_,
-                    double Omega,
-                    bool   surface,
-                    double Csurf,
                     bool   rt1Dmode,
-                    double Tmean,
-                    int    point_num);
-
-    void update_spin_orbit(double time, double Omega);
+                    double Tmean);
 };

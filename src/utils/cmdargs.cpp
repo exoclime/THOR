@@ -61,12 +61,12 @@ using std::endl;
 // Number of arguments following this key is 0
 template<> int arg<bool>::get_nargs() {
     return 0;
-};
+}
 
 // Flag it as set, it will use its predefined value
 template<> void arg<bool>::set_default() {
     has_value = true;
-};
+}
 
 
 cmdargs::cmdargs(const string& app_name_, const string& app_desc_) :

@@ -43,10 +43,11 @@
 
 #include "directories.h"
 
-
+#include <algorithm>
 #include <iostream>
 #include <istream>
 #include <sstream>
+
 #include <utility>
 #include <vector>
 
@@ -58,6 +59,7 @@
 
 using namespace std;
 
+// #include "cuda_device_memory.h"
 #include "log_writer.h"
 
 vector<string> split(const string &s, char delimiter) {
@@ -105,27 +107,36 @@ bool create_dir(const string &dir) {
 
 
 bool create_output_dir(const string &output_dir) {
+    // cout << "create: "<<  output_dir<<endl;
     vector<string> directories = split(output_dir, '/');
 
     string path = "";
 
+    // check for absolute path
+    if (output_dir[0] == '/')
+        path = "/";
+
     for (const auto &dir : directories) {
+        //cout << "dir: " << dir << endl;
+        // check for empty dir, happens with absolute path
+        if (dir == "")
+            continue;
         // check if directory exists
         if (path != "")
             path += string("/");
         path += dir;
 
         if (path_exists(path)) {
-            //cout << path << " exists"<<endl;
+            // cout << path << " exists"<<endl;
 
             // continue
         }
         else {
-            //cout << path << " does not exist, creating"<<endl;
+            // cout << "[" <<  path << "] does not exist, creating"<<endl;
 
             // create directory
             if (create_dir(path)) {
-                //cout << "created " << path << " path"<<endl;
+                // cout << "created " << path << " path"<<endl;
                 // continue
             }
             else {
@@ -299,4 +310,106 @@ bool match_output_file_numbering_scheme(const string &file_path, string &basenam
     else {
         return false;
     }
+}
+
+bool find_continue_file(string &initial_conditions,
+                        string &planet_filename,
+                        bool    continue_sim,
+                        int &   output_file_idx) {
+
+    // build planet filename
+    path   p(initial_conditions);
+    int    file_number = 0;
+    string basename    = "";
+
+    string parent_path = p.parent();
+
+    // check existence of files
+    if (!path_exists(initial_conditions)) {
+        log::printf("initial condition file %s not found.\n", initial_conditions.c_str());
+        return false;
+    }
+
+    // Reload correct file if we are continuing from a specific file
+    if (continue_sim) {
+        if (!match_output_file_numbering_scheme(initial_conditions, basename, file_number)) {
+            log::printf("Loading initial conditions: "
+                        "Could not recognise file numbering scheme "
+                        "for input %s: (found base: %s, num: %d) \n",
+                        initial_conditions.c_str(),
+                        basename.c_str(),
+                        file_number);
+            return false;
+        }
+
+        output_file_idx = file_number;
+
+        planet_filename = p.parent() + "/esp_output_planet_" + basename + ".h5";
+    }
+    else {
+        //test to see if initial file matches standard output naming convention
+        if (match_output_file_numbering_scheme(initial_conditions, basename, file_number)) {
+            //set planet file name based on standard output naming
+            planet_filename = p.parent() + "/esp_output_planet_" + basename + ".h5";
+        }
+        else { //if not, use old naming convention for input files
+            planet_filename = p.parent() + "/" + p.stem() + "_planet.h5";
+        }
+    }
+
+    if (!path_exists(planet_filename)) {
+        log::printf("planet_file %s not found.\n", planet_filename.c_str());
+        return false;
+    }
+
+    return true;
+}
+
+bool overwrite_check(string &output_path,
+                     string &simulation_ID,
+                     int     output_file_idx,
+                     bool    force_overwrite) {
+    // Check presence of output files
+    path results(output_path);
+
+    // Get the files in the directory
+    vector<string> result_files = get_files_in_directory(results.to_string());
+
+    // match them to name pattern, get file numbers and check numbers that are greater than the
+    // restart file number
+    vector<pair<string, int>> matching_name_result_files;
+    for (const auto &r : result_files) {
+        string basename    = "";
+        int    file_number = 0;
+        if (match_output_file_numbering_scheme(r, basename, file_number)) {
+            if (basename == simulation_ID
+                && file_number > output_file_idx) //RD not sure what this do
+                matching_name_result_files.emplace_back(r, file_number);
+        }
+    }
+    // sort them by number
+    std::sort(matching_name_result_files.begin(),
+              matching_name_result_files.end(),
+              [](const std::pair<string, int> &left, const std::pair<string, int> &right) {
+                  return left.second < right.second;
+              });
+
+    if (matching_name_result_files.size() > 0) {
+        if (!force_overwrite) {
+            log::printf("output files already exist and would be overwritten \n"
+                        "when running simulation. \n"
+                        "Files found:\n");
+            for (const auto &f : matching_name_result_files)
+                log::printf("\t%s\n", f.first.c_str());
+
+            log::printf(" Aborting. \n"
+                        "use --overwrite to overwrite existing files.\n");
+
+            // cuda_device_memory_manager::get_instance().deallocate();
+            //
+            // exit(EXIT_FAILURE);
+            return false;
+        }
+    }
+    return true;
 }

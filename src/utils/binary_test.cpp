@@ -68,7 +68,7 @@ using namespace std;
 map<string, output_def> build_definitions(ESP& esp, Icogrid& grid) {
 
     map<string, output_def> out = {
-        // {"map name, {variable pointer, table size, name, short name, on device}}
+        // {"map name, {variable pointer, table size, name, short name, on device, function call back for loc}}
         {"Rho_d",
          {esp.Rho_d,
           esp.nv * esp.point_num,
@@ -290,13 +290,13 @@ map<string, output_def> build_definitions(ESP& esp, Icogrid& grid) {
           std::bind(
               &ESP::index_to_location_scalar, &esp, std::placeholders::_1, std::placeholders::_2)}},
 
-        {"diffv_d",
-         {esp.diffv_d2,
-          6 * esp.nv * esp.point_num,
-          "Diff Vert",
-          "difv",
-          true,
-          std::bind(&ESP::dummy, &esp, std::placeholders::_1, std::placeholders::_2)}},
+        // {"diffv_d",
+        //  {esp.diffv_d2,
+        //   6 * esp.nv * esp.point_num,
+        //   "Diff Vert",
+        //   "difv",
+        //   true,
+        //   std::bind(&ESP::dummy, &esp, std::placeholders::_1, std::placeholders::_2)}},
 
 
         {"DivM_d",
@@ -451,7 +451,14 @@ map<string, output_def> build_definitions(ESP& esp, Icogrid& grid) {
               {"halo",          { grid.halo, grid.nh, "halo", "halo", false}},
               {"maps",          { grid.maps, (grid.nl_region+2)*(grid.nl_region+2)*grid.nr, "maps", "m", false}},
             */
-
+        {"func_r_d",
+         {esp.func_r_d,
+          3 * grid.point_num,
+          "func_r_d",
+          "fd",
+          true,
+          std::bind(
+              &ESP::index_to_location_3xn, &esp, std::placeholders::_1, std::placeholders::_2)}},
         {"func_r",
          {grid.func_r,
           3 * grid.point_num,
@@ -574,7 +581,16 @@ map<string, output_def> build_definitions(ESP& esp, Icogrid& grid) {
           false,
           std::bind(
               &ESP::index_to_location_3x7xn, &esp, std::placeholders::_1, std::placeholders::_2)}},
-    };
+        {"Qheat",
+         {esp.profx_Qheat_d,
+          esp.nv * esp.point_num,
+          "Qheat",
+          "qh",
+          true,
+          std::bind(&ESP::index_to_location_scalar,
+                    &esp,
+                    std::placeholders::_1,
+                    std::placeholders::_2)}}};
 
     return out;
 }
@@ -619,15 +635,12 @@ void binary_test::check_data(const string&         iteration,
     }
 
 
-// Specific debugging functions
-#    ifdef BENCH_POINT_WRITE
-    output_reference(iteration, ref_name, data_output);
-#    endif // BENCH_POINT_WRITE
+    // Specific debugging functions
+    if (use_write)
+        output_reference(iteration, ref_name, data_output);
 
-#    ifdef BENCH_POINT_COMPARE
-    compare_to_reference(iteration, ref_name, data_output);
-
-#    endif // BENCH_POINT_COMPARE
+    if (use_compare)
+        compare_to_reference(iteration, ref_name, data_output);
 
 #    ifdef BENCH_NAN_CHECK
     if (nan_check_d == nullptr) {
@@ -767,7 +780,11 @@ bool binary_test::compare_to_reference(const string&             iteration,
         }
 #    endif // BENCH_COMPARE_PRINT_STATISTICS
 
-        oss << " " << def.short_name << ": " << comp;
+        oss << " " << def.short_name << ": ";
+        if (comp)
+            oss << "\033[1;32m" << comp << "\033[0m";
+        else
+            oss << "\033[1;31m" << comp << "\033[0m";
         out &= comp;
     }
 
@@ -784,7 +801,7 @@ bool binary_test::compare_to_reference(const string&             iteration,
     for (auto const& v : stats_table) {
         auto const& key   = v.first;
         auto const& value = v.second;
-        log::printf("  %5s - num (fail/tot/fst idx): %8d/%8d - %5d Δabs(mx:%11g,mn:%11g) - "
+        log::printf("  %5s - num (fail/tot/fst idx): %8d/%8d/%5d - Δabs(mx:%11g,mn:%11g) - "
                     "Δrel(mx:%11g,mn:%11g) -ref(mx:%11g,mn:%11g) -val(mx:%11g,mn:%11g)\n",
                     key.c_str(),
                     value.num_failures,
@@ -824,6 +841,13 @@ void binary_test::register_phy_modules_variables(const std::map<string, output_d
         phy_modules_data_in.end(), phy_modules_data_in_.begin(), phy_modules_data_in_.end());
     phy_modules_data_out.insert(
         phy_modules_data_out.end(), phy_modules_data_out_.begin(), phy_modules_data_out_.end());
+}
+
+std::string dummy(int i, int first) {
+    //placeholder function to fill the build definitions in binary_test.cpp
+    std::ostringstream string_stream;
+    string_stream << 0;
+    return string_stream.str();
 }
 
 
