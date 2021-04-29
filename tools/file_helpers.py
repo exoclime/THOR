@@ -1,4 +1,5 @@
 import re
+import pathlib
 
 
 def get_path_matching_regex(root_dir_, pattern):
