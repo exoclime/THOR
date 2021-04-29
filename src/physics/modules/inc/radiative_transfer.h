@@ -157,6 +157,31 @@ private:
     double *OLR_d;
 
 
+    // picket-fence scheme
+
+    double  met,
+    double* k_IR_2_nv_d,
+    double* k_V_3_nv_d,
+    double* gam_V_3_d,
+    double* gam_1_d,
+    double* gam_2_d,
+    double* Beta_V_3_d,
+    double* Beta_2_d,
+    double* net_F_nvi_d,    
+    double* AB_d,
+                              
+    double* tau_Ve__df_e, double* tau_IRe__df_e, double* Te__df_e, double* be__df_e, //Kitzman working variables
+    double* sw_down__df_e, double* sw_down_b__df_e, double* sw_up__df_e,
+    double* lw_down__df_e, double* lw_down_b__df_e,
+    double* lw_up__df_e, double* lw_up_b__df_e,
+    double* lw_net__df_e, double* sw_net__df_e,
+
+    double* dtau__dff_l, double* del__dff_l, // lw_grey_updown_linear working variables
+    double* edel__dff_l, double* e0i__dff_l, double* e1i__dff_l,
+    double* Am__dff_l, double* Bm__dff_l,
+    double* lw_up_g__dff_e, double* lw_down_g__dff_e,
+
+
     //  These arrays are for temporary usage in RT code
     double *dtemp;
     double *phtemp;
@@ -179,3 +204,18 @@ private:
                     bool   rt1Dmode,
                     double Tmean);
 };
+
+void RTSetup_picket_fence(double Tstar_,
+    double planet_star_dist_,
+    double radius_star_,
+    double diff_ang_,
+    double P_Ref,
+    double Gravit,
+    double albedo_,
+    double kappa_sw_,
+    double kappa_lw_,
+    bool   latf_lw_,
+    double kappa_lw_pole_,
+    double f_lw,
+    bool   rt1Dmode_,
+    double Tmean);

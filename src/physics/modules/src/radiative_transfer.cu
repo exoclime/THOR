@@ -85,70 +85,226 @@ void radiative_transfer::print_config() {
 
 bool radiative_transfer::initialise_memory(const ESP &              esp,
                                            device_RK_array_manager &phy_modules_core_arrays) {
-    //  Rad Transfer
-    cudaMalloc((void **)&flw_up_d, esp.nvi * esp.point_num * sizeof(double));
-    cudaMalloc((void **)&flw_dn_d, esp.nvi * esp.point_num * sizeof(double));
-    cudaMalloc((void **)&fsw_up_d, esp.nvi * esp.point_num * sizeof(double));
-    cudaMalloc((void **)&fsw_dn_d, esp.nvi * esp.point_num * sizeof(double));
-    cudaMalloc((void **)&tau_d, esp.nv * esp.point_num * 2 * sizeof(double));
 
-    cudaMalloc((void **)&phtemp, esp.nvi * esp.point_num * sizeof(double));
-    cudaMalloc((void **)&thtemp, esp.nvi * esp.point_num * sizeof(double));
-    cudaMalloc((void **)&ttemp, esp.nv * esp.point_num * sizeof(double));
-    cudaMalloc((void **)&dtemp, esp.nv * esp.point_num * sizeof(double));
+    double picket_fence_mod = true;
 
-    cudaMalloc((void **)&qheat_d, esp.nv * esp.point_num * sizeof(double));
-    qheat_h = (double *)malloc(esp.point_num * esp.nv * sizeof(double));
+    if (picket_fence_mod){
+        //  Rad Transfer
+        
+        cudaMalloc((void **)&phtemp, esp.nvi * esp.point_num * sizeof(double));
+        cudaMalloc((void **)&dtemp, esp.nv * esp.point_num * sizeof(double));
 
-    insol_h = (double *)malloc(esp.point_num * sizeof(double));
-    cudaMalloc((void **)&insol_d, esp.point_num * sizeof(double));
-    insol_ann_h = (double *)malloc(esp.point_num * sizeof(double));
-    cudaMalloc((void **)&insol_ann_d, esp.point_num * sizeof(double));
+        cudaMalloc((void **)&qheat_d, esp.nv * esp.point_num * sizeof(double));
+        qheat_h = (double *)malloc(esp.point_num * esp.nv * sizeof(double));
 
-    flw_up_h = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
-    flw_dn_h = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
-    tau_h    = (double *)malloc(esp.nv * esp.point_num * 2 * sizeof(double));
+        insol_h = (double *)malloc(esp.point_num * sizeof(double));
+        cudaMalloc((void **)&insol_d, esp.point_num * sizeof(double));
+       
+        
+        cudaMalloc((void **)&surf_flux_d, esp.point_num * sizeof(double));
 
-    fsw_up_h = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
-    fsw_dn_h = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
+        cudaMalloc((void **)&ASR_d, esp.point_num * sizeof(double));
+        cudaMalloc((void **)&OLR_d, esp.point_num * sizeof(double));
 
-    cudaMalloc((void **)&surf_flux_d, esp.point_num * sizeof(double));
+        // picket fence parameters
 
-    cudaMalloc((void **)&ASR_d, esp.point_num * sizeof(double));
-    cudaMalloc((void **)&OLR_d, esp.point_num * sizeof(double));
+        cudaMalloc((void **)&k_IR_2_nv_d, 2*esp.nv * esp.point_num * sizeof(double));
+        cudaMalloc((void **)&k_V_3_nv_d, 3*esp.nv * esp.point_num * sizeof(double));
+        cudaMalloc((void **)&gam_V_3_d, 3 * esp.point_num * sizeof(double));
+        cudaMalloc((void **)&gam_1_d,  esp.point_num * sizeof(double));
+        cudaMalloc((void **)&gam_2_d,  esp.point_num * sizeof(double));
+        cudaMalloc((void **)&Beta_V_3_d, 3* esp.point_num * sizeof(double));
+        cudaMalloc((void **)&Beta_2_d, 2 * esp.point_num * sizeof(double));
+        cudaMalloc((void **)&net_F_nvi_d, esp.nvi * esp.point_num * sizeof(double));
+        cudaMalloc((void **)&AB_d,  esp.point_num * sizeof(double));
+
+        k_IR_2__h = (double *)malloc(2*esp.nv * esp.point_num * sizeof(double));
+        k_V_3__h = (double *)malloc(3*esp.nv * esp.point_num * sizeof(double));
+        gam_V__h = (double *)malloc(3 * esp.point_num * sizeof(double));
+        gam_1__h = (double *)malloc( esp.point_num * sizeof(double));
+        gam_2__h = (double *)malloc( esp.point_num * sizeof(double));
+        Beta_V__h = (double *)malloc(3* esp.point_num * sizeof(double));
+        Beta__h = (double *)malloc(2 * esp.point_num * sizeof(double));
+        net_F_h = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
+        AB__h = (double *)malloc( esp.point_num * sizeof(double));
+
+        // picket fence parameters     //Kitzman working variables
+        cudaMalloc((void **)&tau_Ve__df_e, esp.nvi * esp.point_num * sizeof(double));
+        cudaMalloc((void **)&tau_IRe__df_e, esp.nvi * esp.point_num * sizeof(double));
+        cudaMalloc((void **)&Te__df_e, esp.nvi * esp.point_num * sizeof(double));
+        cudaMalloc((void **)&be__df_e, esp.nvi * esp.point_num * sizeof(double));
+        cudaMalloc((void **)&sw_down__df_e, esp.nvi * esp.point_num * sizeof(double));
+        cudaMalloc((void **)&sw_down_b__df_e, esp.nvi * esp.point_num * sizeof(double));
+        cudaMalloc((void **)&sw_up__df_e, esp.nvi * esp.point_num * sizeof(double));
+        cudaMalloc((void **)&lw_down__df_e, esp.nvi * esp.point_num * sizeof(double));
+        cudaMalloc((void **)&lw_down_b__df_e, esp.nvi * esp.point_num * sizeof(double));
+        cudaMalloc((void **)&lw_up__df_e, esp.nvi * esp.point_num * sizeof(double));
+        cudaMalloc((void **)&lw_up_b__df_e, esp.nvi * esp.point_num * sizeof(double));
+        cudaMalloc((void **)&lw_net__df_e, esp.nvi * esp.point_num * sizeof(double));
+        cudaMalloc((void **)&sw_net__df_e, esp.nvi * esp.point_num * sizeof(double));
+
+        lw_net__h = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
+        sw_net__h = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
+        dtau__h = (double *)malloc(esp.nv * esp.point_num * sizeof(double));
+                
+
+        // picket fence parameters     // lw_grey_updown_linear working variables
+        cudaMalloc((void **)&dtau__dff_l, esp.nv * esp.point_num * sizeof(double));
+        cudaMalloc((void **)&del__dff_l, esp.nv * esp.point_num * sizeof(double));
+        cudaMalloc((void **)&edel__dff_l, esp.nv * esp.point_num * sizeof(double));
+        cudaMalloc((void **)&e0i__dff_l, esp.nv * esp.point_num * sizeof(double));
+        cudaMalloc((void **)&e1i__dff_l, esp.nv * esp.point_num * sizeof(double));
+        cudaMalloc((void **)&Bm__dff_l, esp.nv * esp.point_num * sizeof(double));
+        cudaMalloc((void **)&Am__dff_l, esp.nv * esp.point_num * sizeof(double));
+        cudaMalloc((void **)&lw_up_g__dff_e, esp.nv * esp.point_num * sizeof(double));
+        cudaMalloc((void **)&lw_down_g__dff_e, esp.nv * esp.point_num * sizeof(double));
+       
+
+    } else {
+        //  Rad Transfer
+        cudaMalloc((void **)&flw_up_d, esp.nvi * esp.point_num * sizeof(double));
+        cudaMalloc((void **)&flw_dn_d, esp.nvi * esp.point_num * sizeof(double));
+        cudaMalloc((void **)&fsw_up_d, esp.nvi * esp.point_num * sizeof(double));
+        cudaMalloc((void **)&fsw_dn_d, esp.nvi * esp.point_num * sizeof(double));
+        cudaMalloc((void **)&tau_d, esp.nv * esp.point_num * 2 * sizeof(double));
+
+        cudaMalloc((void **)&phtemp, esp.nvi * esp.point_num * sizeof(double));
+        cudaMalloc((void **)&thtemp, esp.nvi * esp.point_num * sizeof(double));
+        cudaMalloc((void **)&ttemp, esp.nv * esp.point_num * sizeof(double));
+        cudaMalloc((void **)&dtemp, esp.nv * esp.point_num * sizeof(double));
+
+        cudaMalloc((void **)&qheat_d, esp.nv * esp.point_num * sizeof(double));
+        qheat_h = (double *)malloc(esp.point_num * esp.nv * sizeof(double));
+
+        insol_h = (double *)malloc(esp.point_num * sizeof(double));
+        cudaMalloc((void **)&insol_d, esp.point_num * sizeof(double));
+        insol_ann_h = (double *)malloc(esp.point_num * sizeof(double));
+        cudaMalloc((void **)&insol_ann_d, esp.point_num * sizeof(double));
+
+        flw_up_h = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
+        flw_dn_h = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
+        tau_h    = (double *)malloc(esp.nv * esp.point_num * 2 * sizeof(double));
+
+        fsw_up_h = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
+        fsw_dn_h = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
+
+        cudaMalloc((void **)&surf_flux_d, esp.point_num * sizeof(double));
+
+        cudaMalloc((void **)&ASR_d, esp.point_num * sizeof(double));
+        cudaMalloc((void **)&OLR_d, esp.point_num * sizeof(double));
+
+    }
+    
 
     return true;
 }
 
 
 bool radiative_transfer::free_memory() {
-    cudaFree(flw_up_d);
-    cudaFree(flw_dn_d);
-    cudaFree(fsw_up_d);
-    cudaFree(fsw_dn_d);
-    cudaFree(tau_d);
+    double picket_fence_mod = true;
 
-    cudaFree(phtemp);
-    cudaFree(thtemp);
-    cudaFree(ttemp);
-    cudaFree(dtemp);
+    if (picket_fence_mod) {
+        
+        cudaFree(phtemp);
+        cudaFree(dtemp);
 
-    cudaFree(qheat_d);
-    free(qheat_h);
+        cudaFree(qheat_d);
+        free(qheat_h);
 
-    cudaFree(insol_d);
-    cudaFree(insol_ann_d);
+        cudaFree(insol_d);
+        
 
-    free(flw_up_h);
-    free(flw_dn_h);
-    free(tau_h);
 
-    free(fsw_up_h);
-    free(fsw_dn_h);
+        cudaFree(surf_flux_d);
+        cudaFree(ASR_d);
+        cudaFree(OLR_d);
 
-    cudaFree(surf_flux_d);
-    cudaFree(ASR_d);
-    cudaFree(OLR_d);
+        // picket fence parameters
+
+        cudaFree(k_IR_2_nv_d);
+        cudaFree(k_V_3_nv_d);
+        cudaFree(gam_V_3_d);
+        cudaFree(gam_1_d);
+        cudaFree(gam_2_d);
+        cudaFree(Beta_V_3_d);
+        cudaFree(Beta_2_d);
+        cudaFree(net_F_nvi_d);
+        cudaFree(AB_d);
+        
+        free(k_IR_2__h);
+        free(k_V_3__h);
+        free(gam_V__h);
+        free(gam_1__h);
+        free(gam_2__h);
+        free(Beta_V__h);
+        free(Beta__h);
+        free(net_F_h);
+        free(AB__h);
+
+        // picket fence parameters     //Kitzman working variables
+
+        
+        cudaFree(tau_Ve__df_e);        
+        cudaFree(tau_IRe__df_e);        
+        cudaFree(Te__df_e);        
+        cudaFree(be__df_e);        
+        cudaFree(sw_down__df_e);        
+        cudaFree(sw_down_b__df_e);        
+        cudaFree(sw_up__df_e);        
+        cudaFree(lw_down__df_e);        
+        cudaFree(lw_down_b__df_e);        
+        cudaFree(lw_up__df_e);        
+        cudaFree(lw_up_b__df_e);        
+        cudaFree(lw_net__df_e);        
+        cudaFree(sw_net__df_e);
+
+        free(lw_net__h);
+        free(sw_net__h);
+        free(dtau__h);                
+
+        // picket fence parameters     // lw_grey_updown_linear working variables
+        cudaFree(dtau__dff_l);
+        cudaFree(del__dff_l);
+        cudaFree(edel__dff_l);
+        cudaFree(e0i__dff_l);
+        cudaFree(e1i__dff_l);
+        cudaFree(Bm__dff_l);
+        cudaFree(Am__dff_l);
+        cudaFree(lw_up_g__dff_e);
+        cudaFree(lw_down_g__dff_e);
+
+
+    } else {
+        cudaFree(flw_up_d);
+        cudaFree(flw_dn_d);
+        cudaFree(fsw_up_d);
+        cudaFree(fsw_dn_d);
+        cudaFree(tau_d);
+
+        cudaFree(phtemp);
+        cudaFree(thtemp);
+        cudaFree(ttemp);
+        cudaFree(dtemp);
+
+        cudaFree(qheat_d);
+        free(qheat_h);
+
+        cudaFree(insol_d);
+        cudaFree(insol_ann_d);
+
+        free(flw_up_h);
+        free(flw_dn_h);
+        free(tau_h);
+
+        free(fsw_up_h);
+        free(fsw_dn_h);
+
+        cudaFree(surf_flux_d);
+        cudaFree(ASR_d);
+        cudaFree(OLR_d);
+
+    }
+    
 
     return true;
 }
@@ -169,7 +325,27 @@ bool radiative_transfer::initial_conditions(const ESP &            esp,
                    spindown_start_step,
                    spindown_stop_step);
     }
-    RTSetup(Tstar_config,
+
+    double picket_fence_mod = true;
+
+    if (picket_fence_mod) {
+        RTSetup_picket_fence(Tstar_config,
+            planet_star_dist_config,
+            radius_star_config,
+            diff_ang_config,
+            sim.P_Ref,
+            sim.Gravit,
+            albedo_config,
+            esp.kappa_sw,
+            esp.kappa_lw,
+            latf_lw_config,
+            kappa_lw_pole_config,
+            esp.f_lw,
+            rt1Dmode_config,
+            sim.Tmean);
+
+    } else {
+        RTSetup(Tstar_config,
             planet_star_dist_config,
             radius_star_config,
             diff_ang_config,
@@ -186,7 +362,13 @@ bool radiative_transfer::initial_conditions(const ESP &            esp,
             rt1Dmode_config,
             sim.Tmean);
 
-    cudaMemset(surf_flux_d, 0, sizeof(double) * esp.point_num);
+        cudaMemset(surf_flux_d, 0, sizeof(double) * esp.point_num);
+
+    }
+
+    
+
+    
 
     bool returnstatus = true;
     // int  id;
@@ -250,6 +432,7 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
     }
 
     if (run) {
+        double picket_fence_mod = true;
         //
         //  Number of threads per block.
         const int NTH = 256;
@@ -258,61 +441,142 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
         dim3 NB((esp.point_num / NTH) + 1, esp.nv, 1);
         dim3 NBRT((esp.point_num / NTH) + 1, 1, 1);
 
-        rtm_dual_band<<<NBRT, NTH>>>(esp.pressure_d,
-                                     esp.Rho_d,
-                                     esp.temperature_d,
-                                     flw_up_d,
-                                     flw_dn_d,
-                                     fsw_up_d,
-                                     fsw_dn_d,
-                                     tau_d,
-                                     sim.Gravit,
-                                     esp.Cp_d,
-                                     esp.lonlat_d,
-                                     esp.Altitude_d,
-                                     esp.Altitudeh_d,
-                                     phtemp,
-                                     dtemp,
-                                     ttemp,
-                                     thtemp,
-                                     time_step,
-                                     Tstar,
-                                     planet_star_dist,
-                                     radius_star,
-                                     diff_ang,
-                                     esp.Tint,
-                                     albedo,
-                                     kappa_sw,
-                                     kappa_lw,
-                                     latf_lw,
-                                     kappa_lw_pole,
-                                     n_sw,
-                                     n_lw,
-                                     esp.f_lw,
-                                     incflx,
-                                     sim.P_Ref,
-                                     esp.point_num,
-                                     esp.nv,
-                                     esp.nvi,
-                                     sim.A,
-                                     esp.insolation.get_r_orb(),
-                                     esp.insolation.get_device_cos_zenith_angles(),
-                                     insol_d,
-                                     esp.surface,
-                                     esp.Csurf,
-                                     esp.Tsurface_d,
-                                     esp.dTsurf_dt_d,
-                                     surf_flux_d,
-                                     esp.areasT_d,
-                                     ASR_d,
-                                     OLR_d,
-                                     esp.profx_Qheat_d,
-                                     qheat_d,
-                                     esp.Rd_d,
-                                     Qheat_scaling,
-                                     sim.gcm_off,
-                                     rt1Dmode,
-                                     sim.DeepModel);
+        if (picket_fence_mod){
+
+            rtm_dual_band<<<NBRT, NTH>>>(
+                esp.pressure_d,
+                esp.temperature_d,
+                sim.Gravit,
+                esp.Cp_d,
+                esp.lonlat_d,
+                esp.Altitude_d,
+                esp.Altitudeh_d,
+                phtemp,
+                dtemp,
+                time_step,
+                esp.Tint,
+                albedo,
+                kappa_lw,
+                latf_lw,
+                kappa_lw_pole,
+                incflx,
+                esp.point_num,
+                esp.nv,
+                esp.nvi,
+                sim.A,
+                esp.insolation.get_device_cos_zenith_angles(),
+                insol_d,
+                esp.surface,
+                esp.Tsurface_d,
+                surf_flux_d,
+                esp.areasT_d,
+                ASR_d,
+                OLR_d,
+                esp.profx_Qheat_d,
+                qheat_d,
+                esp.Rd_d,
+                Qheat_scaling,
+
+                metalicity,
+                k_IR_2_nv_d,
+                k_V_3_nv_d,
+                gam_V_3_d,
+                gam_1_d,
+                gam_2_d,
+                Beta_V_3_d,
+                Beta_2_d,
+                net_F_nvi_d,    
+                AB_d,
+                tau_Ve__df_e, //Kitzman working variables
+                tau_IRe__df_e, 
+                Te__df_e, 
+                be__df_e, 
+                sw_down__df_e,
+                sw_down_b__df_e,
+                sw_up__df_e,
+                lw_down__df_e, 
+                lw_down_b__df_e,
+                lw_up__df_e,
+                lw_up_b__df_e,
+                lw_net__df_e,
+                sw_net__df_e,
+
+                dtau__dff_l, // lw_grey_updown_linear working variables
+                del__dff_l, 
+                edel__dff_l,
+                e0i__dff_l, 
+                e1i__dff_l,
+                Am__dff_l, 
+                Bm__dff_l,
+                lw_up_g__dff_e, 
+                lw_down_g__dff_e,
+
+                rt1Dmode,
+                sim.DeepModel                                        
+
+                );
+
+        } else {
+
+            rtm_dual_band<<<NBRT, NTH>>>(esp.pressure_d,
+                esp.Rho_d,
+                esp.temperature_d,
+                flw_up_d,
+                flw_dn_d,
+                fsw_up_d,
+                fsw_dn_d,
+                tau_d,
+                sim.Gravit,
+                esp.Cp_d,
+                esp.lonlat_d,
+                esp.Altitude_d,
+                esp.Altitudeh_d,
+                phtemp,
+                dtemp,
+                ttemp,
+                thtemp,
+                time_step,
+                Tstar,
+                planet_star_dist,
+                radius_star,
+                diff_ang,
+                esp.Tint,
+                albedo,
+                kappa_sw,
+                kappa_lw,
+                latf_lw,
+                kappa_lw_pole,
+                n_sw,
+                n_lw,
+                esp.f_lw,
+                incflx,
+                sim.P_Ref,
+                esp.point_num,
+                esp.nv,
+                esp.nvi,
+                sim.A,
+                esp.insolation.get_r_orb(),
+                esp.insolation.get_device_cos_zenith_angles(),
+                insol_d,
+                esp.surface,
+                esp.Csurf,
+                esp.Tsurface_d,
+                esp.dTsurf_dt_d,
+                surf_flux_d,
+                esp.areasT_d,
+                ASR_d,
+                OLR_d,
+                esp.profx_Qheat_d,
+                qheat_d,
+                esp.Rd_d,
+                Qheat_scaling,
+                sim.gcm_off,
+                rt1Dmode,
+                sim.DeepModel);
+
+        }
+
+        
 
         ASR_tot = gpu_sum_on_device<1024>(ASR_d, esp.point_num);
         OLR_tot = gpu_sum_on_device<1024>(OLR_d, esp.point_num);
@@ -320,109 +584,223 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
         if (nstep * time_step < (2 * M_PI / esp.insolation.get_mean_motion())) {
             // stationary orbit/obliquity
             // calculate annually average of insolation for the first orbit
-            annual_insol<<<NBRT, NTH>>>(insol_ann_d, insol_d, nstep, esp.point_num);
+
+            double picket_fence_mod = true;
+
+            if (picket_fence_mod) {
+
+            } else {
+                annual_insol<<<NBRT, NTH>>>(insol_ann_d, insol_d, nstep, esp.point_num);
+            }
+
+
+            
+            
         }
     }
     return true;
 }
 
 bool radiative_transfer::configure(config_file &config_reader) {
-    // basic star-planet properties
-    config_reader.append_config_var("Tstar", Tstar_config, Tstar_config);
-    config_reader.append_config_var(
-        "planet_star_dist", planet_star_dist_config, planet_star_dist_config);
-    config_reader.append_config_var("radius_star", radius_star_config, radius_star_config);
-    config_reader.append_config_var("diff_ang", diff_ang_config, diff_ang_config);
-    // config_reader.append_config_var("Tint", Tint_config, Tint_config);
-    config_reader.append_config_var("albedo", albedo_config, albedo_config);
-    // config_reader.append_config_var("tausw", tausw_config, tausw_config);
-    // config_reader.append_config_var("taulw", taulw_config, taulw_config);
+    double picket_fence_mod = true;
 
-    // options for latitude dependence in longwave opacity
-    config_reader.append_config_var("latf_lw", latf_lw_config, latf_lw_config);
-    config_reader.append_config_var("kappa_lw_pole", kappa_lw_pole_config, kappa_lw_pole_config);
+    if (picket_fence_mod) {
+        // basic star-planet properties
+        config_reader.append_config_var("Tstar", Tstar_config, Tstar_config);
+        config_reader.append_config_var(
+            "planet_star_dist", planet_star_dist_config, planet_star_dist_config);
+        config_reader.append_config_var("radius_star", radius_star_config, radius_star_config);
+        //config_reader.append_config_var("diff_ang", diff_ang_config, diff_ang_config);
+        // config_reader.append_config_var("Tint", Tint_config, Tint_config);
+        config_reader.append_config_var("albedo", albedo_config, albedo_config);
+        // config_reader.append_config_var("tausw", tausw_config, tausw_config);
+        // config_reader.append_config_var("taulw", taulw_config, taulw_config);
 
-    config_reader.append_config_var("n_sw", n_sw_config, n_sw_config);
-    config_reader.append_config_var("n_lw", n_lw_config, n_lw_config);
-    // config_reader.append_config_var("f_lw", f_lw_config, f_lw_config);
+        // options for latitude dependence in longwave opacity
+        config_reader.append_config_var("latf_lw", latf_lw_config, latf_lw_config);
+        config_reader.append_config_var("kappa_lw_pole", kappa_lw_pole_config, kappa_lw_pole_config);
+
+       
+        // config_reader.append_config_var("f_lw", f_lw_config, f_lw_config);
 
 
-    config_reader.append_config_var("rt1Dmode", rt1Dmode_config, rt1Dmode_config);
+        config_reader.append_config_var("rt1Dmode", rt1Dmode_config, rt1Dmode_config);
 
-    // spin up spin down
-    config_reader.append_config_var("dgrt_spinup_start", spinup_start_step, spinup_start_step);
-    config_reader.append_config_var("dgrt_spinup_stop", spinup_stop_step, spinup_stop_step);
-    config_reader.append_config_var(
-        "dgrt_spindown_start", spindown_start_step, spindown_start_step);
-    config_reader.append_config_var("dgrt_spindown_stop", spindown_stop_step, spindown_stop_step);
+        // spin up spin down
+        config_reader.append_config_var("dgrt_spinup_start", spinup_start_step, spinup_start_step);
+        config_reader.append_config_var("dgrt_spinup_stop", spinup_stop_step, spinup_stop_step);
+        config_reader.append_config_var(
+            "dgrt_spindown_start", spindown_start_step, spindown_start_step);
+        config_reader.append_config_var("dgrt_spindown_stop", spindown_stop_step, spindown_stop_step);
+
+
+
+    } else {
+        // basic star-planet properties
+        config_reader.append_config_var("Tstar", Tstar_config, Tstar_config);
+        config_reader.append_config_var(
+            "planet_star_dist", planet_star_dist_config, planet_star_dist_config);
+        config_reader.append_config_var("radius_star", radius_star_config, radius_star_config);
+        config_reader.append_config_var("diff_ang", diff_ang_config, diff_ang_config);
+        // config_reader.append_config_var("Tint", Tint_config, Tint_config);
+        config_reader.append_config_var("albedo", albedo_config, albedo_config);
+        // config_reader.append_config_var("tausw", tausw_config, tausw_config);
+        // config_reader.append_config_var("taulw", taulw_config, taulw_config);
+
+        // options for latitude dependence in longwave opacity
+        config_reader.append_config_var("latf_lw", latf_lw_config, latf_lw_config);
+        config_reader.append_config_var("kappa_lw_pole", kappa_lw_pole_config, kappa_lw_pole_config);
+
+        config_reader.append_config_var("n_sw", n_sw_config, n_sw_config);
+        config_reader.append_config_var("n_lw", n_lw_config, n_lw_config);
+        // config_reader.append_config_var("f_lw", f_lw_config, f_lw_config);
+
+
+        config_reader.append_config_var("rt1Dmode", rt1Dmode_config, rt1Dmode_config);
+
+        // spin up spin down
+        config_reader.append_config_var("dgrt_spinup_start", spinup_start_step, spinup_start_step);
+        config_reader.append_config_var("dgrt_spinup_stop", spinup_stop_step, spinup_stop_step);
+        config_reader.append_config_var(
+            "dgrt_spindown_start", spindown_start_step, spindown_start_step);
+        config_reader.append_config_var("dgrt_spindown_stop", spindown_stop_step, spindown_stop_step);
+    }
+
+
+    
 
     return true;
 }
 
 bool radiative_transfer::store(const ESP &esp, storage &s) {
-    cudaMemcpy(insol_h, insol_d, esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
-    s.append_table(insol_h, esp.point_num, "/insol", "W m^-2", "insolation (instantaneous)");
+    double picket_fence_mod = true;
 
-    cudaMemcpy(insol_ann_h, insol_ann_d, esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
-    s.append_table(insol_ann_h,
-                   esp.point_num,
-                   "/insol_annual",
-                   "W m^-2",
-                   "insolation (annual/orbit averaged)");
+    if (picket_fence_mod) {
+        cudaMemcpy(insol_h, insol_d, esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
+        s.append_table(insol_h, esp.point_num, "/insol", "W m^-2", "insolation (instantaneous)");
+    
+        cudaMemcpy(
+            lw_net__h, lw_net__df_e, esp.nvi * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
+        s.append_table(lw_net__h, esp.nvi * esp.point_num, "/lw_net__h", "W m^-2", "net long-wave flux (LW)");
+    
+        cudaMemcpy(
+            sw_net__h, sw_net__df_e, esp.nvi * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
+        s.append_table(sw_net__h, esp.nvi * esp.point_num, "/sw_net__h", "W m^-2", "net short-wave flux (SW)");
+    
+            
+        cudaMemcpy(dtau__h, tau_d, esp.nv * esp.point_num  * sizeof(double), cudaMemcpyDeviceToHost);
+        s.append_table(dtau__h,
+                       esp.nv * esp.point_num,
+                       "/tau",
+                       " ",
+                       "optical depth across each layer (not total optical depth)");
+    
+        cudaMemcpy(qheat_h, qheat_d, esp.nv * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
+        s.append_table(qheat_h, esp.nv * esp.point_num, "/DGQheat", " ", "Double Gray Qheat");
+    
+        // cudaMemcpy(Tsurface_h, Tsurface_d, esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
+        // s.append_table(Tsurface_h, esp.point_num, "/Tsurface", "K", "surface temperature");
+    
+        s.append_value(Qheat_scaling, "/dgrt_qheat_scaling", " ", "Qheat scaling applied to DG");
+    
+        s.append_value(ASR_tot, "/ASR", "W", "Absorbed Shortwave Radiation (global total)");
+        s.append_value(OLR_tot, "/OLR", "W", "Outgoing Longwave Radiation (global total)");
 
-    cudaMemcpy(
-        flw_up_h, flw_up_d, esp.nvi * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
-    s.append_table(flw_up_h, esp.nvi * esp.point_num, "/flw_up", "W m^-2", "upward flux (LW)");
+        cudaMemcpy(k_IR_2__h, k_IR_2_nv_d, 2*esp.nv * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
+        s.append_table(k_IR_2__h, 2*esp.nv * esp.point_num, "/k_IR_2__h", " ", "kappa for two IR bands");
+        cudaMemcpy(k_V_3__h, k_V_3_nv_d,3* esp.nv * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
+        s.append_table(k_V_3__h, 3*esp.nv * esp.point_num, "/k_V_3__h", " ", "kappa for three V bands");
 
-    cudaMemcpy(
-        fsw_up_h, fsw_up_d, esp.nvi * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
-    s.append_table(fsw_up_h, esp.nvi * esp.point_num, "/fsw_up", "W m^-2", "upward flux (SW)");
+              
 
-    cudaMemcpy(
-        flw_dn_h, flw_dn_d, esp.nvi * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
-    s.append_table(flw_dn_h, esp.nvi * esp.point_num, "/flw_dn", "W m^-2", "downward flux (LW)");
 
-    cudaMemcpy(
-        fsw_dn_h, fsw_dn_d, esp.nvi * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
-    s.append_table(fsw_dn_h, esp.nvi * esp.point_num, "/fsw_dn", "W m^-2", "downward flux (SW)");
-
-    cudaMemcpy(tau_h, tau_d, esp.nv * esp.point_num * 2 * sizeof(double), cudaMemcpyDeviceToHost);
-    s.append_table(tau_h,
-                   esp.nv * esp.point_num * 2,
-                   "/tau",
-                   " ",
-                   "optical depth across each layer (not total optical depth)");
-
-    cudaMemcpy(qheat_h, qheat_d, esp.nv * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
-    s.append_table(qheat_h, esp.nv * esp.point_num, "/DGQheat", " ", "Double Gray Qheat");
-
-    // cudaMemcpy(Tsurface_h, Tsurface_d, esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
-    // s.append_table(Tsurface_h, esp.point_num, "/Tsurface", "K", "surface temperature");
-
-    s.append_value(Qheat_scaling, "/dgrt_qheat_scaling", " ", "Qheat scaling applied to DG");
-
-    s.append_value(ASR_tot, "/ASR", "W", "Absorbed Shortwave Radiation (global total)");
-    s.append_value(OLR_tot, "/OLR", "W", "Outgoing Longwave Radiation (global total)");
+    } else {
+        cudaMemcpy(insol_h, insol_d, esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
+        s.append_table(insol_h, esp.point_num, "/insol", "W m^-2", "insolation (instantaneous)");
+    
+        cudaMemcpy(insol_ann_h, insol_ann_d, esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
+        s.append_table(insol_ann_h,
+                       esp.point_num,
+                       "/insol_annual",
+                       "W m^-2",
+                       "insolation (annual/orbit averaged)");
+    
+        cudaMemcpy(
+            flw_up_h, flw_up_d, esp.nvi * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
+        s.append_table(flw_up_h, esp.nvi * esp.point_num, "/flw_up", "W m^-2", "upward flux (LW)");
+    
+        cudaMemcpy(
+            fsw_up_h, fsw_up_d, esp.nvi * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
+        s.append_table(fsw_up_h, esp.nvi * esp.point_num, "/fsw_up", "W m^-2", "upward flux (SW)");
+    
+        cudaMemcpy(
+            flw_dn_h, flw_dn_d, esp.nvi * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
+        s.append_table(flw_dn_h, esp.nvi * esp.point_num, "/flw_dn", "W m^-2", "downward flux (LW)");
+    
+        cudaMemcpy(
+            fsw_dn_h, fsw_dn_d, esp.nvi * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
+        s.append_table(fsw_dn_h, esp.nvi * esp.point_num, "/fsw_dn", "W m^-2", "downward flux (SW)");
+    
+        cudaMemcpy(tau_h, tau_d, esp.nv * esp.point_num * 2 * sizeof(double), cudaMemcpyDeviceToHost);
+        s.append_table(tau_h,
+                       esp.nv * esp.point_num * 2,
+                       "/tau",
+                       " ",
+                       "optical depth across each layer (not total optical depth)");
+    
+        cudaMemcpy(qheat_h, qheat_d, esp.nv * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
+        s.append_table(qheat_h, esp.nv * esp.point_num, "/DGQheat", " ", "Double Gray Qheat");
+    
+        // cudaMemcpy(Tsurface_h, Tsurface_d, esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
+        // s.append_table(Tsurface_h, esp.point_num, "/Tsurface", "K", "surface temperature");
+    
+        s.append_value(Qheat_scaling, "/dgrt_qheat_scaling", " ", "Qheat scaling applied to DG");
+    
+        s.append_value(ASR_tot, "/ASR", "W", "Absorbed Shortwave Radiation (global total)");
+        s.append_value(OLR_tot, "/OLR", "W", "Outgoing Longwave Radiation (global total)");
+    }
+   
 
     return true;
 }
 
 bool radiative_transfer::store_init(storage &s) {
-    s.append_value(Tstar, "/Tstar", "K", "Temperature of host star");
-    // s.append_value(Tint, "/Tint", "K", "Temperature of interior heat flux");
-    s.append_value(
-        planet_star_dist_config, "/planet_star_dist", "au", "distance b/w host star and planet");
-    s.append_value(radius_star_config, "/radius_star", "R_sun", "radius of host star");
-    s.append_value(diff_ang, "/diff_ang", "-", "diffusivity factor");
-    s.append_value(albedo, "/albedo", "-", "bond albedo of planet");
-    //  s.append_value(kappa_sw, "/kappa_sw", "-", "gray opacity of shortwave");
-    //  s.append_value(kappa_lw, "/kappa_lw", "-", "gray opacity of longwave");
+    double picket_fence_mod = true;
 
-    s.append_value(latf_lw ? 1.0 : 0.0, "/latf_lw", "-", "use lat dependent opacity");
-    s.append_value(kappa_lw_pole, "/kappa_lw_pole", "-", "gray opacity of longwave at poles");
-    s.append_value(n_lw, "/n_lw", "-", "power law exponent for unmixed absorber in LW");
-    s.append_value(n_sw, "/n_sw", "-", "power law exponent for mixed/unmixed absorber in SW");
-    // s.append_value(f_lw, "/f_lw", "-", "fraction of taulw in well-mixed absorber");
+    if (picket_fence_mod) {
+        s.append_value(Tstar, "/Tstar", "K", "Temperature of host star");
+        // s.append_value(Tint, "/Tint", "K", "Temperature of interior heat flux");
+        s.append_value(
+            planet_star_dist_config, "/planet_star_dist", "au", "distance b/w host star and planet");
+        s.append_value(radius_star_config, "/radius_star", "R_sun", "radius of host star");
+        
+        s.append_value(albedo, "/albedo", "-", "bond albedo of planet");
+        //  s.append_value(kappa_sw, "/kappa_sw", "-", "gray opacity of shortwave");
+        //  s.append_value(kappa_lw, "/kappa_lw", "-", "gray opacity of longwave");
+    
+        s.append_value(latf_lw ? 1.0 : 0.0, "/latf_lw", "-", "use lat dependent opacity");
+        s.append_value(kappa_lw_pole, "/kappa_lw_pole", "-", "gray opacity of longwave at poles");
+       
+        // s.append_value(f_lw, "/f_lw", "-", "fraction of taulw in well-mixed absorber");
+
+    } else {
+        s.append_value(Tstar, "/Tstar", "K", "Temperature of host star");
+        // s.append_value(Tint, "/Tint", "K", "Temperature of interior heat flux");
+        s.append_value(
+            planet_star_dist_config, "/planet_star_dist", "au", "distance b/w host star and planet");
+        s.append_value(radius_star_config, "/radius_star", "R_sun", "radius of host star");
+        s.append_value(diff_ang, "/diff_ang", "-", "diffusivity factor");
+        s.append_value(albedo, "/albedo", "-", "bond albedo of planet");
+        //  s.append_value(kappa_sw, "/kappa_sw", "-", "gray opacity of shortwave");
+        //  s.append_value(kappa_lw, "/kappa_lw", "-", "gray opacity of longwave");
+    
+        s.append_value(latf_lw ? 1.0 : 0.0, "/latf_lw", "-", "use lat dependent opacity");
+        s.append_value(kappa_lw_pole, "/kappa_lw_pole", "-", "gray opacity of longwave at poles");
+        s.append_value(n_lw, "/n_lw", "-", "power law exponent for unmixed absorber in LW");
+        s.append_value(n_sw, "/n_sw", "-", "power law exponent for mixed/unmixed absorber in SW");
+        // s.append_value(f_lw, "/f_lw", "-", "fraction of taulw in well-mixed absorber");
+    }
+   
 
 
     return true;
@@ -469,4 +847,44 @@ void radiative_transfer::RTSetup(double Tstar_,
     incflx          = resc_flx * bc * Tstar * Tstar * Tstar * Tstar;
 
     rt1Dmode = rt1Dmode_;
+}
+
+void radiative_transfer::RTSetup_picket_fence(double Tstar_,
+    double planet_star_dist_,
+    double radius_star_,
+    double diff_ang_,
+    double P_Ref,
+    double Gravit,
+    double albedo_,
+    double kappa_sw_,
+    double kappa_lw_,
+    bool   latf_lw_,
+    double kappa_lw_pole_,
+    double f_lw,
+    bool   rt1Dmode_,
+    double Tmean) {
+
+double bc = 5.6703744191844314e-08; // Stefan–Boltzmann constant [W m−2 K−4]
+
+Tstar            = Tstar_;
+planet_star_dist = planet_star_dist_ * 149597870.7; //conv to km
+radius_star      = radius_star_ * 695700;           //conv to km
+diff_ang         = diff_ang_;
+// Tint             = Tint_;
+albedo = albedo_;
+//tausw      = kappa_sw * P_Ref / Gravit;
+//taulw      = kappa_lw * P_Ref / (f_lw * Gravit);
+//taulw_pole = kappa_lw_pole * P_Ref / (f_lw * Gravit);
+kappa_sw      = kappa_sw_;
+kappa_lw      = kappa_lw_;
+kappa_lw_pole = kappa_lw_pole_;
+
+latf_lw = latf_lw_;
+
+// f_lw             = f_lw_;
+
+double resc_flx = pow(radius_star / planet_star_dist, 2.0);
+incflx          = resc_flx * bc * Tstar * Tstar * Tstar * Tstar;
+
+rt1Dmode = rt1Dmode_;
 }
