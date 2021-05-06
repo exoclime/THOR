@@ -710,14 +710,14 @@ def make_plot(args, save=True, axis=None):
     if ('TSqheatprof' in pview or 'all' in pview) and input.TSRT:
         output.load_reshape(grid,['TSqheat'])
         qheat = output.TSqheat
-        z = {'value': qheat, 'label': r'Two Stream Q heat (W m$^{-2}$)', 'name': 'TSqheatprof'}
+        z = {'value': qheat, 'label': r'Two Stream Q heat (W m$^{-3}$)', 'name': 'TSqheatprof'}
         pfile = call_plot('TSqheatprof',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
         plots_created.append(pfile)
 
     if ('DGqheatprof' in pview or 'all' in pview) and input.RT:
         output.load_reshape(grid,['DGqheat'])
         qheat = output.DGqheat
-        z = {'value': qheat, 'label': r'Double Gray Q heat (W m$^{-2}$)', 'name': 'DGqheatprof'}
+        z = {'value': qheat, 'label': r'Double Gray Q heat (W m$^{-3}$)', 'name': 'DGqheatprof'}
         pfile = call_plot('DGqheatprof',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
         plots_created.append(pfile)
 
@@ -725,7 +725,7 @@ def make_plot(args, save=True, axis=None):
     if ('qheatprof' in pview or 'all' in pview):
         output.load_reshape(grid,['qheat'])
         qheat = output.qheat
-        z = {'value': qheat, 'label': r'Q heat (W m$^{-2}$)', 'name': 'qheatprof'}
+        z = {'value': qheat, 'label': r'Q heat (W m$^{-3}$)', 'name': 'qheatprof'}
         pfile = call_plot('qheatprof',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
         plots_created.append(pfile)
 
