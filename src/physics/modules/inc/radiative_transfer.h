@@ -159,27 +159,54 @@ private:
 
     // picket-fence scheme
 
-    double  met,
-    double* k_IR_2_nv_d,
-    double* k_V_3_nv_d,
-    double* gam_V_3_d,
-    double* gam_1_d,
-    double* gam_2_d,
-    double* Beta_V_3_d,
-    double* Beta_2_d,
-    double* net_F_nvi_d,    
-    double* AB_d,
-                              
-    double* tau_Ve__df_e, double* tau_IRe__df_e, double* Te__df_e, double* be__df_e, //Kitzman working variables
-    double* sw_down__df_e, double* sw_down_b__df_e, double* sw_up__df_e,
-    double* lw_down__df_e, double* lw_down_b__df_e,
-    double* lw_up__df_e, double* lw_up_b__df_e,
-    double* lw_net__df_e, double* sw_net__df_e,
+    double* gam_P;
+    double* gam_V__h;
+    double* Beta_V__h;
+    double* Beta__h;
+    double* gam_1__h;
+    double* gam_2__h;
+    double* k_IR_2__h;
+    double* k_V_3__h;
+    double* net_F_h;
+    double* AB__h;
+    double* Teff;
+    
+    double  metalicity = 0;
+    double* k_IR_2_nv_d;
+    double* k_V_3_nv_d;
+    double* gam_V_3_d;
+    double* gam_1_d;
+    double* gam_2_d;
+    double* Beta_V_3_d;
+    double* Beta_2_d;
+    double* net_F_nvi_d;    
+    double* AB_d;
 
-    double* dtau__dff_l, double* del__dff_l, // lw_grey_updown_linear working variables
-    double* edel__dff_l, double* e0i__dff_l, double* e1i__dff_l,
-    double* Am__dff_l, double* Bm__dff_l,
-    double* lw_up_g__dff_e, double* lw_down_g__dff_e,
+    //Kitzman working variables                          
+    double* tau_Ve__df_e; 
+    double* tau_IRe__df_e;
+    double* Te__df_e;
+    double* be__df_e; 
+    double* sw_down__df_e;
+    double* sw_down_b__df_e;
+    double* sw_up__df_e;
+    double* lw_down__df_e;
+    double* lw_down_b__df_e;
+    double* lw_up__df_e;
+    double* lw_up_b__df_e;
+    double* lw_net__df_e;
+    double* sw_net__df_e;
+
+    // lw_grey_updown_linear working variables
+    double* dtau__dff_l;
+    double* del__dff_l;
+    double* edel__dff_l;
+    double* e0i__dff_l;
+    double* e1i__dff_l;
+    double* Am__dff_l;
+    double* Bm__dff_l;
+    double* lw_up_g__dff_e;
+    double* lw_down_g__dff_e;
 
 
     //  These arrays are for temporary usage in RT code

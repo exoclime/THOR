@@ -921,7 +921,12 @@ __device__  void lw_grey_updown_linear(int id, int nlay, int nlay1,
             Finc_B = Finc * Beta_V_3_d[id * 3 + channel];
 
             // Calculate sw flux
-            sw_grey_down(id, nlay, Finc_B, tau_Ve__df_e, sw_down_b__df_e, mu_s);
+            if (mu_s[id]>=0){
+                sw_grey_down(id, nlay, Finc_B, tau_Ve__df_e, sw_down_b__df_e, mu_s[id]);
+            } else {
+                sw_grey_down(id, nlay, Finc_B, tau_Ve__df_e, sw_down_b__df_e,0);
+            }
+            
 
             // Sum all bands
             for (int i = 0; i < nlay1; i++)
@@ -1169,7 +1174,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
             Am__dff_l, Bm__dff_l,
             lw_up_g__dff_e, lw_down_g__dff_e);
 
-            insol_d[id] =  insol_d[id] * coszrs; // ?????? Is insol_d needed ?
+            insol_d[id] =  insol_d[id] * coszrs* (1-alb); // ?????? Is insol_d needed ?
         }
         else {
             insol_d[id] = 0;

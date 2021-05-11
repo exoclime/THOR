@@ -127,6 +127,8 @@ bool radiative_transfer::initialise_memory(const ESP &              esp,
         Beta__h = (double *)malloc(2 * esp.point_num * sizeof(double));
         net_F_h = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
         AB__h = (double *)malloc( esp.point_num * sizeof(double));
+        gam_P = (double *)malloc(esp.point_num * sizeof(double));
+        Teff = (double *)malloc(esp.point_num * sizeof(double));
 
         // picket fence parameters     //Kitzman working variables
         cudaMalloc((void **)&tau_Ve__df_e, esp.nvi * esp.point_num * sizeof(double));
@@ -188,6 +190,8 @@ bool radiative_transfer::initialise_memory(const ESP &              esp,
         fsw_up_h = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
         fsw_dn_h = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
 
+        
+
         cudaMalloc((void **)&surf_flux_d, esp.point_num * sizeof(double));
 
         cudaMalloc((void **)&ASR_d, esp.point_num * sizeof(double));
@@ -240,6 +244,8 @@ bool radiative_transfer::free_memory() {
         free(Beta__h);
         free(net_F_h);
         free(AB__h);
+        free(gam_P);
+        free(Teff);
 
         // picket fence parameters     //Kitzman working variables
 
@@ -392,6 +398,257 @@ bool radiative_transfer::initial_conditions(const ESP &            esp,
     return returnstatus;
 }
 
+///////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////
+
+
+// Calculates the Bond Albedo according to Parmentier et al. (2015) expression
+void Bond_Parmentier(double Teff0, double grav, double& AB) {
+    // dependcies
+    //// pow from math
+    //// log10 from math        
+
+
+    // Input:
+    // Teff0 - Atmospheric profile effective temperature [K] with zero albedo
+    // grav - Surface gravity of planet [m s-2]
+
+    // Call by reference (Input&Output):
+    // AB - Bond albedo
+
+    // work variables
+    double a, b;
+
+    // start operations
+
+    if (Teff0 <= 250.0)
+    {
+        a = ((double)-0.335) * pow(grav, ((double)0.070));
+        b = 0.0;
+    }
+    else if (Teff0 > 250.0 && Teff0 <= 750.0)
+    {
+        a = -0.335 * pow(grav, ((double)0.070)) + 2.149 * pow(grav, ((double)0.135));
+        b = -0.896 * pow(grav, ((double)0.135));
+    }
+    else if (Teff0 > 750.0 && Teff0 < 1250.0)
+    {
+        a = -0.335 * pow(grav, ((double)0.070)) - 0.428 * pow(grav, ((double)0.135));
+        b = 0.0;
+    }
+    else if (Teff0 >= 1250.0)
+    {
+        a = 16.947 - ((double)3.174) * pow(grav, ((double)0.070)) - 4.051 *
+            pow(grav, ((double)0.135));
+        b = -5.472 + ((double)0.917) * pow(grav, ((double)0.070)) + 1.170 *
+            pow(grav, ((double)0.135));
+    }
+
+    // Final Bond Albedo expression
+    AB = pow(((double)10.0), (a + b * log10(Teff0)));
+
+}
+
+
+///////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////
+
+// Calculates 3 band grey visual gamma values and 2 picket fence IR gamma values
+    // according to the coefficents and equations in:
+    // Parmentier & Menou (2014) and Parmentier et al. (2015)
+    // NOTE: This does not calculate the opacity - call k_Ross_Freedman for that
+    void gam_Parmentier(int nCol, int nLev, double *Teff, int table_num, double *gam_V, double *Beta_V,
+    double *Beta, double *gam_1, double *gam_2 ) {
+    // dependcies
+    //// pow from math
+    //// log10 from math        
+
+
+    // Input:
+    // Teff - Effective temperature [K] (See Parmentier papers for various ways to calculate this)
+    // for non-irradiated atmosphere Teff = Tint
+    // table_num - Table selection from Parmentier et al. (2015): 1 = w. TiO/VO, 2 = w.o. TiO/VO
+
+    // Call by reference (Input&Output):
+    // gam_V(3) - gamma ratio for 3 visual bands (gam_V = kV_Ross/kIR_Ross)
+    // beta_V(3) - fraction of total incident stellar flux in band (1/3 for Parmentier values)
+    // Beta - equilvalent bandwidth for picket fence IR model
+    // gam_1 - gamma ratio for IR band 1 (gam_1 = kIR_1/kIR_Ross)
+    // gam_2 - gamma ratio for IR band 2 (gam_2 = kIR_2/kIR_Ross)
+    // gam_P - gamma ratio for Planck mean (gam_P = kIR_Planck/kIR_Ross)
+    // tau_lim - tau limit variable (usually for IC system)
+
+    // work variables
+    double  R = 0;
+    double aP = 0;
+    double bP = 0;
+    double cP = 0;
+    double aV1 = 0, bV1 = 0, aV2 = 0, bV2 = 0, aV3 = 0, bV3 = 0;
+    double aB = 0, bB = 0;
+    double l10T = 0, l10T2 = 0, RT = 0;
+    int i;
+
+    double gam_P[nCol*nLev*2];
+
+    // start operations
+
+    for (int id = 0, id < nCol; id++) {
+
+        // Log 10 T_eff variables
+        l10T = log10(Teff[id]);
+        l10T2 = pow(l10T, 2.0);
+
+        if (table_num == 1) {
+            // First table in Parmentier et al. (2015) w. TiO/VO
+            // Start large if statements with visual band and Beta coefficents
+            if (Teff[id] <= 200.0)
+            {
+                aV1 = -5.51; bV1 = 2.48;
+                aV2 = -7.37; bV2 = 2.53;
+                aV3 = -3.03; bV3 = -0.20;
+                aB = 0.84; bB = 0.0;
+            }
+            else if (Teff[id] > 200.0 && Teff[id] <= 300.0)
+            {
+                aV1 = 1.23; bV1 = -0.45;
+                aV2 = 13.99; bV2 = -6.75;
+                aV3 = -13.87; bV3 = 4.51;
+                aB = 0.84; bB = 0.0;
+            }
+            else if (Teff[id] > 300.0 && Teff[id] <= 600.0)
+            {
+                aV1 = 8.65; bV1 = -3.45;
+                aV2 = -15.18; bV2 = 5.02;
+                aV3 = -11.95; bV3 = 3.74;
+                aB = 0.84; bB = 0.0;
+            }
+            else if (Teff[id] > 600.0 && Teff[id] <= 1400.0)
+            {
+                aV1 = -12.96; bV1 = 4.33;
+                aV2 = -10.41; bV2 = 3.31;
+                aV3 = -6.97; bV3 = 1.94;
+                aB = 0.84; bB = 0.0;
+            }
+            else if (Teff[id] > 1400.0 && Teff[id] < 2000.0)
+            {
+                aV1 = -23.75; bV1 = 7.76;
+                aV2 = -19.95; bV2 = 6.34;
+                aV3 = -3.65; bV3 = 0.89;
+                aB = 0.84; bB = 0.0;
+            }
+            else if (Teff[id] >= 2000.0)
+            {
+                aV1 = 12.65; bV1 = -3.27;
+                aV2 = 13.56; bV2 = -3.81;
+                aV3 = -6.02; bV3 = 1.61;
+                aB = 6.21; bB = -1.63;
+            }
+
+            // gam_P coefficents
+            aP = -2.36;
+            bP = 13.92;
+            cP = -19.38;
+        }
+        else if (table_num == 2)
+        {
+            // ! Appendix table from Parmentier et al. (2015) - without TiO and VO
+            if (Teff[id] <= 200.0)
+            {
+                aV1 = -5.51; bV1 = 2.48;
+                aV2 = -7.37; bV2 = 2.53;
+                aV3 = -3.03; bV3 = -0.20;
+                aB = 0.84; bB = 0.0;
+            }
+            else if (Teff[id] > 200.0 && Teff[id] <= 300.0)
+            {
+                aV1 = 1.23; bV1 = -0.45;
+                aV2 = 13.99; bV2 = -6.75;
+                aV3 = -13.87; bV3 = 4.51;
+                aB = 0.84; bB = 0.0;
+            }
+            else if (Teff[id] > 300.0 && Teff[id] <= 600.0)
+            {
+                aV1 = 8.65; bV1 = -3.45;
+                aV2 = -15.18; bV2 = 5.02;
+                aV3 = -11.95; bV3 = 3.74;
+                aB = 0.84; bB = 0.0;
+            }
+            else if (Teff[id] > 600.0 && Teff[id] <= 1400.0)
+            {
+                aV1 = -12.96; bV1 = 4.33;
+                aV2 = -10.41; bV2 = 3.31;
+                aV3 = -6.97; bV3 = 1.94;
+                aB = 0.84; bB = 0.0;
+            }
+            else if (Teff[id] > 1400.0 && Teff[id] < 2000.0)
+            {
+                aV1 = -1.68; bV1 = 0.75;
+                aV2 = 6.96; bV2 = -2.21;
+                aV3 = 0.02; bV3 = -0.28;
+                aB = 3.0; bB = -0.69;
+            }
+            else if (Teff[id] >= 2000.0)
+            {
+                aV1 = 10.37; bV1 = -2.91;
+                aV2 = -2.4; bV2 = 0.62;
+                aV3 = -16.54; bV3 = 4.74;
+                aB = 3.0; bB = -0.69;
+            }
+
+            // gam_P coefficents
+            if (Teff[id] <= 1400.0)
+            {
+                aP = -2.36;
+                bP = 13.92;
+                cP = -19.38;
+            }
+            else
+            {
+                aP = -12.45;
+                bP = 82.25;
+                cP = -134.42;
+            }
+        }
+
+        // Calculation of all values
+        // Visual band gamma
+        gam_V[id*nCol + 0] = pow(((double)10.0), (aV1 + bV1 * l10T));
+        gam_V[id*nCol + 1] = pow(((double)10.0), (aV2 + bV2 * l10T));
+        gam_V[id*nCol + 2] = pow(((double)10.0), (aV3 + bV3 * l10T));
+
+
+
+        // Visual band fractions
+        for (i = 0; i < 3; i++)
+        {
+            Beta_V[id*nCol + i] = ((double)1.0) / ((double)3.0);
+        }
+
+        // gamma_Planck - if < 1 then make it grey approximation (k_Planck = k_Ross, gam_P = 1)
+        gam_P[id] = pow(((double)10.0), (aP * l10T2 + bP * l10T + cP));
+        if (gam_P[id] < 1.0000001)
+        {
+            gam_P[id] = 1.0000001;
+        }
+
+        // equivalent bandwidth value
+        Beta[id*nCol + 0] = aB + bB * l10T;
+        Beta[id*nCol + 1] = (1.0) - Beta[id*nCol + 0];
+
+        // IR band kappa1/kappa2 ratio - Eq. 96 from Parmentier & Menou (2014)
+        RT = (gam_P[id] - 1.0) / (2.0 * Beta[id*nCol + 0] * Beta[id*nCol + 1]);
+        R = 1.0 + RT + sqrt(pow(RT, 2.0) + RT);
+
+        // gam_1 and gam_2 values - Eq. 92, 93 from Parmentier & Menou (2014)
+        gam_1[id] = Beta[id*nCol + 0] + R - Beta[id*nCol + 0] * R;
+        gam_2[id] = gam_1[id] / R;
+    }
+
+    
+
+    
+
+}
 
 bool radiative_transfer::phy_loop(ESP &                  esp,
                                   const SimulationSetup &sim,
@@ -442,6 +699,70 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
         dim3 NBRT((esp.point_num / NTH) + 1, 1, 1);
 
         if (picket_fence_mod){
+
+            for (int c = 0; c <  esp.point_num; c++){
+                // Parmentier opacity profile parameters - first get Bond albedo
+                double Tirr = Tstar*powl((radius_star/planet_star_dist), 0.5);
+                Teff[c] = powl((powl(esp.Tint, 4) + (1.0 / sqrtl((double)3.0)) *
+                    powl(Tirr, 4)), 0.25);
+
+                Bond_Parmentier(Teff[c], gravit, AB__h[c]);
+
+                // Recalculate Teff and then find parameters
+                if (esp.insolation.get_device_cos_zenith_angles() >= 0)
+                {
+                    Teff[c] = powl((powl(esp.Tint[c], 4) + (((double)1.0) - AB__h[c]) * esp.insolation.get_device_cos_zenith_angles()[c] *
+                        powl(Tirr, 4)), (0.25));
+                } else {
+                    Teff[c] = powl((powl(esp.Tint[c], 4) + 0, (0.25));
+                }
+                
+            }
+
+            
+            gam_Parmentier(esp.point_num,
+                esp.nv,
+                Teff,
+                1,
+                gam_V__h,
+                Beta_V__h,
+                Beta__h,
+                gam_1__h,
+                gam_2__h);
+            
+
+                
+            bool cudaStatus;
+            cudaStatus = cudaMemcpy(gam_V_3_d, gam_V__h, 3*esp.point_num * sizeof(double), cudaMemcpyHostToDevice);
+            if (cudaStatus != cudaSuccess) {
+                fprintf(stderr, "gam_V_3_d cudaMemcpyHostToDevice failed!");
+                //goto Error;
+            }
+            cudaStatus = cudaMemcpy(Beta_V_3_d, Beta_V__h, 3*esp.point_num * sizeof(double), cudaMemcpyHostToDevice);
+            if (cudaStatus != cudaSuccess) {
+                fprintf(stderr, "Beta_V_3_d cudaMemcpyHostToDevice failed!");
+                //goto Error;
+            }
+            cudaStatus = cudaMemcpy(Beta_2_d, Beta__h, 2*esp.point_num * sizeof(double), cudaMemcpyHostToDevice);
+            if (cudaStatus != cudaSuccess) {
+                fprintf(stderr, "Beta_2_d cudaMemcpyHostToDevice failed!");
+                //goto Error;
+            }
+            cudaStatus = cudaMemcpy(gam_1_d, gam_1__h, esp.point_num *  sizeof(double), cudaMemcpyHostToDevice);
+            if (cudaStatus != cudaSuccess) {
+                fprintf(stderr, "gam_1_d cudaMemcpyHostToDevice failed!");
+                //goto Error;
+            }
+            cudaStatus = cudaMemcpy(gam_2_d, gam_2__h, esp.point_num * sizeof(double), cudaMemcpyHostToDevice);
+            if (cudaStatus != cudaSuccess) {
+                fprintf(stderr, "gam_2_d cudaMemcpyHostToDevice failed!");
+                //goto Error;
+            }
+            cudaStatus = cudaMemcpy(AB_d, AB__h, esp.point_num * sizeof(double), cudaMemcpyHostToDevice);
+            if (cudaStatus != cudaSuccess) {
+                fprintf(stderr, "AB_d cudaMemcpyHostToDevice failed!");
+                //goto Error;
+            }
 
             rtm_dual_band<<<NBRT, NTH>>>(
                 esp.pressure_d,
@@ -578,6 +899,8 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
 
         
 
+        
+
         ASR_tot = gpu_sum_on_device<1024>(ASR_d, esp.point_num);
         OLR_tot = gpu_sum_on_device<1024>(OLR_d, esp.point_num);
 
@@ -592,12 +915,10 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
             } else {
                 annual_insol<<<NBRT, NTH>>>(insol_ann_d, insol_d, nstep, esp.point_num);
             }
-
-
-            
             
         }
     }
+    cudaDeviceSynchronize();
     return true;
 }
 
