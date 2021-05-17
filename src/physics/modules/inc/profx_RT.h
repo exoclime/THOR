@@ -956,16 +956,32 @@ __device__  void lw_grey_updown_linear(int id,
         for (int channel = 0; channel < 3; channel++)
         {
             // Find the opacity structure
-            tau_struct(id, nlay, grav, pe, k_V_3_nv_d, channel, tau_Ve__df_e);
+            tau_struct(id,
+            nlay,
+            grav,
+            pe,
+            k_V_3_nv_d,
+            channel,
+            tau_Ve__df_e);
 
             // Incident flux in band
             Finc_B = Finc * Beta_V_3_d[id * 3 + channel];
 
             // Calculate sw flux
             if (mu_s[id]>=0){
-                sw_grey_down(id, nlay, Finc_B, tau_Ve__df_e, sw_down_b__df_e, mu_s[id]);
+                sw_grey_down(id,
+                nlay,
+                Finc_B,
+                tau_Ve__df_e,
+                sw_down_b__df_e,
+                mu_s[id]);
             } else {
-                sw_grey_down(id, nlay, Finc_B, tau_Ve__df_e, sw_down_b__df_e,0);
+                sw_grey_down(id,
+                nlay,
+                Finc_B,
+                tau_Ve__df_e,
+                sw_down_b__df_e,
+                0);
             }
             
 
@@ -985,7 +1001,13 @@ __device__  void lw_grey_updown_linear(int id,
         for (int channel = 0; channel < 2; channel++)
         {
             // Find the opacity structure
-            tau_struct(id,nlay, grav, pe, k_IR_2_nv_d, channel, tau_IRe__df_e);
+            tau_struct(id,
+            nlay,
+            grav,
+            pe,
+            k_IR_2_nv_d,
+            channel,
+            tau_IRe__df_e);
 
             // Blackbody fluxes (note divide by pi for correct units)
             for (int i = 0; i < nlay1; i++)
@@ -994,9 +1016,22 @@ __device__  void lw_grey_updown_linear(int id,
             }
 
             // Calculate lw flux
-            lw_grey_updown_linear(id,nlay, nlay1, be__df_e, tau_IRe__df_e, lw_up_b__df_e, lw_down_b__df_e,
-                dtau__dff_l, del__dff_l, edel__dff_l, e0i__dff_l, e1i__dff_l,
-                Am__dff_l, Bm__dff_l, lw_up_g__dff_e, lw_down_g__dff_e);
+            lw_grey_updown_linear(id,
+                nlay,
+                nlay1,
+                be__df_e,
+                tau_IRe__df_e,
+                lw_up_b__df_e,
+                lw_down_b__df_e,
+                dtau__dff_l,
+                del__dff_l,
+                edel__dff_l,
+                e0i__dff_l,
+                e1i__dff_l,
+                Am__dff_l,
+                Bm__dff_l,
+                lw_up_g__dff_e,
+                lw_down_g__dff_e);
             
 
 
@@ -1160,7 +1195,10 @@ __global__ void rtm_picket_fence(double *pressure_d,
         for (int level = 0; level < nv; level++)
         {
 
-            kernel_k_Ross_Freedman(temperature_d[id * nv + level], pressure_d[id * nv + level], met, k_IR_2_nv_d[id * nv * 2 + 0 * nv + level]);
+            kernel_k_Ross_Freedman(temperature_d[id * nv + level],
+                pressure_d[id * nv + level],
+                met,
+                k_IR_2_nv_d[id * nv * 2 + 0 * nv + level]);
 
             // Find the visual Rosseland mean opacity from gam_V_3_d
 
@@ -1200,40 +1238,93 @@ __global__ void rtm_picket_fence(double *pressure_d,
             insol_d[id] = incflx * pow(r_rob,-2);
             double flux_top = insol_d[id] * (1-alb);
 
-            Kitzmann_TS_noscatt(id, nv,
-            nvi, temperature_d, pressure_d, phtemp, k_V_3_nv_d, k_IR_2_nv_d, Beta_V_3_d, Beta_2_d, net_F_nvi_d,
-            coszrs, flux_top, tint, gravit, AB_d[id],
+            Kitzmann_TS_noscatt(id,
+                nv,
+                nvi,
+                temperature_d,
+                pressure_d,
+                phtemp,
+                k_V_3_nv_d,
+                k_IR_2_nv_d,
+                Beta_V_3_d,
+                Beta_2_d,
+                net_F_nvi_d,
+                coszrs,
+                flux_top,
+                tint,
+                gravit,
+                AB_d[id],
+                //Kitzman working variables
+                tau_Ve__df_e,
+                tau_IRe__df_e,
+                Te__df_e,
+                be__df_e, 
+                sw_down__df_e,
+                sw_down_b__df_e,
+                sw_up__df_e,
+                lw_down__df_e,
+                lw_down_b__df_e,
+                lw_up__df_e,
+                lw_up_b__df_e,
+                lw_net__df_e,
+                sw_net__df_e,
+                // lw_grey_updown_linear working variables
+                dtau__dff_l,
+                del__dff_l, 
+                edel__dff_l,
+                e0i__dff_l,
+                e1i__dff_l,
+                Am__dff_l,
+                Bm__dff_l,
+                lw_up_g__dff_e,
+                lw_down_g__dff_e);
 
-            tau_Ve__df_e, tau_IRe__df_e, Te__df_e, be__df_e, //Kitzman working variables
-            sw_down__df_e, sw_down_b__df_e, sw_up__df_e,
-            lw_down__df_e, lw_down_b__df_e,
-            lw_up__df_e, lw_up_b__df_e,
-            lw_net__df_e, sw_net__df_e,
-
-            dtau__dff_l, del__dff_l, // lw_grey_updown_linear working variables
-            edel__dff_l, e0i__dff_l, e1i__dff_l,
-            Am__dff_l, Bm__dff_l,
-            lw_up_g__dff_e, lw_down_g__dff_e);
-
-            insol_d[id] =  insol_d[id] * coszrs* (1-alb); // ?????? Is insol_d needed ?
+            // ?????? Is insol_d needed ?
+            insol_d[id] =  insol_d[id] * coszrs* (1-alb); 
         }
         else {
             insol_d[id] = 0;
 
-            Kitzmann_TS_noscatt(id, nv,
-            nvi, temperature_d, pressure_d, phtemp, k_V_3_nv_d, k_IR_2_nv_d, Beta_V_3_d, Beta_2_d, net_F_nvi_d,
-            coszrs, insol_d[id], tint, gravit, AB_d[id],
-
-            tau_Ve__df_e, tau_IRe__df_e, Te__df_e, be__df_e, //Kitzman working variables
-            sw_down__df_e, sw_down_b__df_e, sw_up__df_e,
-            lw_down__df_e, lw_down_b__df_e,
-            lw_up__df_e, lw_up_b__df_e,
-            lw_net__df_e, sw_net__df_e,
-
-            dtau__dff_l, del__dff_l, // lw_grey_updown_linear working variables
-            edel__dff_l, e0i__dff_l, e1i__dff_l,
-            Am__dff_l, Bm__dff_l,
-            lw_up_g__dff_e, lw_down_g__dff_e);
+            Kitzmann_TS_noscatt(id,
+                nv,
+                nvi,
+                temperature_d,
+                pressure_d,
+                phtemp,
+                k_V_3_nv_d,
+                k_IR_2_nv_d,
+                Beta_V_3_d,
+                Beta_2_d,
+                net_F_nvi_d,
+                coszrs,
+                insol_d[id],
+                tint,
+                gravit,
+                AB_d[id],
+                //Kitzman working variables
+                tau_Ve__df_e,
+                tau_IRe__df_e,
+                Te__df_e,
+                be__df_e, 
+                sw_down__df_e,
+                sw_down_b__df_e,
+                sw_up__df_e,
+                lw_down__df_e,
+                lw_down_b__df_e,
+                lw_up__df_e,
+                lw_up_b__df_e,
+                lw_net__df_e,
+                sw_net__df_e,
+                // lw_grey_updown_linear working variables
+                dtau__dff_l,
+                del__dff_l, 
+                edel__dff_l,
+                e0i__dff_l,
+                e1i__dff_l,
+                Am__dff_l,
+                Bm__dff_l,
+                lw_up_g__dff_e,
+                lw_down_g__dff_e);
         }
         
         for (int level = 0; level < nlay; level++)
