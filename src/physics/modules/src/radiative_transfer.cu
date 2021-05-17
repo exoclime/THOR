@@ -764,9 +764,10 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                 //goto Error;
             }
 
-            rtm_dual_band<<<NBRT, NTH>>>(
+            rtm_picket_fence<<<NBRT, NTH>>>(
                 esp.pressure_d,
                 esp.temperature_d,
+                Rho_d,
                 sim.Gravit,
                 esp.Cp_d,
                 esp.lonlat_d,

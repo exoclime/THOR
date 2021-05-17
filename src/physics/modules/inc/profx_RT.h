@@ -700,9 +700,6 @@ __device__ void tau_struct(int id,
     double* kRoss,
     int channel,
     double* tau_struc_e) {
-    // dependencies
-    //// nlay -> namespace main_parameters    
-    //// nlay1 -> namespace main_parameters
 
     // work variables
     double tau_sum;
@@ -887,7 +884,7 @@ __device__  void lw_grey_updown_linear(int id,
         double *Beta_V_3_d,
         double *Beta_2_d,
         double *&net_F_nvi_d,
-        double mu_s,
+        double *mu_s,
         double Finc,
         double Fint,
         double grav,
@@ -1065,6 +1062,7 @@ __device__  void lw_grey_updown_linear(int id,
 
 __global__ void rtm_picket_fence(double *pressure_d,
                               double *temperature_d,
+                              double *Rho_d,
                               double  gravit,
                               double *Cp_d,
                               double *lonlat_d,
@@ -1107,18 +1105,31 @@ __global__ void rtm_picket_fence(double *pressure_d,
                               double* Beta_2_d,
                               double* net_F_nvi_d,    
                               double* AB_d,
-                              
-                              double* tau_Ve__df_e, double* tau_IRe__df_e, double* Te__df_e, double* be__df_e, //Kitzman working variables
-                              double* sw_down__df_e, double* sw_down_b__df_e, double* sw_up__df_e,
-                              double* lw_down__df_e, double* lw_down_b__df_e,
-                              double* lw_up__df_e, double* lw_up_b__df_e,
-                              double* lw_net__df_e, double* sw_net__df_e,
-
-                              double* dtau__dff_l, double* del__dff_l, // lw_grey_updown_linear working variables
-                              double* edel__dff_l, double* e0i__dff_l, double* e1i__dff_l,
-                              double* Am__dff_l, double* Bm__dff_l,
-                              double* lw_up_g__dff_e, double* lw_down_g__dff_e,
-
+                              //Kitzman working variables
+                              double* tau_Ve__df_e,
+                              double* tau_IRe__df_e,
+                              double* Te__df_e,
+                              double* be__df_e, 
+                              double* sw_down__df_e,
+                              double* sw_down_b__df_e,
+                              double* sw_up__df_e,
+                              double* lw_down__df_e,
+                              double* lw_down_b__df_e,
+                              double* lw_up__df_e,
+                              double* lw_up_b__df_e,
+                              double* lw_net__df_e,
+                              double* sw_net__df_e,
+                              // lw_grey_updown_linear working variables
+                              double* dtau__dff_l,
+                              double* del__dff_l,
+                              double* edel__dff_l,
+                              double* e0i__dff_l,
+                              double* e1i__dff_l,
+                              double* Am__dff_l,
+                              double* Bm__dff_l,
+                              double* lw_up_g__dff_e, 
+                              double* lw_down_g__dff_e,
+                              //general model parameters
                               bool    rt1Dmode,
                               bool    DeepModel) {
 
@@ -1216,17 +1227,17 @@ __global__ void rtm_picket_fence(double *pressure_d,
 
                 //latitude dependence of opacity, for e.g., earth           
 
-                k_IR_2_nv_d[id * nlay * 2 + 1 * nlay + level] = k_IR_2_nv_d[id * nlay * 2 + 0 * nlay + level] * gam_2_d[id];
-                k_IR_2_nv_d[id * nlay * 2 + 0 * nlay + level] = k_IR_2_nv_d[id * nlay * 2 + 0 * nlay + level] * gam_1_d[id];
+                k_IR_2_nv_d[id * nv * 2 + 1 * nv + level] = k_IR_2_nv_d[id * nv * 2 + 0 * nv + level] * gam_2_d[id];
+                k_IR_2_nv_d[id * nv * 2 + 0 * nv + level] = k_IR_2_nv_d[id * nv * 2 + 0 * nv + level] * gam_1_d[id];
 
-                k_IR_2_nv_d[id * nlay * 2 + 1 * nlay + level] = k_IR_2_nv_d[id * nlay * 2 + 1 * nlay + level] + 
-                    k_IR_2_nv_d[id * nlay * 2 + 1 * nlay + level]*(kappa_lw_pole - kappa_lw) * pow(sin(lonlat_d[id * 2 + 1]), 2);
-                k_IR_2_nv_d[id * nlay * 2 + 0 * nlay + level] = k_IR_2_nv_d[id * nlay * 2 + 0 * nlay + level] +
-                    k_IR_2_nv_d[id * nlay * 2 + 0 * nlay + level]*(kappa_lw_pole - kappa_lw) * pow(sin(lonlat_d[id * 2 + 1]), 2);
+                k_IR_2_nv_d[id * nv * 2 + 1 * nv + level] = k_IR_2_nv_d[id * nv * 2 + 1 * nv + level] + 
+                    k_IR_2_nv_d[id * nv * 2 + 1 * nv + level]*(kappa_lw_pole - kappa_lw) * pow(sin(lonlat_d[id * 2 + 1]), 2);
+                k_IR_2_nv_d[id * nv * 2 + 0 * nv + level] = k_IR_2_nv_d[id * nv * 2 + 0 * nv + level] +
+                    k_IR_2_nv_d[id * nv * 2 + 0 * nv + level]*(kappa_lw_pole - kappa_lw) * pow(sin(lonlat_d[id * 2 + 1]), 2);
             }
             else {
-                k_IR_2_nv_d[id * nlay * 2 + 1 * nlay + level] = k_IR_2_nv_d[id * nlay * 2 + 0 * nlay + level] * gam_2_d[id];
-                k_IR_2_nv_d[id * nlay * 2 + 0 * nlay + level] = k_IR_2_nv_d[id * nlay * 2 + 0 * nlay + level] * gam_1_d[id];
+                k_IR_2_nv_d[id * nv * 2 + 1 * nv + level] = k_IR_2_nv_d[id * nv * 2 + 0 * nv + level] * gam_2_d[id];
+                k_IR_2_nv_d[id * nv * 2 + 0 * nv + level] = k_IR_2_nv_d[id * nv * 2 + 0 * nv + level] * gam_1_d[id];
             }
 
             
@@ -1327,7 +1338,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 lw_down_g__dff_e);
         }
         
-        for (int level = 0; level < nlay; level++)
+        for (int level = 0; level < nv; level++)
         {
             dtemp[id * nv + level] = 1* //(gravit / Cp_d) *
                 (net_F_nvi_d[id * nvi + level + 1] - net_F_nvi_d[id * nvi + level]) / 
