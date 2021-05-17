@@ -693,9 +693,13 @@ __device__  void linear_log_interp(double xval, double x1, double x2, double y1,
 ///////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////
 
-__device__ void tau_struct(int id, int nlev, double grav,
-    double* p_half, double* kRoss,
-    int channel, double* tau_struc_e) {
+__device__ void tau_struct(int id,
+    int nlev,
+    double grav,
+    double* p_half,
+    double* kRoss,
+    int channel,
+    double* tau_struc_e) {
     // dependencies
     //// nlay -> namespace main_parameters    
     //// nlay1 -> namespace main_parameters
@@ -743,8 +747,12 @@ __device__ void tau_struct(int id, int nlev, double grav,
 ///////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////
 
-__device__  void sw_grey_down(int id, int nlay1, double solar,
-    double* solar_tau, double* sw_down__df_e, double mu) {
+__device__  void sw_grey_down(int id,
+    int nlay1,
+    double solar,
+    double* solar_tau,
+    double* sw_down__df_e,
+    double mu) {
     // dependencies
     //// expl -> math
 
@@ -759,13 +767,22 @@ __device__  void sw_grey_down(int id, int nlay1, double solar,
 ///////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////
 
-__device__  void lw_grey_updown_linear(int id, int nlay, int nlay1,
-    double* be__df_e, double* tau_IRe__df_e,
-    double* lw_up__df_e, double* lw_down__df_e,
-    double* dtau__dff_l, double* del__dff_l,
-    double* edel__dff_l, double* e0i__dff_l, double* e1i__dff_l,
-    double* Am__dff_l, double* Bm__dff_l,
-    double* lw_up_g__dff_e, double* lw_down_g__dff_e) {
+__device__  void lw_grey_updown_linear(int id,
+    int nlay,
+    int nlay1,
+    double* be__df_e,
+    double* tau_IRe__df_e,
+    double* lw_up__df_e,
+    double* lw_down__df_e,
+    double* dtau__dff_l,
+    double* del__dff_l,
+    double* edel__dff_l,
+    double* e0i__dff_l,
+    double* e1i__dff_l,
+    double* Am__dff_l,
+    double* Bm__dff_l,
+    double* lw_up_g__dff_e,
+    double* lw_down_g__dff_e) {
     // dependencies
     //// expll -> math
     //// atan -> math
@@ -859,22 +876,46 @@ __device__  void lw_grey_updown_linear(int id, int nlay, int nlay1,
 
 
 
-    __device__ void Kitzmann_TS_noscatt(int id, const int nlay, const int nlay1, double *Tl,
-        double *pl, double *pe,
-        double *k_V_3_nv_d, double *k_IR_2_nv_d,
-        double *Beta_V_3_d, double *Beta_2_d, double *&net_F_nvi_d,
-        double mu_s, double Finc, double Fint, double grav, double AB_d,
-
-        double *tau_Ve__df_e, double *tau_IRe__df_e, double *Te__df_e, double *be__df_e, //Kitzman working variables
-        double *sw_down__df_e, double *sw_down_b__df_e, double *sw_up__df_e,
-        double *lw_down__df_e, double *lw_down_b__df_e,
-        double *lw_up__df_e, double *lw_up_b__df_e,
-        double *lw_net__df_e, double *sw_net__df_e,
-
-        double *dtau__dff_l, double *del__dff_l, // lw_grey_updown_linear working variables
-        double *edel__dff_l, double *e0i__dff_l, double *e1i__dff_l,
-        double *Am__dff_l, double *Bm__dff_l,
-        double *lw_up_g__dff_e, double *lw_down_g__dff_e) {
+    __device__ void Kitzmann_TS_noscatt(int id,
+        const int nlay,
+        const int nlay1,
+        double *Tl,
+        double *pl,
+        double *pe,
+        double *k_V_3_nv_d,
+        double *k_IR_2_nv_d,
+        double *Beta_V_3_d,
+        double *Beta_2_d,
+        double *&net_F_nvi_d,
+        double mu_s,
+        double Finc,
+        double Fint,
+        double grav,
+        double AB_d,
+        //Kitzman working variables
+        double *tau_Ve__df_e,
+        double *tau_IRe__df_e,
+        double *Te__df_e,
+        double *be__df_e, 
+        double *sw_down__df_e,
+        double *sw_down_b__df_e,
+        double *sw_up__df_e,
+        double *lw_down__df_e,
+        double *lw_down_b__df_e,
+        double *lw_up__df_e,
+        double *lw_up_b__df_e,
+        double *lw_net__df_e,
+        double *sw_net__df_e,
+        // lw_grey_updown_linear working variables
+        double *dtau__dff_l,
+        double *del__dff_l, 
+        double *edel__dff_l,
+        double *e0i__dff_l,
+        double *e1i__dff_l,
+        double *Am__dff_l,
+        double *Bm__dff_l,
+        double *lw_up_g__dff_e,
+        double *lw_down_g__dff_e) {
         // dependcies
         //// powll -> include math
         //// log10f -> include math
