@@ -182,6 +182,10 @@ private:
     double* net_F_nvi_d;    
     double* AB_d;
 
+    double* lw_net__h ;
+    double* sw_net__h ;
+    double* dtau__h ;
+
     //Kitzman working variables                          
     double* tau_Ve__df_e; 
     double* tau_IRe__df_e;

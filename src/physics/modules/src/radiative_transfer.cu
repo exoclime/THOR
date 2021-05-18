@@ -492,7 +492,7 @@ void Bond_Parmentier(double Teff0, double grav, double& AB) {
 
     // start operations
 
-    for (int id = 0, id < nCol; id++) {
+    for (int id = 0; id < nCol; id++) {
 
         // Log 10 T_eff variables
         l10T = log10(Teff[id]);
@@ -706,15 +706,15 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                 Teff[c] = powl((powl(esp.Tint, 4) + (1.0 / sqrtl((double)3.0)) *
                     powl(Tirr, 4)), 0.25);
 
-                Bond_Parmentier(Teff[c], gravit, AB__h[c]);
+                Bond_Parmentier(Teff[c], sim.Gravit, AB__h[c]);
 
                 // Recalculate Teff and then find parameters
                 if (esp.insolation.get_device_cos_zenith_angles() >= 0)
                 {
-                    Teff[c] = powl((powl(esp.Tint[c], 4) + (((double)1.0) - AB__h[c]) * esp.insolation.get_device_cos_zenith_angles()[c] *
-                        powl(Tirr, 4)), (0.25));
+                    Teff[c] = (double)(powl((powl(esp.Tint[c], 4) + (((double)1.0) - AB__h[c]) * esp.insolation.get_device_cos_zenith_angles()[c] *
+                        powl(Tirr, 4)), (0.25)));
                 } else {
-                    Teff[c] = powl((powl(esp.Tint[c], 4) + 0, (0.25));
+                    Teff[c] = (double) (powl( powl(esp.Tint[c], 4) + 0, 0.25));
                 }
                 
             }
@@ -767,7 +767,7 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
             rtm_picket_fence<<<NBRT, NTH>>>(
                 esp.pressure_d,
                 esp.temperature_d,
-                Rho_d,
+                esp.Rho_d,
                 sim.Gravit,
                 esp.Cp_d,
                 esp.lonlat_d,
@@ -1172,42 +1172,3 @@ void radiative_transfer::RTSetup(double Tstar_,
     rt1Dmode = rt1Dmode_;
 }
 
-void radiative_transfer::RTSetup_picket_fence(double Tstar_,
-    double planet_star_dist_,
-    double radius_star_,
-    double diff_ang_,
-    double P_Ref,
-    double Gravit,
-    double albedo_,
-    double kappa_sw_,
-    double kappa_lw_,
-    bool   latf_lw_,
-    double kappa_lw_pole_,
-    double f_lw,
-    bool   rt1Dmode_,
-    double Tmean) {
-
-double bc = 5.6703744191844314e-08; // Stefan–Boltzmann constant [W m−2 K−4]
-
-Tstar            = Tstar_;
-planet_star_dist = planet_star_dist_ * 149597870.7; //conv to km
-radius_star      = radius_star_ * 695700;           //conv to km
-diff_ang         = diff_ang_;
-// Tint             = Tint_;
-albedo = albedo_;
-//tausw      = kappa_sw * P_Ref / Gravit;
-//taulw      = kappa_lw * P_Ref / (f_lw * Gravit);
-//taulw_pole = kappa_lw_pole * P_Ref / (f_lw * Gravit);
-kappa_sw      = kappa_sw_;
-kappa_lw      = kappa_lw_;
-kappa_lw_pole = kappa_lw_pole_;
-
-latf_lw = latf_lw_;
-
-// f_lw             = f_lw_;
-
-double resc_flx = pow(radius_star / planet_star_dist, 2.0);
-incflx          = resc_flx * bc * Tstar * Tstar * Tstar * Tstar;
-
-rt1Dmode = rt1Dmode_;
-}
