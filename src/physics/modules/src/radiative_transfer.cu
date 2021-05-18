@@ -348,7 +348,7 @@ bool radiative_transfer::initial_conditions(const ESP &            esp,
             kappa_lw_pole_config,
             n_lw_config,
             n_sw_config,
-            esp.f_lw,
+            //esp.f_lw,
             rt1Dmode_config,
             sim.Tmean);
 
@@ -366,7 +366,7 @@ bool radiative_transfer::initial_conditions(const ESP &            esp,
             kappa_lw_pole_config,
             n_lw_config,
             n_sw_config,
-            esp.f_lw,
+            //esp.f_lw,
             rt1Dmode_config,
             sim.Tmean);
 
