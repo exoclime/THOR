@@ -335,7 +335,7 @@ bool radiative_transfer::initial_conditions(const ESP &            esp,
     double picket_fence_mod = true;
 
     if (picket_fence_mod) {
-        RTSetup_picket_fence(Tstar_config,
+        RTSetup(Tstar_config,
             planet_star_dist_config,
             radius_star_config,
             diff_ang_config,
