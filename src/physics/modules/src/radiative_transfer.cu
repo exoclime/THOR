@@ -711,10 +711,10 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                 // Recalculate Teff and then find parameters
                 if (esp.insolation.get_device_cos_zenith_angles() >= 0)
                 {
-                    Teff[c] = (double)(powl((powl(esp.Tint[c], 4) + (((double)1.0) - AB__h[c]) * esp.insolation.get_device_cos_zenith_angles()[c] *
+                    Teff[c] = (double*)(powl((powl(esp.Tint[c], 4) + (((double)1.0) - AB__h[c]) * esp.insolation.get_device_cos_zenith_angles()[c] *
                         powl(Tirr, 4)), (0.25)));
                 } else {
-                    Teff[c] = (double) (powl( powl(esp.Tint[c], 4) + 0, 0.25));
+                    Teff[c] = (double*) (powl( powl(esp.Tint[c], 4) + 0, 0.25));
                 }
                 
             }
