@@ -1144,7 +1144,7 @@ void radiative_transfer::RTSetup(double Tstar_,
                                  double kappa_lw_pole_,
                                  double n_lw_,
                                  double n_sw_,
-                                 double f_lw,
+                                 //double f_lw,
                                  bool   rt1Dmode_,
                                  double Tmean) {
 
@@ -1166,7 +1166,7 @@ void radiative_transfer::RTSetup(double Tstar_,
     latf_lw = latf_lw_;
     n_sw    = n_sw_;
     n_lw    = n_lw_;
-    f_lw             = f_lw_;
+    //f_lw             = f_lw_;
 
     double resc_flx = pow(radius_star / planet_star_dist, 2.0);
     incflx          = resc_flx * bc * Tstar * Tstar * Tstar * Tstar;
