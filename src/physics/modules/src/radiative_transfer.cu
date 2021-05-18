@@ -417,7 +417,7 @@ void Bond_Parmentier(double Teff0, double grav, double& AB) {
     // AB - Bond albedo
 
     // work variables
-    double a, b;
+    double a = 0.0, b = 0.0;
 
     // start operations
 
