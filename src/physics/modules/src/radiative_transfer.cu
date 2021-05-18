@@ -346,6 +346,8 @@ bool radiative_transfer::initial_conditions(const ESP &            esp,
             esp.kappa_lw,
             latf_lw_config,
             kappa_lw_pole_config,
+            n_lw_config,
+            n_sw_config,
             esp.f_lw,
             rt1Dmode_config,
             sim.Tmean);
@@ -711,10 +713,10 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                 // Recalculate Teff and then find parameters
                 if (esp.insolation.get_device_cos_zenith_angles() >= 0)
                 {
-                    Teff[c] = pow((pow(esp.Tint, 4.0) + (((double)1.0) - AB__h[c]) * esp.insolation.get_device_cos_zenith_angles()[c] *
-                        pow(Tirr, 4.0)), (0.25));
+                    Teff[c] = powl((powl(esp.Tint, 4.0) + (((double)1.0) - AB__h[c]) * esp.insolation.get_device_cos_zenith_angles()[c] *
+                        powl(Tirr, 4.0)), (0.25));
                 } else {
-                    Teff[c] = (double) pow( pow(esp.Tint, 4.0) + 0, 0.25);
+                    Teff[c] = (double) powl( pow(esp.Tint, 4.0) + 0, 0.25);
                 }
                 
             }
@@ -1164,7 +1166,7 @@ void radiative_transfer::RTSetup(double Tstar_,
     latf_lw = latf_lw_;
     n_sw    = n_sw_;
     n_lw    = n_lw_;
-    // f_lw             = f_lw_;
+    f_lw             = f_lw_;
 
     double resc_flx = pow(radius_star / planet_star_dist, 2.0);
     incflx          = resc_flx * bc * Tstar * Tstar * Tstar * Tstar;

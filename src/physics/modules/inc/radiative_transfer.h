@@ -236,17 +236,4 @@ private:
                     double Tmean);
 };
 
-void RTSetup_picket_fence(double Tstar_,
-    double planet_star_dist_,
-    double radius_star_,
-    double diff_ang_,
-    double P_Ref,
-    double Gravit,
-    double albedo_,
-    double kappa_sw_,
-    double kappa_lw_,
-    bool   latf_lw_,
-    double kappa_lw_pole_,
-    double f_lw,
-    bool   rt1Dmode_,
-    double Tmean);
+
