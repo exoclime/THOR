@@ -49,6 +49,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string>
+#include "directories.h"
+
 
 #ifdef _MSC_VER
 #    define _USE_MATH_DEFINES
@@ -106,7 +109,7 @@ public:
     int *zonal_mean_tab; //something something
 
 
-    Icogrid(bool, double, int, int, int, double, double, bool, int *, bool, double, double);
+    Icogrid(bool, double, int, int, int, double, double, bool, int *, bool, double, double, const std::string &output_path);
     void free_memory();
 
 
