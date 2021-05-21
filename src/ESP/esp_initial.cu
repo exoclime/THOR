@@ -500,10 +500,11 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                     Cp_h[i * nv + lev]          = sim.Cp;
                     Rho_h[i * nv + lev]         = rho_L;
                     temperature_h[i * nv + lev] = T_L;
-                    ptmp                        = pressure_h[i * nv + lev] + 2 * eps;
+                    ptmp = pressure_h[i * nv + lev] + 2 * eps * pressure_h[i * nv + lev];
 
                     it = 0;
-                    while (it < it_max && ptmp - pressure_h[i * nv + lev] > eps) {
+                    while (it < it_max
+                           && (ptmp - pressure_h[i * nv + lev]) / pressure_h[i * nv + lev] > eps) {
                         //Newton-Raphson solver of hydrostatic eqn for thermo properties
                         ptmp = pressure_h[i * nv + lev];
                         f    = (pressure_h[i * nv + lev] - P_L) / dz
