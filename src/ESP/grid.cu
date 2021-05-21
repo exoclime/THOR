@@ -62,6 +62,7 @@
 
 #include "grid.h"
 #include "log_writer.h"
+#include "storage.h"
 #include "vector_operations.h"
 
 // some helper local functions
@@ -92,6 +93,10 @@ __host__ Icogrid::Icogrid(bool   sprd,        // Spring dynamics option
                           bool   vert_refined,
                           double lowest_layer_thickness,
                           double transition_altitude) {
+
+    bool read_from_file = true;
+    char FILE_NAME1[512];
+    sprintf(FILE_NAME1, "aux_grid_construct_g%d.h5", glevel);
 
     log::printf("\n\n Building icosahedral grid!");
 
@@ -126,57 +131,93 @@ __host__ Icogrid::Icogrid(bool   sprd,        // Spring dynamics option
     int kxl      = sqrt(nfaces * 1.0);                  //
     nr           = (point_num - 2) / nl2;               //
 
+
     //  Compute standard grid.
-    point_xyz = (double *)malloc(3 * point_num * sizeof(double));
-    pent_ind  = (int *)malloc(12 * sizeof(int));
-    sphere_ico(
-        point_xyz, glevel, n_region, nl_region, nl2, kxl, nfaces, pent_ind, divide_face, point_num);
-
-    //  Finds the closest neighbors of each point.
+    point_xyz   = (double *)malloc(3 * point_num * sizeof(double));
+    pent_ind    = (int *)malloc(12 * sizeof(int));
     point_local = (int *)malloc(6 * point_num * sizeof(int));
-    neighbors_indx(point_local, point_xyz, pent_ind, point_num);
+    halo        = (int *)malloc(10 * nfaces * 4 * nlhalo * sizeof(int));
+    maps        = (int *)malloc((nl_region + 2) * (nl_region + 2) * nr * sizeof(int));
+    point_xyzq  = (double *)malloc(6 * 3 * point_num * sizeof(double));
 
-    //  Reorder neighbors in the clockwise order.
-    reorder_neighbors_indx(point_local, point_xyz, pent_ind, point_num);
+    if (read_from_file) {
+        storage s(FILE_NAME1, true);
 
-    //  Generate halos.
-    nh   = 10 * nfaces * 4 * nlhalo;
-    halo = (int *)malloc(10 * nfaces * 4 * nlhalo * sizeof(int));
-    generate_halos(halo, point_local, n_region, divide_face);
-
-    //  Reorder neighbors consistent with the rhombi.
-    reorder_neighbors_indx_rhombi(
-        point_local, halo, pent_ind, nl_region, nl2, nr, nlhalo, point_num);
-
-    //  Finds the closest neighbors at the pole.
-    neighbors_indx_pl(point_local, point_xyz, pent_ind, point_num);
-
-    //  Reorder neighbors in the clockwise order at the pole.
-    reorder_neighbors_indx_pl(point_local, point_xyz, pent_ind, point_num);
-
-    //  Produce rhombus' maps.
-    maps = (int *)malloc((nl_region + 2) * (nl_region + 2) * nr * sizeof(int));
-    produce_maps(maps, halo, nr, nl_region);
-
-    //  Smooths the grid applying the spring dynamic method.
-    if (sprd) {
-        // Applies spring dynamics.
-        spring_dynamics(point_local, pent_ind, glevel, spring_beta, point_xyz, point_num);
-
-        //  Finds the q points.
-        point_xyzq = (double *)malloc(6 * 3 * point_num * sizeof(double));
-
-        find_qpoints(point_local, point_xyzq, point_xyz, pent_ind, point_num);
-
-        // Fixes the position of the centroids.
-        relocate_centres(point_local, point_xyzq, point_xyz, pent_ind, point_num);
+        bool load_OK = true;
+        load_OK &= s.read_table_to_ptr("/point_xyz", point_xyz, 3 * point_num);
+        load_OK &= s.read_table_to_ptr("/point_xyzq", point_xyzq, 6 * 3 * point_num);
+        load_OK &= s.read_table_to_ptr("/pent_ind", pent_ind, 12);
+        load_OK &= s.read_table_to_ptr("/point_local", point_local, 6 * point_num);
+        load_OK &= s.read_table_to_ptr("/halo", halo, 10 * nfaces * 4 * nlhalo);
+        load_OK &= s.read_table_to_ptr("/maps", maps, (nl_region + 2) * (nl_region + 2) * nr);
+        if (!load_OK) {
+            log::printf("Error reloading grid construction data from file %s\n", FILE_NAME1);
+            exit(EXIT_FAILURE);
+        }
     }
     else {
-        //      Finds the q points.
-        point_xyzq = (double *)malloc(6 * 3 * point_num * sizeof(double));
-        find_qpoints(point_local, point_xyzq, point_xyz, pent_ind, point_num);
-    }
+        storage s(FILE_NAME1);
 
+        sphere_ico(point_xyz,
+                   glevel,
+                   n_region,
+                   nl_region,
+                   nl2,
+                   kxl,
+                   nfaces,
+                   pent_ind,
+                   divide_face,
+                   point_num);
+
+
+        //  Finds the closest neighbors of each point.
+        neighbors_indx(point_local, point_xyz, pent_ind, point_num);
+
+        //  Reorder neighbors in the clockwise order.
+        reorder_neighbors_indx(point_local, point_xyz, pent_ind, point_num);
+
+        //  Generate halos.
+        nh = 10 * nfaces * 4 * nlhalo; //might be deprecated
+        generate_halos(halo, point_local, n_region, divide_face);
+
+        //  Reorder neighbors consistent with the rhombi.
+        reorder_neighbors_indx_rhombi(
+            point_local, halo, pent_ind, nl_region, nl2, nr, nlhalo, point_num);
+
+        //  Finds the closest neighbors at the pole.
+        neighbors_indx_pl(point_local, point_xyz, pent_ind, point_num);
+
+        //  Reorder neighbors in the clockwise order at the pole.
+        reorder_neighbors_indx_pl(point_local, point_xyz, pent_ind, point_num);
+
+        //  Produce rhombus' maps.
+        produce_maps(maps, halo, nr, nl_region);
+
+        //  Smooths the grid applying the spring dynamic method.
+        if (sprd) {
+            // Applies spring dynamics.
+            spring_dynamics(point_local, pent_ind, glevel, spring_beta, point_xyz, point_num);
+
+            //  Finds the q points.
+            find_qpoints(point_local, point_xyzq, point_xyz, pent_ind, point_num);
+
+            // Fixes the position of the centroids.
+            relocate_centres(point_local, point_xyzq, point_xyz, pent_ind, point_num);
+        }
+        else {
+            //      Finds the q points.
+            find_qpoints(point_local, point_xyzq, point_xyz, pent_ind, point_num);
+        }
+        //write point_xyzq, point_xyz
+        s.append_table(point_local, 6 * point_num, "/point_local", "-", "Neighbors indices");
+        s.append_table(point_xyz, 3 * point_num, "/point_xyz", "-", "Vector locations of centers");
+        s.append_table(
+            point_xyzq, 6 * 3 * point_num, "/point_xyzq", "-", "Vector locations of vertices");
+        s.append_table(pent_ind, 12, "/pent_ind", "-", "Indices of pentagons");
+        s.append_table(
+            halo, 10 * nfaces * 4 * nlhalo, "/halo", "-", "Halo locations for each rhombus");
+        s.append_table(maps, (nl_region + 2) * (nl_region + 2) * nr, "/maps", "-", "Rhombus maps");
+    }
     //  Recompute cartesians points for the new radius.
     correct_xyz_points(A, point_xyzq, point_xyz, pent_ind, point_num);
 
@@ -236,6 +277,7 @@ __host__ Icogrid::Icogrid(bool   sprd,        // Spring dynamics option
     //  Computes the vertical curl operator.
     curlz = (double *)malloc(7 * 3 * point_num * sizeof(double));
     curlz_operator(areasT, areas, curlz, mvec, pent_ind, point_num);
+
 
     //  Computes zonal mean for sponge layer operations
     if (sponge == true) {
