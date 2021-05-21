@@ -81,6 +81,7 @@ parser.add_argument("-p", "--prof", action="store_true", default=False, help='Ru
 parser.add_argument("-o", "--output", type=str, default=None, help='Output dir name')
 parser.add_argument("-r", "--report", action="store_true", default=False, help="Run reporting code at end of sim")
 parser.add_argument("-d", "--dependency", action="store", type=int, default=None, help="Run after this job ID")
+parser.add_argument("-par", "--partition", nargs=1, default=['gpu-invest'],help='specify partition')
 
 parser.add_argument("--pp", action="append", type=str, default=[], help="Post processing to run")
 
@@ -101,6 +102,8 @@ if args.output is not None:
     output_arg = f"-o {args.output}"
 else:
     output_arg = ""
+
+partition = args.partition[0]
 
 if args.dependency is not None:
     last_id = args.dependency
@@ -157,7 +160,7 @@ sbatch_args = ['sbatch',
                '-D', working_dir,
                '-n', str(1),
                '--gres', config_data['gpu_key'],
-               '-p', config_data['partition'],
+               '-p', partition,
                '--mem-per-cpu=8G',
                '--time', time_limit,
                '--mail-type=ALL',
@@ -213,7 +216,7 @@ if args.report:
                    '-J', job_name + "-muninn",
                    '-n', str(1),
                    '--gres', config_data['gpu_key'],
-                   '-p', config_data['partition'],
+                   '-p', partition,
                    '--time', time_limit,
                    '--mail-type=ALL',
                    '--mail-user=' + mail,
@@ -269,7 +272,7 @@ for pp in args.pp:
                    '-J', job_name + "-postproc",
                    '-n', str(1),
                    '--gres', config_data['gpu_key'],
-                   '-p', config_data['partition'],
+                   '-p', partition,
                    '--mem-per-cpu=8G',
                    '--time', time_limit,
                    '--mail-type=ALL',
