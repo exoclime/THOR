@@ -1304,6 +1304,5 @@ __host__ ESP::~ESP() {
     if (phy_modules_execute)
         phy_modules_free_mem();
 
-
     log::printf("\n\n Free memory!\n\n");
 }
