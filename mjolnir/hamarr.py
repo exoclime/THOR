@@ -2039,6 +2039,14 @@ def profile(input, grid, output, z, stride=50, axis=None, save=True, use_p=True,
         ax.plot(x, y*unit, 'k-', alpha=0.5, lw=1.0,
                     path_effects=[pe.Stroke(linewidth=1.5, foreground=color), pe.Normal()])
 
+        # if use_p:
+        #     for jj in [2561]:
+        #         ax.plot(z['value'][jj ,:,0],output.Pressure[jj,:,0]/1e5,'r--',zorder=111)
+        #         col_lon.append(grid.lon[jj])
+        #         col_lat.append(grid.lat[jj])
+        #         col_lor.append('r')
+        # else:
+        #     ax.plot(z['value'][1995,:,0],grid.Altitude,'r--',zorder=111)
         rp, = ax.plot(x[np.int(np.floor(grid.nv / 2))], y[np.int(np.floor(grid.nv / 2))] * unit, 'k+', ms=5, alpha=0.5)
         gp, = ax.plot(x[np.int(np.floor(grid.nv * 0.75))], y[np.int(np.floor(grid.nv * 0.75))] * unit, 'k*', ms=5, alpha=0.5)
 

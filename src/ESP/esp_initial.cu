@@ -458,7 +458,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
     //
     //  Initial atmospheric conditions
     bool   read_gibbs = read_in_gibbs_H(GibbsN); //ultrahot jup
-    double chi_H = 0, ptmp, eps = 1e-8, f, df, dz, mu;
+    double chi_H = 0, ptmp, eps = 1e-15, f, df, dz, mu;
     int    it, it_max = 100;
 
     double Rd_L, P_L, T_L, rho_L, alpha;
@@ -575,20 +575,33 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         T_L = temperature_h[i * nv + lev - 1];
                         dz  = Altitude_h[lev] - Altitude_h[lev - 1];
                     }
-                    pressure_h[i * nv + lev] = P_L;
-                    Rd_h[i * nv + lev]       = Rd_L;
-                    ptmp                     = pressure_h[i * nv + lev] + 2 * eps;
+                    pressure_h[i * nv + lev]    = P_L;
+                    temperature_h[i * nv + lev] = T_L;
+                    Rd_h[i * nv + lev]          = Rd_L;
+                    // ptmp                        = pressure_h[i * nv + lev] + 2 * eps;
+                    ptmp = pressure_h[i * nv + lev] + 2 * eps * pressure_h[i * nv + lev];
 
                     it = 0;
-                    while (it < it_max && ptmp - pressure_h[i * nv + lev] > eps) {
+                    while (it < it_max
+                           && (ptmp - pressure_h[i * nv + lev]) / pressure_h[i * nv + lev] > eps) {
                         //Newton-Raphson solver of hydrostatic eqn for thermo properties
                         ptmp = pressure_h[i * nv + lev];
-                        f    = log(pressure_h[i * nv + lev] / P_L) / dz
-                            + sim.Gravit
-                                  / (0.5
-                                     * (Rd_h[i * nv + lev] * temperature_h[i * nv + lev]
-                                        + Rd_L * T_L));
-                        df                       = 1.0 / (pressure_h[i * nv + lev] * dz);
+                        // below method doesn't work so well
+                        // f    = log(pressure_h[i * nv + lev] / P_L) / dz
+                        //     + sim.Gravit
+                        //           / (0.5
+                        //              * (Rd_h[i * nv + lev] * temperature_h[i * nv + lev]
+                        //                 + Rd_L * T_L));
+                        // df                       = 1.0 / (pressure_h[i * nv + lev] * dz);
+
+                        // works better to get hs balance
+                        f = (pressure_h[i * nv + lev] - P_L) / dz
+                            + sim.Gravit / Rd_h[i * nv + lev] * 0.5
+                                  * (pressure_h[i * nv + lev] / temperature_h[i * nv + lev]
+                                     + P_L / T_L);
+                        df =
+                            1.0 / dz
+                            + 0.5 * sim.Gravit / (Rd_h[i * nv + lev] * temperature_h[i * nv + lev]);
                         pressure_h[i * nv + lev] = pressure_h[i * nv + lev] - f / df;
                         if (init_PT_profile == ISOTHERMAL) {
                             temperature_h[i * nv + lev] = sim.Tmean;
