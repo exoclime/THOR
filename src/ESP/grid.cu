@@ -92,11 +92,15 @@ __host__ Icogrid::Icogrid(bool   sprd,        // Spring dynamics option
                           int *  max_count,
                           bool   vert_refined,
                           double lowest_layer_thickness,
-                          double transition_altitude) {
+                          double transition_altitude,
+                          const std::string& output_path) {
 
     bool read_from_file = false;
     char FILE_NAME1[512];
-    sprintf(FILE_NAME1, "aux_grid_construct_g%d.h5", glevel);
+    sprintf(FILE_NAME1, "%s/aux_grid_constructs.h5", output_path.c_str());
+    if (path_exists(FILE_NAME1)){
+      read_from_file = true;
+    }
 
     log::printf("\n\n Building icosahedral grid!");
 
@@ -131,7 +135,6 @@ __host__ Icogrid::Icogrid(bool   sprd,        // Spring dynamics option
     int kxl      = sqrt(nfaces * 1.0);                  //
     nr           = (point_num - 2) / nl2;               //
 
-
     //  Compute standard grid.
     point_xyz   = (double *)malloc(3 * point_num * sizeof(double));
     pent_ind    = (int *)malloc(12 * sizeof(int));
@@ -142,7 +145,7 @@ __host__ Icogrid::Icogrid(bool   sprd,        // Spring dynamics option
 
     if (read_from_file) {
         storage s(FILE_NAME1, true);
-
+        printf("\n\n Fetching grid construction data from file %s \n\n",FILE_NAME1);
         bool load_OK = true;
         load_OK &= s.read_table_to_ptr("/point_xyz", point_xyz, 3 * point_num);
         load_OK &= s.read_table_to_ptr("/point_xyzq", point_xyzq, 6 * 3 * point_num);
