@@ -798,8 +798,7 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
             
             cuda_check_status_or_exit(__FILE__, __LINE__);
 
-            rtm_picket_fence<<<NBRT, NTH>>>(
-                esp.pressure_d,
+            rtm_picket_fence<<<NBRT, NTH>>>(esp.pressure_d,
                 esp.temperature_d,
                 esp.Rho_d,
                 sim.Gravit,

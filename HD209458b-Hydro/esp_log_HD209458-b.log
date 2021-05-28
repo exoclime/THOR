@@ -1,17 +1,17 @@
 *********************************************************************
 Starting logging to HD209458b-Hydro/esp_log_HD209458-b.log.
 
-Time: Fri May 28 09:53:32 2021
+Time: Fri May 28 16:07:15 2021
 
 
 
 
  version 2.3
- Compiled on May 28 2021 at 09:53:22.
+ Compiled on May 28 2021 at 16:05:17.
  build level: debug
 
  git branch: main
- git hash: 491acd482ca8910a1f6bebb42c0c9abd79b063f7-dirty
+ git hash: 4df2550d9e6b6d7f4ec2fb473003e2a92ad9ad2c-dirty
 Opening result output file.
  Output file for result write log: HD209458b-Hydro/esp_write_log_HD209458-b.txt.
  Using GPU #0
@@ -116,8 +116,4 @@ Capabilities: 86 (compiled with SM=75).
    Start output numbering at 0.
  Starting the model integration.
 
-cpyD2H: unspecified launch failure
-Malloc: unspecified launch failure
-krnl: unspecified launch failure
-cpyD2H: unspecified launch failure
-[src/physics/modules/src/radiative_transfer.cu:946] CUDA error check reports error: unspecified launch failure
+NaN value or Negative AUX in Density_Pressure_Eqs, EXITING
