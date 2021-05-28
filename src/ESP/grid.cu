@@ -94,7 +94,7 @@ __host__ Icogrid::Icogrid(bool   sprd,        // Spring dynamics option
                           double lowest_layer_thickness,
                           double transition_altitude) {
 
-    bool read_from_file = true;
+    bool read_from_file = false;
     char FILE_NAME1[512];
     sprintf(FILE_NAME1, "aux_grid_construct_g%d.h5", glevel);
 
