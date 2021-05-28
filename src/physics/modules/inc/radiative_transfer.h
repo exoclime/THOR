@@ -46,6 +46,7 @@
 
 #include "phy_module_base.h"
 
+
 class radiative_transfer : public phy_module_base
 {
 public:
@@ -184,7 +185,7 @@ private:
 
     double* lw_net__h ;
     double* sw_net__h ;
-    double* dtau__h ;
+    double* dtau ;
 
     //Kitzman working variables                          
     double* tau_Ve__df_e; 
@@ -234,6 +235,8 @@ private:
                     //double f_lw,
                     bool   rt1Dmode,
                     double Tmean);
+    
 };
+
 
 

@@ -47,6 +47,7 @@
 
 #include "insolation.h"
 #include "reduction_add.h"
+#include "debug_helpers.h"
 
 radiative_transfer::radiative_transfer() {
 }
@@ -81,6 +82,8 @@ void radiative_transfer::print_config() {
     log::printf("    Spin up stop step           = %d.\n", spinup_stop_step);
     log::printf("    Spin down start step        = %d.\n", spindown_start_step);
     log::printf("    Spin down stop step         = %d.\n", spindown_stop_step);
+    
+    
 }
 
 bool radiative_transfer::initialise_memory(const ESP &              esp,
@@ -90,6 +93,8 @@ bool radiative_transfer::initialise_memory(const ESP &              esp,
 
     if (picket_fence_mod){
         //  Rad Transfer
+        
+        cuda_check_status_or_exit(__FILE__, __LINE__);
         
         cudaMalloc((void **)&phtemp, esp.nvi * esp.point_num * sizeof(double));
         cudaMalloc((void **)&dtemp, esp.nv * esp.point_num * sizeof(double));
@@ -147,7 +152,6 @@ bool radiative_transfer::initialise_memory(const ESP &              esp,
 
         lw_net__h = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
         sw_net__h = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
-        dtau__h = (double *)malloc(esp.nv * esp.point_num * sizeof(double));
                 
 
         // picket fence parameters     // lw_grey_updown_linear working variables
@@ -160,6 +164,8 @@ bool radiative_transfer::initialise_memory(const ESP &              esp,
         cudaMalloc((void **)&Am__dff_l, esp.nv * esp.point_num * sizeof(double));
         cudaMalloc((void **)&lw_up_g__dff_e, esp.nv * esp.point_num * sizeof(double));
         cudaMalloc((void **)&lw_down_g__dff_e, esp.nv * esp.point_num * sizeof(double));
+        
+        cuda_check_status_or_exit(__FILE__, __LINE__);
        
 
     } else {
@@ -208,6 +214,8 @@ bool radiative_transfer::free_memory() {
     double picket_fence_mod = true;
 
     if (picket_fence_mod) {
+        
+        cuda_check_status_or_exit(__FILE__, __LINE__);
         
         cudaFree(phtemp);
         cudaFree(dtemp);
@@ -266,7 +274,7 @@ bool radiative_transfer::free_memory() {
 
         free(lw_net__h);
         free(sw_net__h);
-        free(dtau__h);                
+                        
 
         // picket fence parameters     // lw_grey_updown_linear working variables
         cudaFree(dtau__dff_l);
@@ -278,6 +286,8 @@ bool radiative_transfer::free_memory() {
         cudaFree(Am__dff_l);
         cudaFree(lw_up_g__dff_e);
         cudaFree(lw_down_g__dff_e);
+        
+        cuda_check_status_or_exit(__FILE__, __LINE__);
 
 
     } else {
@@ -318,6 +328,8 @@ bool radiative_transfer::free_memory() {
 bool radiative_transfer::initial_conditions(const ESP &            esp,
                                             const SimulationSetup &sim,
                                             storage *              s) {
+                                            
+    cuda_check_status_or_exit(__FILE__, __LINE__);
 
     if (spinup_start_step > -1 || spinup_stop_step > -1) {
         if (spinup_stop_step < spinup_start_step)
@@ -335,6 +347,9 @@ bool radiative_transfer::initial_conditions(const ESP &            esp,
     double picket_fence_mod = true;
 
     if (picket_fence_mod) {
+    
+        cuda_check_status_or_exit(__FILE__, __LINE__);
+        
         RTSetup(Tstar_config,
             planet_star_dist_config,
             radius_star_config,
@@ -351,6 +366,8 @@ bool radiative_transfer::initial_conditions(const ESP &            esp,
             //esp.f_lw,
             rt1Dmode_config,
             sim.Tmean);
+            
+            cuda_check_status_or_exit(__FILE__, __LINE__);
 
     } else {
         RTSetup(Tstar_config,
@@ -460,7 +477,7 @@ void Bond_Parmentier(double Teff0, double grav, double& AB) {
     // Parmentier & Menou (2014) and Parmentier et al. (2015)
     // NOTE: This does not calculate the opacity - call k_Ross_Freedman for that
     void gam_Parmentier(int nCol, int nLev, double *Teff, int table_num, double *gam_V, double *Beta_V,
-    double *Beta, double *gam_1, double *gam_2 ) {
+    double *Beta, double *gam_1, double *gam_2 , double *gam_P) {
     // dependcies
     //// pow from math
     //// log10 from math        
@@ -490,7 +507,7 @@ void Bond_Parmentier(double Teff0, double grav, double& AB) {
     double l10T = 0, l10T2 = 0, RT = 0;
     int i;
 
-    double gam_P[nCol*nLev*2];
+   
 
     // start operations
 
@@ -614,16 +631,16 @@ void Bond_Parmentier(double Teff0, double grav, double& AB) {
 
         // Calculation of all values
         // Visual band gamma
-        gam_V[id*nCol + 0] = pow(((double)10.0), (aV1 + bV1 * l10T));
-        gam_V[id*nCol + 1] = pow(((double)10.0), (aV2 + bV2 * l10T));
-        gam_V[id*nCol + 2] = pow(((double)10.0), (aV3 + bV3 * l10T));
+        gam_V[id*3 + 0] = pow(((double)10.0), (aV1 + bV1 * l10T));
+        gam_V[id*3 + 1] = pow(((double)10.0), (aV2 + bV2 * l10T));
+        gam_V[id*3 + 2] = pow(((double)10.0), (aV3 + bV3 * l10T));
 
 
 
         // Visual band fractions
         for (i = 0; i < 3; i++)
         {
-            Beta_V[id*nCol + i] = ((double)1.0) / ((double)3.0);
+            Beta_V[id*3 + i] = ((double)1.0) / ((double)3.0);
         }
 
         // gamma_Planck - if < 1 then make it grey approximation (k_Planck = k_Ross, gam_P = 1)
@@ -634,15 +651,15 @@ void Bond_Parmentier(double Teff0, double grav, double& AB) {
         }
 
         // equivalent bandwidth value
-        Beta[id*nCol + 0] = aB + bB * l10T;
-        Beta[id*nCol + 1] = (1.0) - Beta[id*nCol + 0];
+        Beta[id*2 + 0] = aB + bB * l10T;
+        Beta[id*2 + 1] = (1.0) - Beta[id*2 + 0];
 
         // IR band kappa1/kappa2 ratio - Eq. 96 from Parmentier & Menou (2014)
-        RT = (gam_P[id] - 1.0) / (2.0 * Beta[id*nCol + 0] * Beta[id*nCol + 1]);
+        RT = (gam_P[id] - 1.0) / (2.0 * Beta[id*2 + 0] * Beta[id*2 + 1]);
         R = 1.0 + RT + sqrt(pow(RT, 2.0) + RT);
 
         // gam_1 and gam_2 values - Eq. 92, 93 from Parmentier & Menou (2014)
-        gam_1[id] = Beta[id*nCol + 0] + R - Beta[id*nCol + 0] * R;
+        gam_1[id] = Beta[id*2 + 0] + R - Beta[id*2 + 0] * R;
         gam_2[id] = gam_1[id] / R;
     }
 
@@ -701,25 +718,35 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
         dim3 NBRT((esp.point_num / NTH) + 1, 1, 1);
 
         if (picket_fence_mod){
+                cuda_check_status_or_exit(__FILE__, __LINE__);
 
             for (int c = 0; c <  esp.point_num; c++){
                 // Parmentier opacity profile parameters - first get Bond albedo
-                double Tirr = Tstar*powl((radius_star/planet_star_dist), 0.5);
-                Teff[c] = powl((powl(esp.Tint, 4) + (1.0 / sqrtl((double)3.0)) *
-                    powl(Tirr, 4)), 0.25);
+                double Tirr = Tstar*pow((radius_star/planet_star_dist), 0.5);
+                
+                Teff[c] = pow( (pow(esp.Tint, 4.0) +
+                    (1.0 / sqrt(3.0)) *
+                    pow(Tirr, 4.0) ), 0.25);
 
                 Bond_Parmentier(Teff[c], sim.Gravit, AB__h[c]);
+                
+                cuda_check_status_or_exit(__FILE__, __LINE__);
 
                 // Recalculate Teff and then find parameters
-                if (esp.insolation.get_device_cos_zenith_angles() >= 0)
+                if (esp.insolation.get_host_cos_zenith_angles()[c] >= 0)
                 {
-                    Teff[c] = powl((powl(esp.Tint, 4.0) + (((double)1.0) - AB__h[c]) * esp.insolation.get_device_cos_zenith_angles()[c] *
-                        powl(Tirr, 4.0)), (0.25));
+                    Teff[c] = 0 +
+                        pow( (pow(esp.Tint, 4.0) +
+                        (1.0 - AB__h[c]) *
+                        esp.insolation.get_host_cos_zenith_angles()[c] *
+                        pow(Tirr, 4.0) ), 0.25);
                 } else {
-                    Teff[c] = (double) powl( pow(esp.Tint, 4.0) + 0, 0.25);
+                    Teff[c] = pow( pow(esp.Tint, 4.0) + 0, 0.25);
                 }
                 
             }
+            
+            cuda_check_status_or_exit(__FILE__, __LINE__);
 
             
             gam_Parmentier(esp.point_num,
@@ -730,7 +757,10 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                 Beta_V__h,
                 Beta__h,
                 gam_1__h,
-                gam_2__h);
+                gam_2__h,
+                gam_P);
+                
+            cuda_check_status_or_exit(__FILE__, __LINE__);
             
 
                 
@@ -765,6 +795,8 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                 fprintf(stderr, "AB_d cudaMemcpyHostToDevice failed!");
                 //goto Error;
             }
+            
+            cuda_check_status_or_exit(__FILE__, __LINE__);
 
             rtm_picket_fence<<<NBRT, NTH>>>(
                 esp.pressure_d,
@@ -840,6 +872,8 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                 sim.DeepModel                                        
 
                 );
+                
+                cuda_check_status_or_exit(__FILE__, __LINE__);
 
         } else {
 
@@ -904,9 +938,12 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
         
 
         
-
+        cuda_check_status_or_exit(__FILE__, __LINE__);
+        
         ASR_tot = gpu_sum_on_device<1024>(ASR_d, esp.point_num);
         OLR_tot = gpu_sum_on_device<1024>(OLR_d, esp.point_num);
+        
+        cuda_check_status_or_exit(__FILE__, __LINE__);
 
         if (nstep * time_step < (2 * M_PI / esp.insolation.get_mean_motion())) {
             // stationary orbit/obliquity
@@ -930,6 +967,9 @@ bool radiative_transfer::configure(config_file &config_reader) {
     double picket_fence_mod = true;
 
     if (picket_fence_mod) {
+    
+        cuda_check_status_or_exit(__FILE__, __LINE__);
+        
         // basic star-planet properties
         config_reader.append_config_var("Tstar", Tstar_config, Tstar_config);
         config_reader.append_config_var(
@@ -957,7 +997,8 @@ bool radiative_transfer::configure(config_file &config_reader) {
         config_reader.append_config_var(
             "dgrt_spindown_start", spindown_start_step, spindown_start_step);
         config_reader.append_config_var("dgrt_spindown_stop", spindown_stop_step, spindown_stop_step);
-
+        
+        cuda_check_status_or_exit(__FILE__, __LINE__);
 
 
     } else {
@@ -1003,25 +1044,26 @@ bool radiative_transfer::store(const ESP &esp, storage &s) {
     if (picket_fence_mod) {
         cudaMemcpy(insol_h, insol_d, esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
         s.append_table(insol_h, esp.point_num, "/insol", "W m^-2", "insolation (instantaneous)");
+        
+        cuda_check_status_or_exit(__FILE__, __LINE__);
     
         cudaMemcpy(
             lw_net__h, lw_net__df_e, esp.nvi * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
         s.append_table(lw_net__h, esp.nvi * esp.point_num, "/lw_net__h", "W m^-2", "net long-wave flux (LW)");
+        
+        cuda_check_status_or_exit(__FILE__, __LINE__);
     
         cudaMemcpy(
             sw_net__h, sw_net__df_e, esp.nvi * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
         s.append_table(sw_net__h, esp.nvi * esp.point_num, "/sw_net__h", "W m^-2", "net short-wave flux (SW)");
     
-            
-        cudaMemcpy(dtau__h, tau_d, esp.nv * esp.point_num  * sizeof(double), cudaMemcpyDeviceToHost);
-        s.append_table(dtau__h,
-                       esp.nv * esp.point_num,
-                       "/tau",
-                       " ",
-                       "optical depth across each layer (not total optical depth)");
+    
+        cuda_check_status_or_exit(__FILE__, __LINE__);             
     
         cudaMemcpy(qheat_h, qheat_d, esp.nv * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
         s.append_table(qheat_h, esp.nv * esp.point_num, "/DGQheat", " ", "Double Gray Qheat");
+        
+        cuda_check_status_or_exit(__FILE__, __LINE__);
     
         // cudaMemcpy(Tsurface_h, Tsurface_d, esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
         // s.append_table(Tsurface_h, esp.point_num, "/Tsurface", "K", "surface temperature");
@@ -1030,11 +1072,15 @@ bool radiative_transfer::store(const ESP &esp, storage &s) {
     
         s.append_value(ASR_tot, "/ASR", "W", "Absorbed Shortwave Radiation (global total)");
         s.append_value(OLR_tot, "/OLR", "W", "Outgoing Longwave Radiation (global total)");
+        
+        cuda_check_status_or_exit(__FILE__, __LINE__);
 
         cudaMemcpy(k_IR_2__h, k_IR_2_nv_d, 2*esp.nv * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
         s.append_table(k_IR_2__h, 2*esp.nv * esp.point_num, "/k_IR_2__h", " ", "kappa for two IR bands");
         cudaMemcpy(k_V_3__h, k_V_3_nv_d,3* esp.nv * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
         s.append_table(k_V_3__h, 3*esp.nv * esp.point_num, "/k_V_3__h", " ", "kappa for three V bands");
+        
+        cuda_check_status_or_exit(__FILE__, __LINE__);
 
               
 
@@ -1083,6 +1129,8 @@ bool radiative_transfer::store(const ESP &esp, storage &s) {
     
         s.append_value(ASR_tot, "/ASR", "W", "Absorbed Shortwave Radiation (global total)");
         s.append_value(OLR_tot, "/OLR", "W", "Outgoing Longwave Radiation (global total)");
+        
+        cuda_check_status_or_exit(__FILE__, __LINE__);
     }
    
 
@@ -1107,6 +1155,8 @@ bool radiative_transfer::store_init(storage &s) {
         s.append_value(kappa_lw_pole, "/kappa_lw_pole", "-", "gray opacity of longwave at poles");
        
         // s.append_value(f_lw, "/f_lw", "-", "fraction of taulw in well-mixed absorber");
+        
+        cuda_check_status_or_exit(__FILE__, __LINE__);
 
     } else {
         s.append_value(Tstar, "/Tstar", "K", "Temperature of host star");
@@ -1172,5 +1222,7 @@ void radiative_transfer::RTSetup(double Tstar_,
     incflx          = resc_flx * bc * Tstar * Tstar * Tstar * Tstar;
 
     rt1Dmode = rt1Dmode_;
+    
+    cuda_check_status_or_exit(__FILE__, __LINE__);
 }
 

@@ -1,0 +1,123 @@
+*********************************************************************
+Starting logging to HD209458b-Hydro/esp_log_HD209458-b.log.
+
+Time: Fri May 28 09:53:32 2021
+
+
+
+
+ version 2.3
+ Compiled on May 28 2021 at 09:53:22.
+ build level: debug
+
+ git branch: main
+ git hash: 491acd482ca8910a1f6bebb42c0c9abd79b063f7-dirty
+Opening result output file.
+ Output file for result write log: HD209458b-Hydro/esp_write_log_HD209458-b.txt.
+ Using GPU #0
+
+ CUDA Device #0
+ Name: NVIDIA GeForce RTX 3080
+ Compute Capabilities: 8.6
+   Total global memory:           10504699904
+   Total shared memory per block: 49152
+   Total registers per block:     65536
+   Warp size:                     32
+   Maximum memory pitch:          2147483647
+   Maximum threads per block:     1024
+   Clock rate:                    1710000
+   Total constant memory:         65536
+   Number of multiprocessors:     68
+Device has higher compute capability than used at compile time.
+Capabilities: 86 (compiled with SM=75).
+
+
+ Building icosahedral grid!
+
+ Running spring dynamics.
+
+ Done!
+
+ GRID DONE!
+
+  Dynamical core memory initialised.
+  Module memory initialised.
+ Setting the initial conditions.
+
+
+ Planet: HD209458-b
+   Radius = 98658960.000000 m
+   Omega  = 0.000021 s-1
+   Gravit = 8.981000 m/s2
+   Rd     = 3714.000000 J/(Kg K)
+   Cp     = 13000.000000 J/(Kg K)
+   Tmean  = 1500.000000 K
+
+ THOR
+   ********** 
+   Grid - Icosahedral
+   Glevel          = 4.
+   Spring dynamics = 1.
+   Beta            = 1.150000.
+   Resolution      = 4.014279 deg.
+   Vertical layers = 20.
+   ********** 
+   Split-Explicit / HE-VI 
+   FV = Central finite volume 
+   Time integration =  64800000 s.
+   Large time-step  =  300 s.
+   Start time       =  0.000000 s.
+   Surface          = false.
+   Surface Heat Capacity       = 10000000.000000 J/K/m^2.
+    
+   Running Core Benchmark test "NoBenchmark" (0).
+    
+
+ Physics module: multi   
+   ********** 
+    
+  multi physics module, with radiative transfer, chemistry, boundary layer
+   Radiative Transfer module: true.
+   Boundary Layer module: false.
+
+  Radiative transfer module
+    Tstar                       = 6092.000000 K.
+    Orbital distance            = 0.047470 au.
+    Radius of host star         = 1.203000 R_sun.
+    1.0/Diffusivity factor      = 0.500000.
+    Bond albedo                 = 0.000000.
+    Using sin(lat) variation LW?      = false.
+    Longwave opacity (poles)  = 0.002500.
+    Power law index of unmixed LW abs = 2.000000.
+    Power law index of SW       = 1.000000.
+
+    1D mode                     = false.
+    Spin up start step          = -1.
+    Spin up stop step           = -1.
+    Spin down start step        = -1.
+    Spin down stop step         = -1.
+   Chemistry module: false.
+    
+  Insolation configuration (if used by modules) 
+    Synchronous rotation        = true.
+    Orbital mean motion         = 0.000000 rad/s.
+    Host star initial right asc = 0.000000 deg.
+    Planet true initial long    = 0.000000.
+    Orbital eccentricity        = 0.000000.
+    Obliquity                   = 0.000000 deg.
+    Longitude of periastron     = 0.000000 deg.
+    Use averaged insolation     = NoInsolAvg 
+   ********** 
+
+    
+ Simulation
+   Start from rest = true 
+   Output directory = HD209458b-Hydro 
+   Start output numbering at 0.
+ Starting the model integration.
+
+cpyD2H: unspecified launch failure
+Malloc: unspecified launch failure
+krnl: unspecified launch failure
+cpyD2H: unspecified launch failure
+[src/physics/modules/src/radiative_transfer.cu:946] CUDA error check reports error: unspecified launch failure
