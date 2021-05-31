@@ -713,14 +713,14 @@ __device__ void tau_struct(int id,
     //dP = (p_half(1) - 1e-4)
     //tau_lay = (kRoss(1) * dP) / grav
     //tau_sum = tau_sum + tau_lay
-    tau_struc_e[id*(nlev+1) + nlev+1] = tau_sum;
+    tau_struc_e[id*(nlev+1) + nlev] = tau_sum;
 
     // Integrate from top to bottom    
 
-    for (k = nlev-1; k > -1; k--)
+    for (level = nlev-2; level > -1; level--)
     {
         // Pressure difference between layer edges
-        delP = (p_half[id*(nlev+1) + k] - p_half[id*(nlev+1)+k + 1]);
+        delP = (p_half[id*(nlev+1) + level] - p_half[id*(nlev+1)+ level + 1]);
 
         if (delP < 0.0000001)
         {
@@ -728,13 +728,13 @@ __device__ void tau_struct(int id,
         }
 
         // Optical depth of layer assuming hydrostatic equilibirum
-        tau_lay = (kRoss[id*nlev*3+channel * nlev + k] * delP) / grav;
+        tau_lay = (kRoss[id*nlev*channel + channel * nlev + level] * delP) / grav;
 
         // Add to running sum
         tau_sum = tau_sum + tau_lay;
 
         // Optical depth structure is running sum
-        tau_struc_e[id*(nlev+1) + k] = tau_sum;
+        tau_struc_e[id*(nlev+1) + level] = tau_sum;
     }
 
 }
