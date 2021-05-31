@@ -50,16 +50,19 @@
 __global__ void dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
                              double *Pressureh_d,   // Mid-point pressure [Pa]
                              double *Temperature_d, // Temperature [K]
-                             double *pt_d,          // Potential temperature [K]
-                             double *Rho_d,         // Density [m^3/kg]
-                             double *Cp_d,          // Specific heat capacity [J/kg/K]
-                             double *Rd_d,          // Gas constant [J/kg/K]
-                             double  Gravit,        // Gravity [m/s^2]
-                             double *Altitude_d,    // Altitudes of the layers
-                             double *Altitudeh_d,   // Altitudes of the interfaces
-                             int conv_adj_iter, // number of iterations of entire algorithm allowed
-                             int num,           // Number of columns
-                             int nv) {          // Vertical levels
+                             double *profx_Qheat_d,
+                             double *pt_d,        // Potential temperature [K]
+                             double *Rho_d,       // Density [m^3/kg]
+                             double *Cp_d,        // Specific heat capacity [J/kg/K]
+                             double *Rd_d,        // Gas constant [J/kg/K]
+                             double  Gravit,      // Gravity [m/s^2]
+                             double *Altitude_d,  // Altitudes of the layers
+                             double *Altitudeh_d, // Altitudes of the interfaces
+                             double  time_step,
+                             int  conv_adj_iter, // number of iterations of entire algorithm allowed
+                             bool soft_adjust,
+                             int  num, // Number of columns
+                             int  nv) { // Vertical levels
     //
     //  Description: Mixes entropy vertically on statically unstable columns
     //
@@ -204,22 +207,45 @@ __global__ void dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
 
             repeat = false;
             iter += 1;
+
+            if (soft_adjust) {
+                double Ttmp, Ptmp;
+
+                for (int lev = 0; lev < nv; lev++) {
+                    Ttmp = pt_d[id * nv + lev]
+                           * pow(Pressure_d[id * nv + lev] / Pressureh_d[id * (nv + 1) + 0],
+                                 Rd_d[id * nv + lev] / Cp_d[id * nv + lev]);
+                    Ptmp = Ttmp * Rd_d[id * nv + lev] * Rho_d[id * nv + lev];
+                    //reset pt value to beginning of time step
+                    pt_d[id * nv + lev] =
+                        Temperature_d[id * nv + lev]
+                        * pow(Pressure_d[id * nv + lev] / Pressureh_d[id * (nv + 1) + 0],
+                              -Rd_d[id * nv + lev] / Cp_d[id * nv + lev]);
+
+                    profx_Qheat_d[id * nv + lev] +=
+                        (Cp_d[id * nv + lev] - Rd_d[id * nv + lev]) / Rd_d[id * nv + lev]
+                        * (Ptmp - Pressure_d[id * nv + lev]) / time_step;
+                    //does not repeat
+                }
+            }
             // Compute Temperature & pressure from potential temperature
-            for (int lev = 0; lev < nv; lev++) {
-                Temperature_d[id * nv + lev] =
-                    pt_d[id * nv + lev]
-                    * pow(Pressure_d[id * nv + lev] / Pressureh_d[id * (nv + 1) + 0],
-                          Rd_d[id * nv + lev] / Cp_d[id * nv + lev]);
-                Pressure_d[id * nv + lev] =
-                    Temperature_d[id * nv + lev] * Rd_d[id * nv + lev] * Rho_d[id * nv + lev];
-                //check pt again
-                pt_d[id * nv + lev] =
-                    Temperature_d[id * nv + lev]
-                    * pow(Pressure_d[id * nv + lev] / Pressureh_d[id * (nv + 1) + 0],
-                          -Rd_d[id * nv + lev] / Cp_d[id * nv + lev]);
-                if (lev > 0) {
-                    if (pt_d[id * nv + lev] - pt_d[id * nv + lev - 1] < stable)
-                        repeat = true;
+            else {
+                for (int lev = 0; lev < nv; lev++) {
+                    Temperature_d[id * nv + lev] =
+                        pt_d[id * nv + lev]
+                        * pow(Pressure_d[id * nv + lev] / Pressureh_d[id * (nv + 1) + 0],
+                              Rd_d[id * nv + lev] / Cp_d[id * nv + lev]);
+                    Pressure_d[id * nv + lev] =
+                        Temperature_d[id * nv + lev] * Rd_d[id * nv + lev] * Rho_d[id * nv + lev];
+                    //check pt again
+                    pt_d[id * nv + lev] =
+                        Temperature_d[id * nv + lev]
+                        * pow(Pressure_d[id * nv + lev] / Pressureh_d[id * (nv + 1) + 0],
+                              -Rd_d[id * nv + lev] / Cp_d[id * nv + lev]);
+                    if (lev > 0) {
+                        if (pt_d[id * nv + lev] - pt_d[id * nv + lev - 1] < stable)
+                            repeat = true;
+                    }
                 }
             }
         }
