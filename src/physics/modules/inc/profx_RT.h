@@ -703,7 +703,7 @@ __device__ void tau_struct(int id,
     double tau_sum;
     double tau_lay;
     double delP;
-    int k;
+    int level;
 
     // running sum of optical depth
     tau_sum = 0.0;
