@@ -1496,7 +1496,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
             */
         
         
-            
+            /*
             if (isnan(lw_up__df_e[id * nvi + level]) ) {
                 for (int level = 0; level < nvi; level++)
                 {
@@ -1537,6 +1537,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 //__threadfence();         // ensure store issued before trap
                 //asm("trap;");            // kill kernel with error
             }
+            */
             
             /*
             if (isnan(sw_net__df_e[id * nvi + level])  ) {
