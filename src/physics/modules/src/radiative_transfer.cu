@@ -162,8 +162,8 @@ bool radiative_transfer::initialise_memory(const ESP &              esp,
         cudaMalloc((void **)&e1i__dff_l, esp.nv * esp.point_num * sizeof(double));
         cudaMalloc((void **)&Bm__dff_l, esp.nv * esp.point_num * sizeof(double));
         cudaMalloc((void **)&Am__dff_l, esp.nv * esp.point_num * sizeof(double));
-        cudaMalloc((void **)&lw_up_g__dff_e, esp.nv * esp.point_num * sizeof(double));
-        cudaMalloc((void **)&lw_down_g__dff_e, esp.nv * esp.point_num * sizeof(double));
+        cudaMalloc((void **)&lw_up_g__dff_l, esp.nv * esp.point_num * sizeof(double));
+        cudaMalloc((void **)&lw_down_g__dff_l, esp.nv * esp.point_num * sizeof(double));
         
         cuda_check_status_or_exit(__FILE__, __LINE__);
        
@@ -284,8 +284,8 @@ bool radiative_transfer::free_memory() {
         cudaFree(e1i__dff_l);
         cudaFree(Bm__dff_l);
         cudaFree(Am__dff_l);
-        cudaFree(lw_up_g__dff_e);
-        cudaFree(lw_down_g__dff_e);
+        cudaFree(lw_up_g__dff_l);
+        cudaFree(lw_down_g__dff_l);
         
         cuda_check_status_or_exit(__FILE__, __LINE__);
 
@@ -864,8 +864,8 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                 e1i__dff_l,
                 Am__dff_l, 
                 Bm__dff_l,
-                lw_up_g__dff_e, 
-                lw_down_g__dff_e,
+                lw_up_g__dff_l, 
+                lw_down_g__dff_l,
 
                 rt1Dmode,
                 sim.DeepModel                                        

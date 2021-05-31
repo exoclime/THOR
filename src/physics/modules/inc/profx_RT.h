@@ -776,8 +776,8 @@ __device__  void lw_grey_updown_linear(int id,
     double *e1i__dff_l,
     double *Am__dff_l,
     double *Bm__dff_l,
-    double *lw_up_g__dff_e,
-    double *lw_down_g__dff_e) {
+    double *lw_up_g__dff_l,
+    double *lw_down_g__dff_l) {
     // dependencies
     //// expll -> math
     //// atan -> math
@@ -800,7 +800,7 @@ __device__  void lw_grey_updown_linear(int id,
     w[0] = 0.5;
     w[1] = 0.5;
 
-    for (k = nlay-1; k >-1; k--)
+    for (k = nlay-2; k >-1; k--)
     {
         dtau__dff_l[id*nlay + k ] = (tau_IRe__df_e[id*nlay1 + k] - tau_IRe__df_e[id*nlay1 + k + 1]);
     }
@@ -831,10 +831,10 @@ __device__  void lw_grey_updown_linear(int id,
 
         // Peform downward loop first
         // Top boundary condition
-        lw_down_g__dff_e[id * nlay +  nlay] = 0.0;
-        for (k = nlay-1; k > -1; k--)
+        lw_down_g__dff_l[id * nlay +  nlay] = 0.0;
+        for (k = nlay-2; k > -1; k--)
         {
-            lw_down_g__dff_e[id * nlay +  k] = lw_down_g__dff_e[id * nlay +  k + 1] * edel__dff_l[id * nlay + k] + 
+            lw_down_g__dff_l[id * nlay +  k] = lw_down_g__dff_l[id * nlay +  k + 1] * edel__dff_l[id * nlay + k] + 
             Am__dff_l[id * nlay + k] * be__df_e[id * nlay1 + k + 1] + Bm__dff_l[id * nlay + k] * be__df_e[id * nlay1 + k]; // TS intensity
         }
 
@@ -842,18 +842,18 @@ __device__  void lw_grey_updown_linear(int id,
         // Peform upward loop
         // Lower boundary condition
         
-        lw_up_g__dff_e[id * nlay + 0 + 1 ] = be__df_e[id * nlay1 + 0 + 1];
+        lw_up_g__dff_l[id * nlay + 0 + 1 ] = be__df_e[id * nlay1 + 0 + 1];
         for (k = 0; k < nlay; k++)
         {
-            lw_up_g__dff_e[id * nlay + k] = lw_up_g__dff_e[id * nlay + k] * edel__dff_l[id * nlay + k] +
+            lw_up_g__dff_l[id * nlay + k] = lw_up_g__dff_l[id * nlay + k] * edel__dff_l[id * nlay + k] +
                 Bm__dff_l[id * nlay + k] * be__df_e[id * nlay1 + k + 1] + Am__dff_l[id * nlay + k] * be__df_e[id * nlay1 + k]; // TS intensity
         }
 
         // Sum up flux arrays with Gauss weights and points
-        for (k = nlay1-1; k > -1; k--)
+        for (k = nlay1-2; k > -1; k--)
         {
-            lw_down__df_e[id * nlay1 + k + 1] = lw_down__df_e[id * nlay1 + k + 1] + lw_down_g__dff_e[id * nlay +  k] * w[g] * uarr[g];
-            lw_up__df_e[id * nlay1 + k + 1] = lw_up__df_e[id * nlay1 + k + 1] + lw_up_g__dff_e[id * nlay + k] * w[g] * uarr[g];
+            lw_down__df_e[id * nlay1 + k + 1] = lw_down__df_e[id * nlay1 + k + 1] + lw_down_g__dff_l[id * nlay +  k] * w[g] * uarr[g];
+            lw_up__df_e[id * nlay1 + k + 1] = lw_up__df_e[id * nlay1 + k + 1] + lw_up_g__dff_l[id * nlay + k] * w[g] * uarr[g];
         }
     }
 
@@ -909,8 +909,8 @@ __device__  void lw_grey_updown_linear(int id,
         double *e1i__dff_l,
         double *Am__dff_l,
         double *Bm__dff_l,
-        double *lw_up_g__dff_e,
-        double *lw_down_g__dff_e) {
+        double *lw_up_g__dff_l,
+        double *lw_down_g__dff_l) {
         // dependcies
         //// powll -> include math
         //// log10f -> include math
@@ -1029,8 +1029,8 @@ __device__  void lw_grey_updown_linear(int id,
                 e1i__dff_l,
                 Am__dff_l,
                 Bm__dff_l,
-                lw_up_g__dff_e,
-                lw_down_g__dff_e);
+                lw_up_g__dff_l,
+                lw_down_g__dff_l);
             
 
 
@@ -1130,8 +1130,8 @@ __global__ void rtm_picket_fence(double *pressure_d,
                               double *e1i__dff_l,
                               double *Am__dff_l,
                               double *Bm__dff_l,
-                              double *lw_up_g__dff_e, 
-                              double *lw_down_g__dff_e,
+                              double *lw_up_g__dff_l, 
+                              double *lw_down_g__dff_l,
                               //general model parameters
                               bool    rt1Dmode,
                               bool    DeepModel) {
@@ -1340,8 +1340,8 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 e1i__dff_l,
                 Am__dff_l,
                 Bm__dff_l,
-                lw_up_g__dff_e,
-                lw_down_g__dff_e);
+                lw_up_g__dff_l,
+                lw_down_g__dff_l);
 
             // ?????? Is insol_d needed ?
             insol_d[id] =  insol_d[id] * coszrs* (1-alb); 
@@ -1387,8 +1387,8 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 e1i__dff_l,
                 Am__dff_l,
                 Bm__dff_l,
-                lw_up_g__dff_e,
-                lw_down_g__dff_e);
+                lw_up_g__dff_l,
+                lw_down_g__dff_l);
         }
         
         if (isnan(zenith_angles[id] ) ) {
