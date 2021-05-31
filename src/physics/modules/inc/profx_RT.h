@@ -1156,7 +1156,25 @@ __global__ void rtm_picket_fence(double *pressure_d,
     double xi, xip, xim, a, b;
 
     if (id < num) {
-    
+
+        for (int channel = 0; channel < 3; channel++) {
+            if (gam_V_3_d[id*3 + channel]==0){
+                for (int channel = 0; channel < 3; channel++) {
+                    printf("gam_V_3_d contains 0 in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d channel:%d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, channel, &pressure_d[id*3 + channel]);
+                }
+                __threadfence();         // ensure store issued before trap
+                asm("trap;");            // kill kernel with error           
+            }
+
+            if (isnan(gam_V_3_d[id*3 + channel])){
+                for (int channel = 0; channel < 3; channel++) {
+                    printf("gam_V_3_d contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d channel:%d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, channel, &pressure_d[id*3 + channel]);
+                }
+                __threadfence();         // ensure store issued before trap
+                asm("trap;");            // kill kernel with error           
+            }
+        }
+        
            
 
         for (int lev = 0; lev < nv; lev++) {
@@ -1185,6 +1203,8 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 __threadfence();         // ensure store issued before trap
                 asm("trap;");            // kill kernel with error           
             }
+
+            
              
             
             
