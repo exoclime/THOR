@@ -210,8 +210,8 @@ private:
     double* e1i__dff_l;
     double* Am__dff_l;
     double* Bm__dff_l;
-    double* lw_up_g__dff_e;
-    double* lw_down_g__dff_e;
+    double* lw_up_g__dff_l;
+    double* lw_down_g__dff_l;
 
 
     //  These arrays are for temporary usage in RT code
