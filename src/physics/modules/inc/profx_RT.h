@@ -1459,7 +1459,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
             }
 
         } 
-        for (int level = 0; level < nvi; level++)
+        for (int level = 1; level < nvi; level++)
         {
             if (isnan(tau_IRe__df_e[id * nvi + level]) ) {
                 for (int lev = 0; lev < nvi; lev++)
