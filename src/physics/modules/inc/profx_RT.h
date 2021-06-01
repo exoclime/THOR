@@ -1015,7 +1015,7 @@ __device__  void lw_grey_updown_linear(int id,
             // Blackbody fluxes (note divide by pi for correct units)
             for (int i = 0; i < nlay1; i++)
             {
-                be__df_e[id * nlay1 + i] = StBC * pow((double)(Te__df_e[id * nlay1 + i]), ((double)4.0)) / pi * Beta_2_d[id * 2 + channel];
+                be__df_e[id * nlay1 + i] = StBC * pow((Te__df_e[id * nlay1 + i]), 4.0) / pi * Beta_2_d[id * 2 + channel];
             }
 
             // Calculate lw flux
@@ -1423,23 +1423,43 @@ __global__ void rtm_picket_fence(double *pressure_d,
         for (int level = 0; level < nvi; level++)
         {
             if (isnan(tau_IRe__df_e[id * nvi + level]) ) {
-                for (int level = 0; level < nvi; level++)
+                for (int lev = 0; lev < nvi; lev++)
                 {
-                    printf("tau_IRe__df_e contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d -- level: %d --value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, level, &tau_IRe__df_e[id*nvi + level]);
+                    printf("tau_IRe__df_e contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d -- level: %d --value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, lev, &tau_IRe__df_e[id*nvi + lev]);
                    
                     __threadfence();         // ensure store issued before trap
                     asm("trap;");            // kill kernel with error
                 }
             }
             if (isnan(tau_Ve__df_e[id * nvi + level]) ) {
-                for (int level = 0; level < nvi; level++)
+                for (int lev = 0; lev < nvi; lev++)
                 {
-                    printf("tau_Ve__df_e contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d  level: %d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, level, &tau_Ve__df_e[id*nvi + level]);
+                    printf("tau_Ve__df_e contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d  level: %d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, lev, &tau_Ve__df_e[id*nvi + lev]);
                     
                     __threadfence();         // ensure store issued before trap
                     asm("trap;");            // kill kernel with error
                 }
             }
+
+            if (isnan(Te__df_e[id * nvi + level]) ) {
+                for (int lev = 0; lev < nvi; lev++)
+                {
+                    printf("Te__df_e contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d  level: %d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, lev, &Te__df_e[id*nvi + lev]);
+                    
+                    __threadfence();         // ensure store issued before trap
+                    asm("trap;");            // kill kernel with error
+                }
+            }
+
+            if (isnan(be__df_e[id * nvi + level]) ) {
+                for (int lev = 0; lev < nvi; lev++)
+                {
+                    printf("be__df_e contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d  level: %d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, lev, &be__df_e[id*nvi + lev]);
+                    
+                    __threadfence();         // ensure store issued before trap
+                    asm("trap;");            // kill kernel with error
+                }
+            }   
         
         }
         
