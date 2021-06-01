@@ -931,9 +931,9 @@ __device__  void lw_grey_updown_linear(int id,
         // start operation
 
         // Find temperature at layer edges through linear interpolation and extrapolation
-        for (int i = nlay - 2; i > -1; i--)
+        for (int i = nlay - 2; i > 0; i--)
         {
-            linear_log_interp(pe[id*nlay1 + i+1], pl[id * nlay + i + 1], pl[id * nlay + i ], Tl[id * nlay + i+1], Tl[id * nlay + i], Te__df_e[id * nlay1 + i+1]);
+            linear_log_interp(pe[id*nlay1 + i], pl[id * nlay + i + 1], pl[id * nlay + i ], Tl[id * nlay + i+1], Tl[id * nlay + i], Te__df_e[id * nlay1 + i]);
         }
         Te__df_e[id * nlay1 + nlay1] = Tl[id * nlay + nlay] + (pe[id * nlay1 + nlay1] - pe[id * nlay1 + nlay1 -1]) / 
             (pl[id * nlay + nlay] - pe[id * nlay1 + nlay1 - 1]) * (Tl[id * nlay + nlay] - Te__df_e[id * nlay1 + nlay1 -1]);
