@@ -1406,7 +1406,31 @@ __global__ void rtm_picket_fence(double *pressure_d,
                         //__threadfence();         // ensure store issued before trap
                         //asm("trap;");            // kill kernel with error
             }
-        }       
+        } 
+
+        for (int channel = 0; channel < ; channel++)
+        {
+            if (isnan(Beta_2_d[id*channel + channel] ) ) {
+                for (int chan = 0; chan < count; chan++)
+                {
+                    printf("Beta_2_d contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d channel:%d --value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, chan, &Beta_2_d[id*chan + chan]);
+                        //temperature_d[id * nv + level] = id * nv + level;
+                        __threadfence();         // ensure store issued before trap
+                        asm("trap;");            // kill kernel with error
+                }
+            }
+
+            if (Beta_2_d[id*channel + channel] ==0 ) {
+                for (int chan = 0; chan < count; chan++)
+                {
+                    printf("Beta_2_d contains zeroes in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d channel:%d --value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, chan, &Beta_2_d[id*chan + chan]);
+                        //temperature_d[id * nv + level] = id * nv + level;
+                        __threadfence();         // ensure store issued before trap
+                        asm("trap;");            // kill kernel with error
+                }
+            }
+            
+        }      
         
         for (int channel = 0; channel < 3; channel++)
             {
@@ -1459,7 +1483,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
             }
 
         } 
-        for (int level = 2; level < nvi; level++)
+        for (int level = 3; level < nvi; level++)
         {
             if (isnan(tau_IRe__df_e[id * nvi + level]) ) {
                 for (int lev = 0; lev < nvi; lev++)
@@ -1500,7 +1524,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
                     asm("trap;");            // kill kernel with error
                 }
             }
-            /*
+            
 
             
              if (isnan(Te__df_e[id * nvi + level]) ) {
@@ -1521,6 +1545,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
                     //asm("trap;");            // kill kernel with error
                 }
             }
+            /*
 
             if (isnan(be__df_e[id * nvi + level]) ) {
                 for (int lev = 0; lev < nvi; lev++)
