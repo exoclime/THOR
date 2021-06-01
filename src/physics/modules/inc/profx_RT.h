@@ -947,49 +947,42 @@ __device__  void lw_grey_updown_linear(int id,
         {
             sw_down__df_e[id * nlay1 + i] = 0.0;
             sw_up__df_e[id * nlay1 + i] = 0.0;
-            sw_down_b__df_e[id * nlay1 + i]  = 0.0;
         }
         for (int channel = 0; channel < 3; channel++)
         {
-            // Find the opacity structure
-            tau_struct(id,
-            nlay,
-            grav,
-            pe,
-            k_V_3_nv_d,
-            channel,
-            tau_Ve__df_e);
+           
 
             // Incident flux in band
-            if (Finc==0)
+            if (mu_s[id]>0)
             {
-                /* code */
-            } else
-            {
+                // Find the opacity structure
+                tau_struct(id,
+                    nlay,
+                    grav,
+                    pe,
+                    k_V_3_nv_d,
+                    channel,
+                    tau_Ve__df_e);
+
                 Finc_B = Finc * Beta_V_3_d[id * 3 + channel];
 
-                    // Calculate sw flux
-                if (mu_s[id]>=0){
-                    sw_grey_down(id,
+                
+                sw_grey_down(id,
                     nlay,
                     Finc_B,
                     tau_Ve__df_e,
                     sw_down_b__df_e,
-                    mu_s[id]);
-                } else {
-                    sw_grey_down(id,
-                    nlay,
-                    Finc_B,
-                    tau_Ve__df_e,
-                    sw_down_b__df_e,
-                    0);
-                }
-            }
-            
-            
-            
+                    mu_s[id]);             
 
-           
+            } else
+            {
+                for (int i = nlay1-1; i >-1; i--)
+                {
+                    sw_down_b__df_e[id * nlay1 + i] = 0;
+                    tau_Ve__df_e[id * nlay1 + i] = 0;
+                }
+                
+            }
             
 
             // Sum all bands
