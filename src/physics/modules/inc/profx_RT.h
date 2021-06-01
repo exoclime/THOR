@@ -936,13 +936,21 @@ __device__  void lw_grey_updown_linear(int id,
         // Find temperature at layer edges through linear interpolation and extrapolation
         for (int i = nlay - 2; i > -1; i--)
         {
+
+            if (pl[id * nlay + i + 1] == pl[id * nlay + i + 0] )
+            {
+                printf("pl[i+1] equals pl[i] in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d  level: %d \n", blockIdx.x, blockDim.x, threadIdx.x, id, level);
+                
+            }
             if (pl[id * nlay + i + 1] < 0.0000001)
             {
-                pl[id * nlay + i + 1] = 0.0000001;
+                
                 for (int level = 0; level < nlay; level++)
                 {
                     printf("pl lower than 0.0000001 in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d  level: %d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, level, &pl[id * nlay + level]);
                 }
+
+                pl[id * nlay + i + 1] = 0.0000001;
                  __threadfence();         // ensure store issued before trap
                 asm("trap;");            // kill kernel with error
             }
@@ -952,9 +960,18 @@ __device__  void lw_grey_updown_linear(int id,
             if (pe[id * nlay1 + i + 1] < 0.0000001)
             {
                 pe[id * nlay1 + i + 1] = 0.0000001;
-                for (int level = 0; level < nlay; level++)
+                for (int level = 0; level < nlay1; level++)
                 {
                     printf("pe lower than 0.0000001 in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d  level: %d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, level, &pe[id * nlay + level]);
+                }
+                __threadfence();         // ensure store issued before trap
+                asm("trap;");            // kill kernel with error
+            }
+            if (Tl[id * nlay + i + 1] < 0.0000001)
+            {
+                for (int level = 0; level < nlay; level++)
+                {
+                    printf("Tl lower than 0.0000001 in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d  level: %d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, level, &Tl[id * nlay + level]);
                 }
                 __threadfence();         // ensure store issued before trap
                 asm("trap;");            // kill kernel with error
