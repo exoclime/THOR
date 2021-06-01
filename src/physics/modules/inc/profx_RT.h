@@ -910,7 +910,8 @@ __device__  void lw_grey_updown_linear(int id,
         double *Am__dff_l,
         double *Bm__dff_l,
         double *lw_up_g__dff_e,
-        double *lw_down_g__dff_e) {
+        double *lw_down_g__dff_e) 
+    {
         // dependcies
         //// powll -> include math
         //// log10f -> include math
@@ -938,14 +939,27 @@ __device__  void lw_grey_updown_linear(int id,
             if (pl[id * nlay + i + 1] < 0.0000001)
             {
                 pl[id * nlay + i + 1] = 0.0000001;
+                printf("pl lower than 0.0000001 in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d  level: %d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, lev, &pl[id * nlay + i + 1]);
+                 __threadfence();         // ensure store issued before trap
+                asm("trap;");            // kill kernel with error
+            }
+                    
             }
             if (pl[id * nlay + i ] < 0.0000002)
             {
                 pl[id * nlay + i ] = 0.0000002;
+
+                printf("pl lower than 0.0000001 in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d  level: %d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, lev, &pl[id * nlay + i + 1]);
+                 __threadfence();         // ensure store issued before trap
+                asm("trap;");            // kill kernel with error
+                
             }
             if (pe[id * nlay1 + i + 1] < 0.0000001)
             {
                 pe[id * nlay1 + i + 1] = 0.0000001;
+                printf("pe lower than 0.0000001 in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d  level: %d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, lev, &pe[id * nlay + i + 1]);
+                 __threadfence();         // ensure store issued before trap
+                asm("trap;");            // kill kernel with error
             }
 
             linear_log_interp(pe[id*nlay1 + i + 1], pl[id * nlay + i + 1], pl[id * nlay + i ], Tl[id * nlay + i+1], Tl[id * nlay + i], Te__df_e[id * nlay1 + i + 1]);
