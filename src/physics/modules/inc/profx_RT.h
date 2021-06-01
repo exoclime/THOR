@@ -1452,15 +1452,29 @@ __global__ void rtm_picket_fence(double *pressure_d,
             {
             
                 if ( isnan(k_V_3_nv_d[id * nv * 3 + channel * nv + level] ) ) {
-                    for (int level = 0; level < nvi; level++)
+                    for (int lev = 0; lev < nvi; lev++)
                     {
-                        printf("k_V_3_nv_d contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d --value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, &k_V_3_nv_d[id*nv*3 +channel*nv + level]);
+                        printf("k_V_3_nv_d contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d  level: %d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id,lev, &k_V_3_nv_d[id*nv*3 +channel*nv + lev]);
                         //temperature_d[id * nv + level] = id * nv + level;
                         //__threadfence();         // ensure store issued before trap
                         //asm("trap;");            // kill kernel with error
                     }
                 }
             }
+
+            for (int channel = 0; channel < 2; channel++)
+            {
+                if ( isnan(k_IR_2_nv_d[id * nv * 2 + channel * nv + level] ) ) {
+                    for (int lev = 0; lev < nvi; lev++)
+                    {
+                        printf("k_IR_2_nv_d contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d level:%d --value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, lev, &k_IR_2_nv_d[id*nv*2 +channel*nv + lev]);
+
+                    }
+                    
+
+                }
+                
+            }    
             
             
         }
@@ -1499,18 +1513,8 @@ __global__ void rtm_picket_fence(double *pressure_d,
         
         
         for (int level = 0; level < nvi; level++)
-        {
-            
-            for (int channel = 0; channel < 2; channel++)
-            {
-                printf("k_IR_2_nv_d contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d level:%d --value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, level, &k_IR_2_nv_d[id*nv*2 +channel*nv + level]);
-            }
-            
-                        
-            printf("pressure_d contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d level:%d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, level, &pressure_d[id*nvi + level]);
-            
-        
-        
+        {          
+              
             
             if (isnan(lw_up__df_e[id * nvi + level]) ) {
                 for (int lev = 0; lev < nvi; lev++)
