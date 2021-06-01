@@ -939,7 +939,7 @@ __device__  void lw_grey_updown_linear(int id,
             if (pl[id * nlay + i + 1] < 0.0000001)
             {
                 pl[id * nlay + i + 1] = 0.0000001;
-                for (int level = 0; level < count; level++)
+                for (int level = 0; level < nlay; level++)
                 {
                     printf("pl lower than 0.0000001 in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d  level: %d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, level, &pl[id * nlay + level]);
                 }
@@ -952,7 +952,7 @@ __device__  void lw_grey_updown_linear(int id,
             if (pe[id * nlay1 + i + 1] < 0.0000001)
             {
                 pe[id * nlay1 + i + 1] = 0.0000001;
-                for (int level = 0; level < count; level++)
+                for (int level = 0; level < nlay; level++)
                 {
                     printf("pe lower than 0.0000001 in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d  level: %d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, level, &pe[id * nlay + level]);
                 }
