@@ -1408,22 +1408,22 @@ __global__ void rtm_picket_fence(double *pressure_d,
             }
         } 
 
-        for (int channel = 0; channel < ; channel++)
+        for (int channel = 0; channel < 2 ; channel++)
         {
-            if (isnan(Beta_2_d[id*channel + channel] ) ) {
-                for (int chan = 0; chan < count; chan++)
+            if (isnan(Beta_2_d[id*2 + channel] ) ) {
+                for (int chan = 0; chan < 2; chan++)
                 {
-                    printf("Beta_2_d contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d channel:%d --value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, chan, &Beta_2_d[id*chan + chan]);
+                    printf("Beta_2_d contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d channel:%d --value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, chan, &Beta_2_d[id*2 + chan]);
                         //temperature_d[id * nv + level] = id * nv + level;
                         __threadfence();         // ensure store issued before trap
                         asm("trap;");            // kill kernel with error
                 }
             }
 
-            if (Beta_2_d[id*channel + channel] ==0 ) {
-                for (int chan = 0; chan < count; chan++)
+            if (Beta_2_d[id*2 + channel] ==0 ) {
+                for (int chan = 0; chan < 2; chan++)
                 {
-                    printf("Beta_2_d contains zeroes in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d channel:%d --value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, chan, &Beta_2_d[id*chan + chan]);
+                    printf("Beta_2_d contains zeroes in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d channel:%d --value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, chan, &Beta_2_d[id*2 + chan]);
                         //temperature_d[id * nv + level] = id * nv + level;
                         __threadfence();         // ensure store issued before trap
                         asm("trap;");            // kill kernel with error
