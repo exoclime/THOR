@@ -939,7 +939,9 @@ __device__  void lw_grey_updown_linear(int id,
 
             if (pl[id * nlay + i + 1] == pl[id * nlay + i + 0] )
             {
-                printf("pl[i+1] equals pl[i] in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d  level: %d \n", blockIdx.x, blockDim.x, threadIdx.x, id, level);
+                printf("pl[i+1] equals pl[i] in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d   \n", blockIdx.x, blockDim.x, threadIdx.x, id);
+                 __threadfence();         // ensure store issued before trap
+                asm("trap;");            // kill kernel with error
                 
             }
             if (pl[id * nlay + i + 1] < 0.0000001)
