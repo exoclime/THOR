@@ -921,7 +921,7 @@ __device__  void lw_grey_updown_linear(int id,
         //// sw_grey_down -> function
         //// lw_grey_updown_linear -> function
 
-        const double pi = atan(1) * 4;
+        const double pi = atan(1.0) * 4;
         const double twopi = 2.0 * pi;
         const double StBC = 5.670374419e-8;
 
