@@ -961,24 +961,35 @@ __device__  void lw_grey_updown_linear(int id,
             tau_Ve__df_e);
 
             // Incident flux in band
-            Finc_B = Finc * Beta_V_3_d[id * 3 + channel];
+            if (Finc==0)
+            {
+                /* code */
+            } else
+            {
+                Finc_B = Finc * Beta_V_3_d[id * 3 + channel];
 
-            // Calculate sw flux
-            if (mu_s[id]>=0){
-                sw_grey_down(id,
-                nlay,
-                Finc_B,
-                tau_Ve__df_e,
-                sw_down_b__df_e,
-                mu_s[id]);
-            } else {
-                sw_grey_down(id,
-                nlay,
-                Finc_B,
-                tau_Ve__df_e,
-                sw_down_b__df_e,
-                0);
+                    // Calculate sw flux
+                if (mu_s[id]>=0){
+                    sw_grey_down(id,
+                    nlay,
+                    Finc_B,
+                    tau_Ve__df_e,
+                    sw_down_b__df_e,
+                    mu_s[id]);
+                } else {
+                    sw_grey_down(id,
+                    nlay,
+                    Finc_B,
+                    tau_Ve__df_e,
+                    sw_down_b__df_e,
+                    0);
+                }
             }
+            
+            
+            
+
+           
             
 
             // Sum all bands
