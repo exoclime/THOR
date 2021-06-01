@@ -1459,7 +1459,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
             }
 
         } 
-        for (int level = 1; level < nvi; level++)
+        for (int level = 2; level < nvi; level++)
         {
             if (isnan(tau_IRe__df_e[id * nvi + level]) ) {
                 for (int lev = 0; lev < nvi; lev++)
@@ -1484,7 +1484,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
             if (phtemp[id * nvi + level]==0 ) {
                 for (int lev = 0; lev < nvi; lev++)
                 {
-                    printf("Te__df_e contains zeroes in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d  level: %d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, lev, &phtemp[id*nvi + lev]);
+                    printf("phtemp contains zeroes in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d  level: %d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, lev, &phtemp[id*nvi + lev]);
                     
                     __threadfence();         // ensure store issued before trap
                     asm("trap;");            // kill kernel with error
@@ -1494,7 +1494,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
              if (isnan(phtemp[id * nvi + level]) ) {
                 for (int lev = 0; lev < nvi; lev++)
                 {
-                    printf("Te__df_e contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d  level: %d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, lev, &phtemp[id*nvi + lev]);
+                    printf("phtemp contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d  level: %d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, lev, &phtemp[id*nvi + lev]);
                     
                     __threadfence();         // ensure store issued before trap
                     asm("trap;");            // kill kernel with error
