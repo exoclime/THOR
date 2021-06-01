@@ -1519,6 +1519,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
             if (isnan(lw_up__df_e[id * nvi + level]) ) {
                 for (int lev = 0; lev < nvi; lev++)
                 {
+                    printf("lw_up__df_e has NaNs at the level:%u\n", lev);
                     printf("lw_up__df_e contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d timestep:%d level:%d \n", blockIdx.x, blockDim.x, threadIdx.x, id, timestep, lev);
                     printf("lw_up__df_e has the value:%u\n",  &lw_up__df_e[id*nvi + lev]);
                 }
@@ -1529,6 +1530,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
             if (isnan(lw_down__df_e[id * nvi + level] ) ) {
                 for (int lev = 0; lev < nvi; lev++)
                 {
+                    printf("lw_down__df_e has NaNs at the level:%u\n", lev);
                     printf("lw_down__df_e contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d timestep:%d level:%d \n", blockIdx.x, blockDim.x, threadIdx.x, id, timestep, lev);
                     printf("lw_down__df_e has the value:%u\n",  &lw_down__df_e[id*nvi + level]);
                 }
@@ -1539,6 +1541,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
             if (isnan(sw_up__df_e[id * nvi + level] )  ) {
                 for (int lev = 0; lev < nvi; lev++)
                 {
+                    printf("sw_up__df_e has NaNs at the level:%u\n", lev);
                     printf("sw_up__df_e contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d timestep:%d level: %d \n", blockIdx.x, blockDim.x, threadIdx.x, id, timestep, lev);
                     printf("sw_up__df_e has the value:%u\n", &sw_up__df_e[id*nvi+lev]);
                 }
@@ -1549,6 +1552,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
             if (isnan(sw_down__df_e[id * nvi + level] )  ) {
                 for (int lev = 0; lev < nvi; lev++)
                 {
+                    printf("sw_down__df_e has NaNs at the level:%u\n", lev);
                     printf("sw_down__df_e contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d timestep:%d level:%d \n", blockIdx.x, blockDim.x, threadIdx.x, id, timestep, lev);
                     printf("sw_down__df_e has the value:%u\n", &sw_down__df_e[id*nvi + lev]);
                 }
