@@ -930,9 +930,24 @@ __device__  void lw_grey_updown_linear(int id,
        
         // start operation
 
+                
+
         // Find temperature at layer edges through linear interpolation and extrapolation
         for (int i = nlay - 2; i > -1; i--)
         {
+            if (pl[id * nlay + i + 1] < 0.0000001)
+            {
+                pl[id * nlay + i + 1] = 0.0000001;
+            }
+            if (pl[id * nlay + i ] < 0.0000002)
+            {
+                pl[id * nlay + i ] = 0.0000002;
+            }
+            if (pe[id * nlay1 + i + 1] < 0.0000001)
+            {
+                pe[id * nlay1 + i + 1] = 0.0000001;
+            }
+            
             linear_log_interp(pe[id*nlay1 + i + 1], pl[id * nlay + i + 1], pl[id * nlay + i ], Tl[id * nlay + i+1], Tl[id * nlay + i], Te__df_e[id * nlay1 + i + 1]);
         }
         Te__df_e[id * nlay1 + nlay1] = Tl[id * nlay + nlay] + (pe[id * nlay1 + nlay1] - pe[id * nlay1 + nlay1 -1]) / 
@@ -1483,7 +1498,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
             }
 
         } 
-        for (int level = 3; level < nvi; level++)
+        for (int level = 0; level < nvi; level++)
         {
             if (isnan(tau_IRe__df_e[id * nvi + level]) ) {
                 for (int lev = 0; lev < nvi; lev++)
