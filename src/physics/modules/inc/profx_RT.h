@@ -892,15 +892,15 @@ __device__  void lw_grey_updown_linear(int id,
         double *tau_IRe__df_e,
         double *Te__df_e,
         double *be__df_e, 
-        double *sw_down__df_e,
+        double *&sw_down__df_e,
         double *sw_down_b__df_e,
-        double *sw_up__df_e,
-        double *lw_down__df_e,
+        double *&sw_up__df_e,
+        double *&lw_down__df_e,
         double *lw_down_b__df_e,
-        double *lw_up__df_e,
+        double *&lw_up__df_e,
         double *lw_up_b__df_e,
-        double *lw_net__df_e,
-        double *sw_net__df_e,
+        double *&lw_net__df_e,
+        double *&sw_net__df_e,
         // lw_grey_updown_linear working variables
         double *dtau__dff_l,
         double *del__dff_l, 
@@ -1895,7 +1895,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
 
         }
         
-        ASR_d[id] = sw_down__df_e[id * nvi + nv] * areasT_d[id] * pow(rscale, 2);
+        ASR_d[id] = sw_down__df_e[id * nvi + nvi] * areasT_d[id] * pow(rscale, 2);
             
             /*
             if (isnan(ASR_d[id] )) {
@@ -1906,7 +1906,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
             }
             */
         
-        OLR_d[id] = lw_up__df_e[id * nvi + nv]*areasT_d[id] * pow(rscale, 2);
+        OLR_d[id] = lw_up__df_e[id * nvi + nvi]*areasT_d[id] * pow(rscale, 2);
             
             /*
             if (isnan(OLR_d[id] ) ) {
