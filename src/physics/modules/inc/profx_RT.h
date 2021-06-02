@@ -1433,8 +1433,6 @@ __global__ void rtm_picket_fence(double *pressure_d,
             
         }
 
-        cuda_check_status_or_exit(__FILE__, __LINE__);
-
         // !! Radiation - Comment in what scheme you want to use - Heng model won't work!
         
         if (zenith_angles[id] > 0.0) {
@@ -1529,7 +1527,6 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 lw_up_g__dff_e,
                 lw_down_g__dff_e);
         }
-        cuda_check_status_or_exit(__FILE__, __LINE__);
         
         if (isnan(zenith_angles[id] ) ) {
             
@@ -1776,8 +1773,6 @@ __global__ void rtm_picket_fence(double *pressure_d,
         else {
             rscale = 1.0;
         }
-
-        cuda_check_status_or_exit(__FILE__, __LINE__);
         
         
         
@@ -1965,8 +1960,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
             
         
         
-        cuda_check_status_or_exit(__FILE__, __LINE__);
-
+        
         for (int lev = 0; lev < nv; lev++) {
         
             /*
