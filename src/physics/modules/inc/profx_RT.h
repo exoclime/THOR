@@ -1031,7 +1031,7 @@ __device__  void lw_grey_updown_linear(int id,
 
             if (Te__df_e[id * nlay1 + i] == 0)
             {                
-                    printf("Tl[id * nlay + i] is zer0\n");
+                    printf("Te__df_e[id * nlay + i] is zer0\n");
             }
             if (Te__df_e[id * nlay1 + i] < 0)
             {                
@@ -2000,5 +2000,9 @@ __global__ void rtm_picket_fence(double *pressure_d,
             }
             // }
         }
+
+        printf("Column complete");
+
+
     }
 }
