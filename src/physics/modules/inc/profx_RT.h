@@ -694,10 +694,10 @@ __device__  void linear_log_interp(double xval, double x1, double x2, double y1,
 __device__ void tau_struct(int id,
     int nlev,
     double grav,
-    double* p_half,
-    double* kRoss,
+    double *p_half,
+    double *kRoss,
     int channel,
-    double* tau_struc_e) {
+    double *&tau_struc_e) {
 
     // work variables
     double tau_sum;
@@ -746,7 +746,7 @@ __device__  void sw_grey_down(int id,
     int nlay1,
     double solar,
     double *solar_tau,
-    double *sw_down__df_e,
+    double *&sw_down__df_e,
     double mu) {
     // dependencies
     //// expl -> math
@@ -767,8 +767,8 @@ __device__  void lw_grey_updown_linear(int id,
     int nlay1,
     double *be__df_e,
     double *tau_IRe__df_e,
-    double *lw_up__df_e,
-    double *lw_down__df_e,
+    double *&lw_up__df_e,
+    double *&lw_down__df_e,
     double *dtau__dff_l,
     double *del__dff_l,
     double *edel__dff_l,
@@ -1041,7 +1041,7 @@ __device__  void lw_grey_updown_linear(int id,
 
             if (Te__df_e[id * nlay1 + i] == 0)
             {                
-                    printf("Te__df_e[id * nlay + i] is zer0\n");
+                    printf("Te__df_e[id * nlay1 + i] is zer0\n");
             }
             if (Te__df_e[id * nlay1 + i] < 0)
             {                
