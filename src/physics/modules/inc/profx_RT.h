@@ -985,7 +985,7 @@ __device__  void lw_grey_updown_linear(int id,
             
                 
 
-            linear_log_interp(pe[id*nlay1 + i + 1], pl[id * nlay + i + 1], pl[id * nlay + i ], Tl[id * nlay + i+1], Tl[id * nlay + i], *Te__df_e[id * nlay1 + i + 1]);
+            linear_log_interp(pe[id*nlay1 + i + 1], pl[id * nlay + i + 1], pl[id * nlay + i ], Tl[id * nlay + i+1], Tl[id * nlay + i], &Te__df_e[id * nlay1 + i + 1]);
 
             printf("---------");
             if (pe[id*nlay1 + i + 1] == 0)
