@@ -979,7 +979,18 @@ __device__  void lw_grey_updown_linear(int id,
                 asm("trap;");            // kill kernel with error
             }
 
+            
+                
+
             linear_log_interp(pe[id*nlay1 + i + 1], pl[id * nlay + i + 1], pl[id * nlay + i ], Tl[id * nlay + i+1], Tl[id * nlay + i], Te__df_e[id * nlay1 + i + 1]);
+
+            printf("---------");
+            printf("pe[id*nlay1 + i + 1]  level: %d value:%u\n", level, &pe[id*nlay1 + i + 1]);
+            printf("pl[id * nlay + i + 1]  level: %d value:%u\n", level, &pl[id * nlay + i + 1]);
+            printf("pl[id * nlay + i ]  level: %d value:%u\n", level, &pl[id * nlay + i ]);
+            printf("Tl[id * nlay + i+1]  level: %d value:%u\n", level, &Tl[id * nlay + i+1]);
+            printf("Tl[id * nlay + i]  level: %d value:%u\n", level, &Tl[id * nlay + i]);
+            printf("Te__df_e[id * nlay1 + i + 1]  level: %d value:%u\n", level, &Te__df_e[id * nlay1 + i + 1]);
         }
         Te__df_e[id * nlay1 + nlay1] = Tl[id * nlay + nlay] + (pe[id * nlay1 + nlay1] - pe[id * nlay1 + nlay1 -1]) / 
             (pl[id * nlay + nlay] - pe[id * nlay1 + nlay1 - 1]) * (Tl[id * nlay + nlay] - Te__df_e[id * nlay1 + nlay1 -1]);
