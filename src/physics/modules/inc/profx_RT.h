@@ -665,8 +665,8 @@ __device__ void kernel_k_Ross_Freedman(double Tin, double Pin, double met, doubl
 
 __device__  void linear_log_interp(double xval, double x1, double x2, double y1, double y2, double &yval) {
     // dependcies
-    //// powll from math
-    //// log10f from math
+    //// pow from math
+    //// log10 from math
 
     // work variables
     double lxval;
@@ -683,7 +683,7 @@ __device__  void linear_log_interp(double xval, double x1, double x2, double y1,
     ly1 = log10((double)(y1));
     ly2 = log10((double)(y2));
 
-    norm = ((double)1.0) / (lx2 - lx1);
+    norm = (1.0) / (lx2 - lx1);
 
     yval = pow((double)(10.0), ((ly1 * (lx2 - lxval) + ly2 * (lxval - lx1)) * norm));
 }
@@ -1027,6 +1027,15 @@ __device__  void lw_grey_updown_linear(int id,
             if (Tl[id * nlay + i] < 0)
             {                
                     printf("Tl[id * nlay + i] is negative\n");
+            }
+
+            if (Te__df_e[id * nlay1 + i] == 0)
+            {                
+                    printf("Tl[id * nlay + i] is zer0\n");
+            }
+            if (Te__df_e[id * nlay1 + i] < 0)
+            {                
+                    printf("Te__df_e[id * nlay1 + i] is negative\n");
             }
             
             printf("---------\n");
