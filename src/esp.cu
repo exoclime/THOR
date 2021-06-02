@@ -992,7 +992,8 @@ int main(int argc, char** argv) {
                  &max_count,
                  vert_refined,
                  lowest_layer_thickness,
-                 transition_altitude);
+                 transition_altitude,
+                 output_path);
 
     //  Define object X.
     int point_num_temp = Grid.point_num;

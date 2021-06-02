@@ -2401,6 +2401,7 @@ def RTbalanceTS(input, grid, output):
     plt.plot(output.time, np.sum(olr,axis=0), 'rs', linestyle='--',label='OLR')
     #plt.plot(output.time, output.OLR_tot, 'rs', linestyle='--',label='OLR')
 
+    # print('ASR = %e, OLR = %e, ratio = %e'%(np.sum(asr,axis=0)[0],np.sum(olr,axis=0)[0],np.sum(olr,axis=0)[0]/np.sum(asr,axis=0)[0]))
     plt.xlabel('Time (days)')
     plt.ylabel('Global integrated power (W)')
     plt.legend(loc='upper right')
