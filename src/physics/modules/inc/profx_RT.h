@@ -996,6 +996,16 @@ __device__  void lw_grey_updown_linear(int id,
             {                
                     printf("pe[id*nlay1 + i + 1] is negative\n");
             }
+
+            if (pe[id*nlay1 + i + 1] > pe[id * nlay1 + i ])
+            {                
+                    printf("pe[id*nlay1 + i + 1] > pe[id * nlay1 + i ] \n");
+            }
+            if (pl[id*nlay + i + 1] > pl[id * nlay + i ])
+            {                
+                    printf("pl[id*nlay + i + 1] > pl[id * nlay + i ] \n");
+            }
+
             if (pl[id * nlay + i + 1] == 0)
             {                
                     printf("pl[id * nlay + i + 1] is zer0\n");
@@ -1806,11 +1816,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 //__threadfence();         // ensure store issued before trap
                 //asm("trap;");            // kill kernel with error
             }
-            if (sw_up__df_e[id * nvi + level] ==0  ) {
-
-                printf("sw_up__df_e is zero at the level:%u\n", level);
-
-            }
+            
             if (isnan(sw_up__df_e[id * nvi + level] )  ) {
                 for (int lev = 0; lev < nvi; lev++)
                 {
