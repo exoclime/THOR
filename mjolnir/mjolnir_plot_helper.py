@@ -783,14 +783,14 @@ def make_plot(args, save=True, axis=None):
             (grid.Altitude[None, :, None] - grid.Altitudeh[None, :-1, None]) /\
             (grid.Altitudeh[None, 1:, None] - grid.Altitudeh[None, :-1, None])
         z = {'value': KH, 'label': r'boundary layer K$_H$ (m$^2$ s$^{-1}$)', 'name': 'KH'}
-        pfile = call_plot('KH',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis, use_p=True)
+        pfile = call_plot('KH',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis, use_p=False)
         plots_created.append(pfile)
 
         KM = output.KM[:, :-1, :] + (output.KM[:, 1:, :] - output.KM[:, :-1, :]) *\
             (grid.Altitude[None, :, None] - grid.Altitudeh[None, :-1, None]) /\
             (grid.Altitudeh[None, 1:, None] - grid.Altitudeh[None, :-1, None])
         z = {'value': KM, 'label': r'boundary layer K$_M$ (m$^2$ s$^{-1}$)', 'name': 'KM'}
-        pfile = call_plot('KM',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis, use_p=True)
+        pfile = call_plot('KM',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis, use_p=False)
         plots_created.append(pfile)
 
     if ('Riprof' in pview or 'all' in pview) and input.BL and (input.BL_type == 1):
