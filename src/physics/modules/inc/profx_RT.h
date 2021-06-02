@@ -1607,6 +1607,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
         } 
         for (int level = 0; level < nvi; level++)
         {
+            /*
             if (isnan(tau_IRe__df_e[id * nvi + level]) ) {
                 for (int lev = 0; lev < nvi; lev++)
                 {
@@ -1625,6 +1626,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
                     asm("trap;");            // kill kernel with error
                 }
             }
+            */
 
            
             if (phtemp[id * nvi + level]==0 ) {
@@ -1648,8 +1650,8 @@ __global__ void rtm_picket_fence(double *pressure_d,
             }
             
 
-            
-             if (isnan(Te__df_e[id * nvi + level]) ) {
+            /*
+            if (isnan(Te__df_e[id * nvi + level]) ) {
                 for (int lev = 0; lev < nvi; lev++)
                 {
                     printf("Te__df_e contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d  level: %d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, lev, &Te__df_e[id*nvi + lev]);
@@ -1667,7 +1669,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
                     //asm("trap;");            // kill kernel with error
                 }
             }
-            /*
+            
 
             if (isnan(be__df_e[id * nvi + level]) ) {
                 for (int lev = 0; lev < nvi; lev++)
@@ -1769,18 +1771,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
         for (int level = 0; level < nvi; level++)
         {          
             
-            if (isnan(sw_down_b__df_e[id * nvi + level]) ) {
-                for (int lev = 0; lev < nvi; lev++)
-                {
-                    printf("sw_down_b__df_e has NaNs at the level:%u\n", lev);
-                    printf("sw_down_b__df_e contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d timestep:%d level:%d \n", blockIdx.x, blockDim.x, threadIdx.x, id, timestep, lev);
-                    printf("sw_down_b__df_e has the value:%u\n",  &sw_down_b__df_e[id*nvi + lev]);
-                }
-                //sw_net__df_e[id * nv + level] = id * nv + level;
-                __threadfence();         // ensure store issued before trap
-                asm("trap;");            // kill kernel with error
-            }
-              
+                        
             
             if (isnan(lw_up__df_e[id * nvi + level]) ) {
                 for (int lev = 0; lev < nvi; lev++)
@@ -1790,8 +1781,8 @@ __global__ void rtm_picket_fence(double *pressure_d,
                     printf("lw_up__df_e has the value:%u\n",  &lw_up__df_e[id*nvi + lev]);
                 }
                 //sw_net__df_e[id * nv + level] = id * nv + level;
-                __threadfence();         // ensure store issued before trap
-                asm("trap;");            // kill kernel with error
+                //__threadfence();         // ensure store issued before trap
+                //asm("trap;");            // kill kernel with error
             }
             if (isnan(lw_down__df_e[id * nvi + level] ) ) {
                 for (int lev = 0; lev < nvi; lev++)
@@ -1801,8 +1792,8 @@ __global__ void rtm_picket_fence(double *pressure_d,
                     printf("lw_down__df_e has the value:%u\n",  &lw_down__df_e[id*nvi + level]);
                 }
                 //sw_net__df_e[id * nv + level] = id * nv + level;
-                __threadfence();         // ensure store issued before trap
-                asm("trap;");            // kill kernel with error
+                //__threadfence();         // ensure store issued before trap
+                //asm("trap;");            // kill kernel with error
             }
             if (sw_up__df_e[id * nvi + level] ==0  ) {
 
@@ -1816,8 +1807,8 @@ __global__ void rtm_picket_fence(double *pressure_d,
                     printf("sw_up__df_e contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d timestep:%d level: %d \n", blockIdx.x, blockDim.x, threadIdx.x, id, timestep, lev);
                     printf("sw_up__df_e has the value:%u\n", &sw_up__df_e[id*nvi+lev]);
                 }
-                sw_net__df_e[id * nv + level] = id * nv + level;
-                __threadfence();         // ensure store issued before trap
+               
+               // __threadfence();         // ensure store issued before trap
                 //asm("trap;");            // kill kernel with error
             }
             if (isnan(sw_down__df_e[id * nvi + level] )  ) {
@@ -1907,16 +1898,23 @@ __global__ void rtm_picket_fence(double *pressure_d,
             */
         
         OLR_d[id] = lw_up__df_e[id * nvi + nvi]*areasT_d[id] * pow(rscale, 2);
-            
-            /*
-            if (isnan(OLR_d[id] ) ) {
-                printf("OLR_d contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d  level:%d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, level, &OLR_d[id]);
+
+        if (isnan(areasT_d[id] ) ) {
+                printf("areasT_d[id] contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, &areasT_d[id]);
                 //OLR_d[id] = id;
                 //__threadfence();         // ensure store issued before trap
                 //asm("trap;");            // kill kernel with error
             }
             
-            */
+            
+            if (isnan(OLR_d[id] ) ) {
+                printf("my message:OLR_d contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, &OLR_d[id]);
+                //OLR_d[id] = id;
+                //__threadfence();         // ensure store issued before trap
+                //asm("trap;");            // kill kernel with error
+            }
+            
+            
         
         
         
