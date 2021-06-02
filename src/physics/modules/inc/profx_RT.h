@@ -930,7 +930,7 @@ __device__  void lw_grey_updown_linear(int id,
         double Finc_B;
        
         // start operation
-
+        double out;
                 
 
         // Find temperature at layer edges through linear interpolation and extrapolation
@@ -985,12 +985,18 @@ __device__  void lw_grey_updown_linear(int id,
             linear_log_interp(pe[id*nlay1 + i + 1], pl[id * nlay + i + 1], pl[id * nlay + i ], Tl[id * nlay + i+1], Tl[id * nlay + i], Te__df_e[id * nlay1 + i + 1]);
 
             printf("---------");
-            printf("pe[id*nlay1 + i + 1]  level: %d value:%u\n", i, &pe[id*nlay1 + i + 1]);
-            printf("pl[id * nlay + i + 1]  level: %d value:%u\n", i, &pl[id * nlay + i + 1]);
-            printf("pl[id * nlay + i ]  level: %d value:%u\n", i, &pl[id * nlay + i ]);
-            printf("Tl[id * nlay + i+1]  level: %d value:%u\n", i, &Tl[id * nlay + i+1]);
-            printf("Tl[id * nlay + i]  level: %d value:%u\n", i, &Tl[id * nlay + i]);
-            printf("Te__df_e[id * nlay1 + i + 1]  level: %d value:%u\n", i, &Te__df_e[id * nlay1 + i + 1]);
+            out = pe[id*nlay1 + i + 1];
+            printf("pe[id*nlay1 + i + 1]  level: %d value:%u\n", i, out);
+            out = pl[id * nlay + i + 1];
+            printf("pl[id * nlay + i + 1]  level: %d value:%u\n", i, out);
+            out = pl[id * nlay + i ];
+            printf("pl[id * nlay + i ]  level: %d value:%u\n", i, out);
+            out = Tl[id * nlay + i+1];
+            printf("Tl[id * nlay + i+1]  level: %d value:%u\n", i, out);
+            out = Tl[id * nlay + i];
+            printf("Tl[id * nlay + i]  level: %d value:%u\n", i, out);
+            out = Te__df_e[id * nlay1 + i + 1];
+            printf("Te__df_e[id * nlay1 + i + 1]  level: %d value:%u\n", i, out);
             printf("---------");
         }
         Te__df_e[id * nlay1 + nlay1] = Tl[id * nlay + nlay] + (pe[id * nlay1 + nlay1] - pe[id * nlay1 + nlay1 -1]) / 
