@@ -1905,10 +1905,23 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 //__threadfence();         // ensure store issued before trap
                 //asm("trap;");            // kill kernel with error
             }
+
+            if (areasT_d[id] == 0 ) {
+                printf("areasT_d[id] contains 0 in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, &areasT_d[id]);
+                //OLR_d[id] = id;
+                //__threadfence();         // ensure store issued before trap
+                //asm("trap;");            // kill kernel with error
+            }
             
             
             if (isnan(OLR_d[id] ) ) {
                 printf("my message:OLR_d contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, &OLR_d[id]);
+                //OLR_d[id] = id;
+                //__threadfence();         // ensure store issued before trap
+                //asm("trap;");            // kill kernel with error
+            }
+            if (OLR_d[id] == 0 ) {
+                printf("my message:OLR_d contains 0 in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, &OLR_d[id]);
                 //OLR_d[id] = id;
                 //__threadfence();         // ensure store issued before trap
                 //asm("trap;");            // kill kernel with error
