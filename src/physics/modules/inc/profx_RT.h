@@ -1786,6 +1786,11 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 __threadfence();         // ensure store issued before trap
                 asm("trap;");            // kill kernel with error
             }
+            if (isnan(sw_up__df_e[id * nvi + level] ==0)  ) {
+                
+                printf("sw_up__df_e is zero at the level:%u\n", lev)
+
+            }
             if (isnan(sw_up__df_e[id * nvi + level] )  ) {
                 for (int lev = 0; lev < nvi; lev++)
                 {
