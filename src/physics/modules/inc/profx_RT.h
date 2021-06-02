@@ -1121,6 +1121,15 @@ __device__  void lw_grey_updown_linear(int id,
             for (int i = 0; i < nlay1; i++)
             {
                 be__df_e[id * nlay1 + i] = StBC * pow((Te__df_e[id * nlay1 + i]), 4.0) / pi * Beta_2_d[id * 2 + channel];
+
+                if (be__df_e[id * nlay1 + i] < 0)
+                {                
+                    printf("be__df_e[id * nlay1 + i] is negative\n");
+                }
+                if (isnan(be__df_e[id * nlay1 + i] ) )
+                {                
+                    printf("be__df_e[id * nlay1 + i] is NaN\n");
+                }
             }
 
             // Calculate lw flux
