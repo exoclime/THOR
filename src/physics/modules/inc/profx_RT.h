@@ -985,27 +985,51 @@ __device__  void lw_grey_updown_linear(int id,
             
                 
 
-            linear_log_interp(pe[id*nlay1 + i + 1], pl[id * nlay + i + 1], pl[id * nlay + i ], Tl[id * nlay + i+1], Tl[id * nlay + i], &Te__df_e[id * nlay1 + i + 1]);
+            linear_log_interp(pe[id*nlay1 + i + 1], pl[id * nlay + i + 1], pl[id * nlay + i ], Tl[id * nlay + i+1], Tl[id * nlay + i], Te__df_e[id * nlay1 + i + 1]);
 
-            printf("---------");
+            printf("---------\n");
             if (pe[id*nlay1 + i + 1] == 0)
-            {
-                
+            {                
                     printf("pe[id*nlay1 + i + 1] is zer0\n");
             }
-            out = pe[id*nlay1 + i + 1];
-            printf("pe[id*nlay1 + i + 1]  level: %d value:%u\n", i, out);
-            out = pl[id * nlay + i + 1];
-            printf("pl[id * nlay + i + 1]  level: %d value:%u\n", i, out);
-            out = pl[id * nlay + i ];
-            printf("pl[id * nlay + i ]  level: %d value:%u\n", i, out);
-            out = Tl[id * nlay + i+1];
-            printf("Tl[id * nlay + i+1]  level: %d value:%u\n", i, out);
-            out = Tl[id * nlay + i];
-            printf("Tl[id * nlay + i]  level: %d value:%u\n", i, out);
-            out = Te__df_e[id * nlay1 + i + 1];
-            printf("Te__df_e[id * nlay1 + i + 1]  level: %d value:%u\n", i, out);
-            printf("---------");
+             if (pe[id*nlay1 + i + 1] < 0)
+            {                
+                    printf("pe[id*nlay1 + i + 1] is negative\n");
+            }
+            if (pl[id * nlay + i + 1] == 0)
+            {                
+                    printf("pl[id * nlay + i + 1] is zer0\n");
+            }
+            if (pl[id * nlay + i + 1] < 0)
+            {                
+                    printf("pl[id * nlay + i + 1] is negative\n");
+            }
+            if (pl[id * nlay + i ] == 0)
+            {                
+                    printf("pl[id * nlay + i ] is zer0\n");
+            }
+            if (pl[id * nlay + i ] < 0)
+            {                
+                    printf("pl[id * nlay + i ] is negative\n");
+            }
+            if (Tl[id * nlay + i+1] == 0)
+            {                
+                    printf("Tl[id * nlay + i+1] is zer0\n");
+            }
+            if (Tl[id * nlay + i+1] < 0)
+            {                
+                    printf("Tl[id * nlay + i+1] is negative\n");
+            }
+            if (Tl[id * nlay + i] == 0)
+            {                
+                    printf("Tl[id * nlay + i] is zer0\n");
+            }
+            if (Tl[id * nlay + i] < 0)
+            {                
+                    printf("Tl[id * nlay + i] is negative\n");
+            }
+            
+            printf("---------\n");
         }
         Te__df_e[id * nlay1 + nlay1] = Tl[id * nlay + nlay] + (pe[id * nlay1 + nlay1] - pe[id * nlay1 + nlay1 -1]) / 
             (pl[id * nlay + nlay] - pe[id * nlay1 + nlay1 - 1]) * (Tl[id * nlay + nlay] - Te__df_e[id * nlay1 + nlay1 -1]);
