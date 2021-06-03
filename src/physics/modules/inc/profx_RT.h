@@ -1925,8 +1925,6 @@ __global__ void rtm_picket_fence(double *pressure_d,
         
         
 
-        printf(" zenith angle :%u\n",  &);
-
         printf("before ASR_d\n");
         
         ASR_d[id] = sw_down__df_e[id * nvi + nvi] * areasT_d[id] * pow(rscale, 2);
