@@ -2017,7 +2017,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
 
             
         
-        OLR_d[id] = lw_up__df_e[id * nvi + nvi]*areasT_d[id] * pow(rscale, 2);
+        OLR_d[id] = lw_up__df_e[id * nvi + nv]*areasT_d[id] * pow(rscale, 2);
         printf("OLR_d is computed\n");
 
         if (isnan(OLR_d[id] )) {
@@ -2036,6 +2036,32 @@ __global__ void rtm_picket_fence(double *pressure_d,
 
         if (isnan(areasT_d[id] ) ) {
                 printf("areasT_d[id] contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, &areasT_d[id]);
+                //OLR_d[id] = id;
+                //__threadfence();         // ensure store issued before trap
+                //asm("trap;");            // kill kernel with error
+            }
+
+        if (areasT_d[id] <1 ) {
+                printf("areasT_d[id] small than 1 in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, &areasT_d[id]);
+                //OLR_d[id] = id;
+                //__threadfence();         // ensure store issued before trap
+                //asm("trap;");            // kill kernel with error
+            }
+        if (areasT_d[id] <0.01 ) {
+                printf("areasT_d[id] small than 0.01 in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, &areasT_d[id]);
+                //OLR_d[id] = id;
+                //__threadfence();         // ensure store issued before trap
+                //asm("trap;");            // kill kernel with error
+            }
+        
+        if (areasT_d[id] <0.0001 ) {
+                printf("areasT_d[id] small than 0.0001 in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, &areasT_d[id]);
+                //OLR_d[id] = id;
+                //__threadfence();         // ensure store issued before trap
+                //asm("trap;");            // kill kernel with error
+            }
+        if (areasT_d[id] <0.000001 ) {
+                printf("areasT_d[id] small than 0.000001 in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, &areasT_d[id]);
                 //OLR_d[id] = id;
                 //__threadfence();         // ensure store issued before trap
                 //asm("trap;");            // kill kernel with error
