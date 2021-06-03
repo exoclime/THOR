@@ -1805,6 +1805,18 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 //__threadfence();         // ensure store issued before trap
                 //asm("trap;");            // kill kernel with error
             }
+
+            if (lw_down__df_e[id * nvi + level] ==0  ) {
+                for (int lev = 0; lev < nvi; lev++)
+                {
+                    printf("lw_down__df_e has 0 at the level:%u\n", lev);
+                    printf("lw_down__df_e contains 0 in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d timestep:%d level:%d \n", blockIdx.x, blockDim.x, threadIdx.x, id, timestep, lev);
+                    printf("lw_down__df_e has the value:%u\n",  &lw_down__df_e[id*nvi + level]);
+                }
+                //sw_net__df_e[id * nv + level] = id * nv + level;
+                //__threadfence();         // ensure store issued before trap
+                //asm("trap;");            // kill kernel with error
+            }
             if (isnan(lw_down__df_e[id * nvi + level] ) ) {
                 for (int lev = 0; lev < nvi; lev++)
                 {
@@ -1894,12 +1906,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
                     //lw_net__df_e[id] = id;
                     //__threadfence();         // ensure store issued before trap
                     //asm("trap;");            // kill kernel with error
-                }
-                
-            
-            
-            
-            
+                }            
 
         }
 
@@ -1917,6 +1924,16 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 __threadfence();         // ensure store issued before trap
                 asm("trap;");            // kill kernel with error
             }
+
+            if (ASR_d[id] == 0 ) {
+                printf("my message:OLR_d contains 0 in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, &ASR_d[id]);
+                //OLR_d[id] = id;
+                //__threadfence();         // ensure store issued before trap
+                //asm("trap;");            // kill kernel with error
+            }
+
+            
+
             
         
         OLR_d[id] = lw_up__df_e[id * nvi + nvi]*areasT_d[id] * pow(rscale, 2);
