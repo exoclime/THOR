@@ -665,7 +665,7 @@ __device__ void kernel_k_Ross_Freedman(double Tin, double Pin, double met, doubl
 
 
 
-__device__  void linear_log_interp(int nlay, int nlay1, double *xval, double *x1, double *x2, double *y1, double *y2, double *&yval) {
+__device__  void linear_log_interp(int id, int i, int nlay, int nlay1, double *xval, double *x1, double *x2, double *y1, double *y2, double *&yval) {
     // dependcies
     //// pow from math
     //// log10 from math
@@ -988,7 +988,7 @@ __device__  void lw_grey_updown_linear(int id,
             
                 
 
-            linear_log_interp(nlay, nlay1, pe, pl, pl, Tl, Tl, Te__df_e);
+            linear_log_interp(id, i, nlay, nlay1, pe, pl, pl, Tl, Tl, Te__df_e);
 
             printf("---------\n");
             if (pe[id*nlay1 + i + 1] == 0)
