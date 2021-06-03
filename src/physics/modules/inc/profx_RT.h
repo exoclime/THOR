@@ -1818,7 +1818,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
         
         
         
-        
+        /*
         for (int level = 0; level < nvi; level++)
         {          
             
@@ -1882,7 +1882,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
             }
             
             
-            /*
+            
             if (isnan(sw_net__df_e[id * nvi + level])  ) {
                 printf("sw_net__df_e contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d level:%d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, level, &sw_net__df_e[id*nvi + level]);
                 //sw_net__df_e[id * nv + level] = id * nv + level;
@@ -1903,7 +1903,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 //__threadfence();         // ensure store issued before trap
                 //asm("trap;");            // kill kernel with error
             }
-            */
+            
                         
             
             
@@ -1912,7 +1912,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
             //calculate OLR for this point
             
              
-            /*
+            
             if (isnan(lw_net__df_e[id * nvi + level])) {
                 printf("lw_net__df_e contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d  level:%d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, level, &lw_net__df_e[id*nvi + level]);
                 
@@ -1922,27 +1922,29 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 //__threadfence();          // ensure store issued before trap
                 asm("trap;");            // kill kernel with error            
             }
-            */
             
             
             
             
             
             
-            /*
+            
+            
                 if ( isnan( lw_net__df_e[id * nvi + level]  ) ) {
                     printf("lw_net__df_e contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d  level:%d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, level, &lw_net__df_e[id*nvi + level]);
                     //lw_net__df_e[id] = id;
                     //__threadfence();         // ensure store issued before trap
                     //asm("trap;");            // kill kernel with error
                 }
-                */
+                
             
             
             
             
 
         }
+
+        */
 
         printf("before ASR_d\n");
         
