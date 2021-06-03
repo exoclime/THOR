@@ -799,6 +799,8 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                 //goto Error;
             }
 
+            // check for error
+            cudaError_t error = cudaGetLastError();
             if(error != cudaSuccess)
             {
                 // print the CUDA error message and exit
