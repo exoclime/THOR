@@ -666,29 +666,29 @@ __device__ void kernel_k_Ross_Freedman(double Tin, double Pin, double met, doubl
 
 
 
-__device__  void linear_log_interp(int id, int i, int nlay, int nlay1, double *pe, double *pl, double *pl, double *Tl, double *Tl, double *&Te__df_e) {
+__device__  void linear_log_interp(int id, int i, int nlay, int nlay1, double *pe, double *pl,  double *Tl,  double *&Te__df_e) {
     // dependcies
     //// pow from math
     //// log10 from math
 
     // work variables
     double lpe;
-    double lTl;
-    double lTl;
-    double lpl;
-    double lpl;
+    double lTl1;
+    double lTl2;
+    double lpl1;
+    double lpl2;
     double norm;
 
     // start operations
     lpe = log10((double)(pe[id*nlay1 + i ]));
-    lpl = log10((double)(pl[id * nlay + i + 1]));
-    lpl = log10((double)(pl[id * nlay + i ]));
-    lTl = log10((double)(Tl[id * nlay + i + 1]));
-    lTl = log10((double)(Tl[id * nlay + i]));
+    lpl1 = log10((double)(pl[id * nlay + i + 1]));
+    lpl2 = log10((double)(pl[id * nlay + i ]));
+    lTl1 = log10((double)(Tl[id * nlay + i + 1]));
+    lTl2 = log10((double)(Tl[id * nlay + i]));
 
-    norm = (1.0) / (lpl - lpl);
+    norm = (1.0) / (lpl2 - lpl1);
 
-    Te__df_e[id * nlay1 + i ] = pow((double)(10.0), ((lTl * (lpl - lpe) + lTl * (lpe - lpl)) * norm));
+    Te__df_e[id * nlay1 + i ] = pow((double)(10.0), ((lTl1 * (lpl2 - lpe) + lTl2 * (lpe - lpl1)) * norm));
 }
 
 ///////////////////////////////////////////////////////////////
@@ -1271,6 +1271,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
            
 
         for (int lev = 0; lev < nv; lev++) {
+            /*
             if (isnan(pressure_d[id*nv + lev]) ){
                 for (int level = 0; level < nv; level++) {
                     printf("pressure_d contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d lev:%d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, level, &pressure_d[id*nv + level]);
@@ -1278,7 +1279,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 __threadfence();         // ensure store issued before trap
                 asm("trap;");            // kill kernel with error           
             }
-            /*
+            
             if (isnan(temperature_d[id*nv + lev]) && lev !=0){
                 printf("temperature_d contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d lev:%d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, lev, &temperature_d[id*nv + lev]);
                 __threadfence();         // ensure store issued before trap
@@ -1290,7 +1291,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 __threadfence();         // ensure store issued before trap
                 asm("trap;");            // kill kernel with error           
             }
-            */
+            
             if (pressure_d[id*nv + lev]==0 && lev !=0){
                 for (int lev = 0; lev < nv; lev++) {
                     printf("pressure_d contains 0 in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d lev:%d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, lev, &pressure_d[id*nv + lev]);
@@ -1309,8 +1310,10 @@ __global__ void rtm_picket_fence(double *pressure_d,
             
              
             
-            
+            */
             dtemp[id * nv + lev] = 0.0;
+
+
         }
         
         // Calculate pressures and temperatures at interfaces
