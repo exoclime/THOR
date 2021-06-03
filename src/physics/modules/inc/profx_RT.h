@@ -665,29 +665,30 @@ __device__ void kernel_k_Ross_Freedman(double Tin, double Pin, double met, doubl
 
 
 
-__device__  void linear_log_interp(int id, int i, int nlay, int nlay1, double *xval, double *x1, double *x2, double *y1, double *y2, double *&yval) {
+
+__device__  void linear_log_interp(int id, int i, int nlay, int nlay1, double *pe, double *pl, double *pl, double *Tl, double *Tl, double *&Te__df_e) {
     // dependcies
     //// pow from math
     //// log10 from math
 
     // work variables
-    double lxval;
-    double ly1;
-    double ly2;
-    double lx1;
-    double lx2;
+    double lpe;
+    double lTl;
+    double lTl;
+    double lpl;
+    double lpl;
     double norm;
 
     // start operations
-    lxval = log10((double)(xval[id*nlay1 + i ]));
-    lx1 = log10((double)(x1[id * nlay + i + 1]));
-    lx2 = log10((double)(x2[id * nlay + i ]));
-    ly1 = log10((double)(y1[id * nlay + i + 1]));
-    ly2 = log10((double)(y2[id * nlay + i]));
+    lpe = log10((double)(pe[id*nlay1 + i ]));
+    lpl = log10((double)(pl[id * nlay + i + 1]));
+    lpl = log10((double)(pl[id * nlay + i ]));
+    lTl = log10((double)(Tl[id * nlay + i + 1]));
+    lTl = log10((double)(Tl[id * nlay + i]));
 
-    norm = (1.0) / (lx2 - lx1);
+    norm = (1.0) / (lpl - lpl);
 
-    yval[id * nlay1 + i ] = pow((double)(10.0), ((ly1 * (lx2 - lxval) + ly2 * (lxval - lx1)) * norm));
+    Te__df_e[id * nlay1 + i ] = pow((double)(10.0), ((lTl * (lpl - lpe) + lTl * (lpe - lpl)) * norm));
 }
 
 ///////////////////////////////////////////////////////////////
@@ -750,14 +751,14 @@ __device__  void sw_grey_down(int id,
     double solar,
     double *solar_tau,
     double *&sw_down__df_e,
-    double mu) {
+    double *mu) {
     // dependencies
     //// expl -> math
 
     // start operations
     for (int i = nlay1-1; i >-1; i--)
     {
-        sw_down__df_e[id * nlay1 + i] = solar * mu * exp((double)(-solar_tau[id * nlay1 + i] / mu));
+        sw_down__df_e[id * nlay1 + i] = solar * mu * exp((double)(-solar_tau[id * nlay1 + i] / mu[i]));
     }
 
 }
@@ -939,58 +940,9 @@ __device__  void lw_grey_updown_linear(int id,
         // Find temperature at layer edges through linear interpolation and extrapolation
         for (int i = nlay - 2; i > -1; i--)
         {
-
-            if (pl[id * nlay + i + 1] == pl[id * nlay + i + 0] )
-            {
-                printf("pl[i+1] equals pl[i] in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d   \n", blockIdx.x, blockDim.x, threadIdx.x, id);
-                 __threadfence();         // ensure store issued before trap
-                asm("trap;");            // kill kernel with error
-                
-            }
-            /*
-            if (pl[id * nlay + i + 1] < 0.0000001)
-            {
-                
-                for (int level = 0; level < nlay; level++)
-                {
-                    printf("pl lower than 0.0000001 in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d  level: %d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, level, &pl[id * nlay + level]);
-                }
-
-                pl[id * nlay + i + 1] = 0.0000001;
-                 __threadfence();         // ensure store issued before trap
-                asm("trap;");            // kill kernel with error
-            }
-                    
-            
-            
-            if (pe[id * nlay1 + i + 1] < 0.0000001)
-            {
-                pe[id * nlay1 + i + 1] = 0.0000001;
-                for (int level = 0; level < nlay1; level++)
-                {
-                    printf("pe lower than 0.0000001 in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d  level: %d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, level, &pe[id * nlay + level]);
-                }
-                __threadfence();         // ensure store issued before trap
-                asm("trap;");            // kill kernel with error
-            }
-            if (Tl[id * nlay + i + 1] < 0.0000001)
-            {
-                for (int level = 0; level < nlay; level++)
-                {
-                    printf("Tl lower than 0.0000001 in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d  level: %d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, level, &Tl[id * nlay + level]);
-                }
-                __threadfence();         // ensure store issued before trap
-                asm("trap;");            // kill kernel with error
-            }
-
-            */
-
-            
-                
-
             linear_log_interp(id, i, nlay, nlay1, pe, pl, pl, Tl, Tl, Te__df_e);
 
-            printf("---------\n");
+            //printf("---------\n");
             if (pe[id*nlay1 + i + 1] == 0)
             {                
                     printf("pe[id*nlay1 + i + 1] is zer0\n");
@@ -1097,7 +1049,7 @@ __device__  void lw_grey_updown_linear(int id,
                     Finc_B,
                     tau_Ve__df_e,
                     sw_down_b__df_e,
-                    mu_s[id]);
+                    mu_s);
 
                 printf("sw_grey_down finished\n");            
 
@@ -1149,14 +1101,6 @@ __device__  void lw_grey_updown_linear(int id,
             {
                 be__df_e[id * nlay1 + i] = StBC * pow((Te__df_e[id * nlay1 + i]), 4.0) / pi * Beta_2_d[id * 2 + channel];
 
-                if (be__df_e[id * nlay1 + i] < 0)
-                {                
-                    printf("be__df_e[id * nlay1 + i] is negative\n");
-                }
-                if (isnan(be__df_e[id * nlay1 + i] ) )
-                {                
-                    printf("be__df_e[id * nlay1 + i] is NaN\n");
-                }
             }
 
             // Calculate lw flux
