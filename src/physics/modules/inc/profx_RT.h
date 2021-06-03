@@ -679,7 +679,7 @@ __device__  void linear_log_interp(int id, int i, int nlay, int nlay1, double *x
     double norm;
 
     // start operations
-    lxval = log10((double)(xval[id*nlay1 + i + 1]));
+    lxval = log10((double)(xval[id*nlay1 + i ]));
     lx1 = log10((double)(x1[id * nlay + i + 1]));
     lx2 = log10((double)(x2[id * nlay + i ]));
     ly1 = log10((double)(y1[id * nlay + i + 1]));
@@ -687,7 +687,7 @@ __device__  void linear_log_interp(int id, int i, int nlay, int nlay1, double *x
 
     norm = (1.0) / (lx2 - lx1);
 
-    yval[id * nlay1 + i + 1] = pow((double)(10.0), ((ly1 * (lx2 - lxval) + ly2 * (lxval - lx1)) * norm));
+    yval[id * nlay1 + i ] = pow((double)(10.0), ((ly1 * (lx2 - lxval) + ly2 * (lxval - lx1)) * norm));
 }
 
 ///////////////////////////////////////////////////////////////
@@ -1550,6 +1550,8 @@ __global__ void rtm_picket_fence(double *pressure_d,
         }
 
         printf("Kitzmann really finished\n");
+
+        /*
         
         if (isnan(zenith_angles[id] ) ) {
             
@@ -1638,7 +1640,8 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 }
             }
 
-        } 
+        }
+        */
 
         printf("temperature_d & pressure_d print out\n");  
         /*
