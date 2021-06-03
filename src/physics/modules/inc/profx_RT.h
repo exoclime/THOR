@@ -1910,7 +1910,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
 
         }
 
-        
+        printf(" zenith angle :%u\n",  &zenith_angles[id]);
 
         printf("before ASR_d\n");
         
