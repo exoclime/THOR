@@ -871,6 +871,8 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                 sim.DeepModel                                        
 
                 );
+
+                printf("rtm_picket_fence finished\n");
                 
                 cuda_check_status_or_exit(__FILE__, __LINE__);
 

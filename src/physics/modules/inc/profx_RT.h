@@ -696,6 +696,7 @@ __device__ void tau_struct(int id,
     double grav,
     double *p_half,
     double *kRoss,
+    int nchan,
     int channel,
     double *&tau_struc_e) {
 
@@ -728,7 +729,7 @@ __device__ void tau_struct(int id,
         }
 
         // Optical depth of layer assuming hydrostatic equilibirum
-        tau_lay = (kRoss[id*nlev*channel + channel * nlev + level] * delP) / grav;
+        tau_lay = (kRoss[id*nlev*nchan + channel * nlev + level] * delP) / grav;
 
         // Add to running sum
         tau_sum = tau_sum + tau_lay;
@@ -1076,8 +1077,11 @@ __device__  void lw_grey_updown_linear(int id,
                     grav,
                     pe,
                     k_V_3_nv_d,
+                    3,
                     channel,
                     tau_Ve__df_e);
+                
+                printf("tau_struct finished\n");
 
                 Finc_B = Finc * Beta_V_3_d[id * 3 + channel];
 
@@ -1087,7 +1091,9 @@ __device__  void lw_grey_updown_linear(int id,
                     Finc_B,
                     tau_Ve__df_e,
                     sw_down_b__df_e,
-                    mu_s[id]);             
+                    mu_s[id]);
+
+                printf("sw_grey_down finished\n");            
 
             } else
             {
@@ -1124,8 +1130,11 @@ __device__  void lw_grey_updown_linear(int id,
             grav,
             pe,
             k_IR_2_nv_d,
+            2,
             channel,
             tau_IRe__df_e);
+
+            printf("tau_struct finished\n");
 
             // Blackbody fluxes (note divide by pi for correct units)
             for (int i = 0; i < nlay1; i++)
@@ -1159,6 +1168,8 @@ __device__  void lw_grey_updown_linear(int id,
                 Bm__dff_l,
                 lw_up_g__dff_e,
                 lw_down_g__dff_e);
+
+            printf("lw_grey_updown_linear finished\n");
             
 
 
@@ -1180,6 +1191,8 @@ __device__  void lw_grey_updown_linear(int id,
         }
 
         net_F_nvi_d[id * nlay1 + 0] = Fint;
+
+        printf("Kitzmann finished\n");
 
 
 
