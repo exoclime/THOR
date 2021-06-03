@@ -94,8 +94,7 @@ bool radiative_transfer::initialise_memory(const ESP &              esp,
     cudaMalloc((void **)&ASR_d, esp.point_num * sizeof(double));
     cudaMalloc((void **)&OLR_d, esp.point_num * sizeof(double));
     
-    OLR_tot = (double *)malloc(esp.point_num * sizeof(double));
-    ASR_tot = (double *)malloc(esp.point_num * sizeof(double));
+    
 
     if (picket_fence_mod){
         //  Rad Transfer
