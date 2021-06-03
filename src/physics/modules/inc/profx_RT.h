@@ -666,7 +666,7 @@ __device__ void kernel_k_Ross_Freedman(double Tin, double Pin, double met, doubl
 
 
 
-__device__  void linear_log_interp(int id, int i, int nlay, int nlay1, double *pe, double *pl,  double *Tl,  double *&Te__df_e) {
+__device__  void linear_log_interp(int id, int i, int nlay, int nlay1, double *pe, double *pl,  double *Tl,  double *Te__df_e) {
     // dependcies
     //// pow from math
     //// log10 from math
@@ -701,7 +701,7 @@ __device__ void tau_struct(int id,
     double *kRoss,
     int nchan,
     int channel,
-    double *&tau_struc_e) {
+    double *tau_struc_e) {
 
     // work variables
     double tau_sum;
@@ -750,7 +750,7 @@ __device__  void sw_grey_down(int id,
     int nlay1,
     double solar,
     double *solar_tau,
-    double *&sw_down__df_e,
+    double *sw_down__df_e,
     double *mu) {
     // dependencies
     //// expl -> math
@@ -771,8 +771,8 @@ __device__  void lw_grey_updown_linear(int id,
     int nlay1,
     double *be__df_e,
     double *tau_IRe__df_e,
-    double *&lw_up__df_e,
-    double *&lw_down__df_e,
+    double *lw_up__df_e,
+    double *lw_down__df_e,
     double *dtau__dff_l,
     double *del__dff_l,
     double *edel__dff_l,
@@ -1795,7 +1795,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 //asm("trap;");            // kill kernel with error
             }
             if (lw_up__df_e[id * nvi + level]==0 ) {
-                printf("lw_up__df_e has NaNs at the level:%u\n", level);
+                printf("lw_up__df_e has 0 at the level:%u\n", level);
                 printf("lw_up__df_e contains 0 in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d timestep:%d level:%d \n", blockIdx.x, blockDim.x, threadIdx.x, id, timestep, level);
                     
                 for (int lev = 0; lev < nvi; lev++)
@@ -1810,7 +1810,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
             }
 
             if (lw_down__df_e[id * nvi + level] ==0  ) {
-                printf("lw_up__df_e has NaNs at the level:%u\n", level);
+                printf("lw_down__df_e has 0 at the level:%u\n", level);
                 printf("lw_down__df_e contains 0 in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d timestep:%d level:%d \n", blockIdx.x, blockDim.x, threadIdx.x, id, timestep, level);
                    
                 for (int lev = 0; lev < nvi; lev++)
