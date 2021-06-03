@@ -806,9 +806,7 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                 // print the CUDA error message and exit
                 printf("CUDA error: %s\n", cudaGetErrorString(error));
                 exit(-1);
-            }
-
-            
+            }            
             
             cuda_check_status_or_exit(__FILE__, __LINE__);
 
@@ -889,8 +887,8 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                 printf("rtm_picket_fence finished\n");
 
                  // check for error
-                cudaError_t error = cudaGetLastError();
-                if(error != cudaSuccess)
+                cudaError_t error1 = cudaGetLastError();
+                if(error1 != cudaSuccess)
                 {
                     // print the CUDA error message and exit
                     printf("CUDA error: %s\n", cudaGetErrorString(error));
