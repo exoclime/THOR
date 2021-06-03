@@ -1956,14 +1956,14 @@ __global__ void rtm_picket_fence(double *pressure_d,
         ASR_d[id] = sw_down__df_e[id * nvi + nvi] * areasT_d[id] * pow(rscale, 2);
         printf("ASR_d is computed\n");
             
-            /*
+            
             if (isnan(ASR_d[id] )) {
                 printf("ASR_d contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, &ASR_d[id]);
                 //ASR_d[id] = id;
-                //__threadfence();         // ensure store issued before trap
-                //asm("trap;");            // kill kernel with error
+                __threadfence();         // ensure store issued before trap
+                asm("trap;");            // kill kernel with error
             }
-            */
+            
         
         OLR_d[id] = lw_up__df_e[id * nvi + nvi]*areasT_d[id] * pow(rscale, 2);
         printf("OLR_d is computed\n");
