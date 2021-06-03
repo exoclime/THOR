@@ -91,6 +91,12 @@ bool radiative_transfer::initialise_memory(const ESP &              esp,
 
     double picket_fence_mod = true;
 
+    cudaMalloc((void **)&ASR_d, esp.point_num * sizeof(double));
+    cudaMalloc((void **)&OLR_d, esp.point_num * sizeof(double));
+    
+    OLR_tot = (double *)malloc(esp.point_num * sizeof(double));
+    ASR_tot = (double *)malloc(esp.point_num * sizeof(double));
+
     if (picket_fence_mod){
         //  Rad Transfer
         
@@ -108,11 +114,7 @@ bool radiative_transfer::initialise_memory(const ESP &              esp,
         
         cudaMalloc((void **)&surf_flux_d, esp.point_num * sizeof(double));
 
-        cudaMalloc((void **)&ASR_d, esp.point_num * sizeof(double));
-        cudaMalloc((void **)&OLR_d, esp.point_num * sizeof(double));
-
-        OLR_tot = (double *)malloc(esp.point_num * sizeof(double));
-        ASR_tot = (double *)malloc(esp.point_num * sizeof(double));
+       
 
         // picket fence parameters
 
@@ -203,11 +205,7 @@ bool radiative_transfer::initialise_memory(const ESP &              esp,
 
         cudaMalloc((void **)&surf_flux_d, esp.point_num * sizeof(double));
 
-        cudaMalloc((void **)&ASR_d, esp.point_num * sizeof(double));
-        cudaMalloc((void **)&OLR_d, esp.point_num * sizeof(double));
-        
-        OLR_tot = (double *)malloc(esp.point_num * sizeof(double));
-        ASR_tot = (double *)malloc(esp.point_num * sizeof(double));
+       
 
     }
     
