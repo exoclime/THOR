@@ -952,7 +952,7 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
         ASR_tot = gpu_sum_on_device<1024>(ASR_d, esp.point_num);
         OLR_tot = gpu_sum_on_device<1024>(OLR_d, esp.point_num);
         
-        //cuda_check_status_or_exit(__FILE__, __LINE__);
+        cuda_check_status_or_exit(__FILE__, __LINE__);
 
         if (nstep * time_step < (2 * M_PI / esp.insolation.get_mean_motion())) {
             // stationary orbit/obliquity
