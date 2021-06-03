@@ -798,6 +798,13 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                 fprintf(stderr, "AB_d cudaMemcpyHostToDevice failed!");
                 //goto Error;
             }
+
+            if(error != cudaSuccess)
+            {
+                // print the CUDA error message and exit
+                printf("CUDA error: %s\n", cudaGetErrorString(error));
+                exit(-1);
+            }
             
             cuda_check_status_or_exit(__FILE__, __LINE__);
 
@@ -938,6 +945,8 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                 sim.DeepModel);
 
         }
+
+        printf("rtm_dual_band finished\n");
 
         
         // check for error
