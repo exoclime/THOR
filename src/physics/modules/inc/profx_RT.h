@@ -1052,9 +1052,9 @@ __device__  void lw_grey_updown_linear(int id,
                     printf("Te__df_e[id * nlay1 + i] is negative\n");
             }
 
-            printf("level:%d   \n", i);
+            //printf("level:%d   \n", i);
             
-            printf("---------\n");
+            //printf("---------\n");
         }
         
         Te__df_e[id * nlay1 + nlay1] = Tl[id * nlay + nlay] + (pe[id * nlay1 + nlay1] - pe[id * nlay1 + nlay1 -1]) / 
