@@ -1811,6 +1811,8 @@ __global__ void rtm_picket_fence(double *pressure_d,
             rscale = 1.0;
         }
 
+        printf("rscale is computed\n");
+
         
         
         
@@ -1941,6 +1943,8 @@ __global__ void rtm_picket_fence(double *pressure_d,
             
 
         }
+
+        printf("before ASR_d\n");
         
         ASR_d[id] = sw_down__df_e[id * nvi + nvi] * areasT_d[id] * pow(rscale, 2);
         printf("ASR_d is computed\n");
