@@ -81,8 +81,8 @@ public:
         return qheat_d;
     };
 
-    double OLR_tot;
-    double ASR_tot;
+    double *OLR_tot;
+    double *ASR_tot;
 
 private:
     // Scaling of Qheat, for slow ramp up or ramp down.

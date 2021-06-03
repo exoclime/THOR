@@ -1788,9 +1788,9 @@ __global__ void rtm_picket_fence(double *pressure_d,
         }
 
         printf("dtemp is computed\n");
-        printf("height difference: %u  %u\n", &Altitudeh_d[nv] - &Altitudeh_d[nv-1]);
-        printf("height difference: %u  %u\n", &Altitudeh_d[nv-1] - &Altitudeh_d[nv-2]);
-        printf("height difference: %u  %u\n", &Altitudeh_d[nv-2] - &Altitudeh_d[nv-3]);
+        printf("height difference: %u  %u\n", &Altitudeh_d[nv] , &Altitudeh_d[nv-1]);
+        printf("height difference: %u  %u\n", &Altitudeh_d[nv-1] , &Altitudeh_d[nv-2]);
+        printf("height difference: %u  %u\n", &Altitudeh_d[nv-2] , &Altitudeh_d[nv-3]);
 
         
 
