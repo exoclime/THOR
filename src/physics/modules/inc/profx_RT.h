@@ -663,7 +663,9 @@ __device__ void kernel_k_Ross_Freedman(double Tin, double Pin, double met, doubl
 ///////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////
 
-__device__  void linear_log_interp(double xval, double x1, double x2, double y1, double y2, double &yval) {
+
+
+__device__  void linear_log_interp(int nlay, int nlay1, double *xval, double *x1, double *x2, double *y1, double *y2, double *&yval) {
     // dependcies
     //// pow from math
     //// log10 from math
@@ -677,15 +679,15 @@ __device__  void linear_log_interp(double xval, double x1, double x2, double y1,
     double norm;
 
     // start operations
-    lxval = log10((double)(xval));
-    lx1 = log10((double)(x1));
-    lx2 = log10((double)(x2));
-    ly1 = log10((double)(y1));
-    ly2 = log10((double)(y2));
+    lxval = log10((double)(xval[id*nlay1 + i + 1]));
+    lx1 = log10((double)(x1[id * nlay + i + 1]));
+    lx2 = log10((double)(x2[id * nlay + i ]));
+    ly1 = log10((double)(y1[id * nlay + i + 1]));
+    ly2 = log10((double)(y2[id * nlay + i]));
 
     norm = (1.0) / (lx2 - lx1);
 
-    yval = pow((double)(10.0), ((ly1 * (lx2 - lxval) + ly2 * (lxval - lx1)) * norm));
+    yval[id * nlay1 + i + 1] = pow((double)(10.0), ((ly1 * (lx2 - lxval) + ly2 * (lxval - lx1)) * norm));
 }
 
 ///////////////////////////////////////////////////////////////
@@ -986,7 +988,7 @@ __device__  void lw_grey_updown_linear(int id,
             
                 
 
-            linear_log_interp(pe[id*nlay1 + i + 1], pl[id * nlay + i + 1], pl[id * nlay + i ], Tl[id * nlay + i+1], Tl[id * nlay + i], Te__df_e[id * nlay1 + i + 1]);
+            linear_log_interp(nlay, nlay1, pe, pl, pl, Tl, Tl, Te__df_e);
 
             printf("---------\n");
             if (pe[id*nlay1 + i + 1] == 0)
