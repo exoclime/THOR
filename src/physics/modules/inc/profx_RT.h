@@ -758,7 +758,7 @@ __device__  void sw_grey_down(int id,
     // start operations
     for (int i = nlay1-1; i >-1; i--)
     {
-        sw_down__df_e[id * nlay1 + i] = solar * mu * exp((double)(-solar_tau[id * nlay1 + i] / mu[i]));
+        sw_down__df_e[id * nlay1 + i] = solar * mu[i] * exp(-solar_tau[id * nlay1 + i] / mu[i]);
     }
 
 }
@@ -940,7 +940,14 @@ __device__  void lw_grey_updown_linear(int id,
         // Find temperature at layer edges through linear interpolation and extrapolation
         for (int i = nlay - 2; i > -1; i--)
         {
-            linear_log_interp(id, i, nlay, nlay1, pe, pl, pl, Tl, Tl, Te__df_e);
+            linear_log_interp(id,
+                i,
+                nlay,
+                nlay1,
+                pe,
+                pl,
+                Tl,
+                Te__df_e);
 
             //printf("---------\n");
             if (pe[id*nlay1 + i + 1] == 0)
