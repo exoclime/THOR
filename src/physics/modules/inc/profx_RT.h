@@ -1896,7 +1896,22 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 for (int lev = 0; lev < nvi; lev++)
                 {
                     //printf("sw_down__df_e has NaNs at the level:%u\n", lev);
-                    printf("sw_down__df_e contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d timestep:%d level:%d \n", blockIdx.x, blockDim.x, threadIdx.x, id, timestep, lev);
+                    //printf("sw_down__df_e has a negative value in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d timestep:%d level:%d \n", blockIdx.x, blockDim.x, threadIdx.x, id, timestep, lev);
+                    //printf("sw_down__df_e has the value:%u\n", &sw_down__df_e[id*nvi + lev]);
+                }
+                //sw_net__df_e[id * nv + level] = id * nv + level;
+                //__threadfence();         // ensure store issued before trap
+                //asm("trap;");            // kill kernel with error
+            }
+
+            if (sw_down__df_e[id * nvi + level] ==0  ) {
+
+                printf("lw_down__df_e has a zero at the level:%u\n", level);
+                  
+                for (int lev = 0; lev < nvi; lev++)
+                {
+                    //printf("sw_down__df_e has NaNs at the level:%u\n", lev);
+                    //printf("sw_down__df_e contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d timestep:%d level:%d \n", blockIdx.x, blockDim.x, threadIdx.x, id, timestep, lev);
                     //printf("sw_down__df_e has the value:%u\n", &sw_down__df_e[id*nvi + lev]);
                 }
                 //sw_net__df_e[id * nv + level] = id * nv + level;
