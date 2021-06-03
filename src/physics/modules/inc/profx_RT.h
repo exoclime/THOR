@@ -1191,10 +1191,10 @@ __global__ void rtm_picket_fence(double *pressure_d,
                               double *Tsurface_d, // ??? relevant
                               double *surf_flux_d,  // ??? relevant
                               double *areasT_d,
-                              double *&ASR_d, // ??? relevant
-                              double *&OLR_d, // ??? relevant
-                              double *&profx_Qheat_d,
-                              double *&DG_Qheat_d, // internal qheat for debugging
+                              double *ASR_d, // ??? relevant
+                              double *OLR_d, // ??? relevant
+                              double *profx_Qheat_d,
+                              double *DG_Qheat_d, // internal qheat for debugging
                               double *Rd_d,
                               double  Qheat_scaling,
  
