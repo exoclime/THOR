@@ -1795,6 +1795,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 //asm("trap;");            // kill kernel with error
             }
             if (lw_up__df_e[id * nvi + level]==0 ) {
+                printf("lw_up__df_e has NaNs at the level:%u\n", level);
                 printf("lw_up__df_e contains 0 in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d timestep:%d level:%d \n", blockIdx.x, blockDim.x, threadIdx.x, id, timestep, level);
                     
                 for (int lev = 0; lev < nvi; lev++)
@@ -1809,6 +1810,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
             }
 
             if (lw_down__df_e[id * nvi + level] ==0  ) {
+                printf("lw_up__df_e has NaNs at the level:%u\n", level);
                 printf("lw_down__df_e contains 0 in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d timestep:%d level:%d \n", blockIdx.x, blockDim.x, threadIdx.x, id, timestep, level);
                    
                 for (int lev = 0; lev < nvi; lev++)
