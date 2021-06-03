@@ -1551,13 +1551,12 @@ __global__ void rtm_picket_fence(double *pressure_d,
         
         if (isnan(zenith_angles[id] ) ) {
             
-            for (int level = 0; level < nvi; level++)
-            {
-                        printf("zenith_angles contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d --value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, &zenith_angles[id]);
+           
+            printf("zenith_angles contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d --value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, &zenith_angles[id]);
                         //temperature_d[id * nv + level] = id * nv + level;
                         //__threadfence();         // ensure store issued before trap
                         //asm("trap;");            // kill kernel with error
-            }
+            
         } 
 
         for (int channel = 0; channel < 2 ; channel++)
@@ -1582,7 +1581,8 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 }
             }
             
-        }      
+        }
+        printf("Beta_2_d print out\n");      
         
         for (int channel = 0; channel < 3; channel++)
             {
@@ -1594,6 +1594,8 @@ __global__ void rtm_picket_fence(double *pressure_d,
                         //asm("trap;");            // kill kernel with error
                 }
             }
+        
+        printf("gam_V_3_d print out\n");      
             
         for (int level = 0; level < nv; level++)
         {
@@ -1634,11 +1636,13 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 }
             }
 
-
         } 
+
+        printf("temperature_d & pressure_d print out\n");  
+        /*
         for (int level = 0; level < nvi; level++)
         {
-            /*
+            
             if (isnan(tau_IRe__df_e[id * nvi + level]) ) {
                 for (int lev = 0; lev < nvi; lev++)
                 {
@@ -1680,10 +1684,10 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 }
             }
 
-            */
+            
             
 
-            /*
+            
             if (isnan(Te__df_e[id * nvi + level]) ) {
                 for (int lev = 0; lev < nvi; lev++)
                 {
@@ -1724,9 +1728,10 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 }
             }
 
-            */   
+            
         
         }
+         */  
         
         for (int level = 0; level < nv; level++)
         {
@@ -1763,10 +1768,10 @@ __global__ void rtm_picket_fence(double *pressure_d,
 
                 }
                 
-            }    
-            
-            
+            }              
         }
+
+        printf("k_V_3_nv_d & k_IR_2_nv_d print out\n");
         
         
         
@@ -1777,8 +1782,15 @@ __global__ void rtm_picket_fence(double *pressure_d,
         {
             dtemp[id * nv + level] = 1* //(gravit / Cp_d) *
                 (net_F_nvi_d[id * nvi + level + 1] - net_F_nvi_d[id * nvi + level]) / 
-                (Altitudeh_d[level + 1] - Altitudeh_d[level]);
+                (phtemp[[id * nvi + level + 1] - phtemp[[id * nvi + level ]);
         }
+
+        printf("dtemp is computed\n");
+        printf("height difference: %u\n", &(Altitudeh_d[nv] - Altitudeh_d[nv-1]));
+        printf("height difference: %u\n", &(Altitudeh_d[nv-1] - Altitudeh_d[nv-2]));
+        printf("height difference: %u\n", &(Altitudeh_d[nv-2] - Altitudeh_d[nv-3]));
+
+        
 
         if (surface == true) {
             Tsurface_d[id] = timestep * dtemp[id * nv + 0];
@@ -1788,6 +1800,8 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 Tsurface_d[id] = 0;
         }
 
+        printf("Tsurface_d is computed\n");
+
         //calculate ASR for this point
         double rscale;
         if (DeepModel) {
@@ -1796,6 +1810,8 @@ __global__ void rtm_picket_fence(double *pressure_d,
         else {
             rscale = 1.0;
         }
+
+        
         
         
         
@@ -1927,6 +1943,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
         }
         
         ASR_d[id] = sw_down__df_e[id * nvi + nvi] * areasT_d[id] * pow(rscale, 2);
+        printf("ASR_d is computed\n");
             
             /*
             if (isnan(ASR_d[id] )) {
@@ -1938,6 +1955,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
             */
         
         OLR_d[id] = lw_up__df_e[id * nvi + nvi]*areasT_d[id] * pow(rscale, 2);
+        printf("OLR_d is computed\n");
 
         if (isnan(areasT_d[id] ) ) {
                 printf("areasT_d[id] contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, &areasT_d[id]);
