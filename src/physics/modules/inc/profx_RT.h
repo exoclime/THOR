@@ -1546,6 +1546,8 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 lw_up_g__dff_e,
                 lw_down_g__dff_e);
         }
+
+        printf("Kitzmann really finished\n");
         
         if (isnan(zenith_angles[id] ) ) {
             
@@ -1655,7 +1657,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
                     asm("trap;");            // kill kernel with error
                 }
             }
-            */
+            
 
            
             if (phtemp[id * nvi + level]==0 ) {
@@ -1677,6 +1679,8 @@ __global__ void rtm_picket_fence(double *pressure_d,
                     asm("trap;");            // kill kernel with error
                 }
             }
+
+            */
             
 
             /*
@@ -1737,7 +1741,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
             {
             
                 if ( isnan(k_V_3_nv_d[id * nv * 3 + channel * nv + level] ) ) {
-                    for (int lev = 0; lev < nvi; lev++)
+                    for (int lev = 0; lev < nv; lev++)
                     {
                         printf("k_V_3_nv_d contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d  level: %d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id,lev, &k_V_3_nv_d[id*nv*3 +channel*nv + lev]);
                         //temperature_d[id * nv + level] = id * nv + level;
@@ -1750,7 +1754,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
             for (int channel = 0; channel < 2; channel++)
             {
                 if ( isnan(k_IR_2_nv_d[id * nv * 2 + channel * nv + level] ) ) {
-                    for (int lev = 0; lev < nvi; lev++)
+                    for (int lev = 0; lev < nv; lev++)
                     {
                         printf("k_IR_2_nv_d contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d level:%d --value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, lev, &k_IR_2_nv_d[id*nv*2 +channel*nv + lev]);
 
