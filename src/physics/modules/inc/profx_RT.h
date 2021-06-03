@@ -885,7 +885,7 @@ __device__  void lw_grey_updown_linear(int id,
         double *k_IR_2_nv_d,
         double *Beta_V_3_d,
         double *Beta_2_d,
-        double *&net_F_nvi_d,
+        double *net_F_nvi_d,
         double *mu_s,
         double Finc,
         double Fint,
@@ -896,15 +896,15 @@ __device__  void lw_grey_updown_linear(int id,
         double *tau_IRe__df_e,
         double *Te__df_e,
         double *be__df_e, 
-        double *&sw_down__df_e,
+        double *sw_down__df_e,
         double *sw_down_b__df_e,
-        double *&sw_up__df_e,
-        double *&lw_down__df_e,
+        double *sw_up__df_e,
+        double *lw_down__df_e,
         double *lw_down_b__df_e,
-        double *&lw_up__df_e,
+        double *lw_up__df_e,
         double *lw_up_b__df_e,
-        double *&lw_net__df_e,
-        double *&sw_net__df_e,
+        double *lw_net__df_e,
+        double *sw_net__df_e,
         // lw_grey_updown_linear working variables
         double *dtau__dff_l,
         double *del__dff_l, 
@@ -1926,7 +1926,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
             }
 
             if (ASR_d[id] == 0 ) {
-                printf("my message:OLR_d contains 0 in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, &ASR_d[id]);
+                printf("my message:ASR_d contains 0 in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, &ASR_d[id]);
                 //OLR_d[id] = id;
                 //__threadfence();         // ensure store issued before trap
                 //asm("trap;");            // kill kernel with error
