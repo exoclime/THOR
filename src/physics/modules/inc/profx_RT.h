@@ -1891,7 +1891,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
 
             if (sw_down__df_e[id * nvi + level] <0  ) {
 
-                printf("lw_down__df_e has a negative value at the level:%u\n", level);
+                printf("sw_down__df_e has a negative value at the level:%u\n", level);
                   
                 for (int lev = 0; lev < nvi; lev++)
                 {
@@ -1906,7 +1906,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
 
             if (sw_down__df_e[id * nvi + level] ==0  ) {
 
-                printf("lw_down__df_e has a zero at the level:%u\n", level);
+                printf("sw_down__df_e has a zero at the level:%u\n", level);
                   
                 for (int lev = 0; lev < nvi; lev++)
                 {
