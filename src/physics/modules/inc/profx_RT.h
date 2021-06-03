@@ -1042,15 +1042,19 @@ __device__  void lw_grey_updown_linear(int id,
 
             if (Te__df_e[id * nlay1 + i] == 0)
             {                
+                   
                     printf("Te__df_e[id * nlay1 + i] is zer0\n");
             }
             if (Te__df_e[id * nlay1 + i] < 0)
             {                
                     printf("Te__df_e[id * nlay1 + i] is negative\n");
             }
+
+            printf("level:%d   \n", i);
             
             printf("---------\n");
         }
+        
         Te__df_e[id * nlay1 + nlay1] = Tl[id * nlay + nlay] + (pe[id * nlay1 + nlay1] - pe[id * nlay1 + nlay1 -1]) / 
             (pl[id * nlay + nlay] - pe[id * nlay1 + nlay1 - 1]) * (Tl[id * nlay + nlay] - Te__df_e[id * nlay1 + nlay1 -1]);
 
@@ -1097,6 +1101,8 @@ __device__  void lw_grey_updown_linear(int id,
 
             } else
             {
+                printf("sw darkside\n");
+
                 for (int i = nlay1-1; i >-1; i--)
                 {
                     sw_down_b__df_e[id * nlay1 + i] = 0;
