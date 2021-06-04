@@ -1742,12 +1742,28 @@ __global__ void rtm_picket_fence(double *pressure_d,
             dtemp[id * nv + level] = 1* //(gravit / Cp_d) *
                 (net_F_nvi_d[id * nvi + level+1] - net_F_nvi_d[id * nvi + level]) / 
                 (phtemp[level] - phtemp[level+1]);
+
+            if (dtemp[id * nv + level]<0)
+            {
+                printf("dtemp contains a negative value at level:%d \n",  lev);                    
+            }
+
+            if (dtemp[id * nv + level]==0)
+            {
+                printf("dtemp contains a 0 at level:%d \n",  lev);                    
+            }
+
+            if (isnan(dtemp[id * nv + level]))
+            {
+                printf("dtemp contains a 0 at level:%d \n",  lev);                    
+            }
+
         }
 
         printf("dtemp is computed\n");
-        printf("height difference: %u  %u\n", &Altitudeh_d[nv] , &Altitudeh_d[nv-1]);
-        printf("height difference: %u  %u\n", &Altitudeh_d[nv-1] , &Altitudeh_d[nv-2]);
-        printf("height difference: %u  %u\n", &Altitudeh_d[nv-2] , &Altitudeh_d[nv-3]);
+        
+        
+        
 
         
 
