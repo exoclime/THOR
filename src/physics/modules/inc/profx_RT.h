@@ -1052,7 +1052,7 @@ __device__  void lw_grey_updown_linear(int id,
 
                 
                 sw_grey_down(id,
-                    nlay,
+                    nlay1,
                     Finc_B,
                     tau_Ve__df_e,
                     sw_down_b__df_e,
@@ -1741,7 +1741,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
         {
             dtemp[id * nv + level] = 1* //(gravit / Cp_d) *
                 (net_F_nvi_d[id * nvi + level + 1] - net_F_nvi_d[id * nvi + level]) / 
-                (phtemp[id * nvi + level + 1] - phtemp[id * nvi + level ]);
+                (Altitudeh_d[level+1] - Altitudeh_d[level]);
         }
 
         printf("dtemp is computed\n");
@@ -1991,7 +1991,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
 
         printf("before ASR_d\n");
         
-        ASR_d[id] = sw_net__df_e[id * nvi + nv] * areasT_d[id] * pow(rscale, 2);
+        ASR_d[id] = sw_down__df_e[id * nvi + nv] * areasT_d[id] * pow(rscale, 2);
         printf("ASR_d is computed\n");
             
             
