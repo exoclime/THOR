@@ -1145,7 +1145,7 @@ __device__  void lw_grey_updown_linear(int id,
         for (int i = 0; i < nlay1; i++)
         {
             lw_net__df_e[id * nlay1 + i] = lw_up__df_e[id * nlay1 + i] - lw_down__df_e[id * nlay1 + i];
-            sw_net__df_e[id * nlay1 + i] = sw_down__df_e[id * nlay1 + i]- sw_up__df_e[id * nlay1 + i];
+            sw_net__df_e[id * nlay1 + i] = sw_up__df_e[id * nlay1 + i] - sw_down__df_e[id * nlay1 + i];
             net_F_nvi_d[id * nlay1 + i] = lw_net__df_e[id * nlay1 + i] + sw_net__df_e[id * nlay1 + i];
         }
 
@@ -1740,8 +1740,8 @@ __global__ void rtm_picket_fence(double *pressure_d,
         for (int level = 0; level < nv; level++)
         {
             dtemp[id * nv + level] = 1* //(gravit / Cp_d) *
-                (net_F_nvi_d[id * nvi + level + 1] - net_F_nvi_d[id * nvi + level]) / 
-                (Altitudeh_d[level+1] - Altitudeh_d[level]);
+                (net_F_nvi_d[id * nvi + level] - net_F_nvi_d[id * nvi + level+1]) / 
+                (phtemp[level] - phtemp[level+1]);
         }
 
         printf("dtemp is computed\n");
@@ -1780,11 +1780,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
         
         for (int level = 0; level < nvi; level++)
         {
-            printf("nvi:%d \n", level);
-                           
-            
-                        
-            
+                                    
             if (isnan(lw_up__df_e[id * nvi + level]) ) {
                 for (int lev = 0; lev < nvi; lev++)
                 {
