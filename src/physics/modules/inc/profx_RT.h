@@ -666,7 +666,14 @@ __device__ void kernel_k_Ross_Freedman(double Tin, double Pin, double met, doubl
 
 
 
-__device__  void linear_log_interp(int id, int i, int nlay, int nlay1, double *pe, double *pl,  double *Tl,  double *Te__df_e) {
+__device__  void linear_log_interp(int id,
+    int i,
+    int nlay,
+    int nlay1,
+    double *pe,
+    double *Altitudeh_d, 
+    double *Tl,
+    double *Te__df_e) {
     // dependcies
     //// pow from math
     //// log10 from math
@@ -675,20 +682,20 @@ __device__  void linear_log_interp(int id, int i, int nlay, int nlay1, double *p
     double lpe;
     double lTl1;
     double lTl2;
-    double lpl1;
-    double lpl2;
+    double lAlt1;
+    double lAlt2;
     double norm;
 
     // start operations
     lpe = log10((double)(pe[id*nlay1 + i +1]));
-    lpl1 = log10((double)(pl[id * nlay + i + 1]));
-    lpl2 = log10((double)(pl[id * nlay + i ]));
+    lAlt1 = log10((double)(Altitudeh_d[id * nlay + i]));
+    lAlt2 = log10((double)(Altitudeh_d[id * nlay + i +1 ]));
     lTl1 = log10((double)(Tl[id * nlay + i + 1]));
     lTl2 = log10((double)(Tl[id * nlay + i]));
 
-    norm = (1.0) / (lpl2 - lpl1);
+    norm = (1.0) / (lAlt2 - lAlt1);
 
-    Te__df_e[id * nlay1 + i +1] = pow((double)(10.0), ((lTl1 * (lpl2 - lpe) + lTl2 * (lpe - lpl1)) * norm));
+    Te__df_e[id * nlay1 + i +1] = pow((double)(10.0), ((lTl1 * (lAlt2 - lpe) + lTl2 * (lpe - lAlt1)) * norm));
 }
 
 ///////////////////////////////////////////////////////////////
@@ -696,8 +703,8 @@ __device__  void linear_log_interp(int id, int i, int nlay, int nlay1, double *p
 
 __device__ void tau_struct(int id,
     int nlev,
-    double grav,
-    double *p_half,
+    double *Rho_d,
+    double *Altitudeh_d,
     double *kRoss,
     int nchan,
     int channel,
@@ -706,7 +713,7 @@ __device__ void tau_struct(int id,
     // work variables
     double tau_sum;
     double tau_lay;
-    double delP;
+    double delPdelAlt;
     int level;
 
     // running sum of optical depth
@@ -721,18 +728,18 @@ __device__ void tau_struct(int id,
 
     // Integrate from top to bottom    
 
-    for (level = nlev-1; level > -1; level--)
+    for (level = nlev-1; level > -1; level--) 
     {
         // Pressure difference between layer edges
-        delP = (p_half[id*(nlev+1) + level] - p_half[id*(nlev+1)+ level + 1]);
+        delPdelAlt = (Altitudeh_d[id*(nlev+1) + level + 1] - Altitudeh_d[id*(nlev+1)+ level + 0]);
 
-        if (delP < 0.0000001)
+        if (delPdelAlt < 0.0000001)
         {
-            delP = 0.0000001;
+            delPdelAlt = 0.0000001;
         }
 
-        // Optical depth of layer assuming hydrostatic equilibirum
-        tau_lay = (kRoss[id*nlev*nchan + channel * nlev + level] * delP) / grav;
+        // Optical depth of layer assuming hydrostatic equilibirum  //////////////////// kappa * rho * delta height  (old: kappa *delP/gravity)
+        tau_lay = kRoss[id*nlev*nchan + channel * nlev + level] * delPdelAlt * Rho_d[id*nlev +  level];
 
         // Add to running sum
         tau_sum = tau_sum + tau_lay;
@@ -878,6 +885,9 @@ __device__  void lw_grey_updown_linear(int id,
     __device__ void Kitzmann_TS_noscatt(int id,
         const int nlay,
         const int nlay1,
+        double *Altitude_d,
+        double *Altitudeh_d,
+        double *Rho_d,
         double *Tl,
         double *pl,
         double *pe,
@@ -945,7 +955,7 @@ __device__  void lw_grey_updown_linear(int id,
                 nlay,
                 nlay1,
                 pe,
-                pl,
+                Altitudeh_d,
                 Tl,
                 Te__df_e);
 
@@ -1016,11 +1026,11 @@ __device__  void lw_grey_updown_linear(int id,
             //printf("---------\n");
         }
         
-        Te__df_e[id * nlay1 + nlay1] = Tl[id * nlay + nlay] + (pe[id * nlay1 + nlay1] - pe[id * nlay1 + nlay1 -1]) / 
-            (pl[id * nlay + nlay] - pe[id * nlay1 + nlay1 - 1]) * (Tl[id * nlay + nlay] - Te__df_e[id * nlay1 + nlay1 -1]);
+        Te__df_e[id * nlay1 + nlay1] = Tl[id * nlay + nlay] + (Altitudeh_d[id * nlay1 + nlay1-1] - Altitudeh_d[id * nlay1 + nlay1 ]) / 
+            ( Altitudeh_d[id * nlay1 + nlay1 - 1] - Altitude_d[id * nlay + nlay] ) * (Tl[id * nlay + nlay] - Te__df_e[id * nlay1 + nlay1 -1]);
 
-        Te__df_e[id * nlay1 + 0] = Tl[id * nlay + 0] + (pe[id * nlay1 + 0] - pe[id * nlay1 + 1]) /
-            (pl[id * nlay + 0] - pe[id * nlay1 + 1]) *
+        Te__df_e[id * nlay1 + 0] = Tl[id * nlay + 0] + (Altitudeh_d[id * nlay1 + 1] - Altitudeh_d[id * nlay1 + 0]) /
+            (Altitudeh_d[id * nlay1 + 1] - Altitude_d[id * nlay + 0]) *
             (Tl[id * nlay + 0] - Te__df_e[id * nlay1 + 1]);
 
         // Shortwave fluxes
@@ -1039,8 +1049,8 @@ __device__  void lw_grey_updown_linear(int id,
                 // Find the opacity structure
                 tau_struct(id,
                     nlay,
-                    grav,
-                    pe,
+                    Rho_d,
+                    Altitudeh_d,
                     k_V_3_nv_d,
                     3,
                     channel,
@@ -1094,8 +1104,8 @@ __device__  void lw_grey_updown_linear(int id,
             // Find the opacity structure
             tau_struct(id,
             nlay,
-            grav,
-            pe,
+            Rho_d,
+            Altitudeh_d,
             k_IR_2_nv_d,
             2,
             channel,
@@ -1417,6 +1427,9 @@ __global__ void rtm_picket_fence(double *pressure_d,
             Kitzmann_TS_noscatt(id,
                 nv,
                 nvi,
+                Altitude_d,
+                Altitudeh_d,
+                Rho_d,
                 temperature_d,
                 pressure_d,
                 phtemp,
@@ -1741,7 +1754,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
         {
             dtemp[id * nv + level] = 1* //(gravit / Cp_d) *
                 (net_F_nvi_d[id * nvi + level+1] - net_F_nvi_d[id * nvi + level]) / 
-                (phtemp[level] - phtemp[level+1]);
+                (Altitudeh_d[level+1] - Altitudeh_d[level]);
 
             if (dtemp[id * nv + level]<0)
             {
@@ -2003,7 +2016,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
 
         printf("before ASR_d\n");
         
-        ASR_d[id] = -sw_down__df_e[id * nvi + nv] * areasT_d[id] * pow(rscale, 2);
+        ASR_d[id] = sw_down__df_e[id * nvi + nv] // * areasT_d[id] * pow(rscale, 2);
         printf("ASR_d is computed\n");
             
             
@@ -2031,7 +2044,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
 
             
         
-        OLR_d[id] = lw_up__df_e[id * nvi + nv]*areasT_d[id] * pow(rscale, 2);
+        OLR_d[id] = lw_up__df_e[id * nvi + nv] //*areasT_d[id] * pow(rscale, 2);
         printf("OLR_d is computed\n");
 
         if (isnan(OLR_d[id] )) {
