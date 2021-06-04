@@ -117,7 +117,7 @@
 // number of times to execute per time step
 // (repeats entire algorithm if > 1)
 #define conv_adj_iter_default 1
-#define soft_adjustment_default true
+#define soft_adjustment_default false
 // true = soft adjustment: calculate tendencies due to convection, forward to dyn core
 // false = hard adjustment: force profiles to neutral during profx step
 
