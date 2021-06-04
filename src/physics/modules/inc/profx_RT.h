@@ -680,7 +680,7 @@ __device__  void linear_log_interp(int id, int i, int nlay, int nlay1, double *p
     double norm;
 
     // start operations
-    lpe = log10((double)(pe[id*nlay1 + i ]));
+    lpe = log10((double)(pe[id*nlay1 + i +1]));
     lpl1 = log10((double)(pl[id * nlay + i + 1]));
     lpl2 = log10((double)(pl[id * nlay + i ]));
     lTl1 = log10((double)(Tl[id * nlay + i + 1]));
@@ -688,7 +688,7 @@ __device__  void linear_log_interp(int id, int i, int nlay, int nlay1, double *p
 
     norm = (1.0) / (lpl2 - lpl1);
 
-    Te__df_e[id * nlay1 + i ] = pow((double)(10.0), ((lTl1 * (lpl2 - lpe) + lTl2 * (lpe - lpl1)) * norm));
+    Te__df_e[id * nlay1 + i +1] = pow((double)(10.0), ((lTl1 * (lpl2 - lpe) + lTl2 * (lpe - lpl1)) * norm));
 }
 
 ///////////////////////////////////////////////////////////////
@@ -758,7 +758,7 @@ __device__  void sw_grey_down(int id,
     // start operations
     for (int i = nlay1-1; i >-1; i--)
     {
-        sw_down__df_e[id * nlay1 + i] = solar * mu[i] * exp(-solar_tau[id * nlay1 + i] / mu[i]);
+        sw_down__df_e[id * nlay1 + i] = solar * mu[id] * exp(-solar_tau[id * nlay1 + i] / mu[id]);
     }
 
 }
