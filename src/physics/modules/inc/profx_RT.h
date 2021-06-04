@@ -1145,7 +1145,7 @@ __device__  void lw_grey_updown_linear(int id,
         for (int i = 0; i < nlay1; i++)
         {
             lw_net__df_e[id * nlay1 + i] = lw_up__df_e[id * nlay1 + i] - lw_down__df_e[id * nlay1 + i];
-            sw_net__df_e[id * nlay1 + i] = sw_up__df_e[id * nlay1 + i] - sw_down__df_e[id * nlay1 + i];
+            sw_net__df_e[id * nlay1 + i] = sw_down__df_e[id * nlay1 + i]- sw_up__df_e[id * nlay1 + i];
             net_F_nvi_d[id * nlay1 + i] = lw_net__df_e[id * nlay1 + i] + sw_net__df_e[id * nlay1 + i];
         }
 
@@ -1779,7 +1779,9 @@ __global__ void rtm_picket_fence(double *pressure_d,
         
         
         for (int level = 0; level < nvi; level++)
-        {          
+        {
+            printf("nvi:%d \n", level);
+                           
             
                         
             
@@ -1989,7 +1991,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
 
         printf("before ASR_d\n");
         
-        ASR_d[id] = sw_down__df_e[id * nvi + nvi] * areasT_d[id] * pow(rscale, 2);
+        ASR_d[id] = sw_net__df_e[id * nvi + nv] * areasT_d[id] * pow(rscale, 2);
         printf("ASR_d is computed\n");
             
             
