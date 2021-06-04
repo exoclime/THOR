@@ -688,8 +688,8 @@ __device__  void linear_log_interp(int id,
 
     // start operations
     lpe = log10((double)(pe[id*nlay1 + i +1]));
-    lAlt1 = log10((double)(Altitudeh_d[id * nlay + i]));
-    lAlt2 = log10((double)(Altitudeh_d[id * nlay + i +1 ]));
+    lAlt1 = log10((double)(Altitudeh_d[id * nlay + i + 1]));
+    lAlt2 = log10((double)(Altitudeh_d[id * nlay + i]));
     lTl1 = log10((double)(Tl[id * nlay + i + 1]));
     lTl2 = log10((double)(Tl[id * nlay + i]));
 
