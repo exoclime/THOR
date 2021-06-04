@@ -1477,6 +1477,9 @@ __global__ void rtm_picket_fence(double *pressure_d,
             Kitzmann_TS_noscatt(id,
                 nv,
                 nvi,
+                Altitude_d,
+                Altitudeh_d,
+                Rho_d,
                 temperature_d,
                 pressure_d,
                 phtemp,
@@ -2016,7 +2019,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
 
         printf("before ASR_d\n");
         
-        ASR_d[id] = sw_down__df_e[id * nvi + nv] // * areasT_d[id] * pow(rscale, 2);
+        ASR_d[id] = sw_down__df_e[id * nvi + nv]; // * areasT_d[id] * pow(rscale, 2);
         printf("ASR_d is computed\n");
             
             
@@ -2044,7 +2047,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
 
             
         
-        OLR_d[id] = lw_up__df_e[id * nvi + nv] //*areasT_d[id] * pow(rscale, 2);
+        OLR_d[id] = lw_up__df_e[id * nvi + nv] ; //*areasT_d[id] * pow(rscale, 2);
         printf("OLR_d is computed\n");
 
         if (isnan(OLR_d[id] )) {
