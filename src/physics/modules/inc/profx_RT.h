@@ -1740,7 +1740,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
         for (int level = 0; level < nv; level++)
         {
             dtemp[id * nv + level] = 1* //(gravit / Cp_d) *
-                (net_F_nvi_d[id * nvi + level] - net_F_nvi_d[id * nvi + level+1]) / 
+                (net_F_nvi_d[id * nvi + level+1] - net_F_nvi_d[id * nvi + level]) / 
                 (phtemp[level] - phtemp[level+1]);
         }
 
