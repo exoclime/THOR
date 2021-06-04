@@ -1745,17 +1745,17 @@ __global__ void rtm_picket_fence(double *pressure_d,
 
             if (dtemp[id * nv + level]<0)
             {
-                printf("dtemp contains a negative value at level:%d \n",  lev);                    
+                printf("dtemp contains a negative value at level:%d \n",  level);                    
             }
 
             if (dtemp[id * nv + level]==0)
             {
-                printf("dtemp contains a 0 at level:%d \n",  lev);                    
+                printf("dtemp contains a 0 at level:%d \n",  level);                    
             }
 
             if (isnan(dtemp[id * nv + level]))
             {
-                printf("dtemp contains a 0 at level:%d \n",  lev);                    
+                printf("dtemp contains a 0 at level:%d \n",  level);                    
             }
 
         }
