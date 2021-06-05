@@ -670,7 +670,7 @@ __device__  void linear_log_interp(int id,
     int i,
     int nlay,
     int nlay1,
-    double *pe,
+    double *Altitude_d,
     double *Altitudeh_d, 
     double *Tl,
     double *Te__df_e) {
@@ -679,7 +679,7 @@ __device__  void linear_log_interp(int id,
     //// log10 from math
 
     // work variables
-    double lpe;
+    double eAlt;
     double lTl1;
     double lTl2;
     double lAlt1;
@@ -687,15 +687,15 @@ __device__  void linear_log_interp(int id,
     double norm;
 
     // start operations
-    lpe = log10((double)(pe[id*nlay1 + i +1]));
-    lAlt1 = log10((double)(Altitudeh_d[id * nlay + i + 1]));
-    lAlt2 = log10((double)(Altitudeh_d[id * nlay + i]));
-    lTl1 = log10((double)(Tl[id * nlay + i + 1]));
-    lTl2 = log10((double)(Tl[id * nlay + i]));
+    eAlt = log10((double)(Altitude_d[id*nlay1 + i +1])) ;
+    lAlt1 = log10((double)(Altitude_d[id * nlay + i ])) ;
+    lAlt2 = log10((double)(Altitude_d[id * nlay + i + 1])) ;
+    lTl1 = log10((double)(Tl[id * nlay + i + 1])) ;
+    lTl2 = log10((double)(Tl[id * nlay + i])) ;
 
     norm = (1.0) / (lAlt2 - lAlt1);
 
-    Te__df_e[id * nlay1 + i +1] = pow((double)(10.0), ((lTl1 * (lAlt2 - lpe) + lTl2 * (lpe - lAlt1)) * norm));
+    Te__df_e[id * nlay1 + i +1] = pow((double)(10.0), ((lTl1 * (lAlt2 - eAlt) + lTl2 * (eAlt - lAlt1)) * norm));
 }
 
 ///////////////////////////////////////////////////////////////
@@ -739,7 +739,7 @@ __device__ void tau_struct(int id,
         }
 
         // Optical depth of layer assuming hydrostatic equilibirum  //////////////////// kappa * rho * delta height  (old: kappa *delP/gravity)
-        tau_lay = kRoss[id*nlev*nchan + channel * nlev + level] * delPdelAlt * Rho_d[id*nlev +  level];
+        tau_lay = kRoss[id*nlev*nchan + channel * nlev + level] * delPdelAlt * Rho_d[id*nlev  + level];
 
         // Add to running sum
         tau_sum = tau_sum + tau_lay;
@@ -954,7 +954,7 @@ __device__  void lw_grey_updown_linear(int id,
                 i,
                 nlay,
                 nlay1,
-                pe,
+                Altitude_d,
                 Altitudeh_d,
                 Tl,
                 Te__df_e);
@@ -1027,10 +1027,10 @@ __device__  void lw_grey_updown_linear(int id,
         }
         
         Te__df_e[id * nlay1 + nlay1] = Tl[id * nlay + nlay] + (Altitudeh_d[id * nlay1 + nlay1-1] - Altitudeh_d[id * nlay1 + nlay1 ]) / 
-            ( Altitudeh_d[id * nlay1 + nlay1 - 1] - Altitude_d[id * nlay + nlay] ) * (Tl[id * nlay + nlay] - Te__df_e[id * nlay1 + nlay1 -1]);
+            ( Altitude_d[id * nlay + nlay1 ] - Altitudeh_d[id * nlay1 + nlay-1] ) * (Tl[id * nlay + nlay] - Te__df_e[id * nlay1 + nlay]);
 
         Te__df_e[id * nlay1 + 0] = Tl[id * nlay + 0] + (Altitudeh_d[id * nlay1 + 1] - Altitudeh_d[id * nlay1 + 0]) /
-            (Altitudeh_d[id * nlay1 + 1] - Altitude_d[id * nlay + 0]) *
+            (Altitude_d[id * nlay + 1] - Altitude_d[id * nlay + 0]) *
             (Tl[id * nlay + 0] - Te__df_e[id * nlay1 + 1]);
 
         // Shortwave fluxes
