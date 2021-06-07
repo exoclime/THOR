@@ -687,9 +687,9 @@ __device__  void linear_log_interp(int id,
     double norm;
 
     // start operations
-    eAlt = log10((double)(Altitudeh_d[id*nlay1 + i +1])) ;
-    lAlt1 = log10((double)(Altitude_d[id * nlay + i ])) ;
-    lAlt2 = log10((double)(Altitude_d[id * nlay + i + 1])) ;
+    eAlt = log10((double)(Altitudeh_d[i +1])) ;
+    lAlt1 = log10((double)(Altitude_d[ i ])) ;
+    lAlt2 = log10((double)(Altitude_d[ i + 1])) ;
     lTl1 = log10((double)(Tl[id * nlay + i + 1])) ;
     lTl2 = log10((double)(Tl[id * nlay + i])) ;
 
@@ -731,7 +731,7 @@ __device__ void tau_struct(int id,
     for (level = nlev-1; level > -1; level--) 
     {
         // Pressure difference between layer edges
-        delPdelAlt = (Altitudeh_d[id*(nlev+1) + level + 1] - Altitudeh_d[id*(nlev+1)+ level + 0]);
+        delPdelAlt = (Altitudeh_d[ level + 1] - Altitudeh_d[ level + 0]);
 
         if (delPdelAlt < 0.0000001)
         {
@@ -960,11 +960,11 @@ __device__  void lw_grey_updown_linear(int id,
                 Te__df_e);
 
             //printf("---------\n");
-            if (pe[id*nlay1 + i + 1] == 0)
+            if (pe[id*nlay1 + i + 1] == 0.0)
             {                
                     printf("pe[id*nlay1 + i + 1] is zer0\n");
             }
-             if (pe[id*nlay1 + i + 1] < 0)
+             if (pe[id*nlay1 + i + 1] < 0.0)
             {                
                     printf("pe[id*nlay1 + i + 1] is negative\n");
             }
@@ -978,45 +978,45 @@ __device__  void lw_grey_updown_linear(int id,
                     printf("pl[id*nlay + i + 1] > pl[id * nlay + i ] \n");
             }
 
-            if (pl[id * nlay + i + 1] == 0)
+            if (pl[id * nlay + i + 1] == 0.0)
             {                
                     printf("pl[id * nlay + i + 1] is zer0\n");
             }
-            if (pl[id * nlay + i + 1] < 0)
+            if (pl[id * nlay + i + 1] < 0.0)
             {                
                     printf("pl[id * nlay + i + 1] is negative\n");
             }
-            if (pl[id * nlay + i ] == 0)
+            if (pl[id * nlay + i ] == 0.0)
             {                
                     printf("pl[id * nlay + i ] is zer0\n");
             }
-            if (pl[id * nlay + i ] < 0)
+            if (pl[id * nlay + i ] < 0.0)
             {                
                     printf("pl[id * nlay + i ] is negative\n");
             }
-            if (Tl[id * nlay + i+1] == 0)
+            if (Tl[id * nlay + i+1] == 0.0)
             {                
                     printf("Tl[id * nlay + i+1] is zer0\n");
             }
-            if (Tl[id * nlay + i+1] < 0)
+            if (Tl[id * nlay + i+1] < 0.0)
             {                
                     printf("Tl[id * nlay + i+1] is negative\n");
             }
-            if (Tl[id * nlay + i] == 0)
+            if (Tl[id * nlay + i] == 0.0)
             {                
                     printf("Tl[id * nlay + i] is zer0\n");
             }
-            if (Tl[id * nlay + i] < 0)
+            if (Tl[id * nlay + i] < 0.0)
             {                
                     printf("Tl[id * nlay + i] is negative\n");
             }
 
-            if (Te__df_e[id * nlay1 + i] == 0)
+            if (Te__df_e[id * nlay1 + i] == 0.0)
             {                
                    
                     printf("Te__df_e[id * nlay1 + i] is zer0 at level %d\n", i);
             }
-            if (Te__df_e[id * nlay1 + i] < 0)
+            if (Te__df_e[id * nlay1 + i] < 0.0)
             {                
                     printf("Te__df_e[id * nlay1 + i] is negative\n");
             }
@@ -1026,11 +1026,11 @@ __device__  void lw_grey_updown_linear(int id,
             //printf("---------\n");
         }
         
-        Te__df_e[id * nlay1 + nlay1] = Tl[id * nlay + nlay] + (Altitudeh_d[id * nlay1 + nlay1-1] - Altitudeh_d[id * nlay1 + nlay1 ]) / 
-            ( Altitude_d[id * nlay + nlay1 ] - Altitudeh_d[id * nlay1 + nlay-1] ) * (Tl[id * nlay + nlay] - Te__df_e[id * nlay1 + nlay]);
+        Te__df_e[id * nlay1 + nlay1] = Tl[id * nlay + nlay] + (Altitudeh_d[ nlay1-1] - Altitudeh_d[ nlay1 ]) / 
+            ( Altitude_d[ nlay1 ] - Altitudeh_d[ nlay-1] ) * (Tl[id * nlay + nlay] - Te__df_e[id * nlay1 + nlay]);
 
-        Te__df_e[id * nlay1 + 0] = Tl[id * nlay + 0] + (Altitudeh_d[id * nlay1 + 1] - Altitudeh_d[id * nlay1 + 0]) /
-            (Altitude_d[id * nlay + 1] - Altitude_d[id * nlay + 0]) *
+        Te__df_e[id * nlay1 + 0] = Tl[id * nlay + 0] + (Altitudeh_d[ 1] - Altitudeh_d[ 0]) /
+            (Altitude_d[ 1] - Altitude_d[ 0]) *
             (Tl[id * nlay + 0] - Te__df_e[id * nlay1 + 1]);
 
         // Shortwave fluxes
@@ -1268,9 +1268,9 @@ __global__ void rtm_picket_fence(double *pressure_d,
     if (id < num) {
 
         for (int channel = 0; channel < 3; channel++) {
-            if (gam_V_3_d[id*3 + channel]==0){
+            if (gam_V_3_d[id*3 + channel]==0.0){
                 for (int chan = 0; chan < 3; chan++) {
-                    printf("gam_V_3_d contains 0 in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d channel:%d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, chan, &pressure_d[id*3 + chan]);
+                    printf("gam_V_3_d contains 0 in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d channel:%d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, chan, &gam_V_3_d[id*3 + chan]);
                 }
                 __threadfence();         // ensure store issued before trap
                 asm("trap;");            // kill kernel with error           
@@ -1278,7 +1278,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
 
             if (isnan(gam_V_3_d[id*3 + channel])){
                 for (int chan = 0; chan < 3; chan++) {
-                    printf("gam_V_3_d contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d channel:%d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, chan, &pressure_d[id*3 + chan]);
+                    printf("gam_V_3_d contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d channel:%d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, chan, &gam_V_3_d[id*3 + chan]);
                 }
                 __threadfence();         // ensure store issued before trap
                 asm("trap;");            // kill kernel with error           
