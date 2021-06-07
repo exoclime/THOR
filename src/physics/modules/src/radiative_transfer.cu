@@ -170,7 +170,7 @@ bool radiative_transfer::initialise_memory(const ESP &              esp,
         cudaMalloc((void **)&lw_down_g__dff_e, esp.nvi * esp.point_num * sizeof(double));
 
 
-        tau_h    = (double *)malloc(esp.nvi * esp.point_num * 3 * sizeof(double));
+        tau_h    = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
         
         cuda_check_status_or_exit(__FILE__, __LINE__);
        
@@ -292,6 +292,8 @@ bool radiative_transfer::free_memory() {
         cudaFree(Am__dff_l);
         cudaFree(lw_up_g__dff_e);
         cudaFree(lw_down_g__dff_e);
+
+        free(tau_h);
         
         cuda_check_status_or_exit(__FILE__, __LINE__);
 
@@ -1074,7 +1076,7 @@ bool radiative_transfer::configure(config_file &config_reader) {
 }
 
 bool radiative_transfer::store(const ESP &esp, storage &s) {
-    
+
     double picket_fence_mod = true;
 
     if (picket_fence_mod) {
@@ -1095,9 +1097,9 @@ bool radiative_transfer::store(const ESP &esp, storage &s) {
 
         cuda_check_status_or_exit(__FILE__, __LINE__); 
 
-        cudaMemcpy(tau_h, tau_Ve__df_e, esp.nvi * esp.point_num * 3 * sizeof(double), cudaMemcpyDeviceToHost);
+        cudaMemcpy(tau_h, tau_Ve__df_e, esp.nvi * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
         s.append_table(tau_h,
-                       esp.nvi * esp.point_num * 3,
+                       esp.nvi * esp.point_num,
                        "/tau",
                        " ",
                        "optical depth across each layer (not total optical depth)");
