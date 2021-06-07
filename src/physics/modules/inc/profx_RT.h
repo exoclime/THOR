@@ -687,7 +687,7 @@ __device__  void linear_log_interp(int id,
     double norm;
 
     // start operations
-    eAlt = log10((double)(Altitude_d[id*nlay1 + i +1])) ;
+    eAlt = log10((double)(Altitudeh_d[id*nlay1 + i +1])) ;
     lAlt1 = log10((double)(Altitude_d[id * nlay + i ])) ;
     lAlt2 = log10((double)(Altitude_d[id * nlay + i + 1])) ;
     lTl1 = log10((double)(Tl[id * nlay + i + 1])) ;
@@ -1014,7 +1014,7 @@ __device__  void lw_grey_updown_linear(int id,
             if (Te__df_e[id * nlay1 + i] == 0)
             {                
                    
-                    printf("Te__df_e[id * nlay1 + i] is zer0\n");
+                    printf("Te__df_e[id * nlay1 + i] is zer0 at level %d\n", i);
             }
             if (Te__df_e[id * nlay1 + i] < 0)
             {                
