@@ -168,6 +168,9 @@ bool radiative_transfer::initialise_memory(const ESP &              esp,
         cudaMalloc((void **)&Am__dff_l, esp.nv * esp.point_num * sizeof(double));
         cudaMalloc((void **)&lw_up_g__dff_e, esp.nvi * esp.point_num * sizeof(double));
         cudaMalloc((void **)&lw_down_g__dff_e, esp.nvi * esp.point_num * sizeof(double));
+
+
+        tau_h    = (double *)malloc(esp.nvi * esp.point_num * 3 * sizeof(double));
         
         cuda_check_status_or_exit(__FILE__, __LINE__);
        
@@ -1088,6 +1091,13 @@ bool radiative_transfer::store(const ESP &esp, storage &s) {
         cudaMemcpy(
             sw_net__h, sw_net__df_e, esp.nvi * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
         s.append_table(sw_net__h, esp.nvi * esp.point_num, "/sw_net__h", "W m^-2", "net short-wave flux (SW)");
+
+        cudaMemcpy(tau_h, tau_Ve__df_e, esp.nvi * esp.point_num * 3 * sizeof(double), cudaMemcpyDeviceToHost);
+        s.append_table(tau_h,
+                       esp.nv * esp.point_num * 2,
+                       "/tau",
+                       " ",
+                       "optical depth across each layer (not total optical depth)");
     
     
         cuda_check_status_or_exit(__FILE__, __LINE__);             

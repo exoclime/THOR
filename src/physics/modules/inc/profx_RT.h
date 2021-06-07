@@ -1044,7 +1044,7 @@ __device__  void lw_grey_updown_linear(int id,
            
 
             // Incident flux in band
-            if (mu_s[id]>0)
+            if (mu_s[id]>0.0)
             {
                 // Find the opacity structure
                 tau_struct(id,
@@ -1076,8 +1076,8 @@ __device__  void lw_grey_updown_linear(int id,
 
                 for (int i = nlay1-1; i >-1; i--)
                 {
-                    sw_down_b__df_e[id * nlay1 + i] = 0;
-                    tau_Ve__df_e[id * nlay1 + i] = 0;
+                    sw_down_b__df_e[id * nlay1 + i] = 0.0;
+                    tau_Ve__df_e[id * nlay1 + i] = 0.0;
                 }
                 
             }
@@ -2002,13 +2002,18 @@ __global__ void rtm_picket_fence(double *pressure_d,
 
         }
 
-        if (zenith_angles[id]>0)
+        if (zenith_angles[id]>0.0)
         {
             printf("zenith_angles is larger than 0\n");
         } else
         {
             printf("zenith_angles is zero or smaller\n");
         }
+        if (zenith_angles[id]==0.0)
+        {
+            printf("zenith_angles is 0\n");
+        }
+
         if (zenith_angles[id]>1)
         {
              printf("zenith_angles is larger than 1\n");
