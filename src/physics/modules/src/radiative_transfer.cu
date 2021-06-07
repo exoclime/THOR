@@ -1074,6 +1074,7 @@ bool radiative_transfer::configure(config_file &config_reader) {
 }
 
 bool radiative_transfer::store(const ESP &esp, storage &s) {
+    
     double picket_fence_mod = true;
 
     if (picket_fence_mod) {
@@ -1092,9 +1093,11 @@ bool radiative_transfer::store(const ESP &esp, storage &s) {
             sw_net__h, sw_net__df_e, esp.nvi * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
         s.append_table(sw_net__h, esp.nvi * esp.point_num, "/sw_net__h", "W m^-2", "net short-wave flux (SW)");
 
+        cuda_check_status_or_exit(__FILE__, __LINE__); 
+
         cudaMemcpy(tau_h, tau_Ve__df_e, esp.nvi * esp.point_num * 3 * sizeof(double), cudaMemcpyDeviceToHost);
         s.append_table(tau_h,
-                       esp.nv * esp.point_num * 2,
+                       esp.nvi * esp.point_num * 3,
                        "/tau",
                        " ",
                        "optical depth across each layer (not total optical depth)");
