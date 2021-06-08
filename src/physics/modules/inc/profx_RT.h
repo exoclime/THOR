@@ -1126,16 +1126,16 @@ __device__  void lw_grey_updown_linear(int id,
                         printf("Rho_d[id * nlay + i] is zero at level %d and in channel %d\n", i, channel);
                     }
 
-                    if (isnan(kRoss[id*nlay*3 + channel * nlay + i]))
+                    if (isnan(k_V_3_nv_d[id*nlay*3 + channel * nlay + i]))
                     {                
                         printf("SW kRoss[id * nlay + i] is negative at level %d and in channel %d\n", i, channel);
                     }
 
-                    if (kRoss[id*nlay*3 + channel * nlay + i] == 0.0)
+                    if (k_V_3_nv_d[id*nlay*3 + channel * nlay + i] == 0.0)
                     {                
                         printf("SW kRoss[id * nlay + i] is negativeat level %d and in channel %d\n", i, channel);
                     }
-                    if (kRoss[id*nlay*3 + channel * nlay + i] < 0.0)
+                    if (k_V_3_nv_d[id*nlay*3 + channel * nlay + i] < 0.0)
                     {                
                         printf("SW kRoss[id * nlay + i] is negative at level %d and in channel %d\n", i, channel);
                     }
@@ -1216,16 +1216,16 @@ __device__  void lw_grey_updown_linear(int id,
                 for (int i = 0; i < nlay; i++)
                 {
                     
-                    if (isnan(kRoss[id*nlay*3 + channel * nlay + i]))
+                    if (isnan(k_IR_2_nv_d[id*nlay*2 + channel * nlay + i]))
                     {                
                         printf("LW kRoss[id * nlay + i] is negative at level %d and in channel %d\n", i, channel);
                     }
 
-                    if (kRoss[id*nlay*3 + channel * nlay + i] == 0.0)
+                    if (kRoss[id*k_IR_2_nv_d*2 + channel * nlay + i] == 0.0)
                     {                
                         printf("LW kRoss[id * nlay + i] is negativeat level %d and in channel %d\n", i, channel);
                     }
-                    if (kRoss[id*nlay*3 + channel * nlay + i] < 0.0)
+                    if (kRoss[id*k_IR_2_nv_d*2 + channel * nlay + i] < 0.0)
                     {                
                         printf("LW kRoss[id * nlay + i] is negative at level %d and in channel %d\n", i, channel);
                     }
