@@ -1093,7 +1093,7 @@ __device__  void lw_grey_updown_linear(int id,
                     channel,
                     tau_Ve__df_e);
                 
-                printf("tau_struct finished\n");
+                //printf("tau_struct finished\n");
 
                 Finc_B = Finc * Beta_V_3_d[id * 3 + channel];
 
@@ -1105,7 +1105,7 @@ __device__  void lw_grey_updown_linear(int id,
                     sw_down_b__df_e,
                     mu_s);
 
-                printf("sw_grey_down finished\n");            
+                //printf("sw_grey_down finished\n");            
 
             } else
             {
@@ -1148,7 +1148,7 @@ __device__  void lw_grey_updown_linear(int id,
             channel,
             tau_IRe__df_e);
 
-            printf("tau_struct finished\n");
+            //printf("tau_struct finished\n");
 
             // Blackbody fluxes (note divide by pi for correct units)
             for (int i = 0; i < nlay1; i++)
@@ -1175,7 +1175,7 @@ __device__  void lw_grey_updown_linear(int id,
                 lw_up_g__dff_e,
                 lw_down_g__dff_e);
 
-            printf("lw_grey_updown_linear finished\n");
+            //printf("lw_grey_updown_linear finished\n");
             
 
 
@@ -1198,7 +1198,7 @@ __device__  void lw_grey_updown_linear(int id,
 
         net_F_nvi_d[id * nlay1 + 0] = Fint;
 
-        printf("Kitzmann finished\n");
+        //printf("Kitzmann finished\n");
 
 
 
@@ -1755,7 +1755,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
         }
         */
 
-        printf("temperature_d & pressure_d print out\n");  
+        //printf("temperature_d & pressure_d print out\n");  
         /*
         for (int level = 0; level < nvi; level++)
         {
@@ -1896,7 +1896,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
             }              
         }
 
-        printf("k_V_3_nv_d & k_IR_2_nv_d print out\n");
+        //printf("k_V_3_nv_d & k_IR_2_nv_d print out\n");
         
         
         
@@ -1911,12 +1911,12 @@ __global__ void rtm_picket_fence(double *pressure_d,
 
             if (dtemp[id * nv + level]<0.0)
             {
-                printf("dtemp contains a negative value at level:%d \n",  level);                    
+                //printf("dtemp contains a negative value at level:%d \n",  level);                    
             }
 
             if (dtemp[id * nv + level]==0.0)
             {
-                printf("dtemp contains a 0 at level:%d \n",  level);                    
+                //printf("dtemp contains a 0 at level:%d \n",  level);                    
             }
 
             if (isnan(dtemp[id * nv + level]))
@@ -2186,7 +2186,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
             }
 
             if (ASR_d[id] == 0.0 ) {
-                printf("my message:ASR_d contains 0 in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, &ASR_d[id]);
+                //printf("my message:ASR_d contains 0 in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, &ASR_d[id]);
                 //OLR_d[id] = id;
                 //__threadfence();         // ensure store issued before trap
                 //asm("trap;");            // kill kernel with error
