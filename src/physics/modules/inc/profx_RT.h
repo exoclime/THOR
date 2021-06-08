@@ -1095,6 +1095,30 @@ __device__  void lw_grey_updown_linear(int id,
                 
                 //printf("tau_struct finished\n");
 
+                for (int i = 0; i < nlay1; i++)
+                {
+                    if (tau_Ve__df_e[id * nlay1 + i] < 0.0)
+                    {                
+                        printf("tau_Ve__df_e[id * nlay1 + i] is negative at level %d and in channel %d\n", i, channel);
+                    }
+                    if (isnan(tau_Ve__df_e[id * nlay1 + i]))
+                    {                
+                        printf("tau_Ve__df_e[id * nlay1 + i] is negativeat level %d and in channel %d\n", i, channel);
+                    }
+                }
+                for (int i = 0; i < nlay; i++)
+                {
+                    if (Rho_d[id * nlay + i] < 0.0)
+                    {                
+                        printf("Rho_d[id * nlay + i] is negative at level %d and in channel %d\n", i, channel);
+                    }
+                    if (isnan(Rho_d[id * nlay + i]))
+                    {                
+                        printf("Rho_d[id * nlay + i] is negativeat level %d and in channel %d\n", i, channel);
+                    }
+                }
+                
+
                 Finc_B = Finc * Beta_V_3_d[id * 3 + channel];
 
                 
@@ -1147,6 +1171,18 @@ __device__  void lw_grey_updown_linear(int id,
             2,
             channel,
             tau_IRe__df_e);
+
+            for (int i = 0; i < nlay1; i++)
+                {
+                    if (tau_Ve__df_e[id * nlay1 + i] < 0.0)
+                    {                
+                        printf("tau_Ve__df_e[id * nlay1 + i] is negative at level %d and in channel %d\n", i, channel);
+                    }
+                    if (isnan(tau_Ve__df_e[id * nlay1 + i]))
+                    {                
+                        printf("tau_Ve__df_e[id * nlay1 + i] is negativeat level %d and in channel %d\n", i, channel);
+                    }
+                }
 
             //printf("tau_struct finished\n");
 
@@ -1483,7 +1519,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
 
         for (int lev = 0; lev < nvi; lev++)
         {
-            if (Te__df_e[id * nvi + lev] == 0)
+            if (Te__df_e[id * nvi + lev] == 0.0)
             {
                 printf("Te__df_e has a zero at the level:%u\n", lev);
                 __threadfence();         // ensure store issued before trap
@@ -1495,15 +1531,43 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 __threadfence();         // ensure store issued before trap
                 asm("trap;");            // kill kernel with error
             }
-            if (phtemp[id * nvi + lev] == 0)
+            if (phtemp[id * nvi + lev] == 0.0)
             {
-                printf("Te__df_e has a zero at the level:%u\n", lev);
+                printf("phtemp has a zero at the level:%u\n", lev);
                 __threadfence();         // ensure store issued before trap
                 asm("trap;");            // kill kernel with error
             }
             if (isnan(phtemp[id * nvi + lev]))
             {
-                printf("Te__df_e has a NaN at the level:%u\n", lev);
+                printf("phtemp has a NaN at the level:%u\n", lev);
+                __threadfence();         // ensure store issued before trap
+                asm("trap;");            // kill kernel with error
+            }
+            
+        }
+        for (int lev = 0; lev < nv; lev++)
+        {
+            if (temperature_d[id * nv + lev] == 0.0)
+            {
+                printf("temperature_d has a zero at the level:%u\n", lev);
+                __threadfence();         // ensure store issued before trap
+                asm("trap;");            // kill kernel with error
+            }
+            if (isnan(temperature_d[id * nv + lev]))
+            {
+                printf("temperature_d has a NaN at the level:%u\n", lev);
+                __threadfence();         // ensure store issued before trap
+                asm("trap;");            // kill kernel with error
+            }
+            if (pressure_d[id * nv + lev] == 0.0)
+            {
+                printf("pressure_d has a zero at the level:%u\n", lev);
+                __threadfence();         // ensure store issued before trap
+                asm("trap;");            // kill kernel with error
+            }
+            if (isnan(pressure_d[id * nv + lev]))
+            {
+                printf("pressure_d has a NaN at the level:%u\n", lev);
                 __threadfence();         // ensure store issued before trap
                 asm("trap;");            // kill kernel with error
             }
