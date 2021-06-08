@@ -766,14 +766,20 @@ __device__ void tau_struct(int id,
         // Pressure difference between layer edges
         delPdelAlt = (Altitudeh_d[level + 1] - Altitudeh_d[level + 0]);
 
-        if (delPdelAlt < 10)
+        if (delPdelAlt < 1000)
         {
             //delPdelAlt = 0.0000001;
-            delPdelAlt = 10;
+            delPdelAlt = 1000;
         }
 
         // Optical depth of layer assuming hydrostatic equilibirum  //////////////////// kappa * rho * delta height  (old: kappa *delP/gravity)
         tau_lay = kRoss[id*nlev*nchan + channel * nlev + level] * delPdelAlt * Rho_d[id*nlev  + level];
+
+        if (tau_lay < 0.0000001)
+        {
+            tau_lay = 0.0000001;
+        }
+
 
         // Add to running sum
         tau_sum = tau_sum + tau_lay;
@@ -1104,7 +1110,7 @@ __device__  void lw_grey_updown_linear(int id,
                     }
                     if (tau_IRe__df_e[id * nlay1 + i] == 0.0)
                     {                
-                        printf("tau_Ve__df_e[id * nlay1 + i] is zero at level %d and in channel %d\n", i, channel);
+                        //printf("tau_Ve__df_e[id * nlay1 + i] is zero at level %d and in channel %d\n", i, channel);
                     }
                     if (isnan(tau_Ve__df_e[id * nlay1 + i]))
                     {                
@@ -1205,7 +1211,7 @@ __device__  void lw_grey_updown_linear(int id,
                     }
                     if (tau_IRe__df_e[id * nlay1 + i] == 0.0)
                     {                
-                        printf("tau_IRe__df_e[id * nlay1 + i] is zero at level %d and in channel %d\n", i, channel);
+                        //printf("tau_IRe__df_e[id * nlay1 + i] is zero at level %d and in channel %d\n", i, channel);
                     }
                     if (isnan(tau_IRe__df_e[id * nlay1 + i]))
                     {                
