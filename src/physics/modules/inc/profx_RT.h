@@ -1221,11 +1221,11 @@ __device__  void lw_grey_updown_linear(int id,
                         printf("LW kRoss[id * nlay + i] is negative at level %d and in channel %d\n", i, channel);
                     }
 
-                    if (kRoss[id*k_IR_2_nv_d*2 + channel * nlay + i] == 0.0)
+                    if (k_IR_2_nv_d[id*nlay*2 + channel * nlay + i] == 0.0)
                     {                
                         printf("LW kRoss[id * nlay + i] is negativeat level %d and in channel %d\n", i, channel);
                     }
-                    if (kRoss[id*k_IR_2_nv_d*2 + channel * nlay + i] < 0.0)
+                    if (k_IR_2_nv_d[id*nlay*2 + channel * nlay + i] < 0.0)
                     {                
                         printf("LW kRoss[id * nlay + i] is negative at level %d and in channel %d\n", i, channel);
                     }
