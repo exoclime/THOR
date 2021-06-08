@@ -822,18 +822,7 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
 
             // 
 
-            try
-            {
-              // do something crazy
-              throw_on_cuda_error(cudaSetDevice(-1), __FILE__, __LINE__);
-            }
-            catch(thrust::system_error &e)
-            {
-              std::cerr << "CUDA error after cudaSetDevice: " << e.what() << std::endl;
-          
-              // oops, recover
-              cudaSetDevice(0);
-            }
+           
 
             rtm_picket_fence<<<NBRT, NTH>>>(esp.pressure_d,
                 esp.temperature_d,
