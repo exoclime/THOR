@@ -1108,7 +1108,7 @@ __device__  void lw_grey_updown_linear(int id,
                     }
                     if (isnan(tau_Ve__df_e[id * nlay1 + i]))
                     {                
-                        printf("tau_Ve__df_e[id * nlay1 + i] is negativeat level %d and in channel %d\n", i, channel);
+                        printf("tau_Ve__df_e[id * nlay1 + i] is negative at level %d and in channel %d\n", i, channel);
                     }
                 }
                 for (int i = 0; i < nlay; i++)
@@ -1119,8 +1119,28 @@ __device__  void lw_grey_updown_linear(int id,
                     }
                     if (isnan(Rho_d[id * nlay + i]))
                     {                
-                        printf("Rho_d[id * nlay + i] is negativeat level %d and in channel %d\n", i, channel);
+                        printf("Rho_d[id * nlay + i] is negative at level %d and in channel %d\n", i, channel);
                     }
+                    if (Rho_d[id * nlay + i]==0.0)
+                    {                
+                        printf("Rho_d[id * nlay + i] is zero at level %d and in channel %d\n", i, channel);
+                    }
+
+                    if (isnan(kRoss[id*nlay*3 + channel * nlay + i]))
+                    {                
+                        printf("SW kRoss[id * nlay + i] is negative at level %d and in channel %d\n", i, channel);
+                    }
+
+                    if (kRoss[id*nlay*3 + channel * nlay + i] == 0.0)
+                    {                
+                        printf("SW kRoss[id * nlay + i] is negativeat level %d and in channel %d\n", i, channel);
+                    }
+                    if (kRoss[id*nlay*3 + channel * nlay + i] < 0.0)
+                    {                
+                        printf("SW kRoss[id * nlay + i] is negative at level %d and in channel %d\n", i, channel);
+                    }
+
+                    
                 }
                 
 
@@ -1191,6 +1211,26 @@ __device__  void lw_grey_updown_linear(int id,
                     {                
                         printf("tau_IRe__df_e[id * nlay1 + i] is negativeat level %d and in channel %d\n", i, channel);
                     }
+                }
+
+                for (int i = 0; i < nlay; i++)
+                {
+                    
+                    if (isnan(kRoss[id*nlay*3 + channel * nlay + i]))
+                    {                
+                        printf("LW kRoss[id * nlay + i] is negative at level %d and in channel %d\n", i, channel);
+                    }
+
+                    if (kRoss[id*nlay*3 + channel * nlay + i] == 0.0)
+                    {                
+                        printf("LW kRoss[id * nlay + i] is negativeat level %d and in channel %d\n", i, channel);
+                    }
+                    if (kRoss[id*nlay*3 + channel * nlay + i] < 0.0)
+                    {                
+                        printf("LW kRoss[id * nlay + i] is negative at level %d and in channel %d\n", i, channel);
+                    }
+
+                    
                 }
 
             //printf("tau_struct finished\n");
