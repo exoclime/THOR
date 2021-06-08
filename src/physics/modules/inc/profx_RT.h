@@ -701,7 +701,7 @@ __device__  void linear_log_interp(int id,
 ///////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////
 
-
+/*
 __device__  void linear_interp(int id,
     int i,
     int nlay,
@@ -728,6 +728,8 @@ __device__  void linear_interp(int id,
     Te__df_e[id * nlay1 + i] = Tl[id * nlay + i-1] * ContributionFactorFromBelow    +   Tl[id * nlay + i] * ContributionFactorFromAbove;
 
 }
+
+*/
 
 ///////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////
@@ -1451,7 +1453,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
                            * (2 * Altitudeh_d[nvi] - Altitude_d[nv - 1] - Altitude_d[nv - 2]);
                 if (pp < 0)
                     pp = 0; //prevents pressure at the top from becoming negative
-                ptop = 0.5 * (pressure_d[id * nv + nv  + pp);
+                ptop = 0.5 * (pressure_d[id * nv + nv]  + pp);
 
                 phtemp[id * nvi + nvi] = ptop;
 
@@ -1483,25 +1485,25 @@ __global__ void rtm_picket_fence(double *pressure_d,
         {
             if (Te__df_e[id * nvi + lev] == 0)
             {
-                printf("Te__df_e has a zero at the level:%u\n", level);
+                printf("Te__df_e has a zero at the level:%u\n", lev);
                 __threadfence();         // ensure store issued before trap
                 asm("trap;");            // kill kernel with error
             }
             if (isnan(Te__df_e[id * nvi + lev]))
             {
-                printf("Te__df_e has a NaN at the level:%u\n", level);
+                printf("Te__df_e has a NaN at the level:%u\n", lev);
                 __threadfence();         // ensure store issued before trap
                 asm("trap;");            // kill kernel with error
             }
             if (phtemp[id * nvi + lev] == 0)
             {
-                printf("Te__df_e has a zero at the level:%u\n", level);
+                printf("Te__df_e has a zero at the level:%u\n", lev);
                 __threadfence();         // ensure store issued before trap
                 asm("trap;");            // kill kernel with error
             }
             if (phtemp(Te__df_e[id * nvi + lev]))
             {
-                printf("Te__df_e has a NaN at the level:%u\n", level);
+                printf("Te__df_e has a NaN at the level:%u\n", lev);
                 __threadfence();         // ensure store issued before trap
                 asm("trap;");            // kill kernel with error
             }
