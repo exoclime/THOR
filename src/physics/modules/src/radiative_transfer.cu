@@ -428,7 +428,15 @@ bool radiative_transfer::initial_conditions(const ESP &            esp,
 ///////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////
 
-
+#include <assert.h>
+#define cdpErrchk(ans) { cdpAssert((ans), __FILE__, __LINE__); }
+ __device__ void cdpAssert(cudaError_t code, const char *file, int line, bool abort=true)            {
+    if (code != cudaSuccess)
+    {
+        printf("GPU kernel assert: %s %s %d\n", cudaGetErrorString(code), file, line);
+        if (abort) assert(0);
+    }
+}
 // Calculates the Bond Albedo according to Parmentier et al. (2015) expression
 void Bond_Parmentier(double Teff0, double grav, double& AB) {
     // dependcies
@@ -815,15 +823,7 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
             
             cuda_check_status_or_exit(__FILE__, __LINE__);
 
-            #define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
-            inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true)
-            {
-            if (code != cudaSuccess) 
-            {
-                fprintf(stderr,"GPUassert: %s %s %d\n", cudaGetErrorString(code), file, line);
-                if (abort) exit(code);
-            }
-            }
+            
 
             // 
 
