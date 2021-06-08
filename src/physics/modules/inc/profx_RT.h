@@ -766,9 +766,10 @@ __device__ void tau_struct(int id,
         // Pressure difference between layer edges
         delPdelAlt = (Altitudeh_d[level + 1] - Altitudeh_d[level + 0]);
 
-        if (delPdelAlt < 0.0000001)
+        if (delPdelAlt < 10)
         {
-            delPdelAlt = 0.0000001;
+            //delPdelAlt = 0.0000001;
+            delPdelAlt = 10;
         }
 
         // Optical depth of layer assuming hydrostatic equilibirum  //////////////////// kappa * rho * delta height  (old: kappa *delP/gravity)
