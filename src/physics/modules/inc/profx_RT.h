@@ -1174,13 +1174,13 @@ __device__  void lw_grey_updown_linear(int id,
 
             for (int i = 0; i < nlay1; i++)
                 {
-                    if (tau_Ve__df_e[id * nlay1 + i] < 0.0)
+                    if (tau_IRe__df_e[id * nlay1 + i] < 0.0)
                     {                
-                        printf("tau_Ve__df_e[id * nlay1 + i] is negative at level %d and in channel %d\n", i, channel);
+                        printf("tau_IRe__df_e[id * nlay1 + i] is negative at level %d and in channel %d\n", i, channel);
                     }
-                    if (isnan(tau_Ve__df_e[id * nlay1 + i]))
+                    if (isnan(tau_IRe__df_e[id * nlay1 + i]))
                     {                
-                        printf("tau_Ve__df_e[id * nlay1 + i] is negativeat level %d and in channel %d\n", i, channel);
+                        printf("tau_IRe__df_e[id * nlay1 + i] is negativeat level %d and in channel %d\n", i, channel);
                     }
                 }
 
