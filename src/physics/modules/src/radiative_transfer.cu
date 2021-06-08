@@ -49,6 +49,22 @@
 #include "reduction_add.h"
 #include "debug_helpers.h"
 
+#include <thrust/system_error.h>
+#include <thrust/system/cuda/error.h>
+#include <sstream>
+
+void throw_on_cuda_error(cudaError_t code, const char *file, int line)
+{
+  if(code != cudaSuccess)
+  {
+    std::stringstream ss;
+    ss << file << "(" << line << ")";
+    std::string file_and_line;
+    ss >> file_and_line;
+    throw thrust::system_error(code, thrust::cuda_category(), file_and_line);
+  }
+}
+
 radiative_transfer::radiative_transfer() {
 }
 
@@ -428,15 +444,7 @@ bool radiative_transfer::initial_conditions(const ESP &            esp,
 ///////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////
 
-#include <assert.h>
-#define cdpErrchk(ans) { cdpAssert((ans), __FILE__, __LINE__); }
- __device__ void cdpAssert(cudaError_t code, const char *file, int line, bool abort=true)            {
-    if (code != cudaSuccess)
-    {
-        printf("GPU kernel assert: %s %s %d\n", cudaGetErrorString(code), file, line);
-        if (abort) assert(0);
-    }
-}
+
 // Calculates the Bond Albedo according to Parmentier et al. (2015) expression
 void Bond_Parmentier(double Teff0, double grav, double& AB) {
     // dependcies
@@ -827,7 +835,10 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
 
             // 
 
-            rtm_picket_fence<<<NBRT, NTH>>>(esp.pressure_d,
+            try
+            {
+              // do something crazy
+              throw_on_cuda_error(rtm_picket_fence<<<NBRT, NTH>>>(esp.pressure_d,
                 esp.temperature_d,
                 esp.Rho_d,
                 sim.Gravit,
@@ -897,7 +908,16 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                 rt1Dmode,
                 sim.DeepModel                                        
 
-                );
+                ), __FILE__, __LINE__);
+            }
+            catch(thrust::system_error &e)
+            {
+              std::cerr << "CUDA error after kernel launch: " << e.what() << std::endl;
+          
+              
+            }
+
+            
 
 
 
@@ -976,8 +996,7 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
 
         }
 
-        gpuErrchk( cudaPeekAtLastError() );
-
+        
         
 
         
