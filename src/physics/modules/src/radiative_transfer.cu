@@ -815,6 +815,16 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
             
             cuda_check_status_or_exit(__FILE__, __LINE__);
 
+            #define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
+            inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true)
+            {
+            if (code != cudaSuccess) 
+            {
+                fprintf(stderr,"GPUassert: %s %s %d\n", cudaGetErrorString(code), file, line);
+                if (abort) exit(code);
+            }
+            }
+
             // 
 
             rtm_picket_fence<<<NBRT, NTH>>>(esp.pressure_d,
@@ -889,6 +899,8 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
 
                 );
 
+
+
                 printf("rtm_picket_fence finished\n");
 
                  // check for error
@@ -960,9 +972,13 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                 rt1Dmode,
                 sim.DeepModel);
 
+                printf("rtm_dual_band finished\n");
+
         }
 
-        printf("rtm_dual_band finished\n");
+        gpuErrchk( cudaPeekAtLastError() );
+
+        
 
         
         // check for error

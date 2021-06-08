@@ -1941,7 +1941,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 Tsurface_d[id] = 0;
         }
 
-        printf("Tsurface_d is computed\n");
+        //printf("Tsurface_d is computed\n");
 
         //calculate ASR for this point
         double rscale;
@@ -1952,7 +1952,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
             rscale = 1.0;
         }
 
-        printf("rscale is computed\n");
+        //printf("rscale is computed\n");
 
         
         
@@ -2089,8 +2089,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
 
             if (sw_down__df_e[id * nvi + level] == 0.0  ) {
 
-                //printf("sw_down__df_e has a zero at the level:%u\n", level);
-                  
+                //printf("sw_down__df_e has a zero at the level:%u\n", level);                  
                 for (int lev = 0; lev < nvi; lev++)
                 {
                     //printf("sw_down__df_e has NaNs at the level:%u\n", lev);
@@ -2103,37 +2102,17 @@ __global__ void rtm_picket_fence(double *pressure_d,
             }
             
             
-            
             if (isnan(sw_net__df_e[id * nvi + level])  ) {
                 printf("sw_net__df_e contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d level:%d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, level, &sw_net__df_e[id*nvi + level]);
                 //sw_net__df_e[id * nv + level] = id * nv + level;
                 //__threadfence();         // ensure store issued before trap
                 //asm("trap;");            // kill kernel with error
             }
-            
-            
-            if (isnan(areasT_d[id])  ) {
-                printf("areasT_d contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, &areasT_d[id]);
-                //areasT_d[id] = id;
-                //__threadfence();         // ensure store issued before trap
-                //asm("trap;");            // kill kernel with error
-            }
-            if (isnan(rscale) ) {
-                printf("rscale contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, &rscale);
-                
-                //__threadfence();         // ensure store issued before trap
-                //asm("trap;");            // kill kernel with error
-            }
-            
-                        
-            
-            
 
 
             //calculate OLR for this point
             
              
-            
             if (isnan(lw_net__df_e[id * nvi + level])) {
                 printf("lw_net__df_e contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d  level:%d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, level, &lw_net__df_e[id*nvi + level]);
                   
