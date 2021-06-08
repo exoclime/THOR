@@ -49,21 +49,8 @@
 #include "reduction_add.h"
 #include "debug_helpers.h"
 
-#include <thrust/system_error.h>
-#include <thrust/system/cuda/error.h>
-#include <sstream>
-
-void throw_on_cuda_error(cudaError_t code, const char *file, int line)
-{
-  if(code != cudaSuccess)
-  {
-    std::stringstream ss;
-    ss << file << "(" << line << ")";
-    std::string file_and_line;
-    ss >> file_and_line;
-    throw thrust::system_error(code, thrust::cuda_category(), file_and_line);
-  }
-}
+#include <stdio.h>
+#include <stdlib.h>
 
 radiative_transfer::radiative_transfer() {
 }
@@ -838,7 +825,17 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
             try
             {
               // do something crazy
-              throw_on_cuda_error(rtm_picket_fence<<<NBRT, NTH>>>(esp.pressure_d,
+              throw_on_cuda_error(cudaSetDevice(-1), __FILE__, __LINE__);
+            }
+            catch(thrust::system_error &e)
+            {
+              std::cerr << "CUDA error after cudaSetDevice: " << e.what() << std::endl;
+          
+              // oops, recover
+              cudaSetDevice(0);
+            }
+
+            rtm_picket_fence<<<NBRT, NTH>>>(esp.pressure_d,
                 esp.temperature_d,
                 esp.Rho_d,
                 sim.Gravit,
@@ -908,20 +905,14 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                 rt1Dmode,
                 sim.DeepModel                                        
 
-                ), __FILE__, __LINE__);
-            }
-            catch(thrust::system_error &e)
-            {
-              std::cerr << "CUDA error after kernel launch: " << e.what() << std::endl;
-          
-              
-            }
-
-            
+                );
 
 
 
                 printf("rtm_picket_fence finished\n");
+
+                // make the host block until the device is finished with foo
+                cudaDeviceSynchronize();
 
                  // check for error
                 cudaError_t error1 = cudaGetLastError();
@@ -931,6 +922,9 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                     printf("CUDA error: %s\n", cudaGetErrorString(error));
                     exit(-1);
                 }
+                
+
+                
                 
                 cuda_check_status_or_exit(__FILE__, __LINE__);
 
