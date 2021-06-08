@@ -695,7 +695,38 @@ __device__  void linear_log_interp(int id,
 
     norm = (1.0) / (lAlt2 - lAlt1);
 
-    Te__df_e[id * nlay1 + i + 1] = pow((double)(10.0), ((lTl1 * (lAlt2 - eAlt) + lTl2 * (eAlt - lAlt1)) * norm));
+    Te__df_e[id * nlay1 + i + 1] = pow((double)(10.0), ( (lTl1 * (lAlt2 - eAlt) + lTl2 * (eAlt - lAlt1)) * norm) );
+}
+
+///////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////
+
+
+__device__  void linear_interp(int id,
+    int i,
+    int nlay,
+    int nlay1,
+    double *Altitude_d,
+    double *Altitudeh_d, 
+    double *Tl,
+    double *Te__df_e) {
+    // dependcies
+    //// pow from math
+    //// log10 from math
+
+    // work variables
+    
+    double ContributionFactorFromBelow;
+    double ContributionFactorFromAbove;
+    
+
+
+    // start operations
+    ContributionFactorFromBelow = (Altitudeh_d[lev] - Altitude_d[lev]) / (Altitude_d[lev - 1] - Altitude_d[lev]);
+    ContributionFactorFromAbove =  (Altitudeh_d[lev] - Altitude_d[lev - 1]) / (Altitude_d[lev] - Altitude_d[lev - 1]);
+
+    Te__df_e[id * nlay1 + i] = Tl[id * nlay + i-1] * ContributionFactorFromBelow    +   Tl[id * nlay + i] * ContributionFactorFromAbove;
+
 }
 
 ///////////////////////////////////////////////////////////////
@@ -946,10 +977,12 @@ __device__  void lw_grey_updown_linear(int id,
         // start operation
         double out;
                 
-
+        /*
         // Find temperature at layer edges through linear interpolation and extrapolation
         for (int i = nlay - 2; i > -1; i--)
         {
+
+            
             linear_log_interp(id,
                 i,
                 nlay,
@@ -1011,7 +1044,7 @@ __device__  void lw_grey_updown_linear(int id,
                     printf("Tl[id * nlay + i] is negative\n");
             }
 
-            if (Te__df_e[id * nlay1 + i] == 0.0)
+            if (Te__df_e[id * nlay1 + i] == 0.0 && i != 0)
             {                
                    
                     printf("Te__df_e[id * nlay1 + i] is zer0 at level %d\n", i);
@@ -1032,6 +1065,8 @@ __device__  void lw_grey_updown_linear(int id,
         Te__df_e[id * nlay1 + 0] = Tl[id * nlay + 0] + (Altitudeh_d[ 1] - Altitudeh_d[ 0]) /
             (Altitude_d[ 1] - Altitude_d[ 0]) *
             (Tl[id * nlay + 0] - Te__df_e[id * nlay1 + 1]);
+
+        */
 
         // Shortwave fluxes
         for (int i = 0; i < nlay1; i++)
@@ -1261,7 +1296,9 @@ __global__ void rtm_picket_fence(double *pressure_d,
     double ps, psm;
     double pp, ptop;
 
-    double xi, xip, xim, a, b;
+    
+    double ContributionFactorFromBelow;
+    double ContributionFactorFromAbove;
 
     if (id < num) {
 
@@ -1335,6 +1372,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
         }
         
         // Calculate pressures and temperatures at interfaces
+        /*
         for (int lev = 0; lev <= nv; lev++) {
             if (lev == 0) {
                 psm = pressure_d[id * nv + 1]
@@ -1364,11 +1402,112 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 a                    = (xi - xip) / (xim - xip);
                 b                    = (xi - xim) / (xip - xim);
 
-                phtemp[id * nvi + lev] =
-                    pressure_d[id * nv + lev - 1] * a + pressure_d[id * nv + lev] * b;
+                phtemp[id * nvi + lev] = pressure_d[id * nv + lev - 1] * a + pressure_d[id * nv + lev] * b;
                 
             }
         }
+        */
+
+       double ContributionFactorFromBelow;
+       double ContributionFactorFromAbove;
+
+        for (int lev = 0; lev <= nv; lev++) {
+            if (lev == 0) {
+                psm = pressure_d[id * nv + 1]
+                      - Rho_d[id * nv + 0] * gravit * (-Altitude_d[0] - Altitude_d[1]);
+                ps = 0.5 * (pressure_d[id * nv + 0] + psm);
+
+                phtemp[id * nvi + 0] = ps;
+
+                Te__df_e[id * nvi + 0] = tint;
+                
+            }
+            else if (lev == nv) {
+                pp = pressure_d[id * nv + nv - 2]
+                     + (pressure_d[id * nv + nv - 1] - pressure_d[id * nv + nv - 2])
+                           / (Altitude_d[nv - 1] - Altitude_d[nv - 2])
+                           * (2 * Altitudeh_d[nv] - Altitude_d[nv - 1] - Altitude_d[nv - 2]);
+                if (pp < 0)
+                    pp = 0; //prevents pressure at the top from becoming negative
+                ptop = 0.5 * (pressure_d[id * nv + nv - 1] + pp);
+
+                phtemp[id * nvi + nv] = ptop;
+
+                pp = temperature_d[id * nv + nv - 2]
+                     + (temperature_d[id * nv + nv - 1] - temperature_d[id * nv + nv - 2])
+                           / (Altitude_d[nv - 1] - Altitude_d[nv - 2])
+                           * (2 * Altitudeh_d[nv] - Altitude_d[nv - 1] - Altitude_d[nv - 2]);
+                if (pp < 0)
+                    pp = 0; //prevents temperature at the top from becoming negative
+                ptop = 0.5 * (temperature_d[id * nv + nv - 1] + pp);
+
+                Te__df_e[id * nvi + nv] = ptop;
+               
+            }
+            else if (lev == nvi) {
+                pp = pressure_d[id * nv + nv - 2]
+                     + (pressure_d[id * nv + nv - 1] - pressure_d[id * nv + nv - 2])
+                           / (Altitude_d[nv - 1] - Altitude_d[nv - 2])
+                           * (2 * Altitudeh_d[nvi] - Altitude_d[nv - 1] - Altitude_d[nv - 2]);
+                if (pp < 0)
+                    pp = 0; //prevents pressure at the top from becoming negative
+                ptop = 0.5 * (pressure_d[id * nv + nv  + pp);
+
+                phtemp[id * nvi + nvi] = ptop;
+
+                pp = temperature_d[id * nv + nv - 2]
+                     + (temperature_d[id * nv + nv - 1] - temperature_d[id * nv + nv - 2])
+                           / (Altitude_d[nv - 1] - Altitude_d[nv - 2])
+                           * (2 * Altitudeh_d[nvi] - Altitude_d[nv - 1] - Altitude_d[nv - 2]);
+                if (pp < 0)
+                    pp = 0; //prevents temperature at the top from becoming negative
+                ptop = 0.5 * (temperature_d[id * nv + nv ] + pp);
+
+                Te__df_e[id * nvi + nvi] = ptop;
+               
+            }
+            else {
+                
+                
+                ContributionFactorFromBelow = (Altitudeh_d[lev] - Altitude_d[lev]) / (Altitude_d[lev - 1] - Altitude_d[lev]);
+                ContributionFactorFromAbove =  (Altitudeh_d[lev] - Altitude_d[lev - 1]) / (Altitude_d[lev] - Altitude_d[lev - 1]);
+
+                phtemp[id * nvi + lev] = pressure_d[id * nv + lev - 1] * ContributionFactorFromBelow + pressure_d[id * nv + lev] * ContributionFactorFromAbove;
+
+                Te__df_e[id * nvi + lev] = temperature_d[id * nv + lev - 1] * ContributionFactorFromBelow + temperature_d[id * nv + lev] * ContributionFactorFromAbove;
+                
+            }
+        }
+
+        for (int lev = 0; lev < nvi; lev++)
+        {
+            if (Te__df_e[id * nvi + lev] == 0)
+            {
+                printf("Te__df_e has a zero at the level:%u\n", level);
+                __threadfence();         // ensure store issued before trap
+                asm("trap;");            // kill kernel with error
+            }
+            if (isnan(Te__df_e[id * nvi + lev]))
+            {
+                printf("Te__df_e has a NaN at the level:%u\n", level);
+                __threadfence();         // ensure store issued before trap
+                asm("trap;");            // kill kernel with error
+            }
+            if (phtemp[id * nvi + lev] == 0)
+            {
+                printf("Te__df_e has a zero at the level:%u\n", level);
+                __threadfence();         // ensure store issued before trap
+                asm("trap;");            // kill kernel with error
+            }
+            if (phtemp(Te__df_e[id * nvi + lev]))
+            {
+                printf("Te__df_e has a NaN at the level:%u\n", level);
+                __threadfence();         // ensure store issued before trap
+                asm("trap;");            // kill kernel with error
+            }
+            
+        }
+        
 
         // zenith angle
         if (rt1Dmode) {
