@@ -1103,7 +1103,7 @@ __device__  void lw_grey_updown_linear(int id,
                     }
                     if (tau_IRe__df_e[id * nlay1 + i] == 0.0)
                     {                
-                        printf("tau_IRe__df_e[id * nlay1 + i] is zero at level %d and in channel %d\n", i, channel);
+                        printf("tau_Ve__df_e[id * nlay1 + i] is zero at level %d and in channel %d\n", i, channel);
                     }
                     if (isnan(tau_Ve__df_e[id * nlay1 + i]))
                     {                
