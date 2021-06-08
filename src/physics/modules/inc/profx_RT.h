@@ -1501,7 +1501,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 __threadfence();         // ensure store issued before trap
                 asm("trap;");            // kill kernel with error
             }
-            if (phtemp(Te__df_e[id * nvi + lev]))
+            if (isnan(phtemp[id * nvi + lev]))
             {
                 printf("Te__df_e has a NaN at the level:%u\n", lev);
                 __threadfence();         // ensure store issued before trap
