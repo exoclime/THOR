@@ -2053,9 +2053,23 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 printf("dtemp contains a NaN at level:%d \n",  level);                    
             }
 
+            if (isnan(net_F_nvi_d[id * nvi + level+1]))
+            {
+                printf("net_F_nvi_d[id * nvi + level] contains a NaN at level:%d \n",  level);                    
+            }
+
             if ((Altitudeh_d[level+1] - Altitudeh_d[level])==0.0)
             {
                 printf("(Altitudeh_d[level+1] - Altitudeh_d[level]) is 0 at level:%d \n",  level);                    
+            }
+
+            if (isnan(Altitudeh_d[level+1] - Altitudeh_d[level]))
+            {
+                printf("(Altitudeh_d[level+1] - Altitudeh_d[level]) is NaN at level:%d \n",  level);                    
+            }
+            if (isnan((net_F_nvi_d[id * nvi + level+1] - net_F_nvi_d[id * nvi + level])))
+            {
+                printf("(net_F_nvi_d[id * nvi + level+1] - net_F_nvi_d[id * nvi + level]) is NaN at level:%d \n",  level);                    
             }
 
         }
@@ -2096,11 +2110,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
         
         for (int level = 0; level < nvi; level++)
         {
-            if (isnan(net_F_nvi_d[id * nvi + level]) ) {
-
-                 printf("net_F_nvi_d has NaN at the level:%u\n", level);
-                
-            }                        
+                                
             if (isnan(lw_up__df_e[id * nvi + level]) ) {
 
                  printf("lw_up__df_e has NaNs at the level:%u\n", level);
