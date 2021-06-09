@@ -2050,7 +2050,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
 
             if (isnan(dtemp[id * nv + level]))
             {
-                printf("dtemp contains a 0 at level:%d \n",  level);                    
+                printf("dtemp contains a NaN at level:%d \n",  level);                    
             }
 
         }
@@ -2091,7 +2091,11 @@ __global__ void rtm_picket_fence(double *pressure_d,
         
         for (int level = 0; level < nvi; level++)
         {
-                                    
+            if (isnan(net_F_nvi_d[id * nvi + level]) ) {
+
+                 printf("net_F_nvi_d has NaNs at the level:%u\n", level);
+                
+            }                        
             if (isnan(lw_up__df_e[id * nvi + level]) ) {
 
                  printf("lw_up__df_e has NaNs at the level:%u\n", level);
@@ -2431,9 +2435,9 @@ __global__ void rtm_picket_fence(double *pressure_d,
             
             
             
-            if (pressure_d[id * nv + lev]
-                    + Rd_d[id * nv + lev] / (Cp_d[id * nv + lev] - Rd_d[id * nv + lev])
-                          * dtemp[id * nv + lev] * timestep
+            if (pressure_d[id * nv + lev] + Rd_d[id * nv + lev] /
+                (Cp_d[id * nv + lev] - Rd_d[id * nv + lev])
+                * dtemp[id * nv + lev] * timestep
                 < 0) {
                 //trying to prevent too much cooling resulting in negative pressure in dyn core
                 dtemp[id * nv + lev] = -pressure_d[id * nv + lev] / timestep;
