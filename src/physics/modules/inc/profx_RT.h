@@ -1107,6 +1107,8 @@ __device__  void lw_grey_updown_linear(int id,
                     if (tau_Ve__df_e[id * nlay1 + i] < 0.0)
                     {                
                         printf("tau_Ve__df_e[id * nlay1 + i] is negative at level %d and in channel %d\n", i, channel);
+                        __threadfence();         // ensure store issued before trap
+                        asm("trap;");            // kill kernel with error
                     }
                     if (tau_IRe__df_e[id * nlay1 + i] == 0.0)
                     {                
@@ -1115,6 +1117,8 @@ __device__  void lw_grey_updown_linear(int id,
                     if (isnan(tau_Ve__df_e[id * nlay1 + i]))
                     {                
                         printf("tau_Ve__df_e[id * nlay1 + i] is negative at level %d and in channel %d\n", i, channel);
+                        __threadfence();         // ensure store issued before trap
+                        asm("trap;");            // kill kernel with error
                     }
                 }
                 for (int i = 0; i < nlay; i++)
@@ -1208,6 +1212,8 @@ __device__  void lw_grey_updown_linear(int id,
                     if (tau_IRe__df_e[id * nlay1 + i] < 0.0)
                     {                
                         printf("tau_IRe__df_e[id * nlay1 + i] is negative at level %d and in channel %d\n", i, channel);
+                        __threadfence();         // ensure store issued before trap
+                        asm("trap;");            // kill kernel with error
                     }
                     if (tau_IRe__df_e[id * nlay1 + i] == 0.0)
                     {                
@@ -1216,15 +1222,19 @@ __device__  void lw_grey_updown_linear(int id,
                     if (isnan(tau_IRe__df_e[id * nlay1 + i]))
                     {                
                         printf("tau_IRe__df_e[id * nlay1 + i] is negativeat level %d and in channel %d\n", i, channel);
+                        __threadfence();         // ensure store issued before trap
+                        asm("trap;");            // kill kernel with error
                     }
                 }
 
-                for (int i = 0; i < nlay; i++)
+            for (int i = 0; i < nlay; i++)
                 {
                     
                     if (isnan(k_IR_2_nv_d[id*nlay*2 + channel * nlay + i]))
                     {                
                         printf("LW kRoss[id * nlay + i] is negative at level %d and in channel %d\n", i, channel);
+                        __threadfence();         // ensure store issued before trap
+                        asm("trap;");            // kill kernel with error
                     }
 
                     if (k_IR_2_nv_d[id*nlay*2 + channel * nlay + i] == 0.0)
@@ -2083,9 +2093,11 @@ __global__ void rtm_picket_fence(double *pressure_d,
         {
                                     
             if (isnan(lw_up__df_e[id * nvi + level]) ) {
+
+                 printf("lw_up__df_e has NaNs at the level:%u\n", level);
                 for (int lev = 0; lev < nvi; lev++)
                 {
-                    printf("lw_up__df_e has NaNs at the level:%u\n", lev);
+                   
                     //printf("lw_up__df_e contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d timestep:%d level:%d \n", blockIdx.x, blockDim.x, threadIdx.x, id, timestep, lev);
                     //printf("lw_up__df_e has the value:%u\n",  &lw_up__df_e[id*nvi + lev]);
                 }
@@ -2224,8 +2236,8 @@ __global__ void rtm_picket_fence(double *pressure_d,
             if (isnan(sw_net__df_e[id * nvi + level])  ) {
                 printf("sw_net__df_e contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d level:%d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, level, &sw_net__df_e[id*nvi + level]);
                 //sw_net__df_e[id * nv + level] = id * nv + level;
-                //__threadfence();         // ensure store issued before trap
-                //asm("trap;");            // kill kernel with error
+                __threadfence();         // ensure store issued before trap
+                asm("trap;");            // kill kernel with error
             }
 
 
