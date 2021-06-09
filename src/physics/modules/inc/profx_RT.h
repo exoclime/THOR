@@ -757,7 +757,7 @@ __device__ void tau_struct(int id,
     //dP = (p_half(1) - 1e-4)
     //tau_lay = (kRoss(1) * dP) / grav
     //tau_sum = tau_sum + tau_lay
-    tau_struc_e[id*(nlev+1) + nlev+1] = tau_sum;
+    tau_struc_e[id*(nlev+1) + nlev] = tau_sum;
 
     // Integrate from top to bottom    
 
@@ -882,7 +882,7 @@ __device__  void lw_grey_updown_linear(int id,
 
         // Peform downward loop first
         // Top boundary condition
-        lw_down_g__dff_e[id * nlay1 +  nlay+1] = 0.0;
+        lw_down_g__dff_e[id * nlay1 +  nlay] = 0.0;
         for (k = nlay-1; k > -1; k--)
         {
             lw_down_g__dff_e[id * nlay1 +  k] = lw_down_g__dff_e[id * nlay1 +  k + 1] * edel__dff_l[id * nlay + k] + 
@@ -1547,6 +1547,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 Te__df_e[id * nvi + nv] = ptop;
                
             }
+            /*
             else if (lev == nvi) {
                 pp = pressure_d[id * nv + nv - 2]
                      + (pressure_d[id * nv + nv - 1] - pressure_d[id * nv + nv - 2])
@@ -1569,6 +1570,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 Te__df_e[id * nvi + nvi] = ptop;
                
             }
+            */
             else {
                 
                 
