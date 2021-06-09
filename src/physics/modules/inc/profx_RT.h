@@ -2094,6 +2094,15 @@ __global__ void rtm_picket_fence(double *pressure_d,
                     printf("net_F_nvi_d[id * nvi + level] and isnan(lw_down__df_e[id * nvi + level]) contain a NaNs at mu>0 at level:%d \n",  level);
                 }
 
+                if (isnan(lw_up__df_e[id * nvi + level] ) && zenith_angles[id]<=0.0)
+                {
+                    printf("net_F_nvi_d[id * nvi + level] and isnan(lw_up__df_e[id * nvi + level]) contain a NaNs at mu=0 at level:%d \n",  level);
+                }
+                if (isnan(lw_up__df_e[id * nvi + level] ) && zenith_angles[id]>0.0)
+                {
+                    printf("net_F_nvi_d[id * nvi + level] and isnan(lw_up__df_e[id * nvi + level]) contain a NaNs at mu>0 at level:%d \n",  level);
+                }
+
                 if (isnan(sw_down__df_e[id * nvi + level] ) && zenith_angles[id]<=0.0)
                 {
                     printf("net_F_nvi_d[id * nvi + level] and isnan(sw_down__df_e[id * nvi + level]) contain a NaNs at mu=0 at level:%d \n",  level);
