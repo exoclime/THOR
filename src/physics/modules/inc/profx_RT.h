@@ -766,10 +766,10 @@ __device__ void tau_struct(int id,
         // Pressure difference between layer edges
         delPdelAlt = (Altitudeh_d[level + 1] - Altitudeh_d[level + 0]);
 
-        if (delPdelAlt < 1000)
+        if (delPdelAlt < 10)
         {
             //delPdelAlt = 0.0000001;
-            delPdelAlt = 1000;
+            delPdelAlt = 10;
         }
 
         // Optical depth of layer assuming hydrostatic equilibirum  //////////////////// kappa * rho * delta height  (old: kappa *delP/gravity)
@@ -2055,7 +2055,73 @@ __global__ void rtm_picket_fence(double *pressure_d,
 
             if (isnan(net_F_nvi_d[id * nvi + level]))
             {
-                printf("net_F_nvi_d[id * nvi + level] contains a NaN at level:%d \n",  level);                    
+                if (zenith_angles[id]<=0.0)
+                {
+                    printf("net_F_nvi_d[id * nvi + level] contains a NaN at mu=0 at level:%d \n",  level);
+                }
+                if (isnan(sw_net__df_e[id * nvi + level]) && zenith_angles[id]<=0.0)
+                {
+                    printf("net_F_nvi_d[id * nvi + level] and isnan(sw_net__df_e[id * nvi + level]) contain a NaNs at mu=0 at level:%d \n",  level);
+                }
+                if (isnan(sw_net__df_e[id * nvi + level]) && zenith_angles[id]>0.0)
+                {
+                    printf("net_F_nvi_d[id * nvi + level] and isnan(sw_net__df_e[id * nvi + level]) contain a NaNs at mu>0 at level:%d \n",  level);
+                }
+                if (isnan(lw_net__df_e[id * nvi + level]) && zenith_angles[id]<=0.0)
+                {
+                    printf("net_F_nvi_d[id * nvi + level] and isnan(lw_net__df_e[id * nvi + level]) contain a NaNs at mu=0 at level:%d \n",  level);
+                }
+                if (isnan(lw_net__df_e[id * nvi + level]) && zenith_angles[id]>0.0)
+                {
+                    printf("net_F_nvi_d[id * nvi + level] and isnan(lw_net__df_e[id * nvi + level]) contain a NaNs at mu>0 at level:%d \n",  level);
+                }
+
+                if (isnan(sw_net__df_e[id * nvi + level]) && zenith_angles[id]<=0.0)
+                {
+                    printf("net_F_nvi_d[id * nvi + level] and isnan(sw_net__df_e[id * nvi + level]) contain a NaNs at mu=0 at level:%d \n",  level);
+                }
+                if (isnan(sw_net__df_e[id * nvi + level]) && zenith_angles[id]>0.0)
+                {
+                    printf("net_F_nvi_d[id * nvi + level] and isnan(sw_net__df_e[id * nvi + level]) contain a NaNs at mu>0 at level:%d \n",  level);
+                }
+
+                if (isnan(lw_down__df_e[id * nvi + level] ) && zenith_angles[id]<=0.0)
+                {
+                    printf("net_F_nvi_d[id * nvi + level] and isnan(lw_down__df_e[id * nvi + level]) contain a NaNs at mu=0 at level:%d \n",  level);
+                }
+                if (isnan(lw_down__df_e[id * nvi + level] ) && zenith_angles[id]>0.0)
+                {
+                    printf("net_F_nvi_d[id * nvi + level] and isnan(lw_down__df_e[id * nvi + level]) contain a NaNs at mu>0 at level:%d \n",  level);
+                }
+
+                if (isnan(sw_down__df_e[id * nvi + level] ) && zenith_angles[id]<=0.0)
+                {
+                    printf("net_F_nvi_d[id * nvi + level] and isnan(sw_down__df_e[id * nvi + level]) contain a NaNs at mu=0 at level:%d \n",  level);
+                }
+                if (isnan(sw_down__df_e[id * nvi + level] ) && zenith_angles[id]>0.0)
+                {
+                    printf("net_F_nvi_d[id * nvi + level] and isnan(sw_down__df_e[id * nvi + level]) contain a NaNs at mu>0 at level:%d \n",  level);
+                }
+
+                if (isnan(phtemp[id * nvi + level]) && zenith_angles[id]<=0.0)
+                {
+                    printf("net_F_nvi_d[id * nvi + level] and isnan(phtemp[id * nvi + level]) contain a NaNs at mu=0 at level:%d \n",  level);
+                }
+                if (isnan(phtemp[id * nvi + level]) && zenith_angles[id]>0.0)
+                {
+                    printf("net_F_nvi_d[id * nvi + level] and isnan(phtemp[id * nvi + level]) contain a NaNs at mu>0 at level:%d \n",  level);
+                }
+
+                if (isnan(be__df_e[id * nvi + level]) && zenith_angles[id]<=0.0)
+                {
+                    printf("net_F_nvi_d[id * nvi + level] and isnan(be__df_e[id * nvi + level]) contain a NaNs at mu=0 at level:%d \n",  level);
+                }
+                if (isnan(be__df_e[id * nvi + level]) && zenith_angles[id]>0.0)
+                {
+                    printf("net_F_nvi_d[id * nvi + level] and isnan(be__df_e[id * nvi + level]) contain a NaNs at mu>0 at level:%d \n",  level);
+                }
+
+            
             }
 
             if ((Altitudeh_d[level+1] - Altitudeh_d[level])==0.0)
@@ -2067,14 +2133,11 @@ __global__ void rtm_picket_fence(double *pressure_d,
             {
                 printf("(Altitudeh_d[level+1] - Altitudeh_d[level]) is NaN at level:%d \n",  level);                    
             }
-            if (isnan((net_F_nvi_d[id * nvi + level+1] - net_F_nvi_d[id * nvi + level])))
-            {
-                printf("(net_F_nvi_d[id * nvi + level+1] - net_F_nvi_d[id * nvi + level]) is NaN at level:%d \n",  level);                    
-            }
+           
 
         }
 
-        printf("dtemp is computed\n");
+        
         
         
         
@@ -2110,11 +2173,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
         
         for (int level = 0; level < nvi; level++)
         {
-            if (isnan(net_F_nvi_d[id * nvi + level]))
-            {
-                printf("further below in the code: net_F_nvi_d[id * nvi + level] contains a NaN at level:%d \n",  level);                    
-            }
-                                
+                                           
             if (isnan(lw_up__df_e[id * nvi + level]) ) {
 
                  printf("lw_up__df_e has NaNs at the level:%u\n", level);
@@ -2158,7 +2217,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 //asm("trap;");            // kill kernel with error
             }
 
-            if (lw_down__df_e[id * nvi + level] == 0.0  ) {
+            if (lw_down__df_e[id * nvi + level] == 0.0 && level!=nv ) {
                 printf("lw_down__df_e has 0 at the level:%u\n", level);
                 //printf("lw_down__df_e contains 0 in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d timestep:%d level:%d \n", blockIdx.x, blockDim.x, threadIdx.x, id, timestep, level);
                    
@@ -2305,10 +2364,10 @@ __global__ void rtm_picket_fence(double *pressure_d,
         
         
 
-        printf("before ASR_d\n");
+       
         
         ASR_d[id] = sw_down__df_e[id * nvi + nv]; // * areasT_d[id] * pow(rscale, 2);
-        printf("ASR_d is computed\n");
+        
             
             
             if (isnan(ASR_d[id] )) {
@@ -2336,7 +2395,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
             
         
         OLR_d[id] = lw_up__df_e[id * nvi + nv] ; //*areasT_d[id] * pow(rscale, 2);
-        printf("OLR_d is computed\n");
+       
 
         if (isnan(OLR_d[id] )) {
                 printf("OLR_d contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, &OLR_d[id]);
