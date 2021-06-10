@@ -2401,7 +2401,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
 
        
         
-        ASR_d[id] = sw_down__df_e[id * nvi + nv]; // * areasT_d[id] * pow(rscale, 2);
+        ASR_d[id] = sw_down__df_e[id * nvi + nv] * areasT_d[id] * pow(rscale, 2);
         
             
             
@@ -2429,7 +2429,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
 
             
         
-        OLR_d[id] = lw_up__df_e[id * nvi + nv] ; //*areasT_d[id] * pow(rscale, 2);
+        OLR_d[id] = lw_up__df_e[id * nvi + nv] *areasT_d[id] * pow(rscale, 2);
        
 
         if (isnan(OLR_d[id] )) {
