@@ -980,7 +980,7 @@ __device__  void lw_grey_updown_linear(int id,
         double *lw_up_g__dff_e,
         double *lw_down_g__dff_e,
         double *Gp__dff_l,
-        double *Bp__dff_l,) 
+        double *Bp__dff_l) 
     {
         // dependcies
         //// powll -> include math
