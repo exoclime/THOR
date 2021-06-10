@@ -212,6 +212,8 @@ private:
     double* Bm__dff_l;
     double* lw_up_g__dff_e;
     double* lw_down_g__dff_e;
+    double* Gp__dff_l;
+    double* Bp__dff_l;
 
 
     //  These arrays are for temporary usage in RT code
