@@ -766,11 +766,7 @@ __device__ void tau_struct(int id,
         // Pressure difference between layer edges
         delPdelAlt = (Altitudeh_d[level + 1] - Altitudeh_d[level + 0]);
 
-        if (delPdelAlt < 10)
-        {
-            //delPdelAlt = 0.0000001;
-            delPdelAlt = 10;
-        }
+        
 
         // Optical depth of layer assuming hydrostatic equilibirum  //////////////////// kappa * rho * delta height  (old: kappa *delP/gravity)
         tau_lay = kRoss[id*nlev*nchan + channel * nlev + level] * delPdelAlt * Rho_d[id*nlev  + level];
@@ -1123,8 +1119,8 @@ __device__  void lw_grey_updown_linear(int id,
                     if (tau_Ve__df_e[id * nlay1 + i] < 0.0)
                     {                
                         printf("tau_Ve__df_e[id * nlay1 + i] is negative at level %d and in channel %d\n", i, channel);
-                        __threadfence();         // ensure store issued before trap
-                        asm("trap;");            // kill kernel with error
+                        //__threadfence();         // ensure store issued before trap
+                        //asm("trap;");            // kill kernel with error
                     }
                     if (tau_IRe__df_e[id * nlay1 + i] == 0.0)
                     {                
@@ -1133,8 +1129,8 @@ __device__  void lw_grey_updown_linear(int id,
                     if (isnan(tau_Ve__df_e[id * nlay1 + i]))
                     {                
                         printf("tau_Ve__df_e[id * nlay1 + i] is negative at level %d and in channel %d\n", i, channel);
-                        __threadfence();         // ensure store issued before trap
-                        asm("trap;");            // kill kernel with error
+                        //__threadfence();         // ensure store issued before trap
+                        //asm("trap;");            // kill kernel with error
                     }
                 }
                 for (int i = 0; i < nlay; i++)
