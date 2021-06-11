@@ -1184,7 +1184,7 @@ __device__  void lw_grey_updown_linear(int id,
 
             } else
             {
-                printf("sw darkside\n");
+                //printf("sw darkside\n");
 
                 for (int i = nlay1-1; i >-1; i--)
                 {
@@ -1816,7 +1816,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 Bp__dff_l);
         }
 
-        printf("Kitzmann really finished\n");
+        //printf("Kitzmann really finished\n");
 
         /*
         
@@ -2381,19 +2381,19 @@ __global__ void rtm_picket_fence(double *pressure_d,
 
         if (zenith_angles[id]>0.0)
         {
-            printf("zenith_angles is larger than 0\n");
+            //printf("zenith_angles is larger than 0\n");
         } else
         {
-            printf("zenith_angles is zero or smaller\n");
+            //printf("zenith_angles is zero or smaller\n");
         }
         if (zenith_angles[id]==0.0)
         {
-            printf("zenith_angles is 0\n");
+            //printf("zenith_angles is 0\n");
         }
 
         if (zenith_angles[id]>1)
         {
-             printf("zenith_angles is larger than 1\n");
+             //printf("zenith_angles is larger than 1\n");
 
         }
         
@@ -2563,7 +2563,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
             // }
         }
 
-        printf("Column complete");
+        //printf("Column complete");
 
 
     }
