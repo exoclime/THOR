@@ -176,7 +176,7 @@ bool radiative_transfer::initialise_memory(const ESP &              esp,
         
 
 
-        tau_h    = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
+        tau_h    = (double *)malloc(2*esp.nvi * esp.point_num * sizeof(double));
         flw_up_h = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
         flw_dn_h = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
         fsw_up_h = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
@@ -1143,7 +1143,7 @@ bool radiative_transfer::store(const ESP &esp, storage &s) {
 
         cuda_check_status_or_exit(__FILE__, __LINE__); 
 
-        cudaMemcpy(tau_h, tau_Ve__df_e, esp.nvi * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
+        //cudaMemcpy(tau_h, tau_Ve__df_e, esp.nvi * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
         s.append_table(tau_h,
                        esp.nvi * esp.point_num,
                        "/tau",
