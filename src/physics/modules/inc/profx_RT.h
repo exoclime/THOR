@@ -1306,8 +1306,8 @@ __device__  void lw_grey_updown_linear(int id,
         // Net fluxes
         for (int i = 0; i < nlay1; i++)
         {
-            lw_net__df_e[id * nlay1 + i] = lw_up__df_e[id * nlay1 + i] -  lw_down__df_e[id * nlay1 + i];
-            sw_net__df_e[id * nlay1 + i] =  sw_up__df_e[id * nlay1 + i] - sw_down__df_e[id * nlay1 + i];
+            lw_net__df_e[id * nlay1 + i] = lw_down__df_e[id * nlay1 + i] - lw_up__df_e[id * nlay1 + i] ;
+            sw_net__df_e[id * nlay1 + i] =  sw_down__df_e[id * nlay1 + i] - sw_up__df_e[id * nlay1 + i];
             net_F_nvi_d[id * nlay1 + i] = lw_net__df_e[id * nlay1 + i] + sw_net__df_e[id * nlay1 + i];
         }
 
