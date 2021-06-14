@@ -1128,7 +1128,7 @@ __device__  void lw_grey_updown_linear(int id,
                     }
                     if (isnan(tau_Ve__df_e[id * nlay1 + i]))
                     {                
-                        printf("tau_Ve__df_e[id * nlay1 + i] is negative at level %d and in channel %d\n", i, channel);
+                        printf("tau_Ve__df_e[id * nlay1 + i] is NaN at level %d and in channel %d\n", i, channel);
                         //__threadfence();         // ensure store issued before trap
                         //asm("trap;");            // kill kernel with error
                     }
@@ -1219,29 +1219,16 @@ __device__  void lw_grey_updown_linear(int id,
             channel,
             tau_IRe__df_e);
 
-            for (int i = 0; i < nlay1; i++)
-                {
-                    if (tau_IRe__df_e[id * nlay1 + i] < 0.0)
-                    {                
-                        printf("tau_IRe__df_e[id * nlay1 + i] is negative at level %d and in channel %d\n", i, channel);
-                        __threadfence();         // ensure store issued before trap
-                        asm("trap;");            // kill kernel with error
-                    }
-                    if (tau_IRe__df_e[id * nlay1 + i] == 0.0)
-                    {                
-                        //printf("tau_IRe__df_e[id * nlay1 + i] is zero at level %d and in channel %d\n", i, channel);
-                    }
-                    if (isnan(tau_IRe__df_e[id * nlay1 + i]))
-                    {                
-                        printf("tau_IRe__df_e[id * nlay1 + i] is negativeat level %d and in channel %d\n", i, channel);
-                        __threadfence();         // ensure store issued before trap
-                        asm("trap;");            // kill kernel with error
-                    }
-                }
+            
 
             for (int i = 0; i < nlay; i++)
                 {
-                    
+                     if (isnan(Rho_d[id * nlay + i]))
+                    {                
+                        printf("Rho_d[id * nlay + i] is NaN at level %d and in channel %d\n", i, channel);
+                        __threadfence();         // ensure store issued before trap
+                        asm("trap;");            // kill kernel with error
+                    }
                     if (isnan(k_IR_2_nv_d[id*nlay*2 + channel * nlay + i]))
                     {                
                         printf("LW kRoss[id * nlay + i] is negative at level %d and in channel %d\n", i, channel);
@@ -1259,6 +1246,27 @@ __device__  void lw_grey_updown_linear(int id,
                     }
 
                     
+                }
+
+            for (int i = 0; i < nlay1; i++)
+                {
+                    if (tau_IRe__df_e[id * nlay1 + i] < 0.0)
+                    {                
+                        printf("tau_IRe__df_e[id * nlay1 + i] is negative at level %d and in channel %d\n", i, channel);
+                        __threadfence();         // ensure store issued before trap
+                        asm("trap;");            // kill kernel with error
+                    }
+                    if (tau_IRe__df_e[id * nlay1 + i] == 0.0)
+                    {                
+                        //printf("tau_IRe__df_e[id * nlay1 + i] is zero at level %d and in channel %d\n", i, channel);
+                    }
+                    
+                    if (isnan(tau_IRe__df_e[id * nlay1 + i]))
+                    {                
+                        printf("tau_IRe__df_e[id * nlay1 + i] is NaN at level %d and in channel %d\n", i, channel);
+                        __threadfence();         // ensure store issued before trap
+                        asm("trap;");            // kill kernel with error
+                    }
                 }
 
             //printf("tau_struct finished\n");
