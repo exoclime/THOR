@@ -1306,8 +1306,8 @@ __device__  void lw_grey_updown_linear(int id,
         // Net fluxes
         for (int i = 0; i < nlay1; i++)
         {
-            lw_net__df_e[id * nlay1 + i] = lw_up__df_e[id * nlay1 + i] - lw_down__df_e[id * nlay1 + i];
-            sw_net__df_e[id * nlay1 + i] = sw_up__df_e[id * nlay1 + i] - sw_down__df_e[id * nlay1 + i];
+            lw_net__df_e[id * nlay1 + i] = lw_up__df_e[id * nlay1 + i] -  lw_down__df_e[id * nlay1 + i];
+            sw_net__df_e[id * nlay1 + i] =  sw_up__df_e[id * nlay1 + i] - sw_down__df_e[id * nlay1 + i];
             net_F_nvi_d[id * nlay1 + i] = lw_net__df_e[id * nlay1 + i] + sw_net__df_e[id * nlay1 + i];
         }
 
@@ -1760,7 +1760,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 Bp__dff_l);
 
             // ?????? Is insol_d needed ?
-            insol_d[id] =  insol_d[id] * coszrs* (1-alb); 
+            insol_d[id] =  insol_d[id] * coszrs * (1-alb); 
         }
         else {
             insol_d[id] = 0;
@@ -2057,8 +2057,8 @@ __global__ void rtm_picket_fence(double *pressure_d,
         for (int level = 0; level < nv; level++)
         {
             dtemp[id * nv + level] = 1* //(gravit / Cp_d) *
-                (net_F_nvi_d[id * nvi + level+1] - net_F_nvi_d[id * nvi + level]) / 
-                (Altitudeh_d[level+1] - Altitudeh_d[level]);
+                (net_F_nvi_d[id * nvi + level] - net_F_nvi_d[id * nvi + level + 1] ) / 
+                (Altitudeh_d[level] - Altitudeh_d[level+1]);
 
             if (dtemp[id * nv + level]<0.0)
             {
