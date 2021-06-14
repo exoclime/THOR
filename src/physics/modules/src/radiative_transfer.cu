@@ -1145,7 +1145,7 @@ bool radiative_transfer::store(const ESP &esp, storage &s) {
 
         //cudaMemcpy(tau_h, tau_Ve__df_e, esp.nvi * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
         s.append_table(tau_h,
-                       esp.nvi * esp.point_num,
+                       2*esp.nvi * esp.point_num,
                        "/tau",
                        " ",
                        "optical depth across each layer (not total optical depth)");
