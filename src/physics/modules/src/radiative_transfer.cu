@@ -177,6 +177,10 @@ bool radiative_transfer::initialise_memory(const ESP &              esp,
 
 
         tau_h    = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
+        flw_up_h = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
+        flw_dn_h = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
+        fsw_up_h = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
+        fsw_dn_h = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
         
         cuda_check_status_or_exit(__FILE__, __LINE__);
        
@@ -1120,6 +1124,22 @@ bool radiative_transfer::store(const ESP &esp, storage &s) {
         cudaMemcpy(
             sw_net__h, sw_net__df_e, esp.nvi * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
         s.append_table(sw_net__h, esp.nvi * esp.point_num, "/sw_net__h", "W m^-2", "net short-wave flux (SW)");
+
+        cudaMemcpy(
+            flw_up_h, lw_up__df_e, esp.nvi * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
+        s.append_table(flw_up_h, esp.nvi * esp.point_num, "/flw_up", "W m^-2", "upward flux (LW)");
+    
+        cudaMemcpy(
+            fsw_up_h, sw_up__df_e, esp.nvi * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
+        s.append_table(fsw_up_h, esp.nvi * esp.point_num, "/fsw_up", "W m^-2", "upward flux (SW)");
+    
+        cudaMemcpy(
+            flw_dn_h, lw_down__df_e, esp.nvi * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
+        s.append_table(flw_dn_h, esp.nvi * esp.point_num, "/flw_dn", "W m^-2", "downward flux (LW)");
+    
+        cudaMemcpy(
+            fsw_dn_h, sw_down__df_e, esp.nvi * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
+        s.append_table(fsw_dn_h, esp.nvi * esp.point_num, "/fsw_dn", "W m^-2", "downward flux (SW)");
 
         cuda_check_status_or_exit(__FILE__, __LINE__); 
 
