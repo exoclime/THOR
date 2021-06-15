@@ -671,6 +671,22 @@ __device__ void kernel_k_Ross_Freedman(double Tin, double Pin, double met, doubl
         {       
             printf("Tin below 300 K \n");
         }
+        if (Tin==0.0)
+        {       
+            printf("Tin is 0 K\n");
+        }
+        if (Tin<0.0)
+        {       
+            printf("Tin is negative\n");
+        }
+        if (isnan(Tin))
+        {       
+            printf("Tin is NaN\n");
+        }
+        if (isnan(Pin))
+        {       
+            printf("Pin is NaN\n");
+        }
         if (Pin<1.0)
         {       
             printf("Pin is below 1 Pa \n");
@@ -698,6 +714,22 @@ __device__ void kernel_k_Ross_Freedman(double Tin, double Pin, double met, doubl
         {       
             printf("Tin below 300 K \n");
         }
+        if (Tin==0.0)
+        {       
+            printf("Tin is 0 K\n");
+        }
+        if (Tin<0.0)
+        {       
+            printf("Tin is negative\n");
+        }
+        if (isnan(Tin))
+        {       
+            printf("Tin is NaN\n");
+        }
+        if (isnan(Pin))
+        {       
+            printf("Pin is NaN\n");
+        }
         if (Pin<1.0)
         {       
             printf("Pin is below 1 Pa \n");
@@ -707,6 +739,49 @@ __device__ void kernel_k_Ross_Freedman(double Tin, double Pin, double met, doubl
             printf("Pin is 0 Pa or below below K \n");
         }
         printf("k_IR is 0 \n");
+        __threadfence();         // ensure store issued before trap
+        asm("trap;");            // kill kernel with error
+        
+    }
+    if ( isnan(k_IR))
+    {
+        if (Tin<800.0)
+        {       
+            printf("Tin below 800 K \n");
+        }
+        if (Tin<500.0)
+        {       
+            printf("Tin below 500 K \n");
+        }
+        if (Tin<300.0)
+        {       
+            printf("Tin below 300 K \n");
+        }
+        if (Tin==0.0)
+        {       
+            printf("Tin is 0 K\n");
+        }
+        if (Tin<0.0)
+        {       
+            printf("Tin is negative\n");
+        }
+        if (isnan(Tin))
+        {       
+            printf("Tin is NaN\n");
+        }
+        if (isnan(Pin))
+        {       
+            printf("Pin is NaN\n");
+        }
+        if (Pin<1.0)
+        {       
+            printf("Pin is below 1 Pa \n");
+        }
+        if (Pin<=0.0)
+        {       
+            printf("Pin is 0 Pa or below below K \n");
+        }
+        printf("k_IR is NaN \n");
         __threadfence();         // ensure store issued before trap
         asm("trap;");            // kill kernel with error
         
@@ -1347,7 +1422,7 @@ __device__  void lw_grey_updown_linear(int id,
                         {       
                             printf("mu_s[id ] is 0 \n");
                         }
-                        printf("LW kRoss[id * nlay + i] is negative at ID %d at level %d and in channel %d\n", id, i, channel);
+                        printf("LW kRoss[id * nlay + i] is NaN at ID %d at level %d and in channel %d\n", id, i, channel);
                         __threadfence();         // ensure store issued before trap
                         asm("trap;");            // kill kernel with error
                     }
