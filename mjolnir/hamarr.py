@@ -179,10 +179,10 @@ class output_new:
         #add things to outputs that can be checked for in input or grid
         # if input.RT or input.TSRT:
         #     outputs['Qheat'] = 'qheat'
-
-        if input.out_interm_momentum:
-            outputs['Mh_start_dt'] = 'Mh_start_dt'
-            outputs['Mh_profx'] = 'Mh_profx'
+        #
+        # if input.out_interm_momentum:
+        #     outputs['Mh_start_dt'] = 'Mh_start_dt'
+        #     outputs['Mh_profx'] = 'Mh_profx'
 
         if input.RT:
             outputs['tau'] = 'tau'  #have to be careful about slicing this (sw = ::2, lw = 1::2)
@@ -894,7 +894,6 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
                       'W': (output.Wh[:, :-1, 0] + (output.Wh[:, 1:, 0] - output.Wh[:, :-1, 0]) * interpz[None, :]) / output.Rho[:, :, 0],
                       'Rho': output.Rho[:, :, 0],
                       'Mh': output.Mh[:, :, :, 0],
-                      'diffmh': output.diffmh[:, :, :, 0],
                       'Pressure': output.Pressure[:, :, 0],
                       'Rd': output.Rd[:, :, 0],
                       'Cp': output.Cp[:, :, 0],
@@ -928,6 +927,9 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
                 source['Etotal'] = output.Etotal[:, :, 0]
                 source['Entropy'] = output.Entropy[:, :, 0]
                 source['AngMomz'] = output.AngMomz[:, :, 0]
+
+            if hasattr(output,'diffmh'):
+                source['diffmh'] = output.diffmh[:,:,:,0]
 
             if input.TSRT:
                 source['mustar'] = output.mustar[:, 0]
@@ -968,11 +970,12 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
                            + source['Mh_mean'][2]*np.cos(grid.lat[:, None]))/source['Rho_mean']
 
             # calculate zonal and meridional velocity tendencies from hyperdiffusion
-            source['diffmh_U'] = (-source['diffmh'][0]*np.sin(grid.lon[:,None])+\
-                           source['diffmh'][1]*np.cos(grid.lon[:, None]))/source['Rho']
-            source['diffmh_V'] = (-source['diffmh'][0]*np.sin(grid.lat[:,None])*np.cos(grid.lon[:,None])\
-                      -source['diffmh'][1]*np.sin(grid.lat[:,None])*np.sin(grid.lon[:,None])\
-                           + source['diffmh'][2]*np.cos(grid.lat[:, None]))/source['Rho']
+            if hasattr(output,'diffmh'):
+                source['diffmh_U'] = (-source['diffmh'][0]*np.sin(grid.lon[:,None])+\
+                               source['diffmh'][1]*np.cos(grid.lon[:, None]))/source['Rho']
+                source['diffmh_V'] = (-source['diffmh'][0]*np.sin(grid.lat[:,None])*np.cos(grid.lon[:,None])\
+                          -source['diffmh'][1]*np.sin(grid.lat[:,None])*np.sin(grid.lon[:,None])\
+                               + source['diffmh'][2]*np.cos(grid.lat[:, None]))/source['Rho']
 
             # set up intermediate arrays (icogrid and pressure)
             interm = {}
@@ -2036,6 +2039,14 @@ def profile(input, grid, output, z, stride=50, axis=None, save=True, use_p=True,
         ax.plot(x, y*unit, 'k-', alpha=0.5, lw=1.0,
                     path_effects=[pe.Stroke(linewidth=1.5, foreground=color), pe.Normal()])
 
+        # if use_p:
+        #     for jj in [2561]:
+        #         ax.plot(z['value'][jj ,:,0],output.Pressure[jj,:,0]/1e5,'r--',zorder=111)
+        #         col_lon.append(grid.lon[jj])
+        #         col_lat.append(grid.lat[jj])
+        #         col_lor.append('r')
+        # else:
+        #     ax.plot(z['value'][1995,:,0],grid.Altitude,'r--',zorder=111)
         rp, = ax.plot(x[np.int(np.floor(grid.nv / 2))], y[np.int(np.floor(grid.nv / 2))] * unit, 'k+', ms=5, alpha=0.5)
         gp, = ax.plot(x[np.int(np.floor(grid.nv * 0.75))], y[np.int(np.floor(grid.nv * 0.75))] * unit, 'k*', ms=5, alpha=0.5)
 
@@ -2043,7 +2054,7 @@ def profile(input, grid, output, z, stride=50, axis=None, save=True, use_p=True,
         ax.set_yscale("log")
 
     # add an insert showing the position of
-    inset_pos = [0.8, 0.2, 0.18, 0.18]
+    inset_pos = [0.1, 0.2, 0.18, 0.18]
     ax_inset = ax.inset_axes(inset_pos)
     ax_inset.scatter(col_lon, col_lat, c=col_lor, s=1.0)
     ax_inset.tick_params(axis='both',
@@ -2390,6 +2401,7 @@ def RTbalanceTS(input, grid, output):
     plt.plot(output.time, np.sum(olr,axis=0), 'rs', linestyle='--',label='OLR')
     #plt.plot(output.time, output.OLR_tot, 'rs', linestyle='--',label='OLR')
 
+    # print('ASR = %e, OLR = %e, ratio = %e'%(np.sum(asr,axis=0)[0],np.sum(olr,axis=0)[0],np.sum(olr,axis=0)[0]/np.sum(asr,axis=0)[0]))
     plt.xlabel('Time (days)')
     plt.ylabel('Global integrated power (W)')
     plt.legend(loc='upper right')

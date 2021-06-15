@@ -196,6 +196,9 @@ __global__ void compute_cos_zenith_angles(double* cos_zenith_angles,
                                     obliquity,
                                     column_idx);
 
+        //hack
+        // double coszrs = cos(0 * M_PI / 180.);
+
         if (coszrs < 0.0)
             cos_zenith_angles[column_idx] = 0.0;
         else

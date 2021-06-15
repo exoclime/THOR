@@ -31,8 +31,11 @@ async def run_subprocess(process_args):
         if proc.stdout.at_eof():
             break
         if line != b'':
-            print(" " + line.decode('ascii'), end='')
-            result += line.decode('ascii')
+            try:
+                print(" " + line.decode('ISO8859-1'), end='')
+                result += line.decode('ISO8859-1')
+            except:
+                import pdb; pdb.set_trace()
 
     # Wait for the subprocess exit.
     await proc.wait()
@@ -109,7 +112,7 @@ def edit_init_file(config_set):
     init_file = output_dir+'/esp_initial.h5'
 
     if os.path.exists(init_file):
-        openh5 = h5py.File(init_file)
+        openh5 = h5py.File(init_file,'r+')
     else:
         print("Initial h5 file {} not found!".format(init_file))
         exit(-1)

@@ -240,14 +240,17 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
         dry_conv_adj<<<NBRT, NTH>>>(pressure_d,    // Pressure [Pa]
                                     pressureh_d,   // mid-point pressure [Pa]
                                     temperature_d, // Temperature [K]
-                                    pt_d,          // Pot temperature [K]
-                                    Rho_d,         // Density [m^3/kg]
-                                    Cp_d,          // Specific heat capacity [J/kg/K]
-                                    Rd_d,          // Gas constant [J/kg/K]
-                                    sim.Gravit,    // Gravity [m/s^2]
-                                    Altitude_d,    // Altitudes of the layers
-                                    Altitudeh_d,   // Altitudes of the interfaces
+                                    profx_Qheat_d,
+                                    pt_d,        // Pot temperature [K]
+                                    Rho_d,       // Density [m^3/kg]
+                                    Cp_d,        // Specific heat capacity [J/kg/K]
+                                    Rd_d,        // Gas constant [J/kg/K]
+                                    sim.Gravit,  // Gravity [m/s^2]
+                                    Altitude_d,  // Altitudes of the layers
+                                    Altitudeh_d, // Altitudes of the interfaces
+                                    timestep,
                                     sim.conv_adj_iter,
+                                    sim.soft_adjustment,
                                     point_num, // Number of columns
                                     nv);       // number of vertical layers
     }
@@ -403,6 +406,7 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
                                                             point_num,
                                                             nv,
                                                             surface);
+        //Compute_pressure<<<NB, NTH>>>(pressure_d, temperature_d, Rho_d, Rd_d, point_num);
     }
     else {
         Compute_pressure<<<NB, NTH>>>(pressure_d, temperature_d, Rho_d, Rd_d, point_num);
