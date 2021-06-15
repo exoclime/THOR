@@ -1531,12 +1531,12 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 printf("gam_V_3_d contains negative in the channel %d\n",  channel);               
                         
             }
-            if (Beta_V__h[id*3 + channel]<0.0){
-                printf("Beta_V__h contains negative in the channel %d\n",  channel);               
+            if (Beta_V_3_d[id*3 + channel]<0.0){
+                printf("Beta_V_3_d contains negative in the channel %d\n",  channel);               
                         
             }
-            if (Beta_V__h[id*3 + channel]==0.0){
-                printf("Beta_V__h contains 0 in the channel %d\n",  channel);               
+            if (Beta_V_3_d[id*3 + channel]==0.0){
+                printf("Beta_V_3_d contains 0 in the channel %d\n",  channel);               
                         
             }
             if (gam_V_3_d[id*3 + channel]==0.0){
