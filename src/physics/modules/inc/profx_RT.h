@@ -622,7 +622,7 @@ __device__ void kernel_k_Ross_Freedman(double Tin, double Pin, double met, doubl
 
 
     Tl10 = log10((double)(Tin));
-    if (Pin == 0.0)
+    if (Pin <= 0.0)
     {
          Pl10 = -6;
     }
@@ -748,9 +748,13 @@ __device__ void kernel_k_Ross_Freedman(double Tin, double Pin, double met, doubl
         {       
             printf("Pin is below 1 Pa \n");
         }
-        if (Pin<=0.0)
+        if (Pin<0.0)
         {       
-            printf("Pin is 0 Pa or below below K \n");
+            printf("Pin is below below 0 Pa \n");
+        }
+        if (Pin==0.0)
+        {       
+            printf("Pin is 0 Pa  \n");
         }
         printf("k_IR is 0 \n");
         __threadfence();         // ensure store issued before trap
@@ -791,9 +795,13 @@ __device__ void kernel_k_Ross_Freedman(double Tin, double Pin, double met, doubl
         {       
             printf("Pin is below 1 Pa \n");
         }
-        if (Pin<=0.0)
+        if (Pin<0.0)
         {       
-            printf("Pin is 0 Pa or below below K \n");
+            printf("Pin is below below 0 Pa \n");
+        }
+        if (Pin==0.0)
+        {       
+            printf("Pin is 0 Pa  \n");
         }
         printf("k_IR is NaN \n");
         __threadfence();         // ensure store issued before trap
