@@ -656,6 +656,62 @@ __device__ void kernel_k_Ross_Freedman(double Tin, double Pin, double met, doubl
     {
         k_IR = 1.0e10;
     }
+
+    if (k_IR < 0.0 )
+    {
+        if (Tin<800.0)
+        {       
+            printf("Tin below 800 K \n");
+        }
+        if (Tin<500.0)
+        {       
+            printf("Tin below 500 K \n");
+        }
+        if (Tin<300.0)
+        {       
+            printf("Tin below 300 K \n");
+        }
+        if (Pin<1.0)
+        {       
+            printf("Pin is below 1 Pa \n");
+        }
+        if (Pin<=0.0)
+        {       
+            printf("Pin is 0 Pa or below below K \n");
+        }
+        printf("k_IR is negative\n");
+        __threadfence();         // ensure store issued before trap
+        asm("trap;");            // kill kernel with error
+        
+    }
+    if ( k_IR == 0.0)
+    {
+        if (Tin<800.0)
+        {       
+            printf("Tin below 800 K \n");
+        }
+        if (Tin<500.0)
+        {       
+            printf("Tin below 500 K \n");
+        }
+        if (Tin<300.0)
+        {       
+            printf("Tin below 300 K \n");
+        }
+        if (Pin<1.0)
+        {       
+            printf("Pin is below 1 Pa \n");
+        }
+        if (Pin<=0.0)
+        {       
+            printf("Pin is 0 Pa or below below K \n");
+        }
+        printf("k_IR is 0 \n");
+        __threadfence();         // ensure store issued before trap
+        asm("trap;");            // kill kernel with error
+        
+    }
+    
 }
 
 
@@ -1253,7 +1309,7 @@ __device__  void lw_grey_updown_linear(int id,
 
             for (int i = 0; i < nlay; i++)
                 {
-                     if (isnan(Rho_d[id * nlay + i]))
+                    if (isnan(Rho_d[id * nlay + i]))
                     {                
                         if (mu_s[id]<0.0)
                         {       
@@ -1267,6 +1323,20 @@ __device__  void lw_grey_updown_linear(int id,
                         __threadfence();         // ensure store issued before trap
                         asm("trap;");            // kill kernel with error
                     }
+                    if (Rho_d[id * nlay + i]== 0.0)
+                    {                
+                        if (mu_s[id]<0.0)
+                        {       
+                            printf("mu_s[id ] is negative \n");
+                        }
+                        if (mu_s[id]==0.0)
+                        {       
+                            printf("mu_s[id ] is 0 \n");
+                        }
+                        printf("Rho_d[id * nlay + i] is 0 at level %d and in channel %d\n", i, channel);
+                        __threadfence();         // ensure store issued before trap
+                        asm("trap;");            // kill kernel with error
+                    }
                     if (isnan(k_IR_2_nv_d[id*nlay*2 + channel * nlay + i]))
                     {                
                         if (mu_s[id]<0.0)
@@ -1277,14 +1347,14 @@ __device__  void lw_grey_updown_linear(int id,
                         {       
                             printf("mu_s[id ] is 0 \n");
                         }
-                        printf("LW kRoss[id * nlay + i] is negative at level %d and in channel %d\n", i, channel);
+                        printf("LW kRoss[id * nlay + i] is negative at ID %d at level %d and in channel %d\n", id, i, channel);
                         __threadfence();         // ensure store issued before trap
                         asm("trap;");            // kill kernel with error
                     }
 
                     if (k_IR_2_nv_d[id*nlay*2 + channel * nlay + i] == 0.0)
                     {                
-                        printf("LW kRoss[id * nlay + i] is negativeat level %d and in channel %d\n", i, channel);
+                        printf("LW kRoss[id * nlay + i] is 0 at ID %d at level %d and in channel %d\n", id,  i, channel);
                         if (mu_s[id]<0.0)
                         {       
                             printf("mu_s[id ] is negative \n");
