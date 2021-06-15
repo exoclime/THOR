@@ -1150,16 +1150,46 @@ __device__  void lw_grey_updown_linear(int id,
 
                     if (isnan(k_V_3_nv_d[id*nlay*3 + channel * nlay + i]))
                     {                
-                        printf("SW kRoss[id * nlay + i] is negative at level %d and in channel %d\n", i, channel);
+                        if (mu_s[id]<0.0)
+                        {       
+                            printf("mu_s[id ] is negative \n");
+                        }
+                        if (mu_s[id]==0.0)
+                        {       
+                            printf("mu_s[id ] is 0 \n");
+                        }
+                        printf("SW kRoss[id * nlay + i] is NaN at level %d and in channel %d\n", i, channel);
+                        __threadfence();         // ensure store issued before trap
+                        asm("trap;");            // kill kernel with error
                     }
 
                     if (k_V_3_nv_d[id*nlay*3 + channel * nlay + i] == 0.0)
                     {                
-                        printf("SW kRoss[id * nlay + i] is negativeat level %d and in channel %d\n", i, channel);
+                        if (mu_s[id]<0.0)
+                        {       
+                            printf("mu_s[id ] is negative \n");
+                        }
+                        if (mu_s[id]==0.0)
+                        {       
+                            printf("mu_s[id ] is 0 \n");
+                        }
+                        printf("SW kRoss[id * nlay + i] is 0 at level %d and in channel %d\n", i, channel);
+                        __threadfence();         // ensure store issued before trap
+                        asm("trap;");            // kill kernel with error
                     }
                     if (k_V_3_nv_d[id*nlay*3 + channel * nlay + i] < 0.0)
                     {                
+                        if (mu_s[id]<0.0)
+                        {       
+                            printf("mu_s[id ] is negative \n");
+                        }
+                        if (mu_s[id]==0.0)
+                        {       
+                            printf("mu_s[id ] is 0 \n");
+                        }
                         printf("SW kRoss[id * nlay + i] is negative at level %d and in channel %d\n", i, channel);
+                        __threadfence();         // ensure store issued before trap
+                        asm("trap;");            // kill kernel with error
                     }
 
                     
@@ -1225,12 +1255,28 @@ __device__  void lw_grey_updown_linear(int id,
                 {
                      if (isnan(Rho_d[id * nlay + i]))
                     {                
+                        if (mu_s[id]<0.0)
+                        {       
+                            printf("mu_s[id ] is negative \n");
+                        }
+                        if (mu_s[id]==0.0)
+                        {       
+                            printf("mu_s[id ] is 0 \n");
+                        }
                         printf("Rho_d[id * nlay + i] is NaN at level %d and in channel %d\n", i, channel);
                         __threadfence();         // ensure store issued before trap
                         asm("trap;");            // kill kernel with error
                     }
                     if (isnan(k_IR_2_nv_d[id*nlay*2 + channel * nlay + i]))
                     {                
+                        if (mu_s[id]<0.0)
+                        {       
+                            printf("mu_s[id ] is negative \n");
+                        }
+                        if (mu_s[id]==0.0)
+                        {       
+                            printf("mu_s[id ] is 0 \n");
+                        }
                         printf("LW kRoss[id * nlay + i] is negative at level %d and in channel %d\n", i, channel);
                         __threadfence();         // ensure store issued before trap
                         asm("trap;");            // kill kernel with error
@@ -1239,10 +1285,30 @@ __device__  void lw_grey_updown_linear(int id,
                     if (k_IR_2_nv_d[id*nlay*2 + channel * nlay + i] == 0.0)
                     {                
                         printf("LW kRoss[id * nlay + i] is negativeat level %d and in channel %d\n", i, channel);
+                        if (mu_s[id]<0.0)
+                        {       
+                            printf("mu_s[id ] is negative \n");
+                        }
+                        if (mu_s[id]==0.0)
+                        {       
+                            printf("mu_s[id ] is 0 \n");
+                        }
+                        __threadfence();         // ensure store issued before trap
+                        asm("trap;");            // kill kernel with error
                     }
                     if (k_IR_2_nv_d[id*nlay*2 + channel * nlay + i] < 0.0)
-                    {                
+                    {   
+                        if (mu_s[id]<0.0)
+                        {       
+                            printf("mu_s[id ] is negative \n");
+                        }
+                        if (mu_s[id]==0.0)
+                        {       
+                            printf("mu_s[id ] is 0 \n");
+                        }        
                         printf("LW kRoss[id * nlay + i] is negative at level %d and in channel %d\n", i, channel);
+                        __threadfence();         // ensure store issued before trap
+                        asm("trap;");            // kill kernel with error
                     }
 
                     
@@ -1428,23 +1494,62 @@ __global__ void rtm_picket_fence(double *pressure_d,
     double ContributionFactorFromAbove;
 
     if (id < num) {
+        
+
+        if (gam_2_d[id]<0.0){
+            printf("gam_2_d contains negative in the channel\n");               
+                        
+        }
+        if (gam_2_d[id]==0.0){
+            printf("gam_2_d contains 0 in the channel\n");               
+                        
+        }
+
+        if (gam_1_d[id]<0.0){
+            printf("gam_1_d contains negative in the channel\n");               
+                        
+        }
+        if (gam_1_d[id]==0.0){
+            printf("gam_1_d contains 0 in the channel\n");               
+                        
+        }
+        
+
+        for (int channel = 0; channel < 2; channel++) {
+            if (Beta_2_d[id*2 + channel]<0.0){
+                printf("Beta_2_d contains negative in the channel %d\n",  channel);               
+                        
+            }
+            if (Beta_2_d[id*2 + channel]<0.0){
+                printf("Beta_2_d contains negative in the channel %d\n",  channel);               
+                        
+            }
+        }
 
         for (int channel = 0; channel < 3; channel++) {
+            if (gam_V_3_d[id*3 + channel]<0.0){
+                printf("gam_V_3_d contains negative in the channel %d\n",  channel);               
+                        
+            }
+            if (Beta_V__h[id*3 + channel]<0.0){
+                printf("Beta_V__h contains negative in the channel %d\n",  channel);               
+                        
+            }
+            if (Beta_V__h[id*3 + channel]==0.0){
+                printf("Beta_V__h contains 0 in the channel %d\n",  channel);               
+                        
+            }
             if (gam_V_3_d[id*3 + channel]==0.0){
-                printf("gam_V_3_d contains 0 in the channel\n",  channel);
+                printf("gam_V_3_d contains 0 in the channel %d\n",  channel);
                 
-                for (int chan = 0; chan < 3; chan++) {
-                    //printf("gam_V_3_d contains 0 in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d channel:%d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, chan, &gam_V_3_d[id*3 + chan]);
-                }
+                
                // __threadfence();         // ensure store issued before trap
                 //asm("trap;");            // kill kernel with error           
             }
 
             if (isnan(gam_V_3_d[id*3 + channel])){
-                printf("gam_V_3_d contains NaN in the channel\n",  channel);
-                for (int chan = 0; chan < 3; chan++) {
-                    //printf("gam_V_3_d contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d channel:%d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, chan, &gam_V_3_d[id*3 + chan]);
-                }
+                printf("gam_V_3_d contains NaN in the channel %d\n",  channel);
+                
                 __threadfence();         // ensure store issued before trap
                 asm("trap;");            // kill kernel with error           
             }

@@ -730,6 +730,7 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
 
     if (run) {
         double picket_fence_mod = true;
+        double Tirr;
         //
         //  Number of threads per block.
         const int NTH = 256;
@@ -743,7 +744,7 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
 
             for (int c = 0; c <  esp.point_num; c++){
                 // Parmentier opacity profile parameters - first get Bond albedo
-                double Tirr = Tstar*pow((radius_star/planet_star_dist), 0.5);
+                Tirr = Tstar*pow((radius_star/planet_star_dist), 0.5);
                 
                 Teff[c] = pow( (pow(esp.Tint, 4.0) +
                     (1.0 / sqrt(3.0)) *
@@ -754,15 +755,12 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                 cuda_check_status_or_exit(__FILE__, __LINE__);
 
                 // Recalculate Teff and then find parameters
-                if (esp.insolation.get_host_cos_zenith_angles()[c] >= 0)
+                if (esp.insolation.get_host_cos_zenith_angles()[c] >= 0.0)
                 {
-                    Teff[c] = 0 +
-                        pow( (pow(esp.Tint, 4.0) +
-                        (1.0 - AB__h[c]) *
-                        esp.insolation.get_host_cos_zenith_angles()[c] *
-                        pow(Tirr, 4.0) ), 0.25);
+                    Teff[c] = pow( (pow(esp.Tint, 4.0) +
+                        (1.0 - AB__h[c]) * esp.insolation.get_host_cos_zenith_angles()[c] * pow(Tirr, 4.0) ), 0.25);
                 } else {
-                    Teff[c] = pow( pow(esp.Tint, 4.0) + 0, 0.25);
+                    Teff[c] = pow( pow(esp.Tint, 4.0) + 0.0, 0.25);
                 }
                 
             }
@@ -910,7 +908,7 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
 
 
 
-                printf("rtm_picket_fence finished\n");
+                //printf("rtm_picket_fence finished\n");
 
                 // make the host block until the device is finished with foo
                 cudaDeviceSynchronize();
