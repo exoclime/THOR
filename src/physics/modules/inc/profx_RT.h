@@ -890,6 +890,8 @@ __device__  void linear_interp(int id,
 __device__ void tau_struct(int id,
     int nlev,
     double *Rho_d,
+    double *pl,
+    double gravity,
     double *Altitudeh_d,
     double *kRoss,
     int nchan,
@@ -903,7 +905,7 @@ __device__ void tau_struct(int id,
     int level;
 
     // running sum of optical depth
-    tau_sum = 0.0;
+    tau_sum = kRoss[id*nlev*nchan + channel * nlev + nlev-1] * pl[id*nlev  + nlev-1]/gravity;
 
     // start operations
     //  Upper most tau_struc is given by some low pressure value (here 1e-9 bar = 1e-4 pa)
@@ -1260,6 +1262,8 @@ __device__  void lw_grey_updown_linear(int id,
                 tau_struct(id,
                     nlay,
                     Rho_d,
+                    pl,
+                    grav,
                     Altitudeh_d,
                     k_V_3_nv_d,
                     3,
@@ -1397,6 +1401,8 @@ __device__  void lw_grey_updown_linear(int id,
             tau_struct(id,
             nlay,
             Rho_d,
+            pl,
+            grav,
             Altitudeh_d,
             k_IR_2_nv_d,
             2,
