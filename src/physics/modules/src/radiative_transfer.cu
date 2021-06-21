@@ -182,7 +182,7 @@ bool radiative_transfer::initialise_memory(const ESP &              esp,
         fsw_up_h = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
         fsw_dn_h = (double *)malloc(esp.nvi * esp.point_num * sizeof(double));
         
-        cuda_check_status_or_exit(__FILE__, __LINE__);
+        
        
 
     } else {
@@ -308,8 +308,7 @@ bool radiative_transfer::free_memory() {
 
         free(tau_h);
         
-        cuda_check_status_or_exit(__FILE__, __LINE__);
-
+        
 
     } else {
         cudaFree(flw_up_d);
@@ -369,7 +368,6 @@ bool radiative_transfer::initial_conditions(const ESP &            esp,
 
     if (picket_fence_mod) {
     
-        cuda_check_status_or_exit(__FILE__, __LINE__);
         
         RTSetup(Tstar_config,
             planet_star_dist_config,
@@ -388,8 +386,7 @@ bool radiative_transfer::initial_conditions(const ESP &            esp,
             rt1Dmode_config,
             sim.Tmean);
             
-            cuda_check_status_or_exit(__FILE__, __LINE__);
-
+            
     } else {
         RTSetup(Tstar_config,
             planet_star_dist_config,
@@ -740,8 +737,7 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
         dim3 NBRT((esp.point_num / NTH) + 1, 1, 1);
 
         if (picket_fence_mod){
-                cuda_check_status_or_exit(__FILE__, __LINE__);
-
+                
             for (int c = 0; c <  esp.point_num; c++){
                 // Parmentier opacity profile parameters - first get Bond albedo
                 Tirr = Tstar*pow((radius_star/planet_star_dist), 0.5);
@@ -752,8 +748,7 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
 
                 Bond_Parmentier(Teff[c], sim.Gravit, AB__h[c]);
                 
-                cuda_check_status_or_exit(__FILE__, __LINE__);
-
+               
                 // Recalculate Teff and then find parameters
                 if (esp.insolation.get_host_cos_zenith_angles()[c] >= 0.0)
                 {
@@ -765,8 +760,7 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                 
             }
             
-            cuda_check_status_or_exit(__FILE__, __LINE__);
-
+            
             
             gam_Parmentier(esp.point_num,
                 esp.nv,
@@ -779,9 +773,7 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                 gam_2__h,
                 gam_P);
                 
-            cuda_check_status_or_exit(__FILE__, __LINE__);
             
-
                 
             bool cudaStatus;
             cudaStatus = cudaMemcpy(gam_V_3_d, gam_V__h, 3*esp.point_num * sizeof(double), cudaMemcpyHostToDevice);
@@ -824,13 +816,7 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                 exit(-1);
             }            
             
-            cuda_check_status_or_exit(__FILE__, __LINE__);
-
-            
-
-            // 
-
-           
+                      
 
             rtm_picket_fence<<<NBRT, NTH>>>(esp.pressure_d,
                 esp.temperature_d,
@@ -908,24 +894,7 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
 
 
 
-                //printf("rtm_picket_fence finished\n");
-
-                // make the host block until the device is finished with foo
-                cudaDeviceSynchronize();
-
-                 // check for error
-                cudaError_t error1 = cudaGetLastError();
-                if(error1 != cudaSuccess)
-                {
-                    // print the CUDA error message and exit
-                    printf("CUDA error: %s\n", cudaGetErrorString(error1));
-                    exit(-1);
-                }
                 
-
-                
-                
-                cuda_check_status_or_exit(__FILE__, __LINE__);
 
         } else {
 
@@ -985,25 +954,13 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                 rt1Dmode,
                 sim.DeepModel);
 
-                printf("rtm_dual_band finished\n");
+               
 
         }
 
         
         
 
-        
-        // check for error
-        cudaError_t error = cudaGetLastError();
-        if(error != cudaSuccess)
-        {
-            // print the CUDA error message and exit
-            printf("CUDA error: %s\n", cudaGetErrorString(error));
-            exit(-1);
-        }
-
-        
-        cuda_check_status_or_exit(__FILE__, __LINE__);
         
         ASR_tot = gpu_sum_on_device<1024>(ASR_d, esp.point_num);
         OLR_tot = gpu_sum_on_device<1024>(OLR_d, esp.point_num);
