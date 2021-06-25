@@ -1191,7 +1191,7 @@ def maketable(x, y, z, xname, yname, zname, resultsf, fname):
     f.close()
 
 
-def vertical_lat(input, grid, output, rg, sigmaref, z, slice=['default'], save=True, axis=None, csp=500, wind_vectors=False, use_p=True, clevs=[40]):
+def vertical_lat(input, grid, output, rg, sigmaref, z, slice=['default'], save=True, axis=None, csp=500, wind_vectors=False, use_p=True, clevs=[40], clabel_format='%#.3g', cmap_center=False, cover_color='w'):
     # generic pressure/latitude plot function
 
     # Set the reference pressure
@@ -1310,7 +1310,7 @@ def vertical_lat(input, grid, output, rg, sigmaref, z, slice=['default'], save=T
         if isinstance(clevs[2],str) and 'log' in clevs[2]:
             clevels = np.logspace(np.log10(np.float(clevs[0])),np.log10(np.float(clevs[1])),np.int(clevs[2][:-3]))
         else:
-            clevels = np.linspace(np.int(clevs[0]),np.int(clevs[1]),np.int(clevs[2]))
+            clevels = np.linspace(clevs[0],clevs[1],clevs[2])
     else:
         raise IOError("clevs not valid!")
     # print(np.max(zvals))
@@ -1330,7 +1330,13 @@ def vertical_lat(input, grid, output, rg, sigmaref, z, slice=['default'], save=T
 
     fig.set_tight_layout(True)
 
-    C = ax.contourf(latp * 180 / np.pi, ycoord, zvals, clevels, cmap=z['cmap'])
+    if cmap_center:
+        vmin = -1*np.max(np.abs(clevs[:1]))
+        vmax = np.max(np.abs(clevs[:1]))
+    else:
+        vmin = None
+        vmax = None
+    C = ax.contourf(latp * 180 / np.pi, ycoord, zvals, clevels, cmap=z['cmap'], vmin =vmin,vmax=vmax)
 
     if wind_vectors == True:
         vspacing = np.int(np.shape(rg.Latitude)[0] / 10)
@@ -1355,7 +1361,7 @@ def vertical_lat(input, grid, output, rg, sigmaref, z, slice=['default'], save=T
 
     divider = make_axes_locatable(ax)
     cax = divider.append_axes('right', size='5%', pad=0.05)
-    kwargs = {'format': '%#3.4e'}
+    kwargs = {'format': clabel_format}
     #clb = plt.colorbar(C, extend='both', ax=ax)
     clb = fig.colorbar(C, cax=cax, extend='both', **kwargs)
     clb.set_label(z['label'])
@@ -1371,15 +1377,15 @@ def vertical_lat(input, grid, output, rg, sigmaref, z, slice=['default'], save=T
             else:
                 levp = np.arange(np.ceil(np.nanmin(Zonallt[:, hrange[0]]) / csp) * csp, np.floor(np.nanmax(Zonallt[:, hrange[0]]) / csp) * csp, csp)
 
-    c2 = ax.contour(latp * 180 / np.pi, ycoord, zvals, levels=levp, colors='w', linewidths=1)
-    ax.clabel(c2, inline=False, fontsize=6, fmt='%d', use_clabeltext=True)
+    c2 = ax.contour(latp * 180 / np.pi, ycoord, zvals, levels=levp, colors=cover_color, linewidths=1)
+    ax.clabel(c2, inline=True, fontsize=6, fmt='%d', use_clabeltext=True)
     for cc in C.collections:
         cc.set_edgecolor("face")  # fixes a stupid bug in matplotlib 2.0
     # ax.invert_yaxis()
     # plt.quiver(latq.ravel(),preq.ravel()/1e5,Vq/np.max(Vq),Wq/np.max(Wq),color='0.5')
     if z['plog'] == True:
         ax.set_yscale("log")
-    ax.set_xlabel('Latitude (deg)')
+    ax.set_xlabel('Latitude (degrees)')
     if use_p:
         ax.set_ylabel('Pressure (bar)')
         # ax.plot(latp*180/np.pi,np.zeros_like(latp)+np.max(output.Pressure[:,grid.nv-1,:])/1e5,'r--')
@@ -1758,7 +1764,7 @@ def horizontal_lev(input, grid, output, rg, Plev, z, save=True, axis=False, wind
     # Create Figure #
     #################
 
-    lonp = rg.Longitude[:]
+    lonp = z['lon']
     latp = rg.Latitude[:]
 
     if len(clevs) == 1:
@@ -1792,11 +1798,11 @@ def horizontal_lev(input, grid, output, rg, Plev, z, save=True, axis=False, wind
         cc.set_edgecolor("face")  # fixes a stupid bug in matplotlib 2.0
 
     if z['llswap']:
-        ax.set_xlabel('Latitude (deg)')
-        ax.set_ylabel('Longitude (deg)')
+        ax.set_xlabel('Latitude (degrees)')
+        ax.set_ylabel('Longitude (degrees)')
     else:
-        ax.set_ylabel('Latitude (deg)')
-        ax.set_xlabel('Longitude (deg)')
+        ax.set_ylabel('Latitude (degrees)')
+        ax.set_xlabel('Longitude (degrees)')
 
     ax.set_title(title)
 
@@ -1816,7 +1822,7 @@ def horizontal_lev(input, grid, output, rg, Plev, z, save=True, axis=False, wind
 
     divider = make_axes_locatable(ax)
     cax = divider.append_axes('right', size='5%', pad=0.05)
-    kwargs = {'format': '%#3.4e'}
+    kwargs = {'format': '%#d'}
     clb = fig.colorbar(C, cax=cax, orientation='vertical', **kwargs)
     clb.set_label(z['label'])
 
@@ -2054,7 +2060,7 @@ def profile(input, grid, output, z, stride=50, axis=None, save=True, use_p=True,
         ax.set_yscale("log")
 
     # add an insert showing the position of
-    inset_pos = [0.1, 0.2, 0.18, 0.18]
+    inset_pos = [0.8, 0.7, 0.18, 0.18]
     ax_inset = ax.inset_axes(inset_pos)
     ax_inset.scatter(col_lon, col_lat, c=col_lor, s=1.0)
     ax_inset.tick_params(axis='both',
