@@ -85,6 +85,8 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
     if (sim.out_interm_momentum) {
         cudaMemcpy(
             Mh_start_dt_d, Mh_d, point_num * nv * 3 * sizeof(double), cudaMemcpyDeviceToDevice);
+        cudaMemcpy(
+            Rho_start_dt_d, Rho_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToDevice);
     }
 
     Recompute_W<<<NB, NTH>>>(
@@ -436,6 +438,7 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
 
     if (sim.out_interm_momentum) {
         cudaMemcpy(Mh_profx_d, Mh_d, point_num * nv * 3 * sizeof(double), cudaMemcpyDeviceToDevice);
+        cudaMemcpy(Rho_profx_d, Rho_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToDevice);
     }
 }
 
