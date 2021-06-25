@@ -232,8 +232,10 @@ ESP::alloc_data(bool globdiag, bool output_mean, bool out_interm_momentum, bool 
     }
 
     if (out_interm_momentum == true) {
-        Mh_start_dt_h = (double *)malloc(nv * point_num * 3 * sizeof(double));
-        Mh_profx_h    = (double *)malloc(nv * point_num * 3 * sizeof(double));
+        Mh_start_dt_h  = (double *)malloc(nv * point_num * 3 * sizeof(double));
+        Mh_profx_h     = (double *)malloc(nv * point_num * 3 * sizeof(double));
+        Rho_start_dt_h = (double *)malloc(nv * point_num * sizeof(double));
+        Rho_profx_h    = (double *)malloc(nv * point_num * sizeof(double));
     }
 
     Etotal_h  = (double *)malloc(nv * point_num * sizeof(double));
@@ -295,6 +297,8 @@ ESP::alloc_data(bool globdiag, bool output_mean, bool out_interm_momentum, bool 
         // Average quantities over output interval
         cudaMalloc((void **)&Mh_start_dt_d, nv * point_num * 3 * sizeof(double));
         cudaMalloc((void **)&Mh_profx_d, nv * point_num * 3 * sizeof(double));
+        cudaMalloc((void **)&Rho_start_dt_d, nv * point_num * sizeof(double));
+        cudaMalloc((void **)&Rho_profx_d, nv * point_num * sizeof(double));
     }
 
     // ultra hot
@@ -1076,6 +1080,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
     if (sim.out_interm_momentum) {
         cudaMemset(Mh_start_dt_d, 0, sizeof(double) * nv * point_num * 3);
         cudaMemset(Mh_profx_d, 0, sizeof(double) * nv * point_num * 3);
+        cudaMemset(Rho_start_dt_d, 0, sizeof(double) * nv * point_num);
+        cudaMemset(Rho_profx_d, 0, sizeof(double) * nv * point_num);
     }
     cudaMemset(boundary_flux_d, 0, sizeof(double) * 6 * nv * point_num);
 
