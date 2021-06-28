@@ -1675,6 +1675,12 @@ __global__ void rtm_picket_fence(double *pressure_d,
     const double StBC = 5.670374419e-8;
 
     if (id < num) {
+
+        if (Altitude_d[id * nv + 0]> 90000000)
+        {
+            printf("Altitude_d greater than 90'000'000 m \n");
+        }
+        
         
 
 
