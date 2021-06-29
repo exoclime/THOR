@@ -1585,6 +1585,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
                               double *Altitude_d,
                               double *Altitudeh_d,
                               double r_rob,
+                              double radius_star,
                               double *phtemp,
                               double *dtemp,
                               double  timestep,
@@ -1676,15 +1677,6 @@ __global__ void rtm_picket_fence(double *pressure_d,
 
     if (id < num) {
 
-        /*
-        if (Altitude_d[id * nv + 0]> 90000000)
-        {
-            printf("Altitude_d greater than 90'000'000 m \n");
-        }
-        */
-        
-        
-
 
         for (int lev = 0; lev < nv; lev++) {
             
@@ -1767,7 +1759,12 @@ __global__ void rtm_picket_fence(double *pressure_d,
         }
 
         
-        
+        // rescale zenith angel
+        /*
+        double TransPolAngle;
+        TransPolAngle = asin((radius_star-Altitude_d[id * nv + 0]) / r_rob);
+        zenith_angles[id] = (zenith_angles[id] + TransPolAngle) / (1 + TransPolAngle);
+        */
         
 
         // zenith angle
