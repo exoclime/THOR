@@ -44,7 +44,7 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
-#include <math.h>
+#include <cmath.h>
 
 
 __global__ void dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
