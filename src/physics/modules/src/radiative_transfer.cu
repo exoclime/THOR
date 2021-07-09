@@ -102,7 +102,7 @@ bool radiative_transfer::initialise_memory(const ESP &              esp,
     if (picket_fence_mod){
         //  Rad Transfer
         
-        cuda_check_status_or_exit(__FILE__, __LINE__);
+        //cuda_check_status_or_exit(__FILE__, __LINE__);
         
         cudaMalloc((void **)&phtemp, esp.nvi * esp.point_num * sizeof(double));
         cudaMalloc((void **)&dtemp, esp.nv * esp.point_num * sizeof(double));
@@ -231,7 +231,7 @@ bool radiative_transfer::free_memory() {
 
     if (picket_fence_mod) {
         
-        cuda_check_status_or_exit(__FILE__, __LINE__);
+        //cuda_check_status_or_exit(__FILE__, __LINE__);
         
         cudaFree(phtemp);
         cudaFree(dtemp);
@@ -349,7 +349,7 @@ bool radiative_transfer::initial_conditions(const ESP &            esp,
                                             const SimulationSetup &sim,
                                             storage *              s) {
                                             
-    cuda_check_status_or_exit(__FILE__, __LINE__);
+    //cuda_check_status_or_exit(__FILE__, __LINE__);
 
     if (spinup_start_step > -1 || spinup_stop_step > -1) {
         if (spinup_stop_step < spinup_start_step)
@@ -991,7 +991,7 @@ bool radiative_transfer::configure(config_file &config_reader) {
 
     if (picket_fence_mod) {
     
-        cuda_check_status_or_exit(__FILE__, __LINE__);
+        //cuda_check_status_or_exit(__FILE__, __LINE__);
         
         // basic star-planet properties
         config_reader.append_config_var("Tstar", Tstar_config, Tstar_config);
@@ -1021,7 +1021,7 @@ bool radiative_transfer::configure(config_file &config_reader) {
             "dgrt_spindown_start", spindown_start_step, spindown_start_step);
         config_reader.append_config_var("dgrt_spindown_stop", spindown_stop_step, spindown_stop_step);
         
-        cuda_check_status_or_exit(__FILE__, __LINE__);
+        //cuda_check_status_or_exit(__FILE__, __LINE__);
 
 
     } else {
@@ -1069,13 +1069,13 @@ bool radiative_transfer::store(const ESP &esp, storage &s) {
         cudaMemcpy(insol_h, insol_d, esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
         s.append_table(insol_h, esp.point_num, "/insol", "W m^-2", "insolation (instantaneous)");
         
-        cuda_check_status_or_exit(__FILE__, __LINE__);
+        //cuda_check_status_or_exit(__FILE__, __LINE__);
     
         cudaMemcpy(
             lw_net__h, lw_net__df_e, esp.nvi * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
         s.append_table(lw_net__h, esp.nvi * esp.point_num, "/lw_net__h", "W m^-2", "net long-wave flux (LW)");
         
-        cuda_check_status_or_exit(__FILE__, __LINE__);
+        //cuda_check_status_or_exit(__FILE__, __LINE__);
     
         cudaMemcpy(
             sw_net__h, sw_net__df_e, esp.nvi * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
@@ -1097,7 +1097,7 @@ bool radiative_transfer::store(const ESP &esp, storage &s) {
             fsw_dn_h, sw_down__df_e, esp.nvi * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
         s.append_table(fsw_dn_h, esp.nvi * esp.point_num, "/fsw_dn", "W m^-2", "downward flux (SW)");
 
-        cuda_check_status_or_exit(__FILE__, __LINE__); 
+        //cuda_check_status_or_exit(__FILE__, __LINE__); 
 
         //cudaMemcpy(tau_h, tau_Ve__df_e, esp.nvi * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
         s.append_table(tau_h,
@@ -1107,12 +1107,12 @@ bool radiative_transfer::store(const ESP &esp, storage &s) {
                        "optical depth across each layer (not total optical depth)");
     
     
-        cuda_check_status_or_exit(__FILE__, __LINE__);             
+        //cuda_check_status_or_exit(__FILE__, __LINE__);             
     
         cudaMemcpy(qheat_h, qheat_d, esp.nv * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
         s.append_table(qheat_h, esp.nv * esp.point_num, "/DGQheat", " ", "Double Gray Qheat");
         
-        cuda_check_status_or_exit(__FILE__, __LINE__);
+        //cuda_check_status_or_exit(__FILE__, __LINE__);
     
         // cudaMemcpy(Tsurface_h, Tsurface_d, esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
         // s.append_table(Tsurface_h, esp.point_num, "/Tsurface", "K", "surface temperature");
@@ -1122,14 +1122,14 @@ bool radiative_transfer::store(const ESP &esp, storage &s) {
         s.append_value(ASR_tot, "/ASR", "W", "Absorbed Shortwave Radiation (global total)");
         s.append_value(OLR_tot, "/OLR", "W", "Outgoing Longwave Radiation (global total)");
         
-        cuda_check_status_or_exit(__FILE__, __LINE__);
+        //cuda_check_status_or_exit(__FILE__, __LINE__);
 
         cudaMemcpy(k_IR_2__h, k_IR_2_nv_d, 2*esp.nv * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
         s.append_table(k_IR_2__h, 2*esp.nv * esp.point_num, "/k_IR_2__h", " ", "kappa for two IR bands");
         cudaMemcpy(k_V_3__h, k_V_3_nv_d,3* esp.nv * esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
         s.append_table(k_V_3__h, 3*esp.nv * esp.point_num, "/k_V_3__h", " ", "kappa for three V bands");
         
-        cuda_check_status_or_exit(__FILE__, __LINE__);
+        //cuda_check_status_or_exit(__FILE__, __LINE__);
 
               
 
@@ -1179,7 +1179,7 @@ bool radiative_transfer::store(const ESP &esp, storage &s) {
         s.append_value(ASR_tot, "/ASR", "W", "Absorbed Shortwave Radiation (global total)");
         s.append_value(OLR_tot, "/OLR", "W", "Outgoing Longwave Radiation (global total)");
         
-        cuda_check_status_or_exit(__FILE__, __LINE__);
+        //cuda_check_status_or_exit(__FILE__, __LINE__);
     }
    
 
@@ -1205,7 +1205,7 @@ bool radiative_transfer::store_init(storage &s) {
        
         // s.append_value(f_lw, "/f_lw", "-", "fraction of taulw in well-mixed absorber");
         
-        cuda_check_status_or_exit(__FILE__, __LINE__);
+        //cuda_check_status_or_exit(__FILE__, __LINE__);
 
     } else {
         s.append_value(Tstar, "/Tstar", "K", "Temperature of host star");
@@ -1272,6 +1272,6 @@ void radiative_transfer::RTSetup(double Tstar_,
 
     rt1Dmode = rt1Dmode_;
     
-    cuda_check_status_or_exit(__FILE__, __LINE__);
+    //cuda_check_status_or_exit(__FILE__, __LINE__);
 }
 
