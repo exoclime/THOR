@@ -44,7 +44,7 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
-#include <cmath.h>
+#include <math.h>
 
 
 __global__ void dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
@@ -112,7 +112,7 @@ __global__ void dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
                 // Downward pass
                 for (i = nv - 2; i > -1; i--){
                     d_p = Rho_d[id * nv + i] * Gravit * (Altitudeh_d[i+1] - Altitudeh_d[i]);
-                    pfact = pow( (Pressure_d[id * nv + i] - d_p) / Pressure_d[id * nv + i] , Rd_d / Cp_d);
+                    pfact = pow( (double)((Pressure_d[id * nv + i] - d_p) / Pressure_d[id * nv + i]) , Rd_d / Cp_d);
                     condi = (Temperature_d[id * nv + i] * pfact - small);
 
                     if (Temperature_d[id * nv + i + 1] < condi) {
