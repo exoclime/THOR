@@ -195,12 +195,12 @@ __global__ void compute_cos_zenith_angles(double* cos_zenith_angles,
                                     ecc,
                                     obliquity,
                                     column_idx);
-        /*    
+            
         if (coszrs < 0.0)
             cos_zenith_angles[column_idx] = 0.0;
         else
             cos_zenith_angles[column_idx] = coszrs;
-        */
+        
     }
 }
 
