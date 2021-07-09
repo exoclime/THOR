@@ -112,7 +112,9 @@ __global__ void dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
                 // Downward pass
                 for (i = nv - 2; i > -1; i--){
                     d_p = Rho_d[id * nv + i] * Gravit * (Altitudeh_d[i+1] - Altitudeh_d[i]);
-                    pfact = pow( (double)((Pressure_d[id * nv + i] - d_p) / Pressure_d[id * nv + i]) , Rd_d / Cp_d);
+                    pfact = 
+                        pow( (double)((Pressure_d[id * nv + i] - d_p) / Pressure_d[id * nv + i]) ,
+                            Rd_d / Cp_d);
                     condi = (Temperature_d[id * nv + i] * pfact - small);
 
                     if (Temperature_d[id * nv + i + 1] < condi) {
@@ -131,7 +133,10 @@ __global__ void dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
                 // Upward pass
                 for (i = 0; i < nv - 1; i++) { 
                     d_p = Rho_d[id * nv + i] * Gravit * (Altitudeh_d[i+1] - Altitudeh_d[i]);
-                    pfact = pow( (Pressure_d[id * nv + i] - d_p) / Pressure_d[id * nv + i] , Rd_d / Cp_d);
+                    pfact =
+                        pow( (Pressure_d[id * nv + i] - d_p) / Pressure_d[id * nv + i] ,
+                            Rd_d / Cp_d);
+
                     condi = (Temperature_d[id * nv + i] * pfact - small);
 
                     if (Temperature_d[id * nv + i + 1] < condi) {
@@ -192,9 +197,10 @@ __global__ void dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
                 
                 Pressure_d[id * nv + i] = Temperature_d[id * nv + i] * Rd_d * Rho_d[id * nv + i];
                     
-                pt_d[id * nv + i] = Temperature_d[id * nv + i] *
-                        pow(Pressure_d[id * nv + i] / Pressureh_d[id * (nv + 1) + 0],
-                            - Rd_d / Cp_d );
+                pt_d[id * nv + i] = 
+                    Temperature_d[id * nv + i]
+                        * pow(Pressure_d[id * nv + i] / Pressureh_d[id * (nv + 1) + 0],
+                            Rd_d / Cp_d );
             }
 
             
