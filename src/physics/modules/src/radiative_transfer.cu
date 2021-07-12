@@ -726,7 +726,7 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
     }
 
     if (run) {
-        double picket_fence_mod = true;
+        double picket_fence_mod = false;
         double Tirr;
         //
         //  Number of threads per block.
