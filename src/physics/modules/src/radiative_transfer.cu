@@ -92,7 +92,7 @@ void radiative_transfer::print_config() {
 bool radiative_transfer::initialise_memory(const ESP &              esp,
                                            device_RK_array_manager &phy_modules_core_arrays) {
 
-    double picket_fence_mod = true;
+    double picket_fence_mod = false;
 
     cudaMalloc((void **)&ASR_d, esp.point_num * sizeof(double));
     cudaMalloc((void **)&OLR_d, esp.point_num * sizeof(double));
@@ -227,7 +227,7 @@ bool radiative_transfer::initialise_memory(const ESP &              esp,
 
 
 bool radiative_transfer::free_memory() {
-    double picket_fence_mod = true;
+    double picket_fence_mod = false;
 
     if (picket_fence_mod) {
         
@@ -364,7 +364,7 @@ bool radiative_transfer::initial_conditions(const ESP &            esp,
                    spindown_stop_step);
     }
 
-    double picket_fence_mod = true;
+    double picket_fence_mod = false;
 
     if (picket_fence_mod) {
     
@@ -972,7 +972,7 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
             // stationary orbit/obliquity
             // calculate annually average of insolation for the first orbit
 
-            double picket_fence_mod = true;
+            double picket_fence_mod = false;
 
             if (picket_fence_mod) {
 
@@ -987,7 +987,7 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
 }
 
 bool radiative_transfer::configure(config_file &config_reader) {
-    double picket_fence_mod = true;
+    double picket_fence_mod = false;
 
     if (picket_fence_mod) {
     
@@ -1063,7 +1063,7 @@ bool radiative_transfer::configure(config_file &config_reader) {
 
 bool radiative_transfer::store(const ESP &esp, storage &s) {
 
-    double picket_fence_mod = true;
+    double picket_fence_mod = false;
 
     if (picket_fence_mod) {
         cudaMemcpy(insol_h, insol_d, esp.point_num * sizeof(double), cudaMemcpyDeviceToHost);
@@ -1187,7 +1187,7 @@ bool radiative_transfer::store(const ESP &esp, storage &s) {
 }
 
 bool radiative_transfer::store_init(storage &s) {
-    double picket_fence_mod = true;
+    double picket_fence_mod = false;
 
     if (picket_fence_mod) {
         s.append_value(Tstar, "/Tstar", "K", "Temperature of host star");
