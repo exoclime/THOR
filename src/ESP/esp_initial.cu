@@ -215,7 +215,7 @@ ESP::alloc_data(bool globdiag, bool output_mean, bool out_interm_momentum, bool 
     Mh_h          = (double *)malloc(nv * point_num * 3 * sizeof(double));
     W_h           = (double *)malloc(nv * point_num * sizeof(double));
     Wh_h          = (double *)malloc(nvi * point_num * sizeof(double));
-    double temperatureh_h[nvi], pressureh_d[nvi];
+   
     
 
     if (output_mean == true) {
@@ -546,6 +546,9 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                const double StBC = 5.670374419e-8;
                const double pi = atan((double)(1)) * 4;
+
+               double temperatureh_h[nvi]= 0.0;
+               double pressureh_d[nvi]= 0.0;
         
                 for (int lev = 0; lev <= nv; lev++) {
                     if (lev == 0) {
@@ -613,6 +616,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                     adiabat_correction(nv, temperature_h, Altitude_h, Rho_h, pressure_h, sim.Gravit);
 
                     printf(" At the end of condition: init_PT_profile == PARAMENTIERl");
+                    free(temperatureh_h);
+                    free(pressureh_d);
 
 
                 
@@ -1229,8 +1234,7 @@ __host__ ESP::~ESP() {
     free(Rho_h);
     free(pressure_h);
     free(temperature_h);
-    free(temperatureh_h);
-    free(pressureh_d);
+    
     free(Mh_h);
     // free(diffmh_h);
     // free(diffrh_h);
