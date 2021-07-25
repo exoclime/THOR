@@ -183,8 +183,7 @@ __host__ ESP::ESP(int *                 point_local_,
     f_lw     = f_lw_;
     bv_freq  = bv_freq_;
 
-    Tstar    = Tstar_;
-    radius_star      = radius_star_ * 695700; 
+    
 
     // Set the physics module execute state for the rest of the lifetime of ESP object
     // only execute physics modules when no benchmarks are enabled
