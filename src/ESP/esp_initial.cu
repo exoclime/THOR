@@ -183,6 +183,9 @@ __host__ ESP::ESP(int *                 point_local_,
     f_lw     = f_lw_;
     bv_freq  = bv_freq_;
 
+    Tstar    = Tstar_;
+    radius_star      = radius_star_ * 695700; 
+
     // Set the physics module execute state for the rest of the lifetime of ESP object
     // only execute physics modules when no benchmarks are enabled
     if (core_benchmark == NO_BENCHMARK) {
@@ -213,6 +216,7 @@ ESP::alloc_data(bool globdiag, bool output_mean, bool out_interm_momentum, bool 
     Mh_h          = (double *)malloc(nv * point_num * 3 * sizeof(double));
     W_h           = (double *)malloc(nv * point_num * sizeof(double));
     Wh_h          = (double *)malloc(nvi * point_num * sizeof(double));
+    double temperatureh_h, pressureh_d;
     temperatureh_h= (double *)malloc(nvi * sizeof(double));
     pressureh_d   = (double *)malloc(nvi * sizeof(double));
 
@@ -543,11 +547,12 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                double psm, ps, ptop, pp;
 
                const double StBC = 5.670374419e-8;
+               const double pi = atan((double)(1)) * 4;
         
                 for (int lev = 0; lev <= nv; lev++) {
                     if (lev == 0) {
                         psm = pressure_h[i * nv + 1]
-                              - Rho_h[i * nv + 0] * gravit * (-Altitude_h[0] - Altitude_h[1]);
+                              - Rho_h[i * nv + 0] * sim.Gravit * (-Altitude_h[0] - Altitude_h[1]);
                         ps = 0.5 * (pressure_h[i * nv + 0] + psm);
 
                         pressureh_d[0] = ps;
@@ -572,7 +577,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                                 * (2 * Altitudeh_h[nv] - Altitude_h[nv - 1] - Altitude_h[nv - 2]);
                         if (pp < 0)
                             pp = 0; //prevents temperature at the top from becoming negative
-                        ptop = 0.5 * (temperature_h[id * nv + nv - 1] + pp);
+                        ptop = 0.5 * (temperature_h[i * nv + nv - 1] + pp);
 
                         temperatureh_h[nv] = ptop;
 
@@ -589,7 +594,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                     int table_num;
                     double met, Tirr;
                     mu = 0.5;
-                    met = metalicity;
+                    met = 0.0; // to be connected to input configuration file
 
                     if (ultrahot_thermo != NO_UH_THERMO) {
                         table_num = 1;

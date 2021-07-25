@@ -627,6 +627,10 @@ int main(int argc, char** argv) {
         init_PT_profile = ISOTHERMAL;
         config_OK &= true;
     }
+    else if (init_PT_profile_str == "paramentier") {
+        init_PT_profile = PARAMENTIER;
+        config_OK &= true;
+    }
     else if (init_PT_profile_str == "guillot") {
         init_PT_profile = GUILLOT;
         config_OK &= true;

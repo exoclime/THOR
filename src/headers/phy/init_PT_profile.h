@@ -583,7 +583,7 @@ void adiabat_correction(int nlay, double* (&Tl),
                 gradad[i] = 0.0;
             }
             d_p = Rho_h[0 * nlay + i] * Gravit * (Altitude_h[i+1] - Altitude_h[i]);
-            Tl[i + 1] = Tl[i] * pow((pressure_h[i * nlay + i] - d_p) / pressure_h[i * nlay + i]), gradad[i]);
+            Tl[i + 1] = Tl[i] * pow((pressure_h[i * nlay + i] - d_p) / pressure_h[i * nlay + i], gradad[i]);
         }
     }
 }
