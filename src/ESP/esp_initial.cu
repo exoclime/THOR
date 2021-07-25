@@ -622,8 +622,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                 
 
-            }
-            else {
+            } else {
                 //
                 //          Initial conditions for a non-isothermal Atmosphere
                 //             alternative default
