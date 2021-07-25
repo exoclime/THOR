@@ -530,8 +530,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         it++;
                     }
                 }
-            }
-            else if (init_PT_profile == PARAMENTIER) {
+            } else if (init_PT_profile == PARAMENTIER) {
                 //
                 //          Initial conditions for a non-isothermal Atmosphere 
                 //          radiative transfer and layering accroding 
