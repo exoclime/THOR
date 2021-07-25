@@ -215,9 +215,8 @@ ESP::alloc_data(bool globdiag, bool output_mean, bool out_interm_momentum, bool 
     Mh_h          = (double *)malloc(nv * point_num * 3 * sizeof(double));
     W_h           = (double *)malloc(nv * point_num * sizeof(double));
     Wh_h          = (double *)malloc(nvi * point_num * sizeof(double));
-    double temperatureh_h, pressureh_d;
-    temperatureh_h= (double ) malloc(1*nvi * sizeof(double));
-    pressureh_d   = (double ) malloc(1*nvi * sizeof(double));
+    double temperatureh_h[nvi], pressureh_d[nvi];
+    
 
     if (output_mean == true) {
         Rho_mean_h      = (double *)malloc(nv * point_num * sizeof(double));
@@ -595,13 +594,19 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                     mu = 0.5;
                     met = 0.0; // to be connected to input configuration file
 
+                    double Tstar, Rstar, star_planet_distance;
+
+                    Tstar = 6092;
+                    star_planet_distance = 0.04747 * 1.496e8;
+                    Rstar = 1.203 * 6.96342e8;
+
                     if (ultrahot_thermo != NO_UH_THERMO) {
                         table_num = 1;
                     } else {
                         table_num = 2;
                     }
 
-                    Tirr = ESP.Tstar_ * pow(ESP.radius_star_ / ESP.planet_star_dist_ ,0.5);
+                    Tirr = Tstar * pow(Rstar / star_planet_distance ,0.5);
 
                     Parmentier_IC(nv, pressure_h, pressureh_d, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, met, Altitude_h, Rho_h);
 
