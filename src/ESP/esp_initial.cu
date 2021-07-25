@@ -55,6 +55,8 @@
 #include "phy/valkyrie_jet_steadystate.h"
 #include "storage.h"
 
+#include "phy/init_PT_profile.h"
+
 #include <map>
 #include <stdio.h>
 
@@ -211,6 +213,8 @@ ESP::alloc_data(bool globdiag, bool output_mean, bool out_interm_momentum, bool 
     Mh_h          = (double *)malloc(nv * point_num * 3 * sizeof(double));
     W_h           = (double *)malloc(nv * point_num * sizeof(double));
     Wh_h          = (double *)malloc(nvi * point_num * sizeof(double));
+    temperatureh_h= (double *)malloc(nvi * sizeof(double));
+    pressureh_d   = (double *)malloc(nvi * sizeof(double));
 
     if (output_mean == true) {
         Rho_mean_h      = (double *)malloc(nv * point_num * sizeof(double));
@@ -525,10 +529,90 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                     }
                 }
             }
+            else if (init_PT_profile == PARAMENTIER) {
+                //
+                //          Initial conditions for a non-isothermal Atmosphere 
+                //          radiative transfer and layering accroding 
+                //          to Parmentier & Menou (2014) and Parmentier et al. (2015)
+
+                printf(" At the start of condition: init_PT_profile == PARAMENTIERl");
+
+
+               double ContributionFactorFromBelow;
+               double ContributionFactorFromAbove;
+               double psm, ps, ptop, pp;
+
+               const double StBC = 5.670374419e-8;
+        
+                for (int lev = 0; lev <= nv; lev++) {
+                    if (lev == 0) {
+                        psm = pressure_h[i * nv + 1]
+                              - Rho_h[i * nv + 0] * gravit * (-Altitude_h[0] - Altitude_h[1]);
+                        ps = 0.5 * (pressure_h[i * nv + 0] + psm);
+
+                        pressureh_d[0] = ps;
+
+                        temperatureh_h[0]  = pow((pi*Tint/StBC),0.25);
+                        
+                    }
+                    else if (lev == nv) {
+                        pp = pressure_h[i * nv + nv-2]
+                             + (pressure_h[i * nv + nv-1] - pressure_h[i * nv + nv-2])
+                                   / (Altitude_h[nv - 1] - Altitude_h[nv - 2])
+                                   * (2 * Altitudeh_h[nv] - Altitude_h[nv - 1] - Altitude_h[nv - 2]);
+                        if (pp < 0)
+                            pp = 0; //prevents pressure at the top from becoming negative
+                        ptop = 0.5 * (pressure_h[i * nv + nv -1] + pp);
+
+                        pressureh_d[nv] = ptop;
+
+                        pp = temperature_h[i * nv + nv - 2]
+                            + (temperature_h[i * nv + nv - 1] - temperature_h[i * nv + nv - 2])
+                                / (Altitude_h[nv - 1] - Altitude_h[nv - 2])
+                                * (2 * Altitudeh_h[nv] - Altitude_h[nv - 1] - Altitude_h[nv - 2]);
+                        if (pp < 0)
+                            pp = 0; //prevents temperature at the top from becoming negative
+                        ptop = 0.5 * (temperature_h[id * nv + nv - 1] + pp);
+
+                        temperatureh_h[nv] = ptop;
+
+                    }
+                    else {    
+                        ContributionFactorFromBelow = (Altitudeh_h[lev] - Altitude_h[lev]) / (Altitude_h[lev - 1] - Altitude_h[lev]);
+                        ContributionFactorFromAbove =  (Altitudeh_h[lev] - Altitude_h[lev - 1]) / (Altitude_h[lev] - Altitude_h[lev - 1]);
+                        
+                        pressureh_d[lev] = pressure_h[ lev - 1] * ContributionFactorFromBelow + pressure_h[lev] * ContributionFactorFromAbove;
+                        temperatureh_h[lev] = pressure_h[ lev-1] * ContributionFactorFromBelow + pressure_h[lev] * ContributionFactorFromAbove;
+
+                    }
+
+                    int table_num;
+                    double met, Tirr;
+                    mu = 0.5;
+                    met = metalicity;
+
+                    if (ultrahot_thermo != NO_UH_THERMO) {
+                        table_num = 1;
+                    } else {
+                        table_num = 2;
+                    }
+
+                    Tirr = Tstar * pow(radius_star / esp.insolation.get_r_orb() ,0.5);
+
+                    Parmentier_IC(nv, pressure_h, pressureh_d, Tint, mu, double Tirr, sim.Gravit, temperature_h, table_num, met, Altitude_h, Rho_h);
+
+                    adiabat_correction(nv, temperature_h, Altitude_h, Rho_h, pressure_h, sim.Gravit);
+
+                    printf(" At the end of condition: init_PT_profile == PARAMENTIERl");
+
+
+                
+
+            }
             else {
                 //
                 //          Initial conditions for a non-isothermal Atmosphere
-                //
+                //             alternative default
                 mu = 0.5;
 
                 for (int lev = 0; lev < nv; lev++) {
@@ -626,6 +710,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 }
             }
 
+            /// 
+
             for (int lev = 0; lev < nv; lev++) {
                 //              Density [kg/m3]
                 Rho_h[i * nv + lev] =
@@ -716,6 +802,30 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 }
             }
         }
+
+
+
+        // copy initial condition from the first column to all other columns
+        for (int i = 1; i < point_num; i++) {
+            for (int lev = 0; lev < nv; lev++) {
+                Rho_h[i * nv + lev] = Rho_h[0 * nv + lev];
+                temperature_h[i * nv + lev] =  temperature_h[0 * nv + lev];
+                pressure_h[i * nv + lev] = pressure_h[0 * nv + lev];
+                Cp_h[i * nv + lev] =  Cp_h[0 * nv + lev];
+                Rd_h[i * nv + lev] = Rd_h[0 * nv + lev];
+                //              Momentum [kg/m3 m/s]
+                Mh_h[i * 3 * nv + 3 * lev + 0] = 0.0;
+                Mh_h[i * 3 * nv + 3 * lev + 1] = 0.0;
+                Mh_h[i * 3 * nv + 3 * lev + 2] = 0.0;
+                //              Vertical momentum [kg/m3 m/s]
+                W_h[i * nv + lev]        = 0.0; // Center of the layer.
+                Wh_h[i * (nv + 1) + lev] = 0.0; // Layers interface.
+            }
+
+            Tsurface_h[i] = Tsurface_h[0];
+            
+        }
+
         if (core_benchmark == JET_STEADY) {
             //  Number of threads per block.
             const int NTH = 256;
@@ -1110,6 +1220,8 @@ __host__ ESP::~ESP() {
     free(Rho_h);
     free(pressure_h);
     free(temperature_h);
+    free(temperatureh_h);
+    free(pressureh_d);
     free(Mh_h);
     // free(diffmh_h);
     // free(diffrh_h);

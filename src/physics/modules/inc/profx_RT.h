@@ -1721,30 +1721,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 Te__df_e[id * nvi + nv] = ptop;
                
             }
-            /*
-            else if (lev == nvi) {
-                pp = pressure_d[id * nv + nv - 2]
-                     + (pressure_d[id * nv + nv - 1] - pressure_d[id * nv + nv - 2])
-                           / (Altitude_d[nv - 1] - Altitude_d[nv - 2])
-                           * (2 * Altitudeh_d[nvi] - Altitude_d[nv - 1] - Altitude_d[nv - 2]);
-                if (pp < 0)
-                    pp = 0; //prevents pressure at the top from becoming negative
-                ptop = 0.5 * (pressure_d[id * nv + nv]  + pp);
-
-                phtemp[id * nvi + nvi] = ptop;
-
-                pp = temperature_d[id * nv + nv - 2]
-                     + (temperature_d[id * nv + nv - 1] - temperature_d[id * nv + nv - 2])
-                           / (Altitude_d[nv - 1] - Altitude_d[nv - 2])
-                           * (2 * Altitudeh_d[nvi] - Altitude_d[nv - 1] - Altitude_d[nv - 2]);
-                if (pp < 0)
-                    pp = 0; //prevents temperature at the top from becoming negative
-                ptop = 0.5 * (temperature_d[id * nv + nv ] + pp);
-
-                Te__df_e[id * nvi + nvi] = ptop;
-               
-            }
-            */
+           
             else {
                 
                 

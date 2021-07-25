@@ -82,7 +82,7 @@ __global__ void dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
         int  iter   = 0;
         bool repeat = true; //will repeat entire
 
-        bool ray_mode = false;
+        bool ray_mode = true;
 
         if (ray_mode == true)
         {
