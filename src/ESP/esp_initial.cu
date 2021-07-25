@@ -216,8 +216,8 @@ ESP::alloc_data(bool globdiag, bool output_mean, bool out_interm_momentum, bool 
     W_h           = (double *)malloc(nv * point_num * sizeof(double));
     Wh_h          = (double *)malloc(nvi * point_num * sizeof(double));
     double temperatureh_h, pressureh_d;
-    temperatureh_h= (double *)malloc(nvi * sizeof(double));
-    pressureh_d   = (double *)malloc(nvi * sizeof(double));
+    temperatureh_h= (double *)malloc(1*nvi * sizeof(double));
+    pressureh_d   = (double *)malloc(1*nvi * sizeof(double));
 
     if (output_mean == true) {
         Rho_mean_h      = (double *)malloc(nv * point_num * sizeof(double));
@@ -601,7 +601,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         table_num = 2;
                     }
 
-                    Tirr = Tstar * pow(radius_star / esp.insolation.get_r_orb() ,0.5);
+                    Tirr = sim.Tstar * pow(sim.radius_star / sim.get_r_orb() ,0.5);
 
                     Parmentier_IC(nv, pressure_h, pressureh_d, Tint, mu, double Tirr, sim.Gravit, temperature_h, table_num, met, Altitude_h, Rho_h);
 
