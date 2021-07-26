@@ -541,7 +541,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 //          radiative transfer and layering accroding 
                 //          to Parmentier & Menou (2014) and Parmentier et al. (2015)
 
-                printf(" At the start of condition: init_PT_profile == PARMENTIER");
+                //printf(" At the start of condition: init_PT_profile == PARMENTIER");
 
 
                double ContributionFactorFromBelow;
@@ -553,6 +553,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                double temperatureh_h[nvi]= {0.0};
                double pressureh_d[nvi]= {0.0};
+
+               printf(" At the start of condition: init_PT_profile == PARMENTIER");
         
                 for (int lev = 0; lev <= nv; lev++) {
                     if (lev == 0) {
