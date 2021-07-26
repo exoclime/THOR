@@ -628,8 +628,8 @@ int main(int argc, char** argv) {
         config_OK &= true;
     }
     
-    else if (init_PT_profile_str == "paramentier") {
-        init_PT_profile = PARAMENTIER;
+    else if (init_PT_profile_str == "parmentier") {
+        init_PT_profile = PARMENTIER;
         config_OK &= true;
     }
     

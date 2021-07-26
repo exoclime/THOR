@@ -530,13 +530,13 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         it++;
                     }
                 }
-            } else if (init_PT_profile == PARAMENTIER) {
+            } else if (init_PT_profile == PARMENTIER) {
                 //
                 //          Initial conditions for a non-isothermal Atmosphere 
                 //          radiative transfer and layering accroding 
                 //          to Parmentier & Menou (2014) and Parmentier et al. (2015)
 
-                printf(" At the start of condition: init_PT_profile == PARAMENTIER");
+                printf(" At the start of condition: init_PT_profile == PARMENTIER");
 
 
                double ContributionFactorFromBelow;
@@ -616,7 +616,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                 adiabat_correction(nv, temperature_h, Altitude_h, Rho_h, pressure_h, sim.Gravit);
 
-                printf(" At the end of condition: init_PT_profile == PARAMENTIER");
+                printf(" At the end of condition: init_PT_profile == PARMENTIER");
                 free(temperatureh_h);
                 free(pressureh_d);
 
