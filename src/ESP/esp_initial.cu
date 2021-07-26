@@ -537,7 +537,101 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         it++;
                     }
                 }
-            }  else {
+            } else if (init_PT_profile == PARMENTIER) {
+                //
+                //          Initial conditions for a non-isothermal Atmosphere 
+                //          radiative transfer and layering accroding 
+                //          to Parmentier & Menou (2014) and Parmentier et al. (2015)
+
+                //printf(" At the start of condition: init_PT_profile == PARMENTIER");
+
+
+               double ContributionFactorFromBelow;
+               double ContributionFactorFromAbove;
+               double psm, ps, ptop, pp;
+
+               const double StBC = 5.670374419e-8;
+               const double pi = atan((double)(1)) * 4;
+
+               double temperatureh_h[nvi]= {0.0};
+               double pressureh_d[nvi]= {0.0};
+
+               printf(" At the start of condition: init_PT_profile == PARMENTIER");
+        
+                for (int lev = 0; lev <= nv; lev++) {
+                    if (lev == 0) {
+                        psm = pressure_h[i * nv + 1]
+                              - Rho_h[i * nv + 0] * sim.Gravit * (-Altitude_h[0] - Altitude_h[1]);
+                        ps = 0.5 * (pressure_h[i * nv + 0] + psm);
+
+                        pressureh_d[0] = ps;
+
+                        temperatureh_h[0]  = pow((pi*Tint/StBC),0.25);
+                        
+                    }
+                    else if (lev == nv) {
+                        pp = pressure_h[i * nv + nv-2]
+                             + (pressure_h[i * nv + nv-1] - pressure_h[i * nv + nv-2])
+                                   / (Altitude_h[nv - 1] - Altitude_h[nv - 2])
+                                   * (2 * Altitudeh_h[nv] - Altitude_h[nv - 1] - Altitude_h[nv - 2]);
+                        if (pp < 0)
+                            pp = 0; //prevents pressure at the top from becoming negative
+                        ptop = 0.5 * (pressure_h[i * nv + nv -1] + pp);
+
+                        pressureh_d[nv] = ptop;
+
+                        pp = temperature_h[i * nv + nv - 2]
+                            + (temperature_h[i * nv + nv - 1] - temperature_h[i * nv + nv - 2])
+                                / (Altitude_h[nv - 1] - Altitude_h[nv - 2])
+                                * (2 * Altitudeh_h[nv] - Altitude_h[nv - 1] - Altitude_h[nv - 2]);
+                        if (pp < 0)
+                            pp = 0; //prevents temperature at the top from becoming negative
+                        ptop = 0.5 * (temperature_h[i * nv + nv - 1] + pp);
+
+                        temperatureh_h[nv] = ptop;
+
+                    }
+                    else {    
+                        ContributionFactorFromBelow = (Altitudeh_h[lev] - Altitude_h[lev]) / (Altitude_h[lev - 1] - Altitude_h[lev]);
+                        ContributionFactorFromAbove =  (Altitudeh_h[lev] - Altitude_h[lev - 1]) / (Altitude_h[lev] - Altitude_h[lev - 1]);
+                        
+                        pressureh_d[lev] = pressure_h[ lev - 1] * ContributionFactorFromBelow + pressure_h[lev] * ContributionFactorFromAbove;
+                        temperatureh_h[lev] = pressure_h[ lev-1] * ContributionFactorFromBelow + pressure_h[lev] * ContributionFactorFromAbove;
+
+                    }
+
+                }
+
+                int table_num;
+                double met, Tirr;
+                mu = 0.5;
+                met = 0.0; // to be connected to input configuration file
+
+                double Tstar, Rstar, star_planet_distance;
+
+                Tstar = 6092;
+                star_planet_distance = 0.04747 * 1.496e8;
+                Rstar = 1.203 * 6.96342e8;
+
+                if (ultrahot_thermo != NO_UH_THERMO) {
+                    table_num = 1;
+                } else {
+                    table_num = 2;
+                }
+
+                Tirr = Tstar * pow(Rstar / star_planet_distance ,0.5);
+
+                Parmentier_IC(nv, pressure_h, pressureh_d, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, met, Altitude_h, Rho_h);
+
+                adiabat_correction(nv, temperature_h, Altitude_h, Rho_h, pressure_h, sim.Gravit);
+
+                printf(" At the end of condition: init_PT_profile == PARMENTIER");
+                //free(temperatureh_h);
+                //free(pressureh_d);
+
+                
+                
+            }   else {
 
                 printf(" should not print 2 ");
                 //
@@ -640,101 +734,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 }
             }
 
-            //if (init_PT_profile == PARMENTIER) {
-                //
-                //          Initial conditions for a non-isothermal Atmosphere 
-                //          radiative transfer and layering accroding 
-                //          to Parmentier & Menou (2014) and Parmentier et al. (2015)
-
-                //printf(" At the start of condition: init_PT_profile == PARMENTIER");
-
-
-               double ContributionFactorFromBelow;
-               double ContributionFactorFromAbove;
-               double psm, ps, ptop, pp;
-
-               const double StBC = 5.670374419e-8;
-               const double pi = atan((double)(1)) * 4;
-
-               double temperatureh_h[nvi]= {0.0};
-               double pressureh_d[nvi]= {0.0};
-
-               printf(" At the start of condition: init_PT_profile == PARMENTIER");
-        
-                for (int lev = 0; lev <= nv; lev++) {
-                    if (lev == 0) {
-                        psm = pressure_h[i * nv + 1]
-                              - Rho_h[i * nv + 0] * sim.Gravit * (-Altitude_h[0] - Altitude_h[1]);
-                        ps = 0.5 * (pressure_h[i * nv + 0] + psm);
-
-                        pressureh_d[0] = ps;
-
-                        temperatureh_h[0]  = pow((pi*Tint/StBC),0.25);
-                        
-                    }
-                    else if (lev == nv) {
-                        pp = pressure_h[i * nv + nv-2]
-                             + (pressure_h[i * nv + nv-1] - pressure_h[i * nv + nv-2])
-                                   / (Altitude_h[nv - 1] - Altitude_h[nv - 2])
-                                   * (2 * Altitudeh_h[nv] - Altitude_h[nv - 1] - Altitude_h[nv - 2]);
-                        if (pp < 0)
-                            pp = 0; //prevents pressure at the top from becoming negative
-                        ptop = 0.5 * (pressure_h[i * nv + nv -1] + pp);
-
-                        pressureh_d[nv] = ptop;
-
-                        pp = temperature_h[i * nv + nv - 2]
-                            + (temperature_h[i * nv + nv - 1] - temperature_h[i * nv + nv - 2])
-                                / (Altitude_h[nv - 1] - Altitude_h[nv - 2])
-                                * (2 * Altitudeh_h[nv] - Altitude_h[nv - 1] - Altitude_h[nv - 2]);
-                        if (pp < 0)
-                            pp = 0; //prevents temperature at the top from becoming negative
-                        ptop = 0.5 * (temperature_h[i * nv + nv - 1] + pp);
-
-                        temperatureh_h[nv] = ptop;
-
-                    }
-                    else {    
-                        ContributionFactorFromBelow = (Altitudeh_h[lev] - Altitude_h[lev]) / (Altitude_h[lev - 1] - Altitude_h[lev]);
-                        ContributionFactorFromAbove =  (Altitudeh_h[lev] - Altitude_h[lev - 1]) / (Altitude_h[lev] - Altitude_h[lev - 1]);
-                        
-                        pressureh_d[lev] = pressure_h[ lev - 1] * ContributionFactorFromBelow + pressure_h[lev] * ContributionFactorFromAbove;
-                        temperatureh_h[lev] = pressure_h[ lev-1] * ContributionFactorFromBelow + pressure_h[lev] * ContributionFactorFromAbove;
-
-                    }
-
-                }
-
-                int table_num;
-                double met, Tirr;
-                mu = 0.5;
-                met = 0.0; // to be connected to input configuration file
-
-                double Tstar, Rstar, star_planet_distance;
-
-                Tstar = 6092;
-                star_planet_distance = 0.04747 * 1.496e8;
-                Rstar = 1.203 * 6.96342e8;
-
-                if (ultrahot_thermo != NO_UH_THERMO) {
-                    table_num = 1;
-                } else {
-                    table_num = 2;
-                }
-
-                Tirr = Tstar * pow(Rstar / star_planet_distance ,0.5);
-
-                Parmentier_IC(nv, pressure_h, pressureh_d, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, met, Altitude_h, Rho_h);
-
-                adiabat_correction(nv, temperature_h, Altitude_h, Rho_h, pressure_h, sim.Gravit);
-
-                printf(" At the end of condition: init_PT_profile == PARMENTIER");
-                //free(temperatureh_h);
-                //free(pressureh_d);
-
-                
-                
-            //}
+            
             
 
             printf(" should not print if blocks ignored ");
@@ -833,7 +833,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
         }
 
 
-
+        /*
         // copy initial condition from the first column to all other columns
         for (int i = 1; i < point_num; i++) {
             for (int lev = 0; lev < nv; lev++) {
@@ -854,6 +854,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
             Tsurface_h[i] = Tsurface_h[0];
             
         }
+        */
 
         if (core_benchmark == JET_STEADY) {
             //  Number of threads per block.
