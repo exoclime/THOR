@@ -473,6 +473,9 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
             //
             //          Initial conditions for an isothermal Atmosphere
             //
+            printf(" before any condition for init_PT_profile ");
+
+            printf("init_PT_profile: %d\n", init_PT_profile);
             if ((init_PT_profile == ISOTHERMAL || init_PT_profile == CONSTBV)
                 && ultrahot_thermo == NO_UH_THERMO) {
                 //isothermal initial profile, no variation in Rd or Cp due to H-H2 reaction
