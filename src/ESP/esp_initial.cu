@@ -640,7 +640,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 }
             }
 
-            if (init_PT_profile == PARMENTIER) {
+            //if (init_PT_profile == PARMENTIER) {
                 //
                 //          Initial conditions for a non-isothermal Atmosphere 
                 //          radiative transfer and layering accroding 
@@ -734,8 +734,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                 
                 
-
-            }
+            //}
+            
 
             printf(" should not print if blocks ignored ");
 
