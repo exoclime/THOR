@@ -292,7 +292,7 @@ void gam_Parmentier(double Teff, int table_num, double(&gam_V)[3], double(&Beta_
 
 
     // Calculates the Bond Albedo according to Parmentier et al. (2015) expression
-void Bond_Parmentier(double Teff0, double grav, double& AB) {
+void Bond_Parmentier_host(double Teff0, double grav, double& AB) {
     // dependcies
     //// pow from math
     //// log10 from math        
@@ -380,7 +380,7 @@ void Parmentier_IC(const int nlay, double* pl,
 
     // Find Bond albedo of planet - Bond albedo is given by mu = 1/sqrt(3)
     Teff0 = pow(((pow(Tint, 4.0) + (1.0 / sqrt(((double)3.0))) * pow(Tirr, 4.0))), (1.0 / 4.0));
-    Bond_Parmentier(Teff0, grav, Bond);
+    Bond_Parmentier_host(Teff0, grav, Bond);
 
 
 
