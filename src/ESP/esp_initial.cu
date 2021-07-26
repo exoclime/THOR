@@ -490,6 +490,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 //     Cp_h[i * nv + lev]          = sim.Cp;
                 // }
 
+                printf(" should not print ");
+
                 //iterative solution to hydrostatic equation
                 for (int lev = 0; lev < nv; lev++) {
                     //first, we define thermo quantities of layer below and make
@@ -631,6 +633,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 
 
             } else {
+
+                printf(" should not print 2 ");
                 //
                 //          Initial conditions for a non-isothermal Atmosphere
                 //             alternative default
@@ -730,6 +734,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                     }
                 }
             }
+
+            printf(" should not print if blocks ignored ");
 
             /// 
 
