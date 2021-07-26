@@ -591,34 +591,36 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                     }
 
-                    int table_num;
-                    double met, Tirr;
-                    mu = 0.5;
-                    met = 0.0; // to be connected to input configuration file
+                }
 
-                    double Tstar, Rstar, star_planet_distance;
+                int table_num;
+                double met, Tirr;
+                mu = 0.5;
+                met = 0.0; // to be connected to input configuration file
 
-                    Tstar = 6092;
-                    star_planet_distance = 0.04747 * 1.496e8;
-                    Rstar = 1.203 * 6.96342e8;
+                double Tstar, Rstar, star_planet_distance;
 
-                    if (ultrahot_thermo != NO_UH_THERMO) {
-                        table_num = 1;
-                    } else {
-                        table_num = 2;
-                    }
+                Tstar = 6092;
+                star_planet_distance = 0.04747 * 1.496e8;
+                Rstar = 1.203 * 6.96342e8;
 
-                    Tirr = Tstar * pow(Rstar / star_planet_distance ,0.5);
+                if (ultrahot_thermo != NO_UH_THERMO) {
+                    table_num = 1;
+                } else {
+                    table_num = 2;
+                }
 
-                    Parmentier_IC(nv, pressure_h, pressureh_d, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, met, Altitude_h, Rho_h);
+                Tirr = Tstar * pow(Rstar / star_planet_distance ,0.5);
 
-                    adiabat_correction(nv, temperature_h, Altitude_h, Rho_h, pressure_h, sim.Gravit);
+                Parmentier_IC(nv, pressure_h, pressureh_d, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, met, Altitude_h, Rho_h);
 
-                    printf(" At the end of condition: init_PT_profile == PARAMENTIER");
-                    free(temperatureh_h);
-                    free(pressureh_d);
+                adiabat_correction(nv, temperature_h, Altitude_h, Rho_h, pressure_h, sim.Gravit);
 
+                printf(" At the end of condition: init_PT_profile == PARAMENTIER");
+                free(temperatureh_h);
+                free(pressureh_d);
 
+                
                 
 
             } else {
