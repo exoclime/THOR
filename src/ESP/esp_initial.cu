@@ -469,7 +469,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
     double Rd_L, P_L, T_L, rho_L, alpha;
     if (sim.rest) {
-        for (int i = 0; i < point_num; i++) {
+        for (int i = 0; i < 1; i++) {
             //
             //          Initial conditions for an isothermal Atmosphere
             //
@@ -602,6 +602,10 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                 }
 
+               
+
+                
+
                 int table_num;
                 double met, Tirr;
                 mu = 0.5;
@@ -621,9 +625,9 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                 Tirr = Tstar * pow(Rstar / star_planet_distance ,0.5);
 
-                Parmentier_IC(nv, pressure_h, pressureh_d, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, met, Altitude_h, Rho_h);
+                Parmentier_IC(nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, met);
 
-                adiabat_correction(nv, temperature_h, Altitude_h, Rho_h, pressure_h, sim.Gravit);
+                adiabat_correction(nv, temperature_h, pressure_h, sim.Gravit);
 
                 printf(" At the end of condition: init_PT_profile == PARMENTIER");
                 //free(temperatureh_h);
@@ -833,7 +837,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
         }
 
 
-        /*
+        
         // copy initial condition from the first column to all other columns
         for (int i = 1; i < point_num; i++) {
             for (int lev = 0; lev < nv; lev++) {
@@ -854,7 +858,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
             Tsurface_h[i] = Tsurface_h[0];
             
         }
-        */
+        
 
         if (core_benchmark == JET_STEADY) {
             //  Number of threads per block.

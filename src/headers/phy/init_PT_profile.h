@@ -344,10 +344,8 @@ void Bond_Parmentier_host(double Teff0, double grav, double& AB) {
 //////////////////////////////////////////////////////////////
 
 // This subroutine follows Parmentier & Guillot (2014, 2015) non-grey picket fence scheme
-void Parmentier_IC(const int nlay, double* pl,
-    double* pe, double Tint, double mu, double Tirr,
-    double grav, double* (&Tl), int  table_num, double met,
-     double* Altitude_h, double* Rho_h) {
+void Parmentier_IC(const int nlay, double* pl, double Tint, double mu, double Tirr,
+    double grav, double* (&Tl), int  table_num, double met) {
     // dependcies
     //// pow -> math    
     //// sqrt -> math
@@ -455,47 +453,48 @@ void Parmentier_IC(const int nlay, double* pl,
 
     // T-p structure calculation - we follow exactly V. Parmentier's method
     // Estimate the skin temperature by setting tau = 0
-    tau[0] = 0.0;
+    tau[nlay-1] = 0.0;
     summy = 0.0;
     for (i = 0; i < 3; i++)
     {
-        summy += 3.0 * Beta_V[i] * pow(Tmu, 4.0) / 4.0 * (C[i] + D[i] * exp(-tau[0] / tau_lim) +
-            E[i] * exp(-gam_V[i] * tau[0]));
+        summy += 3.0 * Beta_V[i] * pow(Tmu, 4.0) / 4.0 * (C[i] + D[i] * exp(-tau[nlay-1] / tau_lim) +
+            E[i] * exp(-gam_V[i] * tau[nlay-1]));
     }
 
-    Tskin = 3.0 * pow(Tint, 4) / 4.0 * (tau[0] + A + B * exp(-tau[0] / tau_lim)) + summy;
+    Tskin = 3.0 * pow(Tint, 4) / 4.0 * (tau[nlay-1] + A + B * exp(-tau[nlay-1] / tau_lim)) + summy;
     Tskin = pow(Tskin, (1.0 / 4.0));
 
     // Estimate the opacity TOA at the skin temperature - assume this is = first layer optacity
-    k_Ross_Freedman(Tskin, pl[0], met, kRoss[0]);
-    // k_Rosseland_mod::k_Ross_Valencia(Tskin, pe[0], met, kRoss[0]);
+    k_Ross_Freedman(Tskin, pl[nlay-1], met, kRoss[nlay-1]);
+    
 
 
     // Recalculate the upmost tau with new kappa
-    tau[0] = kRoss[0] / grav * pl[0];
+    tau[nlay-1] = kRoss[nlay-1] / grav * pl[nlay-1];
 
     // More accurate layer T at uppermost layer
     summy = 0.0;
     for (i = 0; i < 3; i++)
     {
-        summy += 3.0 * Beta_V[i] * pow(Tmu, 4.0) / 4.0 * (C[i] + D[i] * exp(-tau[0] / tau_lim) +
-            E[i] * exp(-gam_V[i] * tau[0]));
+        summy += 3.0 * Beta_V[i] * pow(Tmu, 4.0) / 4.0 * (C[i] + D[i] * exp(-tau[nlay-1] / tau_lim) +
+            E[i] * exp(-gam_V[i] * tau[nlay-1]));
     }
-    Tl[0] = 3.0 * pow(Tint, 4) / 4.0 * (tau[0] + A + B * exp(-tau[0] / tau_lim)) + summy;
-    Tl[0] = pow(Tl[0], (1.0 / 4.0));
+    Tl[nlay-1] = 3.0 * pow(Tint, 4) / 4.0 * (tau[nlay-1] + A + B * exp(-tau[nlay-1] / tau_lim)) + summy;
+    Tl[nlay-1] = pow(Tl[nlay-1], (1.0 / 4.0));
 
     // Now we can loop in optical depth space to find the T-p profile
-    for (i = 1; i < nlay; i++)
+    for (i = nlay-2; nlay>-1; i--)
     {
         // Initial guess for layer
-        k_Ross_Freedman(Tl[i - 1], sqrt(pl[i - 1] * pl[i]), met, kRoss[i]);
+        k_Ross_Freedman(Tl[i+1], sqrt(pl[i+1] * pl[i]), met, kRoss[i]);
         
-        tau[i] = tau[i - 1] + kRoss[i] * Rho_h[i] * (Altitude_h[i] - Altitude_h[i-1]) ;
+        tau[i] = tau[i+1] + kRoss[i] / grav *  (pl[i] - pl[i+1]) ;
+    
         summy = 0.0;
         for (j = 0; j < 3; j++)
         {
-            summy = +3.0 * Beta_V[j] * pow(Tmu, 4.0) / 4.0 * (C[j] + D[j] * exp(-tau[i] / tau_lim) +
-                E[j] * exp(-gam_V[j] * tau[i]));
+            summy = +3.0 * Beta_V[j] * pow(Tmu, 4.0) / 4.0 * (C[j] + D[j] * exp(-tau[i-1] / tau_lim) +
+                E[j] * exp(-gam_V[j] * tau[i-1]));
         }
         Tl[i] = 3.0 * pow(Tint, 4.0) / 4.0 * (tau[i] + A + B * exp(-tau[i] / tau_lim)) + summy;
         Tl[i] = pow(Tl[i], (1.0 / 4.0));
@@ -503,9 +502,9 @@ void Parmentier_IC(const int nlay, double* pl,
         // Convergence loop
         for (j = 0; j < 5; j++)
         {
-            k_Ross_Freedman(sqrt(Tl[i - 1] * Tl[i]), sqrt(pl[i - 1] * pl[i]), met, kRoss[i]);
-            //call k_Rosseland_mod::k_Ross_Valencia(sqrt(Tl[i-1]*T[i]), sqrt(pl[i-1]*pl[i]), met, kRoss[i])
-            tau[i] = tau[i - 1] + kRoss[i] * Rho_h[i] * (Altitude_h[i] - Altitude_h[i-1]) ;
+            k_Ross_Freedman(sqrt(Tl[i+1] * Tl[i]), sqrt(pl[i+1] * pl[i]), met, kRoss[i]);
+            
+            tau[i] = tau[i+1] + kRoss[i] / grav *  (pl[i] - pl[i+1]);
             summy = 0.0;
             for (k = 0; k < 3; k++)
             {
@@ -524,8 +523,7 @@ void Parmentier_IC(const int nlay, double* pl,
 //////////////////////////////////////////////////////////////
 
 // Subroutine that corrects for adiabatic region following Parmentier & Guillot (2015)
-void adiabat_correction(int nlay, double* (&Tl),
-    double* Altitude_h, double* Rho_h, double* pressure_h, double Gravit) {
+void adiabat_correction(int nlay, double* (&Tl), double* pressure_h, double Gravit) {
     // dependcies
     //// main_parameters::nlay  -> "FMS_RC_para_&_const.cpp" 
     //// pow -> math    
@@ -545,20 +543,20 @@ void adiabat_correction(int nlay, double* (&Tl),
 
     // start operations
 
-    for (i = 0; i < (nlay - 1); i++)
+    for (i = (nlay-2); i > 0; i--)
     {
-        d_p = Rho_h[0 * nlay + i] * Gravit * (Altitude_h[i+1] - Altitude_h[i]);
-        gradrad[i] = (log10(Tl[i]) - log10(Tl[i + 1])) / (log10(pressure_h[i] - d_p) - log10(pressure_h[i]));
+        
+        gradrad[i+1] = (log10(Tl[i+1]) - log10(Tl[i])) / (log10(pressure_h[i+1]) - log10(pressure_h[i]));
         gradad[i] = ((double)0.32) - ((double)0.10) * Tl[i] / ((double)3000.0);
     }
 
-    gradrad[nlay - 1] = 0.0;
-    gradad[nlay - 1] = 0.0;
+    gradrad[0] = 0.0;
+    gradad[0] = 0.0;
 
-    iRC = nlay - 2;
-    iRC1 = nlay - 2;
+    iRC = 1;
+    iRC1 = 1;
 
-    for (i = (nlay - 2); i >= 0; i--)
+    for (i = 0; i < (nlay-1) ; i++)
     {
         if (iRC1 <= i + 1)
         {
@@ -573,17 +571,17 @@ void adiabat_correction(int nlay, double* (&Tl),
         }
     }
 
-    if (iRC < nlay)
+    if (iRC > 0 )
     {
-        for (i = iRC; i < nlay - 1; i++)
+        for (i = iRC; i > 1; i--)
         {
             gradad[i] = (double)0.32 - ((double)0.10) * Tl[i] / ((double)3000.0);
             if (gradad[i] < 0.0)
             {
                 gradad[i] = 0.0;
             }
-            d_p = Rho_h[0 * nlay + i] * Gravit * (Altitude_h[i+1] - Altitude_h[i]);
-            Tl[i + 1] = Tl[i] * pow((pressure_h[i * nlay + i] - d_p) / pressure_h[i * nlay + i], gradad[i]);
+            
+            Tl[i] = Tl[i+1] * pow((pressure_h[i * nlay + i] ) / pressure_h[i * nlay + i+1], gradad[i+1]);
         }
     }
 }
