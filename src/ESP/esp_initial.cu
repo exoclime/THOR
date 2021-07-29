@@ -675,7 +675,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 {
                     if (pressure_h[i * nv + j] < 0.0)
                     {                
-                        printf("pressure_h[i]] is negative at level %d \n", j);
+                        printf("pressure_h[i] is negative at level %d \n", j);
                         
                     }
                     if (pressure_h[i * nv + j] == 0.0)
