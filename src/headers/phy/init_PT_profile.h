@@ -366,8 +366,14 @@ void Parmentier_IC(const int nlay, double* pl, double Tint, double mu, double Ti
     double a0, a1, b0, A, B, At1, At2;
     double a2[3], a3[3], b1[3], b2[3], b3[3], Av1[3], Av2[3];
     double C[3], D[3], E[3];
-    double kRoss[40];
-    double tau[40 + 1]={0};
+    double kRoss[100];
+    double tau[100 + 1];
+
+    if (nlay>100)
+    {
+         throw invalid_argument("too many vertical layers - max. 100 layers");
+    }
+    
 
     double summy;
 
