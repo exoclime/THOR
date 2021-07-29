@@ -375,7 +375,7 @@ void Parmentier_IC(const int nlay, double* pl, double Tint, double mu, double Ti
         printf("error too many vertical layers - max. 100 layers");
     }
     
-    printf("paramentier positoin 0");
+    
     double summy;
 
     // start operations
@@ -387,7 +387,7 @@ void Parmentier_IC(const int nlay, double* pl, double Tint, double mu, double Ti
     Teff0 = pow(((pow(Tint, 4.0) + (1.0 / sqrt(((double)3.0))) * pow(Tirr, 4.0))), (1.0 / 4.0));
     Bond_Parmentier_host(Teff0, grav, Bond);
 
-    printf("paramentier positoin 1");
+    
 
 
 
@@ -399,7 +399,7 @@ void Parmentier_IC(const int nlay, double* pl, double Tint, double mu, double Ti
     gam_Parmentier(Teff, table_num, gam_V, Beta_V, Beta, gam_1, gam_2,
         gam_P, tau_lim);
 
-    printf("paramentier positoin 2");
+    
 
     for (i = 0; i < 3; i++)
     {
@@ -459,7 +459,7 @@ void Parmentier_IC(const int nlay, double* pl, double Tint, double mu, double Ti
             (9.0 * gam_V[i] * (pow((gam_V[i] * tau_lim), 2.0) - 1.0));
     }
 
-    printf("paramentier positoin 3");
+    
     // T-p structure calculation - we follow exactly V. Parmentier's method
     // Estimate the skin temperature by setting tau = 0
     tau[nlay-1] = 0.0;
@@ -473,7 +473,7 @@ void Parmentier_IC(const int nlay, double* pl, double Tint, double mu, double Ti
     Tskin = 3.0 * pow(Tint, 4) / 4.0 * (tau[nlay-1] + A + B * exp(-tau[nlay-1] / tau_lim)) + summy;
     Tskin = pow(Tskin, (1.0 / 4.0));
 
-    printf("paramentier positoin 4");
+    
     // Estimate the opacity TOA at the skin temperature - assume this is = first layer optacity
     k_Ross_Freedman(Tskin, pl[nlay-1], met, kRoss[nlay-1]);
     
@@ -481,7 +481,7 @@ void Parmentier_IC(const int nlay, double* pl, double Tint, double mu, double Ti
 
     // Recalculate the upmost tau with new kappa
     tau[nlay-1] = kRoss[nlay-1] / grav * pl[nlay-1];
-    printf("paramentier positoin 5");
+    
     // More accurate layer T at uppermost layer
     summy = 0.0;
     for (i = 0; i < 3; i++)
@@ -492,7 +492,7 @@ void Parmentier_IC(const int nlay, double* pl, double Tint, double mu, double Ti
     Tl[nlay-1] = 3.0 * pow(Tint, 4) / 4.0 * (tau[nlay-1] + A + B * exp(-tau[nlay-1] / tau_lim)) + summy;
     Tl[nlay-1] = pow(Tl[nlay-1], (1.0 / 4.0));
 
-    printf("paramentier positoin 6");
+    
     // Now we can loop in optical depth space to find the T-p profile
     for (i = nlay-2; i>-1; i--)
     {
