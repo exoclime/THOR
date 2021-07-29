@@ -667,7 +667,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                 create_pressure_layers( nv,  pressureh_h,  pressure_h,  sim.P_Ref);
 
-                for (int i = 0; i < nlay; i++)
+                for (int i = 0; i < nv; i++)
                 {
                     if (pressure_h[i] < 0.0)
                     {                
