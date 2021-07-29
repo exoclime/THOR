@@ -672,8 +672,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                     if (pressure_h[i] < 0.0)
                     {                
                         printf("pressure_h[i]] is negative at level %d \n", i);
-                        __threadfence();         // ensure store issued before trap
-                        asm("trap;");            // kill kernel with error
+                        
                     }
                     if (pressure_h[i] == 0.0)
                     {                
@@ -683,8 +682,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                     if (isnan(pressure_h[i]))
                     {                
                         printf("pressure_h[i] is NaN at level %d  \n", i);
-                        __threadfence();         // ensure store issued before trap
-                        asm("trap;");            // kill kernel with error
+                        
                     }
                 }
                 
