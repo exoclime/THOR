@@ -663,31 +663,20 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 const double pi = atan((double)(1)) * 4;
 
                 double temperatureh_h[nvi];
-                double pressureh_d[nvi];
+                double pressureh_h[nvi];
+
+                create_pressure_layers( nv,  pressureh_h,  pressure_h,  sim.P_Ref);
 
                
                 
                 for (int lev = 0; lev <= nv; lev++) {
                     if (lev == 0) {
-                        psm = pressure_h[i * nv + 1]
-                              - Rho_h[i * nv + 0] * sim.Gravit * (-Altitude_h[0] - Altitude_h[1]);
-                        ps = 0.5 * (pressure_h[i * nv + 0] + psm);
-
-                        pressureh_d[0] = ps;
-
+                        
                         temperatureh_h[0]  = pow((pi*Tint/StBC),0.25);
                         
                     }
                     else if (lev == nv) {
-                        pp = pressure_h[i * nv + nv-2]
-                             + (pressure_h[i * nv + nv-1] - pressure_h[i * nv + nv-2])
-                                   / (Altitude_h[nv - 1] - Altitude_h[nv - 2])
-                                   * (2 * Altitudeh_h[nv] - Altitude_h[nv - 1] - Altitude_h[nv - 2]);
-                        if (pp < 0)
-                            pp = 0; //prevents pressure at the top from becoming negative
-                        ptop = 0.5 * (pressure_h[i * nv + nv -1] + pp);
-
-                        pressureh_d[nv] = ptop;
+                        
 
                         pp = temperature_h[i * nv + nv - 2]
                             + (temperature_h[i * nv + nv - 1] - temperature_h[i * nv + nv - 2])
@@ -704,8 +693,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         ContributionFactorFromBelow = (Altitudeh_h[lev] - Altitude_h[lev]) / (Altitude_h[lev - 1] - Altitude_h[lev]);
                         ContributionFactorFromAbove =  (Altitudeh_h[lev] - Altitude_h[lev - 1]) / (Altitude_h[lev] - Altitude_h[lev - 1]);
                         
-                        pressureh_d[lev] = pressure_h[ lev - 1] * ContributionFactorFromBelow + pressure_h[lev] * ContributionFactorFromAbove;
-                        temperatureh_h[lev] = pressure_h[ lev-1] * ContributionFactorFromBelow + pressure_h[lev] * ContributionFactorFromAbove;
+                        temperatureh_h[lev] = temperature_h[ lev-1] * ContributionFactorFromBelow + temperature_h[lev] * ContributionFactorFromAbove;
 
                     }
 
@@ -743,9 +731,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
 
 
-                printf(" At the end of condition: init_PT_profile == PARMENTIER");
-                //free(temperatureh_h);
-                //free(pressureh_d);
+                printf(" At the end of condition: init_PT_profile == PARMENTIER \n");
+                
 
                
                     
@@ -772,10 +759,10 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
             
             
 
-                printf(" should not print if blocks ignored ");
+            printf(" should not print if blocks ignored \n");
             
 
-            printf(" after TP profile type procedures ");
+            printf(" after TP profile type procedures \n");
             /// 
 
             for (int lev = 0; lev < nv; lev++) {
