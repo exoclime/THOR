@@ -732,7 +732,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                 int table_num;
                 table_num = 1;
-                double met, Tirr;
+                double met, Tirr, Teff, AB;
                 mu = 0.5;
                 met = 0.0; // to be connected to input configuration file
 
@@ -757,8 +757,6 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 printf(" before adiabat_correction \n");
                 adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
 
-
-
                 printf(" At the end of condition: init_PT_profile == PARMENTIER \n");
                 
 
@@ -782,6 +780,64 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                     }
                     else {
                         Cp_h[i * nv + lev] = sim.Cp;
+                    }
+                }
+
+
+                for (int j = 0; j < nv; j++)
+                {
+                    if (Cp_h[i * nv + j] < 0.0)
+                    {                
+                        printf("pressure_h[i] is negative at level %d \n", j);
+                        
+                    }
+                    if (Cp_h[i * nv + j] == 0.0)
+                    {                
+                        printf("pressure_h[i] is zero at level %d \n", j);
+                    }
+                    
+                    if (isnan(Cp_h[i * nv + j]))
+                    {                
+                        printf("pressure_h[i] is NaN at level %d  \n", j);
+                        
+                    }
+                }
+
+                for (int j = 0; j < nv; j++)
+                {
+                    if (Rd_h[i * nv + j] < 0.0)
+                    {                
+                        printf("pressure_h[i] is negative at level %d \n", j);
+                        
+                    }
+                    if (Rd_h[i * nv + j] == 0.0)
+                    {                
+                        printf("pressure_h[i] is zero at level %d \n", j);
+                    }
+                    
+                    if (isnan(Rd_h[i * nv + j]))
+                    {                
+                        printf("pressure_h[i] is NaN at level %d  \n", j);
+                        
+                    }
+                }
+
+                for (int j = 0; j < nv; j++)
+                {
+                    if (temperature_h[i * nv + j] < 0.0)
+                    {                
+                        printf("pressure_h[i] is negative at level %d \n", j);
+                        
+                    }
+                    if (temperature_h[i * nv + j] == 0.0)
+                    {                
+                        printf("pressure_h[i] is zero at level %d \n", j);
+                    }
+                    
+                    if (isnan(temperature_h[i * nv + j]))
+                    {                
+                        printf("pressure_h[i] is NaN at level %d  \n", j);
+                        
                     }
                 }
                     
