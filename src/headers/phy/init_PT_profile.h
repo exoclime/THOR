@@ -1,7 +1,9 @@
 #pragma once
 #include <math.h>
 
-void create_pressure_layers(int i, int nlay, double* pe, double* pl, double P_Ref){
+void create_pressure_layers(int i, int nlay, double *(&pl), double P_Ref){
+
+    double pe[nlay];
 
     if (nlay>52)
     {
