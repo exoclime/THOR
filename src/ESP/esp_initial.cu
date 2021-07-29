@@ -713,9 +713,10 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                
 
-            if (init_PT_profile == ISOTHERMAL) {    
+                
 
                 int table_num;
+                table_num = 1;
                 double met, Tirr;
                 mu = 0.5;
                 met = 0.0; // to be connected to input configuration file
@@ -731,6 +732,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 } else {
                     table_num = 2;
                 }
+
+                if (init_PT_profile == ISOTHERMAL) {
 
                 Tirr = Tstar * pow(Rstar / star_planet_distance ,0.5);
 
