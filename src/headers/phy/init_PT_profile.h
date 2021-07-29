@@ -2,7 +2,14 @@
 #include <math.h>
 
 void create_pressure_layers(int nlay, double* pe, double* pl, double P_Ref){
-    double a ={0.05,
+
+    if (nlay>52)
+    {
+        
+        printf("error too many vertical layers - max. 52 layers");
+    }
+    
+    double a[] ={0.05,
         0.24134615384615382,
         0.43269230769230765,
         0.6240384615384615,
@@ -56,7 +63,7 @@ void create_pressure_layers(int nlay, double* pe, double* pl, double P_Ref){
         9.808653846153845,
         10.0};
 
-    double b = {2.2727272727272727e-09,
+    double b[] = {2.2727272727272727e-09,
         3.3324801199555632e-09,
         4.886386449955581e-09,
         7.164865709274777e-09,
@@ -113,11 +120,9 @@ void create_pressure_layers(int nlay, double* pe, double* pl, double P_Ref){
     // Contruct pressure array in pa
     for (int i = 0; i < nlay+1; i++)
     {
-        pe[i] = a[i] + b[i]*main_parameters::p0;
+        pe[i] = a[i] + b[i]*P_Ref;
         
     }
-    
-   
 
     //! Pressure layers
 
@@ -497,10 +502,10 @@ void Parmentier_IC(const int nlay, double* pl, double Tint, double mu, double Ti
     double kRoss[100];
     double tau[100 + 1];
 
-    if (nlay>100)
+    if (nlay>52)
     {
         
-        printf("error too many vertical layers - max. 100 layers");
+        printf("error too many vertical layers - max. 52 layers");
     }
     
     
