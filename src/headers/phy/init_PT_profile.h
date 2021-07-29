@@ -9,7 +9,7 @@ void create_pressure_layers(int nlay, double* pe, double* pl, double P_Ref){
         printf("error too many vertical layers - max. 52 layers");
     }
 
-    double a[] ={0.05,
+    double a[] = {0.05,
         0.24134615384615382,
         0.43269230769230765,
         0.6240384615384615,

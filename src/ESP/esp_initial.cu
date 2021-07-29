@@ -646,6 +646,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 }
             }
 
+            if (1==1){
+
             
                 //
                 //          Initial conditions for a non-isothermal Atmosphere 
@@ -777,8 +779,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 }    
             
             
-
-            printf(" should not print if blocks ignored \n");
+            }
+            
             
 
             printf(" after TP profile type procedures \n");
