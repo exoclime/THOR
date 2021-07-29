@@ -543,7 +543,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 
                 
             //} 
-            else {
+            if (3==1) {
 
                 printf(" should not print 2 ");
                 //
