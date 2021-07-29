@@ -667,7 +667,26 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                 create_pressure_layers( nv,  pressureh_h,  pressure_h,  sim.P_Ref);
 
-               
+                for (int i = 0; i < nlay; i++)
+                {
+                    if (pressure_h[i] < 0.0)
+                    {                
+                        printf("pressure_h[i]] is negative at level %d \n", i);
+                        __threadfence();         // ensure store issued before trap
+                        asm("trap;");            // kill kernel with error
+                    }
+                    if (pressure_h[i] == 0.0)
+                    {                
+                        printf("pressure_h[i] is zero at level %d \n", i);
+                    }
+                    
+                    if (isnan(pressure_h[i]))
+                    {                
+                        printf("pressure_h[i] is NaN at level %d  \n", i);
+                        __threadfence();         // ensure store issued before trap
+                        asm("trap;");            // kill kernel with error
+                    }
+                }
                 
                 for (int lev = 0; lev <= nv; lev++) {
                     if (lev == 0) {
