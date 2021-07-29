@@ -547,9 +547,11 @@ void adiabat_correction(int nlay, double* (&Tl), double* pressure_h, double Grav
     // 
 
     // work variables
-    int i, iRC, iRC1, d_p;
+    int i, iRC, iRC1;
     double gradrad[nlay-1];
     double gradad[nlay-1];
+
+
 
 
     // start operations

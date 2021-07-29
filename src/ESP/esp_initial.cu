@@ -749,7 +749,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
             
 
                 printf(" should not print if blocks ignored ");
-            }
+            
 
             printf(" after TP profile type procedures ");
             /// 
