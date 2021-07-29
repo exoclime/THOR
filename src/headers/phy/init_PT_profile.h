@@ -118,7 +118,7 @@ void create_pressure_layers(int i, int nlay, double* pe, double* pl, double P_Re
         1.0000000000000009};
 
     // Contruct pressure array in pa
-    for (int lev = nlay; lev > -1; lev--)
+    for (int lev = 0; lev < nlay+1; lev++)
     {
         pe[i * (nlay+1) + lev] = a[nlay+1-lev] + b[nlay+1-lev]*P_Ref;
         

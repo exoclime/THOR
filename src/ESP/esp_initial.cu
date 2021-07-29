@@ -671,6 +671,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                 create_pressure_layers(i, nv,  pressureh_h,  pressure_h,  sim.P_Ref);
 
+                printf(" after creating pressure \n");
+
                 for (int j = 0; j < nv; i++)
                 {
                     if (pressure_h[i * nv + j] < 0.0)
@@ -724,7 +726,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                
 
-                
+                printf(" after pressure check \n");
 
                 int table_num;
                 table_num = 1;
