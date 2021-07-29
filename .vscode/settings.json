@@ -7,6 +7,7 @@
         "xlocnum": "cpp",
         "xloctime": "cpp",
         "cmath": "cpp",
-        "random": "cpp"
+        "random": "cpp",
+        "stdexcept": "cpp"
     }
 }

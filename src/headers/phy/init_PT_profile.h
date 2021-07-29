@@ -1,6 +1,5 @@
 #pragma once
 #include <math.h>
-#include <stdexcept>
 
 // Calculates the IR band Rosseland mean opacity (local T) according to the
     // Freedman et al. (2014) fit and coefficents
@@ -372,7 +371,8 @@ void Parmentier_IC(const int nlay, double* pl, double Tint, double mu, double Ti
 
     if (nlay>100)
     {
-         throw invalid_argument("too many vertical layers - max. 100 layers");
+        
+        printf("error too many vertical layers - max. 100 layers");
     }
     
 
