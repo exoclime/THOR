@@ -761,7 +761,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 
 
                
-                /*    
+                
                 for (int lev = 0; lev <= nv; lev++) {   
                     if (ultrahot_thermo != NO_UH_THERMO) {
                         chi_H              = chi_H_equilibrium(GibbsT,
@@ -782,7 +782,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         Cp_h[i * nv + lev] = sim.Cp;
                     }
                 }
-                */    
+                    
             
             
             }
