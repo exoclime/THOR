@@ -667,21 +667,21 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                 create_pressure_layers( nv,  pressureh_h,  pressure_h,  sim.P_Ref);
 
-                for (int i = 0; i < nv; i++)
+                for (int j = 0; j < nv; i++)
                 {
-                    if (pressure_h[i] < 0.0)
+                    if (pressure_h[j] < 0.0)
                     {                
-                        printf("pressure_h[i]] is negative at level %d \n", i);
+                        printf("pressure_h[i]] is negative at level %d \n", j);
                         
                     }
-                    if (pressure_h[i] == 0.0)
+                    if (pressure_h[j] == 0.0)
                     {                
-                        printf("pressure_h[i] is zero at level %d \n", i);
+                        printf("pressure_h[i] is zero at level %d \n", j);
                     }
                     
-                    if (isnan(pressure_h[i]))
+                    if (isnan(pressure_h[j]))
                     {                
-                        printf("pressure_h[i] is NaN at level %d  \n", i);
+                        printf("pressure_h[i] is NaN at level %d  \n", j);
                         
                     }
                 }
