@@ -741,9 +741,33 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 
                 adiabat_correction(nv, temperature_h, pressure_h, sim.Gravit);
 
+
+
                 printf(" At the end of condition: init_PT_profile == PARMENTIER");
                 //free(temperatureh_h);
                 //free(pressureh_d);
+
+               
+                    
+                     
+                if (ultrahot_thermo != NO_UH_THERMO) {
+                    chi_H              = chi_H_equilibrium(GibbsT,
+                                                  GibbsdG,
+                                                  GibbsN,
+                                                  temperature_h[i * nv + lev],
+                                                  pressure_h[i * nv + lev]);
+                    Rd_h[i * nv + lev] = Rd_from_chi_H(chi_H);
+                }
+                else {
+                    Rd_h[i * nv + lev] = sim.Rd;
+                }
+               
+                if (ultrahot_thermo != NO_UH_THERMO) {
+                    Cp_h[i * nv + lev] = Cp_from_chi_H(chi_H, temperature_h[i * nv + lev]);
+                }
+                else {
+                    Cp_h[i * nv + lev] = sim.Cp;
+                }
 
             
             
@@ -759,14 +783,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 Rho_h[i * nv + lev] =
                     pressure_h[i * nv + lev] / (temperature_h[i * nv + lev] * Rd_h[i * nv + lev]);
 
-                // if (i == 0) {
-                //     printf("%f\n", Rho_h[i * nv + lev]);
-                // }
-                // hack to check PBL solver xxxxxxx
-                // double u = 10.0;
-                // //              Momentum [kg/m3 m/s]  //should be zero! setting to test PBL
-                // Mh_h[i * 3 * nv + 3 * lev + 0] = -Rho_h[i * nv + lev] * u * (sin(lonlat_h[i * 2]));
-                // Mh_h[i * 3 * nv + 3 * lev + 1] = Rho_h[i * nv + lev] * u * (cos(lonlat_h[i * 2]));
+                
 
                 //              Momentum [kg/m3 m/s]
                 Mh_h[i * 3 * nv + 3 * lev + 0] = 0.0;
@@ -774,10 +791,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 Mh_h[i * 3 * nv + 3 * lev + 2] = 0.0;
 
                 //              Momentum tendency from hyperdiffusion [kg/m3 m/s2]
-                // diffmh_h[i * 3 * nv + 3 * lev + 0] = 0.0;  //i don't think we need to set these
-                // diffmh_h[i * 3 * nv + 3 * lev + 1] = 0.0;
-                // diffmh_h[i * 3 * nv + 3 * lev + 2] = 0.0;
-
+                
                 //              Vertical momentum [kg/m3 m/s]
                 W_h[i * nv + lev]        = 0.0; // Center of the layer.
                 Wh_h[i * (nv + 1) + lev] = 0.0; // Layers interface.
@@ -863,8 +877,10 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 W_h[i * nv + lev]        = 0.0; // Center of the layer.
                 Wh_h[i * (nv + 1) + lev] = 0.0; // Layers interface.
             }
-
-            Tsurface_h[i] = Tsurface_h[0];
+            if (surface) { 
+                Tsurface_h[i] = Tsurface_h[0];
+            }
+           
             
         }
         
