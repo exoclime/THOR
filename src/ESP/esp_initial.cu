@@ -788,17 +788,17 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 {
                     if (Cp_h[i * nv + j] < 0.0)
                     {                
-                        printf("pressure_h[i] is negative at level %d \n", j);
+                        printf("Cp_h[i] is negative at level %d \n", j);
                         
                     }
                     if (Cp_h[i * nv + j] == 0.0)
                     {                
-                        printf("pressure_h[i] is zero at level %d \n", j);
+                        printf("Cp_h[i] is zero at level %d \n", j);
                     }
                     
                     if (isnan(Cp_h[i * nv + j]))
                     {                
-                        printf("pressure_h[i] is NaN at level %d  \n", j);
+                        printf("Cp_h[i] is NaN at level %d  \n", j);
                         
                     }
                 }
@@ -807,17 +807,17 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 {
                     if (Rd_h[i * nv + j] < 0.0)
                     {                
-                        printf("pressure_h[i] is negative at level %d \n", j);
+                        printf("Rd_h[i] is negative at level %d \n", j);
                         
                     }
                     if (Rd_h[i * nv + j] == 0.0)
                     {                
-                        printf("pressure_h[i] is zero at level %d \n", j);
+                        printf("Rd_h[i] is zero at level %d \n", j);
                     }
                     
                     if (isnan(Rd_h[i * nv + j]))
                     {                
-                        printf("pressure_h[i] is NaN at level %d  \n", j);
+                        printf("Rd_h[i] is NaN at level %d  \n", j);
                         
                     }
                 }
@@ -826,17 +826,17 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 {
                     if (temperature_h[i * nv + j] < 0.0)
                     {                
-                        printf("pressure_h[i] is negative at level %d \n", j);
+                        printf("temperature_h[i] is negative at level %d \n", j);
                         
                     }
                     if (temperature_h[i * nv + j] == 0.0)
                     {                
-                        printf("pressure_h[i] is zero at level %d \n", j);
+                        printf("temperature_h[i] is zero at level %d \n", j);
                     }
                     
                     if (isnan(temperature_h[i * nv + j]))
                     {                
-                        printf("pressure_h[i] is NaN at level %d  \n", j);
+                        printf("temperature_h[i] is NaN at level %d  \n", j);
                         
                     }
                 }
