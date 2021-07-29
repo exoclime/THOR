@@ -669,7 +669,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 //double temperatureh_h[nvi];
                 double pressureh_h[nvi];
 
-                create_pressure_layers( nv,  pressureh_h,  pressure_h,  sim.P_Ref);
+                //create_pressure_layers( nv,  pressureh_h,  pressure_h,  sim.P_Ref);
 
                 for (int j = 0; j < nv; i++)
                 {
