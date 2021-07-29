@@ -646,6 +646,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 }
             }
 
+            printf(" intermezzo \n");
+
             if (1==1){
 
             
