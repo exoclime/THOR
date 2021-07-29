@@ -120,7 +120,7 @@ void create_pressure_layers(int i, int nlay, double *(&pl), double P_Ref){
         1.0000000000000009};
 
     // Contruct pressure array in pa
-    for (int lev = 0; lev < nlay+1; lev++)
+    for (int lev = 0; lev < (nlay+1); lev++)
     {
         pe[lev] = a[nlay+1-lev] + b[nlay+1-lev]*P_Ref;
         
@@ -130,7 +130,7 @@ void create_pressure_layers(int i, int nlay, double *(&pl), double P_Ref){
 
     for (int lev = 0; lev < nlay; lev++)
     {
-        pl[lev] = (pe[ lev] - pe[lev + 1] ) / ( logl(pe[ lev] ) - logl( pe[lev+1] ));
+        pl[lev] = (pe[ lev] - pe[lev + 1] ) / ( logl(pe[lev] ) - logl( pe[lev+1] ));
         
     }
 
@@ -659,6 +659,21 @@ void Parmentier_IC(int id, const int nlay, double* pl, double Tint, double mu, d
             }
             Tl[id * nlay + i] = 3.0 * pow(Tint, 4.0) / 4.0 * (tau[i] + A + B * exp(-tau[i] / tau_lim)) + summy;
             Tl[id * nlay + i] = pow(Tl[id * nlay + i], (1.0 / 4.0));
+        }
+        if (Tl[id * nlay + i] < 0.0)
+        {                
+            printf("Tl[i] is negative at level %d \n", j);
+                        
+        }
+        if (Tl[id * nlay + i] == 0.0)
+        {                
+            printf("Tl[i] is zero at level %d \n", j);
+        }
+                    
+        if (isnan(Tl[id * nlay + i]))
+        {                
+            printf("Tl[i] is NaN at level %d  \n", j);
+                        
         }
     }
 
