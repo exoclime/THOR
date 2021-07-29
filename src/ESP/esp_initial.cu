@@ -655,14 +655,14 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 //printf(" At the start of condition: init_PT_profile == PARMENTIER");
 
                 printf(" At the start of condition: init_PT_profile == PARMENTIER");
-                double ContributionFactorFromBelow;
-                double ContributionFactorFromAbove;
-                double psm, ps, ptop, pp;
+                //double ContributionFactorFromBelow;
+                //double ContributionFactorFromAbove;
+                //double psm, ps, ptop, pp;
 
-                const double StBC = 5.670374419e-8;
-                const double pi = atan((double)(1)) * 4;
+                //const double StBC = 5.670374419e-8;
+                //const double pi = atan((double)(1)) * 4;
 
-                double temperatureh_h[nvi];
+                //double temperatureh_h[nvi];
                 double pressureh_h[nvi];
 
                 create_pressure_layers( nv,  pressureh_h,  pressure_h,  sim.P_Ref);
@@ -686,6 +686,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                     }
                 }
                 
+                /*
                 for (int lev = 0; lev <= nv; lev++) {
                     if (lev == 0) {
                         
@@ -715,6 +716,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                     }
 
                 }
+                */
 
                
 
