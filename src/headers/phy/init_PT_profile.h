@@ -493,8 +493,8 @@ void Parmentier_IC(const int nlay, double* pl, double Tint, double mu, double Ti
         summy = 0.0;
         for (j = 0; j < 3; j++)
         {
-            summy = +3.0 * Beta_V[j] * pow(Tmu, 4.0) / 4.0 * (C[j] + D[j] * exp(-tau[i-1] / tau_lim) +
-                E[j] * exp(-gam_V[j] * tau[i-1]));
+            summy = +3.0 * Beta_V[j] * pow(Tmu, 4.0) / 4.0 * (C[j] + D[j] * exp(-tau[i] / tau_lim) +
+                E[j] * exp(-gam_V[j] * tau[i]));
         }
         Tl[i] = 3.0 * pow(Tint, 4.0) / 4.0 * (tau[i] + A + B * exp(-tau[i] / tau_lim)) + summy;
         Tl[i] = pow(Tl[i], (1.0 / 4.0));
