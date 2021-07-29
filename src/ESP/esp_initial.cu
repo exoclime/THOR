@@ -662,7 +662,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 const double StBC = 5.670374419e-8;
                 const double pi = atan((double)(1)) * 4;
 
-                double temperatureh_h[nvi]};
+                double temperatureh_h[nvi];
                 double pressureh_d[nvi];
 
                
