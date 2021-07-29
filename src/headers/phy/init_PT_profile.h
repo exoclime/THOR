@@ -1,14 +1,14 @@
 #pragma once
 #include <math.h>
 
-void create_pressure_layers(int nlay, double* pe, double* pl, double P_Ref){
+void create_pressure_layers(int nlay, double* (&pe), double* (&pl), double P_Ref){
 
     if (nlay>52)
     {
         
         printf("error too many vertical layers - max. 52 layers");
     }
-    
+
     double a[] ={0.05,
         0.24134615384615382,
         0.43269230769230765,
@@ -118,7 +118,7 @@ void create_pressure_layers(int nlay, double* pe, double* pl, double P_Ref){
         1.0000000000000009};
 
     // Contruct pressure array in pa
-    for (int i = 0; i < nlay+1; i++)
+    for (int i = nlay; i > -1; i--)
     {
         pe[i] = a[i] + b[i]*P_Ref;
         
@@ -126,7 +126,7 @@ void create_pressure_layers(int nlay, double* pe, double* pl, double P_Ref){
 
     //! Pressure layers
 
-    for (int i = 0; i < nlay; i++)
+    for (int i = nlay-1; i > -1; i--)
     {
         pl[i] = (pe[i+1] - pe[i] ) / ( logl(pe[i+1] ) - logl( pe[i] ));
         
