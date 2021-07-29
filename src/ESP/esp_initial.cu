@@ -674,7 +674,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 printf(" after creating pressure \n");
 
                 
-                for (int j = 0; j < nv; i++)
+                for (int j = 0; j < nv; j++)
                 {
                     if (pressure_h[i * nv + j] < 0.0)
                     {                
