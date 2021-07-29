@@ -646,7 +646,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 }
             }
 
-            if (init_PT_profile == ISOTHERMAL) {
+            
                 //
                 //          Initial conditions for a non-isothermal Atmosphere 
                 //          radiative transfer and layering accroding 
@@ -662,8 +662,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 const double StBC = 5.670374419e-8;
                 const double pi = atan((double)(1)) * 4;
 
-                double temperatureh_h[nvi]= {0.0};
-                double pressureh_d[nvi]= {0.0};
+                double temperatureh_h[nvi]};
+                double pressureh_d[nvi];
 
                
                 
@@ -713,7 +713,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                
 
-                
+            if (init_PT_profile == ISOTHERMAL) {    
 
                 int table_num;
                 double met, Tirr;
@@ -745,7 +745,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
             
             
 
-            printf(" should not print if blocks ignored ");
+                printf(" should not print if blocks ignored ");
             }
 
             printf(" after TP profile type procedures ");
