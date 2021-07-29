@@ -669,21 +669,21 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 //double temperatureh_h[nvi];
                 double pressureh_h[nvi];
 
-                //create_pressure_layers( nv,  pressureh_h,  pressure_h,  sim.P_Ref);
+                create_pressure_layers(i, nv,  pressureh_h,  pressure_h,  sim.P_Ref);
 
                 for (int j = 0; j < nv; i++)
                 {
-                    if (pressure_h[j] < 0.0)
+                    if (pressure_h[i * nv + j] < 0.0)
                     {                
                         printf("pressure_h[i]] is negative at level %d \n", j);
                         
                     }
-                    if (pressure_h[j] == 0.0)
+                    if (pressure_h[i * nv + j] == 0.0)
                     {                
                         printf("pressure_h[i] is zero at level %d \n", j);
                     }
                     
-                    if (isnan(pressure_h[j]))
+                    if (isnan(pressure_h[i * nv + j]))
                     {                
                         printf("pressure_h[i] is NaN at level %d  \n", j);
                         
@@ -750,7 +750,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                 Parmentier_IC(nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, met);
                 
-                adiabat_correction(nv, temperature_h, pressure_h, sim.Gravit);
+                adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
 
 
 

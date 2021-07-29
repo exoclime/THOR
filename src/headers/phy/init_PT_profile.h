@@ -1,7 +1,7 @@
 #pragma once
 #include <math.h>
 
-void create_pressure_layers(int nlay, double* pe, double* pl, double P_Ref){
+void create_pressure_layers(int i, int nlay, double* pe, double* pl, double P_Ref){
 
     if (nlay>52)
     {
@@ -118,17 +118,17 @@ void create_pressure_layers(int nlay, double* pe, double* pl, double P_Ref){
         1.0000000000000009};
 
     // Contruct pressure array in pa
-    for (int i = nlay; i > -1; i--)
+    for (int lev = nlay; lev > -1; lev--)
     {
-        pe[i] = a[i] + b[i]*P_Ref;
+        pe[i * nlay + lev] = a[lev] + b[lev]*P_Ref;
         
     }
 
     //! Pressure layers
 
-    for (int i = nlay-1; i > -1; i--)
+    for (int lev = nlay-1; lev > -1; lev--)
     {
-        pl[i] = (pe[i+1] - pe[i] ) / ( logl(pe[i+1] ) - logl( pe[i] ));
+        pl[i * nlay + lev] = (pe[i * nlay + lev + 1] - pe[i * nlay + lev] ) / ( logl(pe[i * nlay + lev + 1] ) - logl( pe[i * nlay + lev] ));
         
     }
 
@@ -477,7 +477,7 @@ void Bond_Parmentier_host(double Teff0, double grav, double& AB) {
 //////////////////////////////////////////////////////////////
 
 // This subroutine follows Parmentier & Guillot (2014, 2015) non-grey picket fence scheme
-void Parmentier_IC(const int nlay, double* pl, double Tint, double mu, double Tirr,
+void Parmentier_IC(int id, const int nlay, double* pl, double Tint, double mu, double Tirr,
     double grav, double* (&Tl), int  table_num, double met) {
     // dependcies
     //// pow -> math    
@@ -499,8 +499,8 @@ void Parmentier_IC(const int nlay, double* pl, double Tint, double mu, double Ti
     double a0, a1, b0, A, B, At1, At2;
     double a2[3], a3[3], b1[3], b2[3], b3[3], Av1[3], Av2[3];
     double C[3], D[3], E[3];
-    double kRoss[100];
-    double tau[100 + 1];
+    double kRoss[nlay];
+    double tau[nlay + 1];
 
     if (nlay>52)
     {
@@ -608,12 +608,12 @@ void Parmentier_IC(const int nlay, double* pl, double Tint, double mu, double Ti
 
     
     // Estimate the opacity TOA at the skin temperature - assume this is = first layer optacity
-    k_Ross_Freedman(Tskin, pl[nlay-1], met, kRoss[nlay-1]);
+    k_Ross_Freedman(Tskin, pl[id * nlay + nlay-1], met, kRoss[nlay-1]);
     
 
 
     // Recalculate the upmost tau with new kappa
-    tau[nlay-1] = kRoss[nlay-1] / grav * pl[nlay-1];
+    tau[nlay-1] = kRoss[nlay-1] / grav * pl[id * nlay + nlay-1];
     
     // More accurate layer T at uppermost layer
     summy = 0.0;
@@ -622,17 +622,17 @@ void Parmentier_IC(const int nlay, double* pl, double Tint, double mu, double Ti
         summy += 3.0 * Beta_V[i] * pow(Tmu, 4.0) / 4.0 * (C[i] + D[i] * exp(-tau[nlay-1] / tau_lim) +
             E[i] * exp(-gam_V[i] * tau[nlay-1]));
     }
-    Tl[nlay-1] = 3.0 * pow(Tint, 4) / 4.0 * (tau[nlay-1] + A + B * exp(-tau[nlay-1] / tau_lim)) + summy;
-    Tl[nlay-1] = pow(Tl[nlay-1], (1.0 / 4.0));
+    Tl[id * nlay + nlay-1] = 3.0 * pow(Tint, 4) / 4.0 * (tau[nlay-1] + A + B * exp(-tau[nlay-1] / tau_lim)) + summy;
+    Tl[id * nlay + nlay-1] = pow(Tl[id * nlay + nlay-1], (1.0 / 4.0));
 
     
     // Now we can loop in optical depth space to find the T-p profile
     for (i = nlay-2; i>-1; i--)
     {
         // Initial guess for layer
-        k_Ross_Freedman(Tl[i+1], sqrt(pl[i+1] * pl[i]), met, kRoss[i]);
+        k_Ross_Freedman(Tl[id * nlay + i+1], sqrt(pl[id * nlay + i+1] * pl[id * nlay + i]), met, kRoss[i]);
         
-        tau[i] = tau[i+1] + kRoss[i] / grav *  (pl[i] - pl[i+1]) ;
+        tau[i] = tau[i+1] + kRoss[i] / grav *  (pl[id * nlay + i] - pl[id * nlay + i+1]) ;
     
         summy = 0.0;
         for (j = 0; j < 3; j++)
@@ -640,23 +640,23 @@ void Parmentier_IC(const int nlay, double* pl, double Tint, double mu, double Ti
             summy = +3.0 * Beta_V[j] * pow(Tmu, 4.0) / 4.0 * (C[j] + D[j] * exp(-tau[i] / tau_lim) +
                 E[j] * exp(-gam_V[j] * tau[i]));
         }
-        Tl[i] = 3.0 * pow(Tint, 4.0) / 4.0 * (tau[i] + A + B * exp(-tau[i] / tau_lim)) + summy;
-        Tl[i] = pow(Tl[i], (1.0 / 4.0));
+        Tl[id * nlay + i] = 3.0 * pow(Tint, 4.0) / 4.0 * (tau[i] + A + B * exp(-tau[i] / tau_lim)) + summy;
+        Tl[id * nlay + i] = pow(Tl[id * nlay + i], (1.0 / 4.0));
 
         // Convergence loop
         for (j = 0; j < 5; j++)
         {
-            k_Ross_Freedman(sqrt(Tl[i+1] * Tl[i]), sqrt(pl[i+1] * pl[i]), met, kRoss[i]);
+            k_Ross_Freedman(sqrt(Tl[id * nlay + i+1] * Tl[id * nlay + i]), sqrt(pl[id * nlay + i+1] * pl[id * nlay + i]), met, kRoss[i]);
             
-            tau[i] = tau[i+1] + kRoss[i] / grav *  (pl[i] - pl[i+1]);
+            tau[i] = tau[i+1] + kRoss[i] / grav *  (pl[id * nlay + i] - pl[id * nlay + i+1]);
             summy = 0.0;
             for (k = 0; k < 3; k++)
             {
                 summy += 3.0 * Beta_V[k] * pow(Tmu, 4.0) / 4.0 * (C[k] + D[k] * exp(-tau[i] / tau_lim) +
                     E[k] * exp(-gam_V[k] * tau[i]));
             }
-            Tl[i] = 3.0 * pow(Tint, 4.0) / 4.0 * (tau[i] + A + B * exp(-tau[i] / tau_lim)) + summy;
-            Tl[i] = pow(Tl[i], (1.0 / 4.0));
+            Tl[id * nlay + i] = 3.0 * pow(Tint, 4.0) / 4.0 * (tau[i] + A + B * exp(-tau[i] / tau_lim)) + summy;
+            Tl[id * nlay + i] = pow(Tl[id * nlay + i], (1.0 / 4.0));
         }
     }
 
@@ -667,7 +667,7 @@ void Parmentier_IC(const int nlay, double* pl, double Tint, double mu, double Ti
 //////////////////////////////////////////////////////////////
 
 // Subroutine that corrects for adiabatic region following Parmentier & Guillot (2015)
-void adiabat_correction(int nlay, double* (&Tl), double* pressure_h, double Gravit) {
+void adiabat_correction(int id, int nlay, double* (&Tl), double* pressure_h, double Gravit) {
     // dependcies
     //// main_parameters::nlay  -> "FMS_RC_para_&_const.cpp" 
     //// pow -> math    
@@ -692,7 +692,7 @@ void adiabat_correction(int nlay, double* (&Tl), double* pressure_h, double Grav
     for (i = (nlay-2); i > 0; i--)
     {
         
-        gradrad[i+1] = (log10(Tl[i+1]) - log10(Tl[i])) / (log10(pressure_h[i+1]) - log10(pressure_h[i]));
+        gradrad[i+1] = (log10(Tl[i+1]) - log10(Tl[i])) / (log10(pressure_h[id * nlay + i+1]) - log10(pressure_h[id * nlay + i]));
         gradad[i] = ((double)0.32) - ((double)0.10) * Tl[i] / ((double)3000.0);
     }
 
@@ -721,13 +721,13 @@ void adiabat_correction(int nlay, double* (&Tl), double* pressure_h, double Grav
     {
         for (i = iRC; i > 1; i--)
         {
-            gradad[i] = (double)0.32 - ((double)0.10) * Tl[i] / ((double)3000.0);
+            gradad[i] = (double)0.32 - ((double)0.10) * Tl[id * nlay + i] / ((double)3000.0);
             if (gradad[i] < 0.0)
             {
                 gradad[i] = 0.0;
             }
             
-            Tl[i] = Tl[i+1] * pow((pressure_h[i * nlay + i] ) / pressure_h[i * nlay + i+1], gradad[i+1]);
+            Tl[id * nlay + i] = Tl[id * nlay + i+1] * pow((pressure_h[id * nlay + i] ) / pressure_h[id * nlay + i+1], gradad[i+1]);
         }
     }
 }
