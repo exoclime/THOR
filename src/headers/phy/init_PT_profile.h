@@ -611,11 +611,50 @@ void Parmentier_IC(int id, const int nlay, double* pl, double Tint, double mu, d
     
     // Estimate the opacity TOA at the skin temperature - assume this is = first layer optacity
     k_Ross_Freedman(Tskin, pl[id * nlay + nlay-1], met, kRoss[nlay-1]);
+
+    for (i = nlay-1; i>-1; i--)
+    {
+        if (kRoss[i] < 0.0)
+        {                
+            printf("kRoss[i]  is negative at level %d \n", i);
+                            
+        }
+        if (kRoss[i] == 0.0)
+        {                
+            printf("kRoss[i]  is zero at level %d \n", i);
+        }
+                        
+        if (isnan(kRoss[i]))
+        {                
+            printf("kRoss[i]  is NaN at level %d  \n", i);
+                            
+        }
+    }
+    
     
 
 
     // Recalculate the upmost tau with new kappa
     tau[nlay-1] = kRoss[nlay-1] / grav * pl[id * nlay + nlay-1];
+
+    for (i = nlay; i>-1; i--)
+    {
+        if (tau[i] < 0.0)
+        {                
+            printf("tau[i]  is negative at level %d \n", i);
+                            
+        }
+        if (tau[i] == 0.0)
+        {                
+            printf("tau[i]  is zero at level %d \n", i);
+        }
+                        
+        if (isnan(tau[i]))
+        {                
+            printf("tau[i]  is NaN at level %d  \n", i);
+                            
+        }
+    }
     
     // More accurate layer T at uppermost layer
     summy = 0.0;

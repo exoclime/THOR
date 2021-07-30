@@ -742,8 +742,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 double Tstar, Rstar, star_planet_distance;
 
                 Tstar = 6092;
-                star_planet_distance = 0.04747 * 1.496e8;
-                Rstar = 1.203 * 6.96342e8;
+                star_planet_distance = 0.04747 *  149597870700;
+                Rstar = 1.203 * 6.9657e8;
 
                 if (ultrahot_thermo != NO_UH_THERMO) {
                     table_num = 1;
