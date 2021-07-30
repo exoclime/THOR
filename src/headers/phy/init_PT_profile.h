@@ -662,17 +662,17 @@ void Parmentier_IC(int id, const int nlay, double* pl, double Tint, double mu, d
         }
         if (Tl[id * nlay + i] < 0.0)
         {                
-            printf("Tl[i] is negative at level %d \n", j);
+            printf("Tl[i] is negative at level %d \n", i);
                         
         }
         if (Tl[id * nlay + i] == 0.0)
         {                
-            printf("Tl[i] is zero at level %d \n", j);
+            printf("Tl[i] is zero at level %d \n", i);
         }
                     
         if (isnan(Tl[id * nlay + i]))
         {                
-            printf("Tl[i] is NaN at level %d  \n", j);
+            printf("Tl[i] is NaN at level %d  \n", i);
                         
         }
     }

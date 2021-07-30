@@ -543,7 +543,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 
                 
             //} 
-            if (3==1) {
+            if (1==1) {
 
                 printf(" should not print 2 ");
                 //
@@ -668,7 +668,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                 //double temperatureh_h[nvi];
                 
-
+                /*
                 create_pressure_layers(i, nv,  pressure_h,  sim.P_Ref);
 
                 printf(" after creating pressure \n");
@@ -692,6 +692,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         
                     }
                 }
+
+                */
                 
                 
                 /*
