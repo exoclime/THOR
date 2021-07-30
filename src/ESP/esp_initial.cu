@@ -822,10 +822,11 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 printf(" At the end of condition: init_PT_profile == PARMENTIER \n");
                 printf(" start of Parmentier cycle \n");
                 it = 0;
-                ptmp  = pressure_h[i * nv + lev] + 2 * eps;
+                
                 for (int lev = 0; lev < nv; lev++) {                
                     Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, met);
                     adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
+                    ptmp  = pressure_h[i * nv + lev] + 2 * eps;
                     while (it < it_max && ptmp - pressure_h[i * nv + lev] > eps) {
                         //first, we define thermo quantities of layer below and make
                         //our initial guess for the Newton-Raphson solver
