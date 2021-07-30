@@ -630,6 +630,22 @@ void Parmentier_IC(int id, const int nlay, double* pl, double Tint, double mu, d
                             
         }
     }
+
+    if (tau_lim < 0.0)
+    {                
+        printf("tau_lim at top is negative at level %d \n", 0);
+                        
+    }
+    if (tau_lim == 0.0)
+    {                
+        printf("tau_lim at top is zero at level %d \n", 0);
+    }
+                    
+    if (isnan(tau_lim))
+    {                
+        printf("tau_lim at top is NaN at level %d  \n", 0);
+                        
+    }
     
     
 
@@ -662,6 +678,21 @@ void Parmentier_IC(int id, const int nlay, double* pl, double Tint, double mu, d
     {
         summy += 3.0 * Beta_V[i] * pow(Tmu, 4.0) / 4.0 * (C[i] + D[i] * exp(-tau[nlay-1] / tau_lim) +
             E[i] * exp(-gam_V[i] * tau[nlay-1]));
+    }
+    if (summy < 0.0)
+    {                
+        printf("summy[i] at top is negative at level %d \n", 3);
+                        
+    }
+    if (summy == 0.0)
+    {                
+        printf("summy[i] at top is zero at level %d \n", 3);
+    }
+                    
+    if (isnan(summy))
+    {                
+        printf("summy[i] at top is NaN at level %d  \n", 3);
+                        
     }
     Tl[id * nlay + nlay-1] = 3.0 * pow(Tint, 4) / 4.0 * (tau[nlay-1] + A + B * exp(-tau[nlay-1] / tau_lim)) + summy;
     Tl[id * nlay + nlay-1] = pow(Tl[id * nlay + nlay-1], (1.0 / 4.0));
