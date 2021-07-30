@@ -824,10 +824,11 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 it = 0;
                 Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, met);
                 adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
+
                 for (int lev = 0; lev < nv; lev++) {                
                     
-                    ptmp  = pressure_h[i * nv + lev] + 2 * eps;
-                    while (it < it_max && ptmp - pressure_h[i * nv + lev] > eps) {
+                    
+                    
                         //first, we define thermo quantities of layer below and make
                         //our initial guess for the Newton-Raphson solver
                         if (lev == 0) {
@@ -867,7 +868,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                        
     
                         ptmp = pressure_h[i * nv + lev] + 2 * eps;
-                        if (it < it_max && ptmp - pressure_h[i * nv + lev] > eps) {
+                        while (it < it_max && ptmp - pressure_h[i * nv + lev] > eps) {
                             //Newton-Raphson solver of hydrostatic eqn for thermo properties
                             ptmp = pressure_h[i * nv + lev];
                             f    = log(pressure_h[i * nv + lev] / P_L) / dz
@@ -904,7 +905,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         Rho_h[i * nv + lev] =
                             pressure_h[i * nv + lev] / (Rd_h[i * nv + lev] * temperature_h[i * nv + lev]);
                         
-                    }
+                    
 
                 }
 
