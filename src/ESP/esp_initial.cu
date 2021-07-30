@@ -792,6 +792,9 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         printf("before adiabat_correction temperature_h[i] is NaN at level %d  \n", j);
                         
                     }
+
+                    temperature_h[i * nv + j] = 0.95*temperature_h[i * nv + j] ;
+
                 }
                 
                 printf(" before adiabat_correction \n");
