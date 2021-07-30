@@ -543,7 +543,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 
                 
             //} 
-            if (1==1) {
+            if (init_PT_profile==PARMENTIER) {
 
                 printf(" should not print 2 ");
                 //
