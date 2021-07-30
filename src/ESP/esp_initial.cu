@@ -755,6 +755,25 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 Tirr = Tstar * pow(Rstar / star_planet_distance ,0.5);
 
                 Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, met);
+
+                for (int j = 0; j < nv; j++)
+                {
+                    if (temperature_h[i * nv + j] < 0.0)
+                    {                
+                        printf("before adiabat_correction temperature_h[i] is negative at level %d \n", j);
+                        
+                    }
+                    if (temperature_h[i * nv + j] == 0.0)
+                    {                
+                        printf("before adiabat_correction temperature_h[i] is zero at level %d \n", j);
+                    }
+                    
+                    if (isnan(temperature_h[i * nv + j]))
+                    {                
+                        printf("before adiabat_correction temperature_h[i] is NaN at level %d  \n", j);
+                        
+                    }
+                }
                 
                 printf(" before adiabat_correction \n");
                 adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
@@ -763,17 +782,17 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 {
                     if (temperature_h[i * nv + j] < 0.0)
                     {                
-                        printf("pre temperature_h[i] is negative at level %d \n", j);
+                        printf("after adiabat_correction temperature_h[i] is negative at level %d \n", j);
                         
                     }
                     if (temperature_h[i * nv + j] == 0.0)
                     {                
-                        printf("pre temperature_h[i] is zero at level %d \n", j);
+                        printf("after adiabat_correction temperature_h[i] is zero at level %d \n", j);
                     }
                     
                     if (isnan(temperature_h[i * nv + j]))
                     {                
-                        printf("pre temperature_h[i] is NaN at level %d  \n", j);
+                        printf("after adiabat_correction temperature_h[i] is NaN at level %d  \n", j);
                         
                     }
                 }
