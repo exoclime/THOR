@@ -841,11 +841,13 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         Cp_h[i * nv + lev] = sim.Cp;
                     }
                 }
+                /*
                 printf(" second cycle before Parmentier_IC \n");
                 Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, met);
                 
                 printf(" second cycle before adiabat_correction \n");
                 adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
+                */
 
 
                 for (int j = 0; j < nv; j++)

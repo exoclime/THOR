@@ -612,40 +612,7 @@ void Parmentier_IC(int id, const int nlay, double* pl, double Tint, double mu, d
     // Estimate the opacity TOA at the skin temperature - assume this is = first layer optacity
     k_Ross_Freedman(Tskin, pl[id * nlay + nlay-1], met, kRoss[nlay-1]);
 
-    for (i = nlay-1; i>-1; i--)
-    {
-        if (kRoss[i] < 0.0)
-        {                
-            printf("kRoss[i]  is negative at level %d \n", i);
-                            
-        }
-        if (kRoss[i] == 0.0)
-        {                
-            printf("kRoss[i]  is zero at level %d \n", i);
-        }
-                        
-        if (isnan(kRoss[i]))
-        {                
-            printf("kRoss[i]  is NaN at level %d  \n", i);
-                            
-        }
-    }
-
-    if (tau_lim < 0.0)
-    {                
-        printf("tau_lim at top is negative at level %d \n", 0);
-                        
-    }
-    if (tau_lim == 0.0)
-    {                
-        printf("tau_lim at top is zero at level %d \n", 0);
-    }
-                    
-    if (isnan(tau_lim))
-    {                
-        printf("tau_lim at top is NaN at level %d  \n", 0);
-                        
-    }
+    
     
     
 
@@ -653,24 +620,7 @@ void Parmentier_IC(int id, const int nlay, double* pl, double Tint, double mu, d
     // Recalculate the upmost tau with new kappa
     tau[nlay-1] = kRoss[nlay-1] / grav * pl[id * nlay + nlay-1];
 
-    for (i = nlay; i>-1; i--)
-    {
-        if (tau[i] < 0.0)
-        {                
-            printf("tau[i]  is negative at level %d \n", i);
-                            
-        }
-        if (tau[i] == 0.0)
-        {                
-            printf("tau[i]  is zero at level %d \n", i);
-        }
-                        
-        if (isnan(tau[i]))
-        {                
-            printf("tau[i]  is NaN at level %d  \n", i);
-                            
-        }
-    }
+    
     
     // More accurate layer T at uppermost layer
     summy = 0.0;
@@ -679,39 +629,11 @@ void Parmentier_IC(int id, const int nlay, double* pl, double Tint, double mu, d
         summy += 3.0 * Beta_V[i] * pow(Tmu, 4.0) / 4.0 * (C[i] + D[i] * exp(-tau[nlay-1] / tau_lim) +
             E[i] * exp(-gam_V[i] * tau[nlay-1]));
     }
-    if (summy < 0.0)
-    {                
-        printf("summy[i] at top is negative at level %d \n", 3);
-                        
-    }
-    if (summy == 0.0)
-    {                
-        printf("summy[i] at top is zero at level %d \n", 3);
-    }
-                    
-    if (isnan(summy))
-    {                
-        printf("summy[i] at top is NaN at level %d  \n", 3);
-                        
-    }
+    
     Tl[id * nlay + nlay-1] = 3.0 * pow(Tint, 4) / 4.0 * (tau[nlay-1] + A + B * exp(-tau[nlay-1] / tau_lim)) + summy;
     Tl[id * nlay + nlay-1] = pow(Tl[id * nlay + nlay-1], (1.0 / 4.0));
 
-    if (Tl[id * nlay + nlay-1] < 0.0)
-    {                
-        printf("Tl[i] at top is negative at level %d \n", nlay-1);
-                        
-    }
-    if (Tl[id * nlay + nlay-1] == 0.0)
-    {                
-        printf("Tl[i] at top is zero at level %d \n", nlay-1);
-    }
-                    
-    if (isnan(Tl[id * nlay + nlay-1]))
-    {                
-        printf("Tl[i] at top is NaN at level %d  \n", nlay-1);
-                        
-    }
+    
 
     
     // Now we can loop in optical depth space to find the T-p profile
@@ -746,21 +668,7 @@ void Parmentier_IC(int id, const int nlay, double* pl, double Tint, double mu, d
             Tl[id * nlay + i] = 3.0 * pow(Tint, 4.0) / 4.0 * (tau[i] + A + B * exp(-tau[i] / tau_lim)) + summy;
             Tl[id * nlay + i] = pow(Tl[id * nlay + i], (1.0 / 4.0));
         }
-        if (Tl[id * nlay + i] < 0.0)
-        {                
-            printf("Tl[i] is negative at level %d \n", i);
-                        
-        }
-        if (Tl[id * nlay + i] == 0.0)
-        {                
-            printf("Tl[i] is zero at level %d \n", i);
-        }
-                    
-        if (isnan(Tl[id * nlay + i]))
-        {                
-            printf("Tl[i] is NaN at level %d  \n", i);
-                        
-        }
+        
     }
 
 
