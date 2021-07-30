@@ -750,6 +750,24 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                     table_num = 2;
                 }
 
+                for (int j = 0; j < nv; j++)
+                {
+                    if (temperature_h[i * nv + j] < 0.0)
+                    {                
+                        printf("before Parmentier_IC temperature_h[i] is negative at level %d \n", j);
+                        
+                    }
+                    if (temperature_h[i * nv + j] == 0.0)
+                    {                
+                        printf("before Parmentier_IC temperature_h[i] is zero at level %d \n", j);
+                    }
+                    
+                    if (isnan(temperature_h[i * nv + j]))
+                    {                
+                        printf("before Parmentier_IC temperature_h[i] is NaN at level %d  \n", j);
+                        
+                    }
+                }
                 
                 printf(" before Tirr and Parmentier \n");
                 Tirr = Tstar * pow(Rstar / star_planet_distance ,0.5);

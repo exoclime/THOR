@@ -627,6 +627,22 @@ void Parmentier_IC(int id, const int nlay, double* pl, double Tint, double mu, d
     Tl[id * nlay + nlay-1] = 3.0 * pow(Tint, 4) / 4.0 * (tau[nlay-1] + A + B * exp(-tau[nlay-1] / tau_lim)) + summy;
     Tl[id * nlay + nlay-1] = pow(Tl[id * nlay + nlay-1], (1.0 / 4.0));
 
+    if (Tl[id * nlay + nlay-1] < 0.0)
+    {                
+        printf("Tl[i] at top is negative at level %d \n", nlay-1);
+                        
+    }
+    if (Tl[id * nlay + nlay-1] == 0.0)
+    {                
+        printf("Tl[i] at top is zero at level %d \n", nlay-1);
+    }
+                    
+    if (isnan(Tl[id * nlay + nlay-1]))
+    {                
+        printf("Tl[i] at top is NaN at level %d  \n", nlay-1);
+                        
+    }
+
     
     // Now we can loop in optical depth space to find the T-p profile
     for (i = nlay-2; i>-1; i--)
