@@ -821,7 +821,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                 printf(" At the end of condition: init_PT_profile == PARMENTIER \n");
                 printf(" start of Parmentier cycle \n");
-                it = 0;
+                
                 Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, met);
                 adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
 
@@ -864,7 +864,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         pressure_h[i * nv + lev] = P_L;
                         Rd_h[i * nv + lev]       = Rd_L;
 
-                          
+                        it = 0;  
                         ptmp = pressure_h[i * nv + lev] + 2 * eps;
                         while (it < it_max && ptmp - pressure_h[i * nv + lev] > eps) {
                             //Newton-Raphson solver of hydrostatic eqn for thermo properties
@@ -876,8 +876,9 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                                             + Rd_L * T_L));
                             df                       = 1.0 / (pressure_h[i * nv + lev] * dz);
                             pressure_h[i * nv + lev] = pressure_h[i * nv + lev] - f / df;
-
-                            temp_temp[lev] = temperature_h[i * nv + lev];
+                            for (int levi = 0; levi < nv; levi++) {   
+                                temp_temp[levi] = temperature_h[i * nv + levi];
+                            }
                             Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temp_temp, table_num, met);
                             adiabat_correction(i, nv, temp_temp, pressure_h, sim.Gravit);
                             temperature_h[i * nv + lev] = temp_temp[lev];
