@@ -822,10 +822,10 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 printf(" At the end of condition: init_PT_profile == PARMENTIER \n");
                 printf(" start of Parmentier cycle \n");
                 it = 0;
-                
+                Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, met);
+                adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
                 for (int lev = 0; lev < nv; lev++) {                
-                    Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, met);
-                    adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
+                    
                     ptmp  = pressure_h[i * nv + lev] + 2 * eps;
                     while (it < it_max && ptmp - pressure_h[i * nv + lev] > eps) {
                         //first, we define thermo quantities of layer below and make
@@ -845,7 +845,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                             dz  = Altitude_h[0];
                         }
                         else {
-                            temperature_h[i * nv + lev] = temperature_h[i * nv + lev - 1];
+                            //temperature_h[i * nv + lev] = temperature_h[i * nv + lev - 1];
                             if (ultrahot_thermo != NO_UH_THERMO) {
                                 chi_H = chi_H_equilibrium(
                                     GibbsT, GibbsdG, GibbsN, sim.Tmean, pressure_h[i * nv + lev - 1]);
@@ -860,10 +860,13 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         }
                         pressure_h[i * nv + lev] = P_L;
                         Rd_h[i * nv + lev]       = Rd_L;
+
+                        Rho_h[i * nv + lev] =
+                            pressure_h[i * nv + lev] / (Rd_h[i * nv + lev] * temperature_h[i * nv + lev]);
     
                        
     
-                        ptmp                     = pressure_h[i * nv + lev] + 2 * eps;
+                        ptmp = pressure_h[i * nv + lev] + 2 * eps;
                         if (it < it_max && ptmp - pressure_h[i * nv + lev] > eps) {
                             //Newton-Raphson solver of hydrostatic eqn for thermo properties
                             ptmp = pressure_h[i * nv + lev];
@@ -874,6 +877,9 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                                             + Rd_L * T_L));
                             df                       = 1.0 / (pressure_h[i * nv + lev] * dz);
                             pressure_h[i * nv + lev] = pressure_h[i * nv + lev] - f / df;
+
+                            Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, met);
+                            adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
     
                             if (ultrahot_thermo != NO_UH_THERMO) {
                                 chi_H              = chi_H_equilibrium(GibbsT,
@@ -894,6 +900,9 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         else {
                             Cp_h[i * nv + lev] = sim.Cp;
                         }
+
+                        Rho_h[i * nv + lev] =
+                            pressure_h[i * nv + lev] / (Rd_h[i * nv + lev] * temperature_h[i * nv + lev]);
                         
                     }
 
