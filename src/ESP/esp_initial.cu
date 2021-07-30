@@ -216,8 +216,7 @@ ESP::alloc_data(bool globdiag, bool output_mean, bool out_interm_momentum, bool 
     W_h           = (double *)malloc(nv * point_num * sizeof(double));
     Wh_h          = (double *)malloc(nvi * point_num * sizeof(double));
 
-    double *temp_temp;
-    temp_temp = (double *)malloc(nv * point_num * sizeof(double));
+    
    
     
 
@@ -544,7 +543,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 
 
                 
-                
+                double *temp_temp;
+                temp_temp = (double *)malloc(nv * point_num * sizeof(double));    
             //} 
             if (init_PT_profile==PARMENTIER) {
 
