@@ -773,7 +773,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 printf(" before Tirr and Parmentier \n");
                 Tirr = Tstar * pow(Rstar / star_planet_distance ,0.5);
 
-                Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, met);
+                //Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, met);
 
                 for (int j = 0; j < nv; j++)
                 {
@@ -798,7 +798,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 }
                 
                 printf(" before adiabat_correction \n");
-                adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
+                //adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
 
                 for (int j = 0; j < nv; j++)
                 {
@@ -820,10 +820,88 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 }
 
                 printf(" At the end of condition: init_PT_profile == PARMENTIER \n");
+                printf(" start of Parmentier cycle \n");
+                for (int cycle = 0; cycle < 10; cycle++) {
+                    Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, met);
+                    adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
+                    for (int lev = 0; lev < nv; lev++) {
+                        //first, we define thermo quantities of layer below and make
+                        //our initial guess for the Newton-Raphson solver
+                        if (lev == 0) {
+                            
+                            if (ultrahot_thermo != NO_UH_THERMO) {
+                                chi_H = chi_H_equilibrium(
+                                    GibbsT, GibbsdG, GibbsN, temperature_h[i * nv + lev], sim.P_Ref);
+                                Rd_L = Rd_from_chi_H(chi_H);
+                            }
+                            else {
+                                Rd_L = sim.Rd;
+                            }
+                            P_L = sim.P_Ref;
+                            T_L = temperature_h[i * nv + lev];
+                            dz  = Altitude_h[0];
+                        }
+                        else {
+                            temperature_h[i * nv + lev] = temperature_h[i * nv + lev - 1];
+                            if (ultrahot_thermo != NO_UH_THERMO) {
+                                chi_H = chi_H_equilibrium(
+                                    GibbsT, GibbsdG, GibbsN, sim.Tmean, pressure_h[i * nv + lev - 1]);
+                                Rd_L = Rd_h[i * nv + lev - 1];
+                            }
+                            else {
+                                Rd_L = Rd_h[i * nv + lev - 1];
+                            }
+                            P_L = pressure_h[i * nv + lev - 1];
+                            T_L = temperature_h[i * nv + lev - 1];
+                            dz  = Altitude_h[lev] - Altitude_h[lev - 1];
+                        }
+                        pressure_h[i * nv + lev] = P_L;
+                        Rd_h[i * nv + lev]       = Rd_L;
+    
+                        ptmp                     = pressure_h[i * nv + lev] + 2 * eps;
+    
+                        it = 0;
+                        while (it < it_max && ptmp - pressure_h[i * nv + lev] > eps) {
+                            //Newton-Raphson solver of hydrostatic eqn for thermo properties
+                            ptmp = pressure_h[i * nv + lev];
+                            f    = log(pressure_h[i * nv + lev] / P_L) / dz
+                                + sim.Gravit
+                                      / (0.5
+                                         * (Rd_h[i * nv + lev] * temperature_h[i * nv + lev]
+                                            + Rd_L * T_L));
+                            df                       = 1.0 / (pressure_h[i * nv + lev] * dz);
+                            pressure_h[i * nv + lev] = pressure_h[i * nv + lev] - f / df;
+    
+                            if (ultrahot_thermo != NO_UH_THERMO) {
+                                chi_H              = chi_H_equilibrium(GibbsT,
+                                                          GibbsdG,
+                                                          GibbsN,
+                                                          temperature_h[i * nv + lev],
+                                                          pressure_h[i * nv + lev]);
+                                Rd_h[i * nv + lev] = Rd_from_chi_H(chi_H);
+                            }
+                            else {
+                                Rd_h[i * nv + lev] = sim.Rd;
+                            }
+                            it++;
+                        }
+                        if (ultrahot_thermo != NO_UH_THERMO) {
+                            Cp_h[i * nv + lev] = Cp_from_chi_H(chi_H, temperature_h[i * nv + lev]);
+                        }
+                        else {
+                            Cp_h[i * nv + lev] = sim.Cp;
+                        }
+                    }
+
+                }
+
+                printf(" end of Parmentier cycle \n");
+
+                
                 
 
                
-                
+                /*
                 for (int lev = 0; lev <= nv; lev++) {   
                     if (ultrahot_thermo != NO_UH_THERMO) {
                         chi_H              = chi_H_equilibrium(GibbsT,
@@ -844,6 +922,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         Cp_h[i * nv + lev] = sim.Cp;
                     }
                 }
+                */
                 /*
                 printf(" second cycle before Parmentier_IC \n");
                 Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, met);
@@ -908,8 +987,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         printf("temperature_h[i] is NaN at level %d  \n", j);
                         
                     }
-                }
-                    
+                }                  
             
             
             }
@@ -1018,6 +1096,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 W_h[i * nv + lev]        = 0.0; // Center of the layer.
                 Wh_h[i * (nv + 1) + lev] = 0.0; // Layers interface.
             }
+            Wh_h[i * (nv + 1) + nv] = 0.0;
             if (surface) { 
                 Tsurface_h[i] = Tsurface_h[0];
             }
