@@ -919,6 +919,11 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                     it++;
 
                 }
+                for (int lev = 0; lev < nv; lev++) { 
+                    Rho_h[i * nv + lev] =
+                                pressure_h[i * nv + lev] / (Rd_h[i * nv + lev] * temperature_h[i * nv + lev]);
+                    //pressure_h[i * nv + lev] = (Rd_h[i * nv + lev] * temperature_h[i * nv + lev]) / Rho_h[i * nv + lev];
+                }
                 adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
 
                 //Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, met);
