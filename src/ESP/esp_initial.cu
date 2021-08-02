@@ -856,7 +856,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         
                     }
                     
-                    
+                    /*
                     for (int lev = 0; lev < nv; lev++) { 
                     
                             //first, we define thermo quantities of layer below and make
@@ -933,22 +933,28 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                             Rho_h[i * nv + lev] =
                                 pressure_h[i * nv + lev] / (Rd_h[i * nv + lev] * temp_temp[i * nv + lev]);    
                     }
+                    */
                     
                     it++;
 
                 }
 
-                int nv_below_pressure_threshold;
+                int nv_pressure_threshold;
                 
                 for (int lev = 0; lev < nv; lev++) {
                     if (pressure_h[i * nv + lev]>100000){
-                        nv_below_pressure_threshold = lev;
+                        nv_pressure_threshold = lev;
                     }
                 }
-                for (int lev = 0; lev < nv_below_pressure_threshold; lev++) { 
+                for (int lev = 0; lev < nv_pressure_threshold; lev++) { 
                     temperature_h[i * nv + lev] = temp_temp[lev];
                 }
                 adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
+
+                for (int lev = nv_pressure_threshold; lev < nv; lev++) { 
+                    temperature_h[i * nv + lev] =  temperature_h[i * nv + nv_pressure_threshold];
+                }
+                
                 for (int lev = 0; lev < nv; lev++) {
                     if (ultrahot_thermo != NO_UH_THERMO) {
                         chi_H              = chi_H_equilibrium(GibbsT,
