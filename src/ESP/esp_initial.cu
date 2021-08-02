@@ -543,8 +543,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 
 
                 
-                double *temp_temp;
-                temp_temp = (double *)malloc(nv * point_num * sizeof(double));    
+                   
             //} 
             if (init_PT_profile==PARMENTIER) {
 
@@ -829,9 +828,12 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
 
                 
-                
+                it_max =10;
 
-                for (int lev = 0; lev < nv; lev++) {                
+                for (int lev = 0; lev < nv; lev++) { 
+                    
+                    double *temp_temp;
+                    temp_temp = (double *)malloc(nv * point_num * sizeof(double)); 
                     
                     
                     
