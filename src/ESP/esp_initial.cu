@@ -889,9 +889,6 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                                                 + Rd_L * T_L));
                                 df  = 1.0 / (pressure_h[i * nv + lev] * dz);
                                 pressure_h[i * nv + lev] = pressure_h[i * nv + lev] - f / df;
-                                for (int levi = 0; levi < nv; levi++) {   
-                                    temp_temp[levi] = temperature_h[i * nv + levi];
-                                }
                                 
         
                                 if (ultrahot_thermo != NO_UH_THERMO) {
@@ -921,15 +918,6 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                 }
 
-
-
-
-                if (ultrahot_thermo != NO_UH_THERMO) {
-                    Cp_h[i * nv + lev] = Cp_from_chi_H(chi_H, temperature_h[i * nv + lev]);
-                }
-                else {
-                    Cp_h[i * nv + lev] = sim.Cp;
-                }
 
                 
 
