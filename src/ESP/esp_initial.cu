@@ -828,7 +828,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 //adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
                 it_max =2;
                 int iter;
-                int iter_max = 5;
+                int iter_max = 10;
                 while (it < it_max) {
                     
                     Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, met);
