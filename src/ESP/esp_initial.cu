@@ -940,7 +940,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 int nv_below_pressure_threshold;
                 
                 for (int lev = 0; lev < nv; lev++) {
-                    if (pressure_h[i * nv + lev]>100000){
+                    if (pressure_h[i * nv + lev]>1000000){
                         nv_below_pressure_threshold = lev;
                     }
                 }
