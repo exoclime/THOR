@@ -845,7 +845,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 while (it < it_max) {
                     
                     Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temp_temp, table_num, met);
-                    adiabat_correction(i, nv, temp_temp, pressure_h, sim.Gravit);
+                    //adiabat_correction(i, nv, temp_temp, pressure_h, sim.Gravit);
                     
                     /*
                     for (int lev = 0; lev < nv; lev++) { 
@@ -947,6 +947,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 for (int lev = 0; lev < nv_below_pressure_threshold; lev++) { 
                     temperature_h[i * nv + lev] = temp_temp[lev];
                 }
+                adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
                 for (int lev = 0; lev < nv; lev++) {
                     if (ultrahot_thermo != NO_UH_THERMO) {
                         chi_H              = chi_H_equilibrium(GibbsT,
@@ -969,6 +970,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                                 pressure_h[i * nv + lev] / (Rd_h[i * nv + lev] * temperature_h[i * nv + lev]);
                     
                 }
+
+                
 
                 //adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
 
