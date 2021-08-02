@@ -918,7 +918,42 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                 printf(" end of Parmentier cycle \n");
 
-                
+                for (int j = 0; j < nv; j++)
+                {
+                    if (Rho_h[i * nv + j] < 0.0)
+                    {                
+                        printf("after paramentier-Newton-Raphson solver Rho_h[i] is negative at level %d \n", j);
+                        
+                    }
+                    if (Rho_h[i * nv + j] == 0.0)
+                    {                
+                        printf("after paramentier-Newton-Raphson solver Rho_h[i] is zero at level %d \n", j);
+                    }
+                    
+                    if (isnan(Rho_h[i * nv + j]))
+                    {                
+                        printf("after paramentier-Newton-Raphson solver Rho_h[i] is NaN at level %d  \n", j);
+                        
+                    }
+                }
+                for (int j = 0; j < nv; j++)
+                {
+                    if (pressure_h[i * nv + j] < 0.0)
+                    {                
+                        printf("after paramentier-Newton-Raphson solver pressure_h[i] is negative at level %d \n", j);
+                        
+                    }
+                    if (pressure_h[i * nv + j] == 0.0)
+                    {                
+                        printf("after paramentier-Newton-Raphson solver pressure_h[i] is zero at level %d \n", j);
+                    }
+                    
+                    if (isnan(pressure_h[i * nv + j]))
+                    {                
+                        printf("after paramentier-Newton-Raphson solver pressure_h[i] is NaN at level %d  \n", j);
+                        
+                    }
+                }
                 
 
                
