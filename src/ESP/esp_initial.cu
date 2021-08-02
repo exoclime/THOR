@@ -825,7 +825,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 printf(" start of Parmentier cycle \n");
                 
                 Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, met);
-                adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
+                //adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
 
                 
                 it_max =10;
@@ -886,7 +886,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                                 temp_temp[levi] = temperature_h[i * nv + levi];
                             }
                             Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temp_temp, table_num, met);
-                            adiabat_correction(i, nv, temp_temp, pressure_h, sim.Gravit);
+                            
                             temperature_h[i * nv + lev] = temp_temp[lev];
     
                             if (ultrahot_thermo != NO_UH_THERMO) {
@@ -915,6 +915,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                     
 
                 }
+
+                adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
 
                 printf(" end of Parmentier cycle \n");
 
