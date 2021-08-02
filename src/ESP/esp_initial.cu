@@ -839,21 +839,23 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 
                 //Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, met);
                 //adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
-                it_max =2;
+                it_max =1;
                 int iter;
                 int iter_max = 10;
                 while (it < it_max) {
                     
                     Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temp_temp, table_num, met);
+                    adiabat_correction(i, nv, temp_temp, pressure_h, sim.Gravit);
                     
+                    /*
                     for (int lev = 0; lev < nv; lev++) { 
                         Rho_h[i * nv + lev] =
                                     pressure_h[i * nv + lev] / (Rd_h[i * nv + lev] * temp_temp[i * nv + lev]);
                         pressure_h[i * nv + lev] = (Rd_h[i * nv + lev] * temp_temp[i * nv + lev]) / Rho_h[i * nv + lev];
                         
                     }
-                    adiabat_correction(i, nv, temp_temp, pressure_h, sim.Gravit);
-
+                    
+                    
                     for (int lev = 0; lev < nv; lev++) { 
                     
                             //first, we define thermo quantities of layer below and make
@@ -930,6 +932,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                             Rho_h[i * nv + lev] =
                                 pressure_h[i * nv + lev] / (Rd_h[i * nv + lev] * temp_temp[i * nv + lev]);    
                     }
+                    */
                     it++;
 
                 }
@@ -937,7 +940,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 int nv_below_pressure_threshold;
                 
                 for (int lev = 0; lev < nv; lev++) {
-                    if (pressure_h[i * nv + lev]>100000){
+                    if (pressure_h[i * nv + lev]>10000){
                         nv_below_pressure_threshold = lev;
                     }
                 }
@@ -949,7 +952,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         chi_H              = chi_H_equilibrium(GibbsT,
                                                   GibbsdG,
                                                   GibbsN,
-                                                  temp_temp[i * nv + lev],
+                                                  temperature_h[i * nv + lev],
                                                   pressure_h[i * nv + lev]);
                         Rd_h[i * nv + lev] = Rd_from_chi_H(chi_H);
                     }
@@ -957,7 +960,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         Rd_h[i * nv + lev] = sim.Rd;
                     } 
                     if (ultrahot_thermo != NO_UH_THERMO) {
-                        Cp_h[i * nv + lev] = Cp_from_chi_H(chi_H, temp_temp[i * nv + lev]);
+                        Cp_h[i * nv + lev] = Cp_from_chi_H(chi_H, temperature_h[i * nv + lev]);
                     }
                     else {
                         Cp_h[i * nv + lev] = sim.Cp;
@@ -966,6 +969,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                                 pressure_h[i * nv + lev] / (Rd_h[i * nv + lev] * temperature_h[i * nv + lev]);
                     
                 }
+
                 //adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
 
                 //Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, met);
