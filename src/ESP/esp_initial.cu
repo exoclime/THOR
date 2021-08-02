@@ -833,7 +833,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                             chi_H              = chi_H_equilibrium(GibbsT,
                                                       GibbsdG,
                                                       GibbsN,
-                                                      temp_temp[i * nv + lev],
+                                                      temperature_h[i * nv + lev],
                                                       pressure_h[i * nv + lev]);
                             Rd_h[i * nv + lev] = Rd_from_chi_H(chi_H);
                         }
@@ -1004,7 +1004,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                 
                 */
-                
+
                 /*
                 it_max =10;
 
