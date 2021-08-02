@@ -925,8 +925,14 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                 }
 
-                int nv_half = nv/2;
-                for (int lev = 0; lev < nv_half; lev++) { 
+                int nv_below_100hPa;
+                
+                for (int lev = 0; lev < nv; lev++) {
+                    if (pressure_h[i * nv + lev]>10000){
+                        nv_below_100hPa = lev;
+                    }
+                }
+                for (int lev = 0; lev < nv_below_100hPa; lev++) { 
                     temperature_h[i * nv + lev] = temp_temp[lev];
                 }
                 for (int lev = 0; lev < nv; lev++) {
@@ -949,7 +955,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                     }
                     Rho_h[i * nv + lev] =
                                 pressure_h[i * nv + lev] / (Rd_h[i * nv + lev] * temperature_h[i * nv + lev]);
-                    //pressure_h[i * nv + lev] = (Rd_h[i * nv + lev] * temperature_h[i * nv + lev]) / Rho_h[i * nv + lev];
+                    
                 }
                 adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
 
