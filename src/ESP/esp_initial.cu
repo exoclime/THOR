@@ -823,6 +823,11 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                 printf(" At the end of condition: init_PT_profile == PARMENTIER \n");
                 printf(" start of Parmentier cycle \n");
+                double *temp_temp;
+                temp_temp = (double *)malloc(nv * point_num * sizeof(double));
+                for (int levi = 0; levi < nv; levi++) {   
+                    temp_temp[levi] = temperature_h[i * nv + levi];
+                }
                 
                 //Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, met);
                 //adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
@@ -831,14 +836,14 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 int iter_max = 10;
                 while (it < it_max) {
                     
-                    Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, met);
+                    Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temp_temp, table_num, met);
                     
                     for (int lev = 0; lev < nv; lev++) { 
                         Rho_h[i * nv + lev] =
-                                    pressure_h[i * nv + lev] / (Rd_h[i * nv + lev] * temperature_h[i * nv + lev]);
-                        pressure_h[i * nv + lev] = (Rd_h[i * nv + lev] * temperature_h[i * nv + lev]) / Rho_h[i * nv + lev];
+                                    pressure_h[i * nv + lev] / (Rd_h[i * nv + lev] * temp_temp[i * nv + lev]);
+                        pressure_h[i * nv + lev] = (Rd_h[i * nv + lev] * temp_temp[i * nv + lev]) / Rho_h[i * nv + lev];
                     }
-                    adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
+                    adiabat_correction(i, nv, temp_temp, pressure_h, sim.Gravit);
 
                     for (int lev = 0; lev < nv; lev++) { 
                     
@@ -848,14 +853,14 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                                 
                                 if (ultrahot_thermo != NO_UH_THERMO) {
                                     chi_H = chi_H_equilibrium(
-                                        GibbsT, GibbsdG, GibbsN, temperature_h[i * nv + lev], sim.P_Ref);
+                                        GibbsT, GibbsdG, GibbsN, temp_temp[i * nv + lev], sim.P_Ref);
                                     Rd_L = Rd_from_chi_H(chi_H);
                                 }
                                 else {
                                     Rd_L = sim.Rd;
                                 }
                                 P_L = sim.P_Ref;
-                                T_L = temperature_h[i * nv + lev];
+                                T_L = temp_temp[i * nv + lev];
                                 dz  = Altitude_h[0];
                             }
                             else {
@@ -869,7 +874,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                                     Rd_L = Rd_h[i * nv + lev - 1];
                                 }
                                 P_L = pressure_h[i * nv + lev - 1];
-                                T_L = temperature_h[i * nv + lev - 1];
+                                T_L = temp_temp[i * nv + lev - 1];
                                 dz  = Altitude_h[lev] - Altitude_h[lev - 1];
                             }
     
@@ -887,7 +892,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                                 f    = log(pressure_h[i * nv + lev] / P_L) / dz
                                     + sim.Gravit
                                           / (0.5
-                                             * (Rd_h[i * nv + lev] * temperature_h[i * nv + lev]
+                                             * (Rd_h[i * nv + lev] * temp_temp[i * nv + lev]
                                                 + Rd_L * T_L));
                                 df  = 1.0 / (pressure_h[i * nv + lev] * dz);
                                 pressure_h[i * nv + lev] = pressure_h[i * nv + lev] - f / df;
@@ -897,7 +902,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                                     chi_H              = chi_H_equilibrium(GibbsT,
                                                               GibbsdG,
                                                               GibbsN,
-                                                              temperature_h[i * nv + lev],
+                                                              temp_temp[i * nv + lev],
                                                               pressure_h[i * nv + lev]);
                                     Rd_h[i * nv + lev] = Rd_from_chi_H(chi_H);
                                 }
@@ -907,19 +912,41 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                                 iter++;
                             }
                             if (ultrahot_thermo != NO_UH_THERMO) {
-                                Cp_h[i * nv + lev] = Cp_from_chi_H(chi_H, temperature_h[i * nv + lev]);
+                                Cp_h[i * nv + lev] = Cp_from_chi_H(chi_H, temp_temp[i * nv + lev]);
                             }
                             else {
                                 Cp_h[i * nv + lev] = sim.Cp;
                             }
     
                             Rho_h[i * nv + lev] =
-                                pressure_h[i * nv + lev] / (Rd_h[i * nv + lev] * temperature_h[i * nv + lev]);    
+                                pressure_h[i * nv + lev] / (Rd_h[i * nv + lev] * temp_temp[i * nv + lev]);    
                     }
                     it++;
 
                 }
-                for (int lev = 0; lev < nv; lev++) { 
+
+                int nv_half = nv/2;
+                for (int lev = 0; lev < nv_half; lev++) { 
+                    temperature_h[i * nv + lev] = temp_temp[lev];
+                }
+                for (int lev = 0; lev < nv; lev++) {
+                    if (ultrahot_thermo != NO_UH_THERMO) {
+                        chi_H              = chi_H_equilibrium(GibbsT,
+                                                  GibbsdG,
+                                                  GibbsN,
+                                                  temp_temp[i * nv + lev],
+                                                  pressure_h[i * nv + lev]);
+                        Rd_h[i * nv + lev] = Rd_from_chi_H(chi_H);
+                    }
+                    else {
+                        Rd_h[i * nv + lev] = sim.Rd;
+                    } 
+                    if (ultrahot_thermo != NO_UH_THERMO) {
+                        Cp_h[i * nv + lev] = Cp_from_chi_H(chi_H, temp_temp[i * nv + lev]);
+                    }
+                    else {
+                        Cp_h[i * nv + lev] = sim.Cp;
+                    }
                     Rho_h[i * nv + lev] =
                                 pressure_h[i * nv + lev] / (Rd_h[i * nv + lev] * temperature_h[i * nv + lev]);
                     //pressure_h[i * nv + lev] = (Rd_h[i * nv + lev] * temperature_h[i * nv + lev]) / Rho_h[i * nv + lev];
