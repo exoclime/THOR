@@ -919,23 +919,24 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                                 pressure_h[i * nv + lev] / (Rd_h[i * nv + lev] * temperature_h[i * nv + lev]);    
                     }
                     */
-
-                    if (ultrahot_thermo != NO_UH_THERMO) {
-                        chi_H              = chi_H_equilibrium(GibbsT,
-                                                  GibbsdG,
-                                                  GibbsN,
-                                                  temperature_h[i * nv + lev],
-                                                  pressure_h[i * nv + lev]);
-                        Rd_h[i * nv + lev] = Rd_from_chi_H(chi_H);
-                    }
-                    else {
-                        Rd_h[i * nv + lev] = sim.Rd;
-                    }
-                    if (ultrahot_thermo != NO_UH_THERMO) {
-                        Cp_h[i * nv + lev] = Cp_from_chi_H(chi_H, temperature_h[i * nv + lev]);
-                    }
-                    else {
-                        Cp_h[i * nv + lev] = sim.Cp;
+                    for (int lev = 0; lev < nv; lev++) { 
+                        if (ultrahot_thermo != NO_UH_THERMO) {
+                            chi_H              = chi_H_equilibrium(GibbsT,
+                                                    GibbsdG,
+                                                    GibbsN,
+                                                    temperature_h[i * nv + lev],
+                                                    pressure_h[i * nv + lev]);
+                            Rd_h[i * nv + lev] = Rd_from_chi_H(chi_H);
+                        }
+                        else {
+                            Rd_h[i * nv + lev] = sim.Rd;
+                        }
+                        if (ultrahot_thermo != NO_UH_THERMO) {
+                            Cp_h[i * nv + lev] = Cp_from_chi_H(chi_H, temperature_h[i * nv + lev]);
+                        }
+                        else {
+                            Cp_h[i * nv + lev] = sim.Cp;
+                        }
                     }
                     it++;
 
