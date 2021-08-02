@@ -822,43 +822,13 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 }
 
 
-                printf(" start of dry lapse rate computattion \n");
-
-                for (int lev = 1; lev < nv; lev++) {
-                    temperature_h[i * nv + lev] = temperature_h[i * nv + lev-1] -
-                        0.7*(sim.Gravit / Cp_h[i * nv + lev-1] *(Altitude_h[lev]-Altitude_h[lev-1]));
-
-
-                        if (ultrahot_thermo != NO_UH_THERMO) {
-                            chi_H              = chi_H_equilibrium(GibbsT,
-                                                      GibbsdG,
-                                                      GibbsN,
-                                                      temperature_h[i * nv + lev],
-                                                      pressure_h[i * nv + lev]);
-                            Rd_h[i * nv + lev] = Rd_from_chi_H(chi_H);
-                        }
-                        else {
-                            Rd_h[i * nv + lev] = sim.Rd;
-                        }
-                        if (ultrahot_thermo != NO_UH_THERMO) {
-                            Cp_h[i * nv + lev] = Cp_from_chi_H(chi_H, temperature_h[i * nv + lev]);
-                        }
-                        else {
-                            Cp_h[i * nv + lev] = sim.Cp;
-                        }
-
-                        Rho_h[i * nv + lev] =
-                                pressure_h[i * nv + lev] / (Rd_h[i * nv + lev] * temperature_h[i * nv + lev]);
-
-                        pressure_h[i * nv + lev] = (Rd_h[i * nv + lev] * temperature_h[i * nv + lev]) / Rho_h[i * nv + lev];
-
-                }
+                
 
 
 
 
 
-                /*
+                
                 printf(" At the end of condition: init_PT_profile == PARMENTIER \n");
                 printf(" start of Parmentier cycle \n");
                 double *temp_temp;
@@ -996,14 +966,14 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                                 pressure_h[i * nv + lev] / (Rd_h[i * nv + lev] * temperature_h[i * nv + lev]);
                     
                 }
-                adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
+                //adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
 
                 //Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, met);
                 //adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
 
 
                 
-                */
+                
 
                 /*
                 it_max =10;
