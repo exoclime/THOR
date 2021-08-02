@@ -925,14 +925,14 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                 }
 
-                int nv_below_100hPa;
+                int nv_below_pressure_threshold;
                 
                 for (int lev = 0; lev < nv; lev++) {
-                    if (pressure_h[i * nv + lev]>10000){
-                        nv_below_100hPa = lev;
+                    if (pressure_h[i * nv + lev]>100000){
+                        nv_below_pressure_threshold = lev;
                     }
                 }
-                for (int lev = 0; lev < nv_below_100hPa; lev++) { 
+                for (int lev = 0; lev < nv_below_pressure_threshold; lev++) { 
                     temperature_h[i * nv + lev] = temp_temp[lev];
                 }
                 for (int lev = 0; lev < nv; lev++) {
