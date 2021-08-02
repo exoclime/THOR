@@ -867,11 +867,16 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                             T_L = temperature_h[i * nv + lev - 1];
                             dz  = Altitude_h[lev] - Altitude_h[lev - 1];
                         }
+
+                        pressure_h[i * nv + lev] = P_L;
+                        Rd_h[i * nv + lev]       = Rd_L;
+                        ptmp                     = pressure_h[i * nv + lev] + 2 * eps;
                         
 
                         it = 0;  
-                        ptmp = pressure_h[i * nv + lev] + 2 * eps;
+                        
                         while (it < it_max && ptmp - pressure_h[i * nv + lev] > eps) {
+                            printf(" Newton-Raphson solver \n");
                             //Newton-Raphson solver of hydrostatic eqn for thermo properties
                             ptmp = pressure_h[i * nv + lev];
                             f    = log(pressure_h[i * nv + lev] / P_L) / dz
