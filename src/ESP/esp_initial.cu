@@ -920,6 +920,9 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                 }
 
+                Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, met);
+                adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
+
 
                 
 
