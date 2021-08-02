@@ -826,7 +826,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                 for (int lev = 1; lev < nv; lev++) {
                     temperature_h[i * nv + lev] = temperature_h[i * nv + lev-1] -
-                        (sim.Gravit / Cp_h[i * nv + lev-1] *(Altitude_h[lev]-Altitude_h[lev-1]));
+                        0.5*(sim.Gravit / Cp_h[i * nv + lev-1] *(Altitude_h[lev]-Altitude_h[lev-1]));
 
 
                         if (ultrahot_thermo != NO_UH_THERMO) {
