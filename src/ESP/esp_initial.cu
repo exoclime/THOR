@@ -838,6 +838,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                     lapse_rate*(Altitude_h[lev] - Altitude_h[0]);
                 }
 
+                adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
+
                 for (int lev = 0; lev < nv; lev++) {
                     if (ultrahot_thermo != NO_UH_THERMO) {
                         chi_H              = chi_H_equilibrium(GibbsT,
@@ -1260,7 +1262,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
             }
             
             
-
+            
             printf(" after TP profile type procedures \n");
             /// 
 
@@ -1344,6 +1346,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 }
             }
         }
+        
 
 
         
