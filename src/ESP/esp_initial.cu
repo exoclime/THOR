@@ -858,8 +858,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                     else {
                         Cp_h[i * nv + lev] = sim.Cp;
                     }
-                    Rho_h[i * nv + lev] =
-                                pressure_h[i * nv + lev] / (Rd_h[i * nv + lev] * temperature_h[i * nv + lev]);
+                    //Rho_h[i * nv + lev] = pressure_h[i * nv + lev] / (Rd_h[i * nv + lev] * temperature_h[i * nv + lev]);
                     //pressure_h[i * nv + lev] = (Rd_h[i * nv + lev] * temperature_h[i * nv + lev]) * Rho_h[i * nv + lev];
                     
                 }
