@@ -831,11 +831,11 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 }
 
                 lapse_rate = (temperature_h[i * nv + 0] - temperature_h[i * nv + nv_pressure_threshold+1]) /
-                    (Altitude_h[nv_pressure_threshold+1] - Altitude_h[0]);
+                    (log10(Altitude_h[nv_pressure_threshold+1]) - log10(Altitude_h[0]));
 
                 for (int lev = 1; lev < nv_pressure_threshold; lev++) { 
                     temperature_h[i * nv + lev] = temperature_h[i * nv + 0] - 
-                    lapse_rate*(Altitude_h[lev] - Altitude_h[0]);
+                    lapse_rate*(log10(Altitude_h[lev]) - log10(Altitude_h[0]));
                 }
 
                 adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
@@ -862,6 +862,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                     //pressure_h[i * nv + lev] = (Rd_h[i * nv + lev] * temperature_h[i * nv + lev]) * Rho_h[i * nv + lev];
                     
                 }
+
 
 
                 
