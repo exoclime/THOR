@@ -821,6 +821,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                     }
                 }
 
+                /*
                 int nv_pressure_threshold;
                 int lapse_rate;
                 
@@ -863,6 +864,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                     //pressure_h[i * nv + lev] = (Rd_h[i * nv + lev] * temperature_h[i * nv + lev]) * Rho_h[i * nv + lev];
                     
                 }
+                */
 
 
 
