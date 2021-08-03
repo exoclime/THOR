@@ -826,7 +826,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 int lapse_rate;
                 
                 for (int lev = 0; lev < nv; lev++) {
-                    if (pressure_h[i * nv + lev]>10000){
+                    if (pressure_h[i * nv + lev]>100000){
                         nv_pressure_threshold = lev;
                     }
                 }
