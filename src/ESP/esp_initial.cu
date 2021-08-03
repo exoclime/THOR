@@ -826,17 +826,17 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 int lapse_rate;
                 
                 for (int lev = 0; lev < nv; lev++) {
-                    if (pressure_h[i * nv + lev]>100000){
+                    if (pressure_h[i * nv + lev]>10000){
                         nv_pressure_threshold = lev;
                     }
                 }
 
                 lapse_rate = (temperature_h[i * nv + 0] - temperature_h[i * nv + nv_pressure_threshold]) /
-                    (log10(Altitude_h[nv_pressure_threshold]) - log10(Altitude_h[0]));
+                    ((Altitude_h[nv_pressure_threshold]) - (Altitude_h[0]));
 
                 for (int lev = 0; lev < nv_pressure_threshold; lev++) { 
                     temperature_h[i * nv + lev] = temperature_h[i * nv + 0] - 
-                    lapse_rate*(log10(Altitude_h[lev]) - log10(Altitude_h[0]));
+                    lapse_rate*((Altitude_h[lev]) - (Altitude_h[0]));
                 }
 
                 //Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, met);
