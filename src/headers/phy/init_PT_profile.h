@@ -733,7 +733,7 @@ void adiabat_correction(int id, int nlay, double* (&Tl), double* pressure_h, dou
                 gradad[i] = 0.0;
             }
             
-            Tl[id * nlay + i-1] = Tl[id * nlay + i] * pow((pressure_h[id * nlay + i] ) / pressure_h[id * nlay + i], gradad[i]);
+            Tl[id * nlay + i-1] = Tl[id * nlay + i] * pow((pressure_h[id * nlay + i-1] ) / pressure_h[id * nlay + i], gradad[i]);
         }
     }
 }
