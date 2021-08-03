@@ -826,17 +826,17 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 int lapse_rate;
                 
                 for (int lev = 0; lev < nv; lev++) {
-                    if (pressure_h[i * nv + lev]>10000){
+                    if (pressure_h[i * nv + lev]>1000){
                         nv_pressure_threshold = lev;
                     }
                 }
 
                 lapse_rate = (temperature_h[i * nv + 0] - temperature_h[i * nv + nv_pressure_threshold]) /
-                    (log10(pressure_h[i * nv + nv_pressure_threshold] - pressure_h[i * nv + 0]));
+                    ((pressure_h[i * nv + nv_pressure_threshold]) - (pressure_h[i * nv + 0]));
 
                 for (int lev = 0; lev < nv_pressure_threshold; lev++) { 
                     temperature_h[i * nv + lev] = temperature_h[i * nv + 0] - 
-                    lapse_rate*(log10(pressure_h[i * nv + lev] - pressure_h[i * nv + 0]));
+                    lapse_rate*((pressure_h[i * nv + lev]) - (pressure_h[i * nv + 0]));
                 }
 
                 /*
