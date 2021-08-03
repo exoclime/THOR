@@ -795,7 +795,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         
                     }
 
-                    temperature_h[i * nv + j] = 0.80*temperature_h[i * nv + j] ;
+                    //temperature_h[i * nv + j] = 0.80*temperature_h[i * nv + j] ;
 
                 }
                 
