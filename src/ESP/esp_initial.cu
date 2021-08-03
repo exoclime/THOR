@@ -821,6 +821,47 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                     }
                 }
 
+                int nv_pressure_threshold;
+                int lapse_rate;
+                
+                for (int lev = 0; lev < nv; lev++) {
+                    if (pressure_h[i * nv + lev]>100000){
+                        nv_pressure_threshold = lev;
+                    }
+                }
+
+                lapse_rate = (temperature_h[i * nv + 0] - temperature_h[i * nv + nv_pressure_threshold+1]) /
+                    (Altitude_h[nv_pressure_threshold+1] - Altitude_h[0]);
+
+                for (int lev = 1; lev < nv_pressure_threshold; lev++) { 
+                    temperature_h[i * nv + lev] = temperature_h[i * nv + 0] - 
+                    lapse_rate*(Altitude_h[lev] - Altitude_h[0]);
+                }
+
+                for (int lev = 0; lev < nv; lev++) {
+                    if (ultrahot_thermo != NO_UH_THERMO) {
+                        chi_H              = chi_H_equilibrium(GibbsT,
+                                                  GibbsdG,
+                                                  GibbsN,
+                                                  temperature_h[i * nv + lev],
+                                                  pressure_h[i * nv + lev]);
+                        Rd_h[i * nv + lev] = Rd_from_chi_H(chi_H);
+                    }
+                    else {
+                        Rd_h[i * nv + lev] = sim.Rd;
+                    } 
+                    if (ultrahot_thermo != NO_UH_THERMO) {
+                        Cp_h[i * nv + lev] = Cp_from_chi_H(chi_H, temperature_h[i * nv + lev]);
+                    }
+                    else {
+                        Cp_h[i * nv + lev] = sim.Cp;
+                    }
+                    Rho_h[i * nv + lev] =
+                                pressure_h[i * nv + lev] / (Rd_h[i * nv + lev] * temperature_h[i * nv + lev]);
+                    pressure_h[i * nv + lev] = (Rd_h[i * nv + lev] * temperature_h[i * nv + lev]) * Rho_h[i * nv + lev];
+                    
+                }
+
 
                 
 
@@ -828,7 +869,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
 
 
-                
+                /*
                 printf(" At the end of condition: init_PT_profile == PARMENTIER \n");
                 printf(" start of Parmentier cycle \n");
                 double *temp_temp;
@@ -855,7 +896,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         pressure_h[i * nv + lev] = (Rd_h[i * nv + lev] * temp_temp[i * nv + lev]) / Rho_h[i * nv + lev];
                         
                     }
-                    
+                    *7
                     /*
                     for (int lev = 0; lev < nv; lev++) { 
                     
@@ -934,7 +975,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                                 pressure_h[i * nv + lev] / (Rd_h[i * nv + lev] * temp_temp[i * nv + lev]);    
                     }
                     */
-                    
+                    /*
                     it++;
 
                 }
@@ -988,7 +1029,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                 
                 
-
+                */
                 /*
                 it_max =10;
 

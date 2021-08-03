@@ -504,11 +504,6 @@ void Parmentier_IC(int id, const int nlay, double* pl, double Tint, double mu, d
     double kRoss[nlay];
     double tau[nlay + 1];
 
-    if (nlay>52)
-    {
-        
-        printf("error too many vertical layers - max. 52 layers");
-    }
     
     
     double summy;
@@ -700,10 +695,10 @@ void adiabat_correction(int id, int nlay, double* (&Tl), double* pressure_h, dou
 
     // start operations
 
-    for (i = (nlay-2); i > 0; i--)
+    for (i = (nlay-1); i > 1; i--)
     {
         
-        gradrad[i+1] = (log10(Tl[i+1]) - log10(Tl[i])) / (log10(pressure_h[id * nlay + i+1]) - log10(pressure_h[id * nlay + i]));
+        gradrad[i] = (log10(Tl[i]) - log10(Tl[i-1])) / (log10(pressure_h[id * nlay + i]) - log10(pressure_h[id * nlay + i-1]));
         gradad[i] = ((double)0.32) - ((double)0.10) * Tl[i] / ((double)3000.0);
     }
 
@@ -713,9 +708,9 @@ void adiabat_correction(int id, int nlay, double* (&Tl), double* pressure_h, dou
     iRC = 1;
     iRC1 = 1;
 
-    for (i = 0; i < (nlay-1) ; i++)
+    for (i = 1; i <= (nlay-1) ; i++)
     {
-        if (iRC1 <= i + 1)
+        if (iRC1 >= i -1)
         {
             if (gradrad[i] > ((double)0.7) * gradad[i])
             {
@@ -728,9 +723,9 @@ void adiabat_correction(int id, int nlay, double* (&Tl), double* pressure_h, dou
         }
     }
 
-    if (iRC > 0 )
+    if (iRC > -1 )
     {
-        for (i = iRC; i > 1; i--)
+        for (i = iRC; i > 0; i--)
         {
             gradad[i] = (double)0.32 - ((double)0.10) * Tl[id * nlay + i] / ((double)3000.0);
             if (gradad[i] < 0.0)
@@ -738,7 +733,7 @@ void adiabat_correction(int id, int nlay, double* (&Tl), double* pressure_h, dou
                 gradad[i] = 0.0;
             }
             
-            Tl[id * nlay + i] = Tl[id * nlay + i+1] * pow((pressure_h[id * nlay + i] ) / pressure_h[id * nlay + i+1], gradad[i+1]);
+            Tl[id * nlay + i-1] = Tl[id * nlay + i] * pow((pressure_h[id * nlay + i] ) / pressure_h[id * nlay + i], gradad[i]);
         }
     }
 }
