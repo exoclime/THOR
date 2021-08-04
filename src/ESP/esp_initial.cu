@@ -902,14 +902,6 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 }
                 
 
-
-
-                
-
-
-
-
-
                 /*
                 printf(" At the end of condition: init_PT_profile == PARMENTIER \n");
                 printf(" start of Parmentier cycle \n");
