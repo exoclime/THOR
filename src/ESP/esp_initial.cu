@@ -736,7 +736,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 printf(" after pressure check \n");
 
                 int table_num;
-                table_num = 1;
+                table_num = 2;
                 double met, Tirr, Teff, AB;
                 mu = 0.5;
                 met = 0.0; // to be connected to input configuration file
