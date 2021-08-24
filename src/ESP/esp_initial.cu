@@ -835,8 +835,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                     (log(pressure_h[i * nv + nv_pressure_threshold])/log(exp(1.0)) - log(pressure_h[i * nv + 0])/log(exp(1.0)));
 
                 for (int lev = 0; lev < nv_pressure_threshold; lev++) { 
-                    temperature_h[i * nv + lev] = temperature_h[i * nv + 0] - 
-                    lapse_rate*(log(pressure_h[i * nv + lev])/log(exp(1.0)) - log(pressure_h[i * nv + 0])/log(exp(1.0)));
+                    temperature_h[i * nv + lev] = 0.5*temperature_h[i * nv + lev] + 0.5 * (temperature_h[i * nv + 0] - 
+                    lapse_rate*(log(pressure_h[i * nv + lev])/log(exp(1.0)) - log(pressure_h[i * nv + 0])/log(exp(1.0))) );
                 }
 
                 /*
@@ -870,12 +870,12 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         Cp_h[i * nv + lev] = sim.Cp;
                     }
                     Rho_h[i * nv + lev] = pressure_h[i * nv + lev] / (Rd_h[i * nv + lev] * temperature_h[i * nv + lev]);
-                    pressure_h[i * nv + lev] = (Rd_h[i * nv + lev] * temperature_h[i * nv + lev]) * Rho_h[i * nv + lev];
+                    //pressure_h[i * nv + lev] = (Rd_h[i * nv + lev] * temperature_h[i * nv + lev]) * Rho_h[i * nv + lev];
                     
                 }
-                Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, met);
+                //Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, met);
 
-                for (int j = 0; j < 100; j++) {
+                for (int j = 0; j < 10; j++) {
                     adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
                     for (int lev = 0; lev < nv; lev++) {
                         if (ultrahot_thermo != NO_UH_THERMO) {
@@ -896,7 +896,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                             Cp_h[i * nv + lev] = sim.Cp;
                         }
                         Rho_h[i * nv + lev] = pressure_h[i * nv + lev] / (Rd_h[i * nv + lev] * temperature_h[i * nv + lev]);
-                        pressure_h[i * nv + lev] = (Rd_h[i * nv + lev] * temperature_h[i * nv + lev]) * Rho_h[i * nv + lev];
+                        //pressure_h[i * nv + lev] = (Rd_h[i * nv + lev] * temperature_h[i * nv + lev]) * Rho_h[i * nv + lev];
                         
                     }
                 }
