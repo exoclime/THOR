@@ -835,7 +835,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                     (log(pressure_h[i * nv + nv_pressure_threshold])/log(exp(1.0)) - log(pressure_h[i * nv + 0])/log(exp(1.0)));
 
                 for (int lev = 0; lev < nv_pressure_threshold; lev++) { 
-                    temperature_h[i * nv + lev] = 0.8*temperature_h[i * nv + lev] + 0.2 * (temperature_h[i * nv + 0] - 
+                    temperature_h[i * nv + lev] = 0.9*temperature_h[i * nv + lev] + 0.1 * (temperature_h[i * nv + 0] - 
                     lapse_rate*(log(pressure_h[i * nv + lev])/log(exp(1.0)) - log(pressure_h[i * nv + 0])/log(exp(1.0))) );
                 }
 
