@@ -847,9 +847,9 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 int height_factor;               
 
                 for (int lev = 1; lev < nv; lev++) {
-                    height_factor = 0.95*(nv-lev)/(nv-1);
+                    height_factor = 0.90*(nv-lev)/(nv-1);
                     delta_T = -sim.Gravit / ((Cp_h[i * nv + lev]+Cp_h[i * nv + lev-1])/2) * (log10(Altitude_h[lev]) - log10(Altitude_h[lev-1])); 
-                    temperature_h[i * nv + lev] =0.5 * temperature_h[i * nv + lev] + 0.5*(temperature_h[i * nv + lev-1] + height_factor*delta_T);
+                    temperature_h[i * nv + lev] =0.2 * temperature_h[i * nv + lev] + 0.8*(temperature_h[i * nv + lev-1] + height_factor*delta_T);
                 }
 
                 /*
@@ -889,7 +889,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 //Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, met);
 
                 for (int j = 0; j < 10; j++) {
-                    //adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
+                    adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
                     for (int lev = 0; lev < nv; lev++) {
                         if (ultrahot_thermo != NO_UH_THERMO) {
                             chi_H              = chi_H_equilibrium(GibbsT,
