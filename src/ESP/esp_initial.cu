@@ -927,7 +927,10 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         
                     }
                 }
-                Rho_h[i * nv + lev] = (pressure_h[i * nv + lev-1] - pressure_h[i * nv + lev]) / ((Altitude_h[lev]) - (Altitude_h[lev-1])) / sim.Gravit;
+                for (int lev = 0; lev < nv; lev++) {
+                    Rho_h[i * nv + lev] = (pressure_h[i * nv + lev-1] - pressure_h[i * nv + lev]) / ((Altitude_h[lev]) - (Altitude_h[lev-1])) / sim.Gravit;
+
+                }
                 
 
                 /*
