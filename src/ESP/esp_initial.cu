@@ -831,12 +831,25 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                     }
                 }
 
+                /*
+
                 lapse_rate = (temperature_h[i * nv + 0] - temperature_h[i * nv + nv_pressure_threshold]) /
                     (log(pressure_h[i * nv + nv_pressure_threshold])/log(exp(1.0)) - log(pressure_h[i * nv + 0])/log(exp(1.0)));
 
                 for (int lev = 0; lev < nv_pressure_threshold; lev++) { 
                     temperature_h[i * nv + lev] = 0.9*temperature_h[i * nv + lev] + 0.1 * (temperature_h[i * nv + 0] - 
                     lapse_rate*(log(pressure_h[i * nv + lev])/log(exp(1.0)) - log(pressure_h[i * nv + 0])/log(exp(1.0))) );
+                }
+
+                */
+
+                int delta_T;
+                int height_factor;               
+
+                for (int lev = 1; lev < nv; lev++) {
+                    height_factor = 0.95*(nv-lev)/(nv-1);
+                    delta_T = -sim.Gravit * /Cp_h[i * nv + lev] * (log10(Altitude_h[lev]) - log10(Altitude_h[lev-1]); 
+                    temperature_h[i * nv + lev] = temperature_h[i * nv + lev-1] + height_factor*delta_T;
                 }
 
                 /*
