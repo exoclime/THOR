@@ -566,7 +566,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                                                                     sim.Tmean,
                                                                     sim.P_Ref,
                                                                     sim.Gravit,
-                                                                    Tint,
+                                                                    Tint+300,
                                                                     f_lw,
                                                                     kappa_sw,
                                                                     kappa_lw);
@@ -621,7 +621,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                                                                     sim.Tmean,
                                                                     sim.P_Ref,
                                                                     sim.Gravit,
-                                                                    Tint,
+                                                                    Tint+300,
                                                                     f_lw,
                                                                     kappa_sw,
                                                                     kappa_lw);
@@ -847,6 +847,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 int height_factor;
                 //int delta_P;               
 
+                /*
                 for (int lev = 1; lev < nv; lev++) {
                     height_factor = 0.90*(nv-lev)/(nv-1);
                     delta_T = -sim.Gravit / ((Cp_h[i * nv + lev]+Cp_h[i * nv + lev-1])/2) * ((Altitude_h[lev]) - (Altitude_h[lev-1])); 
@@ -857,11 +858,12 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                     //Rho_h[i * nv + lev] = (pressure_h[i * nv + lev-1] - pressure_h[i * nv + lev]) / ((Altitude_h[lev]) - (Altitude_h[lev-1])) / sim.Gravit;
 
 
-                    /*
-                    delta_P = -sim.Gravit * ((Rho_h[i * nv + lev] + Rho_h[i * nv + lev-1])/2) * ((Altitude_h[lev]) - (Altitude_h[lev-1])); 
-                    pressure_h[i * nv + lev] =  pressure_h[i * nv + lev-1] + delta_P;
-                    */                    
+                    
+                    //delta_P = -sim.Gravit * ((Rho_h[i * nv + lev] + Rho_h[i * nv + lev-1])/2) * ((Altitude_h[lev]) - (Altitude_h[lev-1])); 
+                    //pressure_h[i * nv + lev] =  pressure_h[i * nv + lev-1] + delta_P;
+                                      
                 }
+                */
 
                 /*
                 lapse_rate = (temperature_h[i * nv + 0] - temperature_h[i * nv + nv_pressure_threshold]) /
