@@ -566,7 +566,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                                                                     sim.Tmean,
                                                                     sim.P_Ref,
                                                                     sim.Gravit,
-                                                                    Tint+300,
+                                                                    Tint+150,
                                                                     f_lw,
                                                                     kappa_sw,
                                                                     kappa_lw);
@@ -621,7 +621,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                                                                     sim.Tmean,
                                                                     sim.P_Ref,
                                                                     sim.Gravit,
-                                                                    Tint+300,
+                                                                    Tint+150,
                                                                     f_lw,
                                                                     kappa_sw,
                                                                     kappa_lw);
