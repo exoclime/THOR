@@ -848,7 +848,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                 for (int lev = 1; lev < nv; lev++) {
                     height_factor = 0.95*(nv-lev)/(nv-1);
-                    delta_T = -sim.Gravit /Cp_h[i * nv + lev] * (log10(Altitude_h[lev]) - log10(Altitude_h[lev-1]); 
+                    delta_T = -sim.Gravit / Cp_h[i * nv + lev] * (log10(Altitude_h[lev]) - log10(Altitude_h[lev-1])); 
                     temperature_h[i * nv + lev] = temperature_h[i * nv + lev-1] + height_factor*delta_T;
                 }
 
