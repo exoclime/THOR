@@ -563,10 +563,10 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         else {
                             temperature_h[i * nv + lev] = guillot_T(sim.P_Ref,
                                                                     mu,
-                                                                    sim.Tmean+200,
+                                                                    sim.Tmean+300,
                                                                     sim.P_Ref,
                                                                     sim.Gravit,
-                                                                    Tint+200,
+                                                                    Tint,
                                                                     f_lw,
                                                                     kappa_sw,
                                                                     kappa_lw);
@@ -618,10 +618,10 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         else {
                             temperature_h[i * nv + lev] = guillot_T(pressure_h[i * nv + lev],
                                                                     mu,
-                                                                    sim.Tmean+200,
+                                                                    sim.Tmean+300,
                                                                     sim.P_Ref,
                                                                     sim.Gravit,
-                                                                    Tint+200,
+                                                                    Tint,
                                                                     f_lw,
                                                                     kappa_sw,
                                                                     kappa_lw);
