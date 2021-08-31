@@ -12,7 +12,7 @@ void text_file_to_array(std::string name ,double* array, int nrow){
         if (!inFile)
         {
             printf("\nError opening the file: %d \n", name);
-            return 13;
+            
         }
         for (int i = 0; i < nrow; i++)
         {
