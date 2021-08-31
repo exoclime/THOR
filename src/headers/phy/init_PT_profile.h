@@ -5,7 +5,7 @@
 #include <fstream>
 #include <string>
 
-void text_file_to_array(std::string name ,double *(&array), int nrow){
+void text_file_to_array(std::string name ,double (&array)[1060]){
         
         std::ifstream inFile;
         inFile.open(name);
@@ -14,7 +14,7 @@ void text_file_to_array(std::string name ,double *(&array), int nrow){
             printf("\nError opening the file: %s \n", name);
             
         }
-        for (int i = 0; i < nrow; i++)
+        for (int i = 0; i < 1060; i++)
         {
             inFile >> array[i];
         }  
