@@ -775,7 +775,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 printf(" before Tirr and Parmentier \n");
                 Tirr = Tstar * pow(Rstar / star_planet_distance ,0.5);
 
-                //Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, met);
+                Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, met);
+                adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
 
                 for (int j = 0; j < nv; j++)
                 {
@@ -842,16 +843,17 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 }
 
                 */
-
+                /*
                 int delta_T;
                 int height_factor;
                 //int delta_P;               
 
-                /*
+                
                 for (int lev = 1; lev < nv; lev++) {
                     height_factor = 0.90*(nv-lev)/(nv-1);
-                    delta_T = -sim.Gravit / ((Cp_h[i * nv + lev]+Cp_h[i * nv + lev-1])/2) * ((Altitude_h[lev]) - (Altitude_h[lev-1])); 
-                    temperature_h[i * nv + lev] = 0.05 * temperature_h[i * nv + lev] + 0.95*(temperature_h[i * nv + lev-1] + height_factor*delta_T);
+                    delta_T = -sim.Gravit / ((Cp_h[i * nv + lev]+Cp_h[i * nv + lev-1])/2) * ((Altitude_h[lev]) - (Altitude_h[lev-1]));
+
+                    temperature_h[i * nv + lev] = 0.0 * temperature_h[i * nv + lev] + 1.0*(temperature_h[i * nv + lev-1] + height_factor*delta_T);
 
                     //Rho_h[i * nv + lev] = pressure_h[i * nv + lev] / (Rd_h[i * nv + lev] * temperature_h[i * nv + lev]);
 
@@ -864,6 +866,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                                       
                 }
                 */
+                
 
                 /*
                 lapse_rate = (temperature_h[i * nv + 0] - temperature_h[i * nv + nv_pressure_threshold]) /
@@ -1082,18 +1085,18 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                                 pressure_h[i * nv + lev] / (Rd_h[i * nv + lev] * temperature_h[i * nv + lev]);
                     
                 }
-
-                
-
-                //adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
-
-                //Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, met);
-                //adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
-
-
-                
-                
                 */
+
+                
+
+                //adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
+
+               
+
+
+                
+                
+                
                 /*
                 it_max =10;
 
@@ -1229,10 +1232,14 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         
                     }
                 }
+
+                double OpaTableTemperature[1060];
+                text_file_to_array("OpaTableTemperature.txt" ,double* OpaTableTemperature, int 1060);
+                printf("OpaTableTemperature[0] = %d \n", OpaTableTemperature[0]);
                 
 
                
-                /*
+                
                 for (int lev = 0; lev <= nv; lev++) {   
                     if (ultrahot_thermo != NO_UH_THERMO) {
                         chi_H              = chi_H_equilibrium(GibbsT,
@@ -1253,7 +1260,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         Cp_h[i * nv + lev] = sim.Cp;
                     }
                 }
-                */
+                
                 /*
                 printf(" second cycle before Parmentier_IC \n");
                 Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, met);
@@ -1330,13 +1337,11 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
             for (int lev = 0; lev < nv; lev++) {
                 //              Density [kg/m3]
-                if (init_PT_profile == PARMENTIER){
+                
+                Rho_h[i * nv + lev] =
+                    pressure_h[i * nv + lev] / (temperature_h[i * nv + lev] * Rd_h[i * nv + lev]);
 
-                } else {
-                    Rho_h[i * nv + lev] =
-                        pressure_h[i * nv + lev] / (temperature_h[i * nv + lev] * Rd_h[i * nv + lev]);
-
-                }
+                
                
 
                 

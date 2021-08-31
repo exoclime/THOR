@@ -1,6 +1,30 @@
 #pragma once
 #include <math.h>
 
+#include <iostream>
+#include <fstream>
+//#include <string>>
+
+void text_file_to_array(str name ,double* array, int nrow){
+        
+        ifstream inFile;
+        inFile.open(name);
+        if (!inFile)
+        {
+            printf("\nError opening the file: %d \n", name);
+            return 13;
+        }
+        for (i = 0; i < nrow; i++)
+        {
+            inFile >> array[i];
+        }  
+        inFile.close();
+    
+    }
+
+
+    
+
 void create_pressure_layers(int i, int nlay, double *(&pl), double P_Ref){
 
     double pe[nlay];
@@ -214,6 +238,15 @@ void k_Ross_Freedman(double Tin, double Pin, double met, double& k_IR) {
 
     // Total Rosseland mean opacity - converted to m2 kg-1
     k_IR = (k_lowP + k_hiP) / ((double)10.0);
+
+    if (/* condition */)
+    {
+        /* code */
+    } else  {
+        kappa[1060] = {}
+
+    }
+    
 
     // Avoid divergence in fit for large values
     if (k_IR > 1.0e10)
