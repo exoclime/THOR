@@ -7,7 +7,7 @@
 
 void text_file_to_array(std::string name ,double* array, int nrow){
         
-        ifstream inFile;
+        std::ifstream inFile;
         inFile.open(name);
         if (!inFile)
         {
