@@ -1235,7 +1235,14 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                 double OpaTableTemperature[1060];
                 text_file_to_array("src/ESP/OpaTableTemperature.txt" , OpaTableTemperature);
-                printf("OpaTableTemperature[0] = %d \n", OpaTableTemperature[0]);
+                if (OpaTableTemperature[0]/75.0=1.0)
+                    {                
+                        printf("OpaTableTemperature[0] = %d \n", OpaTableTemperature[0]);
+                        
+                    } else {
+                        printf("wrong value\n");
+                    }
+               
                 
 
                
