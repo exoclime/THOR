@@ -237,16 +237,7 @@ void k_Ross_Freedman(double Tin, double Pin, double met, double& k_IR) {
     k_hiP = pow(((double)10.0), k_hiP);
 
     // Total Rosseland mean opacity - converted to m2 kg-1
-    k_IR = (k_lowP + k_hiP) / ((double)10.0);
-
-    if (/* condition */)
-    {
-        /* code */
-    } else  {
-        kappa[1060] = {}
-
-    }
-    
+    k_IR = (k_lowP + k_hiP) / ((double)10.0);   
 
     // Avoid divergence in fit for large values
     if (k_IR > 1.0e10)
