@@ -3,7 +3,7 @@
 
 #include <iostream>
 #include <fstream>
-//#include <string>>
+#include <string>
 
 void text_file_to_array(str name ,double* array, int nrow){
         
