@@ -11,7 +11,7 @@ void text_file_to_array(std::string name ,double* array, int nrow){
         inFile.open(name);
         if (!inFile)
         {
-            printf("\nError opening the file: %d \n", name);
+            printf("\nError opening the file: %s \n", name);
             
         }
         for (int i = 0; i < nrow; i++)
