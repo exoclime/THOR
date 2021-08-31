@@ -5,7 +5,7 @@
 #include <fstream>
 #include <string>
 
-void text_file_to_array(std::string name ,double *(&array), int nrow){
+void text_file_to_array(std::string name ,double &array, int nrow){
         
         std::ifstream inFile;
         inFile.open(name);
