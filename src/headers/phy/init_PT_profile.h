@@ -46,6 +46,7 @@ void k_Ross_Freedman_bilinear_interpolation_polynomial_fit(double Tin, double Pi
     double x, y, x1, x2, y1, y2, z11, z12, z21, z22;
  
     int iter = 0;
+    int jump_for_higher_temp = 15;
     int len = sizeof(OpaTableTemperature)/sizeof(*OpaTableTemperature);
     
     // exclude values off the table and insure that values within the table are used
@@ -76,18 +77,71 @@ void k_Ross_Freedman_bilinear_interpolation_polynomial_fit(double Tin, double Pi
 
     // setting all inputs variables for the interpolation
     
-    z11 = OpaTableKappa[iter - (3) - 1];
-    z12 = OpaTableKappa[iter - (3)];
+    z11 = OpaTableKappa[iter - (jump_for_higher_temp) - 1];
+    z12 = OpaTableKappa[iter - (jump_for_higher_temp)];
     z21 = OpaTableKappa[iter - 1];
     z22 = OpaTableKappa[iter];
 
-    x1 = OpaTableTemperature[iter - (3) - 1];
+    x1 = OpaTableTemperature[iter - (jump_for_higher_temp) - 1];
     x2 = OpaTableTemperature[iter - 1];
     y1 = OpaTablePressure[iter - 1];
     y2 = OpaTablePressure[iter];
 
     // interpolate values from the table
     bilinear_interpolation_polynomial_fit(x, y, x1, x2, y1, y2, z11,  z12,  z21,  z22, k_IR);
+
+    if (isnan( k_IR))
+    {                
+        printf("output variable k_IR for bilinear interpolation kRoss  is NaN at level   \n");                  
+    }
+    if (isnan( len))
+    {                
+        printf("input length for arrays for bilinear interpolation kRoss  is NaN at level   \n");                  
+    }
+    if (isnan( x))
+    {                
+        printf("input variable x for bilinear interpolation kRoss  is NaN at level   \n");                  
+    }
+    if (isnan( y))
+    {                
+        printf("input variable y for bilinear interpolation kRoss  is NaN at level   \n");                  
+    }
+
+    if (isnan( x1))
+    {                
+        printf("input variable x1 for bilinear interpolation kRoss  is NaN at level   \n");                  
+    }
+    if (isnan( y1))
+    {                
+        printf("input variable y1 for bilinear interpolation kRoss  is NaN at level   \n");                  
+    }
+
+    if (isnan( x2))
+    {                
+        printf("input variable x2 for bilinear interpolation kRoss  is NaN at level   \n");                  
+    }
+    if (isnan( y2))
+    {                
+        printf("input variable y2 for bilinear interpolation kRoss  is NaN at level   \n");                  
+    }
+
+    if (isnan( z11))
+    {                
+        printf("input variable z11 for bilinear interpolation kRoss  is NaN at level   \n");                  
+    }
+    if (isnan( z12))
+    {                
+        printf("input variable z12 for bilinear interpolation kRoss  is NaN at level   \n");                  
+    }
+
+    if (isnan( z21))
+    {                
+        printf("input variable z21 for bilinear interpolation kRoss  is NaN at level   \n");                  
+    }
+    if (isnan( z22))
+    {                
+        printf("input variable z22 for bilinear interpolation kRoss  is NaN at level   \n");                  
+    }
 
 
     //  converted from [cm2 g-1] to [m2 kg-1]
