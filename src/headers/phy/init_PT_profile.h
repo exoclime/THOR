@@ -143,6 +143,16 @@ void k_Ross_Freedman_bilinear_interpolation_polynomial_fit(double Tin, double Pi
         printf("input variable z22 for bilinear interpolation kRoss  is NaN at level   \n");                  
     }
 
+    if (k_IR == 0)
+    {                
+        printf("output variable k_IR for bilinear interpolation is 0 at level   \n");                  
+    }
+
+    if (k_IR > 1.0)
+    {                
+        printf("output variable k_IR for bilinear interpolation greater than 1 at level   \n");                  
+    }
+
 
     //  converted from [cm2 g-1] to [m2 kg-1]
     k_IR = 10 * k_IR;
@@ -983,12 +993,9 @@ void Parmentier_bilinear_interpolation_IC(int id, const int nlay, double* pl, do
     for (i = nlay-2; i>-1; i--)
     {
         // Initial guess for layer
-        k_Ross_Freedman_bilinear_interpolation_polynomial_fit(Tl[id * nlay + i+1], sqrt(pl[id * nlay + i+1] * pl[id * nlay + i]), OpaTableTemperature, OpaTablePressure, OpaTableKappa, kRoss[i]);
+        k_Ross_Freedman(Tl[id * nlay + i+1], sqrt(pl[id * nlay + i+1] * pl[id * nlay + i]), met, kRoss[i]);
+        //k_Ross_Freedman_bilinear_interpolation_polynomial_fit(Tl[id * nlay + i+1], sqrt(pl[id * nlay + i+1] * pl[id * nlay + i]), OpaTableTemperature, OpaTablePressure, OpaTableKappa, kRoss[i]);
         
-        if (isnan( kRoss[i]))
-        {                
-            printf("after bilinear interpolation kRoss[nlay-1] is NaN at level %d  \n", i);                  
-        }
 
         tau[i] = tau[i+1] + kRoss[i] / grav *  (pl[id * nlay + i] - pl[id * nlay + i+1]) ;
     
@@ -1004,7 +1011,8 @@ void Parmentier_bilinear_interpolation_IC(int id, const int nlay, double* pl, do
         // Convergence loop
         for (j = 0; j < 5; j++)
         {
-            k_Ross_Freedman_bilinear_interpolation_polynomial_fit(sqrt(Tl[id * nlay + i+1] * Tl[id * nlay + i]), sqrt(pl[id * nlay + i+1] * pl[id * nlay + i]), OpaTableTemperature, OpaTablePressure, OpaTableKappa, kRoss[i]);
+           k_Ross_Freedman(sqrt(Tl[id * nlay + i+1] * Tl[id * nlay + i]), sqrt(pl[id * nlay + i+1] * pl[id * nlay + i]), met, kRoss[i]);
+           //k_Ross_Freedman_bilinear_interpolation_polynomial_fit(sqrt(Tl[id * nlay + i+1] * Tl[id * nlay + i]), sqrt(pl[id * nlay + i+1] * pl[id * nlay + i]), OpaTableTemperature, OpaTablePressure, OpaTableKappa, kRoss[i]);
         
             
             tau[i] = tau[i+1] + kRoss[i] / grav *  (pl[id * nlay + i] - pl[id * nlay + i+1]);
