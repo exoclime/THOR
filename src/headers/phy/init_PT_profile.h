@@ -68,6 +68,7 @@ void k_Ross_Freedman_bilinear_interpolation_polynomial_fit(double Tin, double Pi
  
     int iter = 0;
     int jump_for_higher_temp = 15;
+    double increasing_factor = 1e+16;
     int len = sizeof(OpaTableTemperature)/sizeof(*OpaTableTemperature);
     
     // exclude values off the table and insure that values within the table are used
@@ -97,12 +98,12 @@ void k_Ross_Freedman_bilinear_interpolation_polynomial_fit(double Tin, double Pi
     }
 
     // setting all inputs variables for the interpolation
-    // increased operations for opacities by 1e+8
+    // increased opacities for operations by 
     
-    z11 = OpaTableKappa[iter - (jump_for_higher_temp) - 1] * 1e+8;
-    z12 = OpaTableKappa[iter - (jump_for_higher_temp)] * 1e+8;
-    z21 = OpaTableKappa[iter - 1] * 1e+8;
-    z22 = OpaTableKappa[iter] * 1e+8;
+    z11 = OpaTableKappa[iter - (jump_for_higher_temp) - 1] * increasing_factor;
+    z12 = OpaTableKappa[iter - (jump_for_higher_temp)] * increasing_factor;
+    z21 = OpaTableKappa[iter - 1] * increasing_factor;
+    z22 = OpaTableKappa[iter] * increasing_factor;
 
     x1 = OpaTableTemperature[iter - (jump_for_higher_temp) - 1];
     x2 = OpaTableTemperature[iter - 1];
@@ -177,7 +178,7 @@ void k_Ross_Freedman_bilinear_interpolation_polynomial_fit(double Tin, double Pi
 
 
     //  converted from [cm2 g-1] to [m2 kg-1] and redo temporal 1e+5 higher values
-    k_IR = 10 * k_IR / 1e+8;
+    k_IR = 10 * k_IR / increasing_factor;
     
 }
 
