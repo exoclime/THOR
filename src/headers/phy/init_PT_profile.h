@@ -33,6 +33,27 @@ void bilinear_interpolation_polynomial_fit(double x, double y, double x1, double
         a11 = 1/((x2-x1)*(y2-y1)) * (z11 - z12 - z21 + z22);
 
         z = a00 + a10*x + a01*y + a11*x*y;
+
+        if (isnan( a00))
+        {                
+            printf("variable a00 inside bilinear interpolation for kRoss  is NaN \n");                  
+        }
+        if (isnan( a10))
+        {                
+            printf("variable a10 inside bilinear interpolation for kRoss  is NaN \n");                  
+        }
+        if (isnan( a01))
+        {                
+            printf("variable a01 inside bilinear interpolation for kRoss  is NaN \n");                  
+        }
+        if (isnan( a11))
+        {                
+            printf("variable a11 inside bilinear interpolation for kRoss  is NaN \n");                  
+        }
+        if (isnan( z))
+        {                
+            printf("variable z inside bilinear interpolation for kRoss  is NaN \n");                  
+        }
     
 }
 
@@ -58,10 +79,10 @@ void k_Ross_Freedman_bilinear_interpolation_polynomial_fit(double Tin, double Pi
         x = Tin;
     }
     
-    if (Pin <= OpaTablePressure[0]) {
-        y = OpaTablePressure[0] + 0.1 ;      
-    } else if (Pin >= OpaTablePressure[len - 1]) {
-        y = OpaTablePressure[len - 1] - 0.1 ;      
+    if (Pin <= OpaTablePressure[0] / 10) {
+        y = OpaTablePressure[0] / 10 + 0.1 ;      
+    } else if (Pin >= OpaTablePressure[len - 1] / 10) {
+        y = OpaTablePressure[len - 1] / 10 - 0.1 ;      
     } else {
         y = Pin;
     }
@@ -71,22 +92,22 @@ void k_Ross_Freedman_bilinear_interpolation_polynomial_fit(double Tin, double Pi
         iter++;
     }
     
-    while (y > OpaTablePressure[iter]) {
+    while (y > OpaTablePressure[iter] / 10) {
         iter++;
     }
 
     // setting all inputs variables for the interpolation
-    // increased operations for opacities by 1e+5
+    // increased operations for opacities by 1e+8
     
-    z11 = OpaTableKappa[iter - (jump_for_higher_temp) - 1] * 1e+5;
-    z12 = OpaTableKappa[iter - (jump_for_higher_temp)] * 1e+5;
-    z21 = OpaTableKappa[iter - 1] * 1e+5;
-    z22 = OpaTableKappa[iter] * 1e+5;
+    z11 = OpaTableKappa[iter - (jump_for_higher_temp) - 1] * 1e+8;
+    z12 = OpaTableKappa[iter - (jump_for_higher_temp)] * 1e+8;
+    z21 = OpaTableKappa[iter - 1] * 1e+8;
+    z22 = OpaTableKappa[iter] * 1e+8;
 
     x1 = OpaTableTemperature[iter - (jump_for_higher_temp) - 1];
     x2 = OpaTableTemperature[iter - 1];
-    y1 = OpaTablePressure[iter - 1];
-    y2 = OpaTablePressure[iter];
+    y1 = OpaTablePressure[iter - 1]  / 10;
+    y2 = OpaTablePressure[iter]  / 10;
 
     // interpolate values from the table
     bilinear_interpolation_polynomial_fit(x, y, x1, x2, y1, y2, z11,  z12,  z21,  z22, k_IR);
@@ -156,7 +177,7 @@ void k_Ross_Freedman_bilinear_interpolation_polynomial_fit(double Tin, double Pi
 
 
     //  converted from [cm2 g-1] to [m2 kg-1] and redo temporal 1e+5 higher values
-    k_IR = 10 * k_IR / 1e+5;
+    k_IR = 10 * k_IR / 1e+8;
     
 }
 
