@@ -40,7 +40,7 @@ void bilinear_interpolation_polynomial_fit(double x, double y, double x1, double
 // Calculates the IR band Rosseland mean opacity (local T) according to a
  // bilinear_interpolation_polynomial_fit to the opacities of Freedman et al. (2014)
 
-void k_Ross_Freedman_bilinear_interpolation_polynomial_fit(double Tin, double Pin, double met, double *OpaTableTemperature,
+void k_Ross_Freedman_bilinear_interpolation_polynomial_fit(double Tin, double Pin, double *OpaTableTemperature,
     double *OpaTablePressure, double *OpaTableKappa, double &k_IR){
         
     double x, y, x1, x2, y1, y2, z11, z12, z21, z22;
@@ -76,10 +76,10 @@ void k_Ross_Freedman_bilinear_interpolation_polynomial_fit(double Tin, double Pi
 
     // setting all inputs variables for the interpolation
     
-    z11 = tableKappa[iter - (3) - 1];
-    z12 = tableKappa[iter - (3)];
-    z21 = tableKappa[iter - 1];
-    z22 = tableKappa[iter];
+    z11 = OpaTableKappa[iter - (3) - 1];
+    z12 = OpaTableKappa[iter - (3)];
+    z21 = OpaTableKappa[iter - 1];
+    z22 = OpaTableKappa[iter];
 
     x1 = OpaTableTemperature[iter - (3) - 1];
     x2 = OpaTableTemperature[iter - 1];
