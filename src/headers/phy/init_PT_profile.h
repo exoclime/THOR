@@ -896,7 +896,7 @@ void Parmentier_bilinear_interpolation_IC(int id, const int nlay, double* pl, do
 
     
     // Estimate the opacity TOA at the skin temperature - assume this is = first layer optacity
-    k_Ross_Freedman_bilinear_interpolation_polynomial_fit(Tskin, pl[id * nlay + nlay-1], OpaTableTemperature, OpaTablePressure, OpaTableKappa, kRoss[nlay-1])
+    k_Ross_Freedman_bilinear_interpolation_polynomial_fit(Tskin, pl[id * nlay + nlay-1], OpaTableTemperature, OpaTablePressure, OpaTableKappa, kRoss[nlay-1]);
 
     
     
@@ -926,7 +926,7 @@ void Parmentier_bilinear_interpolation_IC(int id, const int nlay, double* pl, do
     for (i = nlay-2; i>-1; i--)
     {
         // Initial guess for layer
-        k_Ross_Freedman_bilinear_interpolation_polynomial_fit(Tl[id * nlay + i+1], sqrt(pl[id * nlay + i+1] * pl[id * nlay + i]), OpaTableTemperature, OpaTablePressure, OpaTableKappa, kRoss[i])
+        k_Ross_Freedman_bilinear_interpolation_polynomial_fit(Tl[id * nlay + i+1], sqrt(pl[id * nlay + i+1] * pl[id * nlay + i]), OpaTableTemperature, OpaTablePressure, OpaTableKappa, kRoss[i]);
         
         tau[i] = tau[i+1] + kRoss[i] / grav *  (pl[id * nlay + i] - pl[id * nlay + i+1]) ;
     
@@ -942,7 +942,7 @@ void Parmentier_bilinear_interpolation_IC(int id, const int nlay, double* pl, do
         // Convergence loop
         for (j = 0; j < 5; j++)
         {
-            k_Ross_Freedman_bilinear_interpolation_polynomial_fit(sqrt(Tl[id * nlay + i+1] * Tl[id * nlay + i]), sqrt(pl[id * nlay + i+1] * pl[id * nlay + i]), OpaTableTemperature, OpaTablePressure, OpaTableKappa, kRoss[i])
+            k_Ross_Freedman_bilinear_interpolation_polynomial_fit(sqrt(Tl[id * nlay + i+1] * Tl[id * nlay + i]), sqrt(pl[id * nlay + i+1] * pl[id * nlay + i]), OpaTableTemperature, OpaTablePressure, OpaTableKappa, kRoss[i]);
         
             
             tau[i] = tau[i+1] + kRoss[i] / grav *  (pl[id * nlay + i] - pl[id * nlay + i+1]);
