@@ -775,8 +775,23 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 printf(" before Tirr and Parmentier \n");
                 Tirr = Tstar * pow(Rstar / star_planet_distance ,0.5);
 
-                Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, met);
-                adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
+                double OpaTableTemperature[1060];
+                text_file_to_array("src/physics/modules/src/OpaTableTemperature.txt" , OpaTableTemperature, 1060);
+                double OpaTablePressure[1060];
+                text_file_to_array("src/physics/modules/src/OpaTablePressure.txt" , OpaTablePressure, 1060);
+                double OpaTableKappa[1060];
+                text_file_to_array("src/physics/modules/src/OpaTableKappa.txt" , OpaTableKappa, 1060);
+                if (OpaTableTemperature[0]/75.0==1.0)
+                    {                
+                        printf("OpaTableTemperature[0] = %d \n", OpaTableTemperature[0]);
+                        
+                    } else {
+                        printf("wrong value\n");
+                    }
+
+                //Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, met);
+                Parmentier_bilinear_interpolation_IC(i, nv, pressure_h, Tint, mu, Tirr,
+                    OpaTableTemperature, OpaTablePressure, OpaTableKappa, sim.Gravit, temperature_h, table_num, met);
 
                 for (int j = 0; j < nv; j++)
                 {
@@ -801,7 +816,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 }
                 
                 printf(" before adiabat_correction \n");
-                //adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
+                adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
 
                 for (int j = 0; j < nv; j++)
                 {
@@ -1233,15 +1248,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                     }
                 }
 
-                double OpaTableTemperature[1060];
-                text_file_to_array("src/ESP/OpaTableTemperature.txt" , OpaTableTemperature, 1060);
-                if (OpaTableTemperature[0]/75.0==1.0)
-                    {                
-                        printf("OpaTableTemperature[0] = %d \n", OpaTableTemperature[0]);
-                        
-                    } else {
-                        printf("wrong value\n");
-                    }
+                
                
                 
 
