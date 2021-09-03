@@ -23,7 +23,7 @@ void text_file_to_array(std::string name ,double *array, int Nlen){
 }
 
 void bilinear_interp(double xval, double yval, double x1, double x2, double y1, double y2,
-    double a11, double a11, double a21, double a22, double &aval) {
+    double a11, double a12, double a21, double a22, double &aval) {
     
     double lxval, lyval, lx1, lx2, ly1, ly2, la11, la21, la12, la22;
     double norm;
