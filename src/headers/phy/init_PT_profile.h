@@ -67,13 +67,6 @@ void bilinear_log_interp(double xval, double yval, double x1, double x2, double 
     la12 = log10(a12);
     la22 = log10(a22);
 
-    norm = 1.0 / (lx2 - lx1) / (ly2 - ly1);
-
-    if (isnan( la11 * (lx2 - lxval) * (ly2 - lyval) * norm))
-        {                
-            printf("operations (la11 * (lx2 - lxval) * (ly2 - lyval) * norm) inside bilinear_log_interp for kRoss gets NaN \n");                  
-        }
-
     if (isnan( lx1))
         {                
             printf("variable lx1 in bilinear_log_interp is NaN \n");                  
@@ -88,6 +81,15 @@ void bilinear_log_interp(double xval, double yval, double x1, double x2, double 
         {                
             printf("y2 > y1 \n");                  
         }
+
+    norm = 1.0 / (lx2 - lx1) / (ly2 - ly1);
+
+    if (isnan( la11 * (lx2 - lxval) * (ly2 - lyval) * norm))
+        {                
+            printf("operations (la11 * (lx2 - lxval) * (ly2 - lyval) * norm) inside bilinear_log_interp for kRoss gets NaN \n");                  
+        }
+
+    
 
     aval = la11 * (lx2 - lxval) * (ly2 - lyval) * norm +
         la21 * (lxval - lx1) * (ly2 - lyval) * norm +
