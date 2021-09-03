@@ -22,15 +22,72 @@ void text_file_to_array(std::string name ,double *array, int Nlen){
     
 }
 
+void bilinear_interp(double xval, double yval, double x1, double x2, double y1, double y2,
+    double a11, double a11, double a21, double a22, double &aval) {
+    
+    double lxval, lyval, lx1, lx2, ly1, ly2, la11, la21, la12, la22;
+    double norm;
+
+    lxval = xval;
+    lyval = yval;
+    lx1 = x1 ;
+    lx2 = x2 ;
+    ly1 = y1 ;
+    ly2 = y2 ;
+    la11 = a11 ;
+    la21 = a21 ;
+    la12 = a12 ;
+    la22 = a22 ;
+
+    norm = 1.0 / (lx2 - lx1) / (ly2 - ly1);
+
+    aval = la11 * (lx2 - lxval) * (ly2 - lyval) * norm +
+        la21 * (lxval - lx1) * (ly2 - lyval) * norm +
+        la12 * (lx2 - lxval) * (lyval - ly1) * norm + 
+        la22 * (lxval - lx1) * (lyval - ly1) * norm;
+
+    aval = aval;
+
+}
+
+void bilinear_log_interp(double xval, double yval, double x1, double x2, double y1, double y2,
+    double a11, double a12, double a21, double a22, double &aval) {
+    
+    double lxval, lyval, lx1, lx2, ly1, ly2, la11, la21, la12, la22;
+    double norm;
+
+    lxval = log10(xval);
+    lyval = log10(yval);
+    lx1 = log10(x1) ;
+    lx2 = log10(x2) ;
+    ly1 = log10(y1) ;
+    ly2 = log10(y2) ;
+    la11 = log10(a11) ;
+    la21 = log10(a21) ;
+    la12 = log10(a12) ;
+    la22 = log10(a22) ;
+
+    norm = 1.0 / (lx2 - lx1) / (ly2 - ly1);
+
+    aval = la11 * (lx2 - lxval) * (ly2 - lyval) * norm +
+        la21 * (lxval - lx1) * (ly2 - lyval) * norm +
+        la12 * (lx2 - lxval) * (lyval - ly1) * norm + 
+        la22 * (lxval - lx1) * (lyval - ly1) * norm;
+
+    aval = pow(10, aval);
+
+}
+
+
 void bilinear_interpolation_polynomial_fit(double x, double y, double x1, double x2, double y1, double y2,
     double z11, double z12, double z21, double z22, double &z){
         
         double a00, a10, a01, a11;
 
-        a00 = 1/((x2-x1)*(y2-y1)) * (x2*y2*z11 - x2*y1*z12 - x1*y2*z21 + x1*y1*z22);
-        a10 = 1/((x2-x1)*(y2-y1)) * (-y2*z11 + y1*z12 + y2*z21 - y1*z22);
-        a01 = 1/((x2-x1)*(y2-y1)) * (-x2*z11 + x2*z12 + x1*z21 - x1*z22);
-        a11 = 1/((x2-x1)*(y2-y1)) * (z11 - z12 - z21 + z22);
+        a00 = 1.0/((x2-x1)*(y2-y1)) * (x2*y2*z11 - x2*y1*z12 - x1*y2*z21 + x1*y1*z22);
+        a10 = 1.0/((x2-x1)*(y2-y1)) * (-y2*z11 + y1*z12 + y2*z21 - y1*z22);
+        a01 = 1.0/((x2-x1)*(y2-y1)) * (-x2*z11 + x2*z12 + x1*z21 - x1*z22);
+        a11 = 1.0/((x2-x1)*(y2-y1)) * (z11 - z12 - z21 + z22);
 
         z = a00 + a10*x + a01*y + a11*x*y;
 
@@ -90,6 +147,26 @@ void bilinear_interpolation_polynomial_fit(double x, double y, double x1, double
         if (y2>1e10)
         {                
             printf("variable y2 greater than 1e10 \n");                  
+        }
+
+        if (x1 < 1e-6)
+        {                
+            printf("variable x1 smaller than < 1e-6 \n");                  
+        }
+
+        if (x2 < 1e-6)
+        {                
+            printf("variable x2 smaller than < 1e-6 \n");                  
+        }
+
+        if (y1 < 1e-6)
+        {                
+            printf("variable y1 smaller than < 1e-6 \n");                  
+        }
+
+        if (y2 < 1e-6)
+        {                
+            printf("variable y2 smaller than < 1e-6 \n");                  
         }
         
         
@@ -171,7 +248,7 @@ void k_Ross_Freedman_bilinear_interpolation_polynomial_fit(double Tin, double Pi
     y2 = OpaTablePressure[iter]  * dyncm_2_to_Pa;
 
     // interpolate values from the table
-    bilinear_interpolation_polynomial_fit(x, y, x1, x2, y1, y2, z11,  z12,  z21,  z22, k_IR);
+    bilinear_log_interp(x, y, x1, x2, y1, y2, z11,  z12,  z21,  z22, k_IR);
 
     if (isnan( k_IR))
     {                
