@@ -123,7 +123,8 @@ void k_Ross_Freedman_bilinear_interpolation_polynomial_fit(double Tin, double Pi
     double x, y, x1, x2, y1, y2, z11, z12, z21, z22;
  
     int iter = 0;
-    int jump_for_higher_temp = 15;
+    int lowiter = 0;
+    int jump_for_higher_temp = 10;
     double increasing_factor = 1; //1e+16;
     double dyncm_2_to_Pa = 0.1;
     int len = 1060;
@@ -152,7 +153,16 @@ void k_Ross_Freedman_bilinear_interpolation_polynomial_fit(double Tin, double Pi
     
     // iterating through the table and get iter-position for z22
     while (x > OpaTableTemperature[iter]) {
+        if (iter!=0)
+        {
+            lowiter = iter-1;
+        }       
+        
         iter++;
+    }
+
+    while (y < OpaTablePressure[lowiter]  * dyncm_2_to_Pa) {
+        lowiter--;
     }
     
     while (y > OpaTablePressure[iter]  * dyncm_2_to_Pa) {
@@ -161,35 +171,45 @@ void k_Ross_Freedman_bilinear_interpolation_polynomial_fit(double Tin, double Pi
 
     // setting all inputs variables for the interpolation
     // increased opacities for operations by 
-    
-    z11 = OpaTableKappa[iter - (jump_for_higher_temp) - 1] * increasing_factor;
-    z12 = OpaTableKappa[iter - (jump_for_higher_temp)] * increasing_factor;
-    z21 = OpaTableKappa[iter - 1] * increasing_factor;
-    z22 = OpaTableKappa[iter] * increasing_factor;
 
-    if (iter%jump_for_higher_temp==0) {
-        printf("case A \n");
-        x1 = OpaTableTemperature[iter - jump_for_higher_temp];
-        x2 = OpaTableTemperature[iter + 1];
-        y1 = OpaTablePressure[iter];
-        y2 = OpaTablePressure[iter + 1] ;
-
-        z11 = OpaTableKappa[iter - (jump_for_higher_temp)] * increasing_factor;
-        z12 = OpaTableKappa[iter - (jump_for_higher_temp) + 1] * increasing_factor;
-        z21 = OpaTableKappa[iter] * increasing_factor;
-        z22 = OpaTableKappa[iter + 1] * increasing_factor;
-    } else{
-        printf("case B \n");
-        x1 = OpaTableTemperature[iter - jump_for_higher_temp - 1];
-        x2 = OpaTableTemperature[iter];
+     printf("case B: not at the top of the table and not a temperature jump\n");
+         
+        x1 = OpaTableTemperature[lowiter];
+        x2 = OpaTableTemperature[lowiter+1];
         y1 = OpaTablePressure[iter-1];
         y2 = OpaTablePressure[iter];
 
-        z11 = OpaTableKappa[iter - (jump_for_higher_temp) - 1] * increasing_factor;
-        z12 = OpaTableKappa[iter - (jump_for_higher_temp)] * increasing_factor;
+        z11 = OpaTableKappa[lowiter] * increasing_factor;
+        z12 = OpaTableKappa[lowiter + 1] * increasing_factor;
+        z21 = OpaTableKappa[iter - 1] * increasing_factor;
+        z22 = OpaTableKappa[iter] * increasing_factor; 
+    /*
+    if (iter==0 || OpaTableTemperature[iter - 1] < OpaTableTemperature[iter]) {
+        printf("case A : top of the table or temperature jump\n");
+
+        x1 = OpaTableTemperature[lowiter];
+        x2 = OpaTableTemperature[iter + 1];        
+        y1 = OpaTablePressure[iter];
+        y2 = OpaTablePressure[iter + 1];
+
+        z11 = OpaTableKappa[lowiter] * increasing_factor;
+        z12 = OpaTableKappa[lowiter + 1] * increasing_factor;
+        z21 = OpaTableKappa[iter] * increasing_factor;
+        z22 = OpaTableKappa[iter + 1] * increasing_factor;
+    } else{
+        printf("case B: not at the top of the table and not a temperature jump\n");
+         
+        x1 = OpaTableTemperature[lowiter];
+        x2 = OpaTableTemperature[lowiter+1];
+        y1 = OpaTablePressure[iter-1];
+        y2 = OpaTablePressure[iter];
+
+        z11 = OpaTableKappa[lowiter] * increasing_factor;
+        z12 = OpaTableKappa[lowiter + 1] * increasing_factor;
         z21 = OpaTableKappa[iter - 1] * increasing_factor;
         z22 = OpaTableKappa[iter] * increasing_factor;    
     }
+    */
 
     // interpolate values from the table
     bilinear_log_interp(x, y, x1, x2, y1, y2, z11,  z12,  z21,  z22, k_IR);
