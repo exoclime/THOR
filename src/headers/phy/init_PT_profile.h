@@ -73,45 +73,10 @@ void bilinear_log_interp(double xval, double yval, double x1, double x2, double 
     printf("y2 = %e  \n", y2);
     printf("xval = %e  \n", xval);
     printf("yval = %e  \n", yval);
-    printf("la11 = %e  \n", la11);
-    printf("la21 = %e  \n", la21);
-    printf("la12 = %e  \n", la12);
-    printf("la22 = %e  \n", la22);
-
-    if (isnan( lx1))
-        {                
-            printf("variable lx1 in bilinear_log_interp is NaN \n");                  
-        }
-
-    if (x2 > x1)
-        {                
-            printf("x2 > x1 \n");                  
-        }
-
-    if (y2 > y1)
-        {                
-            printf("y2 > y1 \n");                  
-        }
-
-    if (x2 < x1)
-        {                
-            printf("x2 < x1 \n");                  
-        }
-
-    if (y2 < y1)
-        {                
-            printf("y2 < y1 \n");                  
-        }
-
-    if (x2 == x1)
-        {                
-            printf("x2 == x1 \n");                  
-        }
-
-    if (y2 == y1)
-        {                
-            printf("y2 == y1 \n");                  
-        }
+    printf("a11 = %e  \n", a11);
+    printf("a21 = %e  \n", a21);
+    printf("a12 = %e  \n", a12);
+    printf("a22 = %e  \n", a22);
 
     norm = 1.0 / (lx2 - lx1) / (ly2 - ly1);
 
@@ -144,105 +109,7 @@ void bilinear_interpolation_polynomial_fit(double x, double y, double x1, double
 
         z = a00 + a10*x + a01*y + a11*x*y;
 
-        if (isnan( (x2*y2*z11 - x2*y1*z12 - x1*y2*z21 + x1*y1*z22)))
-        {                
-            printf("operations (x2*y2*z11 - x2*y1*z12 - x1*y2*z21 + x1*y1*z22) inside bilinear interpolation for kRoss gets NaN \n");                  
-        }
-        if (isnan( (1/((x2-x1)*(y2-y1)) * (x2*y2*z11 - x2*y1*z12 - x1*y2*z21 + x1*y1*z22))))
-        {                
-            printf("operations (1/((x2-x1)*(y2-y1)) * (x2*y2*z11 - x2*y1*z12 - x1*y2*z21 + x1*y1*z22)) inside bilinear interpolation for kRoss greater than 1e50 \n");                  
-        }
-
-        if ((1/((x2-x1)*(y2-y1)) * (x2*y2*z11 - x2*y1*z12 - x1*y2*z21 + x1*y1*z22)) < 1e-20  || (1/((x2-x1)*(y2-y1)) * (x2*y2*z11 - x2*y1*z12 - x1*y2*z21 + x1*y1*z22)) > -1e-20 )
-        {                
-            printf("operations (1/((x2-x1)*(y2-y1)) * (x2*y2*z11 - x2*y1*z12 - x1*y2*z21 + x1*y1*z22)) inside bilinear interpolation for kRoss close to 0 within 1e-20 \n");                  
-        }
-
-        if ( (x2*y2*z11 - x2*y1*z12 - x1*y2*z21 + x1*y1*z22) < 1e-20 && (x2*y2*z11 - x2*y1*z12 - x1*y2*z21 + x1*y1*z22) > -1e-20 )
-        {                
-            printf("operations (x2*y2*z11 - x2*y1*z12 - x1*y2*z21 + x1*y1*z22) inside bilinear interpolation for kRoss close to 0 within 1e-20 \n");                  
-        }
-
-        if ( (x2*y2*z11 - x2*y1*z12 - x1*y2*z21 + x1*y1*z22) < -1e50 || (x2*y2*z11 - x2*y1*z12 - x1*y2*z21 + x1*y1*z22) > 1e50 )
-        {                
-            printf("operations (x2*y2*z11 - x2*y1*z12 - x1*y2*z21 + x1*y1*z22) inside bilinear interpolation for kRoss close greater than 1e50 \n");                  
-        }
-
-        if ( 1/((x2-x1)*(y2-y1)) < 1e-20 && 1/((x2-x1)*(y2-y1)) > -1e-20)
-        {                
-            printf("operations 1/((x2-x1)*(y2-y1)) inside bilinear interpolation for kRoss greater close to 0 within 1e-20\n");                  
-        }
-        if ( 1/((x2-x1)*(y2-y1)) < -1e50 || 1/((x2-x1)*(y2-y1)) > 1e50 )
-        {                
-            printf("operations 1/((x2-x1)*(y2-y1)) inside bilinear interpolation for kRoss greater than 1e50\n");                  
-        }
-
-        if (  isnan( 1/((x2-x1)*(y2-y1)))  )
-        {                
-            printf("operation 1/((x2-x1)*(y2-y1)) inside bilinear interpolation for kRoss  is NaN \n");                  
-        }
-
-        if (x1>1e10)
-        {                
-            printf("variable x1 greater than 1e10 \n");                  
-        }
-
-        if (x2>1e10)
-        {                
-            printf("variable x2 greater than 1e10 \n");                  
-        }
-
-        if (y1>1e10)
-        {                
-            printf("variable y1 greater than 1e10 \n");                  
-        }
-
-        if (y2>1e10)
-        {                
-            printf("variable y2 greater than 1e10 \n");                  
-        }
-
-        if (x1 < 1e-6)
-        {                
-            printf("variable x1 smaller than < 1e-6 \n");                  
-        }
-
-        if (x2 < 1e-6)
-        {                
-            printf("variable x2 smaller than < 1e-6 \n");                  
-        }
-
-        if (y1 < 1e-6)
-        {                
-            printf("variable y1 smaller than < 1e-6 \n");                  
-        }
-
-        if (y2 < 1e-6)
-        {                
-            printf("variable y2 smaller than < 1e-6 \n");                  
-        }
         
-        
-        if (isnan( a00))
-        {                
-            printf("variable a00 inside bilinear interpolation for kRoss  is NaN \n");                  
-        }
-        if (isnan( a10))
-        {                
-            printf("variable a10 inside bilinear interpolation for kRoss  is NaN \n");                  
-        }
-        if (isnan( a01))
-        {                
-            printf("variable a01 inside bilinear interpolation for kRoss  is NaN \n");                  
-        }
-        if (isnan( a11))
-        {                
-            printf("variable a11 inside bilinear interpolation for kRoss  is NaN \n");                  
-        }
-        if (isnan( z))
-        {                
-            printf("variable z inside bilinear interpolation for kRoss  is NaN \n");                  
-        }
     
 }
 
@@ -321,6 +188,8 @@ void k_Ross_Freedman_bilinear_interpolation_polynomial_fit(double Tin, double Pi
 
     // interpolate values from the table
     bilinear_log_interp(x, y, x1, x2, y1, y2, z11,  z12,  z21,  z22, k_IR);
+
+    printf("iter = &d   \n", iter);
     
 
     if (isnan( k_IR))
