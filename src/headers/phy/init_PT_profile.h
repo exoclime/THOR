@@ -1013,6 +1013,8 @@ void Parmentier_bilinear_interpolation_IC(int id, const int nlay, double* pl, do
     {                
         printf("after bilinear interpolation kRoss[nlay-1] is NaN at level %d  \n", nlay-1);                  
     }
+
+     printf("kRoss[0] = %e  \n", kRoss[0]);
     
     
     
