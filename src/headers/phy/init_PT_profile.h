@@ -262,10 +262,27 @@ void k_Ross_Freedman_bilinear_interpolation_polynomial_fit(double Tin, double Pi
     z21 = OpaTableKappa[iter - 1] * increasing_factor;
     z22 = OpaTableKappa[iter] * increasing_factor;
 
-    x1 = OpaTableTemperature[iter - (jump_for_higher_temp) - 1];
-    x2 = OpaTableTemperature[iter];
-    y1 = OpaTablePressure[iter - 1]  * dyncm_2_to_Pa;
-    y2 = OpaTablePressure[iter]  * dyncm_2_to_Pa;
+    if (iter%jump_for_higher_temp==0.0) {
+        x1 = OpaTableTemperature[iter - jump_for_higher_temp];
+        x2 = OpaTableTemperature[iter + 1];
+        y1 = OpaTablePressure[iter];
+        y2 = OpaTablePressure[iter+1] ;
+
+        z11 = OpaTableKappa[iter - (jump_for_higher_temp)] * increasing_factor;
+        z12 = OpaTableKappa[iter - (jump_for_higher_temp) + 1] * increasing_factor;
+        z21 = OpaTableKappa[iter] * increasing_factor;
+        z22 = OpaTableKappa[iter + 1] * increasing_factor;
+    } else{
+        x1 = OpaTableTemperature[iter - jump_for_higher_temp - 1];
+        x2 = OpaTableTemperature[iter];
+        y1 = OpaTablePressure[iter-1];
+        y2 = OpaTablePressure[iter];
+
+        z11 = OpaTableKappa[iter - (jump_for_higher_temp) - 1] * increasing_factor;
+        z12 = OpaTableKappa[iter - (jump_for_higher_temp)] * increasing_factor;
+        z21 = OpaTableKappa[iter - 1] * increasing_factor;
+        z22 = OpaTableKappa[iter] * increasing_factor;    
+    }
 
     // interpolate values from the table
     bilinear_log_interp(x, y, x1, x2, y1, y2, z11,  z12,  z21,  z22, k_IR);
