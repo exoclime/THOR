@@ -136,17 +136,17 @@ void k_Ross_Freedman_bilinear_interpolation_polynomial_fit(double Tin, double Pi
     
     // exclude values off the table and insure that values within the table are used
     if (Tin <= OpaTableTemperature[0]) {
-        x = OpaTableTemperature[0] + 0.1 ;      
+        x = OpaTableTemperature[0] + 1e-10 ;      
     } else if (Tin >= OpaTableTemperature[len - 1]) {
-        x = OpaTableTemperature[len - 1] - 0.1 ;      
+        x = OpaTableTemperature[len - 1] - 1e-10 ;      
     } else {
         x = Tin;
     }
     
     if (Pin <= OpaTablePressure[0] * dyncm_2_to_Pa) {
-        y = OpaTablePressure[0] / 10 + 0.1 ;      
+        y = OpaTablePressure[0] * dyncm_2_to_Pa + 1e-10 ;      
     } else if (Pin >= OpaTablePressure[len - 1]  * dyncm_2_to_Pa) {
-        y = OpaTablePressure[len - 1]  * dyncm_2_to_Pa - 0.1 ;      
+        y = OpaTablePressure[len - 1]  * dyncm_2_to_Pa - 1e-10 ;      
     } else {
         y = Pin;
     }
@@ -161,11 +161,11 @@ void k_Ross_Freedman_bilinear_interpolation_polynomial_fit(double Tin, double Pi
         iter++;
     }
 
-    while (y < OpaTablePressure[lowiter]  * dyncm_2_to_Pa) {
+    while (y <= OpaTablePressure[lowiter]  * dyncm_2_to_Pa) {
         lowiter--;
     }
     
-    while (y > OpaTablePressure[iter]  * dyncm_2_to_Pa) {
+    while (y >= OpaTablePressure[iter]  * dyncm_2_to_Pa) {
         iter++;
     }
 
@@ -175,7 +175,7 @@ void k_Ross_Freedman_bilinear_interpolation_polynomial_fit(double Tin, double Pi
      printf("case B: not at the top of the table and not a temperature jump\n");
          
         x1 = OpaTableTemperature[lowiter];
-        x2 = OpaTableTemperature[lowiter+1];
+        x2 = OpaTableTemperature[iter];
         y1 = OpaTablePressure[iter-1];
         y2 = OpaTablePressure[iter];
 
