@@ -263,7 +263,7 @@ void k_Ross_Freedman_bilinear_interpolation_polynomial_fit(double Tin, double Pi
     z22 = OpaTableKappa[iter] * increasing_factor;
 
     x1 = OpaTableTemperature[iter - (jump_for_higher_temp) - 1];
-    x2 = OpaTableTemperature[iter - 1];
+    x2 = OpaTableTemperature[iter];
     y1 = OpaTablePressure[iter - 1]  * dyncm_2_to_Pa;
     y2 = OpaTablePressure[iter]  * dyncm_2_to_Pa;
 
