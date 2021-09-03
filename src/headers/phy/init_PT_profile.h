@@ -310,6 +310,7 @@ void k_Ross_Freedman_bilinear_interpolation_polynomial_fit(double Tin, double Pi
 
     // interpolate values from the table
     bilinear_log_interp(x, y, x1, x2, y1, y2, z11,  z12,  z21,  z22, k_IR);
+    
 
     if (isnan( k_IR))
     {                
