@@ -67,6 +67,17 @@ void bilinear_log_interp(double xval, double yval, double x1, double x2, double 
     la12 = log10(a12);
     la22 = log10(a22);
 
+    printf("x1 = %e  \n", x1);
+    printf("x2 = %e  \n", x2);
+    printf("y1 = %e  \n", y1);
+    printf("y2 = %e  \n", y2);
+    printf("xval = %e  \n", xval);
+    printf("yval = %e  \n", yval);
+    printf("la11 = %e  \n", la11);
+    printf("la21 = %e  \n", la21);
+    printf("la12 = %e  \n", la12);
+    printf("la22 = %e  \n", la22);
+
     if (isnan( lx1))
         {                
             printf("variable lx1 in bilinear_log_interp is NaN \n");                  
