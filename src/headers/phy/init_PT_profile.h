@@ -127,10 +127,15 @@ void k_Ross_Freedman_bilinear_interpolation_polynomial_fit(double Tin, double Pi
     double increasing_factor = 1; //1e+16;
     double dyncm_2_to_Pa = 0.1;
     int len = sizeof(OpaTableTemperature)/sizeof(*OpaTableTemperature);
+
+    printf("length of OpaTableTemperature = %d   \n", len);
+
+    printf(" Tin = %e   \n", Tin);
+    printf("Pin = %e   \n", Pin);
     
     // exclude values off the table and insure that values within the table are used
     if (Tin <= OpaTableTemperature[0]) {
-        x = OpaTableTemperature[0] + 0.11 ;      
+        x = OpaTableTemperature[0] + 0.1 ;      
     } else if (Tin >= OpaTableTemperature[len - 1]) {
         x = OpaTableTemperature[len - 1] - 0.1 ;      
     } else {
@@ -192,68 +197,7 @@ void k_Ross_Freedman_bilinear_interpolation_polynomial_fit(double Tin, double Pi
     printf("iter = %d   \n", iter);
     
 
-    if (isnan( k_IR))
-    {                
-        printf("output variable k_IR for bilinear interpolation kRoss  is NaN at level   \n");                  
-    }
-    if (isnan( len))
-    {                
-        printf("input length for arrays for bilinear interpolation kRoss  is NaN at level   \n");                  
-    }
-    if (isnan( x))
-    {                
-        printf("input variable x for bilinear interpolation kRoss  is NaN at level   \n");                  
-    }
-    if (isnan( y))
-    {                
-        printf("input variable y for bilinear interpolation kRoss  is NaN at level   \n");                  
-    }
-
-    if (isnan( x1))
-    {                
-        printf("input variable x1 for bilinear interpolation kRoss  is NaN at level   \n");                  
-    }
-    if (isnan( y1))
-    {                
-        printf("input variable y1 for bilinear interpolation kRoss  is NaN at level   \n");                  
-    }
-
-    if (isnan( x2))
-    {                
-        printf("input variable x2 for bilinear interpolation kRoss  is NaN at level   \n");                  
-    }
-    if (isnan( y2))
-    {                
-        printf("input variable y2 for bilinear interpolation kRoss  is NaN at level   \n");                  
-    }
-
-    if (isnan( z11))
-    {                
-        printf("input variable z11 for bilinear interpolation kRoss  is NaN at level   \n");                  
-    }
-    if (isnan( z12))
-    {                
-        printf("input variable z12 for bilinear interpolation kRoss  is NaN at level   \n");                  
-    }
-
-    if (isnan( z21))
-    {                
-        printf("input variable z21 for bilinear interpolation kRoss  is NaN at level   \n");                  
-    }
-    if (isnan( z22))
-    {                
-        printf("input variable z22 for bilinear interpolation kRoss  is NaN at level   \n");                  
-    }
-
-    if (k_IR == 0)
-    {                
-        printf("output variable k_IR for bilinear interpolation is 0 at level   \n");                  
-    }
-
-    if (k_IR > 1.0)
-    {                
-        printf("output variable k_IR for bilinear interpolation greater than 1 at level   \n");                  
-    }
+    
 
 
     //  converted from [cm2 g-1] to [m2 kg-1] and redo temporal 1e+5 higher values
@@ -1062,6 +1006,7 @@ void Parmentier_bilinear_interpolation_IC(int id, const int nlay, double* pl, do
 
     
     // Estimate the opacity TOA at the skin temperature - assume this is = first layer optacity
+     printf("pl[id * nlay + nlay-1] = %e  \n", pl[id * nlay + nlay-1]);
     k_Ross_Freedman_bilinear_interpolation_polynomial_fit(Tskin, pl[id * nlay + nlay-1], OpaTableTemperature, OpaTablePressure, OpaTableKappa, kRoss[nlay-1]);
     if (isnan( kRoss[nlay-1]))
     {                
