@@ -82,6 +82,26 @@ void bilinear_log_interp(double xval, double yval, double x1, double x2, double 
             printf("y2 > y1 \n");                  
         }
 
+    if (x2 < x1)
+        {                
+            printf("x2 < x1 \n");                  
+        }
+
+    if (y2 < y1)
+        {                
+            printf("y2 < y1 \n");                  
+        }
+
+    if (x2 == x1)
+        {                
+            printf("x2 == x1 \n");                  
+        }
+
+    if (y2 == y1)
+        {                
+            printf("y2 == y1 \n");                  
+        }
+
     norm = 1.0 / (lx2 - lx1) / (ly2 - ly1);
 
     if (isnan( la11 * (lx2 - lxval) * (ly2 - lyval) * norm))
