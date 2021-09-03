@@ -39,23 +39,23 @@ void bilinear_interpolation_polynomial_fit(double x, double y, double x1, double
             printf("operations (x2*y2*z11 - x2*y1*z12 - x1*y2*z21 + x1*y1*z22) inside bilinear interpolation for kRoss gets NaN \n");                  
         }
 
-        if ( (x2*y2*z11 - x2*y1*z12 - x1*y2*z21 + x1*y1*z22) < 1e-4 && (x2*y2*z11 - x2*y1*z12 - x1*y2*z21 + x1*y1*z22) > -1e-4 )
+        if ( (x2*y2*z11 - x2*y1*z12 - x1*y2*z21 + x1*y1*z22) < 1e-20 && (x2*y2*z11 - x2*y1*z12 - x1*y2*z21 + x1*y1*z22) > -1e-20 )
         {                
-            printf("operations (x2*y2*z11 - x2*y1*z12 - x1*y2*z21 + x1*y1*z22) inside bilinear interpolation for kRoss close to 0 within 1e-4 \n");                  
+            printf("operations (x2*y2*z11 - x2*y1*z12 - x1*y2*z21 + x1*y1*z22) inside bilinear interpolation for kRoss close to 0 within 1e-20 \n");                  
         }
 
-        if ( (x2*y2*z11 - x2*y1*z12 - x1*y2*z21 + x1*y1*z22) < -1e10 || (x2*y2*z11 - x2*y1*z12 - x1*y2*z21 + x1*y1*z22) > 1e10 )
+        if ( (x2*y2*z11 - x2*y1*z12 - x1*y2*z21 + x1*y1*z22) < -1e50 || (x2*y2*z11 - x2*y1*z12 - x1*y2*z21 + x1*y1*z22) > 1e50 )
         {                
-            printf("operations (x2*y2*z11 - x2*y1*z12 - x1*y2*z21 + x1*y1*z22) inside bilinear interpolation for kRoss close greater than 1e8 \n");                  
+            printf("operations (x2*y2*z11 - x2*y1*z12 - x1*y2*z21 + x1*y1*z22) inside bilinear interpolation for kRoss close greater than 1e50 \n");                  
         }
 
-        if ( 1/((x2-x1)*(y2-y1)) < 1e-4 && 1/((x2-x1)*(y2-y1)) > -1e-4)
+        if ( 1/((x2-x1)*(y2-y1)) < 1e-20 && 1/((x2-x1)*(y2-y1)) > -1e-20)
         {                
-            printf("operations 1/((x2-x1)*(y2-y1)) inside bilinear interpolation for kRoss greater close to 0 within 1e-4\n");                  
+            printf("operations 1/((x2-x1)*(y2-y1)) inside bilinear interpolation for kRoss greater close to 0 within 1e-20\n");                  
         }
-        if ( 1/((x2-x1)*(y2-y1)) < -1e10 || 1/((x2-x1)*(y2-y1)) > 1e10 )
+        if ( 1/((x2-x1)*(y2-y1)) < -1e50 || 1/((x2-x1)*(y2-y1)) > 1e50 )
         {                
-            printf("operations 1/((x2-x1)*(y2-y1)) inside bilinear interpolation for kRoss greater than 1e8\n");                  
+            printf("operations 1/((x2-x1)*(y2-y1)) inside bilinear interpolation for kRoss greater than 1e50\n");                  
         }
         
         if (isnan( a00))
