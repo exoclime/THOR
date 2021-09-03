@@ -92,7 +92,7 @@ void k_Ross_Freedman_bilinear_interpolation_polynomial_fit(double Tin, double Pi
  
     int iter = 0;
     int jump_for_higher_temp = 15;
-    double increasing_factor = 1e+16;
+    double increasing_factor = 1; //1e+16;
     double dyncm_2_to_Pa = 0.1;
     int len = sizeof(OpaTableTemperature)/sizeof(*OpaTableTemperature);
     
