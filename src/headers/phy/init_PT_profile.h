@@ -1008,7 +1008,7 @@ void Parmentier_bilinear_interpolation_IC(int id, const int nlay, double* pl, do
     // Estimate the opacity TOA at the skin temperature - assume this is = first layer optacity
      printf("pl[id * nlay + nlay-1] = %e  \n", pl[id * nlay + nlay-1]);
     //k_Ross_Freedman_bilinear_interpolation_polynomial_fit(Tskin, pl[id * nlay + nlay-1], OpaTableTemperature, OpaTablePressure, OpaTableKappa, kRoss[nlay-1]);
-    k_Ross_Freedman(Tskin, pl[id * nlay + nlay-1], met, kRoss[i]);
+    k_Ross_Freedman(Tskin, pl[0], met, kRoss[i]);
     if (isnan( kRoss[nlay-1]))
     {                
         printf("after bilinear interpolation kRoss[nlay-1] is NaN at level %d  \n", nlay-1);                  
