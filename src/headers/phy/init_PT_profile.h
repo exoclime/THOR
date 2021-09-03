@@ -38,6 +38,15 @@ void bilinear_interpolation_polynomial_fit(double x, double y, double x1, double
         {                
             printf("operations (x2*y2*z11 - x2*y1*z12 - x1*y2*z21 + x1*y1*z22) inside bilinear interpolation for kRoss gets NaN \n");                  
         }
+        if (isnan( (1/((x2-x1)*(y2-y1)) * (x2*y2*z11 - x2*y1*z12 - x1*y2*z21 + x1*y1*z22))))
+        {                
+            printf("operations (1/((x2-x1)*(y2-y1)) * (x2*y2*z11 - x2*y1*z12 - x1*y2*z21 + x1*y1*z22)) inside bilinear interpolation for kRoss greater than 1e50 \n");                  
+        }
+
+        if ((1/((x2-x1)*(y2-y1)) * (x2*y2*z11 - x2*y1*z12 - x1*y2*z21 + x1*y1*z22)) < 1e-20  || (1/((x2-x1)*(y2-y1)) * (x2*y2*z11 - x2*y1*z12 - x1*y2*z21 + x1*y1*z22)) > -1e-20 )
+        {                
+            printf("operations (1/((x2-x1)*(y2-y1)) * (x2*y2*z11 - x2*y1*z12 - x1*y2*z21 + x1*y1*z22)) inside bilinear interpolation for kRoss close to 0 within 1e-20 \n");                  
+        }
 
         if ( (x2*y2*z11 - x2*y1*z12 - x1*y2*z21 + x1*y1*z22) < 1e-20 && (x2*y2*z11 - x2*y1*z12 - x1*y2*z21 + x1*y1*z22) > -1e-20 )
         {                
@@ -57,6 +66,32 @@ void bilinear_interpolation_polynomial_fit(double x, double y, double x1, double
         {                
             printf("operations 1/((x2-x1)*(y2-y1)) inside bilinear interpolation for kRoss greater than 1e50\n");                  
         }
+
+        if (  isnan( 1/((x2-x1)*(y2-y1)))  )
+        {                
+            printf("operation 1/((x2-x1)*(y2-y1)) inside bilinear interpolation for kRoss  is NaN \n");                  
+        }
+
+        if (x1>1e10)
+        {                
+            printf("variable x1 greater than 1e10 \n");                  
+        }
+
+        if (x2>1e10)
+        {                
+            printf("variable x2 greater than 1e10 \n");                  
+        }
+
+        if (y1>1e10)
+        {                
+            printf("variable y1 greater than 1e10 \n");                  
+        }
+
+        if (y2>1e10)
+        {                
+            printf("variable y2 greater than 1e10 \n");                  
+        }
+        
         
         if (isnan( a00))
         {                
