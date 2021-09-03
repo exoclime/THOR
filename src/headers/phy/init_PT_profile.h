@@ -285,6 +285,7 @@ void k_Ross_Freedman_bilinear_interpolation_polynomial_fit(double Tin, double Pi
     z22 = OpaTableKappa[iter] * increasing_factor;
 
     if (iter%jump_for_higher_temp==0.0) {
+        printf("case A \n");
         x1 = OpaTableTemperature[iter - jump_for_higher_temp];
         x2 = OpaTableTemperature[iter + 1];
         y1 = OpaTablePressure[iter];
@@ -295,6 +296,7 @@ void k_Ross_Freedman_bilinear_interpolation_polynomial_fit(double Tin, double Pi
         z21 = OpaTableKappa[iter] * increasing_factor;
         z22 = OpaTableKappa[iter + 1] * increasing_factor;
     } else{
+        printf("case B \n");
         x1 = OpaTableTemperature[iter - jump_for_higher_temp - 1];
         x2 = OpaTableTemperature[iter];
         y1 = OpaTablePressure[iter-1];
