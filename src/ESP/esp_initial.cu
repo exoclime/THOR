@@ -430,6 +430,15 @@ ESP::alloc_data(bool globdiag, bool output_mean, bool out_interm_momentum, bool 
         }
     }
 
+    if (init_PT_profile == PARMENTIER) {
+        cudaMalloc((void **)&OpaTableTemperature_d, 1060 * sizeof(double));
+        cudaMalloc((void **)&OpaTablePressure_d, 1060 * sizeof(double));
+        cudaMalloc((void **)&OpaTableKappa_d, 1060 * sizeof(double));
+        OpaTableTemperature__h = (double *)malloc(1060 * sizeof(double));
+        OpaTablePressure__h = (double *)malloc(1060 * esp.point_num * sizeof(double));
+        OpaTableKappa__h = (double *)malloc(1060 * esp.point_num * sizeof(double));
+    }
+
     cudaMalloc((void **)&Tsurface_d, point_num * sizeof(double));
     Tsurface_h = (double *)malloc(point_num * sizeof(double));
     cudaMalloc((void **)&dTsurf_dt_d, point_num * sizeof(double));
@@ -775,12 +784,28 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 printf(" before Tirr and Parmentier \n");
                 Tirr = Tstar * pow(Rstar / star_planet_distance ,0.5);
 
-                double OpaTableTemperature[1060];
-                text_file_to_array("src/physics/modules/src/OpaTableTemperature.txt" , OpaTableTemperature, 1060);
-                double OpaTablePressure[1060];
-                text_file_to_array("src/physics/modules/src/OpaTablePressure.txt" , OpaTablePressure, 1060);
-                double OpaTableKappa[1060];
-                text_file_to_array("src/physics/modules/src/OpaTableKappa.txt" , OpaTableKappa, 1060);
+                //double OpaTableTemperature[1060];
+                text_file_to_array("src/physics/modules/src/OpaTableTemperature.txt" , OpaTableTemperature__h, 1060);
+                //double OpaTablePressure[1060];
+                text_file_to_array("src/physics/modules/src/OpaTablePressure.txt" , OpaTablePressure__h, 1060);
+                //double OpaTableKappa[1060];
+                text_file_to_array("src/physics/modules/src/OpaTableKappa.txt" , OpaTableKappa__h, 1060);
+                bool cudaStatus;
+                cudaStatus = cudaMemcpy(OpaTableTemperature_d, OpaTableTemperature__h,1060 *  sizeof(double), cudaMemcpyHostToDevice);
+                if (cudaStatus != cudaSuccess) {
+                    fprintf(stderr, "OpaTableTemperature_d cudaMemcpyHostToDevice failed!");
+                    //goto Error;
+                }
+                cudaStatus = cudaMemcpy(OpaTablePressure_d, OpaTablePressure__h, 1060 * sizeof(double), cudaMemcpyHostToDevice);
+                if (cudaStatus != cudaSuccess) {
+                    fprintf(stderr, "OpaTablePressure_d cudaMemcpyHostToDevice failed!");
+                    //goto Error;
+                }
+                cudaStatus = cudaMemcpy(OpaTableKappa_d, OpaTableKappa__h, 1060 * sizeof(double), cudaMemcpyHostToDevice);
+                if (cudaStatus != cudaSuccess) {
+                    fprintf(stderr, "OpaTableKappa_d cudaMemcpyHostToDevice failed!");
+                    //goto Error;
+                }
                 if (OpaTableTemperature[0]/75.0==1.0)
                     {                
                         printf("OpaTableTemperature[0] is correct \n");
@@ -791,7 +816,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                 //Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, met);
                 Parmentier_bilinear_interpolation_IC(i, nv, pressure_h, Tint, mu, Tirr,
-                    OpaTableTemperature, OpaTablePressure, OpaTableKappa, sim.Gravit, temperature_h, table_num, met);
+                    OpaTableTemperature__h, OpaTablePressure__h, OpaTableKappa__h, sim.Gravit, temperature_h, table_num, met);
 
                 for (int j = 0; j < nv; j++)
                 {
@@ -2034,6 +2059,15 @@ __host__ ESP::~ESP() {
     cudaFree(dTsurf_dt_d);
 
     free(Tsurface_h);
+
+    if (init_PT_profile == PARMENTIER) {
+        free(OpaTableTemperature__h);
+        free(OpaTablePressure__h);
+        free(OpaTableKappa__h);
+        cudaFree(OpaTableTemperature_d);
+        cudaFree(OpaTablePressure_d);
+        cudaFree(OpaTableKappa_d);
+    }
 
     if (phy_modules_execute)
         phy_modules_free_mem();

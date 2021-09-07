@@ -812,6 +812,117 @@ __device__ void kernel_k_Ross_Freedman(double Tin, double Pin, double met, doubl
 }
 
 
+///////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////
+
+__device__ void kernel_bilinear_log_interp(double xval, double yval, double x1, double x2, double y1, double y2,
+    double a11, double a12, double a21, double a22, double &aval) {
+    
+    double lxval, lyval, lx1, lx2, ly1, ly2, la11, la21, la12, la22;
+    double norm;
+
+    lxval = log10(xval);
+    lyval = log10(yval);
+    lx1 = log10(x1);
+    lx2 = log10(x2);
+    ly1 = log10(y1);
+    ly2 = log10(y2);
+    la11 = log10(a11);
+    la21 = log10(a21);
+    la12 = log10(a12);
+    la22 = log10(a22);
+
+    norm = 1.0 / (lx2 - lx1) / (ly2 - ly1);
+
+    aval = la11 * (lx2 - lxval) * (ly2 - lyval) * norm +
+        la21 * (lxval - lx1) * (ly2 - lyval) * norm +
+        la12 * (lx2 - lxval) * (lyval - ly1) * norm + 
+        la22 * (lxval - lx1) * (lyval - ly1) * norm;
+
+    aval = pow(10, aval);
+
+}
+
+///////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////
+
+
+// Calculates the IR band Rosseland mean opacity (local T) according to a
+// bilinear_interpolation_polynomial_fit to the opacities of Freedman et al. (2014)
+
+__device__ void kernel_k_Ross_Freedman_bilinear_interpolation_polynomial_fit(double Tin, double Pin, double *OpaTableTemperature,
+    double *OpaTablePressure, double *OpaTableKappa, double &k_IR){
+        
+    double x, y, x1, x2, y1, y2, z11, z12, z21, z22;
+ 
+    int iter = 0;
+    int lowiter = 0;
+    int jump_for_higher_temp = 10;
+    double increasing_factor = 1; //1e+16;
+    double dyncm_2_to_Pa = 0.1;
+    int len = 1060;
+
+    printf("length of OpaTableTemperature = %d   \n", len);
+
+    printf(" Tin = %e   \n", Tin);
+    printf("Pin = %e   \n", Pin);
+    
+    // exclude values off the table and insure that values within the table are used
+    if (Tin <= OpaTableTemperature[0]) {
+        x = OpaTableTemperature[0] + 1e-10 ;      
+    } else if (Tin >= OpaTableTemperature[len - 1]) {
+        x = OpaTableTemperature[len - 1] - 1e-10 ;      
+    } else {
+        x = Tin;
+    }
+    
+    if (Pin <= OpaTablePressure[0] * dyncm_2_to_Pa) {
+        y = OpaTablePressure[0] * dyncm_2_to_Pa + 1e-10 ;      
+    } else if (Pin >= OpaTablePressure[len - 1]  * dyncm_2_to_Pa) {
+        y = OpaTablePressure[len - 1]  * dyncm_2_to_Pa - 1e-10 ;      
+    } else {
+        y = Pin;
+    }
+    
+    // iterating through the table and get iter-position for z22
+    while (x > OpaTableTemperature[iter]) {
+        if (iter!=0)
+        {
+            lowiter = iter-1;
+        }
+        iter++;
+    }
+
+    while (y <= OpaTablePressure[lowiter]  * dyncm_2_to_Pa) {
+        lowiter--;
+    }
+    
+    while (y >= OpaTablePressure[iter]  * dyncm_2_to_Pa) {
+        iter++;
+    }
+
+    // setting all inputs variables for the interpolation
+    // increased opacities for operations by 
+         
+        x1 = OpaTableTemperature[lowiter];
+        x2 = OpaTableTemperature[iter];
+        y1 = OpaTablePressure[iter-1];
+        y2 = OpaTablePressure[iter];
+
+        z11 = OpaTableKappa[lowiter] * increasing_factor;
+        z12 = OpaTableKappa[lowiter + 1] * increasing_factor;
+        z21 = OpaTableKappa[iter - 1] * increasing_factor;
+        z22 = OpaTableKappa[iter] * increasing_factor; 
+
+    // interpolate values from the table
+    kernel_bilinear_log_interp(x, y, x1, x2, y1, y2, z11,  z12,  z21,  z22, k_IR);
+
+    //  converted from [cm2 g-1] to [m2 kg-1] and redo temporal 1e+5 higher values
+    k_IR = 10 * k_IR / increasing_factor;
+    
+}
+
+
 
 ///////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////
@@ -1612,6 +1723,9 @@ __global__ void rtm_picket_fence(double *pressure_d,
                               double *Rd_d,
                               double  Qheat_scaling,
                               double  met,
+                              double *OpaTableTemperature,
+                              double *OpaTablePressure,
+                              double *OpaTableKappa,
                               double *k_IR_2_nv_d,
                               double *k_V_3_nv_d,
                               double *gam_V_3_d,
@@ -1661,6 +1775,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
     //
     //  Output:
     //
+    
 
     int id = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -1760,6 +1875,13 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 pressure_d[id * nv + level],
                 met,
                 k_IR_2_nv_d[id * nv * 2 + 0 * nv + level]);
+
+            kernel_k_Ross_Freedman_bilinear_interpolation_polynomial_fit(temperature_d[id * nv + level],
+                pressure_d[id * nv + level],
+                OpaTableTemperature,
+                OpaTablePressure,
+                OpaTableKappa,
+                k_IR_2_nv_d[id * nv * 2 + 0 * nv + level])
 
             // Find the visual Rosseland mean opacity from gam_V_3_d
 

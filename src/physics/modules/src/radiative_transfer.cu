@@ -130,6 +130,8 @@ bool radiative_transfer::initialise_memory(const ESP &              esp,
         cudaMalloc((void **)&net_F_nvi_d, esp.nvi * esp.point_num * sizeof(double));
         cudaMalloc((void **)&AB_d,  esp.point_num * sizeof(double));
 
+       
+
         k_IR_2__h = (double *)malloc(2*esp.nv * esp.point_num * sizeof(double));
         k_V_3__h = (double *)malloc(3*esp.nv * esp.point_num * sizeof(double));
         gam_V__h = (double *)malloc(3 * esp.point_num * sizeof(double));
@@ -141,6 +143,8 @@ bool radiative_transfer::initialise_memory(const ESP &              esp,
         AB__h = (double *)malloc( esp.point_num * sizeof(double));
         gam_P = (double *)malloc(esp.point_num * sizeof(double));
         Teff = (double *)malloc(esp.point_num * sizeof(double));
+
+        
 
         // picket fence parameters     //Kitzman working variables
         cudaMalloc((void **)&tau_Ve__df_e, esp.nvi * esp.point_num * sizeof(double));
@@ -258,6 +262,8 @@ bool radiative_transfer::free_memory() {
         cudaFree(Beta_2_d);
         cudaFree(net_F_nvi_d);
         cudaFree(AB_d);
+
+       
         
         free(k_IR_2__h);
         free(k_V_3__h);
@@ -270,6 +276,8 @@ bool radiative_transfer::free_memory() {
         free(AB__h);
         free(gam_P);
         free(Teff);
+
+        
 
         // picket fence parameters     //Kitzman working variables
 
@@ -307,6 +315,8 @@ bool radiative_transfer::free_memory() {
         
 
         free(tau_h);
+
+
         
         
 
@@ -773,7 +783,6 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                 gam_2__h,
                 gam_P);
                 
-            
                 
             bool cudaStatus;
             cudaStatus = cudaMemcpy(gam_V_3_d, gam_V__h, 3*esp.point_num * sizeof(double), cudaMemcpyHostToDevice);
@@ -806,6 +815,8 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                 fprintf(stderr, "AB_d cudaMemcpyHostToDevice failed!");
                 //goto Error;
             }
+
+            
 
             // check for error
             cudaError_t error = cudaGetLastError();
@@ -854,6 +865,9 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                 esp.Rd_d,
                 Qheat_scaling,
                 metalicity,
+                OpaTableTemperature_d,
+                OpaTablePressure_d,
+                OpaTableKappa_d,
                 k_IR_2_nv_d,
                 k_V_3_nv_d,
                 gam_V_3_d,

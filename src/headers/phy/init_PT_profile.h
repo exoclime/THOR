@@ -67,25 +67,7 @@ void bilinear_log_interp(double xval, double yval, double x1, double x2, double 
     la12 = log10(a12);
     la22 = log10(a22);
 
-    printf("x1 = %e  \n", x1);
-    printf("x2 = %e  \n", x2);
-    printf("y1 = %e  \n", y1);
-    printf("y2 = %e  \n", y2);
-    printf("xval = %e  \n", xval);
-    printf("yval = %e  \n", yval);
-    printf("a11 = %e  \n", a11);
-    printf("a21 = %e  \n", a21);
-    printf("a12 = %e  \n", a12);
-    printf("a22 = %e  \n", a22);
-
     norm = 1.0 / (lx2 - lx1) / (ly2 - ly1);
-
-    if (isnan( la11 * (lx2 - lxval) * (ly2 - lyval) * norm))
-        {                
-            printf("operations (la11 * (lx2 - lxval) * (ly2 - lyval) * norm) inside bilinear_log_interp for kRoss gets NaN \n");                  
-        }
-
-    
 
     aval = la11 * (lx2 - lxval) * (ly2 - lyval) * norm +
         la21 * (lxval - lx1) * (ly2 - lyval) * norm +
@@ -109,13 +91,11 @@ void bilinear_interpolation_polynomial_fit(double x, double y, double x1, double
 
         z = a00 + a10*x + a01*y + a11*x*y;
 
-        
-    
 }
 
 
 // Calculates the IR band Rosseland mean opacity (local T) according to a
- // bilinear_interpolation_polynomial_fit to the opacities of Freedman et al. (2014)
+// bilinear_interpolation_polynomial_fit to the opacities of Freedman et al. (2014)
 
 void k_Ross_Freedman_bilinear_interpolation_polynomial_fit(double Tin, double Pin, double *OpaTableTemperature,
     double *OpaTablePressure, double *OpaTableKappa, double &k_IR){
@@ -171,8 +151,6 @@ void k_Ross_Freedman_bilinear_interpolation_polynomial_fit(double Tin, double Pi
 
     // setting all inputs variables for the interpolation
     // increased opacities for operations by 
-
-     printf("case B: not at the top of the table and not a temperature jump\n");
          
         x1 = OpaTableTemperature[lowiter];
         x2 = OpaTableTemperature[iter];
@@ -213,12 +191,6 @@ void k_Ross_Freedman_bilinear_interpolation_polynomial_fit(double Tin, double Pi
 
     // interpolate values from the table
     bilinear_log_interp(x, y, x1, x2, y1, y2, z11,  z12,  z21,  z22, k_IR);
-
-    printf("iter = %d   \n", iter);
-    
-
-    
-
 
     //  converted from [cm2 g-1] to [m2 kg-1] and redo temporal 1e+5 higher values
     k_IR = 10 * k_IR / increasing_factor;
@@ -938,10 +910,6 @@ void Parmentier_bilinear_interpolation_IC(int id, const int nlay, double* pl, do
     Teff0 = pow(((pow(Tint, 4.0) + (1.0 / sqrt(((double)3.0))) * pow(Tirr, 4.0))), (1.0 / 4.0));
     Bond_Parmentier_host(Teff0, grav, Bond);
 
-    
-
-
-
     Teff = pow((pow(Tint, 4.0) + (((double)1.0) - Bond) * mu * pow(Tirr, 4.0)), (1.0 / 4.0));
 
 
@@ -949,8 +917,6 @@ void Parmentier_bilinear_interpolation_IC(int id, const int nlay, double* pl, do
     // Passed mu, so make lat = acos(mu) and lon = 0
     gam_Parmentier(Teff, table_num, gam_V, Beta_V, Beta, gam_1, gam_2,
         gam_P, tau_lim);
-
-    
 
     for (i = 0; i < 3; i++)
     {
@@ -1026,7 +992,7 @@ void Parmentier_bilinear_interpolation_IC(int id, const int nlay, double* pl, do
 
     
     // Estimate the opacity TOA at the skin temperature - assume this is = first layer optacity
-     printf("pl[id * nlay + nlay-1] = %e  \n", pl[id * nlay + nlay-1]);
+    // printf("pl[id * nlay + nlay-1] = %e  \n", pl[id * nlay + nlay-1]);
     k_Ross_Freedman_bilinear_interpolation_polynomial_fit(Tskin, pl[id * nlay + nlay-1], OpaTableTemperature, OpaTablePressure, OpaTableKappa, kRoss[nlay-1]);
     //k_Ross_Freedman(Tskin, pl[0], met, kRoss[i]);
     if (isnan( kRoss[nlay-1]))
@@ -1034,7 +1000,7 @@ void Parmentier_bilinear_interpolation_IC(int id, const int nlay, double* pl, do
         printf("after bilinear interpolation kRoss[nlay-1] is NaN at level %d  \n", nlay-1);                  
     }
 
-     printf("kRoss[0] = %e  \n", kRoss[0]);
+     //printf("kRoss[0] = %e  \n", kRoss[0]);
     
     
     
@@ -1065,7 +1031,6 @@ void Parmentier_bilinear_interpolation_IC(int id, const int nlay, double* pl, do
         // Initial guess for layer
         //k_Ross_Freedman(Tl[id * nlay + i+1], sqrt(pl[id * nlay + i+1] * pl[id * nlay + i]), met, kRoss[i]);
         k_Ross_Freedman_bilinear_interpolation_polynomial_fit(Tl[id * nlay + i+1], sqrt(pl[id * nlay + i+1] * pl[id * nlay + i]), OpaTableTemperature, OpaTablePressure, OpaTableKappa, kRoss[i]);
-        
 
         tau[i] = tau[i+1] + kRoss[i] / grav *  (pl[id * nlay + i] - pl[id * nlay + i+1]) ;
     
@@ -1096,7 +1061,7 @@ void Parmentier_bilinear_interpolation_IC(int id, const int nlay, double* pl, do
             Tl[id * nlay + i] = pow(Tl[id * nlay + i], (1.0 / 4.0));
         }
 
-        printf("kRoss[%d] = %e  \n", i, kRoss[i]);
+       
         
     }
 
