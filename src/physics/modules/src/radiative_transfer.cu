@@ -516,7 +516,7 @@ void Bond_Parmentier(double Teff0, double grav, double& AB) {
 //////////////////////////////////////////////////////////////
 
 
-void PF_text_file_to_array(std::string name ,double *array, int Nlen){
+void PF_text_file_to_array(std::string name ,double *array, int Nlength){
         
         std::ifstream inFile;
         inFile.open(name);
@@ -525,7 +525,7 @@ void PF_text_file_to_array(std::string name ,double *array, int Nlen){
             printf("\nError opening the file: one of the opacity tables \n");
             
         }
-        for (int i = 0; i < Nlen; i++)
+        for (int i = 0; i < Nlength; i++)
         {
             inFile >> array[i];
         }  
