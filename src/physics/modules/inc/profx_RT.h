@@ -26,6 +26,9 @@
 
 #include "debug_helpers.h"
 
+#include <ctime> // time_t
+#include <cstdio>
+
 __global__ void annual_insol(double *insol_ann_d, double *insol_d, int nstep, int num) {
 
     int id = blockIdx.x * blockDim.x + threadIdx.x;
