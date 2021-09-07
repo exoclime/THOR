@@ -861,11 +861,6 @@ __device__ void kernel_k_Ross_Freedman_bilinear_interpolation_polynomial_fit(dou
     double increasing_factor = 1; //1e+16;
     double dyncm_2_to_Pa = 0.1;
     int len = 1060;
-
-    printf("length of OpaTableTemperature = %d   \n", len);
-
-    printf(" Tin = %e   \n", Tin);
-    printf("Pin = %e   \n", Pin);
     
     // exclude values off the table and insure that values within the table are used
     if (Tin <= OpaTableTemperature[0]) {
@@ -1866,6 +1861,41 @@ __global__ void rtm_picket_fence(double *pressure_d,
         else {
             coszrs = zenith_angles[id];
         }
+
+        using std::chrono::high_resolution_clock;
+        using std::chrono::duration_cast;
+        using std::chrono::duration;
+        using std::chrono::milliseconds;
+
+        auto t1 = high_resolution_clock::now();
+        for (int level = 0; level < nv; level++)
+        {
+            kernel_k_Ross_Freedman(temperature_d[id * nv + level],
+                pressure_d[id * nv + level],
+                met,
+                k_IR_2_nv_d[id * nv * 2 + 0 * nv + level]);
+        }
+        auto t2 = high_resolution_clock::now();
+        auto ms_int = duration_cast<milliseconds>(t2 - t1);
+        duration<double, std::milli> ms_double = t2 - t1;
+        printf("duration for kernel_k_Ross_Freedman: %e ms\n",  ms_double.count()); 
+
+        t1 = high_resolution_clock::now();
+        for (int level = 0; level < nv; level++)
+        {
+            kernel_k_Ross_Freedman_bilinear_interpolation_polynomial_fit(temperature_d[id * nv + level],
+                pressure_d[id * nv + level],
+                OpaTableTemperature,
+                OpaTablePressure,
+                OpaTableKappa,
+                k_IR_2_nv_d[id * nv * 2 + 0 * nv + level]);
+
+        }
+        t2 = high_resolution_clock::now();
+        ms_double = t2 - t1;
+        printf("duration for kernel_k_Ross_Freedman_bilinear_interpolation_polynomial_fit: %e ms\n",  ms_double.count());
+
+
 
         // kappa calculation loop here if using non-constant kappa
         for (int level = 0; level < nv; level++)

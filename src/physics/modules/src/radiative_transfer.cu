@@ -53,6 +53,8 @@
 #include <stdlib.h>
 #include <string>
 
+#include <chrono>
+
 radiative_transfer::radiative_transfer() {
 }
 
