@@ -516,7 +516,7 @@ void Bond_Parmentier(double Teff0, double grav, double& AB) {
 //////////////////////////////////////////////////////////////
 
 
-void text_file_to_array(std::string name ,double *array, int Nlen){
+void text_file_to_array(string name ,double *array, int Nlen){
         
         std::ifstream inFile;
         inFile.open(name);
