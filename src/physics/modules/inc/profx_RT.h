@@ -1867,7 +1867,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
         //using std::chrono::duration;
        // using std::chrono::milliseconds;
 
-        double t1 = std::chrono::high_resolution_clock::now();
+        double t1 = high_resolution_clock::now();
         for (int level = 0; level < nv; level++)
         {
             kernel_k_Ross_Freedman(temperature_d[id * nv + level],
@@ -1875,12 +1875,12 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 met,
                 k_IR_2_nv_d[id * nv * 2 + 0 * nv + level]);
         }
-        double t2 = std::chrono::high_resolution_clock::now();
+        double t2 = high_resolution_clock::now();
         //auto ms_int = std::chrono::duration_cast<milliseconds>(t2 - t1);
-        std::chrono::duration<double, std::milli> ms_double = t2 - t1;
+        double ms_double = t2 - t1;
         printf("duration for kernel_k_Ross_Freedman: %e ms\n",  ms_double.count()); 
 
-        t1 = std::chrono::high_resolution_clock::now();
+        t1 = high_resolution_clock::now();
         for (int level = 0; level < nv; level++)
         {
             kernel_k_Ross_Freedman_bilinear_interpolation_polynomial_fit(temperature_d[id * nv + level],
@@ -1891,7 +1891,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 k_IR_2_nv_d[id * nv * 2 + 0 * nv + level]);
 
         }
-        t2 = std::chrono::high_resolution_clock::now();
+        t2 = high_resolution_clock::now();
         ms_double = t2 - t1;
         printf("duration for kernel_k_Ross_Freedman_bilinear_interpolation_polynomial_fit: %e ms\n",  ms_double.count());
 
