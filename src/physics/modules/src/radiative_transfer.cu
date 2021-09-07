@@ -514,6 +514,28 @@ void Bond_Parmentier(double Teff0, double grav, double& AB) {
 ///////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////
 
+
+void text_file_to_array(std::string name ,double *array, int Nlen){
+        
+        std::ifstream inFile;
+        inFile.open(name);
+        if (!inFile)
+        {
+            printf("\nError opening the file: %s \n", name);
+            
+        }
+        for (int i = 0; i < Nlen; i++)
+        {
+            inFile >> array[i];
+        }  
+        inFile.close();
+    
+}
+
+
+///////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////
+
 // Calculates 3 band grey visual gamma values and 2 picket fence IR gamma values
     // according to the coefficents and equations in:
     // Parmentier & Menou (2014) and Parmentier et al. (2015)

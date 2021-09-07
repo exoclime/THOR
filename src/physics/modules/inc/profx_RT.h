@@ -1870,18 +1870,20 @@ __global__ void rtm_picket_fence(double *pressure_d,
         // kappa calculation loop here if using non-constant kappa
         for (int level = 0; level < nv; level++)
         {
-
+            /*
             kernel_k_Ross_Freedman(temperature_d[id * nv + level],
                 pressure_d[id * nv + level],
                 met,
                 k_IR_2_nv_d[id * nv * 2 + 0 * nv + level]);
+
+            */
 
             kernel_k_Ross_Freedman_bilinear_interpolation_polynomial_fit(temperature_d[id * nv + level],
                 pressure_d[id * nv + level],
                 OpaTableTemperature,
                 OpaTablePressure,
                 OpaTableKappa,
-                k_IR_2_nv_d[id * nv * 2 + 0 * nv + level])
+                k_IR_2_nv_d[id * nv * 2 + 0 * nv + level]);
 
             // Find the visual Rosseland mean opacity from gam_V_3_d
 
