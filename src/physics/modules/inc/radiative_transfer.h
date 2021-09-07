@@ -171,6 +171,10 @@ private:
     double* net_F_h;
     double* AB__h;
     double* Teff;
+
+    double* OpaTableTemperature__h;
+    double* OpaTablePressure__h;
+    double* OpaTableKappa__h;
     
     double  metalicity = 0;
     double* k_IR_2_nv_d;
@@ -182,6 +186,10 @@ private:
     double* Beta_2_d;
     double* net_F_nvi_d;    
     double* AB_d;
+
+    double* OpaTableTemperature_d;
+    double* OpaTablePressure_d;
+    double* OpaTableKappa_d;
 
     double* lw_net__h ;
     double* sw_net__h ;

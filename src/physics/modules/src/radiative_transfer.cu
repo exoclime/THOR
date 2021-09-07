@@ -130,6 +130,9 @@ bool radiative_transfer::initialise_memory(const ESP &              esp,
         cudaMalloc((void **)&net_F_nvi_d, esp.nvi * esp.point_num * sizeof(double));
         cudaMalloc((void **)&AB_d,  esp.point_num * sizeof(double));
 
+        cudaMalloc((void **)&OpaTableTemperature_d, 1060 * sizeof(double));
+        cudaMalloc((void **)&OpaTablePressure_d, 1060 * sizeof(double));
+        cudaMalloc((void **)&OpaTableKappa_d, 1060 * sizeof(double));
        
 
         k_IR_2__h = (double *)malloc(2*esp.nv * esp.point_num * sizeof(double));
@@ -143,6 +146,10 @@ bool radiative_transfer::initialise_memory(const ESP &              esp,
         AB__h = (double *)malloc( esp.point_num * sizeof(double));
         gam_P = (double *)malloc(esp.point_num * sizeof(double));
         Teff = (double *)malloc(esp.point_num * sizeof(double));
+
+        OpaTableTemperature__h = (double *)malloc(1060 * sizeof(double));
+        OpaTablePressure__h = (double *)malloc(1060 * esp.point_num * sizeof(double));
+        OpaTableKappa__h = (double *)malloc(1060 * esp.point_num * sizeof(double));
 
         
 
@@ -276,6 +283,13 @@ bool radiative_transfer::free_memory() {
         free(AB__h);
         free(gam_P);
         free(Teff);
+
+        free(OpaTableTemperature__h);
+        free(OpaTablePressure__h);
+        free(OpaTableKappa__h);
+        cudaFree(OpaTableTemperature_d);
+        cudaFree(OpaTablePressure_d);
+        cudaFree(OpaTableKappa_d);
 
         
 
@@ -813,6 +827,29 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
             cudaStatus = cudaMemcpy(AB_d, AB__h, esp.point_num * sizeof(double), cudaMemcpyHostToDevice);
             if (cudaStatus != cudaSuccess) {
                 fprintf(stderr, "AB_d cudaMemcpyHostToDevice failed!");
+                //goto Error;
+            }
+
+            //double OpaTableTemperature__h[1060];
+            text_file_to_array("src/physics/modules/src/OpaTableTemperature.txt" , OpaTableTemperature__h, 1060);
+            //double OpaTablePressure__h[1060];
+            text_file_to_array("src/physics/modules/src/OpaTablePressure.txt" , OpaTablePressure__h, 1060);
+            //double OpaTableKappa__h[1060];
+            text_file_to_array("src/physics/modules/src/OpaTableKappa.txt" , OpaTableKappa__h, 1060);
+
+            cudaStatus = cudaMemcpy(OpaTableTemperature_d, OpaTableTemperature__h,1060 *  sizeof(double), cudaMemcpyHostToDevice);
+            if (cudaStatus != cudaSuccess) {
+                fprintf(stderr, "OpaTableTemperature_d cudaMemcpyHostToDevice failed!");
+                //goto Error;
+            }
+            cudaStatus = cudaMemcpy(OpaTablePressure_d, OpaTablePressure__h, 1060 * sizeof(double), cudaMemcpyHostToDevice);
+            if (cudaStatus != cudaSuccess) {
+                fprintf(stderr, "OpaTablePressure_d cudaMemcpyHostToDevice failed!");
+                //goto Error;
+            }
+            cudaStatus = cudaMemcpy(OpaTableKappa_d, OpaTableKappa__h, 1060 * sizeof(double), cudaMemcpyHostToDevice);
+            if (cudaStatus != cudaSuccess) {
+                fprintf(stderr, "OpaTableKappa_d cudaMemcpyHostToDevice failed!");
                 //goto Error;
             }
 
