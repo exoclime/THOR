@@ -856,11 +856,7 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                 //goto Error;
             }
 
-            time_t t1,t2;
-            double difference;
-            time(&t1);
-
-            /*
+                        
 
             //double OpaTableTemperature__h[1060];
             PF_text_file_to_array("src/physics/modules/src/OpaTableTemperature.txt" , OpaTableTemperature__h, 1060);
@@ -885,7 +881,7 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                 //goto Error;
             }
 
-            */
+            
 
             
 
@@ -978,10 +974,7 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
 
                 );
 
-            time(&t2);
-            //auto ms_int = std::chrono::duration_cast<milliseconds>(t2 - t1);
-            difference = difftime(t2,t1);
-            printf("duration for kernel_k_Ross_Freedman: %E seconds.\n",  difference); 
+
 
 
 
