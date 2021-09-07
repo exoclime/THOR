@@ -522,7 +522,7 @@ void text_file_to_array(string name ,double *array, int Nlen){
         inFile.open(name);
         if (!inFile)
         {
-            printf("\nError opening the file: %s \n", name);
+            printf("\nError opening the file: one of the opacity tables \n");
             
         }
         for (int i = 0; i < Nlen; i++)
