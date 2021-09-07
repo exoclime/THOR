@@ -1867,7 +1867,8 @@ __global__ void rtm_picket_fence(double *pressure_d,
         //using std::chrono::duration;
        // using std::chrono::milliseconds;
 
-        double t1,t2, difference ;
+        double* t1,t2;
+        double difference;
         time(&t1);
         for (int level = 0; level < nv; level++)
         {
@@ -1879,7 +1880,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
         time(&t2);
         //auto ms_int = std::chrono::duration_cast<milliseconds>(t2 - t1);
         difference = difftime(t2,t1);
-        printf("duration for kernel_k_Ross_Freedman: %e ms\n",  ms_double.count()); 
+        printf("duration for kernel_k_Ross_Freedman: %e ms\n",  difference); 
 
         time(&t1);
         for (int level = 0; level < nv; level++)
@@ -1894,7 +1895,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
         }
         time(&t2);
         difference = difftime(t2,t1);
-        printf("duration for kernel_k_Ross_Freedman_bilinear_interpolation_polynomial_fit: %e ms\n",  ms_double.count());
+        printf("duration for kernel_k_Ross_Freedman_bilinear_interpolation_polynomial_fit: %e ms\n", difference);
 
 
 
