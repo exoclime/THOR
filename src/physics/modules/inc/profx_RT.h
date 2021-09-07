@@ -26,8 +26,7 @@
 
 #include "debug_helpers.h"
 
-#include <ctime> // time_t
-#include <cstdio>
+
 
 __global__ void annual_insol(double *insol_ann_d, double *insol_d, int nstep, int num) {
 
@@ -1870,49 +1869,19 @@ __global__ void rtm_picket_fence(double *pressure_d,
         //using std::chrono::duration;
        // using std::chrono::milliseconds;
 
-        time_t t1,t2;
-        double difference;
-        time(&t1);
-        for (int level = 0; level < nv; level++)
-        {
-            kernel_k_Ross_Freedman(temperature_d[id * nv + level],
-                pressure_d[id * nv + level],
-                met,
-                k_IR_2_nv_d[id * nv * 2 + 0 * nv + level]);
-        }
-        time(&t2);
-        //auto ms_int = std::chrono::duration_cast<milliseconds>(t2 - t1);
-        difference = difftime(t2,t1);
-        printf("duration for kernel_k_Ross_Freedman: %e ms\n",  difference); 
-
-        time(&t1);
-        for (int level = 0; level < nv; level++)
-        {
-            kernel_k_Ross_Freedman_bilinear_interpolation_polynomial_fit(temperature_d[id * nv + level],
-                pressure_d[id * nv + level],
-                OpaTableTemperature,
-                OpaTablePressure,
-                OpaTableKappa,
-                k_IR_2_nv_d[id * nv * 2 + 0 * nv + level]);
-
-        }
-        time(&t2);
-        difference = difftime(t2,t1);
-        printf("duration for kernel_k_Ross_Freedman_bilinear_interpolation_polynomial_fit: %e ms\n", difference);
-
 
 
         // kappa calculation loop here if using non-constant kappa
         for (int level = 0; level < nv; level++)
         {
-            /*
+            
             kernel_k_Ross_Freedman(temperature_d[id * nv + level],
                 pressure_d[id * nv + level],
                 met,
                 k_IR_2_nv_d[id * nv * 2 + 0 * nv + level]);
 
-            */
-
+            
+            /*   
             kernel_k_Ross_Freedman_bilinear_interpolation_polynomial_fit(temperature_d[id * nv + level],
                 pressure_d[id * nv + level],
                 OpaTableTemperature,
@@ -1920,7 +1889,8 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 OpaTableKappa,
                 k_IR_2_nv_d[id * nv * 2 + 0 * nv + level]);
 
-            // Find the visual Rosseland mean opacity from gam_V_3_d
+            */
+           // Find the visual Rosseland mean opacity from gam_V_3_d
 
 
             for (int channel = 0; channel < 3; channel++)

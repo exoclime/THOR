@@ -53,7 +53,8 @@
 #include <stdlib.h>
 #include <string>
 
-
+#include <ctime> // time_t
+#include <cstdio>
 
 radiative_transfer::radiative_transfer() {
 }
@@ -855,6 +856,12 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                 //goto Error;
             }
 
+            time_t t1,t2;
+            double difference;
+            time(&t1);
+
+            /*
+
             //double OpaTableTemperature__h[1060];
             PF_text_file_to_array("src/physics/modules/src/OpaTableTemperature.txt" , OpaTableTemperature__h, 1060);
             //double OpaTablePressure__h[1060];
@@ -877,6 +884,8 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                 fprintf(stderr, "OpaTableKappa_d cudaMemcpyHostToDevice failed!");
                 //goto Error;
             }
+
+            */
 
             
 
@@ -968,6 +977,11 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                 sim.DeepModel                                        
 
                 );
+
+            time(&t2);
+            //auto ms_int = std::chrono::duration_cast<milliseconds>(t2 - t1);
+            difference = difftime(t2,t1);
+            printf("duration for kernel_k_Ross_Freedman: %e ms\n",  difference); 
 
 
 
