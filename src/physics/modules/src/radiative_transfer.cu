@@ -516,7 +516,7 @@ void Bond_Parmentier(double Teff0, double grav, double& AB) {
 //////////////////////////////////////////////////////////////
 
 
-void text_file_to_array(string name ,double *array, int Nlen){
+void PF_text_file_to_array(std::string name ,double *array, int Nlen){
         
         std::ifstream inFile;
         inFile.open(name);
@@ -854,11 +854,11 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
             }
 
             //double OpaTableTemperature__h[1060];
-            text_file_to_array("src/physics/modules/src/OpaTableTemperature.txt" , OpaTableTemperature__h, 1060);
+            PF_text_file_to_array("src/physics/modules/src/OpaTableTemperature.txt" , OpaTableTemperature__h, 1060);
             //double OpaTablePressure__h[1060];
-            text_file_to_array("src/physics/modules/src/OpaTablePressure.txt" , OpaTablePressure__h, 1060);
+            PF_text_file_to_array("src/physics/modules/src/OpaTablePressure.txt" , OpaTablePressure__h, 1060);
             //double OpaTableKappa__h[1060];
-            text_file_to_array("src/physics/modules/src/OpaTableKappa.txt" , OpaTableKappa__h, 1060);
+            PF_text_file_to_array("src/physics/modules/src/OpaTableKappa.txt" , OpaTableKappa__h, 1060);
 
             cudaStatus = cudaMemcpy(OpaTableTemperature_d, OpaTableTemperature__h,1060 *  sizeof(double), cudaMemcpyHostToDevice);
             if (cudaStatus != cudaSuccess) {
