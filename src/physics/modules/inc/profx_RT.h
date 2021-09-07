@@ -1867,7 +1867,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
         //using std::chrono::duration;
        // using std::chrono::milliseconds;
 
-        double* t1,t2;
+        time_t t1,t2;
         double difference;
         time(&t1);
         for (int level = 0; level < nv; level++)
