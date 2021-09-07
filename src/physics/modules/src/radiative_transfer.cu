@@ -51,6 +51,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string>
 
 radiative_transfer::radiative_transfer() {
 }
