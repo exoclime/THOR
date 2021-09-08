@@ -420,6 +420,10 @@ public:
         thermo_equation_types thermo_equation_,
         bool                  surface_config,
         double                Csurf_config,
+        double                MetStar_,
+        double                Tstar_,
+        double                radius_star_,
+        double                planet_star_dist_,
         Insolation &          insolation_);
 
     ~ESP();
