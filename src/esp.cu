@@ -1059,7 +1059,11 @@ int main(int argc, char** argv) {
           thermo_equation,
           surface_config,
           Csurf_config,
-          insolation);
+          insolation,
+          MetStar,
+          Tstar,
+          radius_star,
+          planet_star_dist);
 
     USE_BENCHMARK();
 

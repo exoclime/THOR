@@ -120,7 +120,11 @@ __host__ ESP::ESP(int *                 point_local_,
                   thermo_equation_types thermo_equation_,
                   bool                  surface_config,
                   double                Csurf_config,
-                  Insolation &          insolation_) :
+                  Insolation &          insolation_,
+                  double                MetStar_,
+                  double                Tstar_,
+                  double                radius_star_,
+                  double                planet_star_dist_) :
     nl_region(nl_region_),
     nr(nr_),
     point_num(point_num_),
@@ -182,6 +186,11 @@ __host__ ESP::ESP(int *                 point_local_,
     kappa_sw = kappa_sw_;
     f_lw     = f_lw_;
     bv_freq  = bv_freq_;
+
+    MetStar             = MetStar_;
+    Tstar               = Tstar_;
+    radius_star         = radius_star_;
+    planet_star_dist    = planet_star_dist_;
 
     
 
@@ -742,9 +751,11 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 mu = 0.5;
                 met = 0.0; // to be connected to input configuration file
 
-                double Tstar, Rstar, star_planet_distance;
+                double oTstar, Rstar, star_planet_distance;
 
-                Tstar = 6092;
+                printf(" Tstar = %e \n",Tstar);
+
+                oTstar = 6092;
                 star_planet_distance = 0.04747 *  149597870700;
                 Rstar = 1.203 * 6.9657e8;
 
@@ -774,7 +785,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 }
                 
                 printf(" before Tirr and Parmentier \n");
-                Tirr = Tstar * pow(Rstar / star_planet_distance ,0.5);
+                Tirr = oTstar * pow(oRstar / star_planet_distance ,0.5);
 
                 double OpaTableTemperature__h[1060];
                 text_file_to_array("src/physics/modules/src/OpaTableTemperature.txt" , OpaTableTemperature__h, 1060);

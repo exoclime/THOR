@@ -204,6 +204,12 @@ public:
     double  Csurf;
     double *dTsurf_dt_d; // store change in temp to update all at once in profx
 
+    // variables for initial parmentier conditions (by Noti Pascal)
+    double MetStar;
+    double Tstar;
+    double radius_star;
+    double planet_star_dist;
+
     ///////////////////////////
     //  Device
     int *point_local_d;
