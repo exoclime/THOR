@@ -411,6 +411,13 @@ int main(int argc, char** argv) {
     config_reader.append_config_var("f_lw", f_lw, f_lw_default);
     config_reader.append_config_var("bv_freq", bv_freq, bv_freq_default);
 
+    // additional settings for parmentier profile (default values are not implemented)
+    double MetStar = 0.0, Tstar = 5000.0, radius_star = 1.203, planet_star_dist = 0.04747;
+    config_reader.append_config_var("MetStar", MetStar, Tint_default);
+    config_reader.append_config_var("Tstar", Tstar, kappa_lw_default);
+    config_reader.append_config_var("radius_star", radius_star, kappa_sw_default);
+    config_reader.append_config_var("planet_star_dist", planet_star_dist, f_lw_default);
+
     // ultrahot thermodynamics
     string uh_thermo_str("none");
     config_reader.append_config_var("ultrahot_thermo", uh_thermo_str, string(uh_thermo_default)); //
