@@ -739,25 +739,18 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                     }
 
                 }
-                */
-
-               
+                */               
 
                 printf(" after pressure check \n");
 
                 int table_num;
                 table_num = 2;
-                double met, Tirr, Teff, AB;
-                mu = 0.5;
-                met = 0.0; // to be connected to input configuration file
+                double  Tirr, Teff, AB;
+                mu = 0.5;               
 
-                double oTstar, Rstar, star_planet_distance;
-
-                printf(" Tstar = %e \n",Tstar);
-
-                oTstar = 6092;
-                star_planet_distance = 0.04747 *  149597870700;
-                Rstar = 1.203 * 6.9657e8;
+                //oTstar = 6092;
+                //star_planet_distance = 0.04747 *  149597870700;
+                //Rstar = 1.203 * 6.9657e8;
 
                 if (ultrahot_thermo != NO_UH_THERMO) {
                     table_num = 1;
@@ -785,7 +778,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 }
                 
                 printf(" before Tirr and Parmentier \n");
-                Tirr = oTstar * pow(Rstar / star_planet_distance ,0.5);
+                Tirr = Tstar * pow(radius_star / planet_star_dist_ ,0.5);
 
                 double OpaTableTemperature__h[1060];
                 text_file_to_array("src/physics/modules/src/OpaTableTemperature.txt" , OpaTableTemperature__h, 1060);
@@ -793,19 +786,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 text_file_to_array("src/physics/modules/src/OpaTablePressure.txt" , OpaTablePressure__h, 1060);
                 double OpaTableKappa__h[1060];
                 text_file_to_array("src/physics/modules/src/OpaTableKappa.txt" , OpaTableKappa__h, 1060);
-                
-                /*
-                if (OpaTableTemperature[0]/75.0==1.0)
-                    {                
-                        printf("OpaTableTemperature[0] is correct \n");
-                        
-                    } else {
-                        printf("OpaTableTemperature[0] is the wrong value\n");
-                    }
 
-                */
-
-                //Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, met);
+                //Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, MetStar);
                 Parmentier_bilinear_interpolation_IC(i, nv, pressure_h, Tint, mu, Tirr,
                     OpaTableTemperature__h, OpaTablePressure__h, OpaTableKappa__h, sim.Gravit, temperature_h, table_num, met);
 
