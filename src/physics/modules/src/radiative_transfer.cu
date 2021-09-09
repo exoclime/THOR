@@ -856,7 +856,16 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                 //goto Error;
             }
 
+            
+            
+            printf("timestep_dyn = %e \n",timestep_dyn);
                         
+            for (int c = 0; c <  esp.nv; c++){
+                //printf("Kdhz_h[%d] = %e \n",c, Kdhz_h[c]);
+
+            }
+           
+            
 
             //double OpaTableTemperature__h[1060];
             PF_text_file_to_array("src/physics/modules/src/OpaTableTemperature.txt" , OpaTableTemperature__h, 1060);
