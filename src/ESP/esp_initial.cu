@@ -557,8 +557,6 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
             //} 
             if (init_PT_profile==PARMENTIER) {
 
-                printf(" should not print 2 ");
-                //
                 //          Initial conditions for a non-isothermal Atmosphere
                 //             alternative default
                 mu = 0.5;
@@ -668,47 +666,107 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 //          radiative transfer and layering accroding 
                 //          to Parmentier & Menou (2014) and Parmentier et al. (2015)
 
-                //printf(" At the start of condition: init_PT_profile == PARMENTIER");
+                    //          Initial conditions for a non-isothermal Atmosphere
+                //             alternative default
+                mu = 0.5;
 
-                printf(" At the start of condition: init_PT_profile == PARMENTIER");
-                //double ContributionFactorFromBelow;
-                //double ContributionFactorFromAbove;
-                //double psm, ps, ptop, pp;
-
-                //const double StBC = 5.670374419e-8;
-                //const double pi = atan((double)(1)) * 4;
-
-                //double temperatureh_h[nvi];
-                
-                /*
-                create_pressure_layers(i, nv,  pressure_h,  sim.P_Ref);
-
-                printf(" after creating pressure \n");
-
-                */
-                for (int j = 0; j < nv; j++)
-                {
-                    if (pressure_h[i * nv + j] < 0.0)
-                    {                
-                        printf("pressure_h[i] is negative at level %d \n", j);
-                        
+                for (int lev = 0; lev < nv; lev++) {
+                    //first, we define thermo quantities of layer below and make
+                    //our initial guess for the Newton-Raphson solver
+                    if (lev == 0) {
+                        if (init_PT_profile == ISOTHERMAL) {
+                            temperature_h[i * nv + lev] = sim.Tmean;
+                        }
+                        else {
+                            temperature_h[i * nv + lev] = guillot_T(sim.P_Ref,
+                                                                    mu,
+                                                                    sim.Tmean+300,
+                                                                    sim.P_Ref,
+                                                                    sim.Gravit,
+                                                                    Tint,
+                                                                    f_lw,
+                                                                    kappa_sw,
+                                                                    kappa_lw);
+                        }
+                        if (ultrahot_thermo != NO_UH_THERMO) {
+                            chi_H = chi_H_equilibrium(
+                                GibbsT, GibbsdG, GibbsN, temperature_h[i * nv + lev], sim.P_Ref);
+                            Rd_L = Rd_from_chi_H(chi_H);
+                        }
+                        else {
+                            Rd_L = sim.Rd;
+                        }
+                        P_L = sim.P_Ref;
+                        T_L = temperature_h[i * nv + lev];
+                        dz  = Altitude_h[0];
                     }
-                    if (pressure_h[i * nv + j] == 0.0)
-                    {                
-                        printf("pressure_h[i] is zero at level %d \n", j);
+                    else {
+                        temperature_h[i * nv + lev] = temperature_h[i * nv + lev - 1];
+                        if (ultrahot_thermo != NO_UH_THERMO) {
+                            chi_H = chi_H_equilibrium(
+                                GibbsT, GibbsdG, GibbsN, sim.Tmean, pressure_h[i * nv + lev - 1]);
+                            Rd_L = Rd_h[i * nv + lev - 1];
+                        }
+                        else {
+                            Rd_L = Rd_h[i * nv + lev - 1];
+                        }
+                        P_L = pressure_h[i * nv + lev - 1];
+                        T_L = temperature_h[i * nv + lev - 1];
+                        dz  = Altitude_h[lev] - Altitude_h[lev - 1];
                     }
-                    
-                    if (isnan(pressure_h[i * nv + j]))
-                    {                
-                        printf("pressure_h[i] is NaN at level %d  \n", j);
-                        
+                    pressure_h[i * nv + lev] = P_L;
+                    Rd_h[i * nv + lev]       = Rd_L;
+                    ptmp                     = pressure_h[i * nv + lev] + 2 * eps;
+
+                    it = 0;
+                    while (it < it_max && ptmp - pressure_h[i * nv + lev] > eps) {
+                        //Newton-Raphson solver of hydrostatic eqn for thermo properties
+                        ptmp = pressure_h[i * nv + lev];
+                        f    = log(pressure_h[i * nv + lev] / P_L) / dz
+                            + sim.Gravit
+                                  / (0.5
+                                     * (Rd_h[i * nv + lev] * temperature_h[i * nv + lev]
+                                        + Rd_L * T_L));
+                        df                       = 1.0 / (pressure_h[i * nv + lev] * dz);
+                        pressure_h[i * nv + lev] = pressure_h[i * nv + lev] - f / df;
+                        if (init_PT_profile == ISOTHERMAL) {
+                            temperature_h[i * nv + lev] = sim.Tmean;
+                        }
+                        else {
+                            temperature_h[i * nv + lev] = guillot_T(pressure_h[i * nv + lev],
+                                                                    mu,
+                                                                    sim.Tmean+300,
+                                                                    sim.P_Ref,
+                                                                    sim.Gravit,
+                                                                    Tint,
+                                                                    f_lw,
+                                                                    kappa_sw,
+                                                                    kappa_lw);
+                        }
+                        if (ultrahot_thermo != NO_UH_THERMO) {
+                            chi_H              = chi_H_equilibrium(GibbsT,
+                                                      GibbsdG,
+                                                      GibbsN,
+                                                      temperature_h[i * nv + lev],
+                                                      pressure_h[i * nv + lev]);
+                            Rd_h[i * nv + lev] = Rd_from_chi_H(chi_H);
+                        }
+                        else {
+                            Rd_h[i * nv + lev] = sim.Rd;
+                        }
+                        it++;
+                    }
+                    if (ultrahot_thermo != NO_UH_THERMO) {
+                        Cp_h[i * nv + lev] = Cp_from_chi_H(chi_H, temperature_h[i * nv + lev]);
+                    }
+                    else {
+                        Cp_h[i * nv + lev] = sim.Cp;
                     }
                 }
-                //
+            
 
-                
-                
-                
+                printf(" init_PT_profile == PARMENTIER");
+                               
                 /*
                 for (int lev = 0; lev <= nv; lev++) {
                     if (lev == 0) {
@@ -741,7 +799,6 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 }
                 */               
 
-                printf(" after pressure check \n");
 
                 int table_num;
                 table_num = 2;
@@ -938,7 +995,6 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         else {
                             Cp_h[i * nv + lev] = sim.Cp;
                         }
-                        Rho_h[i * nv + lev] = pressure_h[i * nv + lev] / (Rd_h[i * nv + lev] * temperature_h[i * nv + lev]);
                         
                         //pressure_h[i * nv + lev] = (Rd_h[i * nv + lev] * temperature_h[i * nv + lev]) * Rho_h[i * nv + lev];
                         
@@ -1206,145 +1262,9 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
 
                 */
-
-                printf(" end of Parmentier cycle \n");
-
-                for (int j = 0; j < nv; j++)
-                {
-                    if (Rho_h[i * nv + j] < 0.0)
-                    {                
-                        printf("after paramentier-Newton-Raphson solver Rho_h[i] is negative at level %d \n", j);
-                        
-                    }
-                    if (Rho_h[i * nv + j] == 0.0)
-                    {                
-                        printf("after paramentier-Newton-Raphson solver Rho_h[i] is zero at level %d \n", j);
-                    }
-                    
-                    if (isnan(Rho_h[i * nv + j]))
-                    {                
-                        printf("after paramentier-Newton-Raphson solver Rho_h[i] is NaN at level %d  \n", j);
-                        
-                    }
-                }
-                for (int j = 0; j < nv; j++)
-                {
-                    if (pressure_h[i * nv + j] < 0.0)
-                    {                
-                        printf("after paramentier-Newton-Raphson solver pressure_h[i] is negative at level %d \n", j);
-                        
-                    }
-                    if (pressure_h[i * nv + j] == 0.0)
-                    {                
-                        printf("after paramentier-Newton-Raphson solver pressure_h[i] is zero at level %d \n", j);
-                    }
-                    
-                    if (isnan(pressure_h[i * nv + j]))
-                    {                
-                        printf("after paramentier-Newton-Raphson solver pressure_h[i] is NaN at level %d  \n", j);
-                        
-                    }
-                }
-
-                
-               
-                
-
-               
-                
-                for (int lev = 0; lev <= nv; lev++) {   
-                    if (ultrahot_thermo != NO_UH_THERMO) {
-                        chi_H              = chi_H_equilibrium(GibbsT,
-                                                    GibbsdG,
-                                                    GibbsN,
-                                                    temperature_h[i * nv + lev],
-                                                    pressure_h[i * nv + lev]);
-                        Rd_h[i * nv + lev] = Rd_from_chi_H(chi_H);
-                    }
-                    else {
-                        Rd_h[i * nv + lev] = sim.Rd;
-                    }
-                
-                    if (ultrahot_thermo != NO_UH_THERMO) {
-                        Cp_h[i * nv + lev] = Cp_from_chi_H(chi_H, temperature_h[i * nv + lev]);
-                    }
-                    else {
-                        Cp_h[i * nv + lev] = sim.Cp;
-                    }
-                }
-                
-                /*
-                printf(" second cycle before Parmentier_IC \n");
-                Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, met);
-                
-                printf(" second cycle before adiabat_correction \n");
-                adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
-                */
-
-
-                for (int j = 0; j < nv; j++)
-                {
-                    if (Cp_h[i * nv + j] < 0.0)
-                    {                
-                        printf("Cp_h[i] is negative at level %d \n", j);
-                        
-                    }
-                    if (Cp_h[i * nv + j] == 0.0)
-                    {                
-                        printf("Cp_h[i] is zero at level %d \n", j);
-                    }
-                    
-                    if (isnan(Cp_h[i * nv + j]))
-                    {                
-                        printf("Cp_h[i] is NaN at level %d  \n", j);
-                        
-                    }
-                }
-
-                for (int j = 0; j < nv; j++)
-                {
-                    if (Rd_h[i * nv + j] < 0.0)
-                    {                
-                        printf("Rd_h[i] is negative at level %d \n", j);
-                        
-                    }
-                    if (Rd_h[i * nv + j] == 0.0)
-                    {                
-                        printf("Rd_h[i] is zero at level %d \n", j);
-                    }
-                    
-                    if (isnan(Rd_h[i * nv + j]))
-                    {                
-                        printf("Rd_h[i] is NaN at level %d  \n", j);
-                        
-                    }
-                }
-
-                for (int j = 0; j < nv; j++)
-                {
-                    if (temperature_h[i * nv + j] < 0.0)
-                    {                
-                        printf("temperature_h[i] is negative at level %d \n", j);
-                        
-                    }
-                    if (temperature_h[i * nv + j] == 0.0)
-                    {                
-                        printf("temperature_h[i] is zero at level %d \n", j);
-                    }
-                    
-                    if (isnan(temperature_h[i * nv + j]))
-                    {                
-                        printf("temperature_h[i] is NaN at level %d  \n", j);
-                        
-                    }
-                }                  
-            
-            
+                ///// end of parmentier TP profile procedure
             }
-            
-            
-            
-            printf(" after TP profile type procedures \n");
+
             /// 
 
             for (int lev = 0; lev < nv; lev++) {
@@ -1353,10 +1273,6 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 Rho_h[i * nv + lev] =
                     pressure_h[i * nv + lev] / (temperature_h[i * nv + lev] * Rd_h[i * nv + lev]);
 
-                
-               
-
-                
 
                 //              Momentum [kg/m3 m/s]
                 Mh_h[i * 3 * nv + 3 * lev + 0] = 0.0;

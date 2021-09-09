@@ -109,11 +109,6 @@ void k_Ross_Freedman_bilinear_interpolation_polynomial_fit(double Tin, double Pi
     double dyncm_2_to_Pa = 0.1;
     int len = 1060;
 
-    printf("length of OpaTableTemperature = %d   \n", len);
-
-    printf(" Tin = %e   \n", Tin);
-    printf("Pin = %e   \n", Pin);
-    
     // exclude values off the table and insure that values within the table are used
     if (Tin <= OpaTableTemperature[0]) {
         x = OpaTableTemperature[0] + 1e-10 ;      
