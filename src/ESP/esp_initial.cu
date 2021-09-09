@@ -835,7 +835,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 }
                 
                 printf(" before Tirr and Parmentier \n");
-                Tirr = Tstar * pow(radius_star / planet_star_dist_ ,0.5);
+                Tirr = Tstar * pow(radius_star / planet_star_dist ,0.5);
 
                 double OpaTableTemperature__h[1060];
                 text_file_to_array("src/physics/modules/src/OpaTableTemperature.txt" , OpaTableTemperature__h, 1060);
@@ -846,7 +846,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                 //Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, MetStar);
                 Parmentier_bilinear_interpolation_IC(i, nv, pressure_h, Tint, mu, Tirr,
-                    OpaTableTemperature__h, OpaTablePressure__h, OpaTableKappa__h, sim.Gravit, temperature_h, table_num, met);
+                    OpaTableTemperature__h, OpaTablePressure__h, OpaTableKappa__h, sim.Gravit, temperature_h, table_num, MetStar);
 
                 for (int j = 0; j < nv; j++)
                 {
