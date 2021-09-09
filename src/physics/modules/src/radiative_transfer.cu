@@ -858,11 +858,11 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
 
             
             
-            printf("timestep_dyn = %e \n",timestep_dyn);
+            printf("time_step = %e \n",time_step);
+            printf("time_step = %d \n",time_step);
                         
             for (int c = 0; c <  esp.nv; c++){
                 //printf("Kdhz_h[%d] = %e \n",c, Kdhz_h[c]);
-
             }
            
             
