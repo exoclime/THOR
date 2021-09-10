@@ -520,7 +520,59 @@ __host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
                 Kdh2_h = new double[nv];
                 for (int lev = 0; lev < nv; lev++) {
                     double dbar = sqrt(2 * M_PI / 5) * sim.A / (pow(2, glevel));
-                    Kdh4_h[lev] = (sim.Diffc) * pow(dbar, 3.0 * sim.HyDiffOrder)
+                    Kdh4_h[lev] = (3.0*sim.Diffc) * pow(dbar, 1.0 * sim.HyDiffOrder)
+                                / timestep; // * Altitude_h[lev]/sim.Top_altitude;
+                    Kdhz_h[lev] =
+                        (3.0*sim.DivDampc) * pow(dbar, 4.) / timestep; // * Altitude_h[lev]/sim.Top_altitude;
+                    if (sim.DiffSponge) {
+                        double n = Altitude_h[lev] / sim.Top_altitude;
+                        if (n > ns_diff_sponge) {
+                            ksponge = Dv_sponge
+                                    * pow(sin(0.5 * M_PI * (n - ns_diff_sponge) / (1.0 - ns_diff_sponge)), 2);
+                        }
+                        else {
+                            ksponge = 0;
+                        }
+                        if (order_diff_sponge == 2) {
+                            Kdh2_h[lev] = ksponge * pow(dbar, 2.) / timestep;
+                        }
+                        else if (order_diff_sponge == 4) {
+                            Kdh4_h[lev] += ksponge * pow(dbar, 4.) / timestep;
+                        }
+                    }
+                }
+    
+                //  Diffusion
+                //  Vertical
+                double *Kdvz_h, *Kdv6_h;
+                Kdvz_h = new double[nv]; // vertical divergence damping strength
+                Kdv6_h = new double[nv]; // vertical diffusion strength
+                for (int lev = 0; lev < nv; lev++) {
+                    //      Diffusion constant.
+                    double dz   = Altitudeh_h[lev + 1] - Altitudeh_h[lev];
+                    Kdv6_h[lev] = 3.0 * sim.Diffc_v * pow(dz, 1.0 * sim.VertHyDiffOrder) / timestep;
+                    Kdvz_h[lev] = 0.0; //not used (yet? perhaps in future)
+                }
+    
+                cudaMemcpy(Kdhz_d, Kdhz_h, nv * sizeof(double), cudaMemcpyHostToDevice);
+                cudaMemcpy(Kdh4_d, Kdh4_h, nv * sizeof(double), cudaMemcpyHostToDevice);
+                cudaMemcpy(Kdv6_d, Kdv6_h, nv * sizeof(double), cudaMemcpyHostToDevice);
+    
+            }
+            if (current_step==100) {
+                
+                //  Diffusion
+                //  Horizontal
+                double *Kdhz_h, *Kdh4_h;
+                Kdhz_h = new double[nv]; // horizontal divergence damping strength
+                Kdh4_h = new double[nv]; // horizontal diffusion strength
+                                        // if (sim.DiffSponge) {
+                double  n, ksponge;
+                double *Kdh2_h;
+                Kdh2_h = new double[nv];
+                for (int lev = 0; lev < nv; lev++) {
+                    double dbar = sqrt(2 * M_PI / 5) * sim.A / (pow(2, glevel));
+                    Kdh4_h[lev] = (sim.Diffc) * pow(dbar, 1.0 * sim.HyDiffOrder)
                                 / timestep; // * Altitude_h[lev]/sim.Top_altitude;
                     Kdhz_h[lev] =
                         (sim.DivDampc) * pow(dbar, 4.) / timestep; // * Altitude_h[lev]/sim.Top_altitude;
@@ -550,46 +602,6 @@ __host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
                 for (int lev = 0; lev < nv; lev++) {
                     //      Diffusion constant.
                     double dz   = Altitudeh_h[lev + 1] - Altitudeh_h[lev];
-                    Kdv6_h[lev] = sim.Diffc_v * pow(dz, 3.0 * sim.VertHyDiffOrder) / timestep;
-                    Kdvz_h[lev] = 0.0; //not used (yet? perhaps in future)
-                }
-    
-                cudaMemcpy(Kdhz_d, Kdhz_h, nv * sizeof(double), cudaMemcpyHostToDevice);
-                cudaMemcpy(Kdh4_d, Kdh4_h, nv * sizeof(double), cudaMemcpyHostToDevice);
-                cudaMemcpy(Kdv6_d, Kdv6_h, nv * sizeof(double), cudaMemcpyHostToDevice);
-    
-            }
-            if (current_step==100) {
-                
-                for (int lev = 0; lev < nv; lev++) {
-                    dbar = sqrt(2 * M_PI / 5) * sim.A / (pow(2, glevel));
-                    Kdh4_h[lev] = (sim.Diffc) * pow(dbar, 1.0 * sim.HyDiffOrder)
-                                / timestep; // * Altitude_h[lev]/sim.Top_altitude;
-                    Kdhz_h[lev] =
-                        (sim.DivDampc) * pow(dbar, 4.) / timestep; // * Altitude_h[lev]/sim.Top_altitude;
-                    if (sim.DiffSponge) {
-                        n = Altitude_h[lev] / sim.Top_altitude;
-                        if (n > ns_diff_sponge) {
-                            ksponge = Dv_sponge
-                                    * pow(sin(0.5 * M_PI * (n - ns_diff_sponge) / (1.0 - ns_diff_sponge)), 2);
-                        }
-                        else {
-                            ksponge = 0;
-                        }
-                        if (order_diff_sponge == 2) {
-                            Kdh2_h[lev] = ksponge * pow(dbar, 2.) / timestep;
-                        }
-                        else if (order_diff_sponge == 4) {
-                            Kdh4_h[lev] += ksponge * pow(dbar, 4.) / timestep;
-                        }
-                    }
-                }
-    
-                //  Diffusion
-                //  Vertical
-                for (int lev = 0; lev < nv; lev++) {
-                    //      Diffusion constant.
-                    dz   = Altitudeh_h[lev + 1] - Altitudeh_h[lev];
                     Kdv6_h[lev] = sim.Diffc_v * pow(dz, 1.0 * sim.VertHyDiffOrder) / timestep;
                     Kdvz_h[lev] = 0.0; //not used (yet? perhaps in future)
                 }
