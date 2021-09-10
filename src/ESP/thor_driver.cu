@@ -520,10 +520,10 @@ __host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
                 Kdh2_h = new double[nv];
                 for (int lev = 0; lev < nv; lev++) {
                     double dbar = sqrt(2 * M_PI / 5) * sim.A / (pow(2, glevel));
-                    Kdh4_h[lev] = (3.0*sim.Diffc) * pow(dbar, 1.0 * sim.HyDiffOrder)
+                    Kdh4_h[lev] = (6.0*sim.Diffc) * pow(dbar, 1.0 * sim.HyDiffOrder)
                                 / timestep; // * Altitude_h[lev]/sim.Top_altitude;
                     Kdhz_h[lev] =
-                        (3.0*sim.DivDampc) * pow(dbar, 4.) / timestep; // * Altitude_h[lev]/sim.Top_altitude;
+                        (6.0*sim.DivDampc) * pow(dbar, 4.) / timestep; // * Altitude_h[lev]/sim.Top_altitude;
                     if (sim.DiffSponge) {
                         double n = Altitude_h[lev] / sim.Top_altitude;
                         if (n > ns_diff_sponge) {
@@ -550,7 +550,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
                 for (int lev = 0; lev < nv; lev++) {
                     //      Diffusion constant.
                     double dz   = Altitudeh_h[lev + 1] - Altitudeh_h[lev];
-                    Kdv6_h[lev] = 3.0 * sim.Diffc_v * pow(dz, 1.0 * sim.VertHyDiffOrder) / timestep;
+                    Kdv6_h[lev] = 6.0 * sim.Diffc_v * pow(dz, 1.0 * sim.VertHyDiffOrder) / timestep;
                     Kdvz_h[lev] = 0.0; //not used (yet? perhaps in future)
                 }
     
