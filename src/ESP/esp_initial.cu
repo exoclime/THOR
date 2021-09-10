@@ -834,7 +834,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                     }
                 }
                 
-                printf(" before Tirr and Parmentier \n");
+                //printf(" before Tirr and Parmentier \n");
                 Tirr = Tstar * pow((radius_star*696340000) / (planet_star_dist*1.496e+11) ,0.5);
 
                 printf("Tstar %e  \n", Tstar);
@@ -875,7 +875,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                 }
                 
-                printf(" before adiabat_correction \n");
+                //printf(" before adiabat_correction \n");
                 adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
 
                 for (int j = 0; j < nv; j++)
