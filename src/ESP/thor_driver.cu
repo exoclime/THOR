@@ -515,17 +515,17 @@ __host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
             Kdhz_h = new double[nv]; // horizontal divergence damping strength
             Kdh4_h = new double[nv]; // horizontal diffusion strength
                                     // if (sim.DiffSponge) {
-            //double  n, ksponge;
+            double  n, ksponge;
             double *Kdh2_h;
             Kdh2_h = new double[nv];
             for (int lev = 0; lev < nv; lev++) {
-                dbar = sqrt(2 * M_PI / 5) * sim.A / (pow(2, glevel));
+                double dbar = sqrt(2 * M_PI / 5) * sim.A / (pow(2, glevel));
                 Kdh4_h[lev] = (sim.Diffc) * pow(dbar, 1.0 * sim.HyDiffOrder)
-                            / timestep_dyn; // * Altitude_h[lev]/sim.Top_altitude;
+                            / timestep; // * Altitude_h[lev]/sim.Top_altitude;
                 Kdhz_h[lev] =
-                    (sim.DivDampc) * pow(dbar, 4.) / timestep_dyn; // * Altitude_h[lev]/sim.Top_altitude;
+                    (sim.DivDampc) * pow(dbar, 4.) / timestep; // * Altitude_h[lev]/sim.Top_altitude;
                 if (sim.DiffSponge) {
-                    n = Altitude_h[lev] / sim.Top_altitude;
+                    double n = Altitude_h[lev] / sim.Top_altitude;
                     if (n > ns_diff_sponge) {
                         ksponge = Dv_sponge
                                 * pow(sin(0.5 * M_PI * (n - ns_diff_sponge) / (1.0 - ns_diff_sponge)), 2);
@@ -534,22 +534,22 @@ __host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
                         ksponge = 0;
                     }
                     if (order_diff_sponge == 2) {
-                        Kdh2_h[lev] = ksponge * pow(dbar, 2.) / timestep_dyn;
+                        Kdh2_h[lev] = ksponge * pow(dbar, 2.) / timestep;
                     }
                     else if (order_diff_sponge == 4) {
-                        Kdh4_h[lev] += ksponge * pow(dbar, 4.) / timestep_dyn;
+                        Kdh4_h[lev] += ksponge * pow(dbar, 4.) / timestep;
                     }
                 }
             }
 
             //  Diffusion
             //  Vertical
-            //double *Kdvz_h, *Kdv6_h;
-            //Kdvz_h = new double[nv]; // vertical divergence damping strength
-            //Kdv6_h = new double[nv]; // vertical diffusion strength
+            double *Kdvz_h, *Kdv6_h;
+            Kdvz_h = new double[nv]; // vertical divergence damping strength
+            Kdv6_h = new double[nv]; // vertical diffusion strength
             for (int lev = 0; lev < nv; lev++) {
                 //      Diffusion constant.
-                dz   = Altitudeh_h[lev + 1] - Altitudeh_h[lev];
+                double dz   = Altitudeh_h[lev + 1] - Altitudeh_h[lev];
                 Kdv6_h[lev] = sim.Diffc_v * pow(dz, 1.0 * sim.VertHyDiffOrder) / timestep_dyn;
                 Kdvz_h[lev] = 0.0; //not used (yet? perhaps in future)
             }
