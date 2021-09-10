@@ -550,7 +550,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
             for (int lev = 0; lev < nv; lev++) {
                 //      Diffusion constant.
                 double dz   = Altitudeh_h[lev + 1] - Altitudeh_h[lev];
-                Kdv6_h[lev] = sim.Diffc_v * pow(dz, 1.0 * sim.VertHyDiffOrder) / timestep_dyn;
+                Kdv6_h[lev] = sim.Diffc_v * pow(dz, 1.0 * sim.VertHyDiffOrder) / timestep;
                 Kdvz_h[lev] = 0.0; //not used (yet? perhaps in future)
             }
 
