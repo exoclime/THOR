@@ -50,6 +50,7 @@
 __global__ void dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
                              double *Pressureh_d,   // Mid-point pressure [Pa]
                              double *Temperature_d, // Temperature [K]
+                             double *Te__df_e,      // working variable [K]
                              double *pt_d,          // Potential temperature [K]
                              double *Rho_d,         // Density [m^3/kg]
                              double *Cp_d,          // Specific heat capacity [J/kg/K]

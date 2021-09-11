@@ -160,7 +160,7 @@ bool radiative_transfer::initialise_memory(const ESP &              esp,
         // picket fence parameters     //Kitzman working variables
         cudaMalloc((void **)&tau_Ve__df_e, esp.nvi * esp.point_num * sizeof(double));
         cudaMalloc((void **)&tau_IRe__df_e, esp.nvi * esp.point_num * sizeof(double));
-        cudaMalloc((void **)&Te__df_e, esp.nvi * esp.point_num * sizeof(double));
+        cudaMalloc((void **)&Te__df_e, esp.nvi * esp.point_num * sizeof(double));   // as well used for dry convective adjustment
         cudaMalloc((void **)&be__df_e, esp.nvi * esp.point_num * sizeof(double));
         cudaMalloc((void **)&sw_down__df_e, esp.nvi * esp.point_num * sizeof(double));
         cudaMalloc((void **)&sw_down_b__df_e, esp.nvi * esp.point_num * sizeof(double));
@@ -201,6 +201,8 @@ bool radiative_transfer::initialise_memory(const ESP &              esp,
        
 
     } else {
+
+        cudaMalloc((void **)&Te__df_e, esp.nvi * esp.point_num * sizeof(double));   // as well used for dry convective adjustment
         //  Rad Transfer
         cudaMalloc((void **)&flw_up_d, esp.nvi * esp.point_num * sizeof(double));
         cudaMalloc((void **)&flw_dn_d, esp.nvi * esp.point_num * sizeof(double));
@@ -302,7 +304,7 @@ bool radiative_transfer::free_memory() {
         
         cudaFree(tau_Ve__df_e);        
         cudaFree(tau_IRe__df_e);        
-        cudaFree(Te__df_e);        
+        cudaFree(Te__df_e); // as well used for dry convective adjustment        
         cudaFree(be__df_e);        
         cudaFree(sw_down__df_e);        
         cudaFree(sw_down_b__df_e);        
@@ -339,6 +341,9 @@ bool radiative_transfer::free_memory() {
         
 
     } else {
+
+        cudaFree(Te__df_e); // as well used for dry convective adjustment
+
         cudaFree(flw_up_d);
         cudaFree(flw_dn_d);
         cudaFree(fsw_up_d);
@@ -745,6 +750,45 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
 
     bool run      = true;
     Qheat_scaling = 1.0;
+
+
+
+    /*
+    if (spinup_start_step > -1 && spinup_stop_step > -1) {
+        if (nstep < spinup_start_step) // before spinup
+        {
+            run           = false;
+            Qheat_scaling = 0.0;
+        }
+        else if ((nstep >= spinup_start_step) && (nstep <= spinup_stop_step)) // during spinup
+        {
+            double x = (double)(nstep - spinup_start_step)
+                       / (double)(spinup_stop_step - spinup_start_step);
+            Qheat_scaling = (1 + sin(M_PI * x - M_PI / 2.0)) / 2.0;
+            run           = true;
+        }
+    }
+
+    if (spindown_start_step > -1 && spindown_stop_step > -1) {
+        if ((nstep >= spindown_start_step) && (nstep <= spindown_stop_step)) {
+            double x = (double)(nstep - spindown_start_step)
+                       / (double)(spindown_stop_step - spindown_start_step);
+            Qheat_scaling = 1.0 - (1 + sin(M_PI * x - M_PI / 2.0)) / 2.0;
+            run           = true;
+        }
+        else if (nstep >= spindown_stop_step) {
+            run           = false;
+            Qheat_scaling = 0.0;
+        }
+    }
+    */
+
+   if (nstep==1) {
+       
+        spinup_start_step   = 0;
+        spinup_stop_step    = 864000/time_step;
+        run                 = false;
+   }
 
 
     if (spinup_start_step > -1 && spinup_stop_step > -1) {
