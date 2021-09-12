@@ -237,7 +237,8 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
     if (sim.conv_adj) {
         cudaDeviceSynchronize();
 
-        dry_conv_adj<<<NBRT, NTH>>>(pressure_d,    // Pressure [Pa]
+        dry_conv_adj<<<NBRT, NTH>>>(timestep,      // time step [s]
+                                    pressure_d,    // Pressure [Pa]
                                     pressureh_d,   // mid-point pressure [Pa]
                                     temperature_d, // Temperature [K]
                                     Te__df_e,      // working variable Temperature [K]

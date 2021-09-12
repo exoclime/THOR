@@ -47,7 +47,8 @@
 #include <math.h>
 
 
-__global__ void dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
+__global__ void dry_conv_adj(double timestep,       // time step [s]
+                             double *Pressure_d,    // Pressure [Pa]
                              double *Pressureh_d,   // Mid-point pressure [Pa]
                              double *Temperature_d, // Temperature [K]
                              double *Te__df_e,      // working variable [K]
@@ -63,6 +64,8 @@ __global__ void dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
                              int nv) {          // Vertical levels
     //
     //  Description: Mixes entropy vertically on statically unstable columns
+    //
+
     //
 
     int         id = blockIdx.x * blockDim.x + threadIdx.x;
