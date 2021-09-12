@@ -131,6 +131,8 @@ __global__ void dry_conv_adj(ESP &                  esp,
 
                         Temperature_d[id * nv + i + 1] = Temperature_d[id * nv + i] * pfact;
 
+                        Te__df_e[id * nv + i + 1] = 0; // test
+
                         did_adj = true;
                     }
                 }
