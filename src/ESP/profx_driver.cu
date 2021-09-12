@@ -237,11 +237,12 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
     if (sim.conv_adj) {
         cudaDeviceSynchronize();
 
-        dry_conv_adj<<<NBRT, NTH>>>(timestep,      // time step [s]
+        dry_conv_adj<<<NBRT, NTH>>>(*this,
+                                    timestep,      // time step [s]
                                     pressure_d,    // Pressure [Pa]
                                     pressureh_d,   // mid-point pressure [Pa]
                                     temperature_d, // Temperature [K]
-                                    Te__df_e,      // working variable Temperature [K]
+                                    //Te__df_e,      // working variable Temperature [K]
                                     pt_d,          // Pot temperature [K]
                                     Rho_d,         // Density [m^3/kg]
                                     Cp_d,          // Specific heat capacity [J/kg/K]
@@ -252,6 +253,10 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
                                     sim.conv_adj_iter,
                                     point_num, // Number of columns
                                     nv);       // number of vertical layers
+
+        if (phy_modules_execute) {
+
+        }
     }
 
     BENCH_POINT_I(current_step,
