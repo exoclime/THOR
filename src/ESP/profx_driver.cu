@@ -235,8 +235,8 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
 #endif
 
     if (sim.conv_adj) {
-        if (current_step < 100) {
-            
+        if (current_step > 100) {
+
             cudaDeviceSynchronize();
 
             dry_conv_adj<<<NBRT, NTH>>>(timestep,      // time step [s]
