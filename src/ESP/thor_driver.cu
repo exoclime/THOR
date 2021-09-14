@@ -501,7 +501,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
                              "pressurek_d",
                              "pressure_d"))
         
-        bool increased_damping_for_100_days = 0;
+        bool increased_damping_for_100_days = 1;
         if (increased_damping_for_100_days == 1) {
             
 
