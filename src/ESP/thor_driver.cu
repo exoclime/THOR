@@ -514,7 +514,9 @@ __host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
                 double DivDampc_intitial_factor = 10.0;
                 double Diffc_v_intitial_factor = 10.0;
 
-                printf("increased Diffc in the first 100 time steps by a factor of %e for PARMENTIER \n",Diffc_intitial_factor);
+                printf("changed Diffc in the first 100 time steps by a factor of %e for PARMENTIER \n",Diffc_intitial_factor);
+                printf("changed DivDampc in the first 100 time steps by a factor of %e for PARMENTIER \n",DivDampc_intitial_factor);
+                printf("changed Diffc_v in the first 100 time steps by a factor of %e for PARMENTIER \n",Diffc_v_intitial_factor);
 
                 //  Diffusion
                 //  Horizontal
