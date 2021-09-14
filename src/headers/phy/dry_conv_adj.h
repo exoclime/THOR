@@ -47,12 +47,10 @@
 #include <math.h>
 
 
-__global__ void dry_conv_adj(ESP &                  esp,
-                             double timestep,       // time step [s]
+__global__ void dry_conv_adj(double timestep,       // time step [s]
                              double *Pressure_d,    // Pressure [Pa]
                              double *Pressureh_d,   // Mid-point pressure [Pa]
                              double *Temperature_d, // Temperature [K]
-                             //double *Te__df_e,      // working variable [K]
                              double *pt_d,          // Potential temperature [K]
                              double *Rho_d,         // Density [m^3/kg]
                              double *Cp_d,          // Specific heat capacity [J/kg/K]
@@ -103,6 +101,8 @@ __global__ void dry_conv_adj(ESP &                  esp,
             double pfact, Tbar;
             double d_p;
             double condi;
+            double d_T;
+            double d_T_plus;
 
             // start operations
 
@@ -116,22 +116,24 @@ __global__ void dry_conv_adj(ESP &                  esp,
 
                 // Downward pass
                 for (i = nv - 2; i > -1; i--){
+                    d_T = Temperature_d[id * nv + i];
+                    d_T_plus = Temperature_d[id * nv + i + 1];
                     d_p = Rho_d[id * nv + i] * Gravit * (Altitudeh_d[i+1] - Altitudeh_d[i]);
                     pfact = 
                         pow( (double)((Pressure_d[id * nv + i] - d_p) / Pressure_d[id * nv + i]) ,
                             Rd_d[id * nv + i] / Cp_d[id * nv + i]);
-                    condi = (Temperature_d[id * nv + i] * pfact - small);
+                    condi = (d_T * pfact - small);
 
-                    if (Temperature_d[id * nv + i + 1] < condi) {
+                    if (d_T_plus < condi) {
 
-                        Tbar = (d_p * Temperature_d[id * nv + i] +
-                        Rho_d[id * nv + i + 1] * Gravit * (Altitudeh_d[i + 2] - Altitudeh_d[i+1]) * Temperature_d[id * nv + i + 1]); // /(Altitudeh_d[i + 2] - Altitudeh_d[i]);
+                        Tbar = (d_p * d_T +
+                            Rho_d[id * nv + i + 1] * Gravit * (Altitudeh_d[i + 2] - Altitudeh_d[i+1]) * d_T_plus); // /(Altitudeh_d[i + 2] - Altitudeh_d[i]);
 
-                        Temperature_d[id * nv + i ] =  Tbar / (d_p + pfact * Rho_d[id * nv + i + 1] * Gravit * (Altitudeh_d[i + 2] - Altitudeh_d[i + 1])); // * (Altitudeh_d[i + 2] - Altitudeh_d[i])
+                        d_T =  Tbar / (d_p + pfact * Rho_d[id * nv + i + 1] * Gravit * (Altitudeh_d[i + 2] - Altitudeh_d[i + 1])); // * (Altitudeh_d[i + 2] - Altitudeh_d[i])
 
-                        Temperature_d[id * nv + i + 1] = Temperature_d[id * nv + i] * pfact;
+                        d_T_plus = d_T * pfact;
 
-                        Te__df_e[id * nv + i + 1] = 0; // test
+                        Temperature_d[id * nv + i + 1] =  Temperature_d[id * nv + i + 1] + (d_T_plus - Temperature_d[id * nv + i + 1]) / timestep;
 
                         did_adj = true;
                     }
@@ -139,21 +141,25 @@ __global__ void dry_conv_adj(ESP &                  esp,
 
                 // Upward pass
                 for (i = 0; i < nv - 1; i++) { 
+                    d_T = Temperature_d[id * nv + i];
+                    d_T_plus = Temperature_d[id * nv + i + 1];
                     d_p = Rho_d[id * nv + i] * Gravit * (Altitudeh_d[i+1] - Altitudeh_d[i]);
                     pfact =
                         pow( (Pressure_d[id * nv + i] - d_p) / Pressure_d[id * nv + i] ,
                             Rd_d[id * nv + i] / Cp_d[id * nv + i]);
 
-                    condi = (Temperature_d[id * nv + i] * pfact - small);
+                    condi = (d_T * pfact - small);
 
-                    if (Temperature_d[id * nv + i + 1] < condi) {
+                    if (d_T_plus < condi) {
 
-                        Tbar = (d_p * Temperature_d[id * nv + i] +
-                        Rho_d[id * nv + i + 1] * Gravit * (Altitudeh_d[i + 2] - Altitudeh_d[i+1]) * Temperature_d[id * nv + i + 1]); // /(Altitudeh_d[i + 2] - Altitudeh_d[i]);
+                        Tbar = (d_p * d_T +
+                            Rho_d[id * nv + i + 1] * Gravit * (Altitudeh_d[i + 2] - Altitudeh_d[i+1]) * d_T_plus); // /(Altitudeh_d[i + 2] - Altitudeh_d[i]);
 
-                        Temperature_d[id * nv + i ] =  Tbar / (d_p + pfact * Rho_d[id * nv + i + 1] * Gravit * (Altitudeh_d[i + 2] - Altitudeh_d[i + 1])); // * (Altitudeh_d[i + 2] - Altitudeh_d[i])
+                        d_T =  Tbar / (d_p + pfact * Rho_d[id * nv + i + 1] * Gravit * (Altitudeh_d[i + 2] - Altitudeh_d[i + 1])); // * (Altitudeh_d[i + 2] - Altitudeh_d[i])
 
-                        Temperature_d[id * nv + i + 1] = Temperature_d[id * nv + i] * pfact;
+                        d_T_plus = d_T * pfact;
+
+                        Temperature_d[id * nv + i + 1] =  Temperature_d[id * nv + i + 1] + (d_T_plus - Temperature_d[id * nv + i + 1]) / timestep;
 
                         did_adj = true;
                     }
