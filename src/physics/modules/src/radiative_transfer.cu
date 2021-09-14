@@ -819,7 +819,7 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
         }
     }
 
-    if (run==2) {
+    if (Tirr==2.0) { //(run)
         double picket_fence_mod = true;
         double Tirr;
         //
