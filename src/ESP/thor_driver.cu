@@ -505,7 +505,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
         if (increased_damping_for_100_days == 1) {
             
 
-            if (current_step==1) {
+            if (current_step<100) {
 
                 // pascicode
     
