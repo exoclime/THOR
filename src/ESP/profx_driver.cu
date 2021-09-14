@@ -236,24 +236,24 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
 
     if (sim.conv_adj) {
         if (current_step < 100) {
+            
+            cudaDeviceSynchronize();
 
+            dry_conv_adj<<<NBRT, NTH>>>(timestep,      // time step [s]
+                                        pressure_d,    // Pressure [Pa]
+                                        pressureh_d,   // mid-point pressure [Pa]
+                                        temperature_d, // Temperature [K]
+                                        pt_d,          // Pot temperature [K]
+                                        Rho_d,         // Density [m^3/kg]
+                                        Cp_d,          // Specific heat capacity [J/kg/K]
+                                        Rd_d,          // Gas constant [J/kg/K]
+                                        sim.Gravit,    // Gravity [m/s^2]
+                                        Altitude_d,    // Altitudes of the layers
+                                        Altitudeh_d,   // Altitudes of the interfaces
+                                        sim.conv_adj_iter,
+                                        point_num, // Number of columns
+                                        nv);       // number of vertical layers
         }
-        cudaDeviceSynchronize();
-
-        dry_conv_adj<<<NBRT, NTH>>>(timestep,      // time step [s]
-                                    pressure_d,    // Pressure [Pa]
-                                    pressureh_d,   // mid-point pressure [Pa]
-                                    temperature_d, // Temperature [K]
-                                    pt_d,          // Pot temperature [K]
-                                    Rho_d,         // Density [m^3/kg]
-                                    Cp_d,          // Specific heat capacity [J/kg/K]
-                                    Rd_d,          // Gas constant [J/kg/K]
-                                    sim.Gravit,    // Gravity [m/s^2]
-                                    Altitude_d,    // Altitudes of the layers
-                                    Altitudeh_d,   // Altitudes of the interfaces
-                                    sim.conv_adj_iter,
-                                    point_num, // Number of columns
-                                    nv);       // number of vertical layers
     }
 
     BENCH_POINT_I(current_step,
