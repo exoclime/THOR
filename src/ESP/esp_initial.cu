@@ -769,7 +769,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 //printf(" before adiabat_correction \n");
                 //adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
 
-                bottum_up_adiabat_correction(i, n, temperature_h, pressure_h, sim.Gravit, Cp_h, Altitude_h)
+                bottum_up_adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit, Cp_h, Altitude_h);
 
                 for (int j = 0; j < nv; j++)
                 {
@@ -1291,7 +1291,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
             }
             for (int lev = 1; lev < nv; lev++) {
                 density_diff = Rho_h[i * nv + lev] - (pressure_h[i * nv + lev-1] - pressure_h[i * nv + lev]) / (Altitude_h[lev]-Altitude_h[lev-1]) / sim.Gravit;
-                printf("density_diff :%e at level %d \n",density_diff, level);
+                printf("density_diff :%e at level %d \n",density_diff, lev);
             }
 
             Wh_h[i * (nv + 1) + nv] = 0.0;
