@@ -1137,7 +1137,7 @@ void adiabat_correction(int id, int nlay, double* (&Tl), double* pressure_h, dou
 //////////////////////////////////////////////////////////////
 
 // Subroutine that corrects for adiabatic region following the dry adiabatic lapse rate from bottum up layer by layer
-void bottum_up_adiabat_correction(int id, int nlay, double* (&Tl), double* pressure_h, double Gravit, double* Cp, double* Altitude_h) {
+void bottum_up_adiabat_correction(int id, int nlay, double* (&Tl), double* pressure_h, double gravity, double* Cp, double* Altitude_h) {
     // dependcies
 
 
@@ -1156,7 +1156,7 @@ void bottum_up_adiabat_correction(int id, int nlay, double* (&Tl), double* press
 
     for (int lev = 1; lev < nlay ; lev++)
     {
-        lapse_rate = Gravit / (Cp[id * nlay + lev-1]);
+        lapse_rate = gravity / (Cp[id * nlay + lev-1]) /1000;
         lapse_rate = lapse_rate_factor * lapse_rate;
 
         T_rate = Tl[id * nlay + lev-1] - lapse_rate * ((Altitude_h[lev]) - (Altitude_h[lev-1]));
