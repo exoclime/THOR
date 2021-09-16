@@ -1156,7 +1156,7 @@ void bottum_up_adiabat_correction(int id, int nlay, double* (&Tl), double* press
 
     for (int lev = 1; lev < nlay ; lev++)
     {
-        lapse_rate = gravity / (Cp[id * nlay + lev-1] / 1000);
+        lapse_rate = gravity / (Cp[id * nlay + lev-1] / (1000*1000));
         lapse_rate = lapse_rate_factor * lapse_rate;
 
         T_rate = Tl[id * nlay + lev-1] - lapse_rate * ((Altitude_h[lev]) - (Altitude_h[lev-1]));
