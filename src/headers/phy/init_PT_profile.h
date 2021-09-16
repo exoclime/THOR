@@ -1092,7 +1092,7 @@ void adiabat_correction(int id, int nlay, double* (&Tl), double* pressure_h, dou
     for (i = (nlay-1); i > 1; i--)
     {
         
-        gradrad[i] = (log10(Tl[i]) - log10(Tl[i-1])) / (log10(pressure_h[id * nlay + i]) - log10(pressure_h[id * nlay + i-1]));
+        gradrad[i] = (log10(Tl[i]) - log10(Tl[i-1])) / (log10(pressure_h[id * nlay + i]) - log10(pressure_h[id * nlay + i - 1]));
         gradad[i] = ((double)0.32) - ((double)0.10) * Tl[i] / ((double)3000.0);
     }
 
@@ -1130,4 +1130,43 @@ void adiabat_correction(int id, int nlay, double* (&Tl), double* pressure_h, dou
             Tl[id * nlay + i-1] = Tl[id * nlay + i] * pow((pressure_h[id * nlay + i-1] ) / pressure_h[id * nlay + i], gradad[i]);
         }
     }
+}
+
+
+///////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////
+
+// Subroutine that corrects for adiabatic region following the dry adiabatic lapse rate from bottum up layer by layer
+void bottum_up_adiabat_correction(int id, int nlay, double* (&Tl), double* pressure_h, double Gravit, double* Cp, double* Altitude_h) {
+    // dependcies
+
+
+    // Input:
+    // 
+
+    // Call by reference (Input & Output):
+    // 
+
+    // work variables
+    double lapse_rate;
+    double T_rate;
+    double lapse_rate_factor = 1.0;
+
+    // start operations
+
+    for (int lev = 1; lev < nlay ; lev++)
+    {
+        lapse_rate = Gravit / (Cp[id * nlay + lev-1]);
+        lapse_rate = lapse_rate_factor * lapse_rate;
+
+        T_rate = Tl[id * nlay + lev-1] - lapse_rate * ((Altitude_h[lev]) - (Altitude_h[lev-1]));
+
+        if (T_rate > Tl[id * nlay + lev])
+        {
+            Tl[id * nlay + lev] = T_rate;
+        }
+
+    }
+
+    
 }
