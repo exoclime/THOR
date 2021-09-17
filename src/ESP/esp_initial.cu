@@ -741,80 +741,10 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 text_file_to_array("src/physics/modules/src/OpaTableKappa.txt" , OpaTableKappa__h, 1060);
 
                 //Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, MetStar);
+                Parmentier_bilinear_interpolation_IC(i, nv, pressure_h, Tint, mu, Tirr,
+                    OpaTableTemperature__h, OpaTablePressure__h, OpaTableKappa__h, sim.Gravit, temperature_h, table_num, MetStar);
                 
 
-                for (int k=0; k<1; k++) {
-                    for (int lev = 0; lev < nv; lev++) {
-                        //first, we define thermo quantities of layer below and make
-                        //our initial guess for the Newton-Raphson solver
-                        if (lev == 0) {
-                            
-                            if (ultrahot_thermo != NO_UH_THERMO) {
-                                chi_H = chi_H_equilibrium(
-                                    GibbsT, GibbsdG, GibbsN, temperature_h[i * nv + lev], sim.P_Ref);
-                                Rd_L = Rd_from_chi_H(chi_H);
-                            }
-                            else {
-                                Rd_L = sim.Rd;
-                            }
-                            P_L = sim.P_Ref;
-                            T_L = temperature_h[i * nv + lev];
-                            dz  = Altitude_h[0];
-                        }
-                        else {
-                            temperature_h[i * nv + lev] = temperature_h[i * nv + lev - 1];
-                            if (ultrahot_thermo != NO_UH_THERMO) {
-                                chi_H = chi_H_equilibrium(
-                                    GibbsT, GibbsdG, GibbsN, sim.Tmean, pressure_h[i * nv + lev - 1]);
-                                Rd_L = Rd_h[i * nv + lev - 1];
-                            }
-                            else {
-                                Rd_L = Rd_h[i * nv + lev - 1];
-                            }
-                            P_L = pressure_h[i * nv + lev - 1];
-                            T_L = temperature_h[i * nv + lev - 1];
-                            dz  = Altitude_h[lev] - Altitude_h[lev - 1];
-                        }
-                        pressure_h[i * nv + lev] = P_L;
-                        Rd_h[i * nv + lev]       = Rd_L;
-                        ptmp                     = pressure_h[i * nv + lev] + 2 * eps;
-
-                        it = 0;
-                        while (it < it_max && ptmp - pressure_h[i * nv + lev] > eps) {
-                            //Newton-Raphson solver of hydrostatic eqn for thermo properties
-                            ptmp = pressure_h[i * nv + lev];
-                            f    = log(pressure_h[i * nv + lev] / P_L) / dz
-                                + sim.Gravit
-                                    / (0.5
-                                        * (Rd_h[i * nv + lev] * temperature_h[i * nv + lev]
-                                            + Rd_L * T_L));
-                            df                       = 1.0 / (pressure_h[i * nv + lev] * dz);
-                            pressure_h[i * nv + lev] = pressure_h[i * nv + lev] - f / df;
-                            
-                            Parmentier_bilinear_interpolation_IC(i, nv, pressure_h, Tint, mu, Tirr,
-                                OpaTableTemperature__h, OpaTablePressure__h, OpaTableKappa__h, sim.Gravit, temperature_h, table_num, MetStar);
-
-                            if (ultrahot_thermo != NO_UH_THERMO) {
-                                chi_H              = chi_H_equilibrium(GibbsT,
-                                                        GibbsdG,
-                                                        GibbsN,
-                                                        temperature_h[i * nv + lev],
-                                                        pressure_h[i * nv + lev]);
-                                Rd_h[i * nv + lev] = Rd_from_chi_H(chi_H);
-                            }
-                            else {
-                                Rd_h[i * nv + lev] = sim.Rd;
-                            }
-                            it++;
-                        }
-                        if (ultrahot_thermo != NO_UH_THERMO) {
-                            Cp_h[i * nv + lev] = Cp_from_chi_H(chi_H, temperature_h[i * nv + lev]);
-                        }
-                        else {
-                            Cp_h[i * nv + lev] = sim.Cp;
-                        }
-                    }
-                }
 
                 for (int j = 0; j < nv; j++)
                 {
@@ -841,7 +771,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 //printf(" before adiabat_correction \n");
                 adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
 
-                //bottum_up_adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit, Cp_h, Altitude_h);
+                bottum_up_adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit, Cp_h, Altitude_h, Cp_h, Rd_h);
 
                 for (int j = 0; j < nv; j++)
                 {
