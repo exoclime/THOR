@@ -1174,7 +1174,7 @@ void bottum_up_adiabat_correction(int id, int nlay, double* (&Tl), double* press
         {
             kappa = Rd_h[id * nlay + lev-1] / Cp_h[id * nlay + lev-1];
             T_from_PT =  PT_lower / ( pow(P_Ref / pressure_h[id * nlay + lev-1], kappa) );
-            Tl[id * nlay + lev] = T_from_PT + 0.01 * T_from_PT;
+            Tl[id * nlay + lev] = T_from_PT + 0.0001 * T_from_PT;
         }
     }
 
