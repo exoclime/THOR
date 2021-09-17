@@ -743,25 +743,12 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 //Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, MetStar);
                 
 
-                for (int k=0; k<5; k++) {}
+                for (int k=0; k<5; k++) {
                     for (int lev = 0; lev < nv; lev++) {
                         //first, we define thermo quantities of layer below and make
                         //our initial guess for the Newton-Raphson solver
                         if (lev == 0) {
-                            if (init_PT_profile == ISOTHERMAL) {
-                                temperature_h[i * nv + lev] = sim.Tmean;
-                            }
-                            else {
-                                temperature_h[i * nv + lev] = guillot_T(sim.P_Ref,
-                                                                        mu,
-                                                                        sim.Tmean+300,
-                                                                        sim.P_Ref,
-                                                                        sim.Gravit,
-                                                                        Tint,
-                                                                        f_lw,
-                                                                        kappa_sw,
-                                                                        kappa_lw);
-                            }
+                            
                             if (ultrahot_thermo != NO_UH_THERMO) {
                                 chi_H = chi_H_equilibrium(
                                     GibbsT, GibbsdG, GibbsN, temperature_h[i * nv + lev], sim.P_Ref);
