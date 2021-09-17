@@ -768,6 +768,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                 }
 
+                printf("Altitude_h[0] = %e  \n", Altitude_h[0]);
+
                 //printf(" before adiabat_correction \n");
                 adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
 
@@ -1292,11 +1294,14 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 W_h[i * nv + lev]        = 0.0; // Center of the layer.
                 Wh_h[i * (nv + 1) + lev] = 0.0; // Layers interface.
             }
-            for (int lev = 1; lev < nv; lev++) {
+            for (int lev = 1; lev < nv-1; lev++) {
                 density_diff = Rho_h[i * nv + lev] - (pressure_h[i * nv + lev-1] - pressure_h[i * nv + lev]) / (Altitude_h[lev]-Altitude_h[lev-1]) / sim.Gravit;
                 printf("density_diff :%e at level %d \n",density_diff, lev);
-                Rho_h[i * nv + lev] = (pressure_h[i * nv + lev-1] - pressure_h[i * nv + lev]) / (Altitude_h[lev]-Altitude_h[lev-1]) / (sim.Gravit);
+                //Rho_h[i * nv + lev] = (pressure_h[i * nv + lev-1] - pressure_h[i * nv + lev]) / (Altitude_h[lev]-Altitude_h[lev-1]) / (sim.Gravit);
+
+                Rho_h[i * nv + lev] = (pressure_h[i * nv + lev-1] - pressure_h[i * nv + lev + 1]) / (Altitude_h[lev]) / (sim.Gravit);
             }
+            Rho_h[i * nv + nv-1] = Rho_h[i * nv + nv-2] ;//(pressure_h[i * nv + lev-1] - pressure_h[i * nv + nv-1]) / (Altitude_h[nv-1]-Altitude_h[nv-1-1]) / (sim.Gravit);
 
             Wh_h[i * (nv + 1) + nv] = 0.0;
             if (surface) { // set initial surface temp == bottom layer
