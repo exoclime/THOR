@@ -1299,7 +1299,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 printf("density_diff :%e at level %d \n",density_diff, lev);
                 //Rho_h[i * nv + lev] = (pressure_h[i * nv + lev-1] - pressure_h[i * nv + lev]) / (Altitude_h[lev]-Altitude_h[lev-1]) / (sim.Gravit);
 
-                Rho_h[i * nv + lev] = 0.5*(pressure_h[i * nv + lev-1] - pressure_h[i * nv + lev + 1]) / (Altitude_h[lev]) / (sim.Gravit);
+                Rho_h[i * nv + lev] = (pressure_h[i * nv + lev-1] - pressure_h[i * nv + lev + 1]) / (Altitude_h[lev]) / (sim.Gravit);
             }
             Rho_h[i * nv + nv-1] = Rho_h[i * nv + nv-2] ;//(pressure_h[i * nv + lev-1] - pressure_h[i * nv + nv-1]) / (Altitude_h[nv-1]-Altitude_h[nv-1-1]) / (sim.Gravit);
 
