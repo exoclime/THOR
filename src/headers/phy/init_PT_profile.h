@@ -1150,8 +1150,9 @@ void bottum_up_adiabat_correction(int id, int nlay, double* (&Tl), double* press
     // work variables
     double lapse_rate;
     double T_rate;
-    double lapse_rate_factor = 0.9;
+    double lapse_rate_factor = 0.8;
 
+    double kappa;
     double PT_actual;
     double PT_lower;
     double T_from_PT = 0.0;
@@ -1159,19 +1160,25 @@ void bottum_up_adiabat_correction(int id, int nlay, double* (&Tl), double* press
 
     // start operations
 
-    for (int lev = 1; lev < nlay ; lev++)
+    for (int lev = 2; lev < nlay ; lev++)
     {
         
+        kappa = Rd_h[id * nlay + lev] / Cp_h[id * nlay + lev];
+        PT_actual = Tl[id * nlay + lev]*pow(pressure_h[id * nlay + 0] / pressure_h[id * nlay + lev], kappa);
 
-        PT_actual = Tl[id * nlay + lev]*pow(pressure_h[id * nlay + 0] / pressure_h[id * nlay + lev], Rd_h[id * nlay + lev] / Cp_h[id * nlay + lev]);
-
-        PT_lower = Tl[id * nlay + lev-1]*pow(pressure_h[id * nlay + 0] / pressure_h[id * nlay + lev-1], Rd_h[id * nlay + lev-1] / Cp_h[id * nlay + lev-1]);
+        kappa = Rd_h[id * nlay + lev-1] / Cp_h[id * nlay + lev-1];
+        PT_lower = Tl[id * nlay + lev-1]*pow(pressure_h[id * nlay + 0] / pressure_h[id * nlay + lev-1], kappa);
 
         if (PT_actual < PT_lower)
         {
-            T_from_PT =  PT_lower / (pow(pressure_h[id * nlay + 0] / pressure_h[id * nlay + lev-1], Rd_h[id * nlay + lev-1] / Cp_h[id * nlay + lev-1]) );
+            kappa = Rd_h[id * nlay + lev-1] / Cp_h[id * nlay + lev-1];
+            T_from_PT =  PT_lower / ( pow(pressure_h[id * nlay + 0] / pressure_h[id * nlay + lev-1], kappa) );
             Tl[id * nlay + lev] = T_from_PT + 0.01 * T_from_PT;
         }
+    }
+
+    for (int lev = 1; lev < nlay ; lev++)
+    {
 
         lapse_rate = gravity / (Cp[id * nlay + lev-1]);
         lapse_rate = lapse_rate_factor * lapse_rate;
