@@ -772,6 +772,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
 
                 bottum_up_adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit, Cp_h, Altitude_h, Cp_h, Rd_h);
+                adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
 
                 for (int j = 0; j < nv; j++)
                 {
@@ -1303,6 +1304,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
             }
 
             if (core_benchmark == ACOUSTIC_TEST) {
+                printf("core_benchmark == ACOUSTIC_TEST true \n");
                 // add density perturbation for acoustic wave test
                 double dp, R, lambda0, phi0, vmode, r, g, f;
                 double lat = lonlat_h[i * 2 + 1];
@@ -1328,6 +1330,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 }
             }
             else if (core_benchmark == GWAVE_TEST) {
+                printf("core_benchmark == GWAVE_TEST true \n");
                 double dpt, R, lambda0, phi0, vmode, r, g, f;
                 double lat   = lonlat_h[i * 2 + 1];
                 double lon   = lonlat_h[i * 2];

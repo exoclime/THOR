@@ -1137,7 +1137,8 @@ void adiabat_correction(int id, int nlay, double* (&Tl), double* pressure_h, dou
 //////////////////////////////////////////////////////////////
 
 // Subroutine that corrects for adiabatic region following the dry adiabatic lapse rate from bottum up layer by layer
-void bottum_up_adiabat_correction(int id, int nlay, double* (&Tl), double* pressure_h, double gravity, double* Cp, double* Altitude_h, double* Cp_h, double* Rd_h) {
+void bottum_up_adiabat_correction(int id, int nlay, double* (&Tl), double* pressure_h, double gravity,
+    double* Cp, double* Altitude_h, double* Cp_h, double* Rd_h, double P_Ref) {
     // dependcies
 
 
@@ -1152,7 +1153,7 @@ void bottum_up_adiabat_correction(int id, int nlay, double* (&Tl), double* press
     double T_rate;
     double lapse_rate_factor = 0.8;
 
-    double kappa;
+    double kappa = 0.0;
     double PT_actual;
     double PT_lower;
     double T_from_PT = 0.0;
@@ -1160,19 +1161,19 @@ void bottum_up_adiabat_correction(int id, int nlay, double* (&Tl), double* press
 
     // start operations
 
-    for (int lev = 2; lev < nlay ; lev++)
+    for (int lev = 1; lev < nlay ; lev++)
     {
         
         kappa = Rd_h[id * nlay + lev] / Cp_h[id * nlay + lev];
-        PT_actual = Tl[id * nlay + lev]*pow(pressure_h[id * nlay + 0] / pressure_h[id * nlay + lev], kappa);
+        PT_actual = Tl[id * nlay + lev]*pow(P_Ref / pressure_h[id * nlay + lev], kappa);
 
         kappa = Rd_h[id * nlay + lev-1] / Cp_h[id * nlay + lev-1];
-        PT_lower = Tl[id * nlay + lev-1]*pow(pressure_h[id * nlay + 0] / pressure_h[id * nlay + lev-1], kappa);
+        PT_lower = Tl[id * nlay + lev-1]*pow(P_Ref / pressure_h[id * nlay + lev-1], kappa);
 
         if (PT_actual < PT_lower)
         {
             kappa = Rd_h[id * nlay + lev-1] / Cp_h[id * nlay + lev-1];
-            T_from_PT =  PT_lower / ( pow(pressure_h[id * nlay + 0] / pressure_h[id * nlay + lev-1], kappa) );
+            T_from_PT =  PT_lower / ( pow(P_Ref / pressure_h[id * nlay + lev-1], kappa) );
             Tl[id * nlay + lev] = T_from_PT + 0.01 * T_from_PT;
         }
     }
