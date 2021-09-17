@@ -771,7 +771,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 //printf(" before adiabat_correction \n");
                 adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
 
-                bottum_up_adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit, Cp_h, Altitude_h, Cp_h, Rd_h);
+                bottum_up_adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit, Cp_h, Altitude_h, Cp_h, Rd_h,sim.P_Ref);
                 adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
 
                 for (int j = 0; j < nv; j++)
