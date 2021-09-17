@@ -743,7 +743,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 //Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, MetStar);
                 
 
-                for (int k=0; k<5; k++) {
+                for (int k=0; k<1; k++) {
                     for (int lev = 0; lev < nv; lev++) {
                         //first, we define thermo quantities of layer below and make
                         //our initial guess for the Newton-Raphson solver
