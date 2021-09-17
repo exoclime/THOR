@@ -1150,7 +1150,7 @@ void bottum_up_adiabat_correction(int id, int nlay, double* (&Tl), double* press
     // work variables
     double lapse_rate;
     double T_rate;
-    double lapse_rate_factor = 0.6;
+    double lapse_rate_factor = 0.4;
 
     // start operations
 
