@@ -1161,6 +1161,8 @@ void bottum_up_adiabat_correction(int id, int nlay, double* (&Tl), double* press
 
     // start operations
 
+    /*
+
     for (int lev = 1; lev < nlay ; lev++)
     {
         
@@ -1177,6 +1179,8 @@ void bottum_up_adiabat_correction(int id, int nlay, double* (&Tl), double* press
             Tl[id * nlay + lev] = T_from_PT + 0.0001 * T_from_PT;
         }
     }
+
+    */
 
     for (int lev = 1; lev < nlay ; lev++)
     {
