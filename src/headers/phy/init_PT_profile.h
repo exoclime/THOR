@@ -1163,13 +1163,13 @@ void bottum_up_adiabat_correction(int id, int nlay, double* (&Tl), double* press
     {
         
 
-        PT_actual = Tl[id * nlay + lev]*pow(pressure_h[id * nlay + 0] / pressure_h[id * nlay + lev], Rd_h[i * nv + lev] / Cp_h[i * nv + lev]);
+        PT_actual = Tl[id * nlay + lev]*pow(pressure_h[id * nlay + 0] / pressure_h[id * nlay + lev], Rd_h[id * nlay + lev] / Cp_h[id * nlay + lev]);
 
-        PT_lower = Tl[id * nlay + lev-1]*pow(pressure_h[id * nlay + 0] / pressure_h[id * nlay + lev-1], Rd_h[i * nv + lev-1] / Cp_h[i * nv + lev-1]);
+        PT_lower = Tl[id * nlay + lev-1]*pow(pressure_h[id * nlay + 0] / pressure_h[id * nlay + lev-1], Rd_h[id * nlay + lev-1] / Cp_h[id * nlay + lev-1]);
 
         if (PT_actual < PT_lower)
         {
-            T_from_PT =  PT_lower / (pow(pressure_h[id * nlay + 0] / pressure_h[id * nlay + lev-1], Rd_h[i * nv + lev-1] / Cp_h[i * nv + lev-1]) );
+            T_from_PT =  PT_lower / (pow(pressure_h[id * nlay + 0] / pressure_h[id * nlay + lev-1], Rd_h[id * nlay + lev-1] / Cp_h[id * nlay + lev-1]) );
             Tl[id * nlay + lev] = T_from_PT + 0.01 * T_from_PT;
         }
 
