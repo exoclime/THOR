@@ -756,7 +756,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                     }
                     pressure_h[i * nv + nv - 1] = pressure_h[i * nv + nv - 2];
                     Rho_h[i * nv +  nv - 1] = Rho_h[i * nv + nv - 2];
-                    Rtemperature_hho_h[i * nv +  nv - 1] = temperature_h[i * nv + nv - 2];
+                    temperature_h[i * nv +  nv - 1] = temperature_h[i * nv + nv - 2];
                     printf("pressure_h[i * nv + nv - 1] = %e \n", pressure_h[i * nv + nv - 1]);
                     printf("Rho_h[i * nv + nv - 1] = %e \n", Rho_h[i * nv + nv - 1]);
                     printf("temperature_h[i * nv + nv - 1] = %e \n", temperature_h[i * nv + nv - 1]);
