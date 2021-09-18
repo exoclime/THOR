@@ -741,8 +741,9 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 text_file_to_array("src/physics/modules/src/OpaTableKappa.txt" , OpaTableKappa__h, 1060);
 
                 double pressure_diff = 0.0;
+                int max_iter = 50;
                 //Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, MetStar);
-                for (int iter = 1; iter < 50; iter++) {
+                for (int iter = 1; iter < max_iter ; iter++) {
                     Parmentier_bilinear_interpolation_IC(i, nv, pressure_h, Tint, mu, Tirr,
                         OpaTableTemperature__h, OpaTablePressure__h, OpaTableKappa__h, sim.Gravit, temperature_h, table_num, MetStar);
                     adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
@@ -752,7 +753,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         Rho_h[i * nv + lev] =
                             pressure_h[i * nv + lev] / (temperature_h[i * nv + lev] * Rd_h[i * nv + lev]);
                         pressure_diff = ((Rho_h[i * nv + lev] + Rho_h[i * nv + lev - 1]) / 2) * (Altitude_h[lev]-Altitude_h[lev-1]) * (sim.Gravit);
-                        pressure_h[i * nv + lev] = pressure_h[i * nv + lev - 1] - pressure_diff;
+                        pressure_h[i * nv + lev] = pressure_h[i * nv + lev - 1] - (pressure_diff / max_iter);
                     }
                     pressure_h[i * nv + nv - 1] = pressure_h[i * nv + nv - 2];
                     Rho_h[i * nv +  nv - 1] = Rho_h[i * nv + nv - 2];
