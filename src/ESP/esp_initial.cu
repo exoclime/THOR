@@ -740,16 +740,33 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 double OpaTableKappa__h[1060];
                 text_file_to_array("src/physics/modules/src/OpaTableKappa.txt" , OpaTableKappa__h, 1060);
 
+                Parmentier_bilinear_interpolation_IC(i, nv, pressure_h, Tint, mu, Tirr,
+                        OpaTableTemperature__h, OpaTablePressure__h, OpaTableKappa__h, sim.Gravit, temperature_h, table_num, MetStar);
+                adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
                 double pressure_diff = 0.0;
-                int max_iter = 20;
+                double bolzmann_const = 1.380649e-23;
+                int max_iter = 2;
+                double scale_height ;
+                double euler = 2.71828182845904523536028;
+
+               
+
                 //Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, MetStar);
                 for (int iter = 1; iter < max_iter ; iter++) {
-                    Parmentier_bilinear_interpolation_IC(i, nv, pressure_h, Tint, mu, Tirr,
-                        OpaTableTemperature__h, OpaTablePressure__h, OpaTableKappa__h, sim.Gravit, temperature_h, table_num, MetStar);
-                    adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
+                    scale_height = bolzmann_const * temperature_h[i * nv + 0] * temperature_h[i * nv + 0] * Rd_h[i * nv + 0] /
+                    (pressure_h[i * nv + 0] * sim.Gravit);                    
                     Rho_h[i * nv + 0] =
                         pressure_h[i * nv + 0] / (temperature_h[i * nv + 0] * Rd_h[i * nv + 0]);
+
                     for (int lev = 1; lev < (nv-1); lev++) {
+
+                        pressure_h[i * nv + lev] = pressure_h[i * nv + 0] * pow(euler, (-(Altitude_h[lev]-Altitude_h[0])/scale_height));
+
+                        Parmentier_bilinear_interpolation_IC(i, nv, pressure_h, Tint, mu, Tirr,
+                            OpaTableTemperature__h, OpaTablePressure__h, OpaTableKappa__h, sim.Gravit, temperature_h, table_num, MetStar);
+                        bottum_up_adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit, Cp_h, Altitude_h, Cp_h, Rd_h,sim.P_Ref);
+                        
+                        /*
                         for (int iter = 1; iter < max_iter ; iter++) {
                             Rho_h[i * nv + lev] =
                                 pressure_h[i * nv + lev] / (temperature_h[i * nv + lev] * Rd_h[i * nv + lev]);
@@ -760,6 +777,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                             Rho_h[i * nv +  nv - 1] = Rho_h[i * nv + nv - 2];
                             temperature_h[i * nv +  nv - 1] = temperature_h[i * nv + nv - 2];
                         }
+                        */
                     }
                     
                     printf("pressure_h[i * nv + nv - 1] = %e \n", pressure_h[i * nv + nv - 1]);
@@ -792,7 +810,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 printf("Altitude_h[0] = %e  \n", Altitude_h[0]);
 
                 //printf(" before adiabat_correction \n");
-                adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
+                //adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
 
                 //bottum_up_adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit, Cp_h, Altitude_h, Cp_h, Rd_h,sim.P_Ref);
                 //adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
