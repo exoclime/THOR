@@ -745,7 +745,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
                 double pressure_diff = 0.0;
                 double bolzmann_const = 1.380649e-23;
-                int max_iter = 3;
+                int max_iter = 10;
                 double scale_height ;
                 double euler = 2.71828182845904523536028;
 
@@ -782,7 +782,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         printf("Rho_h[i * nv + %d] = %e \n", lev, Rho_h[i * nv + lev]);
                         printf("temperature_h[i * nv + %d] = %e \n", lev, temperature_h[i * nv + lev]);
                     }
-                    if (iter== max_iter-1) {
+                    if (iter < max_iter-1) {
                         Parmentier_bilinear_interpolation_IC(i, nv, pressure_h, Tint, mu, Tirr,
                             OpaTableTemperature__h, OpaTablePressure__h, OpaTableKappa__h, sim.Gravit, temperature_h, table_num, MetStar);
                         adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);        
