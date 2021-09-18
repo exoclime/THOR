@@ -740,11 +740,20 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 double OpaTableKappa__h[1060];
                 text_file_to_array("src/physics/modules/src/OpaTableKappa.txt" , OpaTableKappa__h, 1060);
 
+                double pressure_diff = 0.0;
                 //Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, MetStar);
-                Parmentier_bilinear_interpolation_IC(i, nv, pressure_h, Tint, mu, Tirr,
-                    OpaTableTemperature__h, OpaTablePressure__h, OpaTableKappa__h, sim.Gravit, temperature_h, table_num, MetStar);
-                
-
+                for (int iter = 1; iter < 50; iter++) {
+                    Parmentier_bilinear_interpolation_IC(i, nv, pressure_h, Tint, mu, Tirr,
+                        OpaTableTemperature__h, OpaTablePressure__h, OpaTableKappa__h, sim.Gravit, temperature_h, table_num, MetStar);
+                    Rho_h[i * nv + 0] =
+                        pressure_h[i * nv + 0] / (temperature_h[i * nv + 0] * Rd_h[i * nv + 0]);
+                    for (int lev = 1; lev < nv; lev++) {
+                        Rho_h[i * nv + lev] =
+                            pressure_h[i * nv + lev] / (temperature_h[i * nv + lev] * Rd_h[i * nv + lev]);
+                        pressure_diff = ((Rho_h[i * nv + lev] + Rho_h[i * nv + lev - 1]) / 2) * (Altitude_h[lev]-Altitude_h[lev-1]) * (sim.Gravit);
+                        pressure_h[i * nv + lev] = pressure_h[i * nv + lev - 1] - pressure_diff;
+                    }
+                }
 
                 for (int j = 0; j < nv; j++)
                 {
@@ -775,6 +784,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                 bottum_up_adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit, Cp_h, Altitude_h, Cp_h, Rd_h,sim.P_Ref);
                 //adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
+
+                
 
                 for (int j = 0; j < nv; j++)
                 {
