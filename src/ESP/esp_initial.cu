@@ -741,7 +741,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 text_file_to_array("src/physics/modules/src/OpaTableKappa.txt" , OpaTableKappa__h, 1060);
 
                 double pressure_diff = 0.0;
-                int max_iter = 50;
+                int max_iter = 20;
                 //Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, MetStar);
                 for (int iter = 1; iter < max_iter ; iter++) {
                     Parmentier_bilinear_interpolation_IC(i, nv, pressure_h, Tint, mu, Tirr,
@@ -750,14 +750,18 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                     Rho_h[i * nv + 0] =
                         pressure_h[i * nv + 0] / (temperature_h[i * nv + 0] * Rd_h[i * nv + 0]);
                     for (int lev = 1; lev < (nv-1); lev++) {
-                        Rho_h[i * nv + lev] =
-                            pressure_h[i * nv + lev] / (temperature_h[i * nv + lev] * Rd_h[i * nv + lev]);
-                        pressure_diff = ((Rho_h[i * nv + lev] + Rho_h[i * nv + lev - 1]) / 2) * (Altitude_h[lev]-Altitude_h[lev-1]) * (sim.Gravit);
-                        pressure_h[i * nv + lev] = pressure_h[i * nv + lev - 1] - (pressure_diff / max_iter);
+                        for (int iter = 1; iter < max_iter ; iter++) {
+                            Rho_h[i * nv + lev] =
+                                pressure_h[i * nv + lev] / (temperature_h[i * nv + lev] * Rd_h[i * nv + lev]);
+                            pressure_diff = ((Rho_h[i * nv + lev + 1] + Rho_h[i * nv + lev - 1]) / 2) * ((Altitude_h[lev+1]-Altitude_h[lev-1])/2) * (sim.Gravit);
+                            pressure_h[i * nv + lev] = pressure_h[i * nv + lev - 1] - (pressure_diff / (max_iter * max_iter));
+
+                            pressure_h[i * nv + nv - 1] = pressure_h[i * nv + nv - 2];
+                            Rho_h[i * nv +  nv - 1] = Rho_h[i * nv + nv - 2];
+                            temperature_h[i * nv +  nv - 1] = temperature_h[i * nv + nv - 2];
+                        }
                     }
-                    pressure_h[i * nv + nv - 1] = pressure_h[i * nv + nv - 2];
-                    Rho_h[i * nv +  nv - 1] = Rho_h[i * nv + nv - 2];
-                    temperature_h[i * nv +  nv - 1] = temperature_h[i * nv + nv - 2];
+                    
                     printf("pressure_h[i * nv + nv - 1] = %e \n", pressure_h[i * nv + nv - 1]);
                     printf("Rho_h[i * nv + nv - 1] = %e \n", Rho_h[i * nv + nv - 1]);
                     printf("temperature_h[i * nv + nv - 1] = %e \n", temperature_h[i * nv + nv - 1]);
