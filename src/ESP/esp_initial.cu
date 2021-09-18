@@ -752,7 +752,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                
 
                 //Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, MetStar);
-                for (int iter = 1; iter < max_iter ; iter++) {
+                for (int iter = 0; iter < max_iter ; iter++) {
                     scale_height = temperature_h[i * nv + 0] * Rd_h[i * nv + 0] / ( sim.Gravit);                    
                     Rho_h[i * nv + 0] =
                         pressure_h[i * nv + 0] / (temperature_h[i * nv + 0] * Rd_h[i * nv + 0]);
