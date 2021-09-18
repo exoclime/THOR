@@ -758,7 +758,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                     Rho_h[i * nv + 0] =
                         pressure_h[i * nv + 0] / (temperature_h[i * nv + 0] * Rd_h[i * nv + 0]);
 
-                    for (int lev = 1; lev < (nv-1); lev++) {
+                    for (int lev = 1; lev < nv; lev++) {
 
                         pressure_h[i * nv + lev] = pressure_h[i * nv + 0] * pow(euler, (-(Altitude_h[lev]-Altitude_h[0])/scale_height));
                         Rho_h[i * nv + lev] =
@@ -776,6 +776,9 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                             temperature_h[i * nv +  nv - 1] = temperature_h[i * nv + nv - 2];
                         }
                         */
+                        printf("pressure_h[i * nv + lev] = %e \n", pressure_h[i * nv + lev]);
+                        printf("Rho_h[i * nv + lev] = %e \n", Rho_h[i * nv + lev]);
+                        printf("temperature_h[i * nv + lev] = %e \n", temperature_h[i * nv + lev]);
                     }
                     Parmentier_bilinear_interpolation_IC(i, nv, pressure_h, Tint, mu, Tirr,
                             OpaTableTemperature__h, OpaTablePressure__h, OpaTableKappa__h, sim.Gravit, temperature_h, table_num, MetStar);
