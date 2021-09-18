@@ -748,12 +748,14 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                     adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
                     Rho_h[i * nv + 0] =
                         pressure_h[i * nv + 0] / (temperature_h[i * nv + 0] * Rd_h[i * nv + 0]);
-                    for (int lev = 1; lev < nv; lev++) {
+                    for (int lev = 1; lev < (nv-1); lev++) {
                         Rho_h[i * nv + lev] =
                             pressure_h[i * nv + lev] / (temperature_h[i * nv + lev] * Rd_h[i * nv + lev]);
                         pressure_diff = ((Rho_h[i * nv + lev] + Rho_h[i * nv + lev - 1]) / 2) * (Altitude_h[lev]-Altitude_h[lev-1]) * (sim.Gravit);
                         pressure_h[i * nv + lev] = pressure_h[i * nv + lev - 1] - pressure_diff;
                     }
+                    pressure_h[i * nv + nv - 1] = pressure_h[i * nv + nv - 2];
+                    Rho_h[i * nv +  nv - 1] = Rho_h[i * nv + nv - 2];
                 }
 
                 for (int j = 0; j < nv; j++)
