@@ -784,6 +784,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                     }
                     Parmentier_bilinear_interpolation_IC(i, nv, pressure_h, Tint, mu, Tirr,
                             OpaTableTemperature__h, OpaTablePressure__h, OpaTableKappa__h, sim.Gravit, temperature_h, table_num, MetStar);
+                    adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);        
                     bottum_up_adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit, Cp_h, Altitude_h, Cp_h, Rd_h,sim.P_Ref);
                     
                     printf("pressure_h[i * nv + nv - 1] = %e \n", pressure_h[i * nv + nv - 1]);
