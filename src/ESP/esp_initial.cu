@@ -740,8 +740,9 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 double OpaTableKappa__h[1060];
                 text_file_to_array("src/physics/modules/src/OpaTableKappa.txt" , OpaTableKappa__h, 1060);
 
-                Parmentier_bilinear_interpolation_IC(i, nv, pressure_h, Tint, mu, Tirr,
-                        OpaTableTemperature__h, OpaTablePressure__h, OpaTableKappa__h, sim.Gravit, temperature_h, table_num, MetStar);
+                Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, MetStar);
+                //Parmentier_bilinear_interpolation_IC(i, nv, pressure_h, Tint, mu, Tirr,
+                        //OpaTableTemperature__h, OpaTablePressure__h, OpaTableKappa__h, sim.Gravit, temperature_h, table_num, MetStar);
                 adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
                 double pressure_diff = 0.0;
                 double bolzmann_const = 1.380649e-23;
@@ -787,8 +788,9 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         }
                     }
                     if (iter < max_iter-2) {
-                        Parmentier_bilinear_interpolation_IC(i, nv, pressure_h, Tint, mu, Tirr,
-                            OpaTableTemperature__h, OpaTablePressure__h, OpaTableKappa__h, sim.Gravit, temperature_h, table_num, MetStar);
+                        Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, MetStar);
+                        //Parmentier_bilinear_interpolation_IC(i, nv, pressure_h, Tint, mu, Tirr,
+                            //OpaTableTemperature__h, OpaTablePressure__h, OpaTableKappa__h, sim.Gravit, temperature_h, table_num, MetStar);
                     }
                     if (iter < max_iter-1) {
                         adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);        
