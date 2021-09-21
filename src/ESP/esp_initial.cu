@@ -782,6 +782,9 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         printf("pressure_h[i * nv + %d] = %e \n", lev, pressure_h[i * nv + lev]);
                         printf("Rho_h[i * nv + %d] = %e \n", lev, Rho_h[i * nv + lev]);
                         printf("temperature_h[i * nv + %d] = %e \n", lev, temperature_h[i * nv + lev]);
+                        if (iter < max_iter-2) {
+                            temperature_h[i * nv + lev] == 0.0;
+                        }
                     }
                     if (iter < max_iter-2) {
                         Parmentier_bilinear_interpolation_IC(i, nv, pressure_h, Tint, mu, Tirr,
