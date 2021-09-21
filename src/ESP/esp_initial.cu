@@ -757,6 +757,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                     scale_height = temperature_h[i * nv + 0] * Rd_h[i * nv + 0] / ( sim.Gravit);                    
                     Rho_h[i * nv + 0] =
                         pressure_h[i * nv + 0] / (temperature_h[i * nv + 0] * Rd_h[i * nv + 0]);
+                    
 
                     printf("scale_height = %e \n", scale_height);
                     printf("pressure_h[i * nv + 0] = %e \n", pressure_h[i * nv + 0]);
@@ -783,16 +784,19 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         printf("pressure_h[i * nv + %d] = %e \n", lev, pressure_h[i * nv + lev]);
                         printf("Rho_h[i * nv + %d] = %e \n", lev, Rho_h[i * nv + lev]);
                         printf("temperature_h[i * nv + %d] = %e \n", lev, temperature_h[i * nv + lev]);
-                        if (iter < max_iter-2) {
+                        if (iter < max_iter) {
                             temperature_h[i * nv + lev] == 0.0;
                         }
                     }
-                    if (iter < max_iter-2) {
+                    if (iter < max_iter) {
+                        temperature_h[i * nv + 0] == 0.0;
+                    }
+                    if (iter < max_iter) {
                         Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, MetStar);
                         //Parmentier_bilinear_interpolation_IC(i, nv, pressure_h, Tint, mu, Tirr,
                             //OpaTableTemperature__h, OpaTablePressure__h, OpaTableKappa__h, sim.Gravit, temperature_h, table_num, MetStar);
                     }
-                    if (iter < max_iter-1) {
+                    if (iter < max_iter) {
                         adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);        
                         //bottum_up_adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit, Cp_h, Altitude_h, Cp_h, Rd_h,sim.P_Ref);
                     }
