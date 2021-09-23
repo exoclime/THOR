@@ -1149,7 +1149,7 @@ __device__  void lw_grey_updown_linear(int id,
         // Peform downward loop first
         // Top boundary condition
         lw_down_g__dff_e[id * nlay1 +  nlay] = 0.0;
-        lw_down_g__dff_e[id * nlay1 +  nlay] = 1.0 - exp(-tau_IRe__df_e[id*nlay1 + nlay]) / uarr[g]) * be__df_e[id * nlay1 + nlay];
+        lw_down_g__dff_e[id * nlay1 +  nlay] = 1.0 - exp(-tau_IRe__df_e[id*nlay1 + nlay] / uarr[g]) * be__df_e[id * nlay1 + nlay];
         for (k = nlay-1; k > -1; k--)
         {
             lw_down_g__dff_e[id * nlay1 +  k] = lw_down_g__dff_e[id * nlay1 +  k + 1] * edel__dff_l[id * nlay + k] + 
