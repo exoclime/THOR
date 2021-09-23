@@ -671,18 +671,7 @@ __device__ void kernel_k_Ross_Freedman(double Tin, double Pin, double met, doubl
 
     if (k_IR < 0.0 )
     {
-        if (Tin<800.0)
-        {       
-            printf("Tin below 800 K \n");
-        }
-        if (Tin<500.0)
-        {       
-            printf("Tin below 500 K \n");
-        }
-        if (Tin<300.0)
-        {       
-            printf("Tin below 300 K \n");
-        }
+        
         if (Tin==0.0)
         {       
             printf("Tin is 0 K\n");
@@ -1013,7 +1002,10 @@ __device__ void tau_struct(int id,
     int level;
 
     // running sum of optical depth
+    // added a ghost level above the grid model, otherwise tau_sum = 0.0
     tau_sum = kRoss[id*nlev*nchan + channel * nlev + nlev-1] * pl[id*nlev  + nlev-1]/gravity;
+
+    //tau_sum = 0.0;
 
     // start operations
     //  Upper most tau_struc is given by some low pressure value (here 1e-9 bar = 1e-4 pa)
@@ -1157,6 +1149,7 @@ __device__  void lw_grey_updown_linear(int id,
         // Peform downward loop first
         // Top boundary condition
         lw_down_g__dff_e[id * nlay1 +  nlay] = 0.0;
+        lw_down_g__dff_e[id * nlay1 +  nlay] = 1.0 - exp(-tau_IRe__df_e[id*nlay1 + nlay]) / uarr[g]) * be__df_e[id * nlay1 + nlay];
         for (k = nlay-1; k > -1; k--)
         {
             lw_down_g__dff_e[id * nlay1 +  k] = lw_down_g__dff_e[id * nlay1 +  k + 1] * edel__dff_l[id * nlay + k] + 
