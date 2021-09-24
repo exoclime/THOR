@@ -625,19 +625,19 @@ __device__ void kernel_k_Ross_Freedman(double Tin, double Pin, double met, doubl
 
     //Tl10 = log10((double)(Tin));
 
-    if (Tin <= 0.0 || isnan(Tin))
+    if (Tin <= 1e-6 || isnan(Tin))
     {
-         Tl10 = -6;
+         Tl10 = -6.0;
     }
     else
     {
-        Tl10 = log10(Tin * 10.0); // Convert to dyne cm-2 and log 10
+        Tl10 = log10(Tin);
     }
 
 
-    if (Pin <= 1.0 || isnan(Pin))
+    if (Pin <= 1e-6 || isnan(Pin))
     {
-         Pl10 = -6; 
+         Pl10 = -6.0; 
     }
     else
     {
