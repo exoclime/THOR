@@ -1004,6 +1004,7 @@ __device__ void tau_struct(int id,
     // running sum of optical depth
     // added a ghost level above the grid model, otherwise tau_sum = 0.0
     tau_sum = kRoss[id*nlev*nchan + channel * nlev + nlev-1] * pl[id*nlev  + nlev-1]/gravity;
+    tau_struc_e[id*(nlev+1) + nlev] = tau_sum;
 
     //tau_sum = 0.0;
 
