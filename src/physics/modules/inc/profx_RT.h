@@ -1888,8 +1888,8 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 ifP = pressure_d[id * nv + level];
             } else
             {
-                scale_height = temperature_h[id * nv + level] * Rd_h[id * nv + level] / ( sim.Gravit);
-                ifP = pressure_d[id * nv + level-1] * pow(euler, (-(Altitude_h[level]-Altitude_h[level -1])/scale_height));
+                scale_height = temperature_d[id * nv + level-1] * Rd_d[id * nv + level-1] / ( gravit);
+                ifP = pressure_d[id * nv + level-1] * pow(euler, (-(Altitude_d[level]-Altitude_d[level -1])/scale_height));
             }
             
             
