@@ -748,7 +748,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 double bolzmann_const = 1.380649e-23;
                 int max_iter = 10;
                 double scale_height ;
-                double euler = 2.71828182845904523536028;
+                double const euler = 2.71828182845904523536028;
 
                
 

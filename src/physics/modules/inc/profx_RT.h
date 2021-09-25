@@ -625,9 +625,9 @@ __device__ void kernel_k_Ross_Freedman(double Tin, double Pin, double met, doubl
 
     //Tl10 = log10((double)(Tin));
 
-    if (Tin <= 1e-15 || isnan(Tin))
+    if (Tin <= 1e-6 || isnan(Tin))
     {
-         Tl10 = -15.0;
+         Tl10 = -6.0;
     }
     else
     {
@@ -635,9 +635,9 @@ __device__ void kernel_k_Ross_Freedman(double Tin, double Pin, double met, doubl
     }
 
 
-    if (Pin <= 1e-15 || isnan(Pin))
+    if (Pin <= 1e-6 || isnan(Pin))
     {
-         Pl10 = -15.0; 
+         Pl10 = -6.0; 
     }
     else
     {
@@ -1792,6 +1792,9 @@ __global__ void rtm_picket_fence(double *pressure_d,
 
     const double pi = atan(1.0) * 4;
     const double StBC = 5.670374419e-8;
+    double ifP = 0.0;
+    double const euler = 2.71828182845904523536028;
+    double scale_height = 0.0 ;
 
     if (id < num) {
 
@@ -1880,10 +1883,20 @@ __global__ void rtm_picket_fence(double *pressure_d,
         // kappa calculation loop here if using non-constant kappa
         for (int level = 0; level < nv; level++)
         {
+            if ( pressure_d[id * nv + level] < pressure_d[id * nv + level-1] || level==0)
+            {
+                ifP = pressure_d[id * nv + level];
+            } else
+            {
+                scale_height = temperature_h[id * nv + level] * Rd_h[id * nv + level] / ( sim.Gravit);
+                ifP = pressure_d[id * nv + level-1] * pow(euler, (-(Altitude_h[level]-Altitude_h[level -1])/scale_height));
+            }
+            
+            
             
             
             kernel_k_Ross_Freedman(temperature_d[id * nv + level],
-                pressure_d[id * nv + level],
+                ifP,
                 met,
                 k_IR_2_nv_d[id * nv * 2 + 0 * nv + level]);
 
