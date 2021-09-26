@@ -625,9 +625,9 @@ __device__ void kernel_k_Ross_Freedman(double Tin, double Pin, double met, doubl
 
     //Tl10 = log10((double)(Tin));
 
-    if (Tin <= 1e-6 || isnan(Tin))
+    if (Tin <= 1 || isnan(Tin))
     {
-         Tl10 = -6.0;
+         Tl10 = 0;
     }
     else
     {
@@ -635,9 +635,9 @@ __device__ void kernel_k_Ross_Freedman(double Tin, double Pin, double met, doubl
     }
 
 
-    if (Pin <= 1e-6 || isnan(Pin))
+    if (Pin <= 1 || isnan(Pin))
     {
-         Pl10 = -6.0; 
+         Pl10 = 1;
     }
     else
     {
