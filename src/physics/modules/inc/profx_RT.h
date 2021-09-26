@@ -1468,7 +1468,7 @@ __device__  void lw_grey_updown_linear(int id,
                 }
                 
 
-                Finc_B = Finc * Beta_V_3_d[id * 3 + channel];
+                Finc_B = (1.0 - AB_d) * Finc * Beta_V_3_d[id * 3 + channel];
 
                 
                 sw_grey_down(id,
