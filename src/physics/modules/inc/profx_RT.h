@@ -1008,7 +1008,7 @@ __device__  void lw_grey_updown_linear(int id,
     for (g = 0; g < gauss_ng; g++)
     {
         // Prepare loop
-        for (k = nlay-1; k > 0; k--)
+        for (k = nlay-1; k > -1; k--)
         {
             // Olson & Kunasz (1987) linear interpolant parameters
             
@@ -1045,6 +1045,11 @@ __device__  void lw_grey_updown_linear(int id,
         {
             lw_down_g__dff_e[id * nlev +  k - 1] = lw_down_g__dff_e[id * nlev +  k] * edel__dff_l[id * nlay + k] + 
             Am__dff_l[id * nlay + k] * be__df_e[id * nlev + k] + Bm__dff_l[id * nlay + k] * be__df_e[id * nlev + k - 1]; // TS intensity
+
+            if (isnan(lw_down_g__dff_e))
+            {
+                printf("lw_down_g__dff_e contain a NaNs at mu=0 at level:%d \n",  level);
+            }
         }
 
 
@@ -1055,15 +1060,23 @@ __device__  void lw_grey_updown_linear(int id,
         lw_up_g__dff_e[id * nlev + 0] = be_int + lw_down_g__dff_e[id * nlev +  0];
         for (k = 1; k < nlev; k++)
         {
-            lw_up_g__dff_e[id * nlev + k] = lw_up_g__dff_e[id * nlev + k - 1] * edel__dff_l[id * nlay + k] +
-                Bp__dff_l[id * nlay + k] * be__df_e[id * nlev + k] + Gp__dff_l[id * nlay + k] * be__df_e[id * nlev + k - 1]; // TS intensity
+            lw_up_g__dff_e[id * nlev + k] = lw_up_g__dff_e[id * nlev + k - 1] * edel__dff_l[id * nlay + k -1] +
+                Bp__dff_l[id * nlay + k -1] * be__df_e[id * nlev + k] + Gp__dff_l[id * nlay + k] * be__df_e[id * nlev + k - 1]; // TS intensity
+
+            if (isnan(lw_up_g__dff_e))
+            {
+                printf("lw_up_g__dff_e contain a NaNs at mu=0 at level:%d \n",  level);
+            }
         }
+
+        
 
         // Sum up flux arrays with Gauss weights and points
         for (k = 0; k < nlev; k++)
         {
             lw_down__df_e[id * nlev + k] = lw_down__df_e[id * nlev + k ] + lw_down_g__dff_e[id * nlev +  k] * w[g] * uarr[g];
             lw_up__df_e[id * nlev + k ] = lw_up__df_e[id * nlev + k ] + lw_up_g__dff_e[id * nlev + k] * w[g] * uarr[g];
+            
         }
     }
 
