@@ -1092,32 +1092,50 @@ __device__  void lw_grey_updown_linear(int id,
                 __threadfence();         // ensure store issued before trap
                 asm("trap;");            // kill kernel with error
             }
-        for (k = nlev-1; k > 0; k--)
+        for (k = nlev-2; k > -1; k--)
         {
-            lw_down_g__dff_e[id * nlev +  k - 1] = lw_down_g__dff_e[id * nlev +  k] * edel__dff_l[id * nlay + k - 1] + 
-            Am__dff_l[id * nlay + k - 1] * be__df_e[id * nlev + k] + Bm__dff_l[id * nlay + k - 1] * be__df_e[id * nlev + k - 1]; // TS intensity
+            lw_down_g__dff_e[id * nlev +  k] = lw_down_g__dff_e[id * nlev +  k + 1] * edel__dff_l[id * nlay + k] + 
+            Am__dff_l[id * nlay + k] * be__df_e[id * nlev + k + 1] + Bm__dff_l[id * nlay + k] * be__df_e[id * nlev + k]; // TS intensity
 
-            if (isnan(lw_down_g__dff_e[id * nlev +  k]))
+            if (isnan(lw_down_g__dff_e[id * nlev +  k + 1]))
             {
-                printf("lw_down_g__dff_e[id * nlev +  k] contain a NaNs at mu=0 at level:%d \n",  k);
+                printf("lw_down_g__dff_e[id * nlev +  k + 1] contain a NaNs at mu=0 at level:%d \n",  k);
                 __threadfence();         // ensure store issued before trap
                 asm("trap;");            // kill kernel with error
             }
-            if (isnan(edel__dff_l[id * nlay + k - 1]))
+            if (isnan(edel__dff_l[id * nlay + k]))
             {
-                printf("edel__dff_l[id * nlay + k - 1] contain a NaNs at mu=0 at level:%d \n",  k);
+                printf("edel__dff_l[id * nlay + k] contain a NaNs at mu=0 at level:%d \n",  k);
                 __threadfence();         // ensure store issued before trap
                 asm("trap;");            // kill kernel with error
             }
-            if (isnan(lw_down_g__dff_e[id * nlev +  k] * edel__dff_l[id * nlay + k - 1]))
+            if (isnan(lw_down_g__dff_e[id * nlev +  k + 1] * edel__dff_l[id * nlay + k ]))
             {
-                printf("lw_down_g__dff_e[id * nlev +  k] * edel__dff_l[id * nlay + k - 1] contain a NaNs at mu=0 at level:%d \n",  k);
+                printf("lw_down_g__dff_e[id * nlev +  k + 1] * edel__dff_l[id * nlay + k] contain a NaNs at mu=0 at level:%d \n",  k);
                 __threadfence();         // ensure store issued before trap
                 asm("trap;");            // kill kernel with error
             }
-            if (isnan(Am__dff_l[id * nlay + k - 1]))
+            if (isnan(Am__dff_l[id * nlay + k]))
             {
-                printf("Am__dff_l[id * nlay + k - 1] contain a NaNs at mu=0 at level:%d \n",  k);
+                printf("Am__dff_l[id * nlay + k] contain a NaNs at mu=0 at level:%d \n",  k);
+                __threadfence();         // ensure store issued before trap
+                asm("trap;");            // kill kernel with error
+            }
+            if (isnan(be__df_e[id * nlev + k + 1]))
+            {
+                printf("be__df_e[id * nlev + k + 1] contain a NaNs at mu=0 at level:%d \n",  k);
+                __threadfence();         // ensure store issued before trap
+                asm("trap;");            // kill kernel with error
+            }
+            if (isnan(Am__dff_l[id * nlay + k] * be__df_e[id * nlev + k + 1]))
+            {
+                printf("Am__dff_l[id * nlay + k ] * be__df_e[id * nlev + k + 1] contain a NaNs at mu=0 at level:%d \n",  k);
+                __threadfence();         // ensure store issued before trap
+                asm("trap;");            // kill kernel with error
+            }
+            if (isnan(Bm__dff_l[id * nlay + k]))
+            {
+                printf("Bm__dff_l[id * nlay + k] contain a NaNs at mu=0 at level:%d \n",  k);
                 __threadfence();         // ensure store issued before trap
                 asm("trap;");            // kill kernel with error
             }
@@ -1127,33 +1145,15 @@ __device__  void lw_grey_updown_linear(int id,
                 __threadfence();         // ensure store issued before trap
                 asm("trap;");            // kill kernel with error
             }
-            if (isnan(Am__dff_l[id * nlay + k - 1] * be__df_e[id * nlev + k]))
+            if (isnan(Bm__dff_l[id * nlay + k] * be__df_e[id * nlev + k]))
             {
-                printf("Am__dff_l[id * nlay + k - 1] * be__df_e[id * nlev + k] contain a NaNs at mu=0 at level:%d \n",  k);
+                printf("Bm__dff_l[id * nlay + k] * be__df_e[id * nlev + k] contain a NaNs at mu=0 at level:%d \n",  k);
                 __threadfence();         // ensure store issued before trap
                 asm("trap;");            // kill kernel with error
             }
-            if (isnan(Bm__dff_l[id * nlay + k - 1]))
+            if (isnan(lw_down_g__dff_e[id * nlev +  k]))
             {
-                printf("Bm__dff_l[id * nlay + k - 1] contain a NaNs at mu=0 at level:%d \n",  k);
-                __threadfence();         // ensure store issued before trap
-                asm("trap;");            // kill kernel with error
-            }
-            if (isnan(be__df_e[id * nlev + k - 1]))
-            {
-                printf("be__df_e[id * nlev + k - 1] contain a NaNs at mu=0 at level:%d \n",  k);
-                __threadfence();         // ensure store issued before trap
-                asm("trap;");            // kill kernel with error
-            }
-            if (isnan(Bm__dff_l[id * nlay + k - 1] * be__df_e[id * nlev + k - 1]))
-            {
-                printf("Bm__dff_l[id * nlay + k - 1] * be__df_e[id * nlev + k - 1] contain a NaNs at mu=0 at level:%d \n",  k);
-                __threadfence();         // ensure store issued before trap
-                asm("trap;");            // kill kernel with error
-            }
-            if (isnan(lw_down_g__dff_e[id * nlev +  k - 1]))
-            {
-                printf("lw_down_g__dff_e[id * nlev + k - 1] contain a NaNs at mu=0 at level:%d \n",  k);
+                printf("lw_down_g__dff_e[id * nlev + k] contain a NaNs at mu=0 at level:%d \n",  k);
                 __threadfence();         // ensure store issued before trap
                 asm("trap;");            // kill kernel with error
             }
