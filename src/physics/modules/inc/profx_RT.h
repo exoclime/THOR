@@ -1045,18 +1045,30 @@ __device__  void lw_grey_updown_linear(int id,
             if (isnan(Am__dff_l[id * nlay + k]))
             {
                 printf("Am__dff_l[id * nlay + k] contain a NaNs at mu=0 at level:%d \n",  k);
+                __threadfence();         // ensure store issued before trap
+                asm("trap;");            // kill kernel with error
+            }
             }
             if (isnan(Bm__dff_l[id * nlay + k]))
             {
                 printf("Bm__dff_l[id * nlay + k] contain a NaNs at mu=0 at level:%d \n",  k);
+                __threadfence();         // ensure store issued before trap
+                asm("trap;");            // kill kernel with error
+            }
             }
             if (isnan(Gp__dff_l[id * nlay + k]))
             {
                 printf("Gp__dff_l[id * nlay + k] contain a NaNs at mu=0 at level:%d \n",  k);
+                __threadfence();         // ensure store issued before trap
+                asm("trap;");            // kill kernel with error
+            }
             }
             if (isnan(Bp__dff_l[id * nlay + k]))
             {
                 printf("Bp__dff_l[id * nlay + k] contain a NaNs at mu=0 at level:%d \n",  k);
+                __threadfence();         // ensure store issued before trap
+                asm("trap;");            // kill kernel with error
+            }
             }
 
         }
@@ -1070,7 +1082,7 @@ __device__  void lw_grey_updown_linear(int id,
             lw_down_g__dff_e[id * nlev +  k - 1] = lw_down_g__dff_e[id * nlev +  k] * edel__dff_l[id * nlay + k - 1] + 
             Am__dff_l[id * nlay + k - 1] * be__df_e[id * nlev + k] + Bm__dff_l[id * nlay + k - 1] * be__df_e[id * nlev + k - 1]; // TS intensity
 
-            if (isnan(lw_down_g__dff_e[id * nlev + k]))
+            if (isnan(lw_down_g__dff_e[id * nlev + k-1]))
             {
                 printf("lw_down_g__dff_e contain a NaNs at mu=0 at level:%d \n",  k);
                 __threadfence();         // ensure store issued before trap
