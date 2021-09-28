@@ -1058,10 +1058,10 @@ __device__  void lw_grey_updown_linear(int id,
         // Perform downward loop first
         // ghost layer radiates down as well
         lw_down_g__dff_e[id * nlev +  (nlev-1)] = (1.0 - exp(-tau_IRe__df_e[id*nlev + (nlev-1)] / uarr[g])) * be__df_e[id * nlev + (nlev-1)];
-        for (k = nlev-2; k > 0; k--)
+        for (k = nlev-1; k > 0; k--)
         {
-            lw_down_g__dff_e[id * nlev +  k - 1] = lw_down_g__dff_e[id * nlev +  k] * edel__dff_l[id * nlay + k] + 
-            Am__dff_l[id * nlay + k] * be__df_e[id * nlev + k] + Bm__dff_l[id * nlay + k] * be__df_e[id * nlev + k - 1]; // TS intensity
+            lw_down_g__dff_e[id * nlev +  k - 1] = lw_down_g__dff_e[id * nlev +  k] * edel__dff_l[id * nlay + k - 1] + 
+            Am__dff_l[id * nlay + k - 1] * be__df_e[id * nlev + k] + Bm__dff_l[id * nlay + k - 1] * be__df_e[id * nlev + k - 1]; // TS intensity
 
             if (isnan(lw_down_g__dff_e[id * nlev + k]))
             {
@@ -1077,8 +1077,8 @@ __device__  void lw_grey_updown_linear(int id,
         lw_up_g__dff_e[id * nlev + 0] = be_int + lw_down_g__dff_e[id * nlev +  0];
         for (k = 1; k < nlev; k++)
         {
-            lw_up_g__dff_e[id * nlev + k] = lw_up_g__dff_e[id * nlev + k - 1] * edel__dff_l[id * nlay + k -1] +
-                Bp__dff_l[id * nlay + k -1] * be__df_e[id * nlev + k] + Gp__dff_l[id * nlay + k] * be__df_e[id * nlev + k - 1]; // TS intensity
+            lw_up_g__dff_e[id * nlev + k] = lw_up_g__dff_e[id * nlev + k - 1] * edel__dff_l[id * nlay + k - 1] +
+                Bp__dff_l[id * nlay + k - 1] * be__df_e[id * nlev + k] + Gp__dff_l[id * nlay + k - 1] * be__df_e[id * nlev + k - 1]; // TS intensity
 
             if (isnan(lw_up_g__dff_e[id * nlev + k]))
             {
