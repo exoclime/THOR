@@ -1008,56 +1008,40 @@ __device__  void lw_grey_updown_linear(int id,
     for (g = 0; g < gauss_ng; g++)
     {
         // Prepare loop
-        for (k = 0; k < nlay; k++)
+        for (k = nlay-1; k > 0; k--)
         {
-            // Olson & Kunasz (1987) parameters
-            //del__dff_l[id*nlay + k]
+            // Olson & Kunasz (1987) linear interpolant parameters
+            
             del = dtau__dff_l[id * nlay + k] / uarr[g];
             edel__dff_l[id * nlay + k] = exp(-del);
             e0i = 1.0 -  edel__dff_l[id * nlay + k];
             e1i = del - e0i;
-            eli_del = e1i / del;
 
-            //e0i__dff_l[id * nlay + k] = 1.0 - edel__dff_l[id * nlay + k];
-            //e1i__dff_l[id * nlay + k] = del__dff_l[id * nlay + k] - e0i__dff_l[id * nlay + k];
-            //e1i_del = e1i__dff_l[id * nlay + k] / del__dff_l[id*nlay + k];
+            eli_del = e1i / del; //  The equivalent to the linear in tau term
 
             if (dtau__dff_l[id * nlay + k] < 1e-6)
             {
+                // If we are in very low optical depth regime, then use an isothermal approximation
                 Am__dff_l[id * nlay + k] = (0.5*(be__df_e[id * nlev + k] + be__df_e[id * nlev + k + 1]) * e0i) / be__df_e[id * nlev + k+1];
                 Bm__dff_l[id * nlay + k] = 0.0;
                 Gp__dff_l[id * nlay + k] = 0.0;
                 Bp__dff_l[id * nlay + k] = Am__dff_l[id * nlay + k];
 
-
-                //edel__dff_l[id * nlay + k] =
-                // If we are in very low optical depth regime, then use an isothermal approximation
-                //Am__dff_l[id * nlay + k] = (0.5*(be__df_e[id * nlay1 + k] + be__df_e[id * nlay1 + k + 1]) * e0i) / be__df_e[id * nlay1 + k+1]; 
-                //Bm__dff_l[id * nlay + k] = e1i__dff_l[id * nlay + k] / del__dff_l[id * nlay + k]; 
-                //Gp__dff_l[id * nlay + k] = 0.0;
-                //Bp__dff_l[id * nlay + k] = Am__dff_l[id * nlay + k];
             } else
             {
                 Am__dff_l[id * nlay + k] = e0i - eli_del;
                 Bm__dff_l[id * nlay + k] = eli_del;
                 Gp__dff_l[id * nlay + k] = Am__dff_l[id * nlay + k];
                 Bp__dff_l[id * nlay + k] = Bm__dff_l[id * nlay + k];
-
-
-                //Am__dff_l[id * nlay + k] = e0i__dff_l[id * nlay + k] - e1i__dff_l[id * nlay + k] / del__dff_l[id * nlay + k]; // Am[k] = Gp[k], just indexed differently
-                //Bm__dff_l[id * nlay + k] = e1i__dff_l[id * nlay + k] / del__dff_l[id * nlay + k]; // Bm[k] = Bp[k], just indexed differently
-                //Gp__dff_l[id * nlay + k] = Am__dff_l[id * nlay + k];
-                //Bp__dff_l[id * nlay + k] = Bm__dff_l[id * nlay + k];
             }
 
         }
 
-        // Peform downward loop first
-        // Top boundary condition
-        //lw_down_g__dff_e[id * nlev +  (nlev-1)] = 0.0;
+        // Begin two-stream loops
+        // Perform downward loop first
         // ghost layer radiates down as well
         lw_down_g__dff_e[id * nlev +  (nlev-1)] = (1.0 - exp(-tau_IRe__df_e[id*nlev + (nlev-1)] / uarr[g])) * be__df_e[id * nlev + (nlev-1)];
-        for (k = nlev-1; k > 0; k--)
+        for (k = nlev-2; k > 0; k--)
         {
             lw_down_g__dff_e[id * nlev +  k - 1] = lw_down_g__dff_e[id * nlev +  k] * edel__dff_l[id * nlay + k] + 
             Am__dff_l[id * nlay + k] * be__df_e[id * nlev + k] + Bm__dff_l[id * nlay + k] * be__df_e[id * nlev + k - 1]; // TS intensity
@@ -1065,17 +1049,18 @@ __device__  void lw_grey_updown_linear(int id,
 
 
         // Peform upward loop
-        // Lower boundary condition
+        // Lower boundary condition - internal heat definition Fint = F_down - F_up
+        // here we use the same condition but use intensity units to be consistent
         
         lw_up_g__dff_e[id * nlev + 0] = be_int + lw_down_g__dff_e[id * nlev +  0];
-        for (k = 0; k < nlay; k++)
+        for (k = 1; k < nlev; k++)
         {
-            lw_up_g__dff_e[id * nlev + k + 1] = lw_up_g__dff_e[id * nlev + k] * edel__dff_l[id * nlay + k] +
-                Bp__dff_l[id * nlay + k] * be__df_e[id * nlev + k + 1] + Gp__dff_l[id * nlay + k] * be__df_e[id * nlev + k]; // TS intensity
+            lw_up_g__dff_e[id * nlev + k] = lw_up_g__dff_e[id * nlev + k - 1] * edel__dff_l[id * nlay + k] +
+                Bp__dff_l[id * nlay + k] * be__df_e[id * nlev + k] + Gp__dff_l[id * nlay + k] * be__df_e[id * nlev + k - 1]; // TS intensity
         }
 
         // Sum up flux arrays with Gauss weights and points
-        for (k = nlay; k > -1; k--)
+        for (k = 0; k < nlev; k++)
         {
             lw_down__df_e[id * nlev + k] = lw_down__df_e[id * nlev + k ] + lw_down_g__dff_e[id * nlev +  k] * w[g] * uarr[g];
             lw_up__df_e[id * nlev + k ] = lw_up__df_e[id * nlev + k ] + lw_up_g__dff_e[id * nlev + k] * w[g] * uarr[g];
