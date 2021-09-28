@@ -1046,9 +1046,9 @@ __device__  void lw_grey_updown_linear(int id,
             lw_down_g__dff_e[id * nlev +  k - 1] = lw_down_g__dff_e[id * nlev +  k] * edel__dff_l[id * nlay + k] + 
             Am__dff_l[id * nlay + k] * be__df_e[id * nlev + k] + Bm__dff_l[id * nlay + k] * be__df_e[id * nlev + k - 1]; // TS intensity
 
-            if (isnan(lw_down_g__dff_e))
+            if (isnan(lw_down_g__dff_e[id * nlev + k]))
             {
-                printf("lw_down_g__dff_e contain a NaNs at mu=0 at level:%d \n",  level);
+                printf("lw_down_g__dff_e contain a NaNs at mu=0 at level:%d \n",  k);
             }
         }
 
@@ -1063,9 +1063,9 @@ __device__  void lw_grey_updown_linear(int id,
             lw_up_g__dff_e[id * nlev + k] = lw_up_g__dff_e[id * nlev + k - 1] * edel__dff_l[id * nlay + k -1] +
                 Bp__dff_l[id * nlay + k -1] * be__df_e[id * nlev + k] + Gp__dff_l[id * nlay + k] * be__df_e[id * nlev + k - 1]; // TS intensity
 
-            if (isnan(lw_up_g__dff_e))
+            if (isnan(lw_up_g__dff_e[id * nlev + k]))
             {
-                printf("lw_up_g__dff_e contain a NaNs at mu=0 at level:%d \n",  level);
+                printf("lw_up_g__dff_e contain a NaNs at mu=0 at level:%d \n",  k);
             }
         }
 
