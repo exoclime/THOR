@@ -1074,13 +1074,13 @@ __device__  void lw_grey_updown_linear(int id,
         // Perform downward loop first
         // ghost layer radiates down as well
         lw_down_g__dff_e[id * nlev +  (nlev-1)] = (1.0 - exp(-tau_IRe__df_e[id*nlev + (nlev-1)] / uarr[g])) * be__df_e[id * nlev + (nlev-1)];
-        if (isnan(tau_IRe__df_e[id*nlev + (nlev-1)]))
+        if (isnan(tau_IRe__df_e[id*nlev + nlev-1]))
             {
                 printf("tau_IRe__df_e[id*nlev + (nlev-1)] contain a NaNs at mu=0 at level:%d \n",  (nlev-1));
                 __threadfence();         // ensure store issued before trap
                 asm("trap;");            // kill kernel with error
             }
-        if (isnan(lw_down_g__dff_e[id * nlev + (nlev-1)]))
+        if (isnan(lw_down_g__dff_e[id * nlev + nlev-1]))
             {
                 printf("lw_down_g__dff_e contain a NaNs at mu=0 at level:%d \n",  (nlev-1));
                 __threadfence();         // ensure store issued before trap
@@ -1127,9 +1127,9 @@ __device__  void lw_grey_updown_linear(int id,
                 __threadfence();         // ensure store issued before trap
                 asm("trap;");            // kill kernel with error
             }
-            if (isnan(lw_down_g__dff_e[id * nlev + (k-1)]))
+            if (isnan(lw_down_g__dff_e[id * nlev +  k - 1]))
             {
-                printf("lw_down_g__dff_e[id * nlev + (k-1)] contain a NaNs at mu=0 at level:%d \n",  k);
+                printf("lw_down_g__dff_e[id * nlev + k - 1)] contain a NaNs at mu=0 at level:%d \n",  k);
                 __threadfence();         // ensure store issued before trap
                 asm("trap;");            // kill kernel with error
             }
