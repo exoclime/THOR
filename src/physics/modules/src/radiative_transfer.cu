@@ -515,7 +515,7 @@ void Bond_Parmentier(double Teff0, double grav, double& AB) {
     }
 
     // Final Bond Albedo expression
-    AB = pow(((double)10.0), (a + b * log10(Teff0)));
+    AB = pow(10.0, (a + b * log10(Teff0)));
 
 }
 
@@ -704,20 +704,20 @@ void PF_text_file_to_array(std::string name ,double *array, int Nlength){
 
         // Calculation of all values
         // Visual band gamma
-        gam_V[id*3 + 0] = pow(((double)10.0), (aV1 + bV1 * l10T));
-        gam_V[id*3 + 1] = pow(((double)10.0), (aV2 + bV2 * l10T));
-        gam_V[id*3 + 2] = pow(((double)10.0), (aV3 + bV3 * l10T));
+        gam_V[id*3 + 0] = pow(10.0, (aV1 + bV1 * l10T));
+        gam_V[id*3 + 1] = pow(10.0, (aV2 + bV2 * l10T));
+        gam_V[id*3 + 2] = pow(10.0, (aV3 + bV3 * l10T));
 
 
 
         // Visual band fractions
         for (i = 0; i < 3; i++)
         {
-            Beta_V[id*3 + i] = ((double)1.0) / ((double)3.0);
+            Beta_V[id*3 + i] = 1.0 / 3.0;
         }
 
         // gamma_Planck - if < 1 then make it grey approximation (k_Planck = k_Ross, gam_P = 1)
-        gam_P[id] = pow(((double)10.0), (aP * l10T2 + bP * l10T + cP));
+        gam_P[id] = pow(10.0, (aP * l10T2 + bP * l10T + cP));
         if (gam_P[id] < 1.0000001)
         {
             gam_P[id] = 1.0000001;
@@ -734,6 +734,9 @@ void PF_text_file_to_array(std::string name ,double *array, int Nlength){
         // gam_1 and gam_2 values - Eq. 92, 93 from Parmentier & Menou (2014)
         gam_1[id] = Beta[id*2 + 0] + R - Beta[id*2 + 0] * R;
         gam_2[id] = gam_1[id] / R;
+
+        // Calculate tau_lim parameter -> not anymore needed
+        //tau_lim = 1.0_dp/(gam_1[id]*gam_2[id]) * sqrt(gam_P[id]/3.0_dp);
     }
 
     
@@ -822,6 +825,8 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
     if (run) {
         double picket_fence_mod = true;
         double Tirr;
+        double F0_h;
+        double const sb = 5.670374419e-8;
         //
         //  Number of threads per block.
         const int NTH = 256;
@@ -831,11 +836,14 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
         dim3 NBRT((esp.point_num / NTH) + 1, 1, 1);
 
         if (picket_fence_mod){
+
+            Tirr = Tstar*pow((radius_star/planet_star_dist), 0.5);
+
+            F0_h = sb * pow(Tirr, 4.0);
                 
             for (int c = 0; c <  esp.point_num; c++){
                 // Parmentier opacity profile parameters - first get Bond albedo
-                Tirr = Tstar*pow((radius_star/planet_star_dist), 0.5);
-                
+
                 Teff[c] = pow( (pow(esp.Tint, 4.0) +
                     (1.0 / sqrt(3.0)) *
                     pow(Tirr, 4.0) ), 0.25);
@@ -847,7 +855,7 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                 if (esp.insolation.get_host_cos_zenith_angles()[c] >= 0.0)
                 {
                     Teff[c] = pow( (pow(esp.Tint, 4.0) +
-                        (1.0 - AB__h[c]) * esp.insolation.get_host_cos_zenith_angles()[c] * pow(Tirr, 4.0) ), 0.25);
+                        (1.0 - AB__h[c]) * esp.insolation.get_host_cos_zenith_angles()[c] * pow(Tirr, 4.0)), 0.25);
                 } else {
                     Teff[c] = pow( pow(esp.Tint, 4.0) + 0.0, 0.25);
                 }
@@ -957,7 +965,7 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                 kappa_lw,
                 latf_lw,
                 kappa_lw_pole,
-                incflx,
+                F0,
                 esp.point_num,
                 esp.nv,
                 esp.nvi,

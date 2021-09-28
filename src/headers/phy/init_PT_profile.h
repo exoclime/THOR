@@ -571,20 +571,20 @@ void gam_Parmentier(double Teff, int table_num, double(&gam_V)[3], double(&Beta_
 
     // Calculation of all values
     // Visual band gamma
-    gam_V[0] = pow(((double)10.0), (aV1 + bV1 * l10T));
-    gam_V[1] = pow(((double)10.0), (aV2 + bV2 * l10T));
-    gam_V[2] = pow(((double)10.0), (aV3 + bV3 * l10T));
+    gam_V[0] = pow(10.0, (aV1 + bV1 * l10T));
+    gam_V[1] = pow(10.0, (aV2 + bV2 * l10T));
+    gam_V[2] = pow(10.0, (aV3 + bV3 * l10T));
 
 
 
     // Visual band fractions
     for (i = 0; i < 3; i++)
     {
-        Beta_V[i] = ((double)1.0) / ((double)3.0);
+        Beta_V[i] = 1.0 / 3.0;
     }
 
     // gamma_Planck - if < 1 then make it grey approximation (k_Planck = k_Ross, gam_P = 1)
-    gam_P = pow(((double)10.0), (aP * l10T2 + bP * l10T + cP));
+    gam_P = pow(10.0, (aP * l10T2 + bP * l10T + cP));
     if (gam_P < 1.0000001)
     {
         gam_P = 1.0000001;
@@ -603,7 +603,7 @@ void gam_Parmentier(double Teff, int table_num, double(&gam_V)[3], double(&Beta_
     gam_2 = gam_1 / R;
 
     // Calculate tau_lim parameter
-    tau_lim = ((double)1.0) / (gam_1 * gam_2) * sqrt(gam_P / ((double)3.0));
+    tau_lim = 1.0 / (gam_1 * gam_2) * sqrt(gam_P / 3.0);
 
 
 }

@@ -649,167 +649,38 @@ __device__ void kernel_k_Ross_Freedman(double Tin, double Pin, double met, doubl
 
     // Low pressure expression
     k_lowP = c1 * atan((double)(Tl10 - c2)) -
-        (c3 / (Pl10 + c4)) * exp((double)(pow((double)(Tl10 - c5), 2.0))) + c6 * met + c7;
+        (c3 / (Pl10 + c4)) * exp(pow(Tl10 - c5, 2.0)) + c6 * met + c7;
 
-    // De log10l
+    // De log10
     k_lowP = pow((double)(10.0), k_lowP);
 
     // Temperature split for coefficents = 800 K
     if (Tin <= 800.0)
     {
-        k_hiP = c8_l + c9_l * Tl10 + c10_l * pow((double)(Tl10), 2.0) +
+        k_hiP = c8_l + c9_l * Tl10 + c10_l * pow(Tl10, 2.0) +
             Pl10 * (c11_l + c12_l * Tl10) +
-            c13_l * met * (0.5 + onedivpi * atan((double)((Tl10 - ((double)2.5)) / (double)0.2)));
+            c13_l * met * (0.5 + onedivpi * atan((Tl10 - 2.5) / 0.2));
     }
     else
     {
         k_hiP = c8_h + c9_h * Tl10 +
             c10_h * pow((double)(Tl10), 2.0) + Pl10 * (c11_h + c12_h * Tl10) +
-            c13_h * met * (0.5 + onedivpi * atan((double)((Tl10 - ((double)2.5)) / (double)0.2)));
+            c13_h * met * (0.5 + onedivpi * atan((Tl10 - 2.5) / 0.2));
     }
 
-    // De log10l
+    // De log10
     k_hiP = pow((double)(10.0), k_hiP);
 
     // Total Rosseland mean opacity - converted to m2 kg-1
     k_IR = (k_lowP + k_hiP) / ((double)10.0);
 
     // Avoid divergence in fit for large values
-    if (k_IR > 1.0e10)
+    if (k_IR > 1.0e30) // 1.0e10
     {
-        k_IR = 1.0e10;
+        k_IR = 1.0e30;
     }
 
-    if (k_IR < 0.0 )
-    {
-        
-        if (Tin==0.0)
-        {       
-            printf("Tin is 0 K\n");
-        }
-        if (Tin<0.0)
-        {       
-            printf("Tin is negative\n");
-        }
-        if (isnan(Tin))
-        {       
-            printf("Tin is NaN\n");
-        }
-        if (isnan(Pin))
-        {       
-            printf("Pin is NaN\n");
-        }
-        if (Pin<1.0)
-        {       
-            printf("Pin is below 1 Pa \n");
-        }
-        if (Pin<0.0)
-        {       
-            printf("Pin is below below 0 Pa \n");
-        }
-         if (Pin==0.0)
-        {       
-            printf("Pin is 0 Pa \n");
-        }
-        printf("k_IR is negative\n");
-        __threadfence();         // ensure store issued before trap
-        asm("trap;");            // kill kernel with error
-        
-    }
-    if ( k_IR == 0.0)
-    {
-        if (Tin<800.0)
-        {       
-            printf("Tin below 800 K \n");
-        }
-        if (Tin<500.0)
-        {       
-            printf("Tin below 500 K \n");
-        }
-        if (Tin<300.0)
-        {       
-            printf("Tin below 300 K \n");
-        }
-        if (Tin==0.0)
-        {       
-            printf("Tin is 0 K\n");
-        }
-        if (Tin<0.0)
-        {       
-            printf("Tin is negative\n");
-        }
-        if (isnan(Tin))
-        {       
-            printf("Tin is NaN\n");
-        }
-        if (isnan(Pin))
-        {       
-            printf("Pin is NaN\n");
-        }
-        if (Pin<1.0)
-        {       
-            printf("Pin is below 1 Pa \n");
-        }
-        if (Pin<0.0)
-        {       
-            printf("Pin is below below 0 Pa \n");
-        }
-        if (Pin==0.0)
-        {       
-            printf("Pin is 0 Pa  \n");
-        }
-        printf("k_IR is 0 \n");
-        __threadfence();         // ensure store issued before trap
-        asm("trap;");            // kill kernel with error
-        
-    }
-    if ( isnan(k_IR))
-    {
-        if (Tin<800.0)
-        {       
-            printf("Tin below 800 K \n");
-        }
-        if (Tin<500.0)
-        {       
-            printf("Tin below 500 K \n");
-        }
-        if (Tin<300.0)
-        {       
-            printf("Tin below 300 K \n");
-        }
-        if (Tin==0.0)
-        {       
-            printf("Tin is 0 K\n");
-        }
-        if (Tin<0.0)
-        {       
-            printf("Tin is negative\n");
-        }
-        if (isnan(Tin))
-        {       
-            printf("Tin is NaN\n");
-        }
-        if (isnan(Pin))
-        {       
-            printf("Pin is NaN\n");
-        }
-        if (Pin<1.0)
-        {       
-            printf("Pin is below 1 Pa \n");
-        }
-        if (Pin<0.0)
-        {       
-            printf("Pin is below below 0 Pa \n");
-        }
-        if (Pin==0.0)
-        {       
-            printf("Pin is 0 Pa  \n");
-        }
-        printf("k_IR is NaN \n");
-        __threadfence();         // ensure store issued before trap
-        asm("trap;");            // kill kernel with error
-        
-    }
+    
     
 }
 
@@ -1014,7 +885,7 @@ __device__ void tau_struct(int id,
 
     // running sum of optical depth
     // added a ghost level above the grid model, otherwise tau_sum = 0.0
-    tau_sum = kRoss[id*nlev*nchan + channel * nlev + nlev-1] * pl[id*nlev  + nlev-1]/gravity;
+    tau_sum = (kRoss[id*nlev*nchan + channel * nlev + nlev-1] * pl[id*nlev  + nlev-1])/gravity;
     tau_struc_e[id*(nlev+1) + nlev] = tau_sum;
 
     //tau_sum = 0.0;
@@ -1028,7 +899,7 @@ __device__ void tau_struct(int id,
 
     // Integrate from top to bottom    
 
-    for (level = nlev-1; level > -1; level--) 
+    for (level = nlev-1; level > 0; level--) 
     {
         // Pressure difference between layer edges
         delPdelAlt = (Altitudeh_d[level + 1] - Altitudeh_d[level + 0]);
@@ -1048,7 +919,7 @@ __device__ void tau_struct(int id,
         tau_sum = tau_sum + tau_lay;
 
         // Optical depth structure is running sum
-        tau_struc_e[id*(nlev+1) + level] = tau_sum;
+        tau_struc_e[id*(nlev+1) + level-1] = tau_sum;
     }
 
 }
@@ -1057,7 +928,7 @@ __device__ void tau_struct(int id,
 //////////////////////////////////////////////////////////////
 
 __device__  void sw_grey_down(int id,
-    int nlay1,
+    int nlev,
     double solar,
     double *solar_tau,
     double *sw_down__df_e,
@@ -1065,20 +936,23 @@ __device__  void sw_grey_down(int id,
     // dependencies
     //// expl -> math
 
+    
+
     // start operations
-    for (int i = nlay1-1; i >-1; i--)
+    for (int i = nlev-1; i >-1; i--)
     {
-        sw_down__df_e[id * nlay1 + i] = solar * mu[id] * exp(-solar_tau[id * nlay1 + i] / mu[id]);
+        sw_down__df_e[id * nlev + i] = solar * exp(-solar_tau[id * nlev + i] / mu[id]);
     }
 
 }
 
 ///////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////
+// short characteristic function() Olsen  & Kunasz 1987) / (Kitzmann et al. 2018)
 
 __device__  void lw_grey_updown_linear(int id,
     int nlay,
-    int nlay1,
+    int nlev,
     double *be__df_e,
     double *tau_IRe__df_e,
     double *lw_up__df_e,
@@ -1111,6 +985,7 @@ __device__  void lw_grey_updown_linear(int id,
     const int gauss_ng = 2;
     double uarr[gauss_ng];
     double w[gauss_ng];
+    double e1i_del, del, e0i, e1i, eli_del;
 
     uarr[0] = 0.21132487;
     uarr[1] = 0.78867513;
@@ -1119,14 +994,14 @@ __device__  void lw_grey_updown_linear(int id,
 
     for (k = nlay-1; k >-1; k--)
     {
-        dtau__dff_l[id*nlay + k ] = (tau_IRe__df_e[id*nlay1 + k] - tau_IRe__df_e[id*nlay1 + k + 1]);
+        dtau__dff_l[id*nlay + k ] = (tau_IRe__df_e[id*nlev + k] - tau_IRe__df_e[id*nlev + k + 1]);
     }
 
     // Zero the flux arrays
-    for (k = 0; k < nlay1; k++)
+    for (k = 0; k < nlev; k++)
     {
-        lw_down__df_e[id*nlay1+k] = 0.0;
-        lw_up__df_e[id*nlay1 + k] = 0.0;
+        lw_down__df_e[id*nlev+k] = 0.0;
+        lw_up__df_e[id*nlev + k] = 0.0;
     }
 
     // Start loops to integrate in mu space
@@ -1136,62 +1011,81 @@ __device__  void lw_grey_updown_linear(int id,
         for (k = 0; k < nlay; k++)
         {
             // Olson & Kunasz (1987) parameters
-            del__dff_l[id*nlay + k] = dtau__dff_l[id * nlay + k] / uarr[g];
-            edel__dff_l[id * nlay + k] = exp((double)(-del__dff_l[id * nlay + k]));
-            e0i__dff_l[id * nlay + k] = 1.0 - edel__dff_l[id * nlay + k];
-            e1i__dff_l[id * nlay + k] = del__dff_l[id * nlay + k] - e0i__dff_l[id * nlay + k];
+            //del__dff_l[id*nlay + k]
+            del = dtau__dff_l[id * nlay + k] / uarr[g];
+            edel__dff_l[id * nlay + k] = exp(-del);
+            e0i = 1.0 -  edel__dff_l[id * nlay + k];
+            e1i = del - e0i;
+            eli_del = e1i / del;
+
+            //e0i__dff_l[id * nlay + k] = 1.0 - edel__dff_l[id * nlay + k];
+            //e1i__dff_l[id * nlay + k] = del__dff_l[id * nlay + k] - e0i__dff_l[id * nlay + k];
+            //e1i_del = e1i__dff_l[id * nlay + k] / del__dff_l[id*nlay + k];
 
             if (dtau__dff_l[id * nlay + k] < 1e-6)
             {
-                // If we are in very low optical depth regime, then use an isothermal approximation
-                Am__dff_l[id * nlay + k] = (0.5*(be__df_e[id * nlay1 + k] + be__df_e[id * nlay1 + k + 1]) * e0i__dff_l[id * nlay + k]) / be__df_e[id * nlay1 + k+1]; 
-                Bm__dff_l[id * nlay + k] = e1i__dff_l[id * nlay + k] / del__dff_l[id * nlay + k]; 
+                Am__dff_l[id * nlay + k] = (0.5*(be__df_e[id * nlev + k] + be__df_e[id * nlev + k + 1]) * e0i) / be__df_e[id * nlev + k+1];
+                Bm__dff_l[id * nlay + k] = 0.0;
                 Gp__dff_l[id * nlay + k] = 0.0;
                 Bp__dff_l[id * nlay + k] = Am__dff_l[id * nlay + k];
+
+
+                //edel__dff_l[id * nlay + k] =
+                // If we are in very low optical depth regime, then use an isothermal approximation
+                //Am__dff_l[id * nlay + k] = (0.5*(be__df_e[id * nlay1 + k] + be__df_e[id * nlay1 + k + 1]) * e0i) / be__df_e[id * nlay1 + k+1]; 
+                //Bm__dff_l[id * nlay + k] = e1i__dff_l[id * nlay + k] / del__dff_l[id * nlay + k]; 
+                //Gp__dff_l[id * nlay + k] = 0.0;
+                //Bp__dff_l[id * nlay + k] = Am__dff_l[id * nlay + k];
             } else
             {
-                Am__dff_l[id * nlay + k] = e0i__dff_l[id * nlay + k] - e1i__dff_l[id * nlay + k] / del__dff_l[id * nlay + k]; // Am[k] = Gp[k], just indexed differently
-                Bm__dff_l[id * nlay + k] = e1i__dff_l[id * nlay + k] / del__dff_l[id * nlay + k]; // Bm[k] = Bp[k], just indexed differently
+                Am__dff_l[id * nlay + k] = e0i - eli_del;
+                Bm__dff_l[id * nlay + k] = eli_del;
                 Gp__dff_l[id * nlay + k] = Am__dff_l[id * nlay + k];
                 Bp__dff_l[id * nlay + k] = Bm__dff_l[id * nlay + k];
+
+
+                //Am__dff_l[id * nlay + k] = e0i__dff_l[id * nlay + k] - e1i__dff_l[id * nlay + k] / del__dff_l[id * nlay + k]; // Am[k] = Gp[k], just indexed differently
+                //Bm__dff_l[id * nlay + k] = e1i__dff_l[id * nlay + k] / del__dff_l[id * nlay + k]; // Bm[k] = Bp[k], just indexed differently
+                //Gp__dff_l[id * nlay + k] = Am__dff_l[id * nlay + k];
+                //Bp__dff_l[id * nlay + k] = Bm__dff_l[id * nlay + k];
             }
 
         }
 
         // Peform downward loop first
         // Top boundary condition
-        lw_down_g__dff_e[id * nlay1 +  nlay] = 0.0;
+        //lw_down_g__dff_e[id * nlev +  (nlev-1)] = 0.0;
         // ghost layer radiates down as well
-        lw_down_g__dff_e[id * nlay1 +  nlay] = 1.0 - exp(-tau_IRe__df_e[id*nlay1 + nlay] / uarr[g]) * be__df_e[id * nlay1 + nlay];
-        for (k = nlay-1; k > -1; k--)
+        lw_down_g__dff_e[id * nlev +  (nlev-1)] = (1.0 - exp(-tau_IRe__df_e[id*nlev + (nlev-1)] / uarr[g])) * be__df_e[id * nlev + (nlev-1)];
+        for (k = nlev-1; k > 0; k--)
         {
-            lw_down_g__dff_e[id * nlay1 +  k] = lw_down_g__dff_e[id * nlay1 +  k + 1] * edel__dff_l[id * nlay + k] + 
-            Am__dff_l[id * nlay + k] * be__df_e[id * nlay1 + k+1] + Bm__dff_l[id * nlay + k] * be__df_e[id * nlay1 + k]; // TS intensity
+            lw_down_g__dff_e[id * nlev +  k - 1] = lw_down_g__dff_e[id * nlev +  k] * edel__dff_l[id * nlay + k] + 
+            Am__dff_l[id * nlay + k] * be__df_e[id * nlev + k] + Bm__dff_l[id * nlay + k] * be__df_e[id * nlev + k - 1]; // TS intensity
         }
 
 
         // Peform upward loop
         // Lower boundary condition
         
-        lw_up_g__dff_e[id * nlay1 + 0  ] = be_int + lw_down_g__dff_e[id * nlay1 +  0];
+        lw_up_g__dff_e[id * nlev + 0] = be_int + lw_down_g__dff_e[id * nlev +  0];
         for (k = 0; k < nlay; k++)
         {
-            lw_up_g__dff_e[id * nlay1 + k+1] = lw_up_g__dff_e[id * nlay1 + k] * edel__dff_l[id * nlay + k] +
-                Bp__dff_l[id * nlay + k] * be__df_e[id * nlay1 + k + 1] + Gp__dff_l[id * nlay + k] * be__df_e[id * nlay1 + k]; // TS intensity
+            lw_up_g__dff_e[id * nlev + k + 1] = lw_up_g__dff_e[id * nlev + k] * edel__dff_l[id * nlay + k] +
+                Bp__dff_l[id * nlay + k] * be__df_e[id * nlev + k + 1] + Gp__dff_l[id * nlay + k] * be__df_e[id * nlev + k]; // TS intensity
         }
 
         // Sum up flux arrays with Gauss weights and points
-        for (k = nlay1-1; k > -1; k--)
+        for (k = nlay; k > -1; k--)
         {
-            lw_down__df_e[id * nlay1 + k] = lw_down__df_e[id * nlay1 + k ] + lw_down_g__dff_e[id * nlay1 +  k] * w[g] * uarr[g];
-            lw_up__df_e[id * nlay1 + k ] = lw_up__df_e[id * nlay1 + k ] + lw_up_g__dff_e[id * nlay1 + k] * w[g] * uarr[g];
+            lw_down__df_e[id * nlev + k] = lw_down__df_e[id * nlev + k ] + lw_down_g__dff_e[id * nlev +  k] * w[g] * uarr[g];
+            lw_up__df_e[id * nlev + k ] = lw_up__df_e[id * nlev + k ] + lw_up_g__dff_e[id * nlev + k] * w[g] * uarr[g];
         }
     }
 
-    for (k = 0; k < nlay1; k++)
+    for (k = 0; k < nlev; k++)
     {
-        lw_down__df_e[id * nlay1 + k] = twopi * lw_down__df_e[id * nlay1 + k];
-        lw_up__df_e[id * nlay1 + k] = twopi * lw_up__df_e[id * nlay1 + k];
+        lw_down__df_e[id * nlev + k] = twopi * lw_down__df_e[id * nlev + k];
+        lw_up__df_e[id * nlev + k] = twopi * lw_up__df_e[id * nlev + k];
     }
 
 }
@@ -1200,9 +1094,11 @@ __device__  void lw_grey_updown_linear(int id,
 ///////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////
 
+// before called ts_short_char
 
 
-    __device__ void Kitzmann_TS_noscatt(int id,
+
+    __device__ void ts_short_char(int id,
         const int nlay,
         const int nlay1,
         double *Altitude_d,
@@ -1220,7 +1116,7 @@ __device__  void lw_grey_updown_linear(int id,
         double Finc,
         double Tint,
         double grav,
-        double AB_d,
+        //double AB_d,
         //Kitzman working variables
         double *tau_Ve__df_e,
         double *tau_IRe__df_e,
@@ -1267,97 +1163,6 @@ __device__  void lw_grey_updown_linear(int id,
        
         // start operation
         double out;
-                
-        /*
-        // Find temperature at layer edges through linear interpolation and extrapolation
-        for (int i = nlay - 2; i > -1; i--)
-        {
-
-            
-            linear_log_interp(id,
-                i,
-                nlay,
-                nlay1,
-                Altitude_d,
-                Altitudeh_d,
-                Tl,
-                Te__df_e);
-
-            //printf("---------\n");
-            if (pe[id*nlay1 + i + 1] == 0.0)
-            {                
-                    printf("pe[id*nlay1 + i + 1] is zer0\n");
-            }
-             if (pe[id*nlay1 + i + 1] < 0.0)
-            {                
-                    printf("pe[id*nlay1 + i + 1] is negative\n");
-            }
-
-            if (pe[id*nlay1 + i + 1] > pe[id * nlay1 + i ])
-            {                
-                    printf("pe[id*nlay1 + i + 1] > pe[id * nlay1 + i ] \n");
-            }
-            if (pl[id*nlay + i + 1] > pl[id * nlay + i ])
-            {                
-                    printf("pl[id*nlay + i + 1] > pl[id * nlay + i ] \n");
-            }
-
-            if (pl[id * nlay + i + 1] == 0.0)
-            {                
-                    printf("pl[id * nlay + i + 1] is zer0\n");
-            }
-            if (pl[id * nlay + i + 1] < 0.0)
-            {                
-                    printf("pl[id * nlay + i + 1] is negative\n");
-            }
-            if (pl[id * nlay + i ] == 0.0)
-            {                
-                    printf("pl[id * nlay + i ] is zer0\n");
-            }
-            if (pl[id * nlay + i ] < 0.0)
-            {                
-                    printf("pl[id * nlay + i ] is negative\n");
-            }
-            if (Tl[id * nlay + i+1] == 0.0)
-            {                
-                    printf("Tl[id * nlay + i+1] is zer0\n");
-            }
-            if (Tl[id * nlay + i+1] < 0.0)
-            {                
-                    printf("Tl[id * nlay + i+1] is negative\n");
-            }
-            if (Tl[id * nlay + i] == 0.0)
-            {                
-                    printf("Tl[id * nlay + i] is zer0\n");
-            }
-            if (Tl[id * nlay + i] < 0.0)
-            {                
-                    printf("Tl[id * nlay + i] is negative\n");
-            }
-
-            if (Te__df_e[id * nlay1 + i] == 0.0 && i != 0)
-            {                
-                   
-                    printf("Te__df_e[id * nlay1 + i] is zer0 at level %d\n", i);
-            }
-            if (Te__df_e[id * nlay1 + i] < 0.0)
-            {                
-                    printf("Te__df_e[id * nlay1 + i] is negative\n");
-            }
-
-            //printf("level:%d   \n", i);
-            
-            //printf("---------\n");
-        }
-        
-        Te__df_e[id * nlay1 + nlay1] = Tl[id * nlay + nlay] + (Altitudeh_d[ nlay1-1] - Altitudeh_d[ nlay1 ]) / 
-            ( Altitude_d[ nlay1 ] - Altitudeh_d[ nlay-1] ) * (Tl[id * nlay + nlay] - Te__df_e[id * nlay1 + nlay]);
-
-        Te__df_e[id * nlay1 + 0] = Tl[id * nlay + 0] + (Altitudeh_d[ 1] - Altitudeh_d[ 0]) /
-            (Altitude_d[ 1] - Altitude_d[ 0]) *
-            (Tl[id * nlay + 0] - Te__df_e[id * nlay1 + 1]);
-
-        */
 
         // Shortwave fluxes
         for (int i = 0; i < nlay1; i++)
@@ -1386,89 +1191,10 @@ __device__  void lw_grey_updown_linear(int id,
                 
                 //printf("tau_struct finished\n");
 
-                for (int i = 0; i < nlay1; i++)
-                {
-                    if (tau_Ve__df_e[id * nlay1 + i] < 0.0)
-                    {                
-                        printf("tau_Ve__df_e[id * nlay1 + i] is negative at level %d and in channel %d\n", i, channel);
-                        //__threadfence();         // ensure store issued before trap
-                        //asm("trap;");            // kill kernel with error
-                    }
-                    if (tau_IRe__df_e[id * nlay1 + i] == 0.0)
-                    {                
-                        //printf("tau_Ve__df_e[id * nlay1 + i] is zero at level %d and in channel %d\n", i, channel);
-                    }
-                    if (isnan(tau_Ve__df_e[id * nlay1 + i]))
-                    {                
-                        printf("tau_Ve__df_e[id * nlay1 + i] is NaN at level %d and in channel %d\n", i, channel);
-                        //__threadfence();         // ensure store issued before trap
-                        //asm("trap;");            // kill kernel with error
-                    }
-                }
-                for (int i = 0; i < nlay; i++)
-                {
-                    if (Rho_d[id * nlay + i] < 0.0)
-                    {                
-                        printf("Rho_d[id * nlay + i] is negative at level %d and in channel %d\n", i, channel);
-                    }
-                    if (isnan(Rho_d[id * nlay + i]))
-                    {                
-                        printf("Rho_d[id * nlay + i] is negative at level %d and in channel %d\n", i, channel);
-                    }
-                    if (Rho_d[id * nlay + i]==0.0)
-                    {                
-                        printf("Rho_d[id * nlay + i] is zero at level %d and in channel %d\n", i, channel);
-                    }
-
-                    if (isnan(k_V_3_nv_d[id*nlay*3 + channel * nlay + i]))
-                    {                
-                        if (mu_s[id]<0.0)
-                        {       
-                            printf("mu_s[id ] is negative \n");
-                        }
-                        if (mu_s[id]==0.0)
-                        {       
-                            printf("mu_s[id ] is 0 \n");
-                        }
-                        printf("SW kRoss[id * nlay + i] is NaN at level %d and in channel %d\n", i, channel);
-                        __threadfence();         // ensure store issued before trap
-                        asm("trap;");            // kill kernel with error
-                    }
-
-                    if (k_V_3_nv_d[id*nlay*3 + channel * nlay + i] == 0.0)
-                    {                
-                        if (mu_s[id]<0.0)
-                        {       
-                            printf("mu_s[id ] is negative \n");
-                        }
-                        if (mu_s[id]==0.0)
-                        {       
-                            printf("mu_s[id ] is 0 \n");
-                        }
-                        printf("SW kRoss[id * nlay + i] is 0 at level %d and in channel %d\n", i, channel);
-                        __threadfence();         // ensure store issued before trap
-                        asm("trap;");            // kill kernel with error
-                    }
-                    if (k_V_3_nv_d[id*nlay*3 + channel * nlay + i] < 0.0)
-                    {                
-                        if (mu_s[id]<0.0)
-                        {       
-                            printf("mu_s[id ] is negative \n");
-                        }
-                        if (mu_s[id]==0.0)
-                        {       
-                            printf("mu_s[id ] is 0 \n");
-                        }
-                        printf("SW kRoss[id * nlay + i] is negative at level %d and in channel %d\n", i, channel);
-                        __threadfence();         // ensure store issued before trap
-                        asm("trap;");            // kill kernel with error
-                    }
-
-                    
-                }
+                
                 
 
-                Finc_B = (1.0 - AB_d) * Finc * Beta_V_3_d[id * 3 + channel];
+                Finc_B = Finc * Beta_V_3_d[id * 3 + channel];
 
                 
                 sw_grey_down(id,
@@ -1476,9 +1202,7 @@ __device__  void lw_grey_updown_linear(int id,
                     Finc_B,
                     tau_Ve__df_e,
                     sw_down_b__df_e,
-                    mu_s);
-
-                //printf("sw_grey_down finished\n");            
+                    mu_s);          
 
             } else
             {
@@ -1523,105 +1247,6 @@ __device__  void lw_grey_updown_linear(int id,
             channel,
             tau_IRe__df_e);
 
-            
-
-            for (int i = 0; i < nlay; i++)
-                {
-                    if (isnan(Rho_d[id * nlay + i]))
-                    {                
-                        if (mu_s[id]<0.0)
-                        {       
-                            printf("mu_s[id ] is negative \n");
-                        }
-                        if (mu_s[id]==0.0)
-                        {       
-                            printf("mu_s[id ] is 0 \n");
-                        }
-                        printf("Rho_d[id * nlay + i] is NaN at level %d and in channel %d\n", i, channel);
-                        __threadfence();         // ensure store issued before trap
-                        asm("trap;");            // kill kernel with error
-                    }
-                    if (Rho_d[id * nlay + i]== 0.0)
-                    {                
-                        if (mu_s[id]<0.0)
-                        {       
-                            printf("mu_s[id ] is negative \n");
-                        }
-                        if (mu_s[id]==0.0)
-                        {       
-                            printf("mu_s[id ] is 0 \n");
-                        }
-                        printf("Rho_d[id * nlay + i] is 0 at level %d and in channel %d\n", i, channel);
-                        __threadfence();         // ensure store issued before trap
-                        asm("trap;");            // kill kernel with error
-                    }
-                    if (isnan(k_IR_2_nv_d[id*nlay*2 + channel * nlay + i]))
-                    {                
-                        if (mu_s[id]<0.0)
-                        {       
-                            printf("mu_s[id ] is negative \n");
-                        }
-                        if (mu_s[id]==0.0)
-                        {       
-                            printf("mu_s[id ] is 0 \n");
-                        }
-                        printf("LW kRoss[id * nlay + i] is NaN at ID %d at level %d and in channel %d\n", id, i, channel);
-                        __threadfence();         // ensure store issued before trap
-                        asm("trap;");            // kill kernel with error
-                    }
-
-                    if (k_IR_2_nv_d[id*nlay*2 + channel * nlay + i] == 0.0)
-                    {                
-                        printf("LW kRoss[id * nlay + i] is 0 at ID %d at level %d and in channel %d\n", id,  i, channel);
-                        if (mu_s[id]<0.0)
-                        {       
-                            printf("mu_s[id ] is negative \n");
-                        }
-                        if (mu_s[id]==0.0)
-                        {       
-                            printf("mu_s[id ] is 0 \n");
-                        }
-                        __threadfence();         // ensure store issued before trap
-                        asm("trap;");            // kill kernel with error
-                    }
-                    if (k_IR_2_nv_d[id*nlay*2 + channel * nlay + i] < 0.0)
-                    {   
-                        if (mu_s[id]<0.0)
-                        {       
-                            printf("mu_s[id ] is negative \n");
-                        }
-                        if (mu_s[id]==0.0)
-                        {       
-                            printf("mu_s[id ] is 0 \n");
-                        }        
-                        printf("LW kRoss[id * nlay + i] is negative at level %d and in channel %d\n", i, channel);
-                        __threadfence();         // ensure store issued before trap
-                        asm("trap;");            // kill kernel with error
-                    }
-
-                    
-                }
-
-            for (int i = 0; i < nlay1; i++)
-                {
-                    if (tau_IRe__df_e[id * nlay1 + i] < 0.0)
-                    {                
-                        printf("tau_IRe__df_e[id * nlay1 + i] is negative at level %d and in channel %d\n", i, channel);
-                        __threadfence();         // ensure store issued before trap
-                        asm("trap;");            // kill kernel with error
-                    }
-                    if (tau_IRe__df_e[id * nlay1 + i] == 0.0)
-                    {                
-                        //printf("tau_IRe__df_e[id * nlay1 + i] is zero at level %d and in channel %d\n", i, channel);
-                    }
-                    
-                    if (isnan(tau_IRe__df_e[id * nlay1 + i]))
-                    {                
-                        printf("tau_IRe__df_e[id * nlay1 + i] is NaN at level %d and in channel %d\n", i, channel);
-                        __threadfence();         // ensure store issued before trap
-                        asm("trap;");            // kill kernel with error
-                    }
-                }
 
             //printf("tau_struct finished\n");
 
@@ -1708,7 +1333,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
                               double  kappa_lw,
                               bool    latf_lw_mod,
                               double  kappa_lw_pole,              
-                              double  incflx,
+                              double  F0_d,
                               int     num,
                               int     nv,
                               int     nvi,
@@ -1883,6 +1508,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
         // kappa calculation loop here if using non-constant kappa
         for (int level = 0; level < nv; level++)
         {
+            /*
             if ( pressure_d[id * nv + level] < pressure_d[id * nv + level-1] || level==0)
             {
                 ifP = pressure_d[id * nv + level];
@@ -1891,6 +1517,9 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 scale_height = temperature_d[id * nv + level-1] * Rd_d[id * nv + level-1] / ( gravit);
                 ifP = pressure_d[id * nv + level-1] * pow(euler, (-(Altitude_d[level]-Altitude_d[level -1])/scale_height));
             }
+            */
+             
+            ifP = pressure_d[id * nv + level];
             
             
             
@@ -1927,7 +1556,8 @@ __global__ void rtm_picket_fence(double *pressure_d,
 
             if (latf_lw_mod) {
 
-                //latitude dependence of opacity, for e.g., earth           
+                //latitude dependence of opacity, for e.g., earth 
+                // not well test yet      
 
                 k_IR_2_nv_d[id * nv * 2 + 1 * nv + level] = k_IR_2_nv_d[id * nv * 2 + 0 * nv + level] * gam_2_d[id];
                 k_IR_2_nv_d[id * nv * 2 + 0 * nv + level] = k_IR_2_nv_d[id * nv * 2 + 0 * nv + level] * gam_1_d[id];
@@ -1948,10 +1578,11 @@ __global__ void rtm_picket_fence(double *pressure_d,
         // !! Radiation - Comment in what scheme you want to use - Heng model won't work!
         
         if (zenith_angles[id] > 0.0) {
-            insol_d[id] = incflx * pow(r_rob,-2);
-            double flux_top = insol_d[id] * (1-alb);
+            
+            double flux_top = (1.0 - AB__h[c]) * zenith_angles[id] * F0_d ; // * (1-alb);
+            insol_d[id] = flux_top;
 
-            Kitzmann_TS_noscatt(id,
+            ts_short_char(id,
                 nv,
                 nvi,
                 Altitude_d,
@@ -1969,7 +1600,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 flux_top,
                 tint,
                 gravit,
-                AB_d[id],
+                //AB_d[id],
                 //Kitzman working variables
                 tau_Ve__df_e,
                 tau_IRe__df_e,
@@ -1997,13 +1628,12 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 Gp__dff_l,
                 Bp__dff_l);
 
-            // ?????? Is insol_d needed ?
-            insol_d[id] =  insol_d[id] * coszrs * (1-alb); 
+            
         }
         else {
-            insol_d[id] = 0;
+            insol_d[id] = 0.0;
 
-            Kitzmann_TS_noscatt(id,
+            ts_short_char(id,
                 nv,
                 nvi,
                 Altitude_d,
@@ -2021,7 +1651,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 insol_d[id],
                 tint,
                 gravit,
-                AB_d[id],
+                //AB_d[id],
                 //Kitzman working variables
                 tau_Ve__df_e,
                 tau_IRe__df_e,
