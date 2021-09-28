@@ -1035,6 +1035,23 @@ __device__  void lw_grey_updown_linear(int id,
                 Bp__dff_l[id * nlay + k] = Bm__dff_l[id * nlay + k];
             }
 
+            if (isnan(Am__dff_l[id * nlay + k]))
+            {
+                printf("Am__dff_l[id * nlay + k] contain a NaNs at mu=0 at level:%d \n",  k);
+            }
+            if (isnan(Bm__dff_l[id * nlay + k]))
+            {
+                printf("Bm__dff_l[id * nlay + k] contain a NaNs at mu=0 at level:%d \n",  k);
+            }
+            if (isnan(Gp__dff_l[id * nlay + k]))
+            {
+                printf("Gp__dff_l[id * nlay + k] contain a NaNs at mu=0 at level:%d \n",  k);
+            }
+            if (isnan(Bp__dff_l[id * nlay + k]))
+            {
+                printf("Bp__dff_l[id * nlay + k] contain a NaNs at mu=0 at level:%d \n",  k);
+            }
+
         }
 
         // Begin two-stream loops
