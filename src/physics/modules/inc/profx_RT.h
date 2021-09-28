@@ -920,6 +920,13 @@ __device__ void tau_struct(int id,
 
         // Optical depth structure is running sum
         tau_struc_e[id*(nlev+1) + level-1] = tau_sum;
+
+        if (isnan(tau_struc_e[id*(nlev+1) + level-1]))
+            {
+                printf("tau_struc_e[id*(nlev+1) + level-1] contain a NaNs at mu=0 at level:%d \n",  (level-1));
+                __threadfence();         // ensure store issued before trap
+                asm("trap;");            // kill kernel with error
+            }
     }
 
 }
@@ -1066,6 +1073,8 @@ __device__  void lw_grey_updown_linear(int id,
             if (isnan(lw_down_g__dff_e[id * nlev + k]))
             {
                 printf("lw_down_g__dff_e contain a NaNs at mu=0 at level:%d \n",  k);
+                __threadfence();         // ensure store issued before trap
+                asm("trap;");            // kill kernel with error
             }
         }
 
@@ -1083,6 +1092,8 @@ __device__  void lw_grey_updown_linear(int id,
             if (isnan(lw_up_g__dff_e[id * nlev + k]))
             {
                 printf("lw_up_g__dff_e contain a NaNs at mu=0 at level:%d \n",  k);
+                __threadfence();         // ensure store issued before trap
+                asm("trap;");            // kill kernel with error
             }
         }
 
