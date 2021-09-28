@@ -1097,6 +1097,12 @@ __device__  void lw_grey_updown_linear(int id,
             lw_down_g__dff_e[id * nlev +  k] = lw_down_g__dff_e[id * nlev +  k + 1] * edel__dff_l[id * nlay + k] + 
             Am__dff_l[id * nlay + k] * be__df_e[id * nlev + k + 1] + Bm__dff_l[id * nlay + k] * be__df_e[id * nlev + k]; // TS intensity
 
+            if (isnan(lw_down_g__dff_e[id * nlev +  k + 1] * edel__dff_l[id * nlay + k] + Am__dff_l[id * nlay + k] * be__df_e[id * nlev + k + 1] + Bm__dff_l[id * nlay + k] * be__df_e[id * nlev + k]))
+            {
+                printf("computation for lw_down_g__dff_e[id * nlev +  k] contain a NaNs at mu=0 at level:%d \n",  k);
+                __threadfence();         // ensure store issued before trap
+                asm("trap;");            // kill kernel with error
+            }
             if (isnan(lw_down_g__dff_e[id * nlev +  k + 1]))
             {
                 printf("lw_down_g__dff_e[id * nlev +  k + 1] contain a NaNs at mu=0 at level:%d \n",  k);
