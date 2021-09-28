@@ -1080,9 +1080,15 @@ __device__  void lw_grey_updown_linear(int id,
                 __threadfence();         // ensure store issued before trap
                 asm("trap;");            // kill kernel with error
             }
+        if (isnan((1.0 - exp(-tau_IRe__df_e[id*nlev + (nlev-1)] / uarr[g]))))
+            {
+                printf("(1.0 - exp(-tau_IRe__df_e[id*nlev + (nlev-1)] / uarr[g])) contain a NaNs at mu=0 at level:%d \n",  (nlev-1));
+                __threadfence();         // ensure store issued before trap
+                asm("trap;");            // kill kernel with error
+            }
         if (isnan(lw_down_g__dff_e[id * nlev + nlev-1]))
             {
-                printf("lw_down_g__dff_e contain a NaNs at mu=0 at level:%d \n",  (nlev-1));
+                printf("lw_down_g__dff_e[id * nlev + nlev-1] contain a NaNs at mu=0 at level:%d \n",  (nlev-1));
                 __threadfence();         // ensure store issued before trap
                 asm("trap;");            // kill kernel with error
             }
@@ -1103,6 +1109,12 @@ __device__  void lw_grey_updown_linear(int id,
                 __threadfence();         // ensure store issued before trap
                 asm("trap;");            // kill kernel with error
             }
+            if (isnan(lw_down_g__dff_e[id * nlev +  k] * edel__dff_l[id * nlay + k - 1]))
+            {
+                printf("lw_down_g__dff_e[id * nlev +  k] * edel__dff_l[id * nlay + k - 1] contain a NaNs at mu=0 at level:%d \n",  k);
+                __threadfence();         // ensure store issued before trap
+                asm("trap;");            // kill kernel with error
+            }
             if (isnan(Am__dff_l[id * nlay + k - 1]))
             {
                 printf("Am__dff_l[id * nlay + k - 1] contain a NaNs at mu=0 at level:%d \n",  k);
@@ -1112,6 +1124,12 @@ __device__  void lw_grey_updown_linear(int id,
             if (isnan(be__df_e[id * nlev + k]))
             {
                 printf("be__df_e[id * nlev + k] contain a NaNs at mu=0 at level:%d \n",  k);
+                __threadfence();         // ensure store issued before trap
+                asm("trap;");            // kill kernel with error
+            }
+            if (isnan(Am__dff_l[id * nlay + k - 1] * be__df_e[id * nlev + k]))
+            {
+                printf("Am__dff_l[id * nlay + k - 1] * be__df_e[id * nlev + k] contain a NaNs at mu=0 at level:%d \n",  k);
                 __threadfence();         // ensure store issued before trap
                 asm("trap;");            // kill kernel with error
             }
@@ -1127,9 +1145,15 @@ __device__  void lw_grey_updown_linear(int id,
                 __threadfence();         // ensure store issued before trap
                 asm("trap;");            // kill kernel with error
             }
+            if (isnan(Bm__dff_l[id * nlay + k - 1] * be__df_e[id * nlev + k - 1]))
+            {
+                printf("Bm__dff_l[id * nlay + k - 1] * be__df_e[id * nlev + k - 1] contain a NaNs at mu=0 at level:%d \n",  k);
+                __threadfence();         // ensure store issued before trap
+                asm("trap;");            // kill kernel with error
+            }
             if (isnan(lw_down_g__dff_e[id * nlev +  k - 1]))
             {
-                printf("lw_down_g__dff_e[id * nlev + k - 1)] contain a NaNs at mu=0 at level:%d \n",  k);
+                printf("lw_down_g__dff_e[id * nlev + k - 1] contain a NaNs at mu=0 at level:%d \n",  k);
                 __threadfence();         // ensure store issued before trap
                 asm("trap;");            // kill kernel with error
             }
