@@ -1029,6 +1029,9 @@ __device__  void lw_grey_updown_linear(int id,
     {
         dtau__dff_l[id*nlay + k ] = (tau_IRe__df_e[id*nlev + k] - tau_IRe__df_e[id*nlev + k + 1]);
 
+        printf("At layer %d tau_IRe__df_e[id*nlev + k] = %e \n",  k, tau_IRe__df_e[id*nlev + k]);
+        printf("At layer %d tau_IRe__df_e[id*nlev + k] = %e \n",  k, tau_IRe__df_e[id*nlev + k + 1]);
+
         if (tau_IRe__df_e[id*nlev + k] < 0.0)
         {
             printf("tau_IRe__df_e[id*nlev + k] smaller than 0.0 at level: %d \n",  k);
