@@ -1026,12 +1026,7 @@ __device__  void lw_grey_updown_linear(int id,
 
             eli_del = e1i / del; //  The equivalent to the linear in tau term
 
-            printf("At layer %d del = %e \n",  k, del);
-            printf("At layer %d edel__dff_l[id * nlay + k] = %e \n",  k, edel__dff_l[id * nlay + k]);
-            printf("At layer %d e0i = %e \n",  k, e0i);
-            printf("At layer %d e1i = %e \n",  k, e1i);
-            printf("At layer %d eli_del = %e \n",  k, eli_del);
-            printf(" be__df_e[id * nlev +  %d] = %e \n",  (k+1),  be__df_e[id * nlev + k+1]);
+            
 
             if (dtau__dff_l[id * nlay + k] < 1e-6)
             {
@@ -1049,7 +1044,18 @@ __device__  void lw_grey_updown_linear(int id,
                 Bp__dff_l[id * nlay + k] = Bm__dff_l[id * nlay + k];
             }
 
-            printf(" Am__dff_l[id * nlev +  %d] = %e \n",  k,  Am__dff_l[id * nlay + k]);
+            if (k == nlay -1)
+            {
+                printf("At layer %d del = %e \n",  k, del);
+                printf("At layer %d edel__dff_l[id * nlay + k] = %e \n",  k, edel__dff_l[id * nlay + k]);
+                printf("At layer %d e0i = %e \n",  k, e0i);
+                printf("At layer %d e1i = %e \n",  k, e1i);
+                printf("At layer %d eli_del = %e \n",  k, eli_del);
+                printf(" be__df_e[id * nlev +  %d] = %e \n",  (k+1),  be__df_e[id * nlev + k+1]);
+                printf(" Am__dff_l[id * nlev +  %d] = %e \n",  k,  Am__dff_l[id * nlay + k]);
+            }
+            
+            
 
             if (isnan(Am__dff_l[id * nlay + k]))
             {
