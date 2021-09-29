@@ -921,15 +921,35 @@ __device__ void tau_struct(int id,
         // Optical depth structure is running sum
         tau_struc_e[id*(nlev+1) + level-1] = tau_sum;
 
+        if (delPdelAlt< 0.0)
+            {
+                printf("delPdelAlt smaller than 0 at level:%d \n",  level);
+                __threadfence();         // ensure store issued before trap
+                asm("trap;");            // kill kernel with error
+            }
+
+        if (kRoss[id*nlev*nchan + channel * nlev + level]< 0.0)
+            {
+                printf("kRoss[id*nlev*nchan + channel * nlev + level] smaller than 0 at level:%d \n",  level);
+                __threadfence();         // ensure store issued before trap
+                asm("trap;");            // kill kernel with error
+            }
+        if (Rho_d[id*nlev  + level]< 0.0)
+            {
+                printf("Rho_d[id*nlev  + level] smaller than 0 at level:%d \n",  level);
+                __threadfence();         // ensure store issued before trap
+                asm("trap;");            // kill kernel with error
+            }
+
         if (isnan(tau_struc_e[id*(nlev+1) + level-1]))
             {
-                printf("tau_struc_e[id*(nlev+1) + level-1] contain a NaNs at mu=0 at level:%d \n",  (level-1));
+                printf("tau_struc_e[id*(nlev+1) + level-1] contain a NaNs at mu=0 at level:%d \n",  level);
                 __threadfence();         // ensure store issued before trap
                 asm("trap;");            // kill kernel with error
             }
         if (tau_struc_e[id*(nlev+1) + level-1]< 0.0)
             {
-                printf("tau_struc_e[id*(nlev+1) + level-1] smaller than 0 at level:%d \n",  (level-1));
+                printf("tau_struc_e[id*(nlev+1) + level-1] smaller than 0 at level:%d \n",  level);
                 __threadfence();         // ensure store issued before trap
                 asm("trap;");            // kill kernel with error
             }
@@ -1008,6 +1028,13 @@ __device__  void lw_grey_updown_linear(int id,
     for (k = nlay-1; k >-1; k--)
     {
         dtau__dff_l[id*nlay + k ] = (tau_IRe__df_e[id*nlev + k] - tau_IRe__df_e[id*nlev + k + 1]);
+
+        if (tau_IRe__df_e[id*nlev + k] < 0.0)
+        {
+            printf("tau_IRe__df_e[id*nlev + k] smaller than 0.0 at level: %d \n",  k);
+                __threadfence();         // ensure store issued before trap
+                asm("trap;");            // kill kernel with error
+        }
         if (tau_IRe__df_e[id*nlev + k] < tau_IRe__df_e[id*nlev + k + 1])
         {
             printf("tau_IRe__df_e[id*nlev + k] < tau_IRe__df_e[id*nlev + k + 1] at level: %d \n",  k);
