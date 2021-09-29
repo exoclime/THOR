@@ -940,6 +940,18 @@ __device__ void tau_struct(int id,
                 __threadfence();         // ensure store issued before trap
                 asm("trap;");            // kill kernel with error
             }
+        if (kRoss[id*nlev*nchan + channel * nlev + level] == 0.0)
+            {
+                printf("kRoss[id*nlev*nchan + channel * nlev + level] == 0 at level:%d \n",  level);
+                __threadfence();         // ensure store issued before trap
+                asm("trap;");            // kill kernel with error
+            }
+        if (Rho_d[id*nlev  + level]== 0.0)
+            {
+                printf("Rho_d[id*nlev  + level] == 0 at level:%d \n",  level);
+                __threadfence();         // ensure store issued before trap
+                asm("trap;");            // kill kernel with error
+            }
 
         if (isnan(tau_struc_e[id*(nlev+1) + level-1]))
             {
@@ -950,6 +962,12 @@ __device__ void tau_struct(int id,
         if (tau_struc_e[id*(nlev+1) + level-1]< 0.0)
             {
                 printf("tau_struc_e[id*(nlev+1) + level-1] smaller than 0 at level:%d \n",  level);
+                __threadfence();         // ensure store issued before trap
+                asm("trap;");            // kill kernel with error
+            }
+        if (tau_struc_e[id*(nlev+1) + level-1] == 0.0)
+            {
+                printf("tau_struc_e[id*(nlev+1) + level-1] == 0 at level:%d \n",  level);
                 __threadfence();         // ensure store issued before trap
                 asm("trap;");            // kill kernel with error
             }
