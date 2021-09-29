@@ -1097,6 +1097,13 @@ __device__  void lw_grey_updown_linear(int id,
             lw_down_g__dff_e[id * nlev +  k] = lw_down_g__dff_e[id * nlev +  k + 1] * edel__dff_l[id * nlay + k] + 
             Am__dff_l[id * nlay + k] * be__df_e[id * nlev + k + 1] + Bm__dff_l[id * nlay + k] * be__df_e[id * nlev + k]; // TS intensity
 
+            printf("lw_down_g__dff_e[id * nlev +  %d] = %e \n",  (k+1), lw_down_g__dff_e[id * nlev +  k + 1]);
+            printf("edel__dff_l[id * nlev +  %d] = %e \n",  (k), edel__dff_l[id * nlay + k]);
+            printf("Am__dff_l[id * nlev +  %d] = %e \n",  (k), Am__dff_l[id * nlay + k]);
+            printf("be__df_e[id * nlev +  %d] = %e \n",  (k+1), be__df_e[id * nlev + k + 1]);
+            printf("Bm__dff_l[id * nlay + %d] = %e \n",  (k), Bm__dff_l[id * nlay + k]);
+            printf("be__df_e[id * nlev +  %d] = %e \n",  (k), be__df_e[id * nlev + k]);
+
             if (isnan(lw_down_g__dff_e[id * nlev +  k + 1] * edel__dff_l[id * nlay + k] + Am__dff_l[id * nlay + k] * be__df_e[id * nlev + k + 1] + Bm__dff_l[id * nlay + k] * be__df_e[id * nlev + k]))
             {
                 printf("computation for lw_down_g__dff_e[id * nlev +  k] contain a NaNs at mu=0 at level:%d \n",  k);
