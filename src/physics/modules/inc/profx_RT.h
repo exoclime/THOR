@@ -1008,6 +1008,13 @@ __device__  void lw_grey_updown_linear(int id,
     for (k = nlay-1; k >-1; k--)
     {
         dtau__dff_l[id*nlay + k ] = (tau_IRe__df_e[id*nlev + k] - tau_IRe__df_e[id*nlev + k + 1]);
+        if (tau_IRe__df_e[id*nlev + k] < tau_IRe__df_e[id*nlev + k + 1])
+        {
+            printf("tau_IRe__df_e[id*nlev + k] < tau_IRe__df_e[id*nlev + k + 1] at level: %d \n",  k);
+                __threadfence();         // ensure store issued before trap
+                asm("trap;");            // kill kernel with error
+        }
+        
     }
 
     // Zero the flux arrays
