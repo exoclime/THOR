@@ -882,11 +882,12 @@ __device__ void tau_struct(int id,
     double tau_lay;
     double delPdelAlt;
     int level;
+    int nlay = nlev -1;
 
     // running sum of optical depth
     // added a ghost level above the grid model, otherwise tau_sum = 0.0
-    tau_sum = (kRoss[id*nlev*nchan + channel * nlev + nlev-1] * pl[id*nlev  + nlev-1])/gravity;
-    tau_struc_e[id*(nlev+1) + nlev] = tau_sum * 0.98;
+    tau_sum = (kRoss[id*nlay*nchan + channel * nlay + nlay-1] * pl[id*nlay  + nlay-1])/gravity;
+    tau_struc_e[id*nlev + nlev-1] = tau_sum;
 
     //tau_sum = 0.0;
 
@@ -895,17 +896,17 @@ __device__ void tau_struct(int id,
     //dP = (p_half(1) - 1e-4)
     //tau_lay = (kRoss(1) * dP) / grav
     //tau_sum = tau_sum + tau_lay
-    tau_struc_e[id*(nlev+1) + nlev] = tau_sum;
+    
      if (id == 0)
             {
-                printf(" tau_struc_e[id*(nlev+1) + %d] == %e \n",  nlev,  tau_struc_e[id*(nlev+1) + nlev]);
+                printf(" tau_struc_e[id*(nlev+1) + %d] == %e \n",  nlev,  tau_struc_e[id*nlev + nlev-1]);
                // __threadfence();         // ensure store issued before trap
                 //asm("trap;");            // kill kernel with error
             }
 
     // Integrate from top to bottom    
 
-    for (level = nlev-1; level > 0; level--) 
+    for (level = nlay-1; level > 0; level--) 
     {
         // Pressure difference between layer edges
         delPdelAlt = (Altitudeh_d[level + 1] - Altitudeh_d[level + 0]);
@@ -913,7 +914,7 @@ __device__ void tau_struct(int id,
         
 
         // Optical depth of layer assuming hydrostatic equilibirum  //////////////////// kappa * rho * delta height  (old: kappa *delP/gravity)
-        tau_lay = kRoss[id*nlev*nchan + channel * nlev + level] * delPdelAlt * Rho_d[id*nlev  + level];
+        tau_lay = kRoss[id*nlay*nchan + channel * nlay + level] * delPdelAlt * Rho_d[id*nlay  + level];
 
         if (tau_lay < 0.0000001)
         {
@@ -925,54 +926,11 @@ __device__ void tau_struct(int id,
         tau_sum = tau_sum + tau_lay;
 
         // Optical depth structure is running sum
-        tau_struc_e[id*(nlev+1) + level-1] = tau_sum;
-
-        
-
-        if (kRoss[id*nlev*nchan + channel * nlev + level]< 0.0  && id == 0)
-            {
-                printf("kRoss[id*nlev*nchan + channel * nlev + level] smaller than 0 at level:%d \n",  level);
-                __threadfence();         // ensure store issued before trap
-                asm("trap;");            // kill kernel with error
-            }
-        if (Rho_d[id*nlev  + level]< 0.0 && id == -1)
-            {
-                printf("Rho_d[id*nlev  + level] smaller than 0 at level:%d \n",  level);
-                __threadfence();         // ensure store issued before trap
-                asm("trap;");            // kill kernel with error
-            }
-        if (kRoss[id*nlev*nchan + channel * nlev + level] == 0.0 && id == 0)
-            {
-                printf("kRoss[id*nlev*nchan + channel * nlev + level] == 0 at level:%d \n",  level);
-                __threadfence();         // ensure store issued before trap
-                asm("trap;");            // kill kernel with error
-            }
-        if (Rho_d[id*nlev  + level]== 0.0 && id == -1)
-            {
-                printf("Rho_d[id*nlev  + level] == 0 at level:%d \n",  level);
-                __threadfence();         // ensure store issued before trap
-                asm("trap;");            // kill kernel with error
-            }
-
-        if (isnan(tau_struc_e[id*(nlev+1) + level-1]) && id == 0)
-            {
-                printf("tau_struc_e[id*(nlev+1) + level-1] contain a NaNs at mu=0 at level:%d \n",  level-1);
-                //__threadfence();         // ensure store issued before trap
-                //asm("trap;");            // kill kernel with error
-            }
-
-        
-        if (id == 0)
-            {
-                printf("tau_struc_e[id*(nlev+1) + %d] == :%e \n",  level-1, tau_struc_e[id*(nlev+1) + level-1]);
-                //__threadfence();         // ensure store issued before trap
-                //asm("trap;");            // kill kernel with error
-            }
-        
-        
+        tau_struc_e[id*nlev + level -1] = tau_sum;
+  
     }
 
-     if (id == 0)
+     if (id == -1)
             {
                 __threadfence();         // ensure store issued before trap
                 asm("trap;");            // kill kernel with error
@@ -1364,7 +1322,7 @@ __device__  void lw_grey_updown_linear(int id,
             {
                 // Find the opacity structure
                 tau_struct(id,
-                    nlay,
+                    nlay1,
                     Rho_d,
                     pl,
                     grav,
