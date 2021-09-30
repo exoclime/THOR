@@ -896,6 +896,12 @@ __device__ void tau_struct(int id,
     //tau_lay = (kRoss(1) * dP) / grav
     //tau_sum = tau_sum + tau_lay
     tau_struc_e[id*(nlev+1) + nlev] = tau_sum;
+     if (id == 0)
+            {
+                printf(" tau_struc_e[id*(nlev+1) + %d] == %e \n",  nlev,  tau_struc_e[id*(nlev+1) + nlev]);
+                __threadfence();         // ensure store issued before trap
+                asm("trap;");            // kill kernel with error
+            }
 
     // Integrate from top to bottom    
 
@@ -951,33 +957,11 @@ __device__ void tau_struct(int id,
         if (isnan(tau_struc_e[id*(nlev+1) + level-1]) && id == 0)
             {
                 printf("tau_struc_e[id*(nlev+1) + level-1] contain a NaNs at mu=0 at level:%d \n",  level-1);
-                __threadfence();         // ensure store issued before trap
-                asm("trap;");            // kill kernel with error
+                //__threadfence();         // ensure store issued before trap
+                //asm("trap;");            // kill kernel with error
             }
-        if (tau_struc_e[id*(nlev+1) + level-1]< 0.0 && id == 0)
-            {
-                printf("tau_struc_e[id*(nlev+1) + level-1] smaller than 0 at level:%d \n",  level-1);
-                __threadfence();         // ensure store issued before trap
-                asm("trap;");            // kill kernel with error
-            }
-        if (tau_struc_e[id*(nlev+1) + level-1] == 0.0 && id == 0)
-            {
-                printf("tau_struc_e[id*(nlev+1) + level-1] == 0 at level:%d \n",  level-1);
-                __threadfence();         // ensure store issued before trap
-                asm("trap;");            // kill kernel with error
-            }
-        if (tau_struc_e[id*(nlev+1) + level]< 0.0 && id == 0)
-            {
-                printf("tau_struc_e[id*(nlev+1) + level] smaller than 0 at level:%d \n",  level);
-                __threadfence();         // ensure store issued before trap
-                asm("trap;");            // kill kernel with error
-            }
-        if (tau_struc_e[id*(nlev+1) + level] == 0.0 && id == 0)
-            {
-                printf("tau_struc_e[id*(nlev+1) + level] == 0 at level:%d \n",  level);
-                __threadfence();         // ensure store issued before trap
-                asm("trap;");            // kill kernel with error
-            }
+        
+        
     }
 
 }
