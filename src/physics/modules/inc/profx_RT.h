@@ -937,7 +937,7 @@ __device__ void tau_struct(int id,
   
     }
 
-     if (id == -1)
+     if (id == 0)
             {
                 __threadfence();         // ensure store issued before trap
                 asm("trap;");            // kill kernel with error
