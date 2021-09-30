@@ -899,7 +899,7 @@ __device__ void tau_struct(int id,
     
      if (id == 0)
             {
-                printf(" tau_struc_e[id*(nlev+1) + %d] == %e \n",  nlev,  tau_struc_e[id*nlev + nlev-1]);
+                printf(" tau_struc_e[id*nlev + nlev + %d] == %e \n",  nlev,  tau_struc_e[id*nlev + nlev-1]);
                // __threadfence();         // ensure store issued before trap
                 //asm("trap;");            // kill kernel with error
             }
@@ -927,6 +927,13 @@ __device__ void tau_struct(int id,
 
         // Optical depth structure is running sum
         tau_struc_e[id*nlev + level -1] = tau_sum;
+
+        if (id == 0)
+            {
+                printf(" tau_struc_e[id*nlev + nlev + %d] == %e \n",  level,  tau_struc_e[id*nlev + level -1]);
+               // __threadfence();         // ensure store issued before trap
+                //asm("trap;");            // kill kernel with error
+            }
   
     }
 
