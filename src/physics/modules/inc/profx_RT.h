@@ -886,9 +886,8 @@ __device__ void tau_struct(int id,
 
     // running sum of optical depth
     // added a ghost level above the grid model, otherwise tau_sum = 0.0
-    tau_struc_e[id*nlev + nlev-1] = 0.0;
     tau_sum = (kRoss[id*nlay*nchan + channel * nlay + nlay-1] * pl[id*nlay  + nlay-1])/gravity;
-    tau_struc_e[id*nlev + nlev-2] = tau_sum;
+    tau_struc_e[id*nlev + nlev-1] = tau_sum;
 
     //tau_sum = 0.0;
 
@@ -898,17 +897,11 @@ __device__ void tau_struct(int id,
     //tau_lay = (kRoss(1) * dP) / grav
     //tau_sum = tau_sum + tau_lay
     
-     if (id == 0)
-            {
-                printf(" tau_struc_e[id*nlev + %d] == %e \n",  nlev-1,  tau_struc_e[id*nlev + nlev-1]);
-                printf(" tau_struc_e[id*nlev + %d] == %e \n",  nlev-2,  tau_struc_e[id*nlev + nlev-2]);
-               // __threadfence();         // ensure store issued before trap
-                //asm("trap;");            // kill kernel with error
-            }
+     
 
     // Integrate from top to bottom    
 
-    for (level = nlay-1; level > 0; level--) 
+    for (level = nlay-1; level > -1; level--) 
     {
         // Pressure difference between layer edges
         delPdelAlt = (Altitudeh_d[level + 1] - Altitudeh_d[level + 0]);
@@ -928,23 +921,9 @@ __device__ void tau_struct(int id,
         tau_sum = tau_sum + tau_lay;
 
         // Optical depth structure is running sum
-        tau_struc_e[id*nlev + level -1] = tau_sum;
-
-        if (id == 0)
-            {
-                printf(" tau_struc_e[id*nlev + nlev + %d] == %e \n",  level-1,  tau_struc_e[id*nlev + level -1]);
-               // __threadfence();         // ensure store issued before trap
-                //asm("trap;");            // kill kernel with error
-            }
+        tau_struc_e[id*nlev + level] = tau_sum;
   
     }
-
-     if (id == 0)
-            {
-                //__threadfence();         // ensure store issued before trap
-                //asm("trap;");            // kill kernel with error
-
-            }
 
     
 }
@@ -1020,28 +999,6 @@ __device__  void lw_grey_updown_linear(int id,
     for (k = nlay-1; k >-1; k--)
     {
         dtau__dff_l[id*nlay + k ] = (tau_IRe__df_e[id*nlev + k] - tau_IRe__df_e[id*nlev + k + 1]);
-
-        //printf("At layer %d tau_IRe__df_e[id*nlev + k] = %e \n",  k, tau_IRe__df_e[id*nlev + k]);
-        //printf("At layer %d tau_IRe__df_e[id*nlev + k] = %e \n",  k +1, tau_IRe__df_e[id*nlev + k + 1]);
-
-        if ( id == 0)
-        {
-            //printf("tau_IRe__df_e[id*nlev + %d] == %e \n",  k, tau_IRe__df_e[id*nlev + k]);
-        }
-        if (tau_IRe__df_e[id*nlev + k] < 0.0 && id == 0)
-        {
-            printf("tau_IRe__df_e[id*nlev + k] smaller than 0.0 at level: %d \n",  k);
-                __threadfence();         // ensure store issued before trap
-                asm("trap;");            // kill kernel with error
-        }
-        if (tau_IRe__df_e[id*nlev + k] < tau_IRe__df_e[id*nlev + k + 1] && id == 0)
-        {
-            printf("tau_IRe__df_e[id*nlev + k] < tau_IRe__df_e[id*nlev + k + 1] at level: %d \n",  k);
-            printf("tau_IRe__df_e[id*nlev + %d] = %e \n",  k, tau_IRe__df_e[id*nlev + k]);
-            printf("tau_IRe__df_e[id*nlev + %d] = %e \n",  k +1, tau_IRe__df_e[id*nlev + k + 1]);
-                __threadfence();         // ensure store issued before trap
-                asm("trap;");            // kill kernel with error
-        }
         
     }
 
@@ -1084,45 +1041,6 @@ __device__  void lw_grey_updown_linear(int id,
                 Gp__dff_l[id * nlay + k] = Am__dff_l[id * nlay + k];
                 Bp__dff_l[id * nlay + k] = Bm__dff_l[id * nlay + k];
             }
-
-            if (k == nlay-1  && id == 0)
-            {
-                printf("At layer %d del = %e \n",  k, del);
-                printf("At layer %d edel__dff_l[id * nlay + k] = %e \n",  k, edel__dff_l[id * nlay + k]);
-                printf("At layer %d e0i = %e \n",  k, e0i);
-                printf("At layer %d e1i = %e \n",  k, e1i);
-                printf("At layer %d eli_del = %e \n",  k, eli_del);
-                printf(" be__df_e[id * nlev +  %d] = %e \n",  (k+1),  be__df_e[id * nlev + k+1]);
-                printf(" Am__dff_l[id * nlev +  %d] = %e \n",  k,  Am__dff_l[id * nlay + k]);
-            }
-            
-            
-
-            if (isnan(Am__dff_l[id * nlay + k]))
-            {
-                printf("Am__dff_l[id * nlay + k] contain a NaNs at mu=0 at level:%d \n",  k);
-                __threadfence();         // ensure store issued before trap
-                asm("trap;");            // kill kernel with error
-            }
-            if (isnan(Bm__dff_l[id * nlay + k]))
-            {
-                printf("Bm__dff_l[id * nlay + k] contain a NaNs at mu=0 at level:%d \n",  k);
-                __threadfence();         // ensure store issued before trap
-                asm("trap;");            // kill kernel with error
-            }
-            if (isnan(Gp__dff_l[id * nlay + k]))
-            {
-                printf("Gp__dff_l[id * nlay + k] contain a NaNs at mu=0 at level:%d \n",  k);
-                __threadfence();         // ensure store issued before trap
-                asm("trap;");            // kill kernel with error
-            }
-            if (isnan(Bp__dff_l[id * nlay + k]))
-            {
-                printf("Bp__dff_l[id * nlay + k] contain a NaNs at mu=0 at level:%d \n",  k);
-                __threadfence();         // ensure store issued before trap
-                asm("trap;");            // kill kernel with error
-            }
-    
 
         }
 
