@@ -899,8 +899,8 @@ __device__ void tau_struct(int id,
      if (id == 0)
             {
                 printf(" tau_struc_e[id*(nlev+1) + %d] == %e \n",  nlev,  tau_struc_e[id*(nlev+1) + nlev]);
-                __threadfence();         // ensure store issued before trap
-                asm("trap;");            // kill kernel with error
+               // __threadfence();         // ensure store issued before trap
+                //asm("trap;");            // kill kernel with error
             }
 
     // Integrate from top to bottom    
