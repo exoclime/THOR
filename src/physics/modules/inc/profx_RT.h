@@ -901,6 +901,7 @@ __device__ void tau_struct(int id,
      if (id == 0)
             {
                 printf(" tau_struc_e[id*nlev + nlev + %d] == %e \n",  nlev-1,  tau_struc_e[id*nlev + nlev-1]);
+                printf(" tau_struc_e[id*nlev + nlev + %d] == %e \n",  nlev-1,  tau_struc_e[id*nlev + nlev-2]);
                // __threadfence();         // ensure store issued before trap
                 //asm("trap;");            // kill kernel with error
             }
@@ -940,8 +941,8 @@ __device__ void tau_struct(int id,
 
      if (id == 0)
             {
-                __threadfence();         // ensure store issued before trap
-                asm("trap;");            // kill kernel with error
+                //__threadfence();         // ensure store issued before trap
+                //asm("trap;");            // kill kernel with error
 
             }
 
@@ -1027,13 +1028,13 @@ __device__  void lw_grey_updown_linear(int id,
         {
             //printf("tau_IRe__df_e[id*nlev + %d] == %e \n",  k, tau_IRe__df_e[id*nlev + k]);
         }
-        if (tau_IRe__df_e[id*nlev + k] < 0.0 && id == -1)
+        if (tau_IRe__df_e[id*nlev + k] < 0.0 && id == 0)
         {
             printf("tau_IRe__df_e[id*nlev + k] smaller than 0.0 at level: %d \n",  k);
                 __threadfence();         // ensure store issued before trap
                 asm("trap;");            // kill kernel with error
         }
-        if (tau_IRe__df_e[id*nlev + k] < tau_IRe__df_e[id*nlev + k + 1] && id == -1)
+        if (tau_IRe__df_e[id*nlev + k] < tau_IRe__df_e[id*nlev + k + 1] && id == 0)
         {
             printf("tau_IRe__df_e[id*nlev + k] < tau_IRe__df_e[id*nlev + k + 1] at level: %d \n",  k);
                 __threadfence();         // ensure store issued before trap
@@ -1082,7 +1083,7 @@ __device__  void lw_grey_updown_linear(int id,
                 Bp__dff_l[id * nlay + k] = Bm__dff_l[id * nlay + k];
             }
 
-            if (k == nlay -1  && id == 0)
+            if (k == nlay-1  && id == 0)
             {
                 printf("At layer %d del = %e \n",  k, del);
                 printf("At layer %d edel__dff_l[id * nlay + k] = %e \n",  k, edel__dff_l[id * nlay + k]);
@@ -1135,7 +1136,7 @@ __device__  void lw_grey_updown_linear(int id,
 
             
 
-            if (isnan(lw_down_g__dff_e[id * nlev +  k + 1] * edel__dff_l[id * nlay + k] + Am__dff_l[id * nlay + k] * be__df_e[id * nlev + k + 1] + Bm__dff_l[id * nlay + k] * be__df_e[id * nlev + k]) && id == -1)
+            if (isnan(lw_down_g__dff_e[id * nlev +  k + 1] * edel__dff_l[id * nlay + k] + Am__dff_l[id * nlay + k] * be__df_e[id * nlev + k + 1] + Bm__dff_l[id * nlay + k] * be__df_e[id * nlev + k]) && id == 0)
             {
                 printf("computation for lw_down_g__dff_e[id * nlev +  k] contain a NaNs at mu=0 at level:%d \n",  k);
                 __threadfence();         // ensure store issued before trap
