@@ -761,8 +761,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         pressure_h[i * nv + 0] / (temperature_h[i * nv + 0] * Rd_h[i * nv + 0]);
                     
 
-                    printf("scale_height = %e \n", scale_height);
-                    printf("pressure_h[i * nv + 0] = %e \n", pressure_h[i * nv + 0]);
+                    //printf("scale_height = %e \n", scale_height);
+                    //printf("pressure_h[i * nv + 0] = %e \n", pressure_h[i * nv + 0]);
 
                     for (int lev = 1; lev < nv; lev++) {
 
@@ -784,9 +784,9 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                             temperature_h[i * nv +  nv - 1] = temperature_h[i * nv + nv - 2];
                         }
                         */
-                        printf("pressure_h[i * nv + %d] = %e \n", lev, pressure_h[i * nv + lev]);
-                        printf("Rho_h[i * nv + %d] = %e \n", lev, Rho_h[i * nv + lev]);
-                        printf("temperature_h[i * nv + %d] = %e \n", lev, temperature_h[i * nv + lev]);
+                        //printf("pressure_h[i * nv + %d] = %e \n", lev, pressure_h[i * nv + lev]);
+                        //printf("Rho_h[i * nv + %d] = %e \n", lev, Rho_h[i * nv + lev]);
+                        //printf("temperature_h[i * nv + %d] = %e \n", lev, temperature_h[i * nv + lev]);
                         if (iter < max_iter) {
                             temperature_h[i * nv + lev] == 0.0;
                         }
@@ -804,9 +804,9 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         //bottum_up_adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit, Cp_h, Altitude_h, Cp_h, Rd_h,sim.P_Ref);
                     }
                     
-                    printf("pressure_h[i * nv + nv - 1] = %e \n", pressure_h[i * nv + nv - 1]);
-                    printf("Rho_h[i * nv + nv - 1] = %e \n", Rho_h[i * nv + nv - 1]);
-                    printf("temperature_h[i * nv + nv - 1] = %e \n", temperature_h[i * nv + nv - 1]);
+                    //printf("pressure_h[i * nv + nv - 1] = %e \n", pressure_h[i * nv + nv - 1]);
+                    //printf("Rho_h[i * nv + nv - 1] = %e \n", Rho_h[i * nv + nv - 1]);
+                    //printf("temperature_h[i * nv + nv - 1] = %e \n", temperature_h[i * nv + nv - 1]);
                 }
 
                 for (int j = 0; j < nv; j++)
