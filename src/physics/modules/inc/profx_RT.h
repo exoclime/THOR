@@ -900,8 +900,8 @@ __device__ void tau_struct(int id,
     
      if (id == 0)
             {
-                printf(" tau_struc_e[id*nlev + nlev + %d] == %e \n",  nlev-1,  tau_struc_e[id*nlev + nlev-1]);
-                printf(" tau_struc_e[id*nlev + nlev + %d] == %e \n",  nlev-2,  tau_struc_e[id*nlev + nlev-2]);
+                printf(" tau_struc_e[id*nlev + %d] == %e \n",  nlev-1,  tau_struc_e[id*nlev + nlev-1]);
+                printf(" tau_struc_e[id*nlev + %d] == %e \n",  nlev-2,  tau_struc_e[id*nlev + nlev-2]);
                // __threadfence();         // ensure store issued before trap
                 //asm("trap;");            // kill kernel with error
             }
@@ -1391,7 +1391,7 @@ __device__  void lw_grey_updown_linear(int id,
         {
             // Find the opacity structure
             tau_struct(id,
-            nlay,
+            nlay1,
             Rho_d,
             pl,
             grav,
