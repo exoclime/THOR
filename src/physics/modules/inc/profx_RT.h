@@ -886,8 +886,9 @@ __device__ void tau_struct(int id,
 
     // running sum of optical depth
     // added a ghost level above the grid model, otherwise tau_sum = 0.0
+    tau_struc_e[id*nlev + nlev-1] = 0.0;
     tau_sum = (kRoss[id*nlay*nchan + channel * nlay + nlay-1] * pl[id*nlay  + nlay-1])/gravity;
-    tau_struc_e[id*nlev + nlev-1] = tau_sum;
+    tau_struc_e[id*nlev + nlev-2] = tau_sum;
 
     //tau_sum = 0.0;
 
@@ -899,7 +900,7 @@ __device__ void tau_struct(int id,
     
      if (id == 0)
             {
-                printf(" tau_struc_e[id*nlev + nlev + %d] == %e \n",  nlev,  tau_struc_e[id*nlev + nlev-1]);
+                printf(" tau_struc_e[id*nlev + nlev + %d] == %e \n",  nlev-1,  tau_struc_e[id*nlev + nlev-1]);
                // __threadfence();         // ensure store issued before trap
                 //asm("trap;");            // kill kernel with error
             }
@@ -930,7 +931,7 @@ __device__ void tau_struct(int id,
 
         if (id == 0)
             {
-                printf(" tau_struc_e[id*nlev + nlev + %d] == %e \n",  level,  tau_struc_e[id*nlev + level -1]);
+                printf(" tau_struc_e[id*nlev + nlev + %d] == %e \n",  level-1,  tau_struc_e[id*nlev + level -1]);
                // __threadfence();         // ensure store issued before trap
                 //asm("trap;");            // kill kernel with error
             }
@@ -939,8 +940,8 @@ __device__ void tau_struct(int id,
 
      if (id == 0)
             {
-                __threadfence();         // ensure store issued before trap
-                asm("trap;");            // kill kernel with error
+                //__threadfence();         // ensure store issued before trap
+                //asm("trap;");            // kill kernel with error
 
             }
 
