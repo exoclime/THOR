@@ -901,7 +901,7 @@ __device__ void tau_struct(int id,
      if (id == 0)
             {
                 printf(" tau_struc_e[id*nlev + nlev + %d] == %e \n",  nlev-1,  tau_struc_e[id*nlev + nlev-1]);
-                printf(" tau_struc_e[id*nlev + nlev + %d] == %e \n",  nlev-1,  tau_struc_e[id*nlev + nlev-2]);
+                printf(" tau_struc_e[id*nlev + nlev + %d] == %e \n",  nlev-2,  tau_struc_e[id*nlev + nlev-2]);
                // __threadfence();         // ensure store issued before trap
                 //asm("trap;");            // kill kernel with error
             }
@@ -1037,6 +1037,8 @@ __device__  void lw_grey_updown_linear(int id,
         if (tau_IRe__df_e[id*nlev + k] < tau_IRe__df_e[id*nlev + k + 1] && id == 0)
         {
             printf("tau_IRe__df_e[id*nlev + k] < tau_IRe__df_e[id*nlev + k + 1] at level: %d \n",  k);
+            printf("tau_IRe__df_e[id*nlev + %d] = %e \n",  k, tau_IRe__df_e[id*nlev + k]);
+            printf("tau_IRe__df_e[id*nlev + %d] = %e \n",  k +1, tau_IRe__df_e[id*nlev + k + 1]);
                 __threadfence();         // ensure store issued before trap
                 asm("trap;");            // kill kernel with error
         }
