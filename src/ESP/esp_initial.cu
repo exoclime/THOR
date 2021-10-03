@@ -722,7 +722,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
 
                 //Hypsometric equation
-                double temp_height[nv] = {0.0};
+                //double temp_height[nv] = {0.0};
 
 
                for (int level = 1; level < nv; level++) {
@@ -1584,7 +1584,7 @@ __host__ ESP::~ESP() {
     free(pressure_h);
     free(temperature_h);
 
-    free(temp_height);
+    
     
     free(Mh_h);
     // free(diffmh_h);
