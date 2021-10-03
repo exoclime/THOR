@@ -658,37 +658,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                 printf(" init_PT_profile == PARMENTIER");
                             
-                /*
-                for (int lev = 0; lev <= nv; lev++) {
-                    if (lev == 0) {
-                        
-                        temperatureh_h[0]  = pow((pi*Tint/StBC),0.25);
-                        
-                    }
-                    else if (lev == nv) {
-                        
-
-                        pp = temperature_h[i * nv + nv - 2]
-                            + (temperature_h[i * nv + nv - 1] - temperature_h[i * nv + nv - 2])
-                                / (Altitude_h[nv - 1] - Altitude_h[nv - 2])
-                                * (2 * Altitudeh_h[nv] - Altitude_h[nv - 1] - Altitude_h[nv - 2]);
-                        if (pp < 0)
-                            pp = 0; //prevents temperature at the top from becoming negative
-                        ptop = 0.5 * (temperature_h[i * nv + nv - 1] + pp);
-
-                        temperatureh_h[nv] = ptop;
-
-                    }
-                    else {    
-                        ContributionFactorFromBelow = (Altitudeh_h[lev] - Altitude_h[lev]) / (Altitude_h[lev - 1] - Altitude_h[lev]);
-                        ContributionFactorFromAbove =  (Altitudeh_h[lev] - Altitude_h[lev - 1]) / (Altitude_h[lev] - Altitude_h[lev - 1]);
-                        
-                        temperatureh_h[lev] = temperature_h[ lev-1] * ContributionFactorFromBelow + temperature_h[lev] * ContributionFactorFromAbove;
-
-                    }
-
-                }
-                */               
+                            
 
 
                 int table_num;
@@ -750,64 +720,82 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 double scale_height ;
                 double const euler = 2.71828182845904523536028;
 
-               
+
+                //Hypsometric equation
+                double temp_height[nv] = 0.0;
+
+
+               for (int level = 1; level < nv; level++) {
+
+                    Altitude_h[level] = (0.5*(Rd_h[i * nv + level -1] + Rd_h[i * nv + level]))*(0.5*(temperature_h[i * nv + level -1] + temperature_h[i * nv + level]))/
+                        (sim.Gravit)*log(pressure_h[i * nv + level -1 ] / pressure_h[i * nv + level])/log(euler) + Altitude_h[level-1];
+               }
+               Altitudeh_h[0] = Altitude_h[0] - 0.5*(Altitude_h[1] - Altitude_h[0]);
+               Altitudeh_h[nvi-1] = Altitude_h[nv-1] + 0.5*(Altitude_h[nv-1] - Altitude_h[nv-2]);
+               for (int level = 1; level < nv; level++) {
+                    Altitudeh_h[level] = Altitude_h[level] + 0.5*(Altitude_h[level] - Altitude_h[level-1]);
+               }
 
                 //Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, MetStar);
 
-                //Hypsometric equation
-                for (int iter = 0; iter < max_iter ; iter++) {
-                    scale_height = temperature_h[i * nv + 0] * Rd_h[i * nv + 0] / ( sim.Gravit);                    
-                    Rho_h[i * nv + 0] =
-                        pressure_h[i * nv + 0] / (temperature_h[i * nv + 0] * Rd_h[i * nv + 0]);
-                    
-
-                    //printf("scale_height = %e \n", scale_height);
-                    //printf("pressure_h[i * nv + 0] = %e \n", pressure_h[i * nv + 0]);
-
-                    for (int lev = 1; lev < nv; lev++) {
-
-                        pressure_h[i * nv + lev] = pressure_h[i * nv + lev] * (max_iter-2) / (max_iter-1) +
-                            (pressure_h[i * nv + 0] * pow(euler, (-(Altitude_h[lev]-Altitude_h[0])/scale_height))) / (max_iter-1);
-                        Rho_h[i * nv + lev] =
-                                pressure_h[i * nv + lev] / (temperature_h[i * nv + lev] * Rd_h[i * nv + lev]);
-                                           
+                if (1==0) {
+                    for (int iter = 0; iter < max_iter ; iter++) {
+                        scale_height = temperature_h[i * nv + 0] * Rd_h[i * nv + 0] / ( sim.Gravit);                    
+                        Rho_h[i * nv + 0] =
+                            pressure_h[i * nv + 0] / (temperature_h[i * nv + 0] * Rd_h[i * nv + 0]);
                         
-                        /*
-                        for (int iter = 1; iter < max_iter ; iter++) {
-                            Rho_h[i * nv + lev] =
-                                pressure_h[i * nv + lev] / (temperature_h[i * nv + lev] * Rd_h[i * nv + lev]);
-                            pressure_diff = ((Rho_h[i * nv + lev + 1] + Rho_h[i * nv + lev - 1]) / 2) * ((Altitude_h[lev+1]-Altitude_h[lev-1])/2) * (sim.Gravit);
-                            pressure_h[i * nv + lev] = pressure_h[i * nv + lev - 1] - (pressure_diff / (max_iter * max_iter));
 
-                            pressure_h[i * nv + nv - 1] = pressure_h[i * nv + nv - 2];
-                            Rho_h[i * nv +  nv - 1] = Rho_h[i * nv + nv - 2];
-                            temperature_h[i * nv +  nv - 1] = temperature_h[i * nv + nv - 2];
+                        //printf("scale_height = %e \n", scale_height);
+                        //printf("pressure_h[i * nv + 0] = %e \n", pressure_h[i * nv + 0]);
+
+                        for (int lev = 1; lev < nv; lev++) {
+
+                            pressure_h[i * nv + lev] = pressure_h[i * nv + lev] * (max_iter-2) / (max_iter-1) +
+                                (pressure_h[i * nv + 0] * pow(euler, (-(Altitude_h[lev]-Altitude_h[0])/scale_height))) / (max_iter-1);
+                            Rho_h[i * nv + lev] =
+                                    pressure_h[i * nv + lev] / (temperature_h[i * nv + lev] * Rd_h[i * nv + lev]);
+                                            
+                            
+                            /*
+                            for (int iter = 1; iter < max_iter ; iter++) {
+                                Rho_h[i * nv + lev] =
+                                    pressure_h[i * nv + lev] / (temperature_h[i * nv + lev] * Rd_h[i * nv + lev]);
+                                pressure_diff = ((Rho_h[i * nv + lev + 1] + Rho_h[i * nv + lev - 1]) / 2) * ((Altitude_h[lev+1]-Altitude_h[lev-1])/2) * (sim.Gravit);
+                                pressure_h[i * nv + lev] = pressure_h[i * nv + lev - 1] - (pressure_diff / (max_iter * max_iter));
+
+                                pressure_h[i * nv + nv - 1] = pressure_h[i * nv + nv - 2];
+                                Rho_h[i * nv +  nv - 1] = Rho_h[i * nv + nv - 2];
+                                temperature_h[i * nv +  nv - 1] = temperature_h[i * nv + nv - 2];
+                            }
+                            */
+                            //printf("pressure_h[i * nv + %d] = %e \n", lev, pressure_h[i * nv + lev]);
+                            //printf("Rho_h[i * nv + %d] = %e \n", lev, Rho_h[i * nv + lev]);
+                            //printf("temperature_h[i * nv + %d] = %e \n", lev, temperature_h[i * nv + lev]);
+                            if (iter < max_iter) {
+                                temperature_h[i * nv + lev] == 0.0;
+                            }
                         }
-                        */
-                        //printf("pressure_h[i * nv + %d] = %e \n", lev, pressure_h[i * nv + lev]);
-                        //printf("Rho_h[i * nv + %d] = %e \n", lev, Rho_h[i * nv + lev]);
-                        //printf("temperature_h[i * nv + %d] = %e \n", lev, temperature_h[i * nv + lev]);
                         if (iter < max_iter) {
-                            temperature_h[i * nv + lev] == 0.0;
+                            temperature_h[i * nv + 0] == 0.0;
                         }
+                        if (iter < max_iter) {
+                            Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, MetStar);
+                            //Parmentier_bilinear_interpolation_IC(i, nv, pressure_h, Tint, mu, Tirr,
+                                //OpaTableTemperature__h, OpaTablePressure__h, OpaTableKappa__h, sim.Gravit, temperature_h, table_num, MetStar);
+                        }
+                        if (iter < max_iter) {
+                            adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);        
+                            //bottum_up_adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit, Cp_h, Altitude_h, Cp_h, Rd_h,sim.P_Ref);
+                        }
+                        
+                        //printf("pressure_h[i * nv + nv - 1] = %e \n", pressure_h[i * nv + nv - 1]);
+                        //printf("Rho_h[i * nv + nv - 1] = %e \n", Rho_h[i * nv + nv - 1]);
+                        //printf("temperature_h[i * nv + nv - 1] = %e \n", temperature_h[i * nv + nv - 1]);
                     }
-                    if (iter < max_iter) {
-                        temperature_h[i * nv + 0] == 0.0;
-                    }
-                    if (iter < max_iter) {
-                        Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, MetStar);
-                        //Parmentier_bilinear_interpolation_IC(i, nv, pressure_h, Tint, mu, Tirr,
-                            //OpaTableTemperature__h, OpaTablePressure__h, OpaTableKappa__h, sim.Gravit, temperature_h, table_num, MetStar);
-                    }
-                    if (iter < max_iter) {
-                        adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);        
-                        //bottum_up_adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit, Cp_h, Altitude_h, Cp_h, Rd_h,sim.P_Ref);
-                    }
-                    
-                    //printf("pressure_h[i * nv + nv - 1] = %e \n", pressure_h[i * nv + nv - 1]);
-                    //printf("Rho_h[i * nv + nv - 1] = %e \n", Rho_h[i * nv + nv - 1]);
-                    //printf("temperature_h[i * nv + nv - 1] = %e \n", temperature_h[i * nv + nv - 1]);
                 }
+
+                
+                
 
                 for (int j = 0; j < nv; j++)
                 {
@@ -1106,7 +1094,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                 //Rho_h[i * nv + lev] = (pressure_h[i * nv + lev-1] - pressure_h[i * nv + lev + 1]) / (Altitude_h[lev]) / (sim.Gravit);
             }
-            Rho_h[i * nv + nv-1] = Rho_h[i * nv + nv-2] ;//(pressure_h[i * nv + lev-1] - pressure_h[i * nv + nv-1]) / (Altitude_h[nv-1]-Altitude_h[nv-1-1]) / (sim.Gravit);
+            //Rho_h[i * nv + nv-1] = Rho_h[i * nv + nv-2] ;//(pressure_h[i * nv + lev-1] - pressure_h[i * nv + nv-1]) / (Altitude_h[nv-1]-Altitude_h[nv-1-1]) / (sim.Gravit);
 
             Wh_h[i * (nv + 1) + nv] = 0.0;
             if (surface) { // set initial surface temp == bottom layer
@@ -1595,6 +1583,8 @@ __host__ ESP::~ESP() {
     free(Rho_h);
     free(pressure_h);
     free(temperature_h);
+
+    free(temp_height)
     
     free(Mh_h);
     // free(diffmh_h);
