@@ -1847,7 +1847,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
             
             }
 
-            if ((Altitudeh_d[level+1] - Altitudeh_d[level])==0.0)
+            if ((Altitudeh_d[level+1] - Altitudeh_d[level])==0.0 && id==0)
             {
                 printf("(Altitudeh_d[level+1] - Altitudeh_d[level]) is 0 at level:%d \n",  level);                    
             }
