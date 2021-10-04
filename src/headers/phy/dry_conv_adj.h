@@ -85,7 +85,7 @@ __global__ void dry_conv_adj(double timestep,       // time step [s]
         int  iter   = 0;
         bool repeat = true; //will repeat entire
 
-        bool ray_mode = true;
+        bool ray_mode = false;
 
         if (ray_mode == true)
         {
