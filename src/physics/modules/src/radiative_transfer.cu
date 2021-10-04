@@ -837,7 +837,7 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
 
         if (picket_fence_mod){
 
-            Tirr = Tstar*pow((radius_star/planet_star_dist), 0.5);
+            Tirr = Tstar*pow((radius_star*696340000) / (planet_star_dist*1.496e+11) ,0.5);
 
             F0_h = sb * pow(Tirr, 4.0);
                 

@@ -1652,7 +1652,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
         if (zenith_angles[id] > 0.0) {
             
             double flux_top = (1.0 - AB_d[id]) * zenith_angles[id] * F0_d ; // * (1-alb);
-            insol_d[id] = flux_top;
+            insol_d[id] = 0.0 ;//flux_top;
 
             ts_short_char(id,
                 nv,
