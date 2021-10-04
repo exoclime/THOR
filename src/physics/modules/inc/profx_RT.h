@@ -1752,6 +1752,13 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 Bp__dff_l);
         }
 
+        if (id == 0)
+        {
+            printf("Altitudeh_d[%d] = %e \n", 0, Altitudeh_d[0]);
+            printf("Altitudeh_d[%d] = %e \n", nvi-1, Altitudeh_d[nvi-1]);
+        }
+        
+
         
         
         for (int level = 0; level < nv; level++)
@@ -1760,7 +1767,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 (net_F_nvi_d[id * nvi + level] - net_F_nvi_d[id * nvi + level + 1] ) / 
                 (Altitudeh_d[level] - Altitudeh_d[level+1]);
 
-            
+           
 
             if (isnan(dtemp[id * nv + level]))
             {

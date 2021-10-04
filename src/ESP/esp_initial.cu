@@ -736,13 +736,15 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                     printf("Altitude_h[%d] = %e \n", level, Altitude_h[level]);
                 }
-                Altitudeh_h[0] = Altitude_h[0] - 0.5*(Altitude_h[1] - Altitude_h[0]);
-                Altitudeh_h[nvi-1] = Altitude_h[nv-1] + 0.5*(Altitude_h[nv-1] - Altitude_h[nv-2]);
-                printf("Altitudeh_h[%d] = %e \n", 0, Altitudeh_h[0]);
+                
+               
                 for (int level = 1; level < nv; level++) {
-                    Altitudeh_h[level] = Altitude_h[level] + 0.5*(Altitude_h[level] - Altitude_h[level-1]);
+                    Altitudeh_h[level] = Altitude_h[level-1] + 0.5*(Altitude_h[level] - Altitude_h[level-1]);
                     printf("Altitudeh_h[%d] = %e \n", level, Altitudeh_h[level]);
                 }
+                Altitudeh_h[0] = Altitude_h[0] * (Altitude_h[0] / Altitudeh_h[1]);
+                Altitudeh_h[nvi-1] = Altitude_h[nv-1] + 0.5*(Altitude_h[nv-1] - Altitude_h[nv-2]);
+                printf("Altitudeh_h[%d] = %e \n", 0, Altitudeh_h[0]);
                 printf("Altitudeh_h[%d] = %e \n", nvi-1, Altitudeh_h[nvi-1]);
 
                 //Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, MetStar);
