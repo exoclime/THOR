@@ -1756,6 +1756,24 @@ __global__ void rtm_picket_fence(double *pressure_d,
         {
             printf("Altitudeh_d[%d] = %e \n", 0, Altitudeh_d[0]);
             printf("Altitudeh_d[%d] = %e \n", nvi-1, Altitudeh_d[nvi-1]);
+
+            for (int channel = 0; channel < 3; channel++)
+            {
+                for (int level = 0; level < nv; level++)
+                {
+                    printf("k_V_3_nv_d[id * nv * 3 + %d * nv + %d] = %e \n", channel,level, k_V_3_nv_d[id * nv * 3 + channel * nv + level]);
+                }                 
+            }
+
+            for (int channel = 0; channel < 2; channel++)
+            {
+                for (int level = 0; level < nv; level++)
+                {
+                    printf(" k_IR_2_nv_d[id * nv * 2 + %d * nv + %d] = %e \n", channel,level,  k_IR_2_nv_d[id * nv * 2 + channel * nv + level]);
+                }                 
+            }
+
+            
         }
         
 
