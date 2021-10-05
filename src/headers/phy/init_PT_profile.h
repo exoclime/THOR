@@ -969,9 +969,6 @@ void Parmentier_IC_1D(const int nlay, double* pl, double Tint, double mu, double
     Bond_Parmentier_host(Teff0, grav, Bond);
 
     
-
-
-
     Teff = pow((pow(Tint, 4.0) + (((double)1.0) - Bond) * mu * pow(Tirr, 4.0)), (1.0 / 4.0));
 
 

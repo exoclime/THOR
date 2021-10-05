@@ -736,7 +736,6 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                     init_pressure_parmentier[level] = 100*pow(euler, -(((double)(level)+1.0)/50.0));
                 }
                 
-
                 Parmentier_IC_1D(init_nv, init_pressure_parmentier, Tint, mu, Tirr, sim.Gravit, init_temperature_parmentier, table_num, MetStar);
                 //Parmentier_bilinear_interpolation_IC(i, nv, pressure_h, Tint, mu, Tirr,
                         //OpaTableTemperature__h, OpaTablePressure__h, OpaTableKappa__h, sim.Gravit, temperature_h, table_num, MetStar);
@@ -764,6 +763,10 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         printf("init_pressure_parmentier[%d] = %e  \n",level, init_pressure_parmentier[level]);
                         printf("init_temperature_parmentier[%d] = %e  \n",level, init_temperature_parmentier[level]);
                 }
+
+                printf("init_temperature_parmentier[%d] = %e  \n",0, init_temperature_parmentier[0]);
+                printf("init_altitude_parmentier[%d] = %e  \n",0, init_altitude_parmentier[0]);
+                printf("init_pressure_parmentier[%d] = %e  \n",0, init_pressure_parmentier[0]);
 
                 for (int level = 1; level < nv; level++) {
                     linear_interpolation_fit(init_nv, Altitude_h[level], init_altitude_parmentier,
