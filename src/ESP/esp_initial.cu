@@ -921,6 +921,28 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                 for (int j = 0; j < nv; j++)
                 {
+                    if (pressure_h[i * nv + j] < 0.0)
+                    {                
+                        printf("before adiabat_correction temperature_h[i] is negative at level %d \n", j);
+                        
+                    }
+                    if (pressure_h[i * nv + j] == 0.0)
+                    {                
+                        printf("before adiabat_correction temperature_h[i] is zero at level %d \n", j);
+                    }
+                    
+                    if (isnan(pressure_h[i * nv + j]))
+                    {                
+                        printf("before adiabat_correction temperature_h[i] is NaN at level %d  \n", j);
+                        
+                    }
+
+                    //temperature_h[i * nv + j] = 0.80*temperature_h[i * nv + j] ;
+
+                }
+
+                for (int j = 0; j < nv; j++)
+                {
                     if (temperature_h[i * nv + j] < 0.0)
                     {                
                         printf("before adiabat_correction temperature_h[i] is negative at level %d \n", j);
@@ -1053,7 +1075,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 */
                 //Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, met);
 
-                for (int j = 0; j < 10; j++) {
+                
                     //adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
                     for (int lev = 0; lev < nv; lev++) {
                         if (ultrahot_thermo != NO_UH_THERMO) {
@@ -1077,7 +1099,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         
                         
                     }
-                }
+                
 
                 ///// end of parmentier TP profile procedure
             } else {
@@ -1196,8 +1218,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                 
                 if (init_PT_profile == PARMENTIER){
-                    //Rho_h[i * nv + lev] = (pressure_h[i * nv + lev-1] - pressure_h[i * nv + lev + 1]) / (Altitude_h[lev+1]-Altitude_h[lev-1]) / (sim.Gravit);
-                    Rho_h[i * nv + lev] = pow(10,(( log(pressure_h[i * nv + lev-1]) / log(pressure_h[i * nv + lev + 1]) ) / log((Altitude_h[lev+1]-Altitude_h[lev-1]) * (sim.Gravit)) ));
+                    Rho_h[i * nv + lev] = (pressure_h[i * nv + lev-1] - pressure_h[i * nv + lev + 1]) / (Altitude_h[lev+1]-Altitude_h[lev-1]) / (sim.Gravit);
+                    //Rho_h[i * nv + lev] = pow(10,(( log(pressure_h[i * nv + lev-1]) / log(pressure_h[i * nv + lev + 1]) ) / log((Altitude_h[lev+1]-Altitude_h[lev-1]) * (sim.Gravit)) ));
                 }
                
                 //              Momentum [kg/m3 m/s]
