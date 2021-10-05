@@ -146,7 +146,13 @@ void linear_interpolation_fit(int len, double Xin, double *Xreference,
         x2 = Xreference[iter];
 
         y1 = Yreference[lowiter];
-        y2 = Yreference[iter];    
+        y2 = Yreference[iter]; 
+    
+    printf("Xin = %e  \n", Xin);
+    printf("x1 = Xreference[%d] = %e  \n",lowiter, Xreference[lowiter]);
+    printf("x2 = Xreference[%d] = %e  \n",iter, Xreference[iter]);
+    printf("y1 = Yreference[%d] = %e  \n",lowiter, Yreference[lowiter]);
+    printf("y2 = Yreference[%d] = %e  \n",iter, Yreference[iter]);
 
     // interpolate values
 
