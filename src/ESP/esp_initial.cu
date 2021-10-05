@@ -721,20 +721,20 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                 for (int level = 0; level < init_nv; level++) {
 
-                    init_pressure_parmentier[level] = 100*pow(euler, -((level+1)/50));
+                    init_pressure_parmentier[level] = 100*pow(euler, -(((double)(level)+1.0)/50.0));
                 }
                 
 
-                Parmentier_IC(i, init_nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, MetStar);
+                Parmentier_IC(i, init_nv, init_pressure_parmentier, Tint, mu, Tirr, sim.Gravit, init_temperature_parmentier, table_num, MetStar);
                 //Parmentier_bilinear_interpolation_IC(i, nv, pressure_h, Tint, mu, Tirr,
                         //OpaTableTemperature__h, OpaTablePressure__h, OpaTableKappa__h, sim.Gravit, temperature_h, table_num, MetStar);
-                adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
+                adiabat_correction(i, init_nv, init_temperature_parmentier, init_pressure_parmentier, sim.Gravit);
                 double pressure_diff = 0.0;
                 double bolzmann_const = 1.380649e-23;
                 int max_iter = 10;
                 double scale_height ;
 
-                for (int lev = 0; lev < nv; lev++) {
+                for (int lev = 0; lev < init_nv; lev++) {
 
                     init_Rd_parmentier[lev] = sim.Rd;
                 }                
