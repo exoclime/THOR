@@ -831,9 +831,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         pressure_h[i * nv + level] = pressure_h[i * nv + level] - f / df;
                         it++;
                     }
-                    printf("Altitude_h[%d] = %e  \n",level, Altitude_h[level]);
-                    printf("pressure_h[%d] = %e  \n",level, pressure_h[level]);
-                    printf("temperature_h[%d] = %e  \n",level, temperature_h[level]);
+                   
                 }
 
                 
@@ -1224,7 +1222,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                 
                 if (init_PT_profile == PARMENTIER){
-                    Rho_h[i * nv + lev] = (pressure_h[i * nv + lev-1] - pressure_h[i * nv + lev + 1]) / (Altitude_h[lev+1]-Altitude_h[lev-1]) / (sim.Gravit);
+                    //Rho_h[i * nv + lev] = (pressure_h[i * nv + lev-1] - pressure_h[i * nv + lev + 1]) / (Altitude_h[lev+1]-Altitude_h[lev-1]) / (sim.Gravit);
                     //Rho_h[i * nv + lev] = pow(10,(( log(pressure_h[i * nv + lev-1]) / log(pressure_h[i * nv + lev + 1]) ) / log((Altitude_h[lev+1]-Altitude_h[lev-1]) * (sim.Gravit)) ));
                 }
                
