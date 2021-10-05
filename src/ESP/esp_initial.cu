@@ -763,7 +763,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 }
 
                 double dz, f, df;
-                
+
+                pressure_h[i * nv + 0] = sim.P_Ref;                
                 for (int level = 1; level < nv; level++) {
                     pressure_h[i * nv + level] = pressure_h[i * nv + level-1];
                     dz  = Altitude_h[level] - Altitude_h[level - 1];
