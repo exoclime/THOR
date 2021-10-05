@@ -770,7 +770,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                     ptmp                     = pressure_h[i * nv + level] + 2 * eps;
 
                     it = 0;
-                    while (it < it_max && ptmp - pressure_h[i * nv + lev] > eps) {
+                    while (it < it_max && ptmp - pressure_h[i * nv + level] > eps) {
                         dz  = Altitude_h[level] - Altitude_h[level - 1];
                         f   = log(pressure_h[i * nv + level] /pressure_h[i * nv + level-1]) / dz
                                     + sim.Gravit
