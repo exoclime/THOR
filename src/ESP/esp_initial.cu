@@ -762,7 +762,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         log(euler) +
                         init_altitude_parmentier[level-1];
 
-                        
+
                         printf("init_altitude_parmentier[%d] = %e  \n",level, init_altitude_parmentier[level]);
                         printf("init_pressure_parmentier[%d] = %e  \n",level, init_pressure_parmentier[level]);
                         printf("init_temperature_parmentier[%d] = %e  \n",level, init_temperature_parmentier[level]);
@@ -800,7 +800,23 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                 double dz, f, df;
 
-                pressure_h[i * nv + 0] = sim.P_Ref;                
+                pressure_h[i * nv + 0] = sim.P_Ref;
+
+                /*
+
+                for (int level = 1; level < nv; level++) {
+                    pressure_h[i * nv + level] = pressure_h[i * nv + level-1] *
+                        pow(-g/
+                            (0.5*(init_Rd_parmentier[level - 1] + init_Rd_parmentier[level])) * 
+                            (0.5*(init_temperature_parmentier[level -1] + init_temperature_parmentier[level])) *
+                            (Altitude_h[level] - Altitude_h[level-1])
+                        );
+                }
+
+                */
+                
+                
+
                 for (int level = 1; level < nv; level++) {
                     pressure_h[i * nv + level] = pressure_h[i * nv + level-1];
                     ptmp                     = pressure_h[i * nv + level] + 2 * eps;
@@ -820,7 +836,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                     printf("temperature_h[%d] = %e  \n",level, temperature_h[level]);
                 }
 
-                adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
+                //adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
 
 
                 
