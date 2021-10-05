@@ -210,6 +210,12 @@ public:
     double radius_star;
     double planet_star_dist;
 
+    // inititial conditions parmentier
+    double *init_altitude_parmentier;
+    double *init_temperature_parmentier;
+    double *init_pressure_parmentier ;
+    double *init_Rd_parmentier ;
+
     ///////////////////////////
     //  Device
     int *point_local_d;
