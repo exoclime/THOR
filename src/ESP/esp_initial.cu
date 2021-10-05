@@ -733,7 +733,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                 for (int level = 0; level < init_nv; level++) {
 
-                    init_pressure_parmentier[level] = 1000*pow(euler, -(((double)(level)+1.0)/50.0));
+                    init_pressure_parmentier[level] = sim.P_Ref*pow(euler, -(((double)(level)+1.0)/(euler*20)));
                 }
                 
                 Parmentier_IC_1D(init_nv, init_pressure_parmentier, Tint, mu, Tirr, sim.Gravit, init_temperature_parmentier, table_num, MetStar);
