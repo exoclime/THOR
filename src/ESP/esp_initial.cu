@@ -767,12 +767,20 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 pressure_h[i * nv + 0] = sim.P_Ref;                
                 for (int level = 1; level < nv; level++) {
                     pressure_h[i * nv + level] = pressure_h[i * nv + level-1];
-                    dz  = Altitude_h[level] - Altitude_h[level - 1];
-                    f   = log(pressure_h[i * nv + level] /pressure_h[i * nv + level-1]) / dz
-                                + sim.Gravit
-                                    / (0.5 * (Rd_h[i * nv + level] * temperature_h[i * nv + level] + Rd_h[i * nv + level - 1] * temperature_h[i * nv + level-1]));
-                    df  = 1.0 / (pressure_h[i * nv + level] * dz);
-                    pressure_h[i * nv + level] = pressure_h[i * nv + level] - f / df;
+                    ptmp                     = pressure_h[i * nv + lev] + 2 * eps;
+
+                    it = 0;
+                    while (it < it_max && ptmp - pressure_h[i * nv + lev] > eps) {
+                        dz  = Altitude_h[level] - Altitude_h[level - 1];
+                        f   = log(pressure_h[i * nv + level] /pressure_h[i * nv + level-1]) / dz
+                                    + sim.Gravit
+                                        / (0.5 * (Rd_h[i * nv + level] * temperature_h[i * nv + level] + Rd_h[i * nv + level - 1] * temperature_h[i * nv + level-1]));
+                        df  = 1.0 / (pressure_h[i * nv + level] * dz);
+                        pressure_h[i * nv + level] = pressure_h[i * nv + level] - f / df;
+                        it++;
+                    }
+                    printf("pressure_h[%d] = %e  \n",level, pressure_h[level]);
+                    printf("temperature_h[%d] = %e  \n",level, temperature_h[level]);
                 }
 
 
