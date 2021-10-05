@@ -762,11 +762,14 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         init_altitude_parmentier[level-1];
                         printf("init_altitude_parmentier[%d] = %e  \n",level, init_altitude_parmentier[level]);
                         printf("init_pressure_parmentier[%d] = %e  \n",level, init_pressure_parmentier[level]);
+                        printf("init_temperature_parmentier[%d] = %e  \n",level, init_temperature_parmentier[level]);
                 }
 
                 for (int level = 1; level < nv; level++) {
                     linear_interpolation_fit(init_nv, Altitude_h[level], init_altitude_parmentier,
                         init_temperature_parmentier,  temperature_h[level]);
+                    printf("after interpolation pressure_h[%d] = %e  \n",level, pressure_h[level]);
+                    printf("after interpolation temperature_h[%d] = %e  \n",level, temperature_h[level]);
                 }
 
                 
