@@ -761,6 +761,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         log(init_pressure_parmentier[level -1] / init_pressure_parmentier[level])/
                         log(euler) +
                         init_altitude_parmentier[level-1];
+
+                        
                         printf("init_altitude_parmentier[%d] = %e  \n",level, init_altitude_parmentier[level]);
                         printf("init_pressure_parmentier[%d] = %e  \n",level, init_pressure_parmentier[level]);
                         printf("init_temperature_parmentier[%d] = %e  \n",level, init_temperature_parmentier[level]);
