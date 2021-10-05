@@ -1132,8 +1132,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                 
                 if (init_PT_profile == PARMENTIER){
-                    Rho_h[i * nv + lev] = (pressure_h[i * nv + lev-1] - pressure_h[i * nv + lev + 1]) / (Altitude_h[lev+1]-Altitude_h[lev-1]) / (sim.Gravit);
-
+                    //Rho_h[i * nv + lev] = (pressure_h[i * nv + lev-1] - pressure_h[i * nv + lev + 1]) / (Altitude_h[lev+1]-Altitude_h[lev-1]) / (sim.Gravit);
+                    Rho_h[i * nv + lev] = pow(10,(( log(pressure_h[i * nv + lev-1]) / log(pressure_h[i * nv + lev + 1]) ) / log((Altitude_h[lev+1]-Altitude_h[lev-1]) * (sim.Gravit)) ))
                 }
                
                 //              Momentum [kg/m3 m/s]
