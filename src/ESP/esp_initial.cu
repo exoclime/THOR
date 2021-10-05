@@ -685,32 +685,10 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                     table_num = 2;
                 }
 
-                for (int j = 0; j < nv; j++)
-                {
-                    if (temperature_h[i * nv + j] < 0.0)
-                    {                
-                        printf("before Parmentier_IC temperature_h[i] is negative at level %d \n", j);
-                        
-                    }
-                    if (temperature_h[i * nv + j] == 0.0)
-                    {                
-                        printf("before Parmentier_IC temperature_h[i] is zero at level %d \n", j);
-                    }
-                    
-                    if (isnan(temperature_h[i * nv + j]))
-                    {                
-                        printf("before Parmentier_IC temperature_h[i] is NaN at level %d  \n", j);
-                        
-                    }
-                }
+               
 
                 //printf(" before Tirr and Parmentier \n");
                 Tirr = Tstar * pow((radius_star*696340000) / (planet_star_dist*1.496e+11) ,0.5);
-
-                printf("Tstar %e  \n", Tstar);
-                printf("radius_star %e  \n", radius_star*696340000);
-                printf("planet_star_dist %e  \n", planet_star_dist*1.496e+11);
-                printf("Tirr %e  \n", Tirr);
 
                 double OpaTableTemperature__h[1060];
                 text_file_to_array("src/physics/modules/src/OpaTableTemperature.txt" , OpaTableTemperature__h, 1060);
@@ -762,31 +740,13 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         log(euler) +
                         init_altitude_parmentier[level-1];
 
-
-                        printf("init_altitude_parmentier[%d] = %e  \n",level, init_altitude_parmentier[level]);
-                        printf("init_pressure_parmentier[%d] = %e  \n",level, init_pressure_parmentier[level]);
-                        printf("init_temperature_parmentier[%d] = %e  \n",level, init_temperature_parmentier[level]);
                 }
 
-                printf("init_temperature_parmentier[%d] = %e  \n",0, init_temperature_parmentier[0]);
-                printf("init_altitude_parmentier[%d] = %e  \n",0, init_altitude_parmentier[0]);
-                printf("init_pressure_parmentier[%d] = %e  \n",0, init_pressure_parmentier[0]);
-                printf("init_temperature_parmentier[%d] = %e  \n",500, init_temperature_parmentier[500]);
-                printf("init_altitude_parmentier[%d] = %e  \n",500, init_altitude_parmentier[500]);
-                printf("init_pressure_parmentier[%d] = %e  \n",500, init_pressure_parmentier[500]);
-                printf("init_temperature_parmentier[%d] = %e  \n",600, init_temperature_parmentier[600]);
-                printf("init_altitude_parmentier[%d] = %e  \n",600, init_altitude_parmentier[600]);
-                printf("init_pressure_parmentier[%d] = %e  \n",600, init_pressure_parmentier[600]);
-                printf("init_temperature_parmentier[%d] = %e  \n",700, init_temperature_parmentier[700]);
-                printf("init_altitude_parmentier[%d] = %e  \n",700, init_altitude_parmentier[700]);
-                printf("init_pressure_parmentier[%d] = %e  \n",700, init_pressure_parmentier[700]);
 
                 for (int level = 0; level < nv; level++) {
                     altitude_from_P_ref = Altitude_h[level] - Altitude_h[0];
                     linear_interpolation_fit(init_nv, altitude_from_P_ref, init_altitude_parmentier,
                         init_temperature_parmentier,  temperature_h[level]);
-                    printf("after interpolation pressure_h[%d] = %e  \n",level, pressure_h[level]);
-                    printf("after interpolation temperature_h[%d] = %e  \n",level, temperature_h[level]);
                 }
 
                 
@@ -839,11 +799,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
 
 
-                for (int level = 0; level < nv; level++) {
-                    printf("Altitude_h[%d] = %e  \n",level, Altitude_h[level]);
-                    printf("pressure_h[%d] = %e  \n",level, pressure_h[level]);
-                    printf("temperature_h[%d] = %e  \n",level, temperature_h[level]);
-                }
+                
 
                                
                 /*
