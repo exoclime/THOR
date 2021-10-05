@@ -768,6 +768,15 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 printf("init_temperature_parmentier[%d] = %e  \n",0, init_temperature_parmentier[0]);
                 printf("init_altitude_parmentier[%d] = %e  \n",0, init_altitude_parmentier[0]);
                 printf("init_pressure_parmentier[%d] = %e  \n",0, init_pressure_parmentier[0]);
+                printf("init_temperature_parmentier[%d] = %e  \n",500, init_temperature_parmentier[500]);
+                printf("init_altitude_parmentier[%d] = %e  \n",500, init_altitude_parmentier[500]);
+                printf("init_pressure_parmentier[%d] = %e  \n",500, init_pressure_parmentier[500]);
+                printf("init_temperature_parmentier[%d] = %e  \n",600, init_temperature_parmentier[600]);
+                printf("init_altitude_parmentier[%d] = %e  \n",600, init_altitude_parmentier[600]);
+                printf("init_pressure_parmentier[%d] = %e  \n",600, init_pressure_parmentier[600]);
+                printf("init_temperature_parmentier[%d] = %e  \n",700, init_temperature_parmentier[700]);
+                printf("init_altitude_parmentier[%d] = %e  \n",700, init_altitude_parmentier[700]);
+                printf("init_pressure_parmentier[%d] = %e  \n",700, init_pressure_parmentier[700]);
 
                 for (int level = 0; level < nv; level++) {
                     linear_interpolation_fit(init_nv, Altitude_h[level], init_altitude_parmentier,
