@@ -836,10 +836,16 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                     printf("temperature_h[%d] = %e  \n",level, temperature_h[level]);
                 }
 
-                //adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
-
-
                 
+
+                adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
+
+
+                for (int level = 0; level < nv; level++) {
+                    printf("Altitude_h[%d] = %e  \n",level, Altitude_h[level]);
+                    printf("pressure_h[%d] = %e  \n",level, pressure_h[level]);
+                    printf("temperature_h[%d] = %e  \n",level, temperature_h[level]);
+                }
 
                                
                 /*
