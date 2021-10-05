@@ -269,6 +269,15 @@ ESP::alloc_data(bool globdiag, bool output_mean, bool out_interm_momentum, bool 
     boundary_flux_h = (double *)malloc(6 * nv * point_num * sizeof(double));
     cudaMalloc((void **)&boundary_flux_d, 6 * point_num * nv * sizeof(double));
 
+    // inititial conditions parmentier
+    if (init_PT_profile == PARMENTIER){
+        init_altitude_parmentier = (double *)malloc(1000 * sizeof(double));
+        init_temperature_parmentier = (double *)malloc(1000 * sizeof(double));
+        init_pressure_parmentier = (double *)malloc(1000 * sizeof(double));
+        init_Rd_parmentier = (double *)malloc(1000 * sizeof(double));
+    }
+        
+
     //  Allocate data in device
     //  Grid
     cudaMalloc((void **)&point_local_d, 6 * point_num * sizeof(int));
@@ -712,10 +721,13 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                 int init_nv = 1000;
                 double const euler = 2.71828182845904523536028;
+                
+                /*
                 double init_altitude_parmentier[init_nv] = {0.0};
                 double init_temperature_parmentier[init_nv] = {0.0};
                 double init_pressure_parmentier[init_nv] = {0.0};
                 double init_Rd_parmentier[init_nv] = {0.0};
+                */
 
                 
 
@@ -1827,6 +1839,12 @@ __host__ ESP::~ESP() {
 
     free(Tsurface_h);
 
+    // inititial conditions parmentier
+
+    free(init_altitude_parmentier);
+    free(init_temperature_parmentier);
+    free(init_pressure_parmentier);
+    free(init_Rd_parmentier);
     
 
     if (phy_modules_execute)
