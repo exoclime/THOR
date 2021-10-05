@@ -721,6 +721,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                 int init_nv = 1000;
                 double const euler = 2.71828182845904523536028;
+                double altitude_from_P_ref;
                 
                 /*
                 double init_altitude_parmentier[init_nv] = {0.0};
@@ -779,7 +780,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 printf("init_pressure_parmentier[%d] = %e  \n",700, init_pressure_parmentier[700]);
 
                 for (int level = 0; level < nv; level++) {
-                    linear_interpolation_fit(init_nv, Altitude_h[level], init_altitude_parmentier,
+                    altitude_from_P_ref = Altitude_h[level] - Altitude_h[0];
+                    linear_interpolation_fit(init_nv, altitude_from_P_ref, init_altitude_parmentier,
                         init_temperature_parmentier,  temperature_h[level]);
                     printf("after interpolation pressure_h[%d] = %e  \n",level, pressure_h[level]);
                     printf("after interpolation temperature_h[%d] = %e  \n",level, temperature_h[level]);
