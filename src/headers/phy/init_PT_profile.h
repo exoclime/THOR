@@ -1043,7 +1043,7 @@ void Parmentier_IC_1D(const int nlay, double* pl, double Tint, double mu, double
     
     // T-p structure calculation - we follow exactly V. Parmentier's method
     // Estimate the skin temperature by setting tau = 0
-    tau[nlay-1] = kRoss[nlay-1] / grav * pl[id * nlay + nlay-1]; //   0.0;
+    tau[nlay-1] = kRoss[nlay-1] / grav * pl[nlay-1]; //   0.0;
     summy = 0.0;
     for (i = 0; i < 3; i++)
     {
