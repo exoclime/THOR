@@ -767,7 +767,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 pressure_h[i * nv + 0] = sim.P_Ref;                
                 for (int level = 1; level < nv; level++) {
                     pressure_h[i * nv + level] = pressure_h[i * nv + level-1];
-                    ptmp                     = pressure_h[i * nv + lev] + 2 * eps;
+                    ptmp                     = pressure_h[i * nv + level] + 2 * eps;
 
                     it = 0;
                     while (it < it_max && ptmp - pressure_h[i * nv + lev] > eps) {
