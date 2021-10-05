@@ -93,6 +93,69 @@ void bilinear_interpolation_polynomial_fit(double x, double y, double x1, double
 
 }
 
+void linear_interp(double Xin, double x1, double x2, double y1, double y2,
+    double &Yout) {
+    
+    double lXin, lx1, lx2, ly1, ly2;
+    double norm;
+
+    lXin = Xin;
+    lx1 = x1;
+    lx2 = x2;
+    ly1 = y1;
+    ly2 = y2;
+
+    norm = 1.0 / (lx2 - lx1);
+
+    Yout = (lXin - lx1) * norm * (ly2-ly1) + ly1;
+
+    Yout = Yout;
+
+}
+
+void linear_interpolation_fit(int len, double Xin, double *Xreference,
+    double *Yreference,  double &Yout){
+        
+    double x, y, x1, x2, y1, y2;
+ 
+    int iter = 0;
+    int lowiter = 0;
+    y = 0.0;
+    
+
+    // exclude values off the reference values
+    if (Xin <= Xreference[0]) {
+        x = Xreference[0] + 1e-10 ;      
+    } else if (Xin >= Xreference[len - 1]) {
+        x = Xreference[len - 1] - 1e-10 ;      
+    } else {
+        x = Xin;
+    }
+    
+    // iterating through the altitude
+
+    while (x >= Xreference[iter]) {
+        iter++;
+    }
+    lowiter = iter-1;
+
+    
+    // setting all inputs variables for the interpolation 
+         
+        x1 = Xreference[lowiter];
+        x2 = Xreference[iter];
+
+        y1 = Yreference[lowiter];
+        y2 = Yreference[iter];    
+
+    // interpolate values
+
+    linear_interp(x, x1, x2, y1, y2, Yout);
+
+    y = Yout;
+   
+}
+
 
 // Calculates the IR band Rosseland mean opacity (local T) according to a
 // bilinear_interpolation_polynomial_fit to the opacities of Freedman et al. (2014)

@@ -710,7 +710,22 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 double OpaTableKappa__h[1060];
                 text_file_to_array("src/physics/modules/src/OpaTableKappa.txt" , OpaTableKappa__h, 1060);
 
-                Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, MetStar);
+                int init_nv = 1000;
+                double const euler = 2.71828182845904523536028;
+                double init_altitude_parmentier[init_nv] = {0.0};
+                double init_temperature_parmentier[init_nv] = {0.0};
+                double init_pressure_parmentier[init_nv] = {0.0};
+                double init_Rd_parmentier[init_nv] = {0.0};
+
+                
+
+                for (int level = 0; level < init_nv; level++) {
+
+                    init_pressure_parmentier[level] = 100*pow(euler, -((level+1)/50));
+                }
+                
+
+                Parmentier_IC(i, init_nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, MetStar);
                 //Parmentier_bilinear_interpolation_IC(i, nv, pressure_h, Tint, mu, Tirr,
                         //OpaTableTemperature__h, OpaTablePressure__h, OpaTableKappa__h, sim.Gravit, temperature_h, table_num, MetStar);
                 adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
@@ -718,12 +733,52 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 double bolzmann_const = 1.380649e-23;
                 int max_iter = 10;
                 double scale_height ;
-                double const euler = 2.71828182845904523536028;
+
+                for (int lev = 0; lev < nv; lev++) {
+
+                    init_Rd_parmentier[lev] = sim.Rd;
+                }                
 
 
                 //Hypsometric equation
-                //double temp_height[nv] = {0.0};
+                for (int level = 1; level < init_nv; level++) {
+                    init_altitude_parmentier[level] = (0.5*(init_Rd_parmentier[level - 1] + init_Rd_parmentier[level]))*
+                        (0.5*(init_temperature_parmentier[level -1] + init_temperature_parmentier[level]))/
+                        (sim.Gravit)*
+                        log(init_pressure_parmentier[level -1] / init_pressure_parmentier[level])/
+                        log(euler) +
+                        init_altitude_parmentier[level-1];
+                }
 
+                for (int level = 1; level < nv; level++) {
+                    linear_interpolation_fit(init_nv, Altitude_h[level], init_altitude_parmentier,
+                        init_temperature_parmentier,  temperature_h[level]);
+                }
+
+                
+                for (int lev = 0; lev < nv; lev++) {
+                    
+                    Rd_h[i * nv + lev] = sim.Rd;
+                    Cp_h[i * nv + lev] = sim.Cp;
+                }
+
+                double dz, f, df;
+                
+                for (int level = 1; level < nv; level++) {
+                    pressure_h[i * nv + level] = pressure_h[i * nv + level-1];
+                    dz  = Altitude_h[level] - Altitude_h[level - 1];
+                    f   = log(pressure_h[i * nv + level] /pressure_h[i * nv + level-1]) / dz
+                                + sim.Gravit
+                                    / (0.5 * (Rd_h[i * nv + level] * temperature_h[i * nv + level] + Rd_h[i * nv + level - 1] * temperature_h[i * nv + level-1]));
+                    df  = 1.0 / (pressure_h[i * nv + lev] * dz);
+                    pressure_h[i * nv + level] = pressure_h[i * nv + level] - f / df;
+                }
+
+
+                
+
+                               
+                /*
                 printf("Altitude_h[%d] = %e \n", 0, Altitude_h[0]);
                 for (int level = 1; level < nv; level++) {
 
@@ -746,6 +801,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 Altitudeh_h[nvi-1] = Altitude_h[nv-1] + 0.5*(Altitude_h[nv-1] - Altitude_h[nv-2]);
                 printf("Altitudeh_h[%d] = %e \n", 0, Altitudeh_h[0]);
                 printf("Altitudeh_h[%d] = %e \n", nvi-1, Altitudeh_h[nvi-1]);
+                
 
                 //Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, MetStar);
 
@@ -767,18 +823,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                                     pressure_h[i * nv + lev] / (temperature_h[i * nv + lev] * Rd_h[i * nv + lev]);
                                             
                             
-                            /*
-                            for (int iter = 1; iter < max_iter ; iter++) {
-                                Rho_h[i * nv + lev] =
-                                    pressure_h[i * nv + lev] / (temperature_h[i * nv + lev] * Rd_h[i * nv + lev]);
-                                pressure_diff = ((Rho_h[i * nv + lev + 1] + Rho_h[i * nv + lev - 1]) / 2) * ((Altitude_h[lev+1]-Altitude_h[lev-1])/2) * (sim.Gravit);
-                                pressure_h[i * nv + lev] = pressure_h[i * nv + lev - 1] - (pressure_diff / (max_iter * max_iter));
-
-                                pressure_h[i * nv + nv - 1] = pressure_h[i * nv + nv - 2];
-                                Rho_h[i * nv +  nv - 1] = Rho_h[i * nv + nv - 2];
-                                temperature_h[i * nv +  nv - 1] = temperature_h[i * nv + nv - 2];
-                            }
-                            */
+                            
                             //printf("pressure_h[i * nv + %d] = %e \n", lev, pressure_h[i * nv + lev]);
                             //printf("Rho_h[i * nv + %d] = %e \n", lev, Rho_h[i * nv + lev]);
                             //printf("temperature_h[i * nv + %d] = %e \n", lev, temperature_h[i * nv + lev]);
@@ -804,6 +849,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         //printf("temperature_h[i * nv + nv - 1] = %e \n", temperature_h[i * nv + nv - 1]);
                     }
                 }
+
+                */
 
                 
                 
@@ -859,7 +906,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                     }
                 }
 
-
+                /*
                 int nv_pressure_threshold;
                 int lapse_rate;
 
@@ -869,7 +916,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                     }
                 }
 
-                /*
+                
 
                 lapse_rate = (temperature_h[i * nv + 0] - temperature_h[i * nv + nv_pressure_threshold]) /
                     (log(pressure_h[i * nv + nv_pressure_threshold])/log(exp(1.0)) - log(pressure_h[i * nv + 0])/log(exp(1.0)));
@@ -963,7 +1010,6 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                             Cp_h[i * nv + lev] = sim.Cp;
                         }
                         
-                        //pressure_h[i * nv + lev] = (Rd_h[i * nv + lev] * temperature_h[i * nv + lev]) * Rho_h[i * nv + lev];
                         
                         
                     }
@@ -1074,7 +1120,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
             
 
-            double density_diff;
+           
 
             /// 
 
@@ -1084,9 +1130,12 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 Rho_h[i * nv + lev] =
                     pressure_h[i * nv + lev] / (temperature_h[i * nv + lev] * Rd_h[i * nv + lev]);
 
+                
+                if (init_PT_profile == PARMENTIER){
+                    Rho_h[i * nv + lev] = (pressure_h[i * nv + lev-1] - pressure_h[i * nv + lev + 1]) / (Altitude_h[lev+1]-Altitude_h[lev-1]) / (sim.Gravit);
+
+                }
                
-
-
                 //              Momentum [kg/m3 m/s]
                 Mh_h[i * 3 * nv + 3 * lev + 0] = 0.0;
                 Mh_h[i * 3 * nv + 3 * lev + 1] = 0.0;
@@ -1097,20 +1146,12 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 //              Vertical momentum [kg/m3 m/s]
                 W_h[i * nv + lev]        = 0.0; // Center of the layer.
                 Wh_h[i * (nv + 1) + lev] = 0.0; // Layers interface.
-            }
-            for (int lev = 1; lev < nv-1; lev++) {
-                density_diff = Rho_h[i * nv + lev] - (pressure_h[i * nv + lev-1] - pressure_h[i * nv + lev+1]) / (Altitude_h[lev+1]-Altitude_h[lev-1]) / sim.Gravit;
-                printf("density_diff :%e at level %d \n",density_diff, lev);
-                Rho_h[i * nv + lev] = (pressure_h[i * nv + lev-1] - pressure_h[i * nv + lev + 1]) / (Altitude_h[lev+1]-Altitude_h[lev-1]) / (sim.Gravit);
-
-                //Rho_h[i * nv + lev] = (pressure_h[i * nv + lev-1] - pressure_h[i * nv + lev + 1]) / (Altitude_h[lev]) / (sim.Gravit);
-            }
-            //Rho_h[i * nv + nv-1] = Rho_h[i * nv + nv-2] ;//(pressure_h[i * nv + lev-1] - pressure_h[i * nv + nv-1]) / (Altitude_h[nv-1]-Altitude_h[nv-1-1]) / (sim.Gravit);
-
+            }            
             Wh_h[i * (nv + 1) + nv] = 0.0;
             if (surface) { // set initial surface temp == bottom layer
                 Tsurface_h[i] = temperature_h[i * nv + 0];
             }
+
 
             if (core_benchmark == ACOUSTIC_TEST) {
                 printf("core_benchmark == ACOUSTIC_TEST true \n");
