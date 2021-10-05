@@ -733,7 +733,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                 for (int level = 0; level < init_nv; level++) {
 
-                    init_pressure_parmentier[level] = 100*pow(euler, -(((double)(level)+1.0)/50.0));
+                    init_pressure_parmentier[level] = 1000*pow(euler, -(((double)(level)+1.0)/50.0));
                 }
                 
                 Parmentier_IC_1D(init_nv, init_pressure_parmentier, Tint, mu, Tirr, sim.Gravit, init_temperature_parmentier, table_num, MetStar);
@@ -752,6 +752,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
 
                 //Hypsometric equation
+                init_altitude_parmentier[0] = 0.0;
                 for (int level = 1; level < init_nv; level++) {
                     init_altitude_parmentier[level] = (0.5*(init_Rd_parmentier[level - 1] + init_Rd_parmentier[level]))*
                         (0.5*(init_temperature_parmentier[level -1] + init_temperature_parmentier[level]))/
@@ -768,7 +769,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 printf("init_altitude_parmentier[%d] = %e  \n",0, init_altitude_parmentier[0]);
                 printf("init_pressure_parmentier[%d] = %e  \n",0, init_pressure_parmentier[0]);
 
-                for (int level = 1; level < nv; level++) {
+                for (int level = 0; level < nv; level++) {
                     linear_interpolation_fit(init_nv, Altitude_h[level], init_altitude_parmentier,
                         init_temperature_parmentier,  temperature_h[level]);
                     printf("after interpolation pressure_h[%d] = %e  \n",level, pressure_h[level]);
@@ -801,6 +802,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         pressure_h[i * nv + level] = pressure_h[i * nv + level] - f / df;
                         it++;
                     }
+                    printf("Altitude_h[%d] = %e  \n",level, Altitude_h[level]);
                     printf("pressure_h[%d] = %e  \n",level, pressure_h[level]);
                     printf("temperature_h[%d] = %e  \n",level, temperature_h[level]);
                 }
