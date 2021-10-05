@@ -1073,7 +1073,7 @@ void Parmentier_IC_1D(const int nlay, double* pl, double Tint, double mu, double
     }
     
     Tl[nlay-1] = 3.0 * pow(Tint, 4) / 4.0 * (tau[nlay-1] + A + B * exp(-tau[nlay-1] / tau_lim)) + summy;
-    Tl[nlay-1] = pow(Tl[id * nlay + nlay-1], (1.0 / 4.0));
+    Tl[nlay-1] = pow(Tl[nlay-1], (1.0 / 4.0));
 
     
 
