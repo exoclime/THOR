@@ -858,7 +858,7 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                 if (esp.insolation.get_host_cos_zenith_angles()[c] >= 0.0)
                 {
                     Teff[c] = pow( (pow(esp.Tint, 4.0) +
-                    (1.0 - AB__h[c]) *0.99 * pow(Tirr, 4.0)), 0.25); //(1.0 - AB__h[c]) * esp.insolation.get_host_cos_zenith_angles()[c] * pow(Tirr, 4.0)), 0.25);
+                    (1.0 - AB__h[c]) * esp.insolation.get_host_cos_zenith_angles()[c] * pow(Tirr, 4.0)), 0.25);
                 } else {
                     Teff[c] = pow( pow(esp.Tint, 4.0) + 0.0, 0.25);
                 }

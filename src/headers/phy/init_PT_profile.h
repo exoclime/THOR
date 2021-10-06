@@ -116,11 +116,10 @@ void linear_interp(double Xin, double x1, double x2, double y1, double y2,
 void linear_interpolation_fit(int len, double Xin, double *Xreference,
     double *Yreference,  double &Yout){
         
-    double x, y, x1, x2, y1, y2;
+    double x, x1, x2, y1, y2;
  
     int iter = 0;
     int lowiter = 0;
-    y = 0.0;
     
 
     // exclude values off the reference values
@@ -158,7 +157,7 @@ void linear_interpolation_fit(int len, double Xin, double *Xreference,
 
     linear_interp(x, x1, x2, y1, y2, Yout);
 
-    y = Yout;
+    Yout = Yout;
    
 }
 
