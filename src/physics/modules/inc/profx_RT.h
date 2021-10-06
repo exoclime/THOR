@@ -1296,7 +1296,7 @@ __device__  void lw_grey_updown_linear(int id,
             }
         }
 
-        if (mu_s[i]<0.1)
+        if (mu_s[id]<0.1)
         {
             for (int i = 0; i < nlay1; i++)
             {
