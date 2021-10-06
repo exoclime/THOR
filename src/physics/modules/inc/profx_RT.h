@@ -933,7 +933,7 @@ __device__ void tau_struct(int id,
 
 __device__  void sw_grey_down(int id,
     int nlev,
-    double solar,
+    double solar_flux,
     double *solar_tau,
     double *sw_down__df_e,
     double *mu) {
@@ -945,7 +945,7 @@ __device__  void sw_grey_down(int id,
     // start operations
     for (int i = nlev-1; i >-1; i--)
     {
-        sw_down__df_e[id * nlev + i] = solar * exp(-solar_tau[id * nlev + i] / mu[id]);
+        sw_down__df_e[id * nlev + i] = solar_flux * mu[id] * exp(-solar_tau[id * nlev + i] / mu[id]);
     }
 
 }
@@ -1296,6 +1296,15 @@ __device__  void lw_grey_updown_linear(int id,
             }
         }
 
+        if (mu_s[i]<0.1)
+        {
+            for (int i = 0; i < nlay1; i++)
+            {
+                printf("sw_down__df_e[id * nlay1 + %d] = %e \n", i, sw_down__df_e[id * nlay1 + i]);
+            }
+        }
+        
+
         // Long wave two-stream fluxes
         for (int i = 0; i < nlay1; i++)
         {
@@ -1479,7 +1488,6 @@ __global__ void rtm_picket_fence(double *pressure_d,
 
     int id = blockIdx.x * blockDim.x + threadIdx.x;
 
-    double coszrs;
     double ps, psm;
     double pp, ptop;
 
@@ -1489,7 +1497,6 @@ __global__ void rtm_picket_fence(double *pressure_d,
 
     const double pi = atan(1.0) * 4;
     const double StBC = 5.670374419e-8;
-    double ifP = 0.0;
     double const euler = 2.71828182845904523536028;
     double scale_height = 0.0 ;
 
@@ -1562,42 +1569,18 @@ __global__ void rtm_picket_fence(double *pressure_d,
         */
         
 
-        // zenith angle
-        if (rt1Dmode) {
-            coszrs = 0.5;
-        }
-        else {
-            coszrs = zenith_angles[id];
-        }
 
-       // using std::chrono::high_resolution_clock;
-        //using std::chrono::duration_cast;
-        //using std::chrono::duration;
-       // using std::chrono::milliseconds;
 
 
 
         // kappa calculation loop here if using non-constant kappa
         for (int level = 0; level < nv; level++)
         {
-            /*
-            if ( pressure_d[id * nv + level] < pressure_d[id * nv + level-1] || level==0)
-            {
-                ifP = pressure_d[id * nv + level];
-            } else
-            {
-                scale_height = temperature_d[id * nv + level-1] * Rd_d[id * nv + level-1] / ( gravit);
-                ifP = pressure_d[id * nv + level-1] * pow(euler, (-(Altitude_d[level]-Altitude_d[level -1])/scale_height));
-            }
-            */
-             
-            ifP = pressure_d[id * nv + level];
             
-            
-            
+                     
             
             kernel_k_Ross_Freedman(temperature_d[id * nv + level],
-                ifP,
+                pressure_d[id * nv + level],
                 met,
                 k_IR_2_nv_d[id * nv * 2 + 0 * nv + level]);
 
@@ -1651,7 +1634,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
         
         if (zenith_angles[id] > 0.0) {
             
-            double flux_top = (1.0 - AB_d[id]) * zenith_angles[id] * F0_d ; // * (1-alb);
+            double flux_top = (1.0 - AB_d[id]) *  F0_d ; // * (1-alb);
             insol_d[id] = flux_top;
 
             ts_short_char(id,

@@ -825,7 +825,6 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
     if (run) {
         double picket_fence_mod = true;
         double Tirr;
-        double Fint;
         double F0_h;
         double const sb = 5.670374419e-8;
         //
@@ -839,8 +838,6 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
         if (picket_fence_mod){
 
             Tirr = Tstar*pow((radius_star) / (planet_star_dist) ,0.5);
-
-            Fint = sb * pow(esp.Tint, 4.0);
 
             F0_h = sb * pow(Tirr, 4.0);
                 
