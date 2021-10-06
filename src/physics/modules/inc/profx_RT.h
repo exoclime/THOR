@@ -1499,6 +1499,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
     const double StBC = 5.670374419e-8;
     double const euler = 2.71828182845904523536028;
     double scale_height = 0.0 ;
+    double flux_top = 0.0;
 
     if (id < num) {
 
@@ -1632,9 +1633,9 @@ __global__ void rtm_picket_fence(double *pressure_d,
 
         // !! Radiation - Comment in what scheme you want to use - Heng model won't work!
         
-        if (zenith_angles[id] > 0.0) {
+        if (zenith_angles[id] > 0.0 && zenith_angles[id] < 0.1) {
             
-            double flux_top = (1.0 - AB_d[id]) *  F0_d ; // * (1-alb);
+            flux_top = (1.0 - AB_d[id]) *  F0_d ; // * (1-alb);
             insol_d[id] = flux_top;
 
             ts_short_char(id,
@@ -1686,6 +1687,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
             
         }
         else {
+            flux_top = 0.0 ;
             insol_d[id] = 0.0;
 
             ts_short_char(id,
@@ -1703,7 +1705,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 Beta_2_d,
                 net_F_nvi_d,
                 zenith_angles,
-                insol_d[id],
+                flux_top,
                 tint,
                 gravit,
                 //AB_d[id],
