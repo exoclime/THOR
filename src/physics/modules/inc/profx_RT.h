@@ -1633,7 +1633,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
 
         // !! Radiation - Comment in what scheme you want to use - Heng model won't work!
         
-        if (zenith_angles[id] > 0.0 && zenith_angles[id] < 0.1) {
+        if (zenith_angles[id] > 0.9 && zenith_angles[id] < 1.0) {
             
             flux_top = (1.0 - AB_d[id]) *  F0_d ; // * (1-alb);
             insol_d[id] = flux_top;
