@@ -1296,7 +1296,7 @@ __device__  void lw_grey_updown_linear(int id,
             }
         }
 
-        if (mu_s[id]<0.01)
+        if (mu_s[id]<0.001 && mu_s[id]>0.0)
         {
             for (int i = 37; i < nlay1; i++)
             {
@@ -1735,32 +1735,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 Bp__dff_l);
         }
 
-        if (id == 0)
-        {
-            printf("Altitudeh_d[%d] = %e \n", 0, Altitudeh_d[0]);
-            printf("Altitudeh_d[%d] = %e \n", nvi-1, Altitudeh_d[nvi-1]);
-
-            for (int channel = 0; channel < 3; channel++)
-            {
-                for (int level = 0; level < nv; level++)
-                {
-                    printf("k_V_3_nv_d[id * nv * 3 + %d * nv + %d] = %e \n", channel,level, k_V_3_nv_d[id * nv * 3 + channel * nv + level]);
-                }                 
-            }
-
-            for (int channel = 0; channel < 2; channel++)
-            {
-                for (int level = 0; level < nv; level++)
-                {
-                    printf(" k_IR_2_nv_d[id * nv * 2 + %d * nv + %d] = %e \n", channel,level,  k_IR_2_nv_d[id * nv * 2 + channel * nv + level]);
-                }                 
-            }
-
-            
-        }
-        
-
-        
+               
         
         for (int level = 0; level < nv; level++)
         {

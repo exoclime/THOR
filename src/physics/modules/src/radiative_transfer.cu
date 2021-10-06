@@ -875,6 +875,8 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                 gam_2__h,
                 gam_P);
 
+
+            /*    
             printf("radius_star = %e \n", radius_star);
             printf("planet_star_dist = %e \n", planet_star_dist);
             printf("Tstar = %e \n", Tstar);
@@ -892,6 +894,7 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
             printf("gam_2__h[0] = %e \n", gam_2__h[0]);
             printf("gam_P[0] = %e \n", gam_P[0]);
             printf("mu[0] = %e \n", 0.99);
+            */
                 
                 
             bool cudaStatus;
