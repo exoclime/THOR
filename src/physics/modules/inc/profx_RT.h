@@ -1296,9 +1296,9 @@ __device__  void lw_grey_updown_linear(int id,
             }
         }
 
-        if (mu_s[id]<0.05)
+        if (mu_s[id]<0.01)
         {
-            for (int i = 0; i < nlay1; i++)
+            for (int i = 37; i < nlay1; i++)
             {
                 printf("sw_down__df_e[%d * nlay1 + %d] = %e \n",id, i, sw_down__df_e[id * nlay1 + i]);
             }
