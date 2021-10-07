@@ -1779,7 +1779,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
         {
             dtemp[id * nv + level] = 1* //(gravit / Cp_d) *
                 (net_F_nvi_d[id * nvi + level] - net_F_nvi_d[id * nvi + level + 1] ) / 
-                (Altitudeh_d[level] - Altitudeh_d[level+1]);
+                ((Altitudeh_d[level] - Altitudeh_d[level+1])*Rho_d[id*nv  + level]*gravit);
 
            
 
