@@ -1649,7 +1649,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
 
         // !! Radiation - Comment in what scheme you want to use - Heng model won't work!
         
-        if (zenith_angles[id] > 0.8 && zenith_angles[id] < 1.0) {
+        if (zenith_angles[id] > 0.7 && zenith_angles[id] < 1.1) {
         //if (id==340) {
             //printf("Teff[%d] = %e \n", 0, Teff[0]);
             printf("AB_d[%d] = %e \n", 0, AB_d[id]);
