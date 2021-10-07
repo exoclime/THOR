@@ -1293,6 +1293,10 @@ __device__  void lw_grey_updown_linear(int id,
             for (int i = 0; i < nlay1; i++)
             {
                 sw_down__df_e[id * nlay1 + i] = sw_down__df_e[id * nlay1 + i] + sw_down_b__df_e[id * nlay1 + i];
+                if (id==340)
+                {
+                    printf("tau_Ve__df_e[%d * nlay1 + %d] = %e \n",id, i, tau_Ve__df_e[id * nlay1 + i]);
+                }
             }
         }
 
@@ -1636,6 +1640,29 @@ __global__ void rtm_picket_fence(double *pressure_d,
         
         //if (zenith_angles[id] > 0.4 && zenith_angles[id] < 0.6) {
         if (id==340) {
+            printf("Teff[%d] = %e \n", 0, Teff[0]);
+            printf("AB__h[%d] = %e \n", 0, AB__h[0]);
+            printf("gam_V__h[0 + 0] = %e \n", gam_V__h[0]);
+            printf("gam_V__h[0 + 1] = %e \n", gam_V__h[1]);
+            printf("gam_V__h[0 + 2] = %e \n", gam_V__h[2]);
+            printf("Beta_V__h[0 + 0] = %e \n", Beta_V__h[0]);
+            printf("Beta_V__h[0 + 1] = %e \n", Beta_V__h[1]);
+            printf("Beta_V__h[0 + 2] = %e \n", Beta_V__h[2]);
+            printf("Beta__h[0 + 0] = %e \n", Beta__h[0]);
+            printf("Beta__h[0 + 1] = %e \n", Beta__h[1]);
+            printf("gam_1__h[0] = %e \n", gam_1__h[0]);
+            printf("gam_2__h[0] = %e \n", gam_2__h[0]);
+            printf("gam_P[0] = %e \n", gam_P[0]);
+            printf("mu[0] = %e \n", 0.99);
+            for (int level = 0; level < nv; level++)
+            {
+                for (int channel = 0; channel < 3; channel++)
+                {
+                    k_V_3_nv_d[id * nv * 3 + channel * nv + level] = k_IR_2_nv_d[id * nv * 2 + 0 * nv + level] * gam_V_3_d[id * 3 + channel];
+                    printf("k_V_3_nv_d[id * nv *3 + %d * nv + level] = %e \n", channel, k_V_3_nv_d[id * nv * 3 + channel * nv + level]);
+                }
+            }
+
             
             flux_top = (1.0 - AB_d[id]) *  F0_d ; // * (1-alb);
             insol_d[id] = flux_top;
