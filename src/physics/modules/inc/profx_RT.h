@@ -1390,6 +1390,10 @@ __device__  void lw_grey_updown_linear(int id,
             }
             for (int i = 0; i < nlay; i++)
             {
+                printf("lw_net__df_e[%d * nlay1 + %d] = %e \n",id, i, lw_net__df_e[id * nlay1 + i]-lw_net__df_e[id * nlay1 + i+1]);
+            }
+            for (int i = 0; i < nlay; i++)
+            {
                 printf("net_F_diff[%d * nlay1 + %d] = %e \n",id, i, net_F_nvi_d[id * nlay1 + i]-net_F_nvi_d[id * nlay1 + i+1]);
             }
         }
@@ -1660,13 +1664,20 @@ __global__ void rtm_picket_fence(double *pressure_d,
             printf("gam_1_d[0] = %e \n", gam_1_d[id]);
             //printf("gam_P[0] = %e \n", gam_P[0]);
             printf("zenith_angles[id] = %e \n", zenith_angles[id]);
+
             for (int channel = 0; channel < 3; channel++)
-            
             {
                 for (int level = 0; level < nv; level++)
                 {
-                    k_V_3_nv_d[id * nv * 3 + channel * nv + level] = k_IR_2_nv_d[id * nv * 2 + 0 * nv + level] * gam_V_3_d[id * 3 + channel];
-                    printf("k_V_3_nv_d[id * nv *3 + %d * nv + level] = %e \n", channel, k_V_3_nv_d[id * nv * 3 + channel * nv + level]);
+                    //k_V_3_nv_d[id * nv * 3 + channel * nv + level] = k_IR_2_nv_d[id * nv * 2 + 0 * nv + level] * gam_V_3_d[id * 3 + channel];
+                    //printf("k_V_3_nv_d[id * nv *3 + %d * nv + %d] = %e \n", channel, level, k_V_3_nv_d[id * nv * 3 + channel * nv + level]);
+                }
+            }
+            for (int channel = 0; channel < 2; channel++)
+            {
+                for (int level = 0; level < nv; level++)
+                {
+                    printf("k_IR_2_nv_d[id * nv *2 + %d * nv + %d] = %e \n", channel, level, k_IR_2_nv_d[id * nv * 2 + channel * nv + level]);
                 }
             }
 
