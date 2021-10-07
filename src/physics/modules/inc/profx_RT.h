@@ -1296,7 +1296,8 @@ __device__  void lw_grey_updown_linear(int id,
             }
         }
 
-        if (mu_s[id]<0.6 && mu_s[id]>0.4)
+        //if (mu_s[id]<0.6 && mu_s[id]>0.4)
+        if (id==343)
         {
             for (int i = 30; i < nlay1; i++)
             {
@@ -1633,7 +1634,8 @@ __global__ void rtm_picket_fence(double *pressure_d,
 
         // !! Radiation - Comment in what scheme you want to use - Heng model won't work!
         
-        if (zenith_angles[id] > 0.4 && zenith_angles[id] < 0.6) {
+        //if (zenith_angles[id] > 0.4 && zenith_angles[id] < 0.6) {
+        if (id==343) {
             
             flux_top = (1.0 - AB_d[id]) *  F0_d ; // * (1-alb);
             insol_d[id] = flux_top;
