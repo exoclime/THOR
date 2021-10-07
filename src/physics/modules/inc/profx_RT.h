@@ -1300,14 +1300,7 @@ __device__  void lw_grey_updown_linear(int id,
             }
         }
 
-        //if (mu_s[id]<0.6 && mu_s[id]>0.4)
-        if (id==340)
-        {
-            for (int i = 0; i < nlay1; i++)
-            {
-                printf("sw_down__df_e[%d * nlay1 + %d] = %e \n",id, i, sw_down__df_e[id * nlay1 + i]);
-            }
-        }
+        
         
 
         // Long wave two-stream fluxes
@@ -1386,6 +1379,19 @@ __device__  void lw_grey_updown_linear(int id,
             lw_net__df_e[id * nlay1 + i] = lw_down__df_e[id * nlay1 + i] - lw_up__df_e[id * nlay1 + i] ;
             sw_net__df_e[id * nlay1 + i] =  sw_down__df_e[id * nlay1 + i] - sw_up__df_e[id * nlay1 + i];
             net_F_nvi_d[id * nlay1 + i] = lw_net__df_e[id * nlay1 + i] + sw_net__df_e[id * nlay1 + i];
+        }
+
+        //if (mu_s[id]<0.6 && mu_s[id]>0.4)
+        if (id==340)
+        {
+            for (int i = 0; i < nlay; i++)
+            {
+                printf("sw_diff[%d * nlay1 + %d] = %e \n",id, i, sw_net__df_e[id * nlay1 + i]-sw_net__df_e[id * nlay1 + i+1]);
+            }
+            for (int i = 0; i < nlay; i++)
+            {
+                printf("net_F_diff[%d * nlay1 + %d] = %e \n",id, i, net_F_nvi_d[id * nlay1 + i]-net_F_nvi_d[id * nlay1 + i+1]);
+            }
         }
 
        
@@ -1649,14 +1655,15 @@ __global__ void rtm_picket_fence(double *pressure_d,
             printf("Beta_V_3_d[0 + 1] = %e \n", Beta_V_3_d[id * 3 + 1]);
             printf("Beta_V_3_d[0 + 2] = %e \n", Beta_V_3_d[id * 3 + 2]);
             printf("Beta_2_d[0 + 0] = %e \n", Beta_2_d[id]);
-            printf("Beta_2_d[0 + 1] = %e \n", Beta_2_d[id]);
+            printf("Beta_2_d[0 + 1] = %e \n", Beta_2_d[id+1]);
             printf("gam_2_d[0] = %e \n", gam_2_d[id]);
             printf("gam_1_d[0] = %e \n", gam_1_d[id]);
             //printf("gam_P[0] = %e \n", gam_P[0]);
             printf("zenith_angles[id] = %e \n", zenith_angles[id]);
-            for (int level = 0; level < nv; level++)
+            for (int channel = 0; channel < 3; channel++)
+            
             {
-                for (int channel = 0; channel < 3; channel++)
+                for (int level = 0; level < nv; level++)
                 {
                     k_V_3_nv_d[id * nv * 3 + channel * nv + level] = k_IR_2_nv_d[id * nv * 2 + 0 * nv + level] * gam_V_3_d[id * 3 + channel];
                     printf("k_V_3_nv_d[id * nv *3 + %d * nv + level] = %e \n", channel, k_V_3_nv_d[id * nv * 3 + channel * nv + level]);
