@@ -886,7 +886,8 @@ __device__ void tau_struct(int id,
 
     // running sum of optical depth
     // added a ghost level above the grid model, otherwise tau_sum = 0.0
-    tau_sum = (kRoss[id*nlay*nchan + channel * nlay + nlay-1] * pl[id*nlay  + nlay-1])/gravity;
+    tau_sum = 0.0;
+    //tau_sum = (kRoss[id*nlay*nchan + channel * nlay + nlay-1] * pl[id*nlay  + nlay-1])/gravity;
     tau_struc_e[id*nlev + nlev-1] = tau_sum;
 
     //tau_sum = 0.0;
@@ -1648,8 +1649,8 @@ __global__ void rtm_picket_fence(double *pressure_d,
 
         // !! Radiation - Comment in what scheme you want to use - Heng model won't work!
         
-        //if (zenith_angles[id] > 0.4 && zenith_angles[id] < 0.6) {
-        if (id==340) {
+        if (zenith_angles[id] > 0.8 && zenith_angles[id] < 1.0) {
+        //if (id==340) {
             //printf("Teff[%d] = %e \n", 0, Teff[0]);
             printf("AB_d[%d] = %e \n", 0, AB_d[id]);
             printf("gam_V_3_d[0 + 0] = %e \n", gam_V_3_d[id * 3 + 0]);
