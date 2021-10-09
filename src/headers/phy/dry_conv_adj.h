@@ -650,8 +650,10 @@ __global__ void ray_dry_conv_adj(double timestep,       // time step [s]
                     Pressure_d[id * nv + i] = Pressure_d[id * nv + i - 1] *
                         pow(euler,
                             Gravit * (Altitude_d[i] - Altitude_d[i-1]) /
-                            (0.5*(Temperature_d[id * nv + i] + Temperature_d[id * nv + i - 1]) *
-                            0.5(Rd_d[id * nv + i] + Rd_d[id * nv + i -1]))
+                            (
+                                0.5*(Temperature_d[id * nv + i] + Temperature_d[id * nv + i - 1]) *
+                                0.5*(Rd_d[id * nv + i] + Rd_d[id * nv + i -1])
+                            )
                         );
                     
                     if (id==0 && isnan(Pressure_d[id * nv + i]))
