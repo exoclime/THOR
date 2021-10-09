@@ -528,7 +528,8 @@ __global__ void ray_dry_conv_adj(double timestep,       // time step [s]
 
             // constants & parameters
 
-            int itermax = 5;
+            int itermax1 = 2;
+            int itermax2 = 5;
             const double small = 1e-6;
             double const euler = 2.71828182845904523536028;
 
@@ -544,12 +545,12 @@ __global__ void ray_dry_conv_adj(double timestep,       // time step [s]
             double d_T_lower;
 
             // start operations
-            for (iter = 0; iter < itermax; iter++)
-                {
+            for (iter = 0; iter < itermax1; iter++)
+            {
                 for (i = 0; i <nv; i++){
                     dT_conv_d[id * nv + i] =  Temperature_d[id * nv + i];
                 }
-                for (iter = 0; iter < itermax; iter++)
+                for (iter = 0; iter < itermax2; iter++)
                 {
                     did_adj = false;
 
