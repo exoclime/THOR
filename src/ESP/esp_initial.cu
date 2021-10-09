@@ -576,7 +576,9 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                 //          taking initial conditions for a guillot profile to start 
                     //             simulating parmentier profile
-                mu = 0.5;
+
+                    
+                /*mu = 0.5;
 
                 for (int lev = 0; lev < nv; lev++) {
                     //first, we define thermo quantities of layer below and make
@@ -671,6 +673,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         Cp_h[i * nv + lev] = sim.Cp;
                     }
                 }
+                */
 
 
                 printf(" init_PT_profile == PARMENTIER");

@@ -844,20 +844,28 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
             for (int c = 0; c <  esp.point_num; c++){
                 // Parmentier opacity profile parameters - first get Bond albedo
 
-                Teff[c] = pow( (pow(esp.Tint, 4.0) +
-                    (1.0 / sqrt(3.0)) *
-                    pow(Tirr, 4.0) ), 0.25);
+                Teff[c] = pow(
+                        (   pow(Tint, 4.0) +
+                            (1.0 / sqrt(3.0)) *
+                            pow(Tirr, 4.0)
+                        ),
+                        0.25);
 
                 Bond_Parmentier(Teff[c], sim.Gravit, AB__h[c]);
                 
                
                 // Recalculate Teff and then find parameters
-                if (esp.insolation.get_host_cos_zenith_angles()[c] >= 0.0)
+                if (esp.insolation.get_host_cos_zenith_angles()[c] > 0.0)
                 {
-                    Teff[c] = pow( (pow(esp.Tint, 4.0) +
-                    (1.0 - AB__h[c]) * esp.insolation.get_host_cos_zenith_angles()[c] * pow(Tirr, 4.0)), 0.25);
+                    Teff[c] = pow(
+                        (   pow(Tint, 4.0) +
+                            (1.0 - AB__h[c]) *
+                            esp.insolation.get_host_cos_zenith_angles()[c] *
+                            pow(Tirr, 4.0)
+                        ),
+                        0.25);
                 } else {
-                    Teff[c] = pow( pow(esp.Tint, 4.0) + 0.0, 0.25);
+                    Teff[c] = pow( pow(Tint, 4.0) + 0.0, 0.25);
                 }
                 
             }
@@ -877,10 +885,11 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
 
             
             printf("Teff[%d] = %e \n", 0, Teff[340]);
-            /*    
+             
             printf("radius_star = %e \n", radius_star);
             printf("planet_star_dist = %e \n", planet_star_dist);
             printf("Tstar = %e \n", Tstar);
+            /*   
             printf("Teff[%d] = %e \n", 0, Teff[0]);
             printf("AB__h[%d] = %e \n", 0, AB__h[0]);
             printf("gam_V__h[0 + 0] = %e \n", gam_V__h[0]);
@@ -982,7 +991,7 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                 phtemp,
                 dtemp,
                 time_step,
-                esp.Tint,
+                Tint,
                 albedo,
                 kappa_lw,
                 latf_lw,
@@ -1077,7 +1086,7 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                 planet_star_dist,
                 radius_star,
                 diff_ang,
-                esp.Tint,
+                Tint,
                 albedo,
                 kappa_sw,
                 kappa_lw,
@@ -1409,7 +1418,7 @@ void radiative_transfer::RTSetup(double Tstar_,
     planet_star_dist = planet_star_dist_ * 149597870.7; //conv to km
     radius_star      = radius_star_ * 695700;           //conv to km
     diff_ang         = diff_ang_;
-    // Tint             = Tint_;
+    Tint             = Tint_;
     albedo = albedo_;
     //tausw      = kappa_sw * P_Ref / Gravit;
     //taulw      = kappa_lw * P_Ref / (f_lw * Gravit);
