@@ -243,7 +243,7 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
 
             if (ray_mode) {
 
-                printf("start ray_dry_conv_adj \n",);
+                printf("start ray_dry_conv_adj \n");
 
                 ray_dry_conv_adj<<<NBRT, NTH>>>(timestep,      // time step [s]
                                                 pressure_d,    // Pressure [Pa]
@@ -261,7 +261,7 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
                                                 point_num, // Number of columns
                                                 nv);       // number of vertical layers
 
-                 printf("start ray_dry_conv_adj \n",);
+                 printf("start ray_dry_conv_adj \n");
             } else {   
 
                 dry_conv_adj<<<NBRT, NTH>>>(timestep,      // time step [s]
