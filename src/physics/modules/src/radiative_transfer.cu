@@ -858,14 +858,14 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                 if (esp.insolation.get_host_cos_zenith_angles()[c] > 0.0)
                 {
                     Teff[c] = pow(
-                        (   pow(Tint, 4.0) +
+                        (   pow(esp.Tint, 4.0) +
                             (1.0 - AB__h[c]) *
                             esp.insolation.get_host_cos_zenith_angles()[c] *
                             pow(Tirr, 4.0)
                         ),
                         0.25);
                 } else {
-                    Teff[c] = pow( pow(Tint, 4.0) + 0.0, 0.25);
+                    Teff[c] = pow( pow(esp.Tint, 4.0) + 0.0, 0.25);
                 }
                 
             }
@@ -991,7 +991,7 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                 phtemp,
                 dtemp,
                 time_step,
-                Tint,
+                esp.Tint,
                 albedo,
                 kappa_lw,
                 latf_lw,
@@ -1086,7 +1086,7 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                 planet_star_dist,
                 radius_star,
                 diff_ang,
-                Tint,
+                esp.Tint,
                 albedo,
                 kappa_sw,
                 kappa_lw,
@@ -1418,7 +1418,7 @@ void radiative_transfer::RTSetup(double Tstar_,
     planet_star_dist = planet_star_dist_ * 149597870.7; //conv to km
     radius_star      = radius_star_ * 695700;           //conv to km
     diff_ang         = diff_ang_;
-    Tint             = Tint_;
+    //Tint             = Tint_;
     albedo = albedo_;
     //tausw      = kappa_sw * P_Ref / Gravit;
     //taulw      = kappa_lw * P_Ref / (f_lw * Gravit);
