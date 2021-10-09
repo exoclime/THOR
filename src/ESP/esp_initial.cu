@@ -1880,7 +1880,7 @@ __host__ ESP::~ESP() {
     }
     bool ray_dry_conv_adj = true;
     if (ray_dry_conv_adj == true){
-        cudafree(dT_conv_d);
+        cudaFree(dT_conv_d);
     }
 
     
