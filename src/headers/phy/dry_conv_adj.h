@@ -644,16 +644,16 @@ __global__ void ray_dry_conv_adj(double timestep,       // time step [s]
                     
                 }
                 for (i = 1; i <nv; i++){
-                    Pressure_d[id * nv + i] = Rho_d[id * nv + i] * Rd_d[id * nv + i] * Temperature_d[id * nv + i];
+                    //Pressure_d[id * nv + i] = Rho_d[id * nv + i] * Rd_d[id * nv + i] * Temperature_d[id * nv + i];
                     // converve the mass might be better than hypsometric equation
-                    /*
+                    
                     Pressure_d[id * nv + i] = Pressure_d[id * nv + i - 1] *
                         pow(euler,
                             Gravit * (Altitude_d[i] - Altitude_d[i-1]) /
                             (0.5*(Temperature_d[id * nv + i] + Temperature_d[id * nv + i - 1]) *
                             0.5(Rd_d[id * nv + i] + Rd_d[id * nv + i -1]))
                         );
-                    */
+                    
                     if (id==0 && isnan(Pressure_d[id * nv + i]))
                     {
                         printf("dry conv - iter = %d \n", iter);
