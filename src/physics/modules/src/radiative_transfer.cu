@@ -845,7 +845,7 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                 // Parmentier opacity profile parameters - first get Bond albedo
 
                 Teff[c] = pow(
-                        (   pow(Tint, 4.0) +
+                        (   pow(esp.Tint, 4.0) +
                             (1.0 / sqrt(3.0)) *
                             pow(Tirr, 4.0)
                         ),
