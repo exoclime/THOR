@@ -550,7 +550,7 @@ __global__ void ray_dry_conv_adj(double timestep,       // time step [s]
                 for (i = 0; i <nv; i++){
                     dT_conv_d[id * nv + i] =  Temperature_d[id * nv + i];
                 }
-                for (iter2 = 0; iter2 < itermax2; iter2++)
+                for (int iter2 = 0; iter2 < itermax2; iter2++)
                 {
                     did_adj = false;
 
@@ -632,7 +632,7 @@ __global__ void ray_dry_conv_adj(double timestep,       // time step [s]
             
 
                 for (i = 0; i <nv; i++){
-                    if id==0 && isnan(dT_conv_d[id * nv + i]))
+                    if (id==0 && isnan(dT_conv_d[id * nv + i]))
                     {
                         printf("dry conv - iter = %d \n", iter);
                         printf("dry conv - dT_conv_d[%d * nv + %d] = %e \n", 0,i, dT_conv_d[id * nv + i]);
@@ -652,7 +652,7 @@ __global__ void ray_dry_conv_adj(double timestep,       // time step [s]
                             0.5(Rd_d[id * nv + i] + Rd_d[id * nv + i -1]))
                         );
                     */
-                    if id==0 && isnan(Pressure_d[id * nv + i]))
+                    if (id==0 && isnan(Pressure_d[id * nv + i]))
                     {
                         printf("dry conv - iter = %d \n", iter);
                         printf("dry conv - Pressure_d[%d * nv + %d] = %e \n", 0,i, Pressure_d[id * nv + i]);
@@ -688,7 +688,7 @@ __global__ void ray_dry_conv_adj(double timestep,       // time step [s]
                             Pressure_d[id * nv + lev - 1] * a + Pressure_d[id * nv + lev] * b;
                     }
 
-                    if id==0 && isnan(Pressureh_d[id * (nv + 1) + i]))
+                    if (id==0 && isnan(Pressureh_d[id * (nv + 1) + i]))
                     {
                         printf("dry conv - iter = %d \n", iter);
                         printf("dry conv - Pressureh_d[%d * (nv + 1) + %d] = %e \n", 0,i, Pressureh_d[id * (nv + 1) + i]);
@@ -702,7 +702,7 @@ __global__ void ray_dry_conv_adj(double timestep,       // time step [s]
                         * pow(Pressureh_d[id * (nv + 1) + 0] / Pressure_d[id * nv + lev],
                             Rd_d[id * nv + lev] / Cp_d[id * nv + lev]);
 
-                    if id==0 && isnan(pt_d[id * nv + i]))
+                    if (id==0 && isnan(pt_d[id * nv + i]))
                     {
                         printf("dry conv - iter = %d \n", iter);
                         printf("dry conv - pt_d[%d * nv + %d] = %e \n", 0,i, pt_d[id * nv + i]);
