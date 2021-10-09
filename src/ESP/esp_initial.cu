@@ -276,6 +276,8 @@ ESP::alloc_data(bool globdiag, bool output_mean, bool out_interm_momentum, bool 
         init_pressure_parmentier = (double *)malloc(1000 * sizeof(double));
         init_Rd_parmentier = (double *)malloc(1000 * sizeof(double));
     }
+
+    
         
 
     //  Allocate data in device
@@ -308,6 +310,12 @@ ESP::alloc_data(bool globdiag, bool output_mean, bool out_interm_momentum, bool 
     cudaMalloc((void **)&Rho_d, nv * point_num * sizeof(double));
     cudaMalloc((void **)&pressure_d, nv * point_num * sizeof(double));
     cudaMalloc((void **)&pressureh_d, (nv + 1) * point_num * sizeof(double));
+
+    // ray dry convective adjustment
+    bool ray_dry_conv_adj = true;
+    if (ray_dry_conv_adj == true){
+        cudaMalloc((void **)&dT_conv_d, nv * point_num * sizeof(double));
+    }
 
     if (output_mean == true) {
         // Average quantities over output interval
@@ -1864,11 +1872,19 @@ __host__ ESP::~ESP() {
 
     // inititial conditions parmentier
 
-    free(init_altitude_parmentier);
-    free(init_temperature_parmentier);
-    free(init_pressure_parmentier);
-    free(init_Rd_parmentier);
+    if (init_PT_profile == PARMENTIER){
+        free(init_altitude_parmentier);
+        free(init_temperature_parmentier);
+        free(init_pressure_parmentier);
+        free(init_Rd_parmentier);
+    }
+    bool ray_dry_conv_adj = true;
+    if (ray_dry_conv_adj == true){
+        cudafree(dT_conv_d);
+    }
+
     
+   
 
     if (phy_modules_execute)
         phy_modules_free_mem();

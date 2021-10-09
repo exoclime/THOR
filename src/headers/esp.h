@@ -216,6 +216,8 @@ public:
     double *init_pressure_parmentier ;
     double *init_Rd_parmentier ;
 
+    double *dT_conv_d;
+
     ///////////////////////////
     //  Device
     int *point_local_d;
