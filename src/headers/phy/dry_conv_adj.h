@@ -521,14 +521,14 @@ __global__ void ray_dry_conv_adj(double timestep,       // time step [s]
         int  iter   = 0;
         bool repeat = true; //will repeat entire
 
-        bool ray_mode = false;
+        bool ray_mode = true;
 
         if (ray_mode == true)
         {
 
             // constants & parameters
 
-            int itermax1 = 2;
+            int itermax1 = 1;
             int itermax2 = 5;
             const double small = 1e-6;
             double const euler = 2.71828182845904523536028;
@@ -640,7 +640,7 @@ __global__ void ray_dry_conv_adj(double timestep,       // time step [s]
                         asm("trap;");            // kill kernel with error
                     }
                     
-                    Temperature_d[id * nv + i] = dT_conv_d[id * nv + i] / timestep;
+                    Temperature_d[id * nv + i] = Temperature_d[id * nv + i] + dT_conv_d[id * nv + i] / timestep;
                     
                 }
                 for (i = 1; i <nv; i++){
