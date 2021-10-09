@@ -528,7 +528,7 @@ __global__ void ray_dry_conv_adj(double timestep,       // time step [s]
 
             // constants & parameters
 
-            int itermax1 = 2;
+            int itermax1 = 3;
             int itermax2 = 5;
             const double small = 1e-6;
             double const euler = 2.71828182845904523536028;
@@ -647,9 +647,9 @@ __global__ void ray_dry_conv_adj(double timestep,       // time step [s]
                     
                 }
                 for (i = 1; i <nv; i++){
-                    //Pressure_d[id * nv + i] = Rho_d[id * nv + i] * Rd_d[id * nv + i] * Temperature_d[id * nv + i];
+                    Pressure_d[id * nv + i] = Rho_d[id * nv + i] * Rd_d[id * nv + i] * Temperature_d[id * nv + i];
                     // converve the mass might be better than hypsometric equation
-                    
+                    /*
                     Pressure_d[id * nv + i] = Pressure_d[id * nv + i] + 
                         (Pressure_d[id * nv + i - 1] *
                             pow(euler,
@@ -660,6 +660,7 @@ __global__ void ray_dry_conv_adj(double timestep,       // time step [s]
                                 )
                             ) -
                         Pressure_d[id * nv + i]) / (timestep * itermax1) ;
+                    */
                     
                     if (id==0 && isnan(Pressure_d[id * nv + i]))
                     {
