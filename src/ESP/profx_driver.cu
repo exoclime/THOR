@@ -261,7 +261,7 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
                                                 point_num, // Number of columns
                                                 nv);       // number of vertical layers
 
-                 printf("start ray_dry_conv_adj \n");
+                 printf("end ray_dry_conv_adj \n");
             } else {   
 
                 dry_conv_adj<<<NBRT, NTH>>>(timestep,      // time step [s]
