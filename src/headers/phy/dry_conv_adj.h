@@ -636,6 +636,8 @@ __global__ void ray_dry_conv_adj(double timestep,       // time step [s]
                     {
                         printf("dry conv - iter = %d \n", iter);
                         printf("dry conv - dT_conv_d[%d * nv + %d] = %e \n", 0,i, dT_conv_d[id * nv + i]);
+                        __threadfence();         // ensure store issued before trap
+                        asm("trap;");            // kill kernel with error
                     }
                     
                     Temperature_d[id * nv + i] = dT_conv_d[id * nv + i] / timestep;
@@ -656,6 +658,8 @@ __global__ void ray_dry_conv_adj(double timestep,       // time step [s]
                     {
                         printf("dry conv - iter = %d \n", iter);
                         printf("dry conv - Pressure_d[%d * nv + %d] = %e \n", 0,i, Pressure_d[id * nv + i]);
+                        __threadfence();         // ensure store issued before trap
+                        asm("trap;");            // kill kernel with error
                     }
                 }
 
@@ -692,6 +696,8 @@ __global__ void ray_dry_conv_adj(double timestep,       // time step [s]
                     {
                         printf("dry conv - iter = %d \n", iter);
                         printf("dry conv - Pressureh_d[%d * (nv + 1) + %d] = %e \n", 0,i, Pressureh_d[id * (nv + 1) + i]);
+                        __threadfence();         // ensure store issued before trap
+                        asm("trap;");            // kill kernel with error
                     }
                 }
 
@@ -706,6 +712,8 @@ __global__ void ray_dry_conv_adj(double timestep,       // time step [s]
                     {
                         printf("dry conv - iter = %d \n", iter);
                         printf("dry conv - pt_d[%d * nv + %d] = %e \n", 0,i, pt_d[id * nv + i]);
+                        __threadfence();         // ensure store issued before trap
+                        asm("trap;");            // kill kernel with error
                     }
                 }
             }
