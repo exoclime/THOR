@@ -528,7 +528,7 @@ __global__ void ray_dry_conv_adj(double timestep,       // time step [s]
 
             // constants & parameters
 
-            int itermax1 = 3;
+            int itermax1 = 4;
             int itermax2 = 5;
             const double small = 1e-6;
             double const euler = 2.71828182845904523536028;
