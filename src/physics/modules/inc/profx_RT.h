@@ -1543,15 +1543,15 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 //Te__df_e[id * nvi + 0] = pow((pi*tint/StBC),0.25);
 
 
-                Te__df_e[id * nvi + 0] = 2 * (gravit * (-Altitude_d[0] - Altitudeh_d[0])) /
+                Te__df_e[id * nvi + 0] = 2 * (gravit * (Altitude_d[0] - Altitudeh_d[0])) /
                     (
                         Rd_d[id * nv + 0] *
-                        pow(pressureh_d[id * nvi + 0] / pressure_d[id * nvi + 0])
+                        log(pressureh_d[id * nvi + 0] / pressure_d[id * nvi + 0])/log(euler)
                     ) -
                     temperature_d[id * nv + 0];
                 
-            }
-            else if (lev == nv) {
+            } else if (lev == nv)
+            {
                 pp = pressure_d[id * nv + nv - 2]
                      + (pressure_d[id * nv + nv - 1] - pressure_d[id * nv + nv - 2])
                            / (Altitude_d[nv - 1] - Altitude_d[nv - 2])
@@ -1561,7 +1561,8 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 ptop = 0.5 * (pressure_d[id * nv + nv - 1] + pp);
 
                 pressureh_d[id * nvi + nv] = ptop;
-
+                
+                /*
                 pp = temperature_d[id * nv + nv - 2]
                      + (temperature_d[id * nv + nv - 1] - temperature_d[id * nv + nv - 2])
                            / (Altitude_d[nv - 1] - Altitude_d[nv - 2])
@@ -1571,10 +1572,17 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 ptop = 0.5 * (temperature_d[id * nv + nv - 1] + pp);
 
                 Te__df_e[id * nvi + nv] = ptop;
+                */
+
+                Te__df_e[id * nvi + 0] = 2 * (gravit * (Altitudeh_d[nvi - 1] -  Altitude_d[nv - 1])) /
+                    (
+                        Rd_d[id * nv + 0] *
+                        log(pressureh_d[id * nvi + 0] / pressure_d[id * nvi + 0])/log(euler)
+                    ) -
+                    temperature_d[id * nv + nv];
                
-            }
-           
-            else {
+            } else
+            {
                 
                 // interpolation between layers
                 xi  = Altitudeh_d[lev];
@@ -1587,9 +1595,9 @@ __global__ void rtm_picket_fence(double *pressure_d,
                             Pressure_d[id * nv + lev - 1] * a + Pressure_d[id * nv + lev] * b;
 
                 // interpolation between layers
-                xi  = Altitudeh_d[lev];
-                xim = Altitude_d[lev - 1];
-                xip = Altitude_d[lev];
+                xi  = pressureh_d[lev];
+                xim = Pressure_d[lev - 1];
+                xip = Pressure_d[lev];
                 a   = (xi - xip) / (xim - xip);
                 b   = (xi - xim) / (xip - xim);
 
