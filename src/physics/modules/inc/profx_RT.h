@@ -1546,7 +1546,10 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 Te__df_e[id * nvi + 0] = 2 * (gravit * (Altitude_d[0] - Altitudeh_d[0])) /
                     (
                         Rd_d[id * nv + 0] *
-                        log(pressureh_d[id * nvi + 0] / pressure_d[id * nvi + 0])/
+                        log(
+                            pressureh_d[id * nvi + 0] / 
+                            pressure_d[id * nvi + 0]
+                        ) /
                         log(euler)
                     ) -
                     temperature_d[id * nv + 0];
@@ -1578,7 +1581,10 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 Te__df_e[id * nvi + 0] = 2 * (gravit * (Altitudeh_d[nvi - 1] -  Altitude_d[nv - 1])) /
                     (
                         Rd_d[id * nv + 0] *
-                        log(pressureh_d[id * nvi + 0] / pressure_d[id * nvi + 0])/
+                        log(
+                            pressure_d[id * nvi + nv - 1] /
+                            pressureh_d[id * nvi + nvi - 1]                            
+                        ) /
                         log(euler)
                     ) -
                     temperature_d[id * nv + nv];
