@@ -979,6 +979,7 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                       
 
             rtm_picket_fence<<<NBRT, NTH>>>(esp.pressure_d,
+                esp.pressureh_d,
                 esp.temperature_d,
                 esp.Rho_d,
                 sim.Gravit,

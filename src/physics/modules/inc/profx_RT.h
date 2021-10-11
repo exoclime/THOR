@@ -1413,6 +1413,7 @@ __device__  void lw_grey_updown_linear(int id,
 
 
 __global__ void rtm_picket_fence(double *pressure_d,
+                              double *pressureh_d,
                               double *temperature_d,
                               double *Rho_d,
                               double  gravit,
