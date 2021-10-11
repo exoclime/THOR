@@ -1542,7 +1542,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
 
                 //Te__df_e[id * nvi + 0] = pow((pi*tint/StBC),0.25);
 
-
+                /*
                 Te__df_e[id * nvi + 0] = 2 * (gravit * (Altitude_d[0] - Altitudeh_d[0])) /
                     (
                         Rd_d[id * nv + 0] *
@@ -1553,6 +1553,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
                         log(euler)
                     ) -
                     temperature_d[id * nv + 0];
+                */
                 
             } else if (lev == nv)
             {
@@ -1566,7 +1567,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
 
                 pressureh_d[id * nvi + nv] = ptop;
                 
-                /*
+                
                 pp = temperature_d[id * nv + nv - 2]
                      + (temperature_d[id * nv + nv - 1] - temperature_d[id * nv + nv - 2])
                            / (Altitude_d[nv - 1] - Altitude_d[nv - 2])
@@ -1576,8 +1577,8 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 ptop = 0.5 * (temperature_d[id * nv + nv - 1] + pp);
 
                 Te__df_e[id * nvi + nv] = ptop;
-                */
-
+                
+                /*
                 Te__df_e[id * nvi + 0] = 2 * (gravit * (Altitudeh_d[nvi - 1] -  Altitude_d[nv - 1])) /
                     (
                         Rd_d[id * nv + 0] *
@@ -1588,6 +1589,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
                         log(euler)
                     ) -
                     temperature_d[id * nv + nv];
+                */
                
             } else
             {
@@ -1609,11 +1611,16 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 a   = (xi - xip) / (xim - xip);
                 b   = (xi - xim) / (xip - xim);
 
+                Te__df_e[id * nvi + lev] =
+                            temperature_d[id * nv + lev - 1] * a + temperature_d[id * nv + lev] * b;
+
+                /*
                Te__df_e[id * nvi + lev] = pressureh_d[id * nvi + lev] /
                     (
                         (Rho_d[id * nv + lev - 1] * a + Rho_d[id * nv + lev] * b) *
                         (Rd_d[id * nv + lev - 1] * a + Rd_d[id * nv + lev] * b)
                     );
+                */
 
                 //Te__df_e[id * nvi + lev] = temperature_d[id * nv + lev - 1] * ContributionFactorFromBelow + temperature_d[id * nv + lev] * ContributionFactorFromAbove;
                 
