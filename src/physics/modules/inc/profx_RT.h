@@ -887,7 +887,7 @@ __device__ void tau_struct(int id,
     // running sum of optical depth
     // added a ghost level above the grid model, otherwise tau_sum = 0.0
     tau_sum = 0.0;
-    //tau_sum = (kRoss[id*nlay*nchan + channel * nlay + nlay-1] * pl[id*nlay  + nlay-1])/gravity;
+    tau_sum = (kRoss[id*nlay*nchan + channel * nlay + nlay-1] * pl[id*nlay  + nlay-1])/gravity;
     tau_struc_e[id*nlev + nlev-1] = tau_sum;
 
     //tau_sum = 0.0;
@@ -1423,7 +1423,6 @@ __global__ void rtm_picket_fence(double *pressure_d,
                               double *Altitudeh_d,
                               double r_rob,
                               double radius_star,
-                              double *phtemp,
                               double *dtemp,
                               double  timestep,
                               double  tint,
@@ -1508,9 +1507,11 @@ __global__ void rtm_picket_fence(double *pressure_d,
     double ps, psm;
     double pp, ptop;
 
-    
-    double ContributionFactorFromBelow;
-    double ContributionFactorFromAbove;
+    double xi = 0.0;
+    double xim = 0.0;
+    double xip = 0.0;
+    double a = 0.0;
+    double b = 0.0;
 
     const double pi = atan(1.0) * 4;
     const double StBC = 5.670374419e-8;
@@ -1537,9 +1538,17 @@ __global__ void rtm_picket_fence(double *pressure_d,
                       - Rho_d[id * nv + 0] * gravit * (-Altitude_d[0] - Altitude_d[1]);
                 ps = 0.5 * (pressure_d[id * nv + 0] + psm);
 
-                phtemp[id * nvi + 0] = ps;
+                pressureh_d[id * nvi + 0] = ps;
 
-                Te__df_e[id * nvi + 0] = pow((pi*tint/StBC),0.25);
+                //Te__df_e[id * nvi + 0] = pow((pi*tint/StBC),0.25);
+
+
+                Te__df_e[id * nvi + 0] = 2 * (gravit * (-Altitude_d[0] - Altitudeh_d[0])) /
+                    (
+                        Rd_d[id * nv + 0] *
+                        pow(pressureh_d[id * nvi + 0] / pressure_d[id * nvi + 0])
+                    ) -
+                    temperature_d[id * nv + 0];
                 
             }
             else if (lev == nv) {
@@ -1551,7 +1560,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
                     pp = 0; //prevents pressure at the top from becoming negative
                 ptop = 0.5 * (pressure_d[id * nv + nv - 1] + pp);
 
-                phtemp[id * nvi + nv] = ptop;
+                pressureh_d[id * nvi + nv] = ptop;
 
                 pp = temperature_d[id * nv + nv - 2]
                      + (temperature_d[id * nv + nv - 1] - temperature_d[id * nv + nv - 2])
@@ -1567,13 +1576,30 @@ __global__ void rtm_picket_fence(double *pressure_d,
            
             else {
                 
-                
-                ContributionFactorFromBelow = (Altitudeh_d[lev] - Altitude_d[lev]) / (Altitude_d[lev - 1] - Altitude_d[lev]);
-                ContributionFactorFromAbove =  (Altitudeh_d[lev] - Altitude_d[lev - 1]) / (Altitude_d[lev] - Altitude_d[lev - 1]);
+                // interpolation between layers
+                xi  = Altitudeh_d[lev];
+                xim = Altitude_d[lev - 1];
+                xip = Altitude_d[lev];
+                a   = (xi - xip) / (xim - xip);
+                b   = (xi - xim) / (xip - xim);
 
-                phtemp[id * nvi + lev] = pressure_d[id * nv + lev - 1] * ContributionFactorFromBelow + pressure_d[id * nv + lev] * ContributionFactorFromAbove;
+                Pressureh_d[id * nvi + lev] =
+                            Pressure_d[id * nv + lev - 1] * a + Pressure_d[id * nv + lev] * b;
 
-                Te__df_e[id * nvi + lev] = temperature_d[id * nv + lev - 1] * ContributionFactorFromBelow + temperature_d[id * nv + lev] * ContributionFactorFromAbove;
+                // interpolation between layers
+                xi  = Altitudeh_d[lev];
+                xim = Altitude_d[lev - 1];
+                xip = Altitude_d[lev];
+                a   = (xi - xip) / (xim - xip);
+                b   = (xi - xim) / (xip - xim);
+
+               Te__df_e[id * nvi + lev] = pressureh_d[id * nvi + lev] /
+                    (
+                        (Rho_d[id * nv + lev - 1] * a + Rho_d[id * nv + lev] * b) *
+                        (Rd_d[id * nv + lev - 1] * a + Rd_d[id * nv + lev] * b)
+                    );
+
+                //Te__df_e[id * nvi + lev] = temperature_d[id * nv + lev - 1] * ContributionFactorFromBelow + temperature_d[id * nv + lev] * ContributionFactorFromAbove;
                 
             }
         }
@@ -1695,7 +1721,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 Rho_d,
                 temperature_d,
                 pressure_d,
-                phtemp,
+                pressureh_d,
                 k_V_3_nv_d,
                 k_IR_2_nv_d,
                 Beta_V_3_d,
@@ -1747,7 +1773,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 Rho_d,
                 temperature_d,
                 pressure_d,
-                phtemp,
+                pressureh_d,
                 k_V_3_nv_d,
                 k_IR_2_nv_d,
                 Beta_V_3_d,
@@ -1861,13 +1887,13 @@ __global__ void rtm_picket_fence(double *pressure_d,
                     printf("net_F_nvi_d[id * nvi + level] and isnan(sw_down__df_e[id * nvi + level]) contain a NaNs at mu>0 at level:%d \n",  level);
                 }
 
-                if (isnan(phtemp[id * nvi + level]) && zenith_angles[id]<=0.0)
+                if (isnan(pressureh_d[id * nvi + level]) && zenith_angles[id]<=0.0)
                 {
-                    printf("net_F_nvi_d[id * nvi + level] and isnan(phtemp[id * nvi + level]) contain a NaNs at mu=0 at level:%d \n",  level);
+                    printf("net_F_nvi_d[id * nvi + level] and isnan(pressureh_d[id * nvi + level]) contain a NaNs at mu=0 at level:%d \n",  level);
                 }
-                if (isnan(phtemp[id * nvi + level]) && zenith_angles[id]>0.0)
+                if (isnan(pressureh_d[id * nvi + level]) && zenith_angles[id]>0.0)
                 {
-                    printf("net_F_nvi_d[id * nvi + level] and isnan(phtemp[id * nvi + level]) contain a NaNs at mu>0 at level:%d \n",  level);
+                    printf("net_F_nvi_d[id * nvi + level] and isnan(pressureh_d[id * nvi + level]) contain a NaNs at mu>0 at level:%d \n",  level);
                 }
 
                 if (isnan(be__df_e[id * nvi + level]) && zenith_angles[id]<=0.0)
