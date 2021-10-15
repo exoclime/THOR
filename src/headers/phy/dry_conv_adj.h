@@ -340,17 +340,7 @@ __global__ void ray_dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
 
                     // Downward pass
                     for (i = nv - 1; i > 0; i--){
-                        /*
-                        d_T_lower = Temperature_d[id * nv + i - 1];
-                        d_T = Temperature_d[id * nv + i];
-
-                        d_p = Rho_d[id * nv + i] * Gravit * (Altitudeh_d[i+1] - Altitudeh_d[i]);
-                        d_p_lower = Rho_d[id * nv + i-1] * Gravit * (Altitudeh_d[i] - Altitudeh_d[i-1]);
-                        d_p_pfact = Rho_d[id * nv + i-1] * Gravit * (Altitude_d[i] - Altitude_d[i-1]);
-
-                        pfact = pow( ( (Pressure_d[id * nv + i - 1] - d_p_pfact) / Pressure_d[id * nv + i - 1]) ,
-                                Rd_d[id * nv + i-1] / Cp_d[id * nv + i-1]);
-                        */
+                        
 
                         d_p = Rho_d[id * nv + i] * Gravit * (Altitudeh_d[i+1] - Altitudeh_d[i]);
                         d_p_lower = Rho_d[id * nv + i-1] * Gravit * (Altitudeh_d[i] - Altitudeh_d[i-1]);
@@ -436,7 +426,7 @@ __global__ void ray_dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
                     for (i = 0; i <nv; i++){ 
                         Temperature_d[id * nv + i] = Temperature_d[id * nv + i] +
                             dT_factor * (dT_conv_d[id * nv + i] - Temperature_d[id * nv + i])  /
-                            (itermax1 *timestep);
+                            (itermax1 * timestep);
                         
                     }
 
@@ -451,17 +441,19 @@ __global__ void ray_dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
                         b   = (xim) / (xip + xim);
                         
                         Pressure_d[id * nv + i] = Pressure_d[id * nv + i] + 
-                            (Pressure_d[id * nv + i - 1] *
-                                pow(euler,
-                                    Gravit * (Altitude_d[i] - Altitude_d[i-1]) /
-                                    (
-                                        //0.5*(Temperature_d[id * nv + i] + Temperature_d[id * nv + i - 1]) *
-                                        //0.5*(Rd_d[id * nv + i] + Rd_d[id * nv + i -1])
-                                        (a * Temperature_d[id * nv + i] + b * Temperature_d[id * nv + i - 1]) *
-                                        (a * Rd_d[id * nv + i] + b * Rd_d[id * nv + i -1])
-                                    )
-                                ) -
-                            Pressure_d[id * nv + i]) / (timestep * itermax1) ;
+                            (   Pressure_d[id * nv + i - 1] *
+                                    pow(euler,
+                                        Gravit * (Altitude_d[i] - Altitude_d[i-1]) /
+                                        (
+                                            0.5*(Temperature_d[id * nv + i] + Temperature_d[id * nv + i - 1]) *
+                                            0.5*(Rd_d[id * nv + i] + Rd_d[id * nv + i -1])
+                                            //(a * Temperature_d[id * nv + i] + b * Temperature_d[id * nv + i - 1]) *
+                                            //(a * Rd_d[id * nv + i] + b * Rd_d[id * nv + i -1])
+                                        )
+                                    ) -
+                                Pressure_d[id * nv + i]
+                            ) /
+                            (timestep * itermax1) ;
                         
                         
                     }
