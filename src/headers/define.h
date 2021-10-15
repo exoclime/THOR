@@ -117,6 +117,7 @@
 // number of times to execute per time step
 // (repeats entire algorithm if > 1)
 #define conv_adj_iter_default 1
+#define soft_adjustment_default false
 
 #define init_PT_profile_default "isothermal"
 #define kappa_lw_default 0.002 // m^2 kg^-1
