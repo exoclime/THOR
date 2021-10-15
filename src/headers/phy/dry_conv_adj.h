@@ -650,7 +650,7 @@ __global__ void ray_dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
 
                         profx_Qheat_d[id * nv + lev] +=
                             (Cp_d[id * nv + lev] - Rd_d[id * nv + lev]) / Rd_d[id * nv + lev]
-                            * (Ptmp - Pressure_d[id * nv + lev]) / time_step;
+                            * (Ptmp - Pressure_d[id * nv + lev]) / timestep;
                         //does not repeat
                     }
                 }

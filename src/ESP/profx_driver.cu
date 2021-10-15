@@ -245,24 +245,6 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
 
                 printf("start ray_dry_conv_adj \n");
 
-                double *Pressure_d,    // Pressure [Pa]
-                             double *Pressureh_d,   // Mid-point pressure [Pa]
-                             double *dT_conv_d,
-                             double *Temperature_d, // Temperature [K]
-                             double *profx_Qheat_d,
-                             double *pt_d,          // Potential temperature [K]
-                             double *Rho_d,         // Density [m^3/kg]
-                             double *Cp_d,          // Specific heat capacity [J/kg/K]
-                             double *Rd_d,          // Gas constant [J/kg/K]
-                             double  Gravit,        // Gravity [m/s^2]
-                             double *Altitude_d,    // Altitudes of the layers
-                             double *Altitudeh_d,   // Altitudes of the interfaces
-                             double timestep,       // time step [s]
-                             int conv_adj_iter, // number of iterations of entire algorithm allowed
-                             bool soft_adjust,
-                             int num,           // Number of columns
-                             int nv)
-
                 ray_dry_conv_adj<<<NBRT, NTH>>>(pressure_d,    // Pressure [Pa]
                                                 pressureh_d,   // mid-point pressure [Pa]
                                                 dT_conv_d,
