@@ -643,8 +643,8 @@ __global__ void ray_dry_conv_adj(double timestep,       // time step [s]
                     // converve the mass might be better than hypsometric equation
 
                     // interpolation between layers
-                    xim = pressure_d[lev - 1];
-                    xip = pressure_d[lev];
+                    xim = Pressure_d[i - 1];
+                    xip = Pressure_d[i];
                     a   = (xip) / (xim + xip);
                     b   = (xim) / (xip + xim);
                     
