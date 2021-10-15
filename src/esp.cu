@@ -365,6 +365,8 @@ int main(int argc, char** argv) {
     string initial_conditions = "initialfilename.h5";
     config_reader.append_config_var(
         "initial", initial_conditions, string(initial_conditions_default));
+    config_reader.append_config_var(
+        "soft_adjustment", sim.soft_adjustment, soft_adjustment_default);
 
     // Benchmark test
     string core_benchmark_str("HeldSuarez");
