@@ -375,9 +375,8 @@ int main(int argc, char** argv) {
 
     config_reader.append_config_var("conv_adj", sim.conv_adj, conv_adj_default);
     config_reader.append_config_var("conv_adj_iter", sim.conv_adj_iter, conv_adj_iter_default);
-    config_reader.append_config_var(
-        "soft_adjustment", sim.soft_adjustment, soft_adjustment_default);
-        
+    config_reader.append_config_var("soft_adjustment", sim.soft_adjustment, soft_adjustment_default);
+
     int GPU_ID_N = 0;
     config_reader.append_config_var("GPU_ID_N", GPU_ID_N, GPU_ID_N_default);
 
