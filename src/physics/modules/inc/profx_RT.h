@@ -1618,8 +1618,8 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 
                Te__df_e[id * nvi + lev] = pressureh_d[id * nvi + lev] /
                     (
-                        (Rho_d[id * nv + lev - 1] * a + Rho_d[id * nv + lev] * b) *
-                        (Rd_d[id * nv + lev - 1] * a + Rd_d[id * nv + lev] * b)
+                        (Rho_d[id * nv + lev - 1] * b + Rho_d[id * nv + lev] * a) *
+                        (Rd_d[id * nv + lev - 1] * b + Rd_d[id * nv + lev] * a)
                     );
                 
             }
