@@ -326,17 +326,16 @@ __global__ void ray_dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
             double d_T;
             double d_T_lower;
 
+            for (i = 0; i <nv; i++){
+                    dT_conv_d[id * nv + i] =  Temperature_d[id * nv + i];
+            }
             // start operations
             while ((repeat == true) && (iter < itermax1))
             {
-                for (i = 0; i <nv; i++){
-                    dT_conv_d[id * nv + i] =  Temperature_d[id * nv + i];
-                }
+                
                 for (int iter2 = 0; iter2 < itermax2; iter2++)
                 {
                     did_adj = false;
-
-                    
 
                     // Downward pass
                     for (i = nv - 1; i > 0; i--){
@@ -495,6 +494,10 @@ __global__ void ray_dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
                     }
 
                     repeat = true;
+
+                    for (i = 0; i <nv; i++){
+                            dT_conv_d[id * nv + i] =  Temperature_d[id * nv + i];
+                    }
                     
                 }
                 

@@ -1618,8 +1618,8 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 
                Te__df_e[id * nvi + lev] = pressureh_d[id * nvi + lev] /
                     (
-                        (Rho_d[id * nv + lev - 1] * b + Rho_d[id * nv + lev] * a) *
-                        (Rd_d[id * nv + lev - 1] * b + Rd_d[id * nv + lev] * a)
+                        (Rho_d[id * nv + lev - 1] * a + Rho_d[id * nv + lev] * b) *
+                        (Rd_d[id * nv + lev - 1] * a + Rd_d[id * nv + lev] * b)
                     );
                 
             }
@@ -1700,19 +1700,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
         if (zenith_angles[id] > 0.0 ) { //&& zenith_angles[id] < 0.3) {
         //if (id==340) {
             //printf("Teff[%d] = %e \n", 0, Teff[0]);
-            printf("AB_d[%d] = %e \n", 0, AB_d[id]);
-            printf("gam_V_3_d[0 + 0] = %e \n", gam_V_3_d[id * 3 + 0]);
-            printf("gam_V_3_d[0 + 1] = %e \n", gam_V_3_d[id * 3 + 1]);
-            printf("gam_V_3_d[0 + 2] = %e \n", gam_V_3_d[id * 3 + 2]);
-            printf("Beta_V_3_d[0 + 0] = %e \n", Beta_V_3_d[id * 3 + 0]);
-            printf("Beta_V_3_d[0 + 1] = %e \n", Beta_V_3_d[id * 3 + 1]);
-            printf("Beta_V_3_d[0 + 2] = %e \n", Beta_V_3_d[id * 3 + 2]);
-            printf("Beta_2_d[0 + 0] = %e \n", Beta_2_d[id]);
-            printf("Beta_2_d[0 + 1] = %e \n", Beta_2_d[id+1]);
-            printf("gam_2_d[0] = %e \n", gam_2_d[id]);
-            printf("gam_1_d[0] = %e \n", gam_1_d[id]);
-            //printf("gam_P[0] = %e \n", gam_P[0]);
-            printf("zenith_angles[id] = %e \n", zenith_angles[id]);
+            
 
             for (int channel = 0; channel < 3; channel++)
             {
