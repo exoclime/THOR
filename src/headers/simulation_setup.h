@@ -102,6 +102,8 @@ public:
 
     bool conv_adj;
     int  conv_adj_iter;
+    bool soft_adjustment;
+    
     bool gcm_off;
     bool single_column;
 
