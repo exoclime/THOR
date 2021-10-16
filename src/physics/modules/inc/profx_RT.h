@@ -1605,13 +1605,14 @@ __global__ void rtm_picket_fence(double *pressure_d,
                             pressure_d[id * nv + lev - 1] * a + pressure_d[id * nv + lev] * b;
 
                 // interpolation between layers
+                /*
                 xi  = pressureh_d[lev];
                 xim = pressure_d[lev - 1];
                 xip = pressure_d[lev];
                 a   = (xi - xip) / (xim - xip);
                 b   = (xi - xim) / (xip - xim);
 
-                /*
+                
                 Te__df_e[id * nvi + lev] =
                             temperature_d[id * nv + lev - 1] * a + temperature_d[id * nv + lev] * b;
                 */

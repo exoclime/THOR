@@ -444,10 +444,10 @@ __global__ void ray_dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
                                     pow(euler,
                                         Gravit * (Altitude_d[i] - Altitude_d[i-1]) /
                                         (
-                                            //0.5*(Temperature_d[id * nv + i] + Temperature_d[id * nv + i - 1]) *
-                                            //0.5*(Rd_d[id * nv + i] + Rd_d[id * nv + i -1])
-                                            (a * Temperature_d[id * nv + i] + b * Temperature_d[id * nv + i - 1]) *
-                                            (a * Rd_d[id * nv + i] + b * Rd_d[id * nv + i -1])
+                                            0.5*(Temperature_d[id * nv + i] + Temperature_d[id * nv + i - 1]) *
+                                            0.5*(Rd_d[id * nv + i] + Rd_d[id * nv + i -1])
+                                            //(a * Temperature_d[id * nv + i] + b * Temperature_d[id * nv + i - 1]) *
+                                            //(a * Rd_d[id * nv + i] + b * Rd_d[id * nv + i -1])
                                         )
                                     ) -
                                 Pressure_d[id * nv + i]
