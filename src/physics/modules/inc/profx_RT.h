@@ -1294,10 +1294,7 @@ __device__  void lw_grey_updown_linear(int id,
             for (int i = 0; i < nlay1; i++)
             {
                 sw_down__df_e[id * nlay1 + i] = sw_down__df_e[id * nlay1 + i] + sw_down_b__df_e[id * nlay1 + i];
-                if (id==340)
-                {
-                    printf("tau_Ve__df_e[%d * nlay1 + %d] = %e \n",id, i, tau_Ve__df_e[id * nlay1 + i]);
-                }
+               
             }
         }
 
