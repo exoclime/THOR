@@ -1382,23 +1382,7 @@ __device__  void lw_grey_updown_linear(int id,
             net_F_nvi_d[id * nlay1 + i] = lw_net__df_e[id * nlay1 + i] + sw_net__df_e[id * nlay1 + i];
         }
 
-        //if (mu_s[id]<0.6 && mu_s[id]>0.4)
-        if (id==340)
-        {
-            for (int i = 0; i < nlay; i++)
-            {
-                printf("sw_diff[%d * nlay1 + %d] = %e \n",id, i, sw_net__df_e[id * nlay1 + i]-sw_net__df_e[id * nlay1 + i+1]);
-            }
-            for (int i = 0; i < nlay; i++)
-            {
-                printf("lw_net__df_e[%d * nlay1 + %d] = %e \n",id, i, lw_net__df_e[id * nlay1 + i]-lw_net__df_e[id * nlay1 + i+1]);
-            }
-            for (int i = 0; i < nlay; i++)
-            {
-                printf("net_F_diff[%d * nlay1 + %d] = %e \n",id, i, net_F_nvi_d[id * nlay1 + i]-net_F_nvi_d[id * nlay1 + i+1]);
-            }
-        }
-
+    
        
 
         //printf("Kitzmann finished\n");
