@@ -110,6 +110,7 @@ void sigint_handler(int sig) {
 }
 
 // To clean up at exit in all conditions (like when calling exit(EXIT_FAILURE)
+// and when exiting at end of main.
 void exit_handler() {
     // Clean up device memory
     cuda_device_memory_manager::get_instance().deallocate();
@@ -975,6 +976,10 @@ int main(int argc, char** argv) {
             "Capabilities: %d (compiled with SM=%d).\n", device_major_minor_number, DEVICE_SM);
     }
 
+    // Register clean up function for exit
+    // takes care of freeing cuda memory in case we catch an error and bail out with exit(EXIT_FAILURE)
+    atexit(exit_handler);
+    
     int max_count = 0;
     //
     //  Make the icosahedral grid
@@ -1213,9 +1218,6 @@ int main(int argc, char** argv) {
     if (sigaction(SIGINT, &sigint_action, NULL) == -1) {
         log::printf("Error: cannot handle SIGINT\n"); // Should not happen
     }
-
-    // Register clean up function for exit
-    atexit(exit_handler);
 
     //
     //  Writes initial conditions
