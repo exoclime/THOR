@@ -777,14 +777,26 @@ void Parmentier_IC(int id, const int nlay, double* pl, double Tint, double mu, d
     Tmu = pow((mu * pow(Tirr, 4.0)), (1.0 / 4.0));
 
     // Find Bond albedo of planet - Bond albedo is given by mu = 1/sqrt(3)
-    Teff0 = pow(((pow(Tint, 4.0) + (1.0 / sqrt(((double)3.0))) * pow(Tirr, 4.0))), (1.0 / 4.0));
+    Teff0 = pow(
+                (
+                    pow(Tint, 4.0) +
+                    (1.0 / sqrt(3.0)) * pow(Tirr, 4.0)
+                ),
+                (1.0 / 4.0)
+                );
     Bond_Parmentier_host(Teff0, grav, Bond);
 
     
 
 
 
-    Teff = pow((pow(Tint, 4.0) + (((double)1.0) - Bond) * mu * pow(Tirr, 4.0)), (1.0 / 4.0));
+    Teff = pow(
+                (
+                    pow(Tint, 4.0) + 
+                    (1.0 - Bond) * mu * pow(Tirr, 4.0)
+                ),
+                (1.0 / 4.0)
+               );
 
 
     // Find the V band gamma, beta and IR gamma and beta ratios for this profile
@@ -855,7 +867,7 @@ void Parmentier_IC(int id, const int nlay, double* pl, double Tint, double mu, d
     
     // T-p structure calculation - we follow exactly V. Parmentier's method
     // Estimate the skin temperature by setting tau = 0
-    tau[nlay-1] = kRoss[nlay-1] / grav * pl[id * nlay + nlay-1]; //   0.0;
+    tau[nlay-1] = kRoss[nlay-1] * pl[id * nlay + nlay-1] / grav ; //   0.0;
     summy = 0.0;
     for (i = 0; i < 3; i++)
     {
@@ -876,7 +888,7 @@ void Parmentier_IC(int id, const int nlay, double* pl, double Tint, double mu, d
 
 
     // Recalculate the upmost tau with new kappa
-    tau[nlay-1] = kRoss[nlay-1] / grav * pl[id * nlay + nlay-1];
+    tau[nlay-1] = kRoss[nlay-1] * pl[id * nlay + nlay-1] / grav ;
 
     
     
@@ -900,7 +912,7 @@ void Parmentier_IC(int id, const int nlay, double* pl, double Tint, double mu, d
         // Initial guess for layer
         k_Ross_Freedman(Tl[id * nlay + i+1], sqrt(pl[id * nlay + i+1] * pl[id * nlay + i]), met, kRoss[i]);
         
-        tau[i] = tau[i+1] + kRoss[i] / grav *  (pl[id * nlay + i] - pl[id * nlay + i+1]) ;
+        tau[i] = tau[i+1] + kRoss[i] *  (pl[id * nlay + i] - pl[id * nlay + i+1]) / grav  ;
     
         summy = 0.0;
         for (j = 0; j < 3; j++)

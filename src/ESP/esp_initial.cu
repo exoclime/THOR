@@ -607,7 +607,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 int init_nv = 1000;
                 double const euler = 2.71828182845904523536028;
                 double altitude_from_P_ref;
-                double molecular_weight = 2.316 / 1e3;
+                double molecular_weight = 2.316; // / 1e3;
                 double scale_height = sim.Tmean * sim.Rd / (molecular_weight * sim.Gravit);
                 double meanT = 0.0;
 
