@@ -609,6 +609,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 double altitude_from_P_ref;
                 double molecular_weight = 2.316;
                 double scale_height = sim.Tmean * sim.Rd / (molecular_weight * sim.Gravit);
+                double meanT = 0.0;
 
                 
                 
@@ -631,8 +632,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                                                                         scale_height
                                                                     )
                                                                 );
+                    init_Rd_parmentier[lev] = sim.Rd;
 
-                    printf(" init_pressure_parmentier[%d] = %e \n", level,  init_pressure_parmentier[level]);
                 }
                 
                 Parmentier_IC_1D(init_nv, init_pressure_parmentier, Tint, mu, Tirr, sim.Gravit, init_temperature_parmentier, table_num, MetStar);
@@ -643,12 +644,15 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 double bolzmann_const = 1.380649e-23;
                 int max_iter = 10;
 
+
                 for (int lev = 0; lev < init_nv; lev++) {
 
-                    init_Rd_parmentier[lev] = sim.Rd;
+                    meanT += init_temperature_parmentier[lev]
 
-                    printf(" init_temperature_parmentier[%d] = %e \n", lev,  init_temperature_parmentier[lev]);
-                }   
+                }
+                meanT = meanT / init_nv;
+                
+                
                 
                 
 
@@ -657,15 +661,16 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 init_altitude_parmentier[0] = 0.0;
                 for (int level = 1; level < init_nv; level++) {
                     init_altitude_parmentier[level] =   sim.Rd *
-                                                        (0.5*(init_temperature_parmentier[0] + init_temperature_parmentier[level]))/
-                                                        (sim.Gravit) *
+                                                        meanT *
                                                         (
                                                             log(
                                                                 init_pressure_parmentier[0] / 
                                                                 init_pressure_parmentier[level]
                                                                 ) /
                                                             log(euler)
-                                                        );
+                                                        ) /
+                                                        (sim.Gravit)
+                                                        ;
 
                 }
 
@@ -674,6 +679,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 printf(" planet_star_dist = %e \n", planet_star_dist);
                 printf(" Tstar = %e \n", Tstar);
                 printf(" scale_height = %e \n", scale_height);
+                printf(" meanT = %e \n", meanT);
                 printf(" init_temperature_parmentier[%d] = %e \n", 0,  init_temperature_parmentier[0]);
                 printf(" init_temperature_parmentier[%d] = %e \n", init_nv-1,  init_temperature_parmentier[init_nv-1]);
                 printf(" init_pressure_parmentier[%d] = %e \n", 0,  init_pressure_parmentier[0]);
