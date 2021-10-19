@@ -675,11 +675,11 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 printf(" Tstar = %e \n", Tstar);
                 printf(" scale_height = %e \n", scale_height);
                 printf(" init_temperature_parmentier[%d] = %e \n", 0,  init_temperature_parmentier[0]);
-                printf(" init_temperature_parmentier[%d] = %e \n", nv-1,  init_temperature_parmentier[nv-1]);
+                printf(" init_temperature_parmentier[%d] = %e \n", init_nv-1,  init_temperature_parmentier[init_nv-1]);
                 printf(" init_pressure_parmentier[%d] = %e \n", 0,  init_pressure_parmentier[0]);
-                printf(" init_pressure_parmentier[%d] = %e \n", nv-1,  init_pressure_parmentier[nv-1]);
+                printf(" init_pressure_parmentier[%d] = %e \n", init_nv-1,  init_pressure_parmentier[init_nv-1]);
                 printf(" init_altitude_parmentier[%d] = %e \n", 0,  init_altitude_parmentier[0]);
-                printf(" init_altitude_parmentier[%d] = %e \n", nv-1,  init_altitude_parmentier[nv-1]);
+                printf(" init_altitude_parmentier[%d] = %e \n", init_nv-1,  init_altitude_parmentier[init_nv-1]);
 
 
                 for (int level = 0; level < nv; level++) {
