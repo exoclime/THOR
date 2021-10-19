@@ -620,6 +620,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 for (int level = 0; level < init_nv; level++) {
 
                     init_pressure_parmentier[level] = sim.P_Ref*pow(euler, -(((double)(level)+1.0)/(euler*20)));
+
+                    printf(" init_pressure_parmentier[%d] = %e \n", level,  init_pressure_parmentier[level]);
                 }
                 
                 Parmentier_IC_1D(init_nv, init_pressure_parmentier, Tint, mu, Tirr, sim.Gravit, init_temperature_parmentier, table_num, MetStar);
@@ -634,7 +636,11 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 for (int lev = 0; lev < init_nv; lev++) {
 
                     init_Rd_parmentier[lev] = sim.Rd;
-                }                
+
+                    printf(" init_temperature_parmentier[%d] = %e \n", level,  init_temperature_parmentier[level]);
+                }   
+                
+                printf(" Tirr = %e \n", Tirr);
 
 
                 //Hypsometric equation
@@ -669,18 +675,6 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                 pressure_h[i * nv + 0] = sim.P_Ref;
 
-                /*
-
-                for (int level = 1; level < nv; level++) {
-                    pressure_h[i * nv + level] = pressure_h[i * nv + level-1] *
-                        pow(-g/
-                            (0.5*(init_Rd_parmentier[level - 1] + init_Rd_parmentier[level])) * 
-                            (0.5*(init_temperature_parmentier[level -1] + init_temperature_parmentier[level])) *
-                            (Altitude_h[level] - Altitude_h[level-1])
-                        );
-                }
-
-                */
 
                 for (int level = 1; level < nv; level++) {
                     pressure_h[i * nv + level] = pressure_h[i * nv + level - 1] *
