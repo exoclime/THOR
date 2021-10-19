@@ -595,7 +595,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                
 
                 //printf(" before Tirr and Parmentier \n");
-                Tirr = Tstar * pow((radius_star*696340000) / (planet_star_dist*1.496e+11) ,0.5);
+                Tirr = Tstar * pow((radius_star*696340000) / (planet_star_dist*149597870700) ,0.5);
 
                 double OpaTableTemperature__h[1060];
                 text_file_to_array("src/physics/modules/src/OpaTableTemperature.txt" , OpaTableTemperature__h, 1060);
@@ -641,6 +641,9 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 }   
                 
                 printf(" Tirr = %e \n", Tirr);
+                printf(" radius_star = %e \n", radius_star);
+                printf(" planet_star_dist = %e \n", planet_star_dist);
+                printf(" Tstar = %e \n", Tstar);
 
 
                 //Hypsometric equation
