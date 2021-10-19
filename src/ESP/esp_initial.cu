@@ -632,7 +632,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                                                                         scale_height
                                                                     )
                                                                 );
-                    init_Rd_parmentier[lev] = sim.Rd;
+                    init_Rd_parmentier[level] = sim.Rd;
 
                 }
                 
@@ -647,7 +647,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                 for (int lev = 0; lev < init_nv; lev++) {
 
-                    meanT += init_temperature_parmentier[lev]
+                    meanT += init_temperature_parmentier[lev];
 
                 }
                 meanT = meanT / init_nv;
