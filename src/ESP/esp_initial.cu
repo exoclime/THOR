@@ -637,7 +637,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                     init_Rd_parmentier[lev] = sim.Rd;
 
-                    printf(" init_temperature_parmentier[%d] = %e \n", level,  init_temperature_parmentier[level]);
+                    printf(" init_temperature_parmentier[%d] = %e \n", lev,  init_temperature_parmentier[lev]);
                 }   
                 
                 printf(" Tirr = %e \n", Tirr);
