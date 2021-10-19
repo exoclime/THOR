@@ -780,7 +780,7 @@ void Parmentier_IC(int id, const int nlay, double* pl, double Tint, double mu, d
     Teff0 = pow(
                 (
                     pow(Tint, 4.0) +
-                    (1.0 / sqrt(3.0)) * pow(Tirr, 4.0)
+                    mu * pow(Tirr, 4.0)
                 ),
                 (1.0 / 4.0)
                 );
@@ -928,7 +928,7 @@ void Parmentier_IC(int id, const int nlay, double* pl, double Tint, double mu, d
         {
             k_Ross_Freedman(sqrt(Tl[id * nlay + i+1] * Tl[id * nlay + i]), sqrt(pl[id * nlay + i+1] * pl[id * nlay + i]), met, kRoss[i]);
             
-            tau[i] = tau[i+1] + kRoss[i] / grav *  (pl[id * nlay + i] - pl[id * nlay + i+1]);
+            tau[i] = tau[i+1] + kRoss[i]  *  (pl[id * nlay + i] - pl[id * nlay + i+1]) / grav;
             summy = 0.0;
             for (k = 0; k < 3; k++)
             {

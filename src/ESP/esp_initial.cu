@@ -582,7 +582,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 int table_num;
                 table_num = 2;
                 double  Tirr, Teff, AB;
-                mu =  1.0 ; // sqrt(3.0);               
+                mu =  1.0 / sqrt(3.0);               
 
                 
 
