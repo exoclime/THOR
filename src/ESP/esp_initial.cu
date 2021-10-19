@@ -607,6 +607,10 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 int init_nv = 1000;
                 double const euler = 2.71828182845904523536028;
                 double altitude_from_P_ref;
+                double molecular_weight = 2.316;
+                double scale_height = sim.Tmean * sim.Rd / (molecular_weight * sim.Gravit)
+
+                
                 
                 /*
                 double init_altitude_parmentier[init_nv] = {0.0};
@@ -619,7 +623,11 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                 for (int level = 0; level < init_nv; level++) {
 
-                    init_pressure_parmentier[level] = sim.P_Ref*pow(euler, -(((double)(level)+1.0)/(euler*20)));
+                    init_pressure_parmentier[level] = sim.P_Ref*pow(euler,
+                                                                    -(
+                                                                        ( ((double)(level)+1.0) /1000
+                                                                        ) * Altitudeh_h[nvi - 1] /
+                                                                    (scale_height)));
 
                     printf(" init_pressure_parmentier[%d] = %e \n", level,  init_pressure_parmentier[level]);
                 }
@@ -631,7 +639,6 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 double pressure_diff = 0.0;
                 double bolzmann_const = 1.380649e-23;
                 int max_iter = 10;
-                double scale_height;
 
                 for (int lev = 0; lev < init_nv; lev++) {
 
