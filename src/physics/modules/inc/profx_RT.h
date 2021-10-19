@@ -1813,101 +1813,104 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 //((Altitudeh_d[level] - Altitudeh_d[level+1])*Rho_d[id*nv  + level]*gravit);
 
            
+            if (id == 430) {
+                if (isnan(dtemp[id * nv + level]))
+                {
+                    printf("dtemp contains a NaN at level:%d \n",  level);                    
+                }
 
-            if (isnan(dtemp[id * nv + level]))
-            {
-                printf("dtemp contains a NaN at level:%d \n",  level);                    
+                if (isnan(net_F_nvi_d[id * nvi + level]))
+                {
+                    if (zenith_angles[id]<=0.0)
+                    {
+                        printf("net_F_nvi_d[id * nvi + level] contains a NaN at mu=0 at level:%d \n",  level);
+                    }
+                    if (isnan(sw_net__df_e[id * nvi + level]) && zenith_angles[id]<=0.0)
+                    {
+                        printf("net_F_nvi_d[id * nvi + level] and isnan(sw_net__df_e[id * nvi + level]) contain a NaNs at mu=0 at level:%d \n",  level);
+                    }
+                    if (isnan(sw_net__df_e[id * nvi + level]) && zenith_angles[id]>0.0)
+                    {
+                        printf("net_F_nvi_d[id * nvi + level] and isnan(sw_net__df_e[id * nvi + level]) contain a NaNs at mu>0 at level:%d \n",  level);
+                    }
+                    if (isnan(lw_net__df_e[id * nvi + level]) && zenith_angles[id]<=0.0)
+                    {
+                        printf("net_F_nvi_d[id * nvi + level] and isnan(lw_net__df_e[id * nvi + level]) contain a NaNs at mu=0 at level:%d \n",  level);
+                    }
+                    if (isnan(lw_net__df_e[id * nvi + level]) && zenith_angles[id]>0.0)
+                    {
+                        printf("net_F_nvi_d[id * nvi + level] and isnan(lw_net__df_e[id * nvi + level]) contain a NaNs at mu>0 at level:%d \n",  level);
+                    }
+
+                    if (isnan(sw_net__df_e[id * nvi + level]) && zenith_angles[id]<=0.0)
+                    {
+                        printf("net_F_nvi_d[id * nvi + level] and isnan(sw_net__df_e[id * nvi + level]) contain a NaNs at mu=0 at level:%d \n",  level);
+                    }
+                    if (isnan(sw_net__df_e[id * nvi + level]) && zenith_angles[id]>0.0)
+                    {
+                        printf("net_F_nvi_d[id * nvi + level] and isnan(sw_net__df_e[id * nvi + level]) contain a NaNs at mu>0 at level:%d \n",  level);
+                    }
+
+                    if (isnan(lw_down__df_e[id * nvi + level] ) && zenith_angles[id]<=0.0)
+                    {
+                        printf("net_F_nvi_d[id * nvi + level] and isnan(lw_down__df_e[id * nvi + level]) contain a NaNs at mu=0 at level:%d \n",  level);
+                    }
+                    if (isnan(lw_down__df_e[id * nvi + level] ) && zenith_angles[id]>0.0)
+                    {
+                        printf("net_F_nvi_d[id * nvi + level] and isnan(lw_down__df_e[id * nvi + level]) contain a NaNs at mu>0 at level:%d \n",  level);
+                    }
+
+                    if (isnan(lw_up__df_e[id * nvi + level] ) && zenith_angles[id]<=0.0)
+                    {
+                        printf("net_F_nvi_d[id * nvi + level] and isnan(lw_up__df_e[id * nvi + level]) contain a NaNs at mu=0 at level:%d \n",  level);
+                    }
+                    if (isnan(lw_up__df_e[id * nvi + level] ) && zenith_angles[id]>0.0)
+                    {
+                        printf("net_F_nvi_d[id * nvi + level] and isnan(lw_up__df_e[id * nvi + level]) contain a NaNs at mu>0 at level:%d \n",  level);
+                    }
+
+                    if (isnan(sw_down__df_e[id * nvi + level] ) && zenith_angles[id]<=0.0)
+                    {
+                        printf("net_F_nvi_d[id * nvi + level] and isnan(sw_down__df_e[id * nvi + level]) contain a NaNs at mu=0 at level:%d \n",  level);
+                    }
+                    if (isnan(sw_down__df_e[id * nvi + level] ) && zenith_angles[id]>0.0)
+                    {
+                        printf("net_F_nvi_d[id * nvi + level] and isnan(sw_down__df_e[id * nvi + level]) contain a NaNs at mu>0 at level:%d \n",  level);
+                    }
+
+                    if (isnan(pressureh_d[id * nvi + level]) && zenith_angles[id]<=0.0)
+                    {
+                        printf("net_F_nvi_d[id * nvi + level] and isnan(pressureh_d[id * nvi + level]) contain a NaNs at mu=0 at level:%d \n",  level);
+                    }
+                    if (isnan(pressureh_d[id * nvi + level]) && zenith_angles[id]>0.0)
+                    {
+                        printf("net_F_nvi_d[id * nvi + level] and isnan(pressureh_d[id * nvi + level]) contain a NaNs at mu>0 at level:%d \n",  level);
+                    }
+
+                    if (isnan(be__df_e[id * nvi + level]) && zenith_angles[id]<=0.0)
+                    {
+                        printf("net_F_nvi_d[id * nvi + level] and isnan(be__df_e[id * nvi + level]) contain a NaNs at mu=0 at level:%d \n",  level);
+                    }
+                    if (isnan(be__df_e[id * nvi + level]) && zenith_angles[id]>0.0)
+                    {
+                        printf("net_F_nvi_d[id * nvi + level] and isnan(be__df_e[id * nvi + level]) contain a NaNs at mu>0 at level:%d \n",  level);
+                    }
+
+                
+                }
+
+                if ((Altitudeh_d[level+1] - Altitudeh_d[level])==0.0 && id==0)
+                {
+                    printf("(Altitudeh_d[level+1] - Altitudeh_d[level]) is 0 at level:%d \n",  level);                    
+                }
+
+                if (isnan(Altitudeh_d[level+1] - Altitudeh_d[level]))
+                {
+                    printf("(Altitudeh_d[level+1] - Altitudeh_d[level]) is NaN at level:%d \n",  level);                    
+                }
+
             }
-
-            if (isnan(net_F_nvi_d[id * nvi + level]))
-            {
-                if (zenith_angles[id]<=0.0)
-                {
-                    printf("net_F_nvi_d[id * nvi + level] contains a NaN at mu=0 at level:%d \n",  level);
-                }
-                if (isnan(sw_net__df_e[id * nvi + level]) && zenith_angles[id]<=0.0)
-                {
-                    printf("net_F_nvi_d[id * nvi + level] and isnan(sw_net__df_e[id * nvi + level]) contain a NaNs at mu=0 at level:%d \n",  level);
-                }
-                if (isnan(sw_net__df_e[id * nvi + level]) && zenith_angles[id]>0.0)
-                {
-                    printf("net_F_nvi_d[id * nvi + level] and isnan(sw_net__df_e[id * nvi + level]) contain a NaNs at mu>0 at level:%d \n",  level);
-                }
-                if (isnan(lw_net__df_e[id * nvi + level]) && zenith_angles[id]<=0.0)
-                {
-                    printf("net_F_nvi_d[id * nvi + level] and isnan(lw_net__df_e[id * nvi + level]) contain a NaNs at mu=0 at level:%d \n",  level);
-                }
-                if (isnan(lw_net__df_e[id * nvi + level]) && zenith_angles[id]>0.0)
-                {
-                    printf("net_F_nvi_d[id * nvi + level] and isnan(lw_net__df_e[id * nvi + level]) contain a NaNs at mu>0 at level:%d \n",  level);
-                }
-
-                if (isnan(sw_net__df_e[id * nvi + level]) && zenith_angles[id]<=0.0)
-                {
-                    printf("net_F_nvi_d[id * nvi + level] and isnan(sw_net__df_e[id * nvi + level]) contain a NaNs at mu=0 at level:%d \n",  level);
-                }
-                if (isnan(sw_net__df_e[id * nvi + level]) && zenith_angles[id]>0.0)
-                {
-                    printf("net_F_nvi_d[id * nvi + level] and isnan(sw_net__df_e[id * nvi + level]) contain a NaNs at mu>0 at level:%d \n",  level);
-                }
-
-                if (isnan(lw_down__df_e[id * nvi + level] ) && zenith_angles[id]<=0.0)
-                {
-                    printf("net_F_nvi_d[id * nvi + level] and isnan(lw_down__df_e[id * nvi + level]) contain a NaNs at mu=0 at level:%d \n",  level);
-                }
-                if (isnan(lw_down__df_e[id * nvi + level] ) && zenith_angles[id]>0.0)
-                {
-                    printf("net_F_nvi_d[id * nvi + level] and isnan(lw_down__df_e[id * nvi + level]) contain a NaNs at mu>0 at level:%d \n",  level);
-                }
-
-                if (isnan(lw_up__df_e[id * nvi + level] ) && zenith_angles[id]<=0.0)
-                {
-                    printf("net_F_nvi_d[id * nvi + level] and isnan(lw_up__df_e[id * nvi + level]) contain a NaNs at mu=0 at level:%d \n",  level);
-                }
-                if (isnan(lw_up__df_e[id * nvi + level] ) && zenith_angles[id]>0.0)
-                {
-                    printf("net_F_nvi_d[id * nvi + level] and isnan(lw_up__df_e[id * nvi + level]) contain a NaNs at mu>0 at level:%d \n",  level);
-                }
-
-                if (isnan(sw_down__df_e[id * nvi + level] ) && zenith_angles[id]<=0.0)
-                {
-                    printf("net_F_nvi_d[id * nvi + level] and isnan(sw_down__df_e[id * nvi + level]) contain a NaNs at mu=0 at level:%d \n",  level);
-                }
-                if (isnan(sw_down__df_e[id * nvi + level] ) && zenith_angles[id]>0.0)
-                {
-                    printf("net_F_nvi_d[id * nvi + level] and isnan(sw_down__df_e[id * nvi + level]) contain a NaNs at mu>0 at level:%d \n",  level);
-                }
-
-                if (isnan(pressureh_d[id * nvi + level]) && zenith_angles[id]<=0.0)
-                {
-                    printf("net_F_nvi_d[id * nvi + level] and isnan(pressureh_d[id * nvi + level]) contain a NaNs at mu=0 at level:%d \n",  level);
-                }
-                if (isnan(pressureh_d[id * nvi + level]) && zenith_angles[id]>0.0)
-                {
-                    printf("net_F_nvi_d[id * nvi + level] and isnan(pressureh_d[id * nvi + level]) contain a NaNs at mu>0 at level:%d \n",  level);
-                }
-
-                if (isnan(be__df_e[id * nvi + level]) && zenith_angles[id]<=0.0)
-                {
-                    printf("net_F_nvi_d[id * nvi + level] and isnan(be__df_e[id * nvi + level]) contain a NaNs at mu=0 at level:%d \n",  level);
-                }
-                if (isnan(be__df_e[id * nvi + level]) && zenith_angles[id]>0.0)
-                {
-                    printf("net_F_nvi_d[id * nvi + level] and isnan(be__df_e[id * nvi + level]) contain a NaNs at mu>0 at level:%d \n",  level);
-                }
-
             
-            }
-
-            if ((Altitudeh_d[level+1] - Altitudeh_d[level])==0.0 && id==0)
-            {
-                printf("(Altitudeh_d[level+1] - Altitudeh_d[level]) is 0 at level:%d \n",  level);                    
-            }
-
-            if (isnan(Altitudeh_d[level+1] - Altitudeh_d[level]))
-            {
-                printf("(Altitudeh_d[level+1] - Altitudeh_d[level]) is NaN at level:%d \n",  level);                    
-            }
            
 
         }
@@ -1945,197 +1948,201 @@ __global__ void rtm_picket_fence(double *pressure_d,
         
         
         
-        
-        for (int level = 0; level < nvi; level++)
+        if (id == 430)
         {
-                                           
-            if (isnan(lw_up__df_e[id * nvi + level]) ) {
+            for (int level = 0; level < nvi; level++)
+            {
+                                            
+                if (isnan(lw_up__df_e[id * nvi + level]) ) {
 
-                 printf("lw_up__df_e has NaNs at the level:%u\n", level);
-                for (int lev = 0; lev < nvi; lev++)
-                {
-                   
-                    //printf("lw_up__df_e contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d timestep:%d level:%d \n", blockIdx.x, blockDim.x, threadIdx.x, id, timestep, lev);
-                    //printf("lw_up__df_e has the value:%u\n",  &lw_up__df_e[id*nvi + lev]);
-                }
-                //sw_net__df_e[id * nv + level] = id * nv + level;
-                //__threadfence();         // ensure store issued before trap
-                //asm("trap;");            // kill kernel with error
-            }
-            if (lw_up__df_e[id * nvi + level]<0.0 ) {
-                printf("lw_up__df_e has a negative value at the level:%u\n", level);
-                //printf("lw_up__df_e has a negative value in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d timestep:%d level:%d \n", blockIdx.x, blockDim.x, threadIdx.x, id, timestep, level);
+                    printf("lw_up__df_e has NaNs at the level:%u\n", level);
+                    for (int lev = 0; lev < nvi; lev++)
+                    {
                     
-                for (int lev = 0; lev < nvi; lev++)
-                {
-                    //printf("lw_up__df_e has 0 at the level:%u\n", lev);
-                    //printf("lw_up__df_e contains 0 in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d timestep:%d level:%d \n", blockIdx.x, blockDim.x, threadIdx.x, id, timestep, lev);
-                    //printf("lw_up__df_e has the value:%u\n",  &lw_up__df_e[id*nvi + lev]);
-                }
-                //sw_net__df_e[id * nv + level] = id * nv + level;
-                //__threadfence();         // ensure store issued before trap
-                //asm("trap;");            // kill kernel with error
-            }
-
-            if (lw_up__df_e[id * nvi + level] == 0.0 ) {
-                printf("lw_up__df_e has 0 at the level:%u\n", level);
-                //printf("lw_up__df_e contains 0 in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d timestep:%d level:%d \n", blockIdx.x, blockDim.x, threadIdx.x, id, timestep, level);
-                    
-                for (int lev = 0; lev < nvi; lev++)
-                {
-                    //printf("lw_up__df_e has 0 at the level:%u\n", lev);
-                    //printf("lw_up__df_e contains 0 in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d timestep:%d level:%d \n", blockIdx.x, blockDim.x, threadIdx.x, id, timestep, lev);
-                    //printf("lw_up__df_e has the value:%u\n",  &lw_up__df_e[id*nvi + lev]);
-                }
-                //sw_net__df_e[id * nv + level] = id * nv + level;
-                //__threadfence();         // ensure store issued before trap
-                //asm("trap;");            // kill kernel with error
-            }
-
-            if (lw_down__df_e[id * nvi + level] == 0.0 && level!=nv ) {
-                printf("lw_down__df_e has 0 at the level:%u\n", level);
-                //printf("lw_down__df_e contains 0 in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d timestep:%d level:%d \n", blockIdx.x, blockDim.x, threadIdx.x, id, timestep, level);
-                   
-                for (int lev = 0; lev < nvi; lev++)
-                {
-                    //printf("lw_down__df_e has 0 at the level:%u\n", lev);
-                    //printf("lw_down__df_e contains 0 in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d timestep:%d level:%d \n", blockIdx.x, blockDim.x, threadIdx.x, id, timestep, lev);
-                    //printf("lw_down__df_e has the value:%u\n",  &lw_down__df_e[id*nvi + level]);
-                }
-                //sw_net__df_e[id * nv + level] = id * nv + level;
-                //__threadfence();         // ensure store issued before trap
-                //asm("trap;");            // kill kernel with error
-            }
-
-            if (lw_down__df_e[id * nvi + level] < 0.0  ) {
-                //printf("lw_down__df_e has a negative value at the level:%u\n", level);
-                //printf("lw_down__df_e has a negative value in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d timestep:%d level:%d \n", blockIdx.x, blockDim.x, threadIdx.x, id, timestep, level);
-                   
-                for (int lev = 0; lev < nvi; lev++)
-                {
-                    //printf("lw_down__df_e has 0 at the level:%u\n", lev);
-                    //printf("lw_down__df_e contains 0 in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d timestep:%d level:%d \n", blockIdx.x, blockDim.x, threadIdx.x, id, timestep, lev);
-                    //printf("lw_down__df_e has the value:%u\n",  &lw_down__df_e[id*nvi + level]);
-                }
-                //sw_net__df_e[id * nv + level] = id * nv + level;
-                //__threadfence();         // ensure store issued before trap
-                //asm("trap;");            // kill kernel with error
-            }
-            if (isnan(lw_down__df_e[id * nvi + level] ) ) {
-                printf("lw_down__df_e has a NaN at the level:%u\n", level);
-                for (int lev = 0; lev < nvi; lev++)
-                {
-                    //printf("lw_down__df_e has NaNs at the level:%u\n", lev);
-                    //printf("lw_down__df_e contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d timestep:%d level:%d \n", blockIdx.x, blockDim.x, threadIdx.x, id, timestep, lev);
-                    //printf("lw_down__df_e has the value:%u\n",  &lw_down__df_e[id*nvi + level]);
-                }
-                //sw_net__df_e[id * nv + level] = id * nv + level;
-                //__threadfence();         // ensure store issued before trap
-                //asm("trap;");            // kill kernel with error
-            }
-            
-            if (isnan(sw_up__df_e[id * nvi + level] )  ) {
-                printf("sw_up__df_e has a NaN at the level:%u\n", level);
-                for (int lev = 0; lev < nvi; lev++)
-                {
-                    //printf("sw_up__df_e has NaNs at the level:%u\n", lev);
-                    //printf("sw_up__df_e contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d timestep:%d level: %d \n", blockIdx.x, blockDim.x, threadIdx.x, id, timestep, lev);
-                    //printf("sw_up__df_e has the value:%u\n", &sw_up__df_e[id*nvi+lev]);
-                }
-               
-               // __threadfence();         // ensure store issued before trap
-                //asm("trap;");            // kill kernel with error
-            }
-            if (isnan(sw_down__df_e[id * nvi + level] )  ) {
-                printf("sw_down__df_e has a NaN at the level:%u\n", level);
-                  
-                for (int lev = 0; lev < nvi; lev++)
-                {
-                    //printf("sw_down__df_e has NaNs at the level:%u\n", lev);
-                    //printf("sw_down__df_e contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d timestep:%d level:%d \n", blockIdx.x, blockDim.x, threadIdx.x, id, timestep, lev);
-                    //printf("sw_down__df_e has the value:%u\n", &sw_down__df_e[id*nvi + lev]);
-                }
-                //sw_net__df_e[id * nv + level] = id * nv + level;
-                //__threadfence();         // ensure store issued before trap
-                //asm("trap;");            // kill kernel with error
-            }
-
-            if (sw_down__df_e[id * nvi + level] < 0.0  ) {
-
-                //printf("sw_down__df_e has a negative value at the level:%u\n", level);
-                  
-                for (int lev = 0; lev < nvi; lev++)
-                {
-                    //printf("sw_down__df_e has NaNs at the level:%u\n", lev);
-                    //printf("sw_down__df_e has a negative value in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d timestep:%d level:%d \n", blockIdx.x, blockDim.x, threadIdx.x, id, timestep, lev);
-                    //printf("sw_down__df_e has the value:%u\n", &sw_down__df_e[id*nvi + lev]);
-                }
-                //sw_net__df_e[id * nv + level] = id * nv + level;
-                //__threadfence();         // ensure store issued before trap
-                //asm("trap;");            // kill kernel with error
-            }
-
-            if (sw_down__df_e[id * nvi + level] == 0.0  ) {
-
-                //printf("sw_down__df_e has a zero at the level:%u\n", level);                  
-                for (int lev = 0; lev < nvi; lev++)
-                {
-                    //printf("sw_down__df_e has NaNs at the level:%u\n", lev);
-                    //printf("sw_down__df_e contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d timestep:%d level:%d \n", blockIdx.x, blockDim.x, threadIdx.x, id, timestep, lev);
-                    //printf("sw_down__df_e has the value:%u\n", &sw_down__df_e[id*nvi + lev]);
-                }
-                //sw_net__df_e[id * nv + level] = id * nv + level;
-                //__threadfence();         // ensure store issued before trap
-                //asm("trap;");            // kill kernel with error
-            }
-            
-            
-            if (isnan(sw_net__df_e[id * nvi + level])  ) {
-                printf("sw_net__df_e contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d level:%d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, level, &sw_net__df_e[id*nvi + level]);
-                //sw_net__df_e[id * nv + level] = id * nv + level;
-                __threadfence();         // ensure store issued before trap
-                asm("trap;");            // kill kernel with error
-            }
-
-
-            //calculate OLR for this point
-            
-             
-            if (isnan(lw_net__df_e[id * nvi + level])) {
-                printf("lw_net__df_e contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d  level:%d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, level, &lw_net__df_e[id*nvi + level]);
-                  
-                //__threadfence();          // ensure store issued before trap
-                asm("trap;");            // kill kernel with error            
-            }
-            
-
-            
-            if ( lw_net__df_e[id * nvi + level] ==0.0  ) {
-                    printf("lw_net__df_e contains 0 in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d  level:%d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, level, &lw_net__df_e[id*nvi + level]);
-                    //lw_net__df_e[id] = id;
+                        //printf("lw_up__df_e contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d timestep:%d level:%d \n", blockIdx.x, blockDim.x, threadIdx.x, id, timestep, lev);
+                        //printf("lw_up__df_e has the value:%u\n",  &lw_up__df_e[id*nvi + lev]);
+                    }
+                    //sw_net__df_e[id * nv + level] = id * nv + level;
                     //__threadfence();         // ensure store issued before trap
                     //asm("trap;");            // kill kernel with error
-            }            
+                }
+                if (lw_up__df_e[id * nvi + level]<0.0 ) {
+                    printf("lw_up__df_e has a negative value at the level:%u\n", level);
+                    //printf("lw_up__df_e has a negative value in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d timestep:%d level:%d \n", blockIdx.x, blockDim.x, threadIdx.x, id, timestep, level);
+                        
+                    for (int lev = 0; lev < nvi; lev++)
+                    {
+                        //printf("lw_up__df_e has 0 at the level:%u\n", lev);
+                        //printf("lw_up__df_e contains 0 in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d timestep:%d level:%d \n", blockIdx.x, blockDim.x, threadIdx.x, id, timestep, lev);
+                        //printf("lw_up__df_e has the value:%u\n",  &lw_up__df_e[id*nvi + lev]);
+                    }
+                    //sw_net__df_e[id * nv + level] = id * nv + level;
+                    //__threadfence();         // ensure store issued before trap
+                    //asm("trap;");            // kill kernel with error
+                }
 
-        }
+                if (lw_up__df_e[id * nvi + level] == 0.0 ) {
+                    printf("lw_up__df_e has 0 at the level:%u\n", level);
+                    //printf("lw_up__df_e contains 0 in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d timestep:%d level:%d \n", blockIdx.x, blockDim.x, threadIdx.x, id, timestep, level);
+                        
+                    for (int lev = 0; lev < nvi; lev++)
+                    {
+                        //printf("lw_up__df_e has 0 at the level:%u\n", lev);
+                        //printf("lw_up__df_e contains 0 in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d timestep:%d level:%d \n", blockIdx.x, blockDim.x, threadIdx.x, id, timestep, lev);
+                        //printf("lw_up__df_e has the value:%u\n",  &lw_up__df_e[id*nvi + lev]);
+                    }
+                    //sw_net__df_e[id * nv + level] = id * nv + level;
+                    //__threadfence();         // ensure store issued before trap
+                    //asm("trap;");            // kill kernel with error
+                }
 
-        if (zenith_angles[id]>0.0)
-        {
-            //printf("zenith_angles is larger than 0\n");
-        } else
-        {
-            //printf("zenith_angles is zero or smaller\n");
-        }
-        if (zenith_angles[id]==0.0)
-        {
-            //printf("zenith_angles is 0\n");
-        }
+                if (lw_down__df_e[id * nvi + level] == 0.0 && level!=nv ) {
+                    printf("lw_down__df_e has 0 at the level:%u\n", level);
+                    //printf("lw_down__df_e contains 0 in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d timestep:%d level:%d \n", blockIdx.x, blockDim.x, threadIdx.x, id, timestep, level);
+                    
+                    for (int lev = 0; lev < nvi; lev++)
+                    {
+                        //printf("lw_down__df_e has 0 at the level:%u\n", lev);
+                        //printf("lw_down__df_e contains 0 in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d timestep:%d level:%d \n", blockIdx.x, blockDim.x, threadIdx.x, id, timestep, lev);
+                        //printf("lw_down__df_e has the value:%u\n",  &lw_down__df_e[id*nvi + level]);
+                    }
+                    //sw_net__df_e[id * nv + level] = id * nv + level;
+                    //__threadfence();         // ensure store issued before trap
+                    //asm("trap;");            // kill kernel with error
+                }
 
-        if (zenith_angles[id]>1)
-        {
-             //printf("zenith_angles is larger than 1\n");
+                if (lw_down__df_e[id * nvi + level] < 0.0  ) {
+                    //printf("lw_down__df_e has a negative value at the level:%u\n", level);
+                    //printf("lw_down__df_e has a negative value in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d timestep:%d level:%d \n", blockIdx.x, blockDim.x, threadIdx.x, id, timestep, level);
+                    
+                    for (int lev = 0; lev < nvi; lev++)
+                    {
+                        //printf("lw_down__df_e has 0 at the level:%u\n", lev);
+                        //printf("lw_down__df_e contains 0 in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d timestep:%d level:%d \n", blockIdx.x, blockDim.x, threadIdx.x, id, timestep, lev);
+                        //printf("lw_down__df_e has the value:%u\n",  &lw_down__df_e[id*nvi + level]);
+                    }
+                    //sw_net__df_e[id * nv + level] = id * nv + level;
+                    //__threadfence();         // ensure store issued before trap
+                    //asm("trap;");            // kill kernel with error
+                }
+                if (isnan(lw_down__df_e[id * nvi + level] ) ) {
+                    printf("lw_down__df_e has a NaN at the level:%u\n", level);
+                    for (int lev = 0; lev < nvi; lev++)
+                    {
+                        //printf("lw_down__df_e has NaNs at the level:%u\n", lev);
+                        //printf("lw_down__df_e contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d timestep:%d level:%d \n", blockIdx.x, blockDim.x, threadIdx.x, id, timestep, lev);
+                        //printf("lw_down__df_e has the value:%u\n",  &lw_down__df_e[id*nvi + level]);
+                    }
+                    //sw_net__df_e[id * nv + level] = id * nv + level;
+                    //__threadfence();         // ensure store issued before trap
+                    //asm("trap;");            // kill kernel with error
+                }
+                
+                if (isnan(sw_up__df_e[id * nvi + level] )  ) {
+                    printf("sw_up__df_e has a NaN at the level:%u\n", level);
+                    for (int lev = 0; lev < nvi; lev++)
+                    {
+                        //printf("sw_up__df_e has NaNs at the level:%u\n", lev);
+                        //printf("sw_up__df_e contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d timestep:%d level: %d \n", blockIdx.x, blockDim.x, threadIdx.x, id, timestep, lev);
+                        //printf("sw_up__df_e has the value:%u\n", &sw_up__df_e[id*nvi+lev]);
+                    }
+                
+                // __threadfence();         // ensure store issued before trap
+                    //asm("trap;");            // kill kernel with error
+                }
+                if (isnan(sw_down__df_e[id * nvi + level] )  ) {
+                    printf("sw_down__df_e has a NaN at the level:%u\n", level);
+                    
+                    for (int lev = 0; lev < nvi; lev++)
+                    {
+                        //printf("sw_down__df_e has NaNs at the level:%u\n", lev);
+                        //printf("sw_down__df_e contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d timestep:%d level:%d \n", blockIdx.x, blockDim.x, threadIdx.x, id, timestep, lev);
+                        //printf("sw_down__df_e has the value:%u\n", &sw_down__df_e[id*nvi + lev]);
+                    }
+                    //sw_net__df_e[id * nv + level] = id * nv + level;
+                    //__threadfence();         // ensure store issued before trap
+                    //asm("trap;");            // kill kernel with error
+                }
 
+                if (sw_down__df_e[id * nvi + level] < 0.0  ) {
+
+                    //printf("sw_down__df_e has a negative value at the level:%u\n", level);
+                    
+                    for (int lev = 0; lev < nvi; lev++)
+                    {
+                        //printf("sw_down__df_e has NaNs at the level:%u\n", lev);
+                        //printf("sw_down__df_e has a negative value in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d timestep:%d level:%d \n", blockIdx.x, blockDim.x, threadIdx.x, id, timestep, lev);
+                        //printf("sw_down__df_e has the value:%u\n", &sw_down__df_e[id*nvi + lev]);
+                    }
+                    //sw_net__df_e[id * nv + level] = id * nv + level;
+                    //__threadfence();         // ensure store issued before trap
+                    //asm("trap;");            // kill kernel with error
+                }
+
+                if (sw_down__df_e[id * nvi + level] == 0.0  ) {
+
+                    //printf("sw_down__df_e has a zero at the level:%u\n", level);                  
+                    for (int lev = 0; lev < nvi; lev++)
+                    {
+                        //printf("sw_down__df_e has NaNs at the level:%u\n", lev);
+                        //printf("sw_down__df_e contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d timestep:%d level:%d \n", blockIdx.x, blockDim.x, threadIdx.x, id, timestep, lev);
+                        //printf("sw_down__df_e has the value:%u\n", &sw_down__df_e[id*nvi + lev]);
+                    }
+                    //sw_net__df_e[id * nv + level] = id * nv + level;
+                    //__threadfence();         // ensure store issued before trap
+                    //asm("trap;");            // kill kernel with error
+                }
+                
+                
+                if (isnan(sw_net__df_e[id * nvi + level])  ) {
+                    printf("sw_net__df_e contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d level:%d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, level, &sw_net__df_e[id*nvi + level]);
+                    //sw_net__df_e[id * nv + level] = id * nv + level;
+                    __threadfence();         // ensure store issued before trap
+                    asm("trap;");            // kill kernel with error
+                }
+
+
+                //calculate OLR for this point
+                
+                
+                if (isnan(lw_net__df_e[id * nvi + level])) {
+                    printf("lw_net__df_e contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d  level:%d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, level, &lw_net__df_e[id*nvi + level]);
+                    
+                    //__threadfence();          // ensure store issued before trap
+                    asm("trap;");            // kill kernel with error            
+                }
+                
+
+                
+                if ( lw_net__df_e[id * nvi + level] ==0.0  ) {
+                        printf("lw_net__df_e contains 0 in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d  level:%d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, level, &lw_net__df_e[id*nvi + level]);
+                        //lw_net__df_e[id] = id;
+                        //__threadfence();         // ensure store issued before trap
+                        //asm("trap;");            // kill kernel with error
+                }            
+
+            }
+
+            if (zenith_angles[id]>0.0)
+            {
+                //printf("zenith_angles is larger than 0\n");
+            } else
+            {
+                //printf("zenith_angles is zero or smaller\n");
+            }
+            if (zenith_angles[id]==0.0)
+            {
+                //printf("zenith_angles is 0\n");
+            }
+
+            if (zenith_angles[id]>1)
+            {
+                //printf("zenith_angles is larger than 1\n");
+
+            }
         }
+        
+        
         
         
 
@@ -2143,8 +2150,8 @@ __global__ void rtm_picket_fence(double *pressure_d,
         
         ASR_d[id] = sw_down__df_e[id * nvi + nv] * areasT_d[id] * pow(rscale, 2);
         
-            
-            
+        if (id == 430)
+        {
             if (isnan(ASR_d[id] )) {
                 printf("ASR_d contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, &ASR_d[id]);
                 //ASR_d[id] = id;
@@ -2164,55 +2171,60 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 //__threadfence();         // ensure store issued before trap
                 //asm("trap;");            // kill kernel with error
             }
+        }
+            
+            
+            
 
             
 
             
         
         OLR_d[id] = lw_up__df_e[id * nvi + nv] *areasT_d[id] * pow(rscale, 2);
-       
 
-        if (isnan(OLR_d[id] )) {
+        if (id == 430)
+        {
+            if (isnan(OLR_d[id] )) {
                 printf("OLR_d contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, &OLR_d[id]);
                 //ASR_d[id] = id;
                 __threadfence();         // ensure store issued before trap
                 asm("trap;");            // kill kernel with error
             }
 
-        if (OLR_d[id] < 0.0 ) {
+            if (OLR_d[id] < 0.0 ) {
                 printf("my message:ASR_d contains a negative value in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, &OLR_d[id]);
                 //OLR_d[id] = id;
                 //__threadfence();         // ensure store issued before trap
                 //asm("trap;");            // kill kernel with error
             }
 
-        if (isnan(areasT_d[id] ) ) {
+            if (isnan(areasT_d[id] ) ) {
                 printf("areasT_d[id] contains NaNs in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, &areasT_d[id]);
                 //OLR_d[id] = id;
                 //__threadfence();         // ensure store issued before trap
                 //asm("trap;");            // kill kernel with error
             }
 
-        if (areasT_d[id] <1.0 ) {
+            if (areasT_d[id] <1.0 ) {
                 printf("areasT_d[id] small than 1 in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, &areasT_d[id]);
                 //OLR_d[id] = id;
                 //__threadfence();         // ensure store issued before trap
                 //asm("trap;");            // kill kernel with error
             }
-        if (areasT_d[id] <0.01 ) {
+            if (areasT_d[id] <0.01 ) {
                 printf("areasT_d[id] small than 0.01 in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, &areasT_d[id]);
                 //OLR_d[id] = id;
                 //__threadfence();         // ensure store issued before trap
                 //asm("trap;");            // kill kernel with error
             }
         
-        if (areasT_d[id] <0.0001 ) {
+            if (areasT_d[id] <0.0001 ) {
                 printf("areasT_d[id] small than 0.0001 in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, &areasT_d[id]);
                 //OLR_d[id] = id;
                 //__threadfence();         // ensure store issued before trap
                 //asm("trap;");            // kill kernel with error
             }
-        if (areasT_d[id] <0.000001 ) {
+            if (areasT_d[id] <0.000001 ) {
                 printf("areasT_d[id] small than 0.000001 in blockIdx.x:%d * blockDim.x:%d + threadIdx.x:%d = globalThreadId:%d value:%u\n", blockIdx.x, blockDim.x, threadIdx.x, id, &areasT_d[id]);
                 //OLR_d[id] = id;
                 //__threadfence();         // ensure store issued before trap
@@ -2252,6 +2264,11 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 //__threadfence();         // ensure store issued before trap
                 //asm("trap;");            // kill kernel with error
             }
+        }
+        
+       
+
+        
             
             
         
