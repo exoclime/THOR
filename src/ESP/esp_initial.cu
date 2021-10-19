@@ -624,7 +624,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 for (int level = 0; level < init_nv; level++) {
 
                     init_pressure_parmentier[level] = sim.P_Ref*pow(euler,
-                                                                    -(  Altitude_h[nv - 1] *
+                                                                    -(  (Altitude_h[nv - 1] - Altitude_h[0]) *
                                                                         ( 
                                                                             (double)(level + 1.0) / 1000
                                                                         )  /
