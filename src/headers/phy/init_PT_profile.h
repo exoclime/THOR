@@ -124,16 +124,16 @@ void linear_interpolation_fit(int len, double Xin, double *Xreference,
 
     // exclude values off the reference values
     if (Xin <= Xreference[0]) {
-        x = Xreference[0] + 1e-10 ;      
+        x = Xreference[0] * (1.0 + 1e-10) ;      
     } else if (Xin >= Xreference[len - 1]) {
-        x = Xreference[len - 1] - 1e-10 ;      
+        x = Xreference[len - 1] * (1.0 - 1e-10) ;      
     } else {
         x = Xin;
     }
     
     // iterating through the altitude
 
-    while (x >= Xreference[iter]) {
+    while ((x >= Xreference[iter]) && (iter<len-1)) {
         iter++;
     }
     lowiter = iter-1;
@@ -147,15 +147,19 @@ void linear_interpolation_fit(int len, double Xin, double *Xreference,
         y1 = Yreference[lowiter];
         y2 = Yreference[iter]; 
     
-    printf("Xin = %e  \n", Xin);
-    printf("x1 = Xreference[%d] = %e  \n",lowiter, Xreference[lowiter]);
-    printf("x2 = Xreference[%d] = %e  \n",iter, Xreference[iter]);
-    printf("y1 = Yreference[%d] = %e  \n",lowiter, Yreference[lowiter]);
-    printf("y2 = Yreference[%d] = %e  \n",iter, Yreference[iter]);
+    
 
     // interpolate values
 
     linear_interp(x, x1, x2, y1, y2, Yout);
+
+    printf("Xin = %e  \n", Xin);
+    printf("x = %e  \n", x);
+    printf("x1 = Xreference[%d] = %e  \n",lowiter, Xreference[lowiter]);
+    printf("x2 = Xreference[%d] = %e  \n",iter, Xreference[iter]);
+    printf("y1 = Yreference[%d] = %e  \n",lowiter, Yreference[lowiter]);
+    printf("y2 = Yreference[%d] = %e  \n",iter, Yreference[iter]);
+    printf("Yout = %e  \n", Yout);
 
     Yout = Yout;
    
