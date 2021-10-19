@@ -651,6 +651,10 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 printf(" radius_star = %e \n", radius_star);
                 printf(" planet_star_dist = %e \n", planet_star_dist);
                 printf(" Tstar = %e \n", Tstar);
+                printf(" init_temperature_parmentier[%d] = %e \n", 0,  init_temperature_parmentier[0]);
+                printf(" init_temperature_parmentier[%d] = %e \n", nv-1,  init_temperature_parmentier[nv-1]);
+                printf(" init_pressure_parmentier[%d] = %e \n", 0,  init_pressure_parmentier[0]);
+                printf(" init_pressure_parmentier[%d] = %e \n", nv-1,  init_pressure_parmentier[nv-1]);
 
 
                 //Hypsometric equation
