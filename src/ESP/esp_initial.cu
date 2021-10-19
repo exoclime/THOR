@@ -657,16 +657,15 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 init_altitude_parmentier[0] = 0.0;
                 for (int level = 1; level < init_nv; level++) {
                     init_altitude_parmentier[level] =   sim.Rd *
-                                                        (0.5*(init_temperature_parmentier[level - 1] + init_temperature_parmentier[level]))/
+                                                        (0.5*(init_temperature_parmentier[0] + init_temperature_parmentier[level]))/
                                                         (sim.Gravit) *
                                                         (
                                                             log(
-                                                                init_pressure_parmentier[level - 1] / 
+                                                                init_pressure_parmentier[0] / 
                                                                 init_pressure_parmentier[level]
                                                                 ) /
                                                             log(euler)
-                                                        ) +
-                                                        init_altitude_parmentier[level - 1];
+                                                        );
 
                 }
 
