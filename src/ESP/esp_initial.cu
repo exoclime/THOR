@@ -577,118 +577,14 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 //          taking initial conditions for a guillot profile to start 
                     //             simulating parmentier profile
 
-                    
-                /*mu = 0.5;
-
-                for (int lev = 0; lev < nv; lev++) {
-                    //first, we define thermo quantities of layer below and make
-                    //our initial guess for the Newton-Raphson solver
-                    if (lev == 0) {
-                        if (init_PT_profile == ISOTHERMAL) {
-                            temperature_h[i * nv + lev] = sim.Tmean;
-                        }
-                        else {
-                            temperature_h[i * nv + lev] = guillot_T(sim.P_Ref,
-                                                                    mu,
-                                                                    sim.Tmean+300,
-                                                                    sim.P_Ref,
-                                                                    sim.Gravit,
-                                                                    Tint,
-                                                                    f_lw,
-                                                                    kappa_sw,
-                                                                    kappa_lw);
-                        }
-                        if (ultrahot_thermo != NO_UH_THERMO) {
-                            chi_H = chi_H_equilibrium(
-                                GibbsT, GibbsdG, GibbsN, temperature_h[i * nv + lev], sim.P_Ref);
-                            Rd_L = Rd_from_chi_H(chi_H);
-                        }
-                        else {
-                            Rd_L = sim.Rd;
-                        }
-                        P_L = sim.P_Ref;
-                        T_L = temperature_h[i * nv + lev];
-                        dz  = Altitude_h[0];
-                    }
-                    else {
-                        temperature_h[i * nv + lev] = temperature_h[i * nv + lev - 1];
-                        if (ultrahot_thermo != NO_UH_THERMO) {
-                            chi_H = chi_H_equilibrium(
-                                GibbsT, GibbsdG, GibbsN, sim.Tmean, pressure_h[i * nv + lev - 1]);
-                            Rd_L = Rd_h[i * nv + lev - 1];
-                        }
-                        else {
-                            Rd_L = Rd_h[i * nv + lev - 1];
-                        }
-                        P_L = pressure_h[i * nv + lev - 1];
-                        T_L = temperature_h[i * nv + lev - 1];
-                        dz  = Altitude_h[lev] - Altitude_h[lev - 1];
-                    }
-                    pressure_h[i * nv + lev] = P_L;
-                    Rd_h[i * nv + lev]       = Rd_L;
-                    ptmp                     = pressure_h[i * nv + lev] + 2 * eps;
-
-                    it = 0;
-                    while (it < it_max && ptmp - pressure_h[i * nv + lev] > eps) {
-                        //Newton-Raphson solver of hydrostatic eqn for thermo properties
-                        ptmp = pressure_h[i * nv + lev];
-                        f    = log(pressure_h[i * nv + lev] / P_L) / dz
-                            + sim.Gravit
-                                / (0.5
-                                    * (Rd_h[i * nv + lev] * temperature_h[i * nv + lev]
-                                        + Rd_L * T_L));
-                        df                       = 1.0 / (pressure_h[i * nv + lev] * dz);
-                        pressure_h[i * nv + lev] = pressure_h[i * nv + lev] - f / df;
-                        if (init_PT_profile == ISOTHERMAL) {
-                            temperature_h[i * nv + lev] = sim.Tmean;
-                        }
-                        else {
-                            temperature_h[i * nv + lev] = guillot_T(pressure_h[i * nv + lev],
-                                                                    mu,
-                                                                    sim.Tmean+300,
-                                                                    sim.P_Ref,
-                                                                    sim.Gravit,
-                                                                    Tint,
-                                                                    f_lw,
-                                                                    kappa_sw,
-                                                                    kappa_lw);
-                        }
-                        if (ultrahot_thermo != NO_UH_THERMO) {
-                            chi_H              = chi_H_equilibrium(GibbsT,
-                                                    GibbsdG,
-                                                    GibbsN,
-                                                    temperature_h[i * nv + lev],
-                                                    pressure_h[i * nv + lev]);
-                            Rd_h[i * nv + lev] = Rd_from_chi_H(chi_H);
-                        }
-                        else {
-                            Rd_h[i * nv + lev] = sim.Rd;
-                        }
-                        it++;
-                    }
-                    if (ultrahot_thermo != NO_UH_THERMO) {
-                        Cp_h[i * nv + lev] = Cp_from_chi_H(chi_H, temperature_h[i * nv + lev]);
-                    }
-                    else {
-                        Cp_h[i * nv + lev] = sim.Cp;
-                    }
-                }
-                */
-
-
                 printf(" init_PT_profile == PARMENTIER");
-                            
-                            
-
 
                 int table_num;
                 table_num = 2;
                 double  Tirr, Teff, AB;
                 mu =  1.0 ; // sqrt(3.0);               
 
-                //oTstar = 6092;
-                //star_planet_distance = 0.04747 *  149597870700;
-                //Rstar = 1.203 * 6.9657e8;
+                
 
                 if (ultrahot_thermo != NO_UH_THERMO) {
                     table_num = 1;
@@ -733,7 +629,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 double pressure_diff = 0.0;
                 double bolzmann_const = 1.380649e-23;
                 int max_iter = 10;
-                double scale_height ;
+                double scale_height;
 
                 for (int lev = 0; lev < init_nv; lev++) {
 
@@ -785,9 +681,20 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 }
 
                 */
-                
-                
 
+                for (int level = 1; level < nv; level++) {
+                    pressure_h[i * nv + level] = pressure_h[i * nv + level - 1] *
+                        pow(-sim.Gravit/
+                            (
+                                0.5*(Rd_h[level - 1] + Rd_h[level]) * 
+                                0.5*(temperature_h[level -1] + temperature_h[level])
+                            ) *
+                            (Altitude_h[level] - Altitude_h[level-1])
+                        );
+                }
+                
+                
+                /*
                 for (int level = 1; level < nv; level++) {
                     pressure_h[i * nv + level] = pressure_h[i * nv + level-1];
                     ptmp                     = pressure_h[i * nv + level] + 2 * eps;
@@ -804,88 +711,36 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                     }
                    
                 }
+                */
 
                 
 
                 adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
 
-
-                
-
-                               
-                /*
-                printf("Altitude_h[%d] = %e \n", 0, Altitude_h[0]);
-                for (int level = 1; level < nv; level++) {
-
-                    Altitude_h[level] = (0.5*(Rd_h[i * nv + level -1] + Rd_h[i * nv + level]))*
-                        (0.5*(temperature_h[i * nv + level -1] + temperature_h[i * nv + level]))/
-                        (sim.Gravit)*
-                        log(pressure_h[i * nv + level -1 ] / pressure_h[i * nv + level])/
-                        log(euler) +
-                         Altitude_h[level-1];
-
-                    printf("Altitude_h[%d] = %e \n", level, Altitude_h[level]);
-                }
-                
-               
-                for (int level = 1; level < nv; level++) {
-                    Altitudeh_h[level] = Altitude_h[level-1] + 0.5*(Altitude_h[level] - Altitude_h[level-1]);
-                    printf("Altitudeh_h[%d] = %e \n", level, Altitudeh_h[level]);
-                }
-                Altitudeh_h[0] = Altitude_h[0] * (Altitude_h[0] / Altitudeh_h[1]);
-                Altitudeh_h[nvi-1] = Altitude_h[nv-1] + 0.5*(Altitude_h[nv-1] - Altitude_h[nv-2]);
-                printf("Altitudeh_h[%d] = %e \n", 0, Altitudeh_h[0]);
-                printf("Altitudeh_h[%d] = %e \n", nvi-1, Altitudeh_h[nvi-1]);
-                
-
-                //Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, MetStar);
-
-                if (1==0) {
-                    for (int iter = 0; iter < max_iter ; iter++) {
-                        scale_height = temperature_h[i * nv + 0] * Rd_h[i * nv + 0] / ( sim.Gravit);                    
-                        Rho_h[i * nv + 0] =
-                            pressure_h[i * nv + 0] / (temperature_h[i * nv + 0] * Rd_h[i * nv + 0]);
-                        
-
-                        //printf("scale_height = %e \n", scale_height);
-                        //printf("pressure_h[i * nv + 0] = %e \n", pressure_h[i * nv + 0]);
-
-                        for (int lev = 1; lev < nv; lev++) {
-
-                            pressure_h[i * nv + lev] = pressure_h[i * nv + lev] * (max_iter-2) / (max_iter-1) +
-                                (pressure_h[i * nv + 0] * pow(euler, (-(Altitude_h[lev]-Altitude_h[0])/scale_height))) / (max_iter-1);
-                            Rho_h[i * nv + lev] =
-                                    pressure_h[i * nv + lev] / (temperature_h[i * nv + lev] * Rd_h[i * nv + lev]);
-                                            
-                            
-                            
-                            //printf("pressure_h[i * nv + %d] = %e \n", lev, pressure_h[i * nv + lev]);
-                            //printf("Rho_h[i * nv + %d] = %e \n", lev, Rho_h[i * nv + lev]);
-                            //printf("temperature_h[i * nv + %d] = %e \n", lev, temperature_h[i * nv + lev]);
-                            if (iter < max_iter) {
-                                temperature_h[i * nv + lev] == 0.0;
-                            }
-                        }
-                        if (iter < max_iter) {
-                            temperature_h[i * nv + 0] == 0.0;
-                        }
-                        if (iter < max_iter) {
-                            Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, MetStar);
-                            //Parmentier_bilinear_interpolation_IC(i, nv, pressure_h, Tint, mu, Tirr,
-                                //OpaTableTemperature__h, OpaTablePressure__h, OpaTableKappa__h, sim.Gravit, temperature_h, table_num, MetStar);
-                        }
-                        if (iter < max_iter) {
-                            adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);        
-                            //bottum_up_adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit, Cp_h, Altitude_h, Cp_h, Rd_h,sim.P_Ref);
-                        }
-                        
-                        //printf("pressure_h[i * nv + nv - 1] = %e \n", pressure_h[i * nv + nv - 1]);
-                        //printf("Rho_h[i * nv + nv - 1] = %e \n", Rho_h[i * nv + nv - 1]);
-                        //printf("temperature_h[i * nv + nv - 1] = %e \n", temperature_h[i * nv + nv - 1]);
+                for (int lev = 0; lev < nv; lev++) {
+                    if (ultrahot_thermo != NO_UH_THERMO) {
+                        chi_H              = chi_H_equilibrium(GibbsT,
+                                                GibbsdG,
+                                                GibbsN,
+                                                temperature_h[i * nv + lev],
+                                                pressure_h[i * nv + lev]);
+                        Rd_h[i * nv + lev] = Rd_from_chi_H(chi_H);
                     }
+                    else {
+                        Rd_h[i * nv + lev] = sim.Rd;
+                    } 
+                    if (ultrahot_thermo != NO_UH_THERMO) {
+                        Cp_h[i * nv + lev] = Cp_from_chi_H(chi_H, temperature_h[i * nv + lev]);
+                    }
+                    else {
+                        Cp_h[i * nv + lev] = sim.Cp;
+                    }   
                 }
 
-                */
+
+                
+
+                  
 
                 
                 
@@ -944,132 +799,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                 
 
-                for (int j = 0; j < nv; j++)
-                {
-                    if (temperature_h[i * nv + j] < 0.0)
-                    {                
-                        printf("after adiabat_correction temperature_h[i] is negative at level %d \n", j);
-                        
-                    }
-                    if (temperature_h[i * nv + j] == 0.0)
-                    {                
-                        printf("after adiabat_correction temperature_h[i] is zero at level %d \n", j);
-                    }
-                    
-                    if (isnan(temperature_h[i * nv + j]))
-                    {                
-                        printf("after adiabat_correction temperature_h[i] is NaN at level %d  \n", j);
-                        
-                    }
-                }
-
-                /*
-                int nv_pressure_threshold;
-                int lapse_rate;
-
-                for (int lev = 0; lev < nv; lev++) {
-                    if (pressure_h[i * nv + lev]>10000){
-                        nv_pressure_threshold = lev;
-                    }
-                }
-
-                
-
-                lapse_rate = (temperature_h[i * nv + 0] - temperature_h[i * nv + nv_pressure_threshold]) /
-                    (log(pressure_h[i * nv + nv_pressure_threshold])/log(exp(1.0)) - log(pressure_h[i * nv + 0])/log(exp(1.0)));
-
-                for (int lev = 0; lev < nv_pressure_threshold; lev++) { 
-                    temperature_h[i * nv + lev] = 0.9*temperature_h[i * nv + lev] + 0.1 * (temperature_h[i * nv + 0] - 
-                    lapse_rate*(log(pressure_h[i * nv + lev])/log(exp(1.0)) - log(pressure_h[i * nv + 0])/log(exp(1.0))) );
-                }
-
-                */
-                /*
-                int delta_T;
-                int height_factor;
-                //int delta_P;               
-
-
-                for (int lev = 1; lev < nv; lev++) {
-                    height_factor = 0.90*(nv-lev)/(nv-1);
-                    delta_T = -sim.Gravit / ((Cp_h[i * nv + lev]+Cp_h[i * nv + lev-1])/2) * ((Altitude_h[lev]) - (Altitude_h[lev-1]));
-
-                    temperature_h[i * nv + lev] = 0.0 * temperature_h[i * nv + lev] + 1.0*(temperature_h[i * nv + lev-1] + height_factor*delta_T);
-
-                    //Rho_h[i * nv + lev] = pressure_h[i * nv + lev] / (Rd_h[i * nv + lev] * temperature_h[i * nv + lev]);
-
-                    //Rho_h[i * nv + lev] = (pressure_h[i * nv + lev-1] - pressure_h[i * nv + lev]) / ((Altitude_h[lev]) - (Altitude_h[lev-1])) / sim.Gravit;
-
 
                     
-                    //delta_P = -sim.Gravit * ((Rho_h[i * nv + lev] + Rho_h[i * nv + lev-1])/2) * ((Altitude_h[lev]) - (Altitude_h[lev-1])); 
-                    //pressure_h[i * nv + lev] =  pressure_h[i * nv + lev-1] + delta_P;
-                                    
-                }
-                */
-
-
-                /*
-                lapse_rate = (temperature_h[i * nv + 0] - temperature_h[i * nv + nv_pressure_threshold]) /
-                    (log10(Altitude_h[nv_pressure_threshold]) - log10(Altitude_h[0]));
-
-                for (int lev = 0; lev < nv_pressure_threshold; lev++) { 
-                    temperature_h[i * nv + lev] = temperature_h[i * nv + 0] - 
-                    lapse_rate*(log10(Altitude_h[lev]) - log10(Altitude_h[0]));
-                }
-                */
-
-
-                /*
-                for (int lev = 0; lev < nv; lev++) {
-                    if (ultrahot_thermo != NO_UH_THERMO) {
-                        chi_H              = chi_H_equilibrium(GibbsT,
-                                                GibbsdG,
-                                                GibbsN,
-                                                temperature_h[i * nv + lev],
-                                                pressure_h[i * nv + lev]);
-                        Rd_h[i * nv + lev] = Rd_from_chi_H(chi_H);
-                    }
-                    else {
-                        Rd_h[i * nv + lev] = sim.Rd;
-                    } 
-                    if (ultrahot_thermo != NO_UH_THERMO) {
-                        Cp_h[i * nv + lev] = Cp_from_chi_H(chi_H, temperature_h[i * nv + lev]);
-                    }
-                    else {
-                        Cp_h[i * nv + lev] = sim.Cp;
-                    }
-                    Rho_h[i * nv + lev] = pressure_h[i * nv + lev] / (Rd_h[i * nv + lev] * temperature_h[i * nv + lev]);
-                    //pressure_h[i * nv + lev] = (Rd_h[i * nv + lev] * temperature_h[i * nv + lev]) * Rho_h[i * nv + lev];
-                    
-                }
-                */
-                //Parmentier_IC(i, nv, pressure_h, Tint, mu, Tirr, sim.Gravit, temperature_h, table_num, met);
-
-                
-                    //adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
-                    for (int lev = 0; lev < nv; lev++) {
-                        if (ultrahot_thermo != NO_UH_THERMO) {
-                            chi_H              = chi_H_equilibrium(GibbsT,
-                                                    GibbsdG,
-                                                    GibbsN,
-                                                    temperature_h[i * nv + lev],
-                                                    pressure_h[i * nv + lev]);
-                            Rd_h[i * nv + lev] = Rd_from_chi_H(chi_H);
-                        }
-                        else {
-                            Rd_h[i * nv + lev] = sim.Rd;
-                        } 
-                        if (ultrahot_thermo != NO_UH_THERMO) {
-                            Cp_h[i * nv + lev] = Cp_from_chi_H(chi_H, temperature_h[i * nv + lev]);
-                        }
-                        else {
-                            Cp_h[i * nv + lev] = sim.Cp;
-                        }
-                        
-                        
-                        
-                    }
                 
 
                 ///// end of parmentier TP profile procedure
