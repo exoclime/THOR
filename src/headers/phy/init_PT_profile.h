@@ -463,13 +463,13 @@ void k_Ross_Freedman(double Tin, double Pin, double met, double& k_IR) {
     {
         k_hiP = c8_l + c9_l * Tl10 + c10_l * pow(Tl10, 2.0) +
             Pl10 * (c11_l + c12_l * Tl10) +
-            c13_l * met * (0.5 + onedivpi * atan((Tl10 - ((double)2.5)) / (double)0.2));
+            c13_l * met * (0.5 + onedivpi * atan((Tl10 - 2.5) / 0.2));
     }
     else
     {
         k_hiP = c8_h + c9_h * Tl10 +
             c10_h * pow(Tl10, 2.0) + Pl10 * (c11_h + c12_h * Tl10) +
-            c13_h * met * (0.5 + onedivpi * atan((Tl10 - ((double)2.5)) / (double)0.2));
+            c13_h * met * (0.5 + onedivpi * atan((Tl10 - 2.5) / 0.2));
     }
 
     // De log10
@@ -983,14 +983,30 @@ void Parmentier_IC_1D(const int nlay, double* pl, double Tint, double mu, double
     // start operations
 
     // Effective temperature parameter
-    Tmu = pow((mu * pow(Tirr, 4.0)), (1.0 / 4.0));
+    Tmu = pow(
+                (mu * pow(Tirr, 4.0)),
+                (1.0 / 4.0)
+             );
 
     // Find Bond albedo of planet - Bond albedo is given by mu = 1/sqrt(3)
-    Teff0 = pow(((pow(Tint, 4.0) + (1.0 / sqrt(((double)3.0))) * pow(Tirr, 4.0))), (1.0 / 4.0));
+    Teff0 = pow(
+                    (
+                        pow(Tint, 4.0) +
+                        (1.0 / sqrt(3.0)) * pow(Tirr, 4.0)
+                    ),
+                    (1.0 / 4.0)
+                );
+
     Bond_Parmentier_host(Teff0, grav, Bond);
 
     
-    Teff = pow((pow(Tint, 4.0) + (((double)1.0) - Bond) * mu * pow(Tirr, 4.0)), (1.0 / 4.0));
+    Teff =  pow(
+                    (
+                        pow(Tint, 4.0) +
+                        (1.0 - Bond) * mu * pow(Tirr, 4.0)
+                    ),
+                    (1.0 / 4.0)
+                );
 
 
     // Find the V band gamma, beta and IR gamma and beta ratios for this profile
@@ -1016,116 +1032,199 @@ void Parmentier_IC_1D(const int nlay, double* pl, double Tint, double mu, double
 
     a0 = 1.0 / gam_1 + 1.0 / gam_2;
 
-    a1 = -1.0 / (((double)3.0) * pow(tau_lim, 2.0)) * (gam_P / (1.0 - gam_P) *
-        (gam_1 + gam_2 - 2.0) / (gam_1 + gam_2) +
-        (gam_1 + gam_2) * tau_lim - (At1 + At2) * pow(tau_lim, 2.0));
+    a1 = -1.0 / (3.0 * pow(tau_lim, 2.0)) * 
+        (
+            gam_P / (1.0 - gam_P) *
+            (gam_1 + gam_2 - 2.0) / (gam_1 + gam_2) +
+            (gam_1 + gam_2) * tau_lim -
+            (At1 + At2) * pow(tau_lim, 2.0)
+        );
 
     for (i = 0; i < 3; i++)
     {
-        a2[i] = pow(tau_lim, 2.0) / (gam_P * pow(gam_V[i], 2.0)) *
-            ((3.0 * pow(gam_1, 2.0) - pow(gam_V[i], 2.0)) * (3.0 * pow(gam_2, 2.0) - pow(gam_V[i], 2.0)) *
-                (gam_1 + gam_2) - 3.0 * gam_V[i] * (6.0 * pow(gam_1, 2.0) * pow(gam_2, 2.0) - pow(gam_V[i], 2.0) *
-                    (pow(gam_1, 2.0) + pow(gam_2, 2.0)))) / (1.0 - pow(gam_V[i], 2.0) * pow(tau_lim, 2.0));
+            a2[i] = pow(tau_lim, 2) /
+                    (gam_P * pow(gam_V[i], 2)) *
+                    (
+                        (3.0*pow(gam_1, 2) - pow(gam_V[i],2)) * 
+                        (3.0*pow(gam_2, 2) - pow(gam_V[i], 2)) *
+                        (gam_1 + gam_2) - 3.0 * gam_V[i] *
+                        (
+                            6.0 * pow(gam_1, 2) * pow(gam_2, 2) - pow(gam_V[i], 2) *
+                            (pow(gam_1, 2) + pow(gam_2, 2))
+                        )
+                    ) /
+                    (1.0 - pow(gam_V[i],2) * pow(tau_lim, 2));
 
-        a3[i] = -pow(tau_lim, 2.0) * (3.0 * pow(gam_1, 2.0) - pow(gam_V[i], 2.0)) *
-            (3.0 * pow(gam_2, 2.0) - pow(gam_V[i], 2.0)) * (Av2[i] + Av1[i]) /
-            (gam_P * pow(gam_V[i], 3.0) * (1.0 - pow(gam_V[i], 2.0) * pow(tau_lim, 2.0)));
+            a3[i] = -pow(tau_lim,2) *
+                    (3.0 * pow(gam_1, 2) - pow(gam_V[i], 2)) *
+                    (3.0 * pow(gam_2, 2) - pow(gam_V[i], 2)) *
+                    (Av2[i] + Av1[i]) /
+                    (
+                        gam_P * pow(gam_V[i],3) *
+                        (1.0 - pow(gam_V[i], 2) * pow(tau_lim, 2))
+                    );            
 
-        b1[i] = gam_1 * gam_2 * (3.0 * pow(gam_1, 2.0) - pow(gam_V[i], 2.0)) * (3.0 * pow(gam_2, 2.0) -
-            pow(gam_V[i], 2.0)) * pow(tau_lim, 2) / (gam_P * pow(gam_V[i], 2.0) *
-                (pow(gam_V[i], 2.0) * pow(tau_lim, 2.0) - 1.0));
+            b1[i] = gam_1 * gam_2 *
+                    (3.0 * pow(gam_1, 2) - pow(gam_V[i], 2)) *
+                    (3.0 * pow(gam_2, 2) - pow(gam_V[i], 2)) *
+                    pow(tau_lim, 2) /
+                    (
+                        gam_P * pow(gam_V[i], 2) *
+                        (pow(gam_V[i], 2) * pow(tau_lim, 2) - 1.0)
+                    );
 
-        b2[i] = 3.0 * (gam_1 + gam_2) * pow(gam_V[i], 3.0) / ((3.0 * pow(gam_1, 2.0) - pow(gam_V[i], 2.0)) *
-            (3.0 * pow(gam_2, 2.0) - pow(gam_V[i], 2.0)));
+            b2[i] = 3.0 * (gam_1+gam_2) *
+                    pow(gam_V[i], 3) /
+                    (
+                        (3.0 * pow(gam_1, 2) - pow(gam_V[i], 2)) *
+                        (3.0 * pow(gam_2, 2) - pow(gam_V[i], 2))
+                    );
 
-        b3[i] = (Av2[i] - Av1[i]) / (gam_V[i] * (gam_1 - gam_2));
+            b3[i] = (Av2[i] - Av1[i]) /
+                    (gam_V[i] * (gam_1 - gam_2));
     }
 
-    b0 = 1.0 / (gam_1 * gam_2 / (gam_1 - gam_2) * (At1 - At2) / 3.0 - pow((gam_1 * gam_2), 2.0) /
-        sqrt(3.0 * gam_P) - pow((gam_1 * gam_2), 3.0) /
-        ((1.0 - gam_1) * (1.0 - gam_2) * (gam_1 + gam_2)));
+        b0 = 1.0 /
+            (
+                gam_1 * gam_2 / (gam_1 - gam_2) *
+                (At1 - At2) / 3.0 -
+                pow((gam_1 * gam_2), 2) /
+                sqrtl(3.0 * gam_P) - pow((gam_1 * gam_2), 3) /
+                ((1.0 - gam_1) * (1.0 - gam_2) * (gam_1 + gam_2))
+            );
 
-    A = 1.0 / ((double)3.0) * (a0 + a1 * b0);
-    B = -1.0 / ((double)3.0) * pow((gam_1 * gam_2), 2.0) / gam_P * b0;
+        A = 1.0 / 3.0 * (a0 + a1 * b0);
+        B = -1.0 / 3.0 * pow((gam_1 * gam_2), 2) / gam_P * b0;
 
     for (i = 0; i < 3; i++)
     {
-        C[i] = -1.0 / ((double)3.0) * (b0 * b1[i] * (1.0 + b2[i] + b3[i]) * a1 + a2[i] + a3[i]);
+            C[i] = -1.0 / 3.0 *
+                    (
+                        b0 * b1[i] * (1.0 + b2[i] + b3[i]) *
+                        a1 + a2[i] + a3[i]
+                    );
 
-        D[i] = 1.0 / ((double)3.0) * pow((gam_1 * gam_2), 2.0) / gam_P * b0 * b1[i] * (1.0 + b2[i] + b3[i]);
+            D[i] =  1.0 / 3.0 *
+                    pow((gam_1 * gam_2), 2) /
+                    gam_P * b0 * b1[i] *
+                    (1.0 + b2[i] + b3[i]);
 
-        E[i] = (3.0 - pow((gam_V[i] / gam_1), 2.0)) * (3.0 - pow((gam_V[i] / gam_2), 2.0)) /
-            (9.0 * gam_V[i] * (pow((gam_V[i] * tau_lim), 2.0) - 1.0));
+            E[i] =  (3.0 - pow((gam_V[i] / gam_1), 2)) *
+                    (3.0 - pow((gam_V[i] / gam_2), 2)) /
+                    (9.0 * gam_V[i] * 
+                    (pow((gam_V[i] * tau_lim), 2) - 1.0));
     }
 
     
     // T-p structure calculation - we follow exactly V. Parmentier's method
     // Estimate the skin temperature by setting tau = 0
-    tau[nlay-1] = kRoss[nlay-1] / grav * pl[nlay-1]; //   0.0;
+    tau[nlay-1] = 0.0; //kRoss[nlay-1] / grav * pl[nlay-1]; //   0.0;
     summy = 0.0;
     for (i = 0; i < 3; i++)
     {
-        summy += 3.0 * Beta_V[i] * pow(Tmu, 4.0) / 4.0 * (C[i] + D[i] * exp(-tau[nlay-1] / tau_lim) +
-            E[i] * exp(-gam_V[i] * tau[nlay-1]));
+        summy +=    3.0 * Beta_V[i] * pow(Tmu, 4) / 4.0 *
+                        (
+                            C[i] + D[i] * exp(-tau[0] / tau_lim) +
+                            E[i] * exp(-gam_V[i] * tau[0])
+                        );
     }
 
-    Tskin = 3.0 * pow(Tint, 4) / 4.0 * (tau[nlay-1] + A + B * exp(-tau[nlay-1] / tau_lim)) + summy;
+    Tskin = 3.0 * pow(Tint, 4) / 4.0 *
+            (
+                tau[nlay-1] + A + B *
+                exp(-tau[nlay-1] / tau_lim)
+            ) + summy;
+
     Tskin = pow(Tskin, (1.0 / 4.0));
 
     
     // Estimate the opacity TOA at the skin temperature - assume this is = first layer optacity
-    k_Ross_Freedman(Tskin, pl[nlay-1], met, kRoss[nlay-1]);
+    k_Ross_Freedman(Tskin, 
+                    pl[nlay-1], 
+                    met, 
+                    kRoss[nlay-1]);
 
 
     // Recalculate the upmost tau with new kappa
     tau[nlay-1] = kRoss[nlay-1] / grav * pl[nlay-1];
 
-    
-    
     // More accurate layer T at uppermost layer
     summy = 0.0;
     for (i = 0; i < 3; i++)
     {
-        summy += 3.0 * Beta_V[i] * pow(Tmu, 4.0) / 4.0 * (C[i] + D[i] * exp(-tau[nlay-1] / tau_lim) +
-            E[i] * exp(-gam_V[i] * tau[nlay-1]));
+        summy += 3.0 * Beta_V[i] * pow(Tmu, 4.0) / 4.0 *
+                (
+                    C[i] +
+                    D[i] * exp(-tau[nlay-1] / tau_lim) +
+                    E[i] * exp(-gam_V[i] * tau[nlay-1])
+                );
     }
     
-    Tl[nlay-1] = 3.0 * pow(Tint, 4) / 4.0 * (tau[nlay-1] + A + B * exp(-tau[nlay-1] / tau_lim)) + summy;
+    Tl[nlay-1] = 3.0 * pow(Tint, 4) / 4.0 *
+                (
+                    tau[nlay-1] + A + B *
+                    exp(-tau[nlay-1] / tau_lim)
+                ) + summy;
+
     Tl[nlay-1] = pow(Tl[nlay-1], (1.0 / 4.0));
 
-    
-
-    
     // Now we can loop in optical depth space to find the T-p profile
     for (i = nlay-2; i>-1; i--)
     {
         // Initial guess for layer
-        k_Ross_Freedman(Tl[i+1], sqrt(pl[i+1] * pl[i]), met, kRoss[i]);
+        k_Ross_Freedman(Tl[i+1],
+                        sqrt(pl[i+1] * pl[i]),
+                        met,
+                        kRoss[i]);
         
-        tau[i] = tau[i+1] + kRoss[i] / grav *  (pl[i] - pl[i+1]) ;
+        tau[i] =    tau[i+1] + kRoss[i] /
+                    grav *  (pl[i] - pl[i+1]) ;
     
         summy = 0.0;
         for (j = 0; j < 3; j++)
         {
-            summy = +3.0 * Beta_V[j] * pow(Tmu, 4.0) / 4.0 * (C[j] + D[j] * exp(-tau[i] / tau_lim) +
-                E[j] * exp(-gam_V[j] * tau[i]));
+            summy += 3.0 * Beta_V[j] *
+                    pow(Tmu, 4.0) / 4.0 *
+                    (
+                        C[j] + D[j] * exp(-tau[i] / tau_lim) +
+                        E[j] * exp(-gam_V[j] * tau[i])
+                    );
         }
-        Tl[i] = 3.0 * pow(Tint, 4.0) / 4.0 * (tau[i] + A + B * exp(-tau[i] / tau_lim)) + summy;
+        Tl[i] = 3.0 * pow(Tint, 4.0) / 4.0 *
+                (
+                    tau[i] + A + B *
+                    exp(-tau[i] / tau_lim)
+                ) + summy;
+
         Tl[i] = pow(Tl[i], (1.0 / 4.0));
 
         // Convergence loop
         for (j = 0; j < 5; j++)
         {
-            k_Ross_Freedman(sqrt(Tl[i+1] * Tl[i]), sqrt(pl[i+1] * pl[i]), met, kRoss[i]);
+            k_Ross_Freedman(sqrt(Tl[i+1] * Tl[i]),
+                            sqrt(pl[i+1] * pl[i]),
+                            met,
+                            kRoss[i]);
             
-            tau[i] = tau[i+1] + kRoss[i] / grav *  (pl[i] - pl[i+1]);
+            tau[i] =    tau[i+1] + kRoss[i] /
+                        grav *  (pl[i] - pl[i+1]);
             summy = 0.0;
             for (k = 0; k < 3; k++)
             {
-                summy += 3.0 * Beta_V[k] * pow(Tmu, 4.0) / 4.0 * (C[k] + D[k] * exp(-tau[i] / tau_lim) +
-                    E[k] * exp(-gam_V[k] * tau[i]));
+                summy +=    3.0 * Beta_V[k] *
+                            pow(Tmu, 4.0) / 4.0 *
+                            (
+                                C[k] + D[k] *
+                                exp(-tau[i] / tau_lim) +
+                                E[k] * exp(-gam_V[k] * tau[i])
+                            );
             }
-            Tl[i] = 3.0 * pow(Tint, 4.0) / 4.0 * (tau[i] + A + B * exp(-tau[i] / tau_lim)) + summy;
+            Tl[i] = 3.0 * pow(Tint, 4.0) / 4.0 *
+                    (
+                        tau[i] + A + B *
+                        exp(-tau[i] / tau_lim)
+                    ) + summy;
+
             Tl[i] = pow(Tl[i], (1.0 / 4.0));
         }
         
