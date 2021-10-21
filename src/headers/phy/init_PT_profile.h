@@ -664,7 +664,7 @@ void gam_Parmentier(double Teff, int table_num, double(&gam_V)[3], double(&Beta_
 
     // equivalent bandwidth value
     Beta[0] = aB + bB * l10T;
-    Beta[1] = (1.0) - Beta[0];
+    Beta[1] = 1.0 - Beta[0];
 
     // IR band kappa1/kappa2 ratio - Eq. 96 from Parmentier & Menou (2014)
     RT = (gam_P - 1.0) / (2.0 * Beta[0] * Beta[1]);
