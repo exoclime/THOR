@@ -1022,12 +1022,27 @@ void Parmentier_IC_1D(const int nlay, double* pl, double Tint, double mu, double
     }
 
     // Hard work starts here - first calculate all the required coefficents
-    At1 = pow(gam_1, 2.0) * log(1.0 + 1.0 / (tau_lim * gam_1));
-    At2 = pow(gam_2, 2.0) * log(1.0 + 1.0 / (tau_lim * gam_2));
+    At1 =   pow(gam_1, 2.0) * 
+            log(1.0 +
+                1.0 / (tau_lim * gam_1)
+                );
+
+    At2 =   pow(gam_2, 2.0) * 
+            log(1.0 +
+                1.0 / (tau_lim * gam_2)
+                );
+
     for (i = 0; i < 3; i++)
     {
-        Av1[i] = pow(gam_1, 2.0) * log(1.0 + gam_V[i] / gam_1);
-        Av2[i] = pow(gam_2, 2.0) * log(1.0 + gam_V[i] / gam_2);
+        Av1[i] =    pow(gam_1, 2.0) * 
+                    log(1.0 +
+                        gam_V[i] / gam_1
+                        );
+
+        Av2[i] =    pow(gam_2, 2.0) * 
+                    log(1.0 + 
+                        gam_V[i] / gam_2
+                        );
     }
 
     a0 = 1.0 / gam_1 + 1.0 / gam_2;
@@ -1101,7 +1116,8 @@ void Parmentier_IC_1D(const int nlay, double* pl, double Tint, double mu, double
             C[i] = -1.0 / 3.0 *
                     (
                         b0 * b1[i] * (1.0 + b2[i] + b3[i]) *
-                        a1 + a2[i] + a3[i]
+                        a1 +
+                        a2[i] + a3[i]
                     );
 
             D[i] =  1.0 / 3.0 *
@@ -1112,20 +1128,21 @@ void Parmentier_IC_1D(const int nlay, double* pl, double Tint, double mu, double
             E[i] =  (3.0 - pow((gam_V[i] / gam_1), 2)) *
                     (3.0 - pow((gam_V[i] / gam_2), 2)) /
                     (9.0 * gam_V[i] * 
-                    (pow((gam_V[i] * tau_lim), 2) - 1.0));
+                        (pow((gam_V[i] * tau_lim), 2) - 1.0)
+                    );
     }
 
     
     // T-p structure calculation - we follow exactly V. Parmentier's method
     // Estimate the skin temperature by setting tau = 0
-    tau[nlay-1] = 0.0; //kRoss[nlay-1] / grav * pl[nlay-1]; //   0.0;
+    tau[nlay-1] = 0.0; 
     summy = 0.0;
     for (i = 0; i < 3; i++)
     {
         summy +=    3.0 * Beta_V[i] * pow(Tmu, 4) / 4.0 *
                         (
-                            C[i] + D[i] * exp(-tau[0] / tau_lim) +
-                            E[i] * exp(-gam_V[i] * tau[0])
+                            C[i] + D[i] * exp(-tau[nlay-1] / tau_lim) +
+                            E[i] * exp(-gam_V[i] * tau[nlay-1])
                         );
     }
 
