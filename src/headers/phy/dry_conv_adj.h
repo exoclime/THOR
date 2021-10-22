@@ -442,9 +442,9 @@ __global__ void ray_dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
                         b   = (xim) / (xip + xim);
                         */
 
-                        xi  = Altitudeh_d[lev];
-                        xim = Altitude_d[lev - 1];
-                        xip = Altitude_d[lev];
+                        xi  = Altitudeh_d[i];
+                        xim = Altitude_d[i - 1];
+                        xip = Altitude_d[i];
                         a   = (xi - xip) / (xim - xip);
                         b   = (xi - xim) / (xip - xim);
                         
