@@ -430,15 +430,23 @@ __global__ void ray_dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
                     }
 
                     for (i = 1; i <nv; i++){
-                        Pressure_d[id * nv + i] = Rho_d[id * nv + i] * Rd_d[id * nv + i] * Temperature_d[id * nv + i];
+                        //Pressure_d[id * nv + i] = Rho_d[id * nv + i] * Rd_d[id * nv + i] * Temperature_d[id * nv + i];
                         // converve the mass might be better than hypsometric equation
 
-                        /*
+                        
                         // interpolation between layers
+                        /*
                         xim = Pressure_d[i - 1];
                         xip = Pressure_d[i];
                         a   = (xip) / (xim + xip);
                         b   = (xim) / (xip + xim);
+                        */
+
+                        xi  = Altitudeh_d[lev];
+                        xim = Altitude_d[lev - 1];
+                        xip = Altitude_d[lev];
+                        a   = (xi - xip) / (xim - xip);
+                        b   = (xi - xim) / (xip - xim);
                         
                         Pressure_d[id * nv + i] = Pressure_d[id * nv + i] + 
                             (   Pressure_d[id * nv + i - 1] *
@@ -454,7 +462,7 @@ __global__ void ray_dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
                                 Pressure_d[id * nv + i]
                             ) /
                             (timestep * itermax1) ;
-                        */
+                        
                         
                         
                     }

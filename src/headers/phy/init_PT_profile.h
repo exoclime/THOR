@@ -445,7 +445,7 @@ void k_Ross_Freedman(double Tin, double Pin, double met, double& k_IR) {
     // start operations
 
     T = Tin;
-    P = Pin * ((double)10.0); // Convert to dyne cm-2
+    P = Pin * 10.0; // Convert to dyne cm-2
 
 
     Tl10 = log10(T);
@@ -453,7 +453,9 @@ void k_Ross_Freedman(double Tin, double Pin, double met, double& k_IR) {
 
     // Low pressure expression
     k_lowP = c1 * atan(Tl10 - c2) -
-        (c3 / (Pl10 + c4)) * exp(pow((Tl10 - c5), 2.0)) + c6 * met + c7;
+        (c3 / (Pl10 + c4)) * 
+        exp(pow((Tl10 - c5), 2.0)) + 
+        c6 * met + c7;
 
     // De log10
     k_lowP = pow(((double)10.0), k_lowP);
