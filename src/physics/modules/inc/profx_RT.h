@@ -576,6 +576,60 @@ __global__ void rtm_dual_band(double *pressure_d,
 //////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////
 
+__device__ void bezier_interp(int iter, double* xi, double* yi, double x, double &y) {
+
+    double dx, dx1, dy, dy1;
+    double w, yc, t;
+    //xc = (xi(1) + xi(2))/2.0_dp ! Control point (no needed here, implicitly included)
+    dx = xi[iter] - xi[iter + 1];
+    dx1 = xi[iter - 1] - xi[iter];
+    dy = yi[iter] - yi[iter + 1];
+    dy1 = yi[iter - 1] - yi[iter];
+
+    if (x > xi[iter + 1] && x < xi[iter])
+    {
+        // left hand side interpolation
+        w   =   dx1 / (dx + dx1);
+
+        yc  =   yi[iter] -
+                dx / 2.0 * 
+                (
+                    w * dy / dx + 
+                    (1.0 - w) * dy1 / dx1
+                );
+
+        t   =   (x - xi[iter + 1]) / dx;
+
+        y   =   pow(1.0 - t, 2) * yi[iter + 1] + 
+                2.0 * t * (1.0 - t) * yc + 
+                pow(t, 2) * yi[iter];
+    } else
+    {
+        // right hand side interpolation
+        w   =   dx / (dx + dx1);
+
+        yc  =   yi[iter] + 
+                dx1 / 2.0 * 
+                (
+                    w * dy1 / dx1 +
+                    (1.0 - w) * dy / dx
+                );
+
+        t   =   (x - xi[iter]) / (dx1);
+
+        y   =   pow(1.0 - t, 2) * yi[iter] + 
+                2.0 * t * (1.0 - t) * yc + 
+                pow(t, 2) * yi[iter - 1];
+
+    }
+}
+
+
+ 
+
+
+//////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////
 
 // Calculates the IR band Rosseland mean opacity (local T) according to the
 // Freedman et al. (2014) fit and coefficents
@@ -801,7 +855,7 @@ __device__ void kernel_k_Ross_Freedman_bilinear_interpolation_polynomial_fit(dou
 __device__  void linear_log_interp(int id,
     int i,
     int nlay,
-    int nlay1,
+    int nlev,
     double *Altitude_d,
     double *Altitudeh_d, 
     double *Tl,
@@ -827,41 +881,10 @@ __device__  void linear_log_interp(int id,
 
     norm = (1.0) / (lAlt2 - lAlt1);
 
-    Te__df_e[id * nlay1 + i + 1] = pow((double)(10.0), ( (lTl1 * (lAlt2 - eAlt) + lTl2 * (eAlt - lAlt1)) * norm) );
+    Te__df_e[id * nlev + i + 1] = pow((double)(10.0), ( (lTl1 * (lAlt2 - eAlt) + lTl2 * (eAlt - lAlt1)) * norm) );
 }
 
-///////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////
 
-/*
-__device__  void linear_interp(int id,
-    int i,
-    int nlay,
-    int nlay1,
-    double *Altitude_d,
-    double *Altitudeh_d, 
-    double *Tl,
-    double *Te__df_e) {
-    // dependcies
-    //// pow from math
-    //// log10 from math
-
-    // work variables
-    
-    double ContributionFactorFromBelow;
-    double ContributionFactorFromAbove;
-    
-
-
-    // start operations
-    ContributionFactorFromBelow = (Altitudeh_d[lev] - Altitude_d[lev]) / (Altitude_d[lev - 1] - Altitude_d[lev]);
-    ContributionFactorFromAbove =  (Altitudeh_d[lev] - Altitude_d[lev - 1]) / (Altitude_d[lev] - Altitude_d[lev - 1]);
-
-    Te__df_e[id * nlay1 + i] = Tl[id * nlay + i-1] * ContributionFactorFromBelow    +   Tl[id * nlay + i] * ContributionFactorFromAbove;
-
-}
-
-*/
 
 ///////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////
@@ -1167,19 +1190,17 @@ __device__  void lw_grey_updown_linear(int id,
 ///////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////
 
-// before called ts_short_char
 
 
 
     __device__ void ts_short_char(int id,
         const int nlay,
-        const int nlay1,
+        const int nlev,
         double *Altitude_d,
         double *Altitudeh_d,
         double *Rho_d,
         double *Tl,
         double *pl,
-        double *pe,
         double *k_V_3_nv_d,
         double *k_IR_2_nv_d,
         double *Beta_V_3_d,
@@ -1194,6 +1215,7 @@ __device__  void lw_grey_updown_linear(int id,
         double *tau_Ve__df_e,
         double *tau_IRe__df_e,
         double *Te__df_e,
+        bool    bezier,
         double *be__df_e, 
         double *sw_down__df_e,
         double *sw_down_b__df_e,
@@ -1221,7 +1243,7 @@ __device__  void lw_grey_updown_linear(int id,
         //// powll -> include math
         //// log10f -> include math
         //// nlay -> layers
-        //// nlay1 -> layers +1
+        //// nlev -> layers +1
         //// linear_log_interp -> function
         //// tau_struct -> function
         //// sw_grey_down -> function
@@ -1233,15 +1255,64 @@ __device__  void lw_grey_updown_linear(int id,
 
         // work variables
         double Finc_B;
+        double out;
        
         // start operation
-        double out;
-
-        // Shortwave fluxes
-        for (int i = 0; i < nlay1; i++)
+        
+        ///////////////////
+        // Find temperature at layer edges through interpolation and extrapolation
+        if (bezier)
         {
-            sw_down__df_e[id * nlay1 + i] = 0.0;
-            sw_up__df_e[id * nlay1 + i] = 0.0;
+            //  Perform interpolation using Bezier peicewise polynomial interpolation
+
+            for (int i = nlay-2; i > 0; i--)
+            {
+                bezier_interp(i, Altitude_d, Tl, Altitudeh_d[i], Te__df_e[i]);
+            }
+            
+            bezier_interp(nlay-2, Altitude_d, Tl, Altitudeh_d[nlay-1], Te__df_e[nlay-1]);
+
+        } else
+        {
+            //Perform interpolation using linear interpolation
+            
+            for (int i = nlay-2; i > -1; i--) {
+                linear_log_interp(Altitudeh_d[i], Altitude_d[i + 1], Altitude_d[i], Tl[i + 1], Tl[i], Te__df_e[i]);
+            }
+        }
+
+        //  Edges are linearly interpolated
+
+        Te[nlev - 1] =  pow( 10.0,
+                            (
+                                log10(Tl[nlay - 1]) + 
+                                (
+                                    log10(Altitude_d[nlay - 1] / Altitudeh_d[nlev - 2]) /
+                                    log10(Altitudeh_d[nlev - 1] / Altitudeh_d[nlev - 2])
+                                   
+                                ) * log10(Tl[nlay - 1] / Te[nlev - 2])
+                            )
+                        );
+
+        Te[0] =         pow( 10.0,
+                            (
+                                log10(Tl[0]) +
+                                (
+                                    log10(Altitude_d[0] / Altitudeh_d[1]) /
+                                    log10(Altitudeh_d[0] / Altitudeh_d[1])
+                                    
+                                ) * log10(Tl[0] / Te[1])
+                            )
+                        );
+        
+        
+        ///////////////////
+        // Shortwave fluxes
+
+        for (int i = 0; i < nlev; i++)
+        {
+            sw_down__df_e[id * nlev + i] = 0.0;
+            sw_up__df_e[id * nlev + i] = 0.0;
         }
         for (int channel = 0; channel < 3; channel++)
         {
@@ -1252,7 +1323,7 @@ __device__  void lw_grey_updown_linear(int id,
             {
                 // Find the opacity structure
                 tau_struct(id,
-                    nlay1,
+                    nlev,
                     Rho_d,
                     pl,
                     grav,
@@ -1271,7 +1342,7 @@ __device__  void lw_grey_updown_linear(int id,
 
                 
                 sw_grey_down(id,
-                    nlay1,
+                    nlev,
                     Finc_B,
                     tau_Ve__df_e,
                     sw_down_b__df_e,
@@ -1281,19 +1352,19 @@ __device__  void lw_grey_updown_linear(int id,
             {
                 //printf("sw darkside\n");
 
-                for (int i = nlay1-1; i >-1; i--)
+                for (int i = nlev-1; i >-1; i--)
                 {
-                    sw_down_b__df_e[id * nlay1 + i] = 0.0;
-                    tau_Ve__df_e[id * nlay1 + i] = 1.0;
+                    sw_down_b__df_e[id * nlev + i] = 0.0;
+                    tau_Ve__df_e[id * nlev + i] = 1.0;
                 }
                 
             }
             
 
             // Sum all bands
-            for (int i = 0; i < nlay1; i++)
+            for (int i = 0; i < nlev; i++)
             {
-                sw_down__df_e[id * nlay1 + i] = sw_down__df_e[id * nlay1 + i] + sw_down_b__df_e[id * nlay1 + i];
+                sw_down__df_e[id * nlev + i] = sw_down__df_e[id * nlev + i] + sw_down_b__df_e[id * nlev + i];
                
             }
         }
@@ -1302,19 +1373,19 @@ __device__  void lw_grey_updown_linear(int id,
         
 
         // Long wave two-stream fluxes
-        for (int i = 0; i < nlay1; i++)
+        for (int i = 0; i < nlev; i++)
         {
-            lw_down__df_e[id * nlay1 + i] = 0.0;
-            lw_up__df_e[id * nlay1 + i] = 0.0;
+            lw_down__df_e[id * nlev + i] = 0.0;
+            lw_up__df_e[id * nlev + i] = 0.0;
             
-            lw_up_b__df_e[id * nlay1 + i] = 0.0;
-            lw_down_b__df_e[id * nlay1 + i] = 0.0;
+            lw_up_b__df_e[id * nlev + i] = 0.0;
+            lw_down_b__df_e[id * nlev + i] = 0.0;
         }
         for (int channel = 0; channel < 2; channel++)
         {
             // Find the opacity structure
             tau_struct(id,
-            nlay1,
+            nlev,
             Rho_d,
             pl,
             grav,
@@ -1328,9 +1399,9 @@ __device__  void lw_grey_updown_linear(int id,
             //printf("tau_struct finished\n");
 
             // Blackbody fluxes (note divide by pi for correct units)
-            for (int i = 0; i < nlay1; i++)
+            for (int i = 0; i < nlev; i++)
             {
-                be__df_e[id * nlay1 + i] = StBC * pow((Te__df_e[id * nlay1 + i]), 4.0) / pi * Beta_2_d[id * 2 + channel];
+                be__df_e[id * nlev + i] = StBC * pow((Te__df_e[id * nlev + i]), 4.0) / pi * Beta_2_d[id * 2 + channel];
 
             }
 
@@ -1340,7 +1411,7 @@ __device__  void lw_grey_updown_linear(int id,
             // Calculate lw flux
             lw_grey_updown_linear(id,
                 nlay,
-                nlay1,
+                nlev,
                 be__df_e,
                 tau_IRe__df_e,
                 lw_up_b__df_e,
@@ -1363,20 +1434,20 @@ __device__  void lw_grey_updown_linear(int id,
 
 
             // Sum all bands
-            for (int i = 0; i < nlay1; i++)
+            for (int i = 0; i < nlev; i++)
             {
-                lw_up__df_e[id * nlay1 + i] = lw_up__df_e[id * nlay1 + i] + lw_up_b__df_e[id * nlay1 + i];
-                lw_down__df_e[id * nlay1 + i] = lw_down__df_e[id * nlay1 + i] + lw_down_b__df_e[id * nlay1 + i];
+                lw_up__df_e[id * nlev + i] = lw_up__df_e[id * nlev + i] + lw_up_b__df_e[id * nlev + i];
+                lw_down__df_e[id * nlev + i] = lw_down__df_e[id * nlev + i] + lw_down_b__df_e[id * nlev + i];
             }
 
         }
 
         // Net fluxes
-        for (int i = 0; i < nlay1; i++)
+        for (int i = 0; i < nlev; i++)
         {
-            lw_net__df_e[id * nlay1 + i] = lw_down__df_e[id * nlay1 + i] - lw_up__df_e[id * nlay1 + i] ;
-            sw_net__df_e[id * nlay1 + i] =  sw_down__df_e[id * nlay1 + i] - sw_up__df_e[id * nlay1 + i];
-            net_F_nvi_d[id * nlay1 + i] = lw_net__df_e[id * nlay1 + i] + sw_net__df_e[id * nlay1 + i];
+            lw_net__df_e[id * nlev + i] = lw_down__df_e[id * nlev + i] - lw_up__df_e[id * nlev + i] ;
+            sw_net__df_e[id * nlev + i] =  sw_down__df_e[id * nlev + i] - sw_up__df_e[id * nlev + i];
+            net_F_nvi_d[id * nlev + i] = lw_net__df_e[id * nlev + i] + sw_net__df_e[id * nlev + i];
         }
 
     
@@ -1445,6 +1516,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
                               double *tau_Ve__df_e,
                               double *tau_IRe__df_e,
                               double *Te__df_e,
+                              bool    bezier,
                               double *be__df_e, 
                               double *sw_down__df_e,
                               double *sw_down_b__df_e,
@@ -1507,107 +1579,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
             
             dtemp[id * nv + lev] = 0.0;
         }
-        
-        
-
-       double ContributionFactorFromBelow;
-       double ContributionFactorFromAbove;
-
-        for (int lev = 0; lev <= nv; lev++) {
-            if (lev == 0) {
-                psm = pressure_d[id * nv + 1]
-                      - Rho_d[id * nv + 0] * gravit * (-Altitude_d[0] - Altitude_d[1]);
-                ps = 0.5 * (pressure_d[id * nv + 0] + psm);
-
-                pressureh_d[id * nvi + 0] = ps;
-
-                //Te__df_e[id * nvi + 0] = pow((pi*tint/StBC),0.25);
-
-                /*
-                Te__df_e[id * nvi + 0] = 2 * (gravit * (Altitude_d[0] - Altitudeh_d[0])) /
-                    (
-                        Rd_d[id * nv + 0] *
-                        log(
-                            pressureh_d[id * nvi + 0] / 
-                            pressure_d[id * nvi + 0]
-                        ) /
-                        log(euler)
-                    ) -
-                    temperature_d[id * nv + 0];
-                */
                 
-            } else if (lev == nv)
-            {
-                pp = pressure_d[id * nv + nv - 2]
-                     + (pressure_d[id * nv + nv - 1] - pressure_d[id * nv + nv - 2])
-                           / (Altitude_d[nv - 1] - Altitude_d[nv - 2])
-                           * (2 * Altitudeh_d[nv] - Altitude_d[nv - 1] - Altitude_d[nv - 2]);
-                if (pp < 0)
-                    pp = 0; //prevents pressure at the top from becoming negative
-                ptop = 0.5 * (pressure_d[id * nv + nv - 1] + pp);
-
-                pressureh_d[id * nvi + nv] = ptop;
-                
-                
-                pp = temperature_d[id * nv + nv - 2]
-                     + (temperature_d[id * nv + nv - 1] - temperature_d[id * nv + nv - 2])
-                           / (Altitude_d[nv - 1] - Altitude_d[nv - 2])
-                           * (2 * Altitudeh_d[nv] - Altitude_d[nv - 1] - Altitude_d[nv - 2]);
-                if (pp < 0)
-                    pp = 0; //prevents temperature at the top from becoming negative
-                ptop = 0.5 * (temperature_d[id * nv + nv - 1] + pp);
-
-                Te__df_e[id * nvi + nv] = ptop;
-                
-                /*
-                Te__df_e[id * nvi + 0] = 2 * (gravit * (Altitudeh_d[nvi - 1] -  Altitude_d[nv - 1])) /
-                    (
-                        Rd_d[id * nv + 0] *
-                        log(
-                            pressure_d[id * nvi + nv - 1] /
-                            pressureh_d[id * nvi + nvi - 1]                            
-                        ) /
-                        log(euler)
-                    ) -
-                    temperature_d[id * nv + nv];
-                */
-               
-            } else
-            {
-                
-                // interpolation between layers
-                xi  = Altitudeh_d[lev];
-                xim = Altitude_d[lev - 1];
-                xip = Altitude_d[lev];
-                a   = (xi - xip) / (xim - xip);
-                b   = (xi - xim) / (xip - xim);
-
-                pressureh_d[id * nvi + lev] =
-                            pressure_d[id * nv + lev - 1] * a + pressure_d[id * nv + lev] * b;
-
-                // interpolation between layers
-                /*
-                xi  = pressureh_d[lev];
-                xim = pressure_d[lev - 1];
-                xip = pressure_d[lev];
-                a   = (xi - xip) / (xim - xip);
-                b   = (xi - xim) / (xip - xim);
-
-                
-                Te__df_e[id * nvi + lev] =
-                            temperature_d[id * nv + lev - 1] * a + temperature_d[id * nv + lev] * b;
-                */
-                
-               Te__df_e[id * nvi + lev] = pressureh_d[id * nvi + lev] /
-                    (
-                        (Rho_d[id * nv + lev - 1] * b + Rho_d[id * nv + lev] * a) *
-                        (Rd_d[id * nv + lev - 1] * b + Rd_d[id * nv + lev] * a)
-                    );
-                
-            }
-        }
-
-        
         // rescale zenith angel
         /*
         double TransPolAngle;
@@ -1615,10 +1587,6 @@ __global__ void rtm_picket_fence(double *pressure_d,
         zenith_angles[id] = (zenith_angles[id] + TransPolAngle) / (1 + TransPolAngle);
         */
         
-
-
-
-
 
         // kappa calculation loop here if using non-constant kappa
         for (int level = 0; level < nv; level++)
@@ -1631,9 +1599,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 met,
                 k_IR_2_nv_d[id * nv * 2 + 0 * nv + level]);
 
-            
 
-            
             /*   
             kernel_k_Ross_Freedman_bilinear_interpolation_polynomial_fit(temperature_d[id * nv + level],
                 pressure_d[id * nv + level],
@@ -1665,9 +1631,9 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 k_IR_2_nv_d[id * nv * 2 + 0 * nv + level] = k_IR_2_nv_d[id * nv * 2 + 0 * nv + level] * gam_1_d[id];
 
                 k_IR_2_nv_d[id * nv * 2 + 1 * nv + level] = k_IR_2_nv_d[id * nv * 2 + 1 * nv + level] + 
-                    k_IR_2_nv_d[id * nv * 2 + 1 * nv + level]*(kappa_lw_pole / kappa_lw) * pow(sin(lonlat_d[id * 2 + 1]), 2);
+                    k_IR_2_nv_d[id * nv * 2 + 1 * nv + level] * (kappa_lw_pole / kappa_lw) * pow(sin(lonlat_d[id * 2 + 1]), 2);
                 k_IR_2_nv_d[id * nv * 2 + 0 * nv + level] = k_IR_2_nv_d[id * nv * 2 + 0 * nv + level] +
-                    k_IR_2_nv_d[id * nv * 2 + 0 * nv + level]*(kappa_lw_pole / kappa_lw) * pow(sin(lonlat_d[id * 2 + 1]), 2);
+                    k_IR_2_nv_d[id * nv * 2 + 0 * nv + level] * (kappa_lw_pole / kappa_lw) * pow(sin(lonlat_d[id * 2 + 1]), 2);
             }
             else {
                 k_IR_2_nv_d[id * nv * 2 + 1 * nv + level] = k_IR_2_nv_d[id * nv * 2 + 0 * nv + level] * gam_2_d[id];
@@ -1681,26 +1647,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
         
         if (zenith_angles[id] > 0.0 ) { //&& zenith_angles[id] < 0.3) {
         //if (id==340) {
-            //printf("Teff[%d] = %e \n", 0, Teff[0]);
-            
-
-            for (int channel = 0; channel < 3; channel++)
-            {
-                for (int level = 0; level < nv; level++)
-                {
-                    //k_V_3_nv_d[id * nv * 3 + channel * nv + level] = k_IR_2_nv_d[id * nv * 2 + 0 * nv + level] * gam_V_3_d[id * 3 + channel];
-                    //printf("k_V_3_nv_d[id * nv *3 + %d * nv + %d] = %e \n", channel, level, k_V_3_nv_d[id * nv * 3 + channel * nv + level]);
-                }
-            }
-            for (int channel = 0; channel < 2; channel++)
-            {
-                for (int level = 0; level < nv; level++)
-                {
-                    //printf("k_IR_2_nv_d[id * nv *2 + %d * nv + %d] = %e \n", channel, level, k_IR_2_nv_d[id * nv * 2 + channel * nv + level]);
-                }
-            }
-
-            
+                                    
             flux_top = (1.0 - AB_d[id]) *  F0_d ; // * (1-alb);
             insol_d[id] = flux_top;
 
@@ -1712,7 +1659,6 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 Rho_d,
                 temperature_d,
                 pressure_d,
-                pressureh_d,
                 k_V_3_nv_d,
                 k_IR_2_nv_d,
                 Beta_V_3_d,
@@ -1727,6 +1673,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 tau_Ve__df_e,
                 tau_IRe__df_e,
                 Te__df_e,
+                bezier,
                 be__df_e, 
                 sw_down__df_e,
                 sw_down_b__df_e,
@@ -1764,7 +1711,6 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 Rho_d,
                 temperature_d,
                 pressure_d,
-                pressureh_d,
                 k_V_3_nv_d,
                 k_IR_2_nv_d,
                 Beta_V_3_d,
@@ -1779,6 +1725,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 tau_Ve__df_e,
                 tau_IRe__df_e,
                 Te__df_e,
+                bezier,
                 be__df_e, 
                 sw_down__df_e,
                 sw_down_b__df_e,

@@ -823,7 +823,8 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
     }
 
     if (run) {
-        double picket_fence_mod = true;
+        bool picket_fence_mod = true;
+        bool bezier = true;
         double Tirr;
         double F0_h;
         double const sb = 5.670374419e-8;
@@ -1024,7 +1025,8 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                 AB_d,
                 tau_Ve__df_e, //Kitzman working variables
                 tau_IRe__df_e, 
-                Te__df_e, 
+                Te__df_e,
+                bezier, 
                 be__df_e, 
                 sw_down__df_e,
                 sw_down_b__df_e,

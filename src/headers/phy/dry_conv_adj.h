@@ -302,7 +302,7 @@ __global__ void ray_dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
         int  iter   = 0;
         bool repeat = true; //will repeat entire
 
-        bool ray_mode = true;
+        bool ray_mode = false;
 
         if (ray_mode == true)
         {
@@ -329,6 +329,38 @@ __global__ void ray_dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
             for (i = 0; i <nv; i++){
                     dT_conv_d[id * nv + i] =  Temperature_d[id * nv + i];
             }
+
+            for (int lev = 0; lev <= nv; lev++) {
+                        if (lev == 0) {
+                            // extrapolate to lower boundary
+                            psm = Pressure_d[id * nv + 1]
+                                - Rho_d[id * nv + 0] * Gravit * (-Altitude_d[0] - Altitude_d[1]);
+                            ps                             = 0.5 * (Pressure_d[id * nv + 0] + psm);
+                            Pressureh_d[id * (nv + 1) + 0] = ps;
+                        }
+                        else if (lev == nv) {
+                            // extrapolate to top boundary
+                            pp = Pressure_d[id * nv + nv - 2]
+                                - Rho_d[id * nv + nv - 1] * Gravit
+                                    * (2 * Altitudeh_d[nv] - Altitude_d[nv - 1] - Altitude_d[nv - 2]);
+                            if (pp < 0)
+                                pp = 0; //prevents pressure from going negative
+                            ptop                             = 0.5 * (Pressure_d[id * nv + nv - 1] + pp);
+                            Pressureh_d[id * (nv + 1) + lev] = ptop;
+                        }
+                        else {
+                            // interpolation between layers
+                            xi  = Altitudeh_d[lev];
+                            xim = Altitude_d[lev - 1];
+                            xip = Altitude_d[lev];
+                            a   = (xi - xip) / (xim - xip);
+                            b   = (xi - xim) / (xip - xim);
+                            Pressureh_d[id * (nv + 1) + lev] =
+                                Pressure_d[id * nv + lev - 1] * a + Pressure_d[id * nv + lev] * b;
+                        }
+
+                    }
+            
             // start operations
             while ((repeat == true) && (iter < itermax1))
             {
@@ -340,12 +372,20 @@ __global__ void ray_dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
                     // Downward pass
                     for (i = nv - 1; i > 0; i--){
                         
-
+                        /*
                         d_p = Rho_d[id * nv + i] * Gravit * (Altitudeh_d[i+1] - Altitudeh_d[i]);
                         d_p_lower = Rho_d[id * nv + i-1] * Gravit * (Altitudeh_d[i] - Altitudeh_d[i-1]);
                         d_p_pfact = Rho_d[id * nv + i-1] * Gravit * (Altitude_d[i] - Altitude_d[i-1]);
 
                         pfact = pow( ( (Pressure_d[id * nv + i - 1] - d_p_pfact) / Pressure_d[id * nv + i - 1]) ,
+                                Rd_d[id * nv + i-1] / Cp_d[id * nv + i-1]);
+                        condi = (dT_conv_d[id * nv + i - 1]  * pfact - small);
+                        */
+
+                        d_p = Pressureh_d[id * (nv + 1) + i] - Pressureh_d[id * (nv + 1) + i + 1];
+                        d_p_lower = Pressureh_d[id * (nv + 1) + i - 1] - Pressureh_d[id * (nv + 1) + i];
+
+                        pfact = pow( ( Pressure_d[id * nv + i] / Pressure_d[id * nv + i - 1]) ,
                                 Rd_d[id * nv + i-1] / Cp_d[id * nv + i-1]);
                         condi = (dT_conv_d[id * nv + i - 1]  * pfact - small);
 
@@ -367,8 +407,7 @@ __global__ void ray_dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
 
                     // Upward pass
                     for (i = 1; i < nv; i++) { 
-                        //d_T_lower = Temperature_d[id * nv + i - 1];
-                        //d_T = Temperature_d[id * nv + i];
+                        /*
                         d_p = Rho_d[id * nv + i] * Gravit * (Altitudeh_d[i+1] - Altitudeh_d[i]);
                         d_p_lower = Rho_d[id * nv + i-1] * Gravit * (Altitudeh_d[i] - Altitudeh_d[i-1]);
                         d_p_pfact = Rho_d[id * nv + i-1] * Gravit * (Altitude_d[i] - Altitude_d[i-1]);
@@ -376,6 +415,14 @@ __global__ void ray_dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
                         pfact = pow( ( (Pressure_d[id * nv + i - 1] - d_p_pfact) / Pressure_d[id * nv + i - 1]) ,
                                 Rd_d[id * nv + i-1] / Cp_d[id * nv + i-1]);
                         condi = (dT_conv_d[id * nv + i - 1] * pfact - small);
+                        */
+
+                        d_p = Pressureh_d[id * (nv + 1) + i] - Pressureh_d[id * (nv + 1) + i + 1];
+                        d_p_lower = Pressureh_d[id * (nv + 1) + i - 1] - Pressureh_d[id * (nv + 1) + i];
+
+                        pfact = pow( ( Pressure_d[id * nv + i] / Pressure_d[id * nv + i - 1]) ,
+                                Rd_d[id * nv + i-1] / Cp_d[id * nv + i-1]);
+                        condi = (dT_conv_d[id * nv + i - 1]  * pfact - small);
 
                         if (dT_conv_d[id * nv + i] < condi) {
 
