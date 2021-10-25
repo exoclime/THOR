@@ -1909,14 +1909,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
         //printf("rscale is computed\n");
 
         
-        if (id == 430)
-        {
-            
-            for (int level = 0; level < nvi; level++)
-            {
-                printf("Te__df_e[id * nvi + %d] = %e\n", level, Te__df_e[id * nvi + level] );
-            }
-        }
+       
         
         
         
@@ -2054,7 +2047,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
 
                 if (sw_down__df_e[id * nvi + level] == 0.0  ) {
 
-                    printf("sw_down__df_e has a zero at the level:%u\n", level);                  
+                    //printf("sw_down__df_e has a zero at the level:%u\n", level);                  
                     for (int lev = 0; lev < nvi; lev++)
                     {
                         //printf("sw_down__df_e has NaNs at the level:%u\n", lev);
