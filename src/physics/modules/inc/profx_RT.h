@@ -1266,23 +1266,37 @@ __device__  void lw_grey_updown_linear(int id,
 
             for (int i = nlay-2; i > 0; i--)
             {
-                bezier_interp(i, Altitude_d, Tl, Altitudeh_d[i], Te__df_e[i]);
+                bezier_interp(  i,
+                                Altitude_d, 
+                                Tl, 
+                                Altitudeh_d[i], 
+                                Te__df_e[i]);
             }
             
-            bezier_interp(nlay-2, Altitude_d, Tl, Altitudeh_d[nlay-1], Te__df_e[nlay-1]);
+            bezier_interp(  nlay-2, 
+                            Altitude_d,
+                            Tl, 
+                            Altitudeh_d[nlay-1], 
+                            Te__df_e[nlay-1]);
 
         } else
         {
             //Perform interpolation using linear interpolation
             
             for (int i = nlay-2; i > -1; i--) {
-                linear_log_interp(i, nlay, nlev, Altitude_d, Altitudeh_d, Tl, Te__df_e);
+                linear_log_interp(  i,
+                                    nlay, 
+                                    nlev, 
+                                    Altitude_d, 
+                                    Altitudeh_d, 
+                                    Tl, 
+                                    Te__df_e);
             }
         }
 
         //  Edges are linearly interpolated
 
-        Te[nlev - 1] =  pow( 10.0,
+        Te__df_e[nlev - 1] =  pow( 10.0,
                             (
                                 log10(Tl[nlay - 1]) + 
                                 (
@@ -1293,7 +1307,7 @@ __device__  void lw_grey_updown_linear(int id,
                             )
                         );
 
-        Te[0] =         pow( 10.0,
+        Te__df_e[0] =         pow( 10.0,
                             (
                                 log10(Tl[0]) +
                                 (
