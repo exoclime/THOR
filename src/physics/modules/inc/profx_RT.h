@@ -1284,7 +1284,8 @@ __device__  void lw_grey_updown_linear(int id,
             //Perform interpolation using linear interpolation
             
             for (int i = nlay-2; i > -1; i--) {
-                linear_log_interp(  i,
+                linear_log_interp(  id,
+                                    i,
                                     nlay, 
                                     nlev, 
                                     Altitude_d, 
