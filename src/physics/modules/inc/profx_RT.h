@@ -1255,7 +1255,6 @@ __device__  void lw_grey_updown_linear(int id,
 
         // work variables
         double Finc_B;
-        double out;
        
         // start operation
         
@@ -1277,7 +1276,7 @@ __device__  void lw_grey_updown_linear(int id,
             //Perform interpolation using linear interpolation
             
             for (int i = nlay-2; i > -1; i--) {
-                linear_log_interp(Altitudeh_d[i], Altitude_d[i + 1], Altitude_d[i], Tl[i + 1], Tl[i], Te__df_e[i]);
+                linear_log_interp(i, nlay, nlev, Altitude_d, Altitudeh_d, Tl, Te__df_e);
             }
         }
 
@@ -1290,7 +1289,7 @@ __device__  void lw_grey_updown_linear(int id,
                                     log10(Altitude_d[nlay - 1] / Altitudeh_d[nlev - 2]) /
                                     log10(Altitudeh_d[nlev - 1] / Altitudeh_d[nlev - 2])
                                    
-                                ) * log10(Tl[nlay - 1] / Te[nlev - 2])
+                                ) * log10(Tl[nlay - 1] / Te__df_e[nlev - 2])
                             )
                         );
 
@@ -1301,7 +1300,7 @@ __device__  void lw_grey_updown_linear(int id,
                                     log10(Altitude_d[0] / Altitudeh_d[1]) /
                                     log10(Altitudeh_d[0] / Altitudeh_d[1])
                                     
-                                ) * log10(Tl[0] / Te[1])
+                                ) * log10(Tl[0] / Te__df_e[1])
                             )
                         );
         
