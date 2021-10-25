@@ -576,22 +576,22 @@ __global__ void rtm_dual_band(double *pressure_d,
 //////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////
 
-__device__ void bezier_interp(int iter, double* xi, double* yi, double x, double &y) {
+__device__ void bezier_altitude_interpolation(int id, int nlay, int iter, double* xi, double* yi, double x, double &y) {
 
     double dx, dx1, dy, dy1;
     double w, yc, t;
     //xc = (xi(1) + xi(2))/2.0_dp ! Control point (no needed here, implicitly included)
     dx = xi[iter] - xi[iter + 1];
     dx1 = xi[iter - 1] - xi[iter];
-    dy = yi[iter] - yi[iter + 1];
-    dy1 = yi[iter - 1] - yi[iter];
+    dy = yi[id * nlay + iter] - yi[id * nlay + iter + 1];
+    dy1 = yi[id * nlay + iter - 1] - yi[id * nlay + iter];
 
     if (x > xi[iter + 1] && x < xi[iter])
     {
         // left hand side interpolation
         w   =   dx1 / (dx + dx1);
 
-        yc  =   yi[iter] -
+        yc  =   yi[id * nlay + iter] -
                 dx / 2.0 * 
                 (
                     w * dy / dx + 
@@ -600,15 +600,15 @@ __device__ void bezier_interp(int iter, double* xi, double* yi, double x, double
 
         t   =   (x - xi[iter + 1]) / dx;
 
-        y   =   pow(1.0 - t, 2) * yi[iter + 1] + 
+        y   =   pow(1.0 - t, 2) * yi[id * nlay + iter + 1] + 
                 2.0 * t * (1.0 - t) * yc + 
-                pow(t, 2) * yi[iter];
+                pow(t, 2) * yi[id * nlay + iter];
     } else
     {
         // right hand side interpolation
         w   =   dx / (dx + dx1);
 
-        yc  =   yi[iter] + 
+        yc  =   yi[id * nlay + iter] + 
                 dx1 / 2.0 * 
                 (
                     w * dy1 / dx1 +
@@ -617,9 +617,9 @@ __device__ void bezier_interp(int iter, double* xi, double* yi, double x, double
 
         t   =   (x - xi[iter]) / (dx1);
 
-        y   =   pow(1.0 - t, 2) * yi[iter] + 
+        y   =   pow(1.0 - t, 2) * yi[id * nlay + iter] + 
                 2.0 * t * (1.0 - t) * yc + 
-                pow(t, 2) * yi[iter - 1];
+                pow(t, 2) * yi[id * nlay + iter - 1];
 
     }
 }
@@ -1266,18 +1266,22 @@ __device__  void lw_grey_updown_linear(int id,
 
             for (int i = nlay-2; i > 0; i--)
             {
-                bezier_interp(  i,
-                                Altitude_d, 
-                                Tl, 
-                                Altitudeh_d[i], 
-                                Te__df_e[i]);
+                bezier_altitude_interpolation(  id,
+                                                nlay,
+                                                i,
+                                                Altitude_d, 
+                                                Tl, 
+                                                Altitudeh_d[i], 
+                                                Te__df_e[id * nlev + i]);
             }
             
-            bezier_interp(  nlay-2, 
-                            Altitude_d,
-                            Tl, 
-                            Altitudeh_d[nlay-1], 
-                            Te__df_e[nlay-1]);
+            bezier_altitude_interpolation(  id,
+                                            nlay,
+                                            nlay-2, 
+                                            Altitude_d,
+                                            Tl, 
+                                            Altitudeh_d[nlay - 1], 
+                                            Te__df_e[id * nlev + nlay - 1]);
 
         } else
         {
@@ -1297,25 +1301,25 @@ __device__  void lw_grey_updown_linear(int id,
 
         //  Edges are linearly interpolated
 
-        Te__df_e[nlev - 1] =  pow( 10.0,
+        Te__df_e[id * nlev + nlev - 1] =  pow( 10.0,
                             (
-                                log10(Tl[nlay - 1]) + 
+                                log10(Tl[id * nlay + nlay - 1]) + 
                                 (
                                     log10(Altitude_d[nlay - 1] / Altitudeh_d[nlev - 2]) /
                                     log10(Altitudeh_d[nlev - 1] / Altitudeh_d[nlev - 2])
                                    
-                                ) * log10(Tl[nlay - 1] / Te__df_e[nlev - 2])
+                                ) * log10(Tl[id * nlay + nlay - 1] / Te__df_e[id * nlev + nlev - 2])
                             )
                         );
 
-        Te__df_e[0] =         pow( 10.0,
+        Te__df_e[id * nlev + 0] =         pow( 10.0,
                             (
-                                log10(Tl[0]) +
+                                log10(Tl[id * nlay + 0]) +
                                 (
                                     log10(Altitude_d[0] / Altitudeh_d[1]) /
                                     log10(Altitudeh_d[0] / Altitudeh_d[1])
                                     
-                                ) * log10(Tl[0] / Te__df_e[1])
+                                ) * log10(Tl[id * nlay + 0] / Te__df_e[id * nlev + 1])
                             )
                         );
         
