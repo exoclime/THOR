@@ -689,9 +689,9 @@ __device__ void kernel_k_Ross_Freedman(double Tin, double Pin, double met, doubl
     }
 
 
-    if (Pin <= 1 || isnan(Pin))
+    if (Pin <= 0.0001 || isnan(Pin))
     {
-         Pl10 = 1;
+         Pl10 = -4;
     }
     else
     {
@@ -702,24 +702,37 @@ __device__ void kernel_k_Ross_Freedman(double Tin, double Pin, double met, doubl
     
 
     // Low pressure expression
-    k_lowP = c1 * atan((double)(Tl10 - c2)) -
-        (c3 / (Pl10 + c4)) * exp(pow(Tl10 - c5, 2.0)) + c6 * met + c7;
+    k_lowP = c1 * atan(Tl10 - c2) -
+        (c3 / (Pl10 + c4)) * exp(pow(Tl10 - c5, 2.0)) +
+        c6 * met + c7;
 
     // De log10
-    k_lowP = pow((double)(10.0), k_lowP);
+    //k_lowP = pow((double)(10.0), k_lowP);
 
     // Temperature split for coefficents = 800 K
     if (Tin <= 800.0)
     {
-        k_hiP = c8_l + c9_l * Tl10 + c10_l * pow(Tl10, 2.0) +
+        k_hiP = c8_l + 
+            c9_l * Tl10 + 
+            c10_l * pow(Tl10, 2.0) +
             Pl10 * (c11_l + c12_l * Tl10) +
-            c13_l * met * (0.5 + onedivpi * atan((Tl10 - 2.5) / 0.2));
+            c13_l * met * 
+            (
+                0.5 + onedivpi * 
+                atan((Tl10 - 2.5) / 0.2)
+            );
     }
     else
     {
-        k_hiP = c8_h + c9_h * Tl10 +
-            c10_h * pow((double)(Tl10), 2.0) + Pl10 * (c11_h + c12_h * Tl10) +
-            c13_h * met * (0.5 + onedivpi * atan((Tl10 - 2.5) / 0.2));
+        k_hiP = c8_h + 
+            c9_h * Tl10 +
+            c10_h * pow(Tl10, 2.0) + 
+            Pl10 * (c11_h + c12_h * Tl10) +
+            c13_h * met * 
+            (
+                0.5 + onedivpi * 
+                atan((Tl10 - 2.5) / 0.2)
+            );
     }
 
     // De log10
@@ -1539,21 +1552,21 @@ __global__ void rtm_picket_fence(double *pressure_d,
         {
             
                      
-            /*
+            
             kernel_k_Ross_Freedman(temperature_d[id * nv + level],
                 pressure_d[id * nv + level],
                 met,
                 k_IR_2_nv_d[id * nv * 2 + 0 * nv + level]);
-            */
+            
 
-               
+            /*   
             kernel_k_Ross_Freedman_bilinear_interpolation_polynomial_fit(temperature_d[id * nv + level],
                 pressure_d[id * nv + level],
                 OpaTableTemperature,
                 OpaTablePressure,
                 OpaTableKappa,
                 k_IR_2_nv_d[id * nv * 2 + 0 * nv + level]);
-            
+            */
 
             
            // Find the visual Rosseland mean opacity from gam_V_3_d
