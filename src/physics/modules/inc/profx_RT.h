@@ -1753,11 +1753,11 @@ __global__ void rtm_picket_fence(double *pressure_d,
                     }
                     if (isnan(sw_net__df_e[id * nvi + level]) && zenith_angles[id]<=0.0)
                     {
-                        printf("net_F_nvi_d[id * nvi + level] and isnan(sw_net__df_e[id * nvi + level]) contain a NaNs at mu=0 at level:%d \n",  level);
+                        printf("sw_net__df_e[id * nvi + level] and isnan(sw_net__df_e[id * nvi + level]) contain a NaNs at mu=0 at level:%d \n",  level);
                     }
                     if (isnan(sw_net__df_e[id * nvi + level]) && zenith_angles[id]>0.0)
                     {
-                        printf("net_F_nvi_d[id * nvi + level] and isnan(sw_net__df_e[id * nvi + level]) contain a NaNs at mu>0 at level:%d \n",  level);
+                        printf("sw_net__df_e[id * nvi + level] and isnan(sw_net__df_e[id * nvi + level]) contain a NaNs at mu>0 at level:%d \n",  level);
                     }
                     if (isnan(lw_net__df_e[id * nvi + level]) && zenith_angles[id]<=0.0)
                     {
@@ -1770,71 +1770,68 @@ __global__ void rtm_picket_fence(double *pressure_d,
 
                     if (isnan(sw_net__df_e[id * nvi + level]) && zenith_angles[id]<=0.0)
                     {
-                        printf("net_F_nvi_d[id * nvi + level] and isnan(sw_net__df_e[id * nvi + level]) contain a NaNs at mu=0 at level:%d \n",  level);
+                        printf("sw_net__df_e[id * nvi + level] and  contain a NaNs at mu<=0 at level:%d \n",  level);
                     }
                     if (isnan(sw_net__df_e[id * nvi + level]) && zenith_angles[id]>0.0)
                     {
-                        printf("net_F_nvi_d[id * nvi + level] and isnan(sw_net__df_e[id * nvi + level]) contain a NaNs at mu>0 at level:%d \n",  level);
+                        printf("sw_net__df_e[id * nvi + level] and  contain a NaNs at mu>0 at level:%d \n",  level);
                     }
 
                     if (isnan(lw_down__df_e[id * nvi + level] ) && zenith_angles[id]<=0.0)
                     {
-                        printf("net_F_nvi_d[id * nvi + level] and isnan(lw_down__df_e[id * nvi + level]) contain a NaNs at mu=0 at level:%d \n",  level);
+                        printf("lw_down__df_e[id * nvi + level]  contain a NaNs at mu<=0 at level:%d \n",  level);
                     }
                     if (isnan(lw_down__df_e[id * nvi + level] ) && zenith_angles[id]>0.0)
                     {
-                        printf("net_F_nvi_d[id * nvi + level] and isnan(lw_down__df_e[id * nvi + level]) contain a NaNs at mu>0 at level:%d \n",  level);
+                        printf("lw_down__df_e[id * nvi + level]  contain a NaNs at mu>0 at level:%d \n",  level);
                     }
 
                     if (isnan(lw_up__df_e[id * nvi + level] ) && zenith_angles[id]<=0.0)
                     {
-                        printf("net_F_nvi_d[id * nvi + level] and isnan(lw_up__df_e[id * nvi + level]) contain a NaNs at mu=0 at level:%d \n",  level);
+                        printf("lw_up__df_e[id * nvi + level]  contain a NaNs at mu=0 at level:%d \n",  level);
                     }
                     if (isnan(lw_up__df_e[id * nvi + level] ) && zenith_angles[id]>0.0)
                     {
-                        printf("net_F_nvi_d[id * nvi + level] and isnan(lw_up__df_e[id * nvi + level]) contain a NaNs at mu>0 at level:%d \n",  level);
+                        printf("lw_up__df_e[id * nvi + level] contain a NaNs at mu>0 at level:%d \n",  level);
                     }
 
                     if (isnan(sw_down__df_e[id * nvi + level] ) && zenith_angles[id]<=0.0)
                     {
-                        printf("net_F_nvi_d[id * nvi + level] and isnan(sw_down__df_e[id * nvi + level]) contain a NaNs at mu=0 at level:%d \n",  level);
+                        printf("sw_down__df_e[id * nvi + level] and isnan(sw_down__df_e[id * nvi + level]) contain a NaNs at mu<=0 at level:%d \n",  level);
                     }
                     if (isnan(sw_down__df_e[id * nvi + level] ) && zenith_angles[id]>0.0)
                     {
-                        printf("net_F_nvi_d[id * nvi + level] and isnan(sw_down__df_e[id * nvi + level]) contain a NaNs at mu>0 at level:%d \n",  level);
+                        printf("sw_down__df_e[id * nvi + level] and isnan(sw_down__df_e[id * nvi + level]) contain a NaNs at mu>0 at level:%d \n",  level);
                     }
 
                     if (isnan(pressureh_d[id * nvi + level]) && zenith_angles[id]<=0.0)
                     {
-                        printf("net_F_nvi_d[id * nvi + level] and isnan(pressureh_d[id * nvi + level]) contain a NaNs at mu=0 at level:%d \n",  level);
+                        printf("pressureh_d[id * nvi + level] and isnan(pressureh_d[id * nvi + level]) contain a NaNs at mu<=0 at level:%d \n",  level);
                     }
                     if (isnan(pressureh_d[id * nvi + level]) && zenith_angles[id]>0.0)
                     {
-                        printf("net_F_nvi_d[id * nvi + level] and isnan(pressureh_d[id * nvi + level]) contain a NaNs at mu>0 at level:%d \n",  level);
+                        printf("pressureh_d[id * nvi + level] and isnan(pressureh_d[id * nvi + level]) contain a NaNs at mu>0 at level:%d \n",  level);
                     }
 
                     if (isnan(be__df_e[id * nvi + level]) && zenith_angles[id]<=0.0)
                     {
-                        printf("net_F_nvi_d[id * nvi + level] and isnan(be__df_e[id * nvi + level]) contain a NaNs at mu=0 at level:%d \n",  level);
+                        printf("be__df_e[id * nvi + level] and isnan(be__df_e[id * nvi + level]) contain a NaNs at mu=0 at level:%d \n",  level);
                     }
                     if (isnan(be__df_e[id * nvi + level]) && zenith_angles[id]>0.0)
                     {
-                        printf("net_F_nvi_d[id * nvi + level] and isnan(be__df_e[id * nvi + level]) contain a NaNs at mu>0 at level:%d \n",  level);
+                        printf("be__df_e[id * nvi + level] and isnan(be__df_e[id * nvi + level]) contain a NaNs at mu>0 at level:%d \n",  level);
+                    }
+                    if (be__df_e[id * nvi + level]<0.0 && zenith_angles[id]>0.0)
+                    {
+                        printf("be__df_e[id * nvi + level]<0.0 contain a NaNs at mu>0 at level:%d \n",  level);
                     }
 
                 
                 }
 
-                if ((Altitudeh_d[level+1] - Altitudeh_d[level])==0.0 && id==0)
-                {
-                    printf("(Altitudeh_d[level+1] - Altitudeh_d[level]) is 0 at level:%d \n",  level);                    
-                }
+                 printf("be__df_e[id * nvi + %d] = %e \n",  level, be__df_e[id * nvi + level]);
 
-                if (isnan(Altitudeh_d[level+1] - Altitudeh_d[level]))
-                {
-                    printf("(Altitudeh_d[level+1] - Altitudeh_d[level]) is NaN at level:%d \n",  level);                    
-                }
-
+                
             }
             
            
