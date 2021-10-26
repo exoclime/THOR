@@ -953,8 +953,8 @@ __device__ void tau_struct(int id,
             tau_lay = kRoss[id*nlay*nchan + channel * nlay + level] * delPdelAlt * Rho_d[id*nlay  + level];
         } else
         {
-           tau_lay  =   (   0.25 * kRoss[id*nlay*nchan + channel * nlay + level + 1]
-                            0.5  * kRoss[id*nlay*nchan + channel * nlay + level]
+           tau_lay  =   (   0.25 * kRoss[id*nlay*nchan + channel * nlay + level + 1] +
+                            0.5  * kRoss[id*nlay*nchan + channel * nlay + level] +
                             0.25 * kRoss[id*nlay*nchan + channel * nlay + level - 1]
                         ) * delPdelAlt * Rho_d[id*nlay  + level];
         }
