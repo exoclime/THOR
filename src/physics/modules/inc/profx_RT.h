@@ -581,12 +581,12 @@ __device__ void bezier_altitude_interpolation(int id, int nlay, int iter, double
     double dx, dx1, dy, dy1;
     double w, yc, t;
     //xc = (xi(1) + xi(2))/2.0_dp ! Control point (no needed here, implicitly included)
-    dx = xi[iter] - xi[iter + 1];
-    dx1 = xi[iter - 1] - xi[iter];
-    dy = yi[id * nlay + iter] - yi[id * nlay + iter + 1];
-    dy1 = yi[id * nlay + iter - 1] - yi[id * nlay + iter];
+    dx  =   xi[iter + 1]                -       xi[iter];
+    dx1 =   xi[iter]                    -       xi[iter - 1];
+    dy  =   yi[id * nlay + iter + 1]    -       yi[id * nlay + iter];
+    dy1 =   yi[id * nlay + iter]        -       yi[id * nlay + iter - 1];
 
-    if (x > xi[iter + 1] && x < xi[iter])
+    if (x < xi[iter + 1] && x > xi[iter])
     {
         // left hand side interpolation
         w   =   dx1 / (dx + dx1);
@@ -939,7 +939,7 @@ __device__ void tau_struct(int id,
 
     // Integrate from top to bottom    
 
-    for (level = nlay-1; level > -1; level--) 
+    for (level = nlay-1; level > 0; level--) 
     {
         // Pressure difference between layer edges
         delPdelAlt = (Altitudeh_d[level + 1] - Altitudeh_d[level + 0]);
@@ -955,11 +955,8 @@ __device__ void tau_struct(int id,
         }
 
 
-        // Add to running sum
-        tau_sum = tau_sum + tau_lay;
-
         // Optical depth structure is running sum
-        tau_struc_e[id*nlev + level] = tau_sum;
+        tau_struc_e[id*nlev + level] =  tau_struc_e[id*nlev + level + 1] + tau_lay;
   
     }
 
@@ -971,7 +968,7 @@ __device__ void tau_struct(int id,
 
 __device__  void sw_grey_down(int id,
     int nlev,
-    double solar_flux,
+    double Finc,
     double *solar_tau,
     double *sw_down__df_e,
     double *mu) {
@@ -983,7 +980,7 @@ __device__  void sw_grey_down(int id,
     // start operations
     for (int i = nlev-1; i >-1; i--)
     {
-        sw_down__df_e[id * nlev + i] = solar_flux * mu[id] * exp(-solar_tau[id * nlev + i] / mu[id]);
+        sw_down__df_e[id * nlev + i] = Finc * mu[id] * exp(-solar_tau[id * nlev + i] / mu[id]);
     }
 
 }
@@ -1024,15 +1021,35 @@ __device__  void lw_grey_updown_linear(int id,
 
 
     //Gauss quadrature variables
-    const int gauss_ng = 2;
+    const int gauss_ng = 5;
     double uarr[gauss_ng];
     double w[gauss_ng];
     double e1i_del, del, e0i, e1i, eli_del;
 
-    uarr[0] = 0.21132487;
-    uarr[1] = 0.78867513;
-    w[0] = 0.5;
-    w[1] = 0.5;
+    if (gauss_ng == 1)
+    {
+        uarr[0] = 1.0/1.66;
+        w[0] = 1.0;
+
+    } else if (gauss_ng = 2)
+    {
+        uarr[0] = 0.21132487;
+        uarr[1] = 0.78867513;
+        w[0] = 0.5;
+        w[1] = 0.5;
+    } else if (gauss_ng = 5)
+    {
+        uarr[0] = 0.0985350858;
+        uarr[1] = 0.3045357266;
+        uarr[2] = 0.5620251898;
+        uarr[3] = 0.8019865821;
+        uarr[4] = 0.9601901429;
+        w[0] = 0.0157479145;
+        w[1] = 0.0739088701;
+        w[2] = 0.1463869871;
+        w[3] = 0.1671746381;
+        w[4] = 0.0967815902;
+    }
 
     for (k = nlay-1; k >-1; k--)
     {
@@ -1149,10 +1166,10 @@ __device__  void lw_grey_updown_linear(int id,
         double *Beta_2_d,
         double *net_F_nvi_d,
         double *mu_s,
-        double Finc,
+        double F0,
         double Tint,
         double grav,
-        //double AB_d,
+        double AB_d,
         //Kitzman working variables
         double *tau_Ve__df_e,
         double *tau_IRe__df_e,
@@ -1196,6 +1213,7 @@ __device__  void lw_grey_updown_linear(int id,
         const double StBC = 5.670374419e-8;
 
         // work variables
+        double Finc;
         double Finc_B;
        
         // start operation
@@ -1274,13 +1292,21 @@ __device__  void lw_grey_updown_linear(int id,
             sw_down__df_e[id * nlev + i] = 0.0;
             sw_up__df_e[id * nlev + i] = 0.0;
         }
-        for (int channel = 0; channel < 3; channel++)
-        {
+
+       
+
+        
            
 
             // Incident flux in band
-            if (mu_s[id]>0.0)
+        if (mu_s[id]>0.0)
+        {
+            Finc = (1.0 - AB_d) * F0;
+
+            for (int channel = 0; channel < 3; channel++)
             {
+                
+                
                 // Find the opacity structure
                 tau_struct(id,
                     nlev,
@@ -1306,27 +1332,20 @@ __device__  void lw_grey_updown_linear(int id,
                     Finc_B,
                     tau_Ve__df_e,
                     sw_down_b__df_e,
-                    mu_s);          
+                    mu_s);
 
-            } else
-            {
-                //printf("sw darkside\n");
-
-                for (int i = nlev-1; i >-1; i--)
+                // Sum all bands
+                for (int i = 0; i < nlev; i++)
                 {
-                    sw_down_b__df_e[id * nlev + i] = 0.0;
-                    tau_Ve__df_e[id * nlev + i] = 1.0;
-                }
+                    sw_down__df_e[id * nlev + i] = sw_down__df_e[id * nlev + i] + sw_down_b__df_e[id * nlev + i];
                 
-            }
-            
+                } 
+            }         
 
-            // Sum all bands
-            for (int i = 0; i < nlev; i++)
-            {
-                sw_down__df_e[id * nlev + i] = sw_down__df_e[id * nlev + i] + sw_down_b__df_e[id * nlev + i];
-               
-            }
+        } else
+        {
+            //sw darkside
+                
         }
 
         
@@ -1361,12 +1380,12 @@ __device__  void lw_grey_updown_linear(int id,
             // Blackbody fluxes (note divide by pi for correct units)
             for (int i = 0; i < nlev; i++)
             {
-                be__df_e[id * nlev + i] = StBC * pow((Te__df_e[id * nlev + i]), 4.0) / pi * Beta_2_d[id * 2 + channel];
+                be__df_e[id * nlev + i] = (StBC * pow((Te__df_e[id * nlev + i]), 4.0) / pi) * Beta_2_d[id * 2 + channel];
 
             }
 
             
-            double be_int = StBC * pow((Tint), 4.0) / pi * Beta_2_d[id * 2 + channel];
+            double be_int = (StBC * pow((Tint), 4.0) / pi) * Beta_2_d[id * 2 + channel];
 
             // Calculate lw flux
             lw_grey_updown_linear(id,
@@ -1625,10 +1644,10 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 Beta_2_d,
                 net_F_nvi_d,
                 zenith_angles,
-                flux_top,
+                F0_d,
                 tint,
                 gravit,
-                //AB_d[id],
+                AB_d[id],
                 //Kitzman working variables
                 tau_Ve__df_e,
                 tau_IRe__df_e,
@@ -1680,7 +1699,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 flux_top,
                 tint,
                 gravit,
-                //AB_d[id],
+                AB_d[id],
                 //Kitzman working variables
                 tau_Ve__df_e,
                 tau_IRe__df_e,
