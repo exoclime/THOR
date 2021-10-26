@@ -956,7 +956,7 @@ __device__ void tau_struct(int id,
            tau_lay  =   (   0.25 * kRoss[id*nlay*nchan + channel * nlay + level + 1] +
                             0.5  * kRoss[id*nlay*nchan + channel * nlay + level] +
                             0.25 * kRoss[id*nlay*nchan + channel * nlay + level - 1]
-                        ) * delPdelAlt *;
+                        ) * delPdelAlt *
                         (   0.25 *  Rho_d[id*nlay  + level + 1] +
                             0.5  *  Rho_d[id*nlay  + level] +
                             0.25 *  Rho_d[id*nlay  + level - 1]
