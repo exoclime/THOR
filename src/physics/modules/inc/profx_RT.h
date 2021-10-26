@@ -2241,10 +2241,12 @@ __global__ void rtm_picket_fence(double *pressure_d,
             }
             DG_Qheat_d[id * nv + lev] = dtemp[id * nv + lev];
             profx_Qheat_d[id * nv + lev] += Qheat_scaling * dtemp[id * nv + lev];
-            if (isnan(profx_Qheat_d[id * nv + lev])) {
-                printf("profx_Qheat_d has NaNs - stop here");
+            if (id == 430)
+            {
+                if (isnan(profx_Qheat_d[id * nv + lev])) {
+                    printf("profx_Qheat_d has NaNs - stop here");
+                }
             }
-            // }
         }
 
         //printf("Column complete");
