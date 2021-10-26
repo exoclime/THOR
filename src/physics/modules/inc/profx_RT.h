@@ -581,12 +581,12 @@ __device__ void bezier_altitude_interpolation(int id, int nlay, int iter, double
     double dx, dx1, dy, dy1;
     double w, yc, t;
     //xc = (xi(1) + xi(2))/2.0_dp ! Control point (no needed here, implicitly included)
-    dx  =   xi[iter + 1]                -       xi[iter];
-    dx1 =   xi[iter]                    -       xi[iter - 1];
-    dy  =   yi[id * nlay + iter + 1]    -       yi[id * nlay + iter];
-    dy1 =   yi[id * nlay + iter]        -       yi[id * nlay + iter - 1];
+    dx  =   xi[iter]                    -       xi[iter + 1];
+    dx1 =   xi[iter - 1]                -       xi[iter];
+    dy  =   yi[id * nlay + iter]        -       yi[id * nlay + iter + 1];
+    dy1 =   yi[id * nlay + iter - 1]    -       yi[id * nlay + iter];
 
-    if (x < xi[iter + 1] && x > xi[iter])
+    if (x > xi[iter + 1] && x < xi[iter])
     {
         // left hand side interpolation
         w   =   dx1 / (dx + dx1);
@@ -598,7 +598,7 @@ __device__ void bezier_altitude_interpolation(int id, int nlay, int iter, double
                     (1.0 - w) * dy1 / dx1
                 );
 
-        t   =   (xi[iter + 1] - x) / dx;
+        t   =   (x - xi[iter + 1]) / dx;
 
         y   =   pow(1.0 - t, 2) * yi[id * nlay + iter + 1] + 
                 2.0 * t * (1.0 - t) * yc + 
@@ -615,7 +615,7 @@ __device__ void bezier_altitude_interpolation(int id, int nlay, int iter, double
                     (1.0 - w) * dy / dx
                 );
 
-        t   =   (xi[iter] - x) / (dx1);
+        t   =   (x - xi[iter]) / (dx1);
 
         y   =   pow(1.0 - t, 2) * yi[id * nlay + iter] + 
                 2.0 * t * (1.0 - t) * yc + 
