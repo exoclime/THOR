@@ -1031,13 +1031,13 @@ __device__  void lw_grey_updown_linear(int id,
         uarr[0] = 1.0/1.66;
         w[0] = 1.0;
 
-    } else if (gauss_ng = 2)
+    } else if (gauss_ng == 2)
     {
         uarr[0] = 0.21132487;
         uarr[1] = 0.78867513;
         w[0] = 0.5;
         w[1] = 0.5;
-    } else if (gauss_ng = 5)
+    } else if (gauss_ng == 5)
     {
         uarr[0] = 0.0985350858;
         uarr[1] = 0.3045357266;
