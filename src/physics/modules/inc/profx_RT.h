@@ -598,7 +598,7 @@ __device__ void bezier_altitude_interpolation(int id, int nlay, int iter, double
                     (1.0 - w) * dy1 / dx1
                 );
 
-        t   =   (x - xi[iter + 1]) / dx;
+        t   =   (xi[iter + 1] - x) / dx;
 
         y   =   pow(1.0 - t, 2) * yi[id * nlay + iter + 1] + 
                 2.0 * t * (1.0 - t) * yc + 
@@ -615,7 +615,7 @@ __device__ void bezier_altitude_interpolation(int id, int nlay, int iter, double
                     (1.0 - w) * dy / dx
                 );
 
-        t   =   (x - xi[iter]) / (dx1);
+        t   =   (xi[iter] - x) / (dx1);
 
         y   =   pow(1.0 - t, 2) * yi[id * nlay + iter] + 
                 2.0 * t * (1.0 - t) * yc + 
