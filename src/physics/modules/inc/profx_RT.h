@@ -939,7 +939,7 @@ __device__ void tau_struct(int id,
 
     // Integrate from top to bottom    
 
-    for (level = nlay-1; level > 0; level--) 
+    for (level = nlay-1; level > -1; level--) 
     {
         // Pressure difference between layer edges
         delPdelAlt = (Altitudeh_d[level + 1] - Altitudeh_d[level + 0]);
@@ -1102,7 +1102,7 @@ __device__  void lw_grey_updown_linear(int id,
         // Begin two-stream loops
         // Perform downward loop first
         // ghost layer radiates down as well
-        lw_down_g__dff_e[id * nlev +  (nlev-1)] = 0;
+        lw_down_g__dff_e[id * nlev +  (nlev-1)] = 0.0;
         //lw_down_g__dff_e[id * nlev +  (nlev-1)] = 1 * (1.0 - exp(-tau_IRe__df_e[id*nlev + (nlev-1)] / uarr[g])) * be__df_e[id * nlev + (nlev-1)];
         
         for (k = nlev-2; k > -1; k--)
@@ -1729,7 +1729,9 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 Bp__dff_l);
         }
 
-               
+        if (id == 430) {
+            printf("tint = %e \n",  tint);
+        }
         
         for (int level = 0; level < nv; level++)
         {
@@ -1742,7 +1744,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
             if (id == 430) {
                 if (isnan(dtemp[id * nv + level]))
                 {
-                    printf("dtemp contains a NaN at level:%d \n",  level);                    
+                    //printf("dtemp contains a NaN at level:%d \n",  level);                    
                 }
 
                 if (isnan(net_F_nvi_d[id * nvi + level]))
@@ -1829,7 +1831,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 
                 }
 
-                 printf("be__df_e[id * nvi + %d] = %e \n",  level, be__df_e[id * nvi + level]);
+                 printf("Te__df_e[id * nvi + %d] = %e \n",  level, Te__df_e[id * nvi + level]);
 
                 
             }
