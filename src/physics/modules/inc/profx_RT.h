@@ -910,7 +910,7 @@ __device__ void tau_struct(int id,
     // running sum of optical depth
     // added a ghost level above the grid model, otherwise tau_sum = 0.0
     tau_sum = 0.0;
-    tau_sum = (kRoss[id*nlay*nchan + channel * nlay + nlay-1] * pl[id*nlay  + nlay-1])/gravity;
+    //tau_sum = (kRoss[id*nlay*nchan + channel * nlay + nlay-1] * pl[id*nlay  + nlay-1])/gravity;
     tau_struc_e[id*nlev + nlev-1] = tau_sum;
 
     //tau_sum = 0.0;
@@ -1071,7 +1071,8 @@ __device__  void lw_grey_updown_linear(int id,
         // Begin two-stream loops
         // Perform downward loop first
         // ghost layer radiates down as well
-        lw_down_g__dff_e[id * nlev +  (nlev-1)] = 1 * (1.0 - exp(-tau_IRe__df_e[id*nlev + (nlev-1)] / uarr[g])) * be__df_e[id * nlev + (nlev-1)];
+        lw_down_g__dff_e[id * nlev +  (nlev-1)] = 0;
+        //lw_down_g__dff_e[id * nlev +  (nlev-1)] = 1 * (1.0 - exp(-tau_IRe__df_e[id*nlev + (nlev-1)] / uarr[g])) * be__df_e[id * nlev + (nlev-1)];
         
         for (k = nlev-2; k > -1; k--)
         {
