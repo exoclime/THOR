@@ -1021,7 +1021,7 @@ __device__  void lw_grey_updown_linear(int id,
 
 
     //Gauss quadrature variables
-    const int gauss_ng = 5;
+    const int gauss_ng = 2;
     double uarr[gauss_ng];
     double w[gauss_ng];
     double e1i_del, del, e0i, e1i, eli_del;
