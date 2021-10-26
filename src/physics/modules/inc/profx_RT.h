@@ -679,6 +679,8 @@ __device__ void kernel_k_Ross_Freedman(double Tin, double Pin, double met, doubl
 
     //Tl10 = log10((double)(Tin));
 
+    /*
+
     if (Tin <= 1 || isnan(Tin))
     {
          Tl10 = 0;
@@ -697,6 +699,10 @@ __device__ void kernel_k_Ross_Freedman(double Tin, double Pin, double met, doubl
     {
         Pl10 = log10(Pin * 10.0); // Convert to dyne cm-2 and log 10
     }
+    */
+
+    Tl10 = log10(Tin);
+    Pl10 = log10(Pin * 10.0);
     
     
     
@@ -705,9 +711,6 @@ __device__ void kernel_k_Ross_Freedman(double Tin, double Pin, double met, doubl
     k_lowP = c1 * atan(Tl10 - c2) -
         (c3 / (Pl10 + c4)) * exp(pow(Tl10 - c5, 2.0)) +
         c6 * met + c7;
-
-    // De log10
-    //k_lowP = pow((double)(10.0), k_lowP);
 
     // Temperature split for coefficents = 800 K
     if (Tin <= 800.0)
@@ -735,11 +738,9 @@ __device__ void kernel_k_Ross_Freedman(double Tin, double Pin, double met, doubl
             );
     }
 
-    // De log10
-    k_hiP = pow((double)(10.0), k_hiP);
 
     // Total Rosseland mean opacity - converted to m2 kg-1
-    k_IR = (k_lowP + k_hiP) / ((double)10.0);
+    k_IR = (pow(10,k_lowP) + pow(10,k_hiP)) / 10.0;
 
     // Avoid divergence in fit for large values
     if (k_IR > 1.0e30) // 1.0e10
