@@ -997,7 +997,8 @@ __device__ void tau_struct(int id,
         
 
         // Optical depth of layer assuming hydrostatic equilibirum  //////////////////// kappa * rho * delta height  (old: kappa *delP/gravity)
-
+        tau_lay = kRoss[id*nlay*nchan + channel * nlay + level] * delPdelAlt * Rho_d[id*nlay  + level];
+        /*
         if (level == (nlay - 1) || level == 0 )
         {
             tau_lay = kRoss[id*nlay*nchan + channel * nlay + level] * delPdelAlt * Rho_d[id*nlay  + level];
@@ -1012,13 +1013,14 @@ __device__ void tau_struct(int id,
                                     rho);
 
             tau_lay  =  kRoss[id*nlay*nchan + channel * nlay + level] * delPdelAlt * rho;
-            /*
+            
             tau_lay  =  (   0.25 * kRoss[id*nlay*nchan + channel * nlay + level + 1] +
                             0.5  * kRoss[id*nlay*nchan + channel * nlay + level] +
                             0.25 * kRoss[id*nlay*nchan + channel * nlay + level - 1]
                         ) * delPdelAlt * rho;
-            */
+            
         }
+        */
         
         
        
