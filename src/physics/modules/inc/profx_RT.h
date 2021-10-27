@@ -1007,7 +1007,8 @@ __device__ void tau_struct(int id,
                                     nlay,
                                     level, 
                                     pl,
-                                    pl[nlay], 
+                                    Rho_d,
+                                    pl[id*nlay + nlay], 
                                     rho);
 
             tau_lay  =  kRoss[id*nlay*nchan + channel * nlay + level] * delPdelAlt * rho;
