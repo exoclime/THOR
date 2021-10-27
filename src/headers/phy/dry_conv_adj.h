@@ -261,6 +261,55 @@ __global__ void dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
 }
 
 
+__device__ void bezier_altitude_interpolation_dry_conv(int id, int nlay, int iter, double* xi, double* yi, double x, double &y) {
+
+    double dx, dx1, dy, dy1;
+    double w, yc, t;
+    //xc = (xi(1) + xi(2))/2.0_dp ! Control point (no needed here, implicitly included)
+    dx  =   xi[iter]                    -       xi[iter + 1];
+    dx1 =   xi[iter - 1]                -       xi[iter];
+    dy  =   yi[id * nlay + iter]        -       yi[id * nlay + iter + 1];
+    dy1 =   yi[id * nlay + iter - 1]    -       yi[id * nlay + iter];
+
+    if (x > xi[iter + 1] && x < xi[iter])
+    {
+        // left hand side interpolation
+        w   =   dx1 / (dx + dx1);
+
+        yc  =   yi[id * nlay + iter] -
+                dx / 2.0 * 
+                (
+                    w * dy / dx + 
+                    (1.0 - w) * dy1 / dx1
+                );
+
+        t   =   (x - xi[iter + 1]) / dx;
+
+        y   =   pow(1.0 - t, 2) * yi[id * nlay + iter + 1] + 
+                2.0 * t * (1.0 - t) * yc + 
+                pow(t, 2) * yi[id * nlay + iter];
+    } else
+    {
+        // right hand side interpolation
+        w   =   dx / (dx + dx1);
+
+        yc  =   yi[id * nlay + iter] + 
+                dx1 / 2.0 * 
+                (
+                    w * dy1 / dx1 +
+                    (1.0 - w) * dy / dx
+                );
+
+        t   =   (x - xi[iter]) / (dx1);
+
+        y   =   pow(1.0 - t, 2) * yi[id * nlay + iter] + 
+                2.0 * t * (1.0 - t) * yc + 
+                pow(t, 2) * yi[id * nlay + iter - 1];
+
+    }
+}
+
+
 __global__ void ray_dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
                              double *Pressureh_d,   // Mid-point pressure [Pa]
                              double *dT_conv_d,
@@ -350,6 +399,7 @@ __global__ void ray_dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
                         }
                         else {
                             // interpolation between layers
+                            /*
                             xi  = Altitudeh_d[lev];
                             xim = Altitude_d[lev - 1];
                             xip = Altitude_d[lev];
@@ -357,6 +407,15 @@ __global__ void ray_dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
                             b   = (xi - xim) / (xip - xim);
                             Pressureh_d[id * (nv + 1) + lev] =
                                 Pressure_d[id * nv + lev - 1] * a + Pressure_d[id * nv + lev] * b;
+                            */
+
+                            bezier_altitude_interpolation_dry_conv( id,
+                                                                    nv, 
+                                                                    lev, 
+                                                                    Altitude_d, 
+                                                                    Pressure_d, 
+                                                                    Altitudeh_d[lev], 
+                                                                    Pressureh_d[id * (nv + 1) + lev]);
                         }
 
                     }
@@ -535,6 +594,7 @@ __global__ void ray_dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
                         }
                         else {
                             // interpolation between layers
+                            /*
                             xi  = Altitudeh_d[lev];
                             xim = Altitude_d[lev - 1];
                             xip = Altitude_d[lev];
@@ -542,6 +602,15 @@ __global__ void ray_dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
                             b   = (xi - xim) / (xip - xim);
                             Pressureh_d[id * (nv + 1) + lev] =
                                 Pressure_d[id * nv + lev - 1] * a + Pressure_d[id * nv + lev] * b;
+                            */
+                            
+                            bezier_altitude_interpolation_dry_conv( id,
+                                                                    nv, 
+                                                                    lev, 
+                                                                    Altitude_d, 
+                                                                    Pressure_d, 
+                                                                    Altitudeh_d[lev], 
+                                                                    Pressureh_d[id * (nv + 1) + lev]);
                         }
 
                         // Compute Potential Temperature
