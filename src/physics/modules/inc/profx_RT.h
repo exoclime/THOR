@@ -1299,7 +1299,7 @@ __device__  void lw_grey_updown_linear(int id,
         {
             //  Perform interpolation using Bezier peicewise polynomial interpolation
 
-            /*
+            
             for (int i = nlay-2; i > 0; i--)
             {
                 bezier_altitude_interpolation(   id,
@@ -1318,7 +1318,8 @@ __device__  void lw_grey_updown_linear(int id,
                                     Tl, 
                                     Altitudeh_d[nlay - 1], 
                                     Te__df_e[id * nlev + nlay - 1]);
-            */
+            
+            /*
             for (int i = nlay-2; i > 0; i--)
             {
                 bezier_interpolation(   id,
@@ -1338,6 +1339,7 @@ __device__  void lw_grey_updown_linear(int id,
                                     Tl, 
                                     pe[id * nlev + nlay - 1], 
                                     Te__df_e[id * nlev + nlay - 1]);
+            */
 
         } else
         {
