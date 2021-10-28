@@ -737,20 +737,21 @@ __device__ void kernel_k_Ross_Freedman(double Tin, double Pin, double met, doubl
     {
         Tl10 = log10(Tin);
     }
+    */
 
 
-    if (Pin <= 0.0001 || isnan(Pin))
+    if (Pin <= 0.00001 || isnan(Pin))
     {
-         Pl10 = -4;
+         Pl10 = -5;
     }
     else
     {
         Pl10 = log10(Pin * 10.0); // Convert to dyne cm-2 and log 10
     }
-    */
+    
 
     Tl10 = log10(Tin);
-    Pl10 = log10(Pin * 10.0);
+    //Pl10 = log10(Pin * 10.0);
     
     
     
@@ -1346,7 +1347,7 @@ __device__  void lw_grey_updown_linear(int id,
         } else
         {
             //Perform interpolation using linear interpolation
-            
+            /*
             for (int i = nlay-2; i > -1; i--) {
                 linear_log_interp(  id,
                                     i,
@@ -1357,6 +1358,7 @@ __device__  void lw_grey_updown_linear(int id,
                                     Tl, 
                                     Te__df_e);
             }
+            */
         }
 
         //  Edges are linearly interpolated
