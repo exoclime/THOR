@@ -740,9 +740,9 @@ __device__ void kernel_k_Ross_Freedman(double Tin, double Pin, double met, doubl
     */
 
 
-    if (Pin <= 0.00001 || isnan(Pin))
+    if (Pin <= 0.0001 || isnan(Pin))
     {
-         Pl10 = -5;
+         Pl10 = -3;
     }
     else
     {
