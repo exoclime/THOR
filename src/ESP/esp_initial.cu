@@ -643,6 +643,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 Parmentier_IC_1D(init_nv, init_pressure_parmentier, Tint, mu, Tirr, sim.Gravit, init_temperature_parmentier, table_num, MetStar);
                 //Parmentier_bilinear_interpolation_IC(i, nv, pressure_h, Tint, mu, Tirr,
                         //OpaTableTemperature__h, OpaTablePressure__h, OpaTableKappa__h, sim.Gravit, temperature_h, table_num, MetStar);
+
+                IC_adiabat_correction(init_nv, init_temperature_parmentier, init_pressure_parmentier, sim.Gravit);
                 
                 double pressure_diff = 0.0;
                 double bolzmann_const = 1.380649e-23;
@@ -747,7 +749,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                 
 
-                adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
+                
 
                 for (int lev = 0; lev < nv; lev++) {
                     if (ultrahot_thermo != NO_UH_THERMO) {
