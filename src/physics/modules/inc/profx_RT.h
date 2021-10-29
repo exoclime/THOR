@@ -1935,7 +1935,12 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 
                 }
 
-                 printf("Te__df_e[id * nvi + %d] = %e \n",  level, Te__df_e[id * nvi + level]);
+                if (level == nvi - 1)
+                {
+                    printf("Te__df_e[id * nvi + %d] = %e \n",  level, Te__df_e[id * nvi + level]);
+                }
+                
+               
 
                 
             }

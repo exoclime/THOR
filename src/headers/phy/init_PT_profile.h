@@ -153,6 +153,7 @@ void linear_interpolation_fit(int len, double Xin, double *Xreference,
 
     linear_interp(x, x1, x2, y1, y2, Yout);
 
+    /*
     printf("Xin = %e  \n", Xin);
     printf("x = %e  \n", x);
     printf("x1 = Xreference[%d] = %e  \n",lowiter, Xreference[lowiter]);
@@ -160,6 +161,7 @@ void linear_interpolation_fit(int len, double Xin, double *Xreference,
     printf("y1 = Yreference[%d] = %e  \n",lowiter, Yreference[lowiter]);
     printf("y2 = Yreference[%d] = %e  \n",iter, Yreference[iter]);
     printf("Yout = %e  \n", Yout);
+    */
 
     Yout = Yout;
    
