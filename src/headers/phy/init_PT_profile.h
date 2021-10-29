@@ -1523,6 +1523,75 @@ void adiabat_correction(int id, int nlay, double* (&Tl), double* pressure_h, dou
     }
 }
 
+///////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////
+
+// Subroutine that corrects for adiabatic region following Parmentier & Guillot (2015)
+void IC_adiabat_correction(int nlay, double* (&Tl), double* pressure_h, double Gravit) {
+    // dependcies
+    //// main_parameters::nlay  -> "FMS_RC_para_&_const.cpp" 
+    //// pow -> math    
+    /// log10 -> math
+
+    // Input:
+    // 
+
+    // Call by reference (Input & Output):
+    // 
+
+    // work variables
+    int i, iRC, iRC1;
+    double gradrad[nlay-1];
+    double gradad[nlay-1];
+
+
+
+
+    // start operations
+
+    for (i = (nlay-1); i > 1; i--)
+    {
+        
+        gradrad[i] = (log10(Tl[i]) - log10(Tl[i-1])) / (log10(pressure_h[i]) - log10(pressure_h[i - 1]));
+        gradad[i] = ((double)0.32) - ((double)0.10) * Tl[i] / ((double)3000.0);
+    }
+
+    gradrad[0] = 0.0;
+    gradad[0] = 0.0;
+
+    iRC = 1;
+    iRC1 = 1;
+
+    for (i = 1; i <= (nlay-1) ; i++)
+    {
+        if (iRC1 >= i -1)
+        {
+            if (gradrad[i] > ((double)0.7) * gradad[i])
+            {
+                iRC1 = i;
+            }
+            if (gradrad[i] > ((double)0.98) * gradad[i])
+            {
+                iRC = i;
+            }
+        }
+    }
+
+    if (iRC > -1 )
+    {
+        for (i = iRC; i > 0; i--)
+        {
+            gradad[i] = (double)0.32 - ((double)0.10) * Tl[i] / ((double)3000.0);
+            if (gradad[i] < 0.0)
+            {
+                gradad[i] = 0.0;
+            }
+            
+            Tl[i-1] = Tl[i] * pow((pressure_h[i-1] ) / pressure_h[i], gradad[i]);
+        }
+    }
+}
+
 
 ///////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////
