@@ -64,6 +64,7 @@
 #include "log_writer.h"
 #include "storage.h"
 #include "vector_operations.h"
+#include <limits>
 
 // some helper local functions
 inline double3 normproj(const double3 &v1, const double3 &v2) {
@@ -81,25 +82,25 @@ inline double3 normproj(const double3 &v1, const double3 &v2) {
 }
 
 
-__host__ Icogrid::Icogrid(bool   sprd,        // Spring dynamics option
-                          double spring_beta, // Parameter beta for spring dynamics
-                          int    glevel,      // Horizontal resolution level
-                          int    vlevel,      // Number of vertical layers
-                          int    nlat,
-                          double A,            // Planet radius [m]
-                          double Top_altitude, // Top model's domain [m]
-                          bool   sponge,
-                          int *  max_count,
-                          bool   vert_refined,
-                          double lowest_layer_thickness,
-                          double transition_altitude,
-                          const std::string& output_path) {
+__host__ Icogrid::Icogrid(bool               sprd,        // Spring dynamics option
+                          double             spring_beta, // Parameter beta for spring dynamics
+                          int                glevel,      // Horizontal resolution level
+                          int                vlevel,      // Number of vertical layers
+                          int                nlat,
+                          double             A,            // Planet radius [m]
+                          double             Top_altitude, // Top model's domain [m]
+                          bool               sponge,
+                          int *              max_count,
+                          bool               vert_refined,
+                          double             lowest_layer_thickness,
+                          double             transition_altitude,
+                          const std::string &output_path) {
 
     bool read_from_file = false;
     char FILE_NAME1[512];
     sprintf(FILE_NAME1, "%s/aux_grid_constructs.h5", output_path.c_str());
-    if (path_exists(FILE_NAME1)){
-      read_from_file = true;
+    if (path_exists(FILE_NAME1)) {
+        read_from_file = true;
     }
 
     log::printf("\n\n Building icosahedral grid!");
@@ -145,7 +146,7 @@ __host__ Icogrid::Icogrid(bool   sprd,        // Spring dynamics option
 
     if (read_from_file) {
         storage s(FILE_NAME1, true);
-        printf("\n\n Fetching grid construction data from file %s \n\n",FILE_NAME1);
+        printf("\n\n Fetching grid construction data from file %s \n\n", FILE_NAME1);
         bool load_OK = true;
         load_OK &= s.read_table_to_ptr("/point_xyz", point_xyz, 3 * point_num);
         load_OK &= s.read_table_to_ptr("/point_xyzq", point_xyzq, 6 * 3 * point_num);
@@ -2037,6 +2038,12 @@ void Icogrid::set_altitudes_softplus(double *Altitude,
     x1 = 1.0 / nv; // fractional index of first layer top
     // Calculate sharpness and amplitude to match top, bottom, transition altitude
     alpha = transition_altitude / log(2);
+    if (isinf(exp(Top_altitude / alpha))) {
+        alpha = Top_altitude / log(std::numeric_limits<double>::max());
+        printf("Warning: transition altitude of %f too small, setting to %f\n",
+               transition_altitude,
+               alpha * log(2));
+    }
     k = log((exp(lowest_layer_thickness / alpha) - 1) / (exp(Top_altitude / alpha) - 1)) / (x1 - 1);
     xbl = -log(exp(lowest_layer_thickness / alpha) - 1) / k + x1; //centering the function
 
