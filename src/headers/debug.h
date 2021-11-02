@@ -86,8 +86,8 @@
 
 // diagnostics levels
 // general enabler of checks
-//#define DIAGNOSTICS_LEVEL1
-#define DIAGNOSTICS_LEVEL2
+#define DIAGNOSTICS_LEVEL1
+//#define DIAGNOSTICS_LEVEL2
 //#define DIAGNOSTICS_LEVEL3
 // #define DIAGNOSTICS_LEVEL4
 
