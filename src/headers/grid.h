@@ -126,6 +126,7 @@ private:
     void set_altitudes_uniform(double *, double *, double, int);
     void set_altitudes_refined(double *, double *, double, int, int);
     void set_altitudes_softplus(double *, double *, double, double, double, int);
+    void set_altitudes_densed_around(int, double, double, double, double, double *, double *);
     void cart2sphe(double *, double *, int);
     void correct_xyz_points(double, double *, double *, int *, int);
     void control_areas(double *, double *, double *, int *, double *, double *, int *, int, double);
