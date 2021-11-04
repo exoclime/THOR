@@ -737,10 +737,10 @@ __device__ void kernel_k_Ross_Freedman(double Tin, double Pin, double met, doubl
     {
         Tl10 = log10(Tin);
     }
-    */
+    
 
 
-    if (Pin <= 0.0001 || isnan(Pin))
+    if (Pin <= 0.001 || isnan(Pin))
     {
          Pl10 = -3;
     }
@@ -748,10 +748,11 @@ __device__ void kernel_k_Ross_Freedman(double Tin, double Pin, double met, doubl
     {
         Pl10 = log10(Pin * 10.0); // Convert to dyne cm-2 and log 10
     }
+    */
     
 
     Tl10 = log10(Tin);
-    //Pl10 = log10(Pin * 10.0);
+    Pl10 = log10(Pin * 10.0);
     
     
     
@@ -1833,9 +1834,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 Bp__dff_l);
         }
 
-        if (id == 430) {
-            printf("tint = %e \n",  tint);
-        }
+        
         
         for (int level = 0; level < nv; level++)
         {
@@ -1935,7 +1934,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
                 
                 }
 
-                if (level == nvi - 1)
+                if (level == nv - 1)
                 {
                     printf("Te__df_e[id * nvi + %d] = %e \n",  level, Te__df_e[id * nvi + level]);
                 }

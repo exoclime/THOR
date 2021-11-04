@@ -212,7 +212,12 @@ __host__ Icogrid::Icogrid(bool   sprd,        // Spring dynamics option
     //  Set the Altitudes
     Altitude  = (double *)malloc(nv * sizeof(double));
     Altitudeh = (double *)malloc(nvi * sizeof(double));
-    if (vert_refined) {
+
+    bool vert_densed = true;
+    if (vert_densed) {
+        set_altitudes_densed_around(nvi, 0.6, 1, 10, Top_altitude, Altitude, Altitudeh)
+
+    } else if (vert_refined) {
         // set_altitudes_refined(Altitude, Altitudeh, Top_altitude, nv, n_bl_layers);
         set_altitudes_softplus(
             Altitude, Altitudeh, Top_altitude, lowest_layer_thickness, transition_altitude, nv);
@@ -2005,6 +2010,47 @@ void Icogrid::set_altitudes_softplus(double *Altitude,
         Altitude[lev] = (Altitudeh[lev] + Altitudeh[lev + 1]) / 2.0;
     }
     printf("stop here");
+}
+
+void Icogrid::set_altitudes_densed_around(  int nvi, 
+                                            double f_height, 
+                                            double a, 
+                                            double b,
+                                            double Top_altitude,
+                                            double *Altitude,
+                                            double *Altitudeh){
+   
+    double c, d;
+    double y[nvi];
+    double base;
+    
+    
+    c = f_height*(nvi-1)/2.0 + 1.0/3.0*b/a + (nvi-1)/4.0;
+   
+    d = 1.0/2.0;
+    
+    for (int i = 0; i < nvi; i++){
+        
+        y[i] =  a*pow(((double)i-c),3) +
+                b*pow(((double)i-d),2);
+    }
+    base = sqrt(pow(y[0],2));
+    
+    for (int i = 0; i < nvi; i++){
+        y[i] =  y[i] + base;
+    }
+    
+    for (int i = 0; i < nvi; i++){
+         y[i] =  y[i] / y[nvi-1];
+    }
+
+    for (int lev = 0; lev < nvi; lev++) { //interfaces
+        Altitudeh[lev] = y[i] * Top_altitude;
+    }
+    for (int lev = 0; lev < nv; lev++) { //centers of layers
+        Altitude[lev] = (Altitudeh[lev] + Altitudeh[lev + 1]) / 2.0;
+    }
+    
 }
 
 
