@@ -215,7 +215,7 @@ __host__ Icogrid::Icogrid(bool   sprd,        // Spring dynamics option
 
     bool vert_densed = true;
     if (vert_densed) {
-        set_altitudes_densed_around(nvi, 0.6, 1, 10, Top_altitude, Altitude, Altitudeh);
+        set_altitudes_densed_around(nvi, 0.75, 1, 4, Top_altitude, Altitude, Altitudeh);
 
     } else if (vert_refined) {
         // set_altitudes_refined(Altitude, Altitudeh, Top_altitude, nv, n_bl_layers);
