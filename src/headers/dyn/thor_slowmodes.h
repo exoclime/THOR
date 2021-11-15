@@ -83,7 +83,8 @@ __global__ void Compute_Slow_Modes(double *SlowMh_d,
                                    double *profx_dMh_d,
                                    double *profx_dWh_d,
                                    double *profx_Qheat_d,
-                                   bool    energy_equation) {
+                                   bool    energy_equation,
+                                   bool    GravHeightVar) {
 
     int x = threadIdx.x;
     int y = threadIdx.y;
@@ -321,10 +322,22 @@ __global__ void Compute_Slow_Modes(double *SlowMh_d,
         intl = (xi - xim) / (xip - xim);
 
         if (DeepModel) {
-            swr = (advrl + rhol * Gravit) * intt + (advr + rho * Gravit) * intl;
+            if (GravHeightVar) {
+                swr = (advrl + rhol * Gravit * pow(A / (A + altl), 2)) * intt
+                      + (advr + rho * Gravit * pow(A / (A + alt), 2)) * intl;
+            }
+            else {
+                swr = (advrl + rhol * Gravit) * intt + (advr + rho * Gravit) * intl;
+            }
         }
         else {
-            swr = (rhol * Gravit) * intt + (rho * Gravit) * intl;
+            if (GravHeightVar) {
+                swr = (rhol * Gravit * pow(A / (A + altl), 2)) * intt
+                      + (rho * Gravit * pow(A / (A + alt), 2)) * intl;
+            }
+            else {
+                swr = (rhol * Gravit) * intt + (rho * Gravit) * intl;
+            }
         }
 
         if (NonHydro) {
@@ -403,7 +416,8 @@ __global__ void Compute_Slow_Modes_Poles(double *SlowMh_d,
                                          double *profx_dMh_d,
                                          double *profx_dWh_d,
                                          double *profx_Qheat_d,
-                                         bool    energy_equation) {
+                                         bool    energy_equation,
+                                         bool    GravHeightVar) {
 
     int id = blockIdx.x * blockDim.x + threadIdx.x;
     id += num - 2; // Poles
@@ -588,10 +602,24 @@ __global__ void Compute_Slow_Modes_Poles(double *SlowMh_d,
 
                 intt = (xi - xip) / (xim - xip);
                 intl = (xi - xim) / (xip - xim);
-                if (DeepModel)
-                    swr = (advrl + rhol * Gravit) * intt + (advrt + rhot * Gravit) * intl;
-                else
-                    swr = (rhol * Gravit) * intt + (rhot * Gravit) * intl;
+                if (DeepModel) {
+                    if (GravHeightVar) {
+                        swr = (advrl + rhol * Gravit * pow(A / (A + altl), 2)) * intt
+                              + (advrt + rhot * Gravit * pow(A / (A + alt), 2)) * intl;
+                    }
+                    else {
+                        swr = (advrl + rhol * Gravit) * intt + (advrt + rhot * Gravit) * intl;
+                    }
+                }
+                else {
+                    if (GravHeightVar) {
+                        swr = (rhol * Gravit * pow(A / (A + altl), 2)) * intt
+                              + (rhot * Gravit * pow(A / (A + alt), 2)) * intl;
+                    }
+                    else {
+                        swr = (rhol * Gravit) * intt + (rhot * Gravit) * intl;
+                    }
+                }
 
                 if (NonHydro) {
                     swr += (-diffw_d[id * nv + lev - 1] - diffwv_d[id * nv + lev - 1]) * intt

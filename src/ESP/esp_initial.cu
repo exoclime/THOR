@@ -465,7 +465,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
     double chi_H = 0, ptmp, eps = 1e-15, f, df, dz, mu;
     int    it, it_max = 100;
 
-    double Rd_L, P_L, T_L, rho_L, alpha;
+    double Rd_L, P_L, T_L, rho_L, alpha, g_L, g;
     if (sim.rest) {
         for (int i = 0; i < point_num; i++) {
             //
@@ -492,12 +492,24 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         rho_L = sim.P_Ref / (sim.Rd * sim.Tmean);
                         T_L   = sim.Tmean;
                         dz    = Altitude_h[0];
+                        if (sim.GravHeightVar) {
+                            g_L = sim.Gravit * pow(sim.A / (sim.A + Altitude_h[0]), 2);
+                        }
+                        else {
+                            g_L = sim.Gravit;
+                        }
                     }
                     else {
                         P_L   = pressure_h[i * nv + lev - 1];
                         rho_L = Rho_h[i * nv + lev - 1];
                         T_L   = temperature_h[i * nv + lev - 1];
                         dz    = Altitude_h[lev] - Altitude_h[lev - 1];
+                        if (sim.GravHeightVar) {
+                            g_L = sim.Gravit * pow(sim.A / (sim.A + Altitude_h[lev - 1]), 2);
+                        }
+                        else {
+                            g_L = sim.Gravit;
+                        }
                     }
                     pressure_h[i * nv + lev]    = P_L;
                     Rd_h[i * nv + lev]          = sim.Rd;
@@ -505,6 +517,12 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                     Rho_h[i * nv + lev]         = rho_L;
                     temperature_h[i * nv + lev] = T_L;
                     ptmp = pressure_h[i * nv + lev] + 2 * eps * pressure_h[i * nv + lev];
+                    if (sim.GravHeightVar) {
+                        g = sim.Gravit * pow(sim.A / (sim.A + Altitude_h[lev]), 2);
+                    }
+                    else {
+                        g = sim.Gravit;
+                    }
 
                     it = 0;
                     while (it < it_max
@@ -512,13 +530,14 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         //Newton-Raphson solver of hydrostatic eqn for thermo properties
                         ptmp = pressure_h[i * nv + lev];
                         f    = (pressure_h[i * nv + lev] - P_L) / dz
-                            + sim.Gravit * 0.5 * (Rho_h[i * nv + lev] + rho_L);
-                        df = 1.0 / dz + 0.5 * sim.Gravit / (sim.Rd * temperature_h[i * nv + lev]);
+                            + 0.5 * (g + g_L) * 0.5 * (Rho_h[i * nv + lev] + rho_L);
+                        df = 1.0 / dz
+                             + 0.5 * (0.5 * (g + g_L)) / (sim.Rd * temperature_h[i * nv + lev]);
                         pressure_h[i * nv + lev] = pressure_h[i * nv + lev] - f / df;
                         if (init_PT_profile == CONSTBV) {
                             //use a constant brunt-vaisala freq
                             //alpha is a function equal to 1/2*(1/T)*dT
-                            alpha = 0.5 * pow(bv_freq, 2) / sim.Gravit * dz
+                            alpha = 0.5 * pow(bv_freq, 2) / (0.5 * (g + g_L)) * dz
                                     + sim.Rd / sim.Cp * (pressure_h[i * nv + lev] - P_L)
                                           / (pressure_h[i * nv + lev] + P_L);
                             temperature_h[i * nv + lev] = (1 + alpha) * T_L / (1 - alpha);
@@ -540,6 +559,12 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                     //first, we define thermo quantities of layer below and make
                     //our initial guess for the Newton-Raphson solver
                     if (lev == 0) {
+                        if (sim.GravHeightVar) {
+                            g_L = sim.Gravit * pow(sim.A / (sim.A + Altitude_h[0]), 2);
+                        }
+                        else {
+                            g_L = sim.Gravit;
+                        }
                         if (init_PT_profile == ISOTHERMAL) {
                             temperature_h[i * nv + lev] = sim.Tmean;
                         }
@@ -548,7 +573,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                                                                     mu,
                                                                     sim.Tmean,
                                                                     sim.P_Ref,
-                                                                    sim.Gravit,
+                                                                    g_L,
                                                                     Tint,
                                                                     f_lw,
                                                                     kappa_sw,
@@ -567,6 +592,12 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         dz  = Altitude_h[0];
                     }
                     else {
+                        if (sim.GravHeightVar) {
+                            g_L = sim.Gravit * pow(sim.A / (sim.A + Altitude_h[lev - 1]), 2);
+                        }
+                        else {
+                            g_L = sim.Gravit;
+                        }
                         temperature_h[i * nv + lev] = temperature_h[i * nv + lev - 1];
                         if (ultrahot_thermo != NO_UH_THERMO) {
                             chi_H = chi_H_equilibrium(
@@ -585,6 +616,12 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                     Rd_h[i * nv + lev]          = Rd_L;
                     // ptmp                        = pressure_h[i * nv + lev] + 2 * eps;
                     ptmp = pressure_h[i * nv + lev] + 2 * eps * pressure_h[i * nv + lev];
+                    if (sim.GravHeightVar) {
+                        g = sim.Gravit * pow(sim.A / (sim.A + Altitude_h[lev]), 2);
+                    }
+                    else {
+                        g = sim.Gravit;
+                    }
 
                     it = 0;
                     while (it < it_max
@@ -601,12 +638,12 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                         // works better to get hs balance
                         f = (pressure_h[i * nv + lev] - P_L) / dz
-                            + sim.Gravit / Rd_h[i * nv + lev] * 0.5
+                            + 0.5 * (g + g_L) / Rd_h[i * nv + lev] * 0.5
                                   * (pressure_h[i * nv + lev] / temperature_h[i * nv + lev]
                                      + P_L / T_L);
-                        df =
-                            1.0 / dz
-                            + 0.5 * sim.Gravit / (Rd_h[i * nv + lev] * temperature_h[i * nv + lev]);
+                        df = 1.0 / dz
+                             + 0.5 * (0.5 * (g + g_L))
+                                   / (Rd_h[i * nv + lev] * temperature_h[i * nv + lev]);
                         pressure_h[i * nv + lev] = pressure_h[i * nv + lev] - f / df;
                         if (init_PT_profile == ISOTHERMAL) {
                             temperature_h[i * nv + lev] = sim.Tmean;
@@ -616,7 +653,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                                                                     mu,
                                                                     sim.Tmean,
                                                                     sim.P_Ref,
-                                                                    sim.Gravit,
+                                                                    g,
                                                                     Tint,
                                                                     f_lw,
                                                                     kappa_sw,

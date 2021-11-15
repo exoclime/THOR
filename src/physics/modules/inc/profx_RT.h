@@ -51,14 +51,22 @@ __device__ void radcsw(double *phtemp,
                        int     id,
                        int     nv,
                        double *insol_d,
-                       bool    DeepModel) {
+                       bool    DeepModel,
+                       bool    GravHeightVar) {
 
     //  Calculate upward, downward, and net flux.
     //  Downward Directed Radiation
 
     // double gocp;
     //double tau      = (tausw / ps0) * (phtemp[id * (nv + 1) + nv]);
-    double tau      = (kappa_sw / gravit) * (phtemp[id * (nv + 1) + nv]);
+    double tau;
+    if (GravHeightVar) {
+        tau = (kappa_sw / (gravit * pow(A / (A + Altitudeh_d[nv + 1]), 2)))
+              * (phtemp[id * (nv + 1) + nv]);
+    }
+    else {
+        tau = (kappa_sw / gravit) * (phtemp[id * (nv + 1) + nv]);
+    }
     insol_d[id]     = incflx * pow(r_orb, -2) * coszrs;
     double flux_top = insol_d[id] * (1.0 - alb);
     double rup, rlow;
@@ -356,7 +364,8 @@ __global__ void rtm_dual_band(double *pressure_d,
                               double  Qheat_scaling,
                               bool    gcm_off,
                               bool    rt1Dmode,
-                              bool    DeepModel) {
+                              bool    DeepModel,
+                              bool    GravHeightVar) {
 
 
     //
@@ -385,8 +394,15 @@ __global__ void rtm_dual_band(double *pressure_d,
         // Calculate pressures and temperatures at interfaces
         for (int lev = 0; lev <= nv; lev++) {
             if (lev == 0) {
-                psm = pressure_d[id * nv + 1]
-                      - Rho_d[id * nv + 0] * gravit * (-Altitude_d[0] - Altitude_d[1]);
+                if (GravHeightVar) {
+                    psm = pressure_d[id * nv + 1]
+                          - Rho_d[id * nv + 0] * gravit * pow(A / (A + Altitude_d[0]), 2)
+                                * (-Altitude_d[0] - Altitude_d[1]);
+                }
+                else {
+                    psm = pressure_d[id * nv + 1]
+                          - Rho_d[id * nv + 0] * gravit * (-Altitude_d[0] - Altitude_d[1]);
+                }
                 ps = 0.5 * (pressure_d[id * nv + 0] + psm);
 
                 phtemp[id * nvi + 0] = ps;
@@ -482,7 +498,8 @@ __global__ void rtm_dual_band(double *pressure_d,
                    id,
                    nv,
                    insol_d,
-                   DeepModel);
+                   DeepModel,
+                   GravHeightVar);
         }
         else {
             insol_d[id] = 0;

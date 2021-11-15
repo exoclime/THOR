@@ -312,7 +312,8 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                                      Qheat_scaling,
                                      sim.gcm_off,
                                      rt1Dmode,
-                                     sim.DeepModel);
+                                     sim.DeepModel,
+                                     sim.GravHeightVar);
 
         ASR_tot = gpu_sum_on_device<1024>(ASR_d, esp.point_num);
         OLR_tot = gpu_sum_on_device<1024>(OLR_d, esp.point_num);

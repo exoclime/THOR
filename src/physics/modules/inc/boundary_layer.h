@@ -172,7 +172,9 @@ __global__ void rayleighHS(double *Mh_d,
                            double  bl_sigma,
                            double  Gravit,
                            double  time_step,
-                           int     num);
+                           double  A,
+                           int     num,
+                           bool    GravHeightVar);
 
 __global__ void Momentum_Diff_Impl(double *      Mh_d,
                                    double *      pressure_d,
@@ -248,8 +250,10 @@ __global__ void CalcGradRi(double *pressure_d,
                            double  asl_transition_height,
                            double  abl_asym_len,
                            double  free_asym_len,
+                           double  A,
                            int     num,
-                           int     nv);
+                           int     nv,
+                           bool    GravHeightVar);
 
 __global__ void FreeAtmosCutOff(double *KH_d,
                                 double *KM_d,

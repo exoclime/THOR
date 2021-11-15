@@ -255,10 +255,12 @@ __host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
                                                                       Rd_d,
                                                                       Altitude_d,
                                                                       Altitudeh_d,
+                                                                      sim.A,
                                                                       point_num,
                                                                       nv,
                                                                       calcT,
-                                                                      energy_equation);
+                                                                      energy_equation,
+                                                                      sim.GravHeightVar);
 
 
         //      Initializes slow terms.
@@ -777,7 +779,8 @@ __host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
                                                profx_dMh_d,
                                                profx_dWh_d,
                                                profx_Qheat_d,
-                                               energy_equation);
+                                               energy_equation,
+                                               sim.GravHeightVar);
         cudaDeviceSynchronize();
         BENCH_POINT_I_S(current_step,
                         rk,
@@ -823,7 +826,8 @@ __host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
                                               profx_dMh_d,
                                               profx_dWh_d,
                                               profx_Qheat_d,
-                                              energy_equation);
+                                              energy_equation,
+                                              sim.GravHeightVar);
         cudaDeviceSynchronize();
 
         BENCH_POINT_I_S(current_step,
@@ -1089,6 +1093,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
                 nv,
                 nvi,
                 sim.DeepModel,
+                sim.GravHeightVar,
                 *diag.diagnostics_global_flag, // Pass the diagnostics arrays device pointers
                 *diag.diagnostics);
 
@@ -1178,6 +1183,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
                                                      nl_region,
                                                      sim.DeepModel,
                                                      energy_equation,
+                                                     sim.GravHeightVar,
                                                      *diag.diagnostics_global_flag,
                                                      *diag.diagnostics);
 
@@ -1222,6 +1228,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
                                                     nv,
                                                     sim.DeepModel,
                                                     energy_equation,
+                                                    sim.GravHeightVar,
                                                     *diag.diagnostics_global_flag,
                                                     *diag.diagnostics);
 

@@ -72,6 +72,7 @@ __global__ void Vertical_Eq(double *      Whs_d,
                             int           nv,
                             int           nvi,
                             bool          DeepModel,
+                            bool          GravHeightVar,
                             unsigned int *diagnostics_flag,
                             diag_data *   diagnostics_data) {
 
@@ -170,9 +171,19 @@ __global__ void Vertical_Eq(double *      Whs_d,
                         / (Rd_d[id * nv + lev - 1] * deltat * deltat);
                 CRddu = (Cp_d[id * nv + lev] - Rd_d[id * nv + lev])
                         / (Rd_d[id * nv + lev] * deltat * deltat);
-                GCoRl = Gravit * (Cp_d[id * nv + lev - 1] - Rd_d[id * nv + lev - 1])
-                        / Rd_d[id * nv + lev - 1];
-                GCoRu = Gravit * (Cp_d[id * nv + lev] - Rd_d[id * nv + lev]) / Rd_d[id * nv + lev];
+                if (GravHeightVar) {
+                    GCoRl = Gravit * pow(A / (A + altl), 2)
+                            * (Cp_d[id * nv + lev - 1] - Rd_d[id * nv + lev - 1])
+                            / Rd_d[id * nv + lev - 1];
+                    GCoRu = Gravit * pow(A / (A + alt), 2)
+                            * (Cp_d[id * nv + lev] - Rd_d[id * nv + lev]) / Rd_d[id * nv + lev];
+                }
+                else {
+                    GCoRl = Gravit * (Cp_d[id * nv + lev - 1] - Rd_d[id * nv + lev - 1])
+                            / Rd_d[id * nv + lev - 1];
+                    GCoRu =
+                        Gravit * (Cp_d[id * nv + lev] - Rd_d[id * nv + lev]) / Rd_d[id * nv + lev];
+                }
             }
             if (DeepModel) {
                 double dzp  = 1.0 / (altht - alth);
@@ -228,16 +239,34 @@ __global__ void Vertical_Eq(double *      Whs_d,
                 Sdh   = Sdl * intt + Sd * intl;
 
                 if (!NonHydro) {
-                    C0 =
-                        (pow(deltat, 2.0) * dSpdz + pow(deltat, 2.0) * Gravit * Sdh
-                         + Gravit * deltat * rhohs + deltat * dPdz - deltat * Srh_d[id * nvi + lev])
-                        * (CRdd);
+                    if (GravHeightVar) {
+                        C0 = (pow(deltat, 2.0) * dSpdz
+                              + pow(deltat, 2.0) * Gravit * pow(A / (A + alt), 2) * Sdh
+                              + Gravit * pow(A / (A + alt), 2) * deltat * rhohs + deltat * dPdz
+                              - deltat * Srh_d[id * nvi + lev])
+                             * (CRdd);
+                    }
+                    else {
+                        C0 = (pow(deltat, 2.0) * dSpdz + pow(deltat, 2.0) * Gravit * Sdh
+                              + Gravit * deltat * rhohs + deltat * dPdz
+                              - deltat * Srh_d[id * nvi + lev])
+                             * (CRdd);
+                    }
                 }
                 else {
-                    C0 = (-Whs_d[id * nvi + lev] + pow(deltat, 2.0) * dSpdz
-                          + pow(deltat, 2.0) * Gravit * Sdh + Gravit * deltat * rhohs
-                          + deltat * dPdz - deltat * Srh_d[id * nvi + lev])
-                         * (CRdd);
+                    if (GravHeightVar) {
+                        C0 = (-Whs_d[id * nvi + lev] + pow(deltat, 2.0) * dSpdz
+                              + pow(deltat, 2.0) * Gravit * pow(A / (A + alt), 2) * Sdh
+                              + Gravit * pow(A / (A + alt), 2) * deltat * rhohs + deltat * dPdz
+                              - deltat * Srh_d[id * nvi + lev])
+                             * (CRdd);
+                    }
+                    else {
+                        C0 = (-Whs_d[id * nvi + lev] + pow(deltat, 2.0) * dSpdz
+                              + pow(deltat, 2.0) * Gravit * Sdh + Gravit * deltat * rhohs
+                              + deltat * dPdz - deltat * Srh_d[id * nvi + lev])
+                             * (CRdd);
+                    }
                 }
 
                 if (lev < nv - 1) { // Fetch the data for next layer
@@ -264,8 +293,15 @@ __global__ void Vertical_Eq(double *      Whs_d,
                     CRddu = (Cp_d[id * nv + lev + 1] - Rd_d[id * nv + lev + 1])
                             / (Rd_d[id * nv + lev + 1] * deltat * deltat);
                     GCoRl = GCoRu;
-                    GCoRu = Gravit * (Cp_d[id * nv + lev + 1] - Rd_d[id * nv + lev + 1])
-                            / Rd_d[id * nv + lev + 1];
+                    if (GravHeightVar) {
+                        GCoRu = Gravit * pow(A / (A + alt), 2)
+                                * (Cp_d[id * nv + lev + 1] - Rd_d[id * nv + lev + 1])
+                                / Rd_d[id * nv + lev + 1];
+                    }
+                    else {
+                        GCoRu = Gravit * (Cp_d[id * nv + lev + 1] - Rd_d[id * nv + lev + 1])
+                                / Rd_d[id * nv + lev + 1];
+                    }
                 }
             }
             else { // DeepModel == false
@@ -318,16 +354,34 @@ __global__ void Vertical_Eq(double *      Whs_d,
                 Sdh   = Sdl * intt + Sd * intl;
 
                 if (!NonHydro) {
-                    C0 =
-                        (pow(deltat, 2.0) * dSpdz + pow(deltat, 2.0) * Gravit * Sdh
-                         + Gravit * deltat * rhohs + deltat * dPdz - deltat * Srh_d[id * nvi + lev])
-                        * (CRdd);
+                    if (GravHeightVar) {
+                        C0 = (pow(deltat, 2.0) * dSpdz
+                              + pow(deltat, 2.0) * Gravit * pow(A / (A + alt), 2) * Sdh
+                              + Gravit * pow(A / (A + alt), 2) * deltat * rhohs + deltat * dPdz
+                              - deltat * Srh_d[id * nvi + lev])
+                             * (CRdd);
+                    }
+                    else {
+                        C0 = (pow(deltat, 2.0) * dSpdz + pow(deltat, 2.0) * Gravit * Sdh
+                              + Gravit * deltat * rhohs + deltat * dPdz
+                              - deltat * Srh_d[id * nvi + lev])
+                             * (CRdd);
+                    }
                 }
                 else {
-                    C0 = (-Whs_d[id * nvi + lev] + pow(deltat, 2.0) * dSpdz
-                          + pow(deltat, 2.0) * Gravit * Sdh + Gravit * deltat * rhohs
-                          + deltat * dPdz - deltat * Srh_d[id * nvi + lev])
-                         * (CRdd);
+                    if (GravHeightVar) {
+                        C0 = (-Whs_d[id * nvi + lev] + pow(deltat, 2.0) * dSpdz
+                              + pow(deltat, 2.0) * Gravit * pow(A / (A + alt), 2) * Sdh
+                              + Gravit * pow(A / (A + alt), 2) * deltat * rhohs + deltat * dPdz
+                              - deltat * Srh_d[id * nvi + lev])
+                             * (CRdd);
+                    }
+                    else {
+                        C0 = (-Whs_d[id * nvi + lev] + pow(deltat, 2.0) * dSpdz
+                              + pow(deltat, 2.0) * Gravit * Sdh + Gravit * deltat * rhohs
+                              + deltat * dPdz - deltat * Srh_d[id * nvi + lev])
+                             * (CRdd);
+                    }
                 }
                 if (lev < nv - 1) { // Fetch data for the next layer
                     althl = alth;
@@ -353,8 +407,15 @@ __global__ void Vertical_Eq(double *      Whs_d,
                     CRddu = (Cp_d[id * nv + lev + 1] - Rd_d[id * nv + lev + 1])
                             / (Rd_d[id * nv + lev + 1] * deltat * deltat);
                     GCoRl = GCoRu;
-                    GCoRu = Gravit * (Cp_d[id * nv + lev + 1] - Rd_d[id * nv + lev + 1])
-                            / Rd_d[id * nv + lev + 1];
+                    if (GravHeightVar) {
+                        GCoRu = Gravit * pow(A / (A + alt), 2)
+                                * (Cp_d[id * nv + lev + 1] - Rd_d[id * nv + lev + 1])
+                                / Rd_d[id * nv + lev + 1];
+                    }
+                    else {
+                        GCoRu = Gravit * (Cp_d[id * nv + lev + 1] - Rd_d[id * nv + lev + 1])
+                                / Rd_d[id * nv + lev + 1];
+                    }
                 }
             } // End of if (DeepModel) physics computation
 
