@@ -1996,7 +1996,7 @@ def streamf_moc_plot(input, grid, output, rg, sigmaref, save=True, axis=False,
         #clb = plt.colorbar(C, extend='both', ax=ax)
         clb = plt.colorbar(C, cax=cax, extend='both', **kwargs)
         if clabel:
-            clb.set_label(r'Eulerian streamfunction (10$^{%d}$ kg s$^{-1}$)'%cscale)
+            clb.set_label(r'Streamfunction (10$^{%d}$ kg s$^{-1}$)'%cscale)
 
     if plog == True:
         ax.set_yscale("log")
