@@ -96,6 +96,8 @@ __global__ void dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
                         psm = Pressure_d[id * nv + 1]
                               - Rho_d[id * nv + 0] * Gravit * pow(A / (A + Altitude_d[0]), 2)
                                     * (-Altitude_d[0] - Altitude_d[1]);
+                        // psm = Pressure_d[id * nv + 1]
+                        //       - Rho_d[id * nv + 0] * Gravit * (-Altitude_d[0] - Altitude_d[1]);
                     }
                     else {
                         psm = Pressure_d[id * nv + 1]
@@ -112,6 +114,10 @@ __global__ void dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
                             - Rho_d[id * nv + nv - 1] * Gravit
                                   * pow(A / (A + Altitude_d[nv - 1]), 2)
                                   * (2 * Altitudeh_d[nv] - Altitude_d[nv - 1] - Altitude_d[nv - 2]);
+                        // pp =
+                        //     Pressure_d[id * nv + nv - 2]
+                        //     - Rho_d[id * nv + nv - 1] * Gravit
+                        //           * (2 * Altitudeh_d[nv] - Altitude_d[nv - 1] - Altitude_d[nv - 2]);
                     }
                     else {
                         pp =

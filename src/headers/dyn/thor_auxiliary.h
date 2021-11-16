@@ -171,6 +171,7 @@ __global__ void Compute_Temperature_H_Pt_Geff(double *temperature_d,
                 if (GravHeightVar) { //density and gravity defined at center of layer 0
                     pl = pressure_d[id * nv + 1]
                          - rho * Gravit * pow(A / (A + Altitude_d[0]), 2) * (-alt - Altitude_d[1]);
+                    // pl = pressure_d[id * nv + 1] - rho * Gravit * (-alt - Altitude_d[1]);
                 }
                 else {
                     pl = pressure_d[id * nv + 1] - rho * Gravit * (-alt - Altitude_d[1]);
@@ -195,6 +196,8 @@ __global__ void Compute_Temperature_H_Pt_Geff(double *temperature_d,
                     pp = pressure_d[id * nv + nv - 2]
                          - rho * Gravit * pow(A / (A + Altitude_d[lev]), 2)
                                * (2 * Altitudeh_d[nv] - alt - Altitude_d[nv - 2]);
+                    // pp = pressure_d[id * nv + nv - 2]
+                    //      - rho * Gravit * (2 * Altitudeh_d[nv] - alt - Altitude_d[nv - 2]);
                 }
                 else {
                     pp = pressure_d[id * nv + nv - 2]
@@ -239,6 +242,9 @@ __global__ void Compute_Temperature_H_Pt_Geff(double *temperature_d,
                     pp = pressure_d[id * nv + nv - 2]
                          - Rho_d[id * nv + nv - 1] * Gravit * pow(A / (A + Altitude_d[nv - 1]), 2)
                                * (2 * Altitudeh_d[nv] - Altitude_d[nv - 1] - Altitude_d[nv - 2]);
+                    // pp = pressure_d[id * nv + nv - 2]
+                    //      - Rho_d[id * nv + nv - 1] * Gravit
+                    //            * (2 * Altitudeh_d[nv] - Altitude_d[nv - 1] - Altitude_d[nv - 2]);
                 }
                 else {
                     pp = pressure_d[id * nv + nv - 2]
