@@ -162,15 +162,21 @@ __global__ void dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
                             // calc adiabatic pressure, integrate upward for new pot. temp.
                             double pu = Pressureh_d[id * (nv + 1) + lev + 1];
                             double pl = Pressureh_d[id * (nv + 1) + lev];
+                            double rho_g_dz;
                             double pi =
                                 pow(Pressure_d[id * nv + lev] / Pressureh_d[id * (nv + 1) + 0],
                                     Rd_d[id * nv + lev]
                                         / Cp_d[id * nv
                                                + lev]); // adiabatic pressure wrt bottom of column
                             double deltap = pl - pu;
+                            rho_g_dz = Rho_d[id * nv + lev] * Gravit
+                                       * (Altitudeh_d[lev + 1] - Altitudeh_d[lev]);
 
                             h   = h + pt_d[id * nv + lev] * pi * deltap;
                             sum = sum + pi * deltap;
+                            //
+                            // h   = h + pt_d[id * nv + lev] * pi * rho_g_dz;
+                            // sum = sum + pi * rho_g_dz;
                         }
                         thnew = h / sum;
 
