@@ -392,7 +392,7 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
     cudaDeviceSynchronize();
 
     //apply heating here if gcm_off = true
-    if (sim.gcm_off == true) {
+    if (sim.gcm_off == true) { //need to skip this step if testing dry conv alone
         apply_heating<<<NB, NTH>>>(
             temperature_d, profx_Qheat_d, Rho_d, Cp_d, Rd_d, timestep, point_num);
         cudaDeviceSynchronize();
