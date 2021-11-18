@@ -240,7 +240,6 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
         cudaDeviceSynchronize();
 
         dry_conv_adj<<<NBRT, NTH>>>(pressure_d,    // Pressure [Pa]
-                                    pressureh_d,   // mid-point pressure [Pa]
                                     temperature_d, // Temperature [K]
                                     profx_Qheat_d,
                                     pt_d,        // Pot temperature [K]
