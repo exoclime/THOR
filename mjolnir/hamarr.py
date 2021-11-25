@@ -842,8 +842,7 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
             if input.surface:
                 surf = 1
                 extrap_low = (grid.Altitudeh[0] - grid.Altitude[1]) / (grid.Altitude[0] - grid.Altitude[1])
-                Psurf = output.Pressure[:, 1, :] + extrap_low * (output.Pressure[:, 0, :] - output.Pressure[:, 1, :])
-
+            
         else:
             surf = 0
 
@@ -887,6 +886,8 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
             outall = GetOutput(resultsf, simID, t, t, rotation=rotation, theta_z=theta_z, theta_y=theta_y)
             output = outall.output
             output.load_reshape_all(grid)
+            if surf:
+                Psurf = output.Pressure[:, 1, :] + extrap_low * (output.Pressure[:, 0, :] - output.Pressure[:, 1, :])
 
             # interpolate in z to middle of layers using this
             interpz = (grid.Altitude - grid.Altitudeh[:-1]) / (grid.Altitudeh[1:] - grid.Altitudeh[:-1])
