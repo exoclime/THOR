@@ -1296,8 +1296,13 @@ __device__  void lw_grey_updown_linear(int id,
         // work variables
         double Finc;
         double Finc_B;
+
+
        
         // start operation
+
+        ASR_d[id] = 0.0;
+        OLR_d[id] = 0.0;
         
         ///////////////////
         // Find temperature at layer edges through interpolation and extrapolation
