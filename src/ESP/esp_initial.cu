@@ -638,7 +638,11 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                 }
 
-                MetStar = 0.0;
+                if (isnan(MetStar)) {
+                    MetStar = 0.0;
+                }
+
+                
                 
                 Parmentier_IC_1D(init_nv, init_pressure_parmentier, Tint, mu, Tirr, sim.Gravit, init_temperature_parmentier, table_num, MetStar);
                 //Parmentier_bilinear_interpolation_IC(i, nv, pressure_h, Tint, mu, Tirr,

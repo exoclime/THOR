@@ -883,25 +883,6 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                 gam_1__h,
                 gam_2__h,
                 gam_P);
-
-            
-            
-            /*   
-            printf("Teff[%d] = %e \n", 0, Teff[0]);
-            printf("AB__h[%d] = %e \n", 0, AB__h[0]);
-            printf("gam_V__h[0 + 0] = %e \n", gam_V__h[0]);
-            printf("gam_V__h[0 + 1] = %e \n", gam_V__h[1]);
-            printf("gam_V__h[0 + 2] = %e \n", gam_V__h[2]);
-            printf("Beta_V__h[0 + 0] = %e \n", Beta_V__h[0]);
-            printf("Beta_V__h[0 + 1] = %e \n", Beta_V__h[1]);
-            printf("Beta_V__h[0 + 2] = %e \n", Beta_V__h[2]);
-            printf("Beta__h[0 + 0] = %e \n", Beta__h[0]);
-            printf("Beta__h[0 + 1] = %e \n", Beta__h[1]);
-            printf("gam_1__h[0] = %e \n", gam_1__h[0]);
-            printf("gam_2__h[0] = %e \n", gam_2__h[0]);
-            printf("gam_P[0] = %e \n", gam_P[0]);
-            printf("mu[0] = %e \n", 0.99);
-            */
                 
                 
             bool cudaStatus;
