@@ -510,7 +510,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
                 // pascicode
     
                 
-                double Diffc_intitial_factor = 1.0;
+                double Diffc_intitial_factor = 0.1;
                 double DivDampc_intitial_factor = 10.0;
                 double Diffc_v_intitial_factor = 10.0;
 
