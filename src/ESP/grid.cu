@@ -213,7 +213,7 @@ __host__ Icogrid::Icogrid(bool   sprd,        // Spring dynamics option
     Altitude  = (double *)malloc(nv * sizeof(double));
     Altitudeh = (double *)malloc(nvi * sizeof(double));
 
-    bool vert_densed = false;
+    bool vert_densed = true;
     if (vert_densed) {
         set_altitudes_densed_around(nvi, 0.7, 1, 6, Top_altitude, Altitude, Altitudeh);
 
