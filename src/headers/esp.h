@@ -219,7 +219,7 @@ public:
     double *init_pressure_parmentier ;
     double *init_Rd_parmentier ;
 
-    // i(by Noti Pascal)
+    // working variable for Ray's dry convective adjustment (by Noti Pascal)
     double *dT_conv_d;
 
     ///////////////////////////
