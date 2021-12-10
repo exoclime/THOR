@@ -123,6 +123,9 @@ public:
     //store and output momentum at start of step and after profx (for momentum analysis)
     double *Mh_start_dt_h;
     double *Mh_profx_h;
+    double *Rho_start_dt_h;
+    double *Rho_profx_h;
+
     //
     // double *Kdhz_h;
     // double *Kdh4_h;
@@ -204,18 +207,19 @@ public:
     double  Csurf;
     double *dTsurf_dt_d; // store change in temp to update all at once in profx
 
-    // variables for initial parmentier conditions (by Noti Pascal)
+    // variables for initial parmentier conditions for TP profile (by Noti Pascal)
     double MetStar;
     double Tstar;
     double radius_star;
     double planet_star_dist;
 
-    // inititial conditions parmentier
+    // init TP to starting TP (by Noti Pascal)
     double *init_altitude_parmentier;
     double *init_temperature_parmentier;
     double *init_pressure_parmentier ;
     double *init_Rd_parmentier ;
 
+    // i(by Noti Pascal)
     double *dT_conv_d;
 
     ///////////////////////////
@@ -260,6 +264,8 @@ public:
     //store and output momentum at start of step and after profx (for momentum analysis)
     double *Mh_start_dt_d;
     double *Mh_profx_d;
+    double *Rho_start_dt_d;
+    double *Rho_profx_d;
 
     double *Adv_d;
 
@@ -655,3 +661,4 @@ private:
 
     device_RK_array_manager phy_modules_core_arrays;
 };
+
