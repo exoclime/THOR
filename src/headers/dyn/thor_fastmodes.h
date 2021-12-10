@@ -45,6 +45,10 @@
 //
 ////////////////////////////////////////////////////////////////////////
 #include "kernel_halo_helpers.h"
+
+#include "debug.h"
+#include "diagnostics.h"
+
 #define REALLY_SMALL 1e-300
 
 template<int NX, int NY>
@@ -249,41 +253,44 @@ __global__ void Momentum_Eq_Poles(double *M_d,
 }
 
 template<int NX, int NY>
-__global__ void Density_Pressure_Eqs(double *pressure_d,
-                                     double *pressurek_d,
-                                     double *Rho_d,
-                                     double *Rhok_d,
-                                     double *Mh_d,
-                                     double *Mhk_d,
-                                     double *Wh_d,
-                                     double *Whk_d,
-                                     double *pt_d,
-                                     double *pth_d,
-                                     double *epotential_d,
-                                     double *epotentialh_d,
-                                     double *ekinetic_d,
-                                     double *ekinetich_d,
-                                     double *Etotal_tau_d,
-                                     double *h_d,
-                                     double *hh_d,
-                                     double *SlowRho_d,
-                                     double *profx_Qheat_d,
-                                     double *diffpr_d,
-                                     double *diffprv_d,
-                                     double *div_d,
-                                     double *Altitude_d,
-                                     double *Altitudeh_d,
-                                     double *Cp_d,
-                                     double *Rd_d,
-                                     double  A,
-                                     double  P_Ref,
-                                     double  Gravit,
-                                     double  dt,
-                                     int *   maps_d,
-                                     int     nl_region,
-                                     bool    DeepModel,
-                                     bool    energy_equation) {
-
+__global__ void Density_Pressure_Eqs(double *      pressure_d,
+                                     double *      pressurek_d,
+                                     double *      Rho_d,
+                                     double *      Rhok_d,
+                                     double *      Mh_d,
+                                     double *      Mhk_d,
+                                     double *      Wh_d,
+                                     double *      Whk_d,
+                                     double *      pt_d,
+                                     double *      pth_d,
+                                     double *      epotential_d,
+                                     double *      epotentialh_d,
+                                     double *      ekinetic_d,
+                                     double *      ekinetich_d,
+                                     double *      Etotal_tau_d,
+                                     double *      h_d,
+                                     double *      hh_d,
+                                     double *      SlowRho_d,
+                                     double *      profx_Qheat_d,
+                                     double *      diffpr_d,
+                                     double *      diffprv_d,
+                                     double *      div_d,
+                                     double *      Altitude_d,
+                                     double *      Altitudeh_d,
+                                     double *      Cp_d,
+                                     double *      Rd_d,
+                                     double        A,
+                                     double        P_Ref,
+                                     double        Gravit,
+                                     double        dt,
+                                     int *         maps_d,
+                                     int           nl_region,
+                                     bool          DeepModel,
+                                     bool          energy_equation,
+                                     unsigned int *diagnostics_flag,
+                                     diag_data *   diagnostics_data) {
+    // This function is one of the tricky part in the algorithm.
+    // It uses the output of the vertical solver using a thomas algorithm
     int x = threadIdx.x;
     int y = threadIdx.y;
     //    int ib  = blockIdx.x;
@@ -299,7 +306,6 @@ __global__ void Density_Pressure_Eqs(double *pressure_d,
     __shared__ double v_s[3 * (NX + 2) * (NY + 2)];
     __shared__ double v1_s[3 * (NX + 2) * (NY + 2)];
     __shared__ double pt_s[(NX + 2) * (NY + 2)];
-
 
     double alt, r2p, r2m, r2l, rscale;
     double wht, whl;
@@ -470,12 +476,16 @@ __global__ void Density_Pressure_Eqs(double *pressure_d,
         }
     }
 
+    // uses thomas algorithm computed vertical velocities in dyn/thor_vertical_int.h :: vertical_eq
+    // wht/whl and wht/whl2 -> can have big error
     dz     = altht - althl;
     dwdz   = (wht * r2p - whl * r2l) / (dz * r2m);
     dwptdz = (wht2 * pht * r2p - whl2 * phl * r2l) / (dz * r2m);
 
+    // the errors can sometimes make aux become negative and cause issues later
     aux = -(nflxpt_s[iri] + dwptdz) * dt;               //advection terms in thermo eqn
     r   = Rhok_d[id * nv + lev] + Rho_d[id * nv + lev]; //density at time tau
+
 
     // Updates density
     nflxr_s[iri] += dwdz;
@@ -512,10 +522,36 @@ __global__ void Density_Pressure_Eqs(double *pressure_d,
              * pow((pressure_d[id * nv + lev] + pressurek_d[id * nv + lev]) / P_Ref,
                    Cv / Cp_d[id * nv + lev]);
 
+        // negative aux can get wrongly negative here and cause NaN in fractional power computation.
+        // r: current density
         aux += pt * r;
 
-        p = P_Ref * pow(Rd_d[id * nv + lev] * aux / P_Ref, Cp_d[id * nv + lev] / Cv); //
+#if defined(DIAG_CHECK_DENSITY_PRESSURE_EQ_AUX) || defined(DIAG_CHECK_DENSITY_PRESSURE_EQ_P_NAN)
+        // clear diagnostics memory
+        diagnostics_data[id * nv + lev].flag = 0;
+        diagnostics_data[id * nv + lev].data = make_double4(0.0, 0.0, 0.0, 0.0);
+#endif // defined(DIAG_CHECK_DENSITY_PRESSURE_EQ_AUX) || defined(DIAG_CHECK_DENSITY_PRESSURE_EQ_P_NAN)
 
+
+#ifdef DIAG_CHECK_DENSITY_PRESSURE_EQ_AUX
+        if (aux < 0.0) {
+            // set global diagnostics flag atomically.
+            atomicOr(diagnostics_flag, NEGATIVE_VALUE);
+            // add the element diagnostics flag to diag array
+            diagnostics_data[id * nv + lev].flag |= NEGATIVE_VALUE;
+            // store aux value in diagnostics data array
+            diagnostics_data[id * nv + lev].data.x = aux;
+        }
+#endif // DIAG_CHECK_DENSITY_PRESSURE_EQ_AUX
+
+        // fractional power that returns a NaN
+        p = P_Ref * pow(Rd_d[id * nv + lev] * aux / P_Ref, Cp_d[id * nv + lev] / Cv);
+#ifdef DIAG_CHECK_DENSITY_PRESSURE_EQ_P_NAN
+        if (isnan(p)) {
+            atomicOr(diagnostics_flag, NAN_VALUE);
+            diagnostics_data[id * nv + lev].flag |= NAN_VALUE;
+        }
+#endif // DIAG_CHECK_DENSITY_PRESSURE_EQ_P_NAN
         pressure_d[id * nv + lev] = p - pressurek_d[id * nv + lev]
                                     + (diffpr_d[id * nv + lev] + diffprv_d[id * nv + lev]) * dt
                                     + Rd_d[id * nv + lev] / Cv * profx_Qheat_d[id * nv + lev] * dt;
@@ -524,41 +560,43 @@ __global__ void Density_Pressure_Eqs(double *pressure_d,
 
 
 template<int NN>
-__global__ void Density_Pressure_Eqs_Poles(double *pressure_d,
-                                           double *pressurek_d,
-                                           double *Rho_d,
-                                           double *Rhok_d,
-                                           double *Mh_d,
-                                           double *Mhk_d,
-                                           double *Wh_d,
-                                           double *Whk_d,
-                                           double *pt_d,
-                                           double *pth_d,
-                                           double *epotential_d,
-                                           double *epotentialh_d,
-                                           double *ekinetic_d,
-                                           double *ekinetich_d,
-                                           double *Etotal_tau_d,
-                                           double *h_d,
-                                           double *hh_d,
-                                           double *SlowRho_d,
-                                           double *profx_Qheat_d,
-                                           double *diffpr_d,
-                                           double *diffprv_d,
-                                           double *div_d,
-                                           double *Altitude_d,
-                                           double *Altitudeh_d,
-                                           double *Cp_d,
-                                           double *Rd_d,
-                                           double  A,
-                                           double  P_Ref,
-                                           double  Gravit,
-                                           double  dt,
-                                           int *   point_local_d,
-                                           int     num,
-                                           int     nv,
-                                           bool    DeepModel,
-                                           bool    energy_equation) {
+__global__ void Density_Pressure_Eqs_Poles(double *      pressure_d,
+                                           double *      pressurek_d,
+                                           double *      Rho_d,
+                                           double *      Rhok_d,
+                                           double *      Mh_d,
+                                           double *      Mhk_d,
+                                           double *      Wh_d,
+                                           double *      Whk_d,
+                                           double *      pt_d,
+                                           double *      pth_d,
+                                           double *      epotential_d,
+                                           double *      epotentialh_d,
+                                           double *      ekinetic_d,
+                                           double *      ekinetich_d,
+                                           double *      Etotal_tau_d,
+                                           double *      h_d,
+                                           double *      hh_d,
+                                           double *      SlowRho_d,
+                                           double *      profx_Qheat_d,
+                                           double *      diffpr_d,
+                                           double *      diffprv_d,
+                                           double *      div_d,
+                                           double *      Altitude_d,
+                                           double *      Altitudeh_d,
+                                           double *      Cp_d,
+                                           double *      Rd_d,
+                                           double        A,
+                                           double        P_Ref,
+                                           double        Gravit,
+                                           double        dt,
+                                           int *         point_local_d,
+                                           int           num,
+                                           int           nv,
+                                           bool          DeepModel,
+                                           bool          energy_equation,
+                                           unsigned int *diagnostics_flag,
+                                           diag_data *   diagnostics_data) {
 
     int id = blockIdx.x * blockDim.x + threadIdx.x;
     id += num - 2; // Poles
@@ -726,9 +764,32 @@ __global__ void Density_Pressure_Eqs_Poles(double *pressure_d,
                      * pow((ptmp + pressurek_d[id * nv + lev]) / P_Ref, Cv / Cp_d[id * nv + lev]);
 
                 aux += pt * r;
+#if defined(DIAG_CHECK_DENSITY_PRESSURE_EQ_AUX) || defined(DIAG_CHECK_DENSITY_PRESSURE_EQ_P_NAN)
+                // clear diagnostics memory
+                diagnostics_data[id * nv + lev].flag = 0;
+                diagnostics_data[id * nv + lev].data = make_double4(0.0, 0.0, 0.0, 0.0);
+#endif
 
+#ifdef DIAG_CHECK_DENSITY_PRESSURE_EQ_AUX
+
+                if (aux < 0.0) {
+                    // set flags. Use binary OR operator to enable the flag
+                    // without overwriting other flags that could be present
+                    atomicOr(diagnostics_flag, NEGATIVE_VALUE);
+                    diagnostics_data[id * nv + lev].flag |= NEGATIVE_VALUE;
+                    diagnostics_data[id * nv + lev].data.x = aux;
+                }
+#endif // DIAG_CHECK_DENSITY_PRESSURE_EQ_AUX
 
                 p = P_Ref * pow(Rd_d[id * nv + lev] * aux / P_Ref, Cp_d[id * nv + lev] / Cv); //
+#ifdef DIAG_CHECK_DENSITY_PRESSURE_EQ_P_NAN
+                if (isnan(p)) {
+                    // set our second flag
+                    atomicOr(diagnostics_flag, NAN_VALUE);
+                    diagnostics_data[id * nv + lev].flag |= NAN_VALUE;
+                }
+#endif // DIAG_CHECK_DENSITY_PRESSURE_EQ_P_NAN
+
 
                 // Updates pressure
                 pressure_d[id * nv + lev] =
