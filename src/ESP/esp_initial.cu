@@ -686,6 +686,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 }
 
                 printf(" Tirr = %e \n", Tirr);
+                printf(" Tint = %e \n", Tint);
                 printf(" radius_star = %e \n", radius_star);
                 printf(" planet_star_dist = %e \n", planet_star_dist);
                 printf(" Tstar = %e \n", Tstar);
