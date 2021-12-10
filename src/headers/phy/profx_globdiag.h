@@ -45,6 +45,9 @@
 ////////////////////////////////////////////////////////////////////////
 #pragma once
 
+__global__ void
+EnergySurface(double *Esurf_d, double *Tsurface_d, double *areasT, double Csurf, int num);
+
 __global__ void CalcTotEnergy(double *Etotal_d,
                               double *GlobalE_d,
                               double *Mh_d,
