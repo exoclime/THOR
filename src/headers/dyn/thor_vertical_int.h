@@ -102,7 +102,7 @@ __global__ void Vertical_Eq(double *      Whs_d,
     // double Cv = Cp - Rd;
     double C0;
     double xi, xim, xip;
-    double intt, intl, inttm, intlm;
+    double intt, intl, inttm;
     double dSpdz, dPdz;
     double rhohs;
     double aa, bb; // <- thomas alg vars
@@ -191,7 +191,7 @@ __global__ void Vertical_Eq(double *      Whs_d,
                 xim = alth;
                 xip = altht;
 
-                intt = -(xi - xip) * dzp * dzh;
+                // intt = -(xi - xip) * dzp * dzh;
                 intl = (xi - xim) * dzp * dzh;
 
                 xi  = altl;
@@ -199,7 +199,7 @@ __global__ void Vertical_Eq(double *      Whs_d,
                 xip = alth;
 
                 inttm = -(xi - xip) * dzm * dzh;
-                intlm = (xi - xim) * dzm * dzh;
+                // intlm = (xi - xim) * dzm * dzh;
 
                 // get g*Cv/Rd and Cv/Rd/dt^2 at the current interface
                 CRdd = (CRddl * (alt - alth) + CRddu * (alth - altl)) / (alt - altl);
@@ -279,7 +279,7 @@ __global__ void Vertical_Eq(double *      Whs_d,
                 xim = alth;
                 xip = altht;
 
-                intt = -(xi - xip) * dzp * dzh;
+                // intt = -(xi - xip) * dzp * dzh;
                 intl = (xi - xim) * dzp * dzh;
 
                 xi  = altl;
@@ -288,7 +288,7 @@ __global__ void Vertical_Eq(double *      Whs_d,
 
                 // compute coefficients aa, bb, cc of thomas algorithm original matrix
                 inttm = -(xi - xip) * dzm * dzh;
-                intlm = (xi - xim) * dzm * dzh;
+                // intlm = (xi - xim) * dzm * dzh;
 
                 // get g*Cv/Rd and Cv/Rd/dt^2 at the current interface
                 CRdd = (CRddl * (alt - alth) + CRddu * (alth - altl)) / (alt - altl);
