@@ -242,10 +242,9 @@ private:
                     double kappa_lw_pole,
                     double n_lw_,
                     double n_sw_,
-                    //double f_lw,
+                    double f_lw,
                     bool   rt1Dmode,
                     double Tmean);
-    
 };
 
 

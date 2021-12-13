@@ -60,7 +60,7 @@ set(MODULES_SRC "0" CACHE STRING "Physics module subdirectory")
 if (MODULES_SRC MATCHES "0")
   #set(MODULES_SRC "Alfrodull")
   #set(MODULES_SRC "src/physics/managers/multi/")
-  set(MODULES_SRC "src/physics/managers/empty/")
+  #set(MODULES_SRC "src/physics/managers/empty/")
 endif()
 
 # if CUDA wants gcc/g++ 5
@@ -128,6 +128,7 @@ set(SRC
   src/ESP/esp_output.cu
   src/ESP/profx_driver.cu
   src/ESP/thor_driver.cu
+  src/ESP/insolation.cu
   src/utils/binary_test.cpp
   src/utils/debug_helpers.cu
   src/utils/storage.cpp
@@ -142,6 +143,11 @@ set(SRC
   src/ESP/phy_modules_device.cu
   src/ESP/ultrahot_thermo.cu
   src/utils/cuda_device_memory.cu
+  src/physics/managers/multi/src/phy_modules.cu
+  src/physics/modules/src/radiative_transfer.cu
+  src/physics/modules/src/boundary_layer.cu
+  src/physics/modules/src/chemistry.cu
+  src/utils/diagnostics.cu
   )
 
 # source for test program for storage class
@@ -195,33 +201,83 @@ endif()
 
 message(STATUS "HDF5 C++libraries " ${HDF5_LIBRARIES})
 include_directories("src/headers")
+include_directories("src/physics/modules/inc")
+######################################################################
+# get git version information
+# from https://stackoverflow.com/questions/1435953/how-can-i-pass-git-sha1-to-compiler-as-definition-using-cmake/4318642#4318642
+
+# The 'real' git information file
+SET(GITREV_BARE_FILE git-rev.h)
+# The temporary git information file
+SET(GITREV_BARE_TMP git-rev-tmp.h)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include/ )
+SET(GITREV_FILE ${CMAKE_CURRENT_BINARY_DIR}/include/${GITREV_BARE_FILE})
+SET(GITREV_TMP ${CMAKE_CURRENT_BINARY_DIR}/include/${GITREV_BARE_TMP})
+
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/include/)
+
+set(GIT_BRANCH_COMMAND "git rev-parse --abbrev-ref HEAD | sed \'s/\(.*\)/\"\\1\"/g\'" )
 
 
+ADD_CUSTOM_COMMAND(
+  OUTPUT ${GITREV_TMP}
+  COMMAND echo -n \\\#define GIT_BRANCH_RAW\  > ${GITREV_TMP}
+  COMMAND echo \\\"\$\$\(git rev-parse --abbrev-ref HEAD\)\\\" >> ${GITREV_TMP} 
+  COMMAND echo -n \\\#define GIT_HASH_RAW\  >> ${GITREV_TMP}
+  COMMAND echo \\\"\$\$\(git describe --always --dirty --abbrev=40 --match=\"NoTagWithThisName\"\)\\\" >> ${GITREV_TMP} 
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different ${GITREV_TMP} ${GITREV_FILE}
+#  COMMAND ${CMAKE_COMMAND} -E remove ${GITREV_TMP}
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+#  VERBATIM
+)
+# Finally, the temporary file should be added as a dependency to the target
+
+######################################################################
+# define main application to build 
+add_executable(esp ${SRC} ${GITREV_TMP})
 
 ######################################################################
 # physics modules subdirectory
 
-set(THOR_MODULE "1")
+# set(THOR_MODULE "1")
 
-file(RELATIVE_PATH THOR_ROOT "${PROJECT_SOURCE_DIR}/${MODULES_SRC}" "${PROJECT_SOURCE_DIR}/" )
-message("Relative path to THOR root from physics module: " ${THOR_ROOT})
-set(THOR_ROOT_INCLUDES "${THOR_ROOT}src/headers" )
-set(SHARED_PHY_MODULES_INC_DIR "${THOR_ROOT}src/physics/modules/inc" )
-set(SHARED_PHY_MODULES_SRC_DIR "${THOR_ROOT}src/physics/modules/src" )
+# file(RELATIVE_PATH THOR_ROOT "${PROJECT_SOURCE_DIR}/${MODULES_SRC}" "${PROJECT_SOURCE_DIR}/" )
+# message("Relative path to THOR root from physics module: " ${THOR_ROOT})
+# set(THOR_ROOT_INCLUDES "${THOR_ROOT}src/headers" )
+# set(SHARED_PHY_MODULES_INC_DIR "${THOR_ROOT}src/physics/modules/inc" )
+# set(SHARED_PHY_MODULES_SRC_DIR "${THOR_ROOT}src/physics/modules/src" )
 
-add_subdirectory(${MODULES_SRC})
+# add_subdirectory(${MODULES_SRC})
 
 
-set(PHYSICS_LIBRARY_PATH "${MODULES_SRC}/libphy_modules.a")
-
+# set(PHYSICS_LIBRARY_PATH "${MODULES_SRC}/libphy_modules.a")
+if (EXISTS "${PROJECT_SOURCE_DIR}/Alfrodull" AND EXISTS "${PROJECT_SOURCE_DIR}/Alfrodull/CMakeLists.txt")
+  message("Alfrodull library detected")
+  set(THOR_MODULE "1")
+  file(RELATIVE_PATH THOR_ROOT "${PROJECT_SOURCE_DIR}/${MODULES_SRC}" "${PROJECT_SOURCE_DIR}/" )
+  message("Relative path to THOR root from physics module: " ${THOR_ROOT})
+  set(THOR_ROOT_INCLUDES "${THOR_ROOT}src/headers" )
+  set(SHARED_PHY_MODULES_INC_DIR "${THOR_ROOT}src/physics/modules/inc" )
+  set(SHARED_PHY_MODULES_SRC_DIR "${THOR_ROOT}src/physics/modules/src" )
+  add_subdirectory(Alfrodull)
+  set(ALFRODULL_INCLUDE_DIRS
+    ${PROJECT_SOURCE_DIR}/Alfrodull/src/inc/)
+  include_directories(${ALFRODULL_INCLUDE_DIRS})
+  target_compile_definitions(esp PRIVATE "HAS_ALFRODULL")
+  target_link_libraries (esp alfrodull)
+  target_link_directories (esp PRIVATE Alfrodull)
+else()
+  message("Alfrodull library not detected")
+endif()
 
 ######################################################################
 # build application
-add_executable(esp ${SRC})
+
 target_compile_options(esp  PUBLIC -DBUILD_LEVEL="release" -DDEVICE_SM=${SM})
 # options for debugging
 #target_compile_options(esp PUBLIC -DBENCHMARKING -DBENCH_NAN_CHECK)
-target_link_libraries (esp ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES} phy_modules)
+# target_link_libraries (esp ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES} phy_modules)
+target_link_libraries (esp ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES})
 
 # build tests
 add_executable(test_storage EXCLUDE_FROM_ALL ${SRC_STORAGE})

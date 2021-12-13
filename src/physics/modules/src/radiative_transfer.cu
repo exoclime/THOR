@@ -89,8 +89,6 @@ void radiative_transfer::print_config() {
     log::printf("    Spin up stop step           = %d.\n", spinup_stop_step);
     log::printf("    Spin down start step        = %d.\n", spindown_start_step);
     log::printf("    Spin down stop step         = %d.\n", spindown_stop_step);
-    
-    
 }
 
 bool radiative_transfer::initialise_memory(const ESP &              esp,
@@ -236,7 +234,6 @@ bool radiative_transfer::initialise_memory(const ESP &              esp,
 
        
 
-    }
     
 
     return true;
@@ -415,7 +412,7 @@ bool radiative_transfer::initial_conditions(const ESP &            esp,
             kappa_lw_pole_config,
             n_lw_config,
             n_sw_config,
-            //esp.f_lw,
+            esp.f_lw,
             rt1Dmode_config,
             sim.Tmean);
             
@@ -434,7 +431,7 @@ bool radiative_transfer::initial_conditions(const ESP &            esp,
             kappa_lw_pole_config,
             n_lw_config,
             n_sw_config,
-            //esp.f_lw,
+            esp.f_lw,
             rt1Dmode_config,
             sim.Tmean);
 
@@ -1202,6 +1199,13 @@ bool radiative_transfer::configure(config_file &config_reader) {
 
     
 
+    // spin up spin down
+    config_reader.append_config_var("dgrt_spinup_start", spinup_start_step, spinup_start_step);
+    config_reader.append_config_var("dgrt_spinup_stop", spinup_stop_step, spinup_stop_step);
+    config_reader.append_config_var(
+        "dgrt_spindown_start", spindown_start_step, spindown_start_step);
+    config_reader.append_config_var("dgrt_spindown_stop", spindown_stop_step, spindown_stop_step);
+
     return true;
 }
 
@@ -1387,7 +1391,7 @@ void radiative_transfer::RTSetup(double Tstar_,
                                  double kappa_lw_pole_,
                                  double n_lw_,
                                  double n_sw_,
-                                 //double f_lw,
+                                 double f_lw,
                                  bool   rt1Dmode_,
                                  double Tmean) {
 
@@ -1397,7 +1401,7 @@ void radiative_transfer::RTSetup(double Tstar_,
     planet_star_dist = planet_star_dist_ * 149597870.7; //conv to km
     radius_star      = radius_star_ * 695700;           //conv to km
     diff_ang         = diff_ang_;
-    //Tint             = Tint_;
+    // Tint             = Tint_;
     albedo = albedo_;
     //tausw      = kappa_sw * P_Ref / Gravit;
     //taulw      = kappa_lw * P_Ref / (f_lw * Gravit);
@@ -1409,7 +1413,7 @@ void radiative_transfer::RTSetup(double Tstar_,
     latf_lw = latf_lw_;
     n_sw    = n_sw_;
     n_lw    = n_lw_;
-    //f_lw             = f_lw_;
+    // f_lw             = f_lw_;
 
     double resc_flx = pow(radius_star / planet_star_dist, 2.0);
     incflx          = resc_flx * bc * Tstar * Tstar * Tstar * Tstar;
@@ -1418,4 +1422,3 @@ void radiative_transfer::RTSetup(double Tstar_,
     
     //cuda_check_status_or_exit(__FILE__, __LINE__);
 }
-

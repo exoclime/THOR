@@ -332,7 +332,7 @@ __global__ void rtm_dual_band(double *pressure_d,
                               double  alb,
                               double  kappa_sw,
                               double  kappa_lw,
-                              bool    latf_lw_mod,
+                              bool    latf_lw,
                               double  kappa_lw_pole,
                               double  n_sw,
                               double  n_lw,
@@ -438,7 +438,7 @@ __global__ void rtm_dual_band(double *pressure_d,
 
         // Compute opacities
         double kappa_lw_lat;
-        if (latf_lw_mod) {
+        if (latf_lw) {
             //latitude dependence of opacity, for e.g., earth
             kappa_lw_lat =
                 kappa_lw + (kappa_lw_pole - kappa_lw) * pow(sin(lonlat_d[id * 2 + 1]), 2);
@@ -1573,7 +1573,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
                               double  tint,
                               double  alb,
                               double  kappa_lw,
-                              bool    latf_lw_mod,
+                              bool    latf_lw,
                               double  kappa_lw_pole,              
                               double  F0_d,
                               int     num,
@@ -1715,7 +1715,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
             // Find the IR Rosseland mean opacity in each IR picket fence band
             // Note: 2nd band done first here to avoid overwrite
 
-            if (latf_lw_mod) {
+            if (latf_lw) {
 
                 //latitude dependence of opacity, for e.g., earth 
                 // not well test yet      
@@ -1907,6 +1907,7 @@ __global__ void rtm_picket_fence(double *pressure_d,
                     printf("profx_Qheat_d has NaNs - stop here");
                 }
             }
+            // }
         }
 
         //printf("Column complete");

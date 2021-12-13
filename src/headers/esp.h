@@ -123,6 +123,9 @@ public:
     //store and output momentum at start of step and after profx (for momentum analysis)
     double *Mh_start_dt_h;
     double *Mh_profx_h;
+    double *Rho_start_dt_h;
+    double *Rho_profx_h;
+
     //
     // double *Kdhz_h;
     // double *Kdh4_h;
@@ -260,6 +263,8 @@ public:
     //store and output momentum at start of step and after profx (for momentum analysis)
     double *Mh_start_dt_d;
     double *Mh_profx_d;
+    double *Rho_start_dt_d;
+    double *Rho_profx_d;
 
     double *Adv_d;
 

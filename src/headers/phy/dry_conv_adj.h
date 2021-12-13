@@ -351,7 +351,7 @@ __global__ void ray_dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
         int  iter   = 0;
         bool repeat = true; //will repeat entire
 
-        bool ray_mode = false;
+        bool ray_mode = true;
 
         if (ray_mode == true)
         {
@@ -666,144 +666,138 @@ __global__ void ray_dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
                     }
                 }
 
-                // Compute Potential Temperature
-                for (int lev = 0; lev < nv; lev++) {
-                    pt_d[id * nv + lev] =
-                        Temperature_d[id * nv + lev]
-                        * pow(Pressureh_d[id * (nv + 1) + 0] / Pressure_d[id * nv + lev],
-                            Rd_d[id * nv + lev] / Cp_d[id * nv + lev]);
+            // Compute Potential Temperature
+            for (int lev = 0; lev < nv; lev++) {
+                pt_d[id * nv + lev] =
+                    Temperature_d[id * nv + lev]
+                    * pow(Pressureh_d[id * (nv + 1) + 0] / Pressure_d[id * nv + lev],
+                          Rd_d[id * nv + lev] / Cp_d[id * nv + lev]);
+            }
+
+            bool done_col = false;
+            while (done_col == false) { // Unstable  column?
+                int top = 0;
+                int bot = nv - 1;
+
+                for (int lev = 0; lev < nv - 1; lev++) {
+                    // sweep upward, find lowest unstable layer
+                    if (pt_d[id * nv + lev + 1] - pt_d[id * nv + lev] < stable) {
+                        if (bot > lev)
+                            bot = lev;
+                    }
                 }
 
-                bool done_col = false;
-                while (done_col == false) { // Unstable  column?
-                    int top = 0;
-                    int bot = nv - 1;
-
-                    for (int lev = 0; lev < nv - 1; lev++) {
-                        // sweep upward, find lowest unstable layer
-                        if (pt_d[id * nv + lev + 1] - pt_d[id * nv + lev] < stable) {
-                            if (bot > lev)
-                                bot = lev;
-                        }
-                    }
-
-                    for (int lev = bot; lev < nv - 1; lev++) {
-                        // sweep upward from unstable layer, find top
-                        if (pt_d[id * nv + lev + 1] - pt_d[id * nv + lev] > stable) {
-                            top = lev;
-                            break;
-                        }
-                        else {
-                            top = nv - 1;
-                        }
-                    }
-
-                    if (bot < nv - 1) {
-                        int    extend = 1;
-                        double thnew;
-
-                        while (extend == 1) {
-                            double h   = 0.0; //Enthalpy;
-                            double sum = 0.0;
-                            extend     = 0;
-
-                            for (int lev = bot; lev <= top; lev++) {
-                                // calc adiabatic pressure, integrate upward for new pot. temp.
-                                double pu = Pressureh_d[id * (nv + 1) + lev + 1];
-                                double pl = Pressureh_d[id * (nv + 1) + lev];
-                                double pi =
-                                    pow(Pressure_d[id * nv + lev] / Pressureh_d[id * (nv + 1) + 0],
-                                        Rd_d[id * nv + lev]
-                                            / Cp_d[id * nv
-                                                + lev]); // adiabatic pressure wrt bottom of column
-                                double deltap = pl - pu;
-
-                                h   = h + pt_d[id * nv + lev] * pi * deltap;
-                                sum = sum + pi * deltap;
-                            }
-                            thnew = h / sum;
-
-                            // if (bot <= 0 && top >= nv - 1) {
-                            //     // no need to extend again
-                            //     extend = 0;
-                            // }
-
-                            if (bot > 0) {
-                                // repeat if new pot. temp. is less than lower boundary p.t.
-                                if ((thnew - pt_d[id * nv + bot - 1]) < stable) {
-                                    bot    = bot - 1;
-                                    extend = 1;
-                                }
-                            }
-
-                            if (top < nv - 1) {
-                                // repeat if new pot. temp. is greater p.t. above
-                                if ((pt_d[id * nv + top + 1] - thnew) < stable) {
-                                    top    = top + 1;
-                                    extend = 1;
-                                }
-                            }
-                        }
-
-                        for (int lev = bot; lev <= top; lev++) {
-                            pt_d[id * nv + lev] = thnew; // set new potential temperature
-                        }
+                for (int lev = bot; lev < nv - 1; lev++) {
+                    // sweep upward from unstable layer, find top
+                    if (pt_d[id * nv + lev + 1] - pt_d[id * nv + lev] > stable) {
+                        top = lev;
+                        break;
                     }
                     else {
-                        done_col = true; //no unstable layers
+                        top = nv - 1;
                     }
                 }
 
-                repeat = false;
-                iter += 1;
+                if (bot < nv - 1) {
+                    int    extend = 1;
+                    double thnew;
 
-                if (soft_adjust) {
-                    double Ttmp, Ptmp;
+                    while (extend == 1) {
+                        double h   = 0.0; //Enthalpy;
+                        double sum = 0.0;
+                        extend     = 0;
 
-                    for (int lev = 0; lev < nv; lev++) {
-                        Ttmp = pt_d[id * nv + lev]
-                            * pow(Pressure_d[id * nv + lev] / Pressureh_d[id * (nv + 1) + 0],
-                                    Rd_d[id * nv + lev] / Cp_d[id * nv + lev]);
-                        Ptmp = Ttmp * Rd_d[id * nv + lev] * Rho_d[id * nv + lev];
-                        //reset pt value to beginning of time step
-                        pt_d[id * nv + lev] =
-                            Temperature_d[id * nv + lev]
-                            * pow(Pressure_d[id * nv + lev] / Pressureh_d[id * (nv + 1) + 0],
-                                -Rd_d[id * nv + lev] / Cp_d[id * nv + lev]);
+                        for (int lev = bot; lev <= top; lev++) {
+                            // calc adiabatic pressure, integrate upward for new pot. temp.
+                            double pu = Pressureh_d[id * (nv + 1) + lev + 1];
+                            double pl = Pressureh_d[id * (nv + 1) + lev];
+                            double pi =
+                                pow(Pressure_d[id * nv + lev] / Pressureh_d[id * (nv + 1) + 0],
+                                    Rd_d[id * nv + lev]
+                                        / Cp_d[id * nv
+                                               + lev]); // adiabatic pressure wrt bottom of column
+                            double deltap = pl - pu;
 
-                        profx_Qheat_d[id * nv + lev] +=
-                            (Cp_d[id * nv + lev] - Rd_d[id * nv + lev]) / Rd_d[id * nv + lev]
-                            * (Ptmp - Pressure_d[id * nv + lev]) / timestep;
-                        //does not repeat
-                    }
-                }
-                // Compute Temperature & pressure from potential temperature
-                else {
-                    for (int lev = 0; lev < nv; lev++) {
-                        Temperature_d[id * nv + lev] =
-                            pt_d[id * nv + lev]
-                            * pow(Pressure_d[id * nv + lev] / Pressureh_d[id * (nv + 1) + 0],
-                                Rd_d[id * nv + lev] / Cp_d[id * nv + lev]);
-                        Pressure_d[id * nv + lev] =
-                            Temperature_d[id * nv + lev] * Rd_d[id * nv + lev] * Rho_d[id * nv + lev];
-                        //check pt again
-                        pt_d[id * nv + lev] =
-                            Temperature_d[id * nv + lev]
-                            * pow(Pressure_d[id * nv + lev] / Pressureh_d[id * (nv + 1) + 0],
-                                -Rd_d[id * nv + lev] / Cp_d[id * nv + lev]);
-                        if (lev > 0) {
-                            if (pt_d[id * nv + lev] - pt_d[id * nv + lev - 1] < stable)
-                                repeat = true;
+                            h   = h + pt_d[id * nv + lev] * pi * deltap;
+                            sum = sum + pi * deltap;
                         }
+                        thnew = h / sum;
+
+                        // if (bot <= 0 && top >= nv - 1) {
+                        //     // no need to extend again
+                        //     extend = 0;
+                        // }
+
+                        if (bot > 0) {
+                            // repeat if new pot. temp. is less than lower boundary p.t.
+                            if ((thnew - pt_d[id * nv + bot - 1]) < stable) {
+                                bot    = bot - 1;
+                                extend = 1;
+                            }
+                        }
+
+                        if (top < nv - 1) {
+                            // repeat if new pot. temp. is greater p.t. above
+                            if ((pt_d[id * nv + top + 1] - thnew) < stable) {
+                                top    = top + 1;
+                                extend = 1;
+                            }
+                        }
+                    }
+
+                    for (int lev = bot; lev <= top; lev++) {
+                        pt_d[id * nv + lev] = thnew; // set new potential temperature
+                    }
+                }
+                else {
+                    done_col = true; //no unstable layers
+                }
+            }
+
+            repeat = false;
+            iter += 1;
+
+            if (soft_adjust) {
+                double Ttmp, Ptmp;
+
+                for (int lev = 0; lev < nv; lev++) {
+                    Ttmp = pt_d[id * nv + lev]
+                           * pow(Pressure_d[id * nv + lev] / Pressureh_d[id * (nv + 1) + 0],
+                                 Rd_d[id * nv + lev] / Cp_d[id * nv + lev]);
+                    Ptmp = Ttmp * Rd_d[id * nv + lev] * Rho_d[id * nv + lev];
+                    //reset pt value to beginning of time step
+                    pt_d[id * nv + lev] =
+                        Temperature_d[id * nv + lev]
+                        * pow(Pressure_d[id * nv + lev] / Pressureh_d[id * (nv + 1) + 0],
+                              -Rd_d[id * nv + lev] / Cp_d[id * nv + lev]);
+
+                    profx_Qheat_d[id * nv + lev] +=
+                        (Cp_d[id * nv + lev] - Rd_d[id * nv + lev]) / Rd_d[id * nv + lev]
+                        * (Ptmp - Pressure_d[id * nv + lev]) / time_step;
+                    //does not repeat
+                }
+            }
+            // Compute Temperature & pressure from potential temperature
+            else {
+                for (int lev = 0; lev < nv; lev++) {
+                    Temperature_d[id * nv + lev] =
+                        pt_d[id * nv + lev]
+                        * pow(Pressure_d[id * nv + lev] / Pressureh_d[id * (nv + 1) + 0],
+                              Rd_d[id * nv + lev] / Cp_d[id * nv + lev]);
+                    Pressure_d[id * nv + lev] =
+                        Temperature_d[id * nv + lev] * Rd_d[id * nv + lev] * Rho_d[id * nv + lev];
+                    //check pt again
+                    pt_d[id * nv + lev] =
+                        Temperature_d[id * nv + lev]
+                        * pow(Pressure_d[id * nv + lev] / Pressureh_d[id * (nv + 1) + 0],
+                              -Rd_d[id * nv + lev] / Cp_d[id * nv + lev]);
+                    if (lev > 0) {
+                        if (pt_d[id * nv + lev] - pt_d[id * nv + lev - 1] < stable)
+                            repeat = true;
                     }
                 }
             }
-            //printf("id = %d, iter = %d\n", id, iter);
         }
-        
-        
-
-        
         //printf("id = %d, iter = %d\n", id, iter);
     }
 }

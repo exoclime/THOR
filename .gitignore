@@ -25,5 +25,8 @@ results*/
 profiling/*
 # compile command database
 compile_commands.json
-
+# version information generated at compile time
+include/git-rev.h
+# jupyter notebooks temp checkpoints directories
+**/.ipynb_checkpoints/
 

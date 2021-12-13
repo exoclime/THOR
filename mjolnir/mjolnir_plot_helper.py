@@ -60,7 +60,7 @@ def make_plot(args, save=True, axis=None):
              'w0prof', 'g0prof', 'spectrum',
              'phase','all','eddyKE','eddyMomMerid','eddyTempMerid','eddyTempVar',
              'Etotlev','AngMomlev', 'Entropylev','Kdiffprof', 'RiB','BLheight',
-             'RTbalance','Riprof','RTbalanceTS']
+             'RTbalance','Riprof','RTbalanceTS','tradprof']
 
     rg_needed = ['Tver', 'Tlonver', 'uver', 'ulonver', 'vver', 'wver', 'wlonver', 'Tulev', 'PTver', 'PTlonver', 'ulev', 'PVver', 'PVlev',
                  'RVlev', 'stream', 'tracer', 'Tsurf', 'insol', 'massf', 'pause_rg',
@@ -646,7 +646,6 @@ def make_plot(args, save=True, axis=None):
         plots_created.append(pfile)
 
     if ('TSfluxprof' in pview or 'all' in pview) and input.TSRT:
-
         output.load_reshape(grid,['f_net'])
         fnet_int = output.f_net
         fnet = fnet_int[:, :-1, :] + (fnet_int[:, 1:, :] - fnet_int[:, :-1, :]) *\
@@ -711,14 +710,14 @@ def make_plot(args, save=True, axis=None):
     if ('TSqheatprof' in pview or 'all' in pview) and input.TSRT:
         output.load_reshape(grid,['TSqheat'])
         qheat = output.TSqheat
-        z = {'value': qheat, 'label': r'Two Stream Q heat (W m$^{-2}$)', 'name': 'TSqheatprof'}
+        z = {'value': qheat, 'label': r'Two Stream Q heat (W m$^{-3}$)', 'name': 'TSqheatprof'}
         pfile = call_plot('TSqheatprof',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
         plots_created.append(pfile)
 
     if ('DGqheatprof' in pview or 'all' in pview) and input.RT:
         output.load_reshape(grid,['DGqheat'])
         qheat = output.DGqheat
-        z = {'value': qheat, 'label': r'Double Gray Q heat (W m$^{-2}$)', 'name': 'DGqheatprof'}
+        z = {'value': qheat, 'label': r'Double Gray Q heat (W m$^{-3}$)', 'name': 'DGqheatprof'}
         pfile = call_plot('DGqheatprof',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
         plots_created.append(pfile)
 
@@ -726,8 +725,17 @@ def make_plot(args, save=True, axis=None):
     if ('qheatprof' in pview or 'all' in pview):
         output.load_reshape(grid,['qheat'])
         qheat = output.qheat
-        z = {'value': qheat, 'label': r'Q heat (W m$^{-2}$)', 'name': 'qheatprof'}
+        z = {'value': qheat, 'label': r'Q heat (W m$^{-3}$)', 'name': 'qheatprof'}
         pfile = call_plot('qheatprof',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
+        plots_created.append(pfile)
+
+    if ('tradprof' in pview or 'all' in pview):
+        output.load_reshape(grid,['qheat','Pressure','Cp','Rd'])
+        qheat = output.qheat
+        dpdt = output.Rd/(output.Cp-output.Rd)*qheat
+        trad = output.Pressure/dpdt
+        z = {'value': np.log10(np.abs(trad)), 'label': r'log(Radiative time scale (s))', 'name': 'tradprof'}
+        pfile = call_plot('tradprof',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
         plots_created.append(pfile)
 
     # need a trick to make these work for axis = None (command line plotting)

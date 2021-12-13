@@ -2,13 +2,13 @@
 
 name: CI
 
-# Controls when the action will run. 
+# Controls when the action will run.
 on:
   # Triggers the workflow on push or pull request events but only for the main branch
   push:
-    branches: [ main ]
+    branches: [ '*' ]
   pull_request:
-    branches: [ main ]
+    branches: [ '*' ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -29,7 +29,7 @@ jobs:
       # Runs a set of commands using the runners shell
       - name: Test compile
         run: |
-          sudo apt-get install libhdf5-dev libhdf5-103 libhdf5-serial-dev libhdf5-cpp-103 cmake
+          sudo apt-get install libhdf5-dev libhdf5-103 libhdf5-serial-dev libhdf5-cpp-103 cmake g++-8
           export CUDA=10.1.105-1
           export CUDA_SHORT=10.1
           export UBUNTU_VERSION=ubuntu1804

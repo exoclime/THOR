@@ -116,6 +116,9 @@ __host__ void ESP::copy_interm_mom_to_host() {
     cudaMemcpy(
         Mh_start_dt_h, Mh_start_dt_d, 3 * point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
     cudaMemcpy(Mh_profx_h, Mh_profx_d, 3 * point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+    cudaMemcpy(
+        Rho_start_dt_h, Rho_start_dt_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
+    cudaMemcpy(Rho_profx_h, Rho_profx_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
 }
 
 __host__ void ESP::copy_diff_to_host() {
@@ -390,6 +393,16 @@ __host__ void ESP::output(int                    fidx, // Index of output file
                        "/Mh_profx",
                        "kg m^-2 s^-1",
                        "Horizontal Momentum after ProfX, before DynCore");
+        s.append_table(Rho_start_dt_h,
+                       nv * point_num,
+                       "/Rho_start_dt",
+                       "kg m^-3",
+                       "Density at start of time step");
+        s.append_table(Rho_profx_h,
+                       nv * point_num,
+                       "/Rho_profx",
+                       "kg m^-3",
+                       "Density after ProfX, before DynCore");
     }
 
     //  Wh

@@ -179,6 +179,10 @@ class output_new:
         #add things to outputs that can be checked for in input or grid
         # if input.RT or input.TSRT:
         #     outputs['Qheat'] = 'qheat'
+        #
+        # if input.out_interm_momentum:
+        #     outputs['Mh_start_dt'] = 'Mh_start_dt'
+        #     outputs['Mh_profx'] = 'Mh_profx'
 
         if input.out_interm_momentum:
             outputs['Mh_start_dt'] = 'Mh_start_dt'
@@ -929,6 +933,9 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
                 source['Entropy'] = output.Entropy[:, :, 0]
                 source['AngMomz'] = output.AngMomz[:, :, 0]
 
+            if hasattr(output,'diffmh'):
+                source['diffmh'] = output.diffmh[:,:,:,0]
+
             if input.TSRT:
                 source['mustar'] = output.mustar[:, 0]
                 source['TSf_net'] = output.f_net[:, :-1, 0] + (output.f_net[:, 1:, 0] - output.f_net[:, :-1, 0]) * interpz[None, :]
@@ -968,11 +975,12 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
                            + source['Mh_mean'][2]*np.cos(grid.lat[:, None]))/source['Rho_mean']
 
             # calculate zonal and meridional velocity tendencies from hyperdiffusion
-            source['diffmh_U'] = (-source['diffmh'][0]*np.sin(grid.lon[:,None])+\
-                           source['diffmh'][1]*np.cos(grid.lon[:, None]))/source['Rho']
-            source['diffmh_V'] = (-source['diffmh'][0]*np.sin(grid.lat[:,None])*np.cos(grid.lon[:,None])\
-                      -source['diffmh'][1]*np.sin(grid.lat[:,None])*np.sin(grid.lon[:,None])\
-                           + source['diffmh'][2]*np.cos(grid.lat[:, None]))/source['Rho']
+            if hasattr(output,'diffmh'):
+                source['diffmh_U'] = (-source['diffmh'][0]*np.sin(grid.lon[:,None])+\
+                               source['diffmh'][1]*np.cos(grid.lon[:, None]))/source['Rho']
+                source['diffmh_V'] = (-source['diffmh'][0]*np.sin(grid.lat[:,None])*np.cos(grid.lon[:,None])\
+                          -source['diffmh'][1]*np.sin(grid.lat[:,None])*np.sin(grid.lon[:,None])\
+                               + source['diffmh'][2]*np.cos(grid.lat[:, None]))/source['Rho']
 
             # set up intermediate arrays (icogrid and pressure)
             interm = {}
@@ -1188,7 +1196,7 @@ def maketable(x, y, z, xname, yname, zname, resultsf, fname):
     f.close()
 
 
-def vertical_lat(input, grid, output, rg, sigmaref, z, slice=['default'], save=True, axis=None, csp=500, wind_vectors=False, use_p=True, clevs=[40]):
+def vertical_lat(input, grid, output, rg, sigmaref, z, slice=['default'], save=True, axis=None, csp=500, wind_vectors=False, use_p=True, clevs=[40], clabel_format='%#.3g', cmap_center=False, cover_color='w'):
     # generic pressure/latitude plot function
 
     # Set the reference pressure
@@ -1307,7 +1315,7 @@ def vertical_lat(input, grid, output, rg, sigmaref, z, slice=['default'], save=T
         if isinstance(clevs[2],str) and 'log' in clevs[2]:
             clevels = np.logspace(np.log10(np.float(clevs[0])),np.log10(np.float(clevs[1])),np.int(clevs[2][:-3]))
         else:
-            clevels = np.linspace(np.int(clevs[0]),np.int(clevs[1]),np.int(clevs[2]))
+            clevels = np.linspace(clevs[0],clevs[1],clevs[2])
     else:
         raise IOError("clevs not valid!")
     # print(np.max(zvals))
@@ -1327,7 +1335,13 @@ def vertical_lat(input, grid, output, rg, sigmaref, z, slice=['default'], save=T
 
     fig.set_tight_layout(True)
 
-    C = ax.contourf(latp * 180 / np.pi, ycoord, zvals, clevels, cmap=z['cmap'])
+    if cmap_center:
+        vmin = -1*np.max(np.abs(clevs[:1]))
+        vmax = np.max(np.abs(clevs[:1]))
+    else:
+        vmin = None
+        vmax = None
+    C = ax.contourf(latp * 180 / np.pi, ycoord, zvals, clevels, cmap=z['cmap'], vmin =vmin,vmax=vmax)
 
     if wind_vectors == True:
         vspacing = np.int(np.shape(rg.Latitude)[0] / 10)
@@ -1352,7 +1366,7 @@ def vertical_lat(input, grid, output, rg, sigmaref, z, slice=['default'], save=T
 
     divider = make_axes_locatable(ax)
     cax = divider.append_axes('right', size='5%', pad=0.05)
-    kwargs = {'format': '%#3.4e'}
+    kwargs = {'format': clabel_format}
     #clb = plt.colorbar(C, extend='both', ax=ax)
     clb = fig.colorbar(C, cax=cax, extend='both', **kwargs)
     clb.set_label(z['label'])
@@ -1368,15 +1382,15 @@ def vertical_lat(input, grid, output, rg, sigmaref, z, slice=['default'], save=T
             else:
                 levp = np.arange(np.ceil(np.nanmin(Zonallt[:, hrange[0]]) / csp) * csp, np.floor(np.nanmax(Zonallt[:, hrange[0]]) / csp) * csp, csp)
 
-    c2 = ax.contour(latp * 180 / np.pi, ycoord, zvals, levels=levp, colors='w', linewidths=1)
-    ax.clabel(c2, inline=False, fontsize=6, fmt='%d', use_clabeltext=True)
+    c2 = ax.contour(latp * 180 / np.pi, ycoord, zvals, levels=levp, colors=cover_color, linewidths=1)
+    ax.clabel(c2, inline=True, fontsize=6, fmt='%d', use_clabeltext=True)
     for cc in C.collections:
         cc.set_edgecolor("face")  # fixes a stupid bug in matplotlib 2.0
     # ax.invert_yaxis()
     # plt.quiver(latq.ravel(),preq.ravel()/1e5,Vq/np.max(Vq),Wq/np.max(Wq),color='0.5')
     if z['plog'] == True:
         ax.set_yscale("log")
-    ax.set_xlabel('Latitude (deg)')
+    ax.set_xlabel('Latitude (degrees)')
     if use_p:
         ax.set_ylabel('Pressure (bar)')
         # ax.plot(latp*180/np.pi,np.zeros_like(latp)+np.max(output.Pressure[:,grid.nv-1,:])/1e5,'r--')
@@ -1755,7 +1769,7 @@ def horizontal_lev(input, grid, output, rg, Plev, z, save=True, axis=False, wind
     # Create Figure #
     #################
 
-    lonp = rg.Longitude[:]
+    lonp = z['lon']
     latp = rg.Latitude[:]
 
     if len(clevs) == 1:
@@ -1789,11 +1803,11 @@ def horizontal_lev(input, grid, output, rg, Plev, z, save=True, axis=False, wind
         cc.set_edgecolor("face")  # fixes a stupid bug in matplotlib 2.0
 
     if z['llswap']:
-        ax.set_xlabel('Latitude (deg)')
-        ax.set_ylabel('Longitude (deg)')
+        ax.set_xlabel('Latitude (degrees)')
+        ax.set_ylabel('Longitude (degrees)')
     else:
-        ax.set_ylabel('Latitude (deg)')
-        ax.set_xlabel('Longitude (deg)')
+        ax.set_ylabel('Latitude (degrees)')
+        ax.set_xlabel('Longitude (degrees)')
 
     ax.set_title(title)
 
@@ -1813,7 +1827,7 @@ def horizontal_lev(input, grid, output, rg, Plev, z, save=True, axis=False, wind
 
     divider = make_axes_locatable(ax)
     cax = divider.append_axes('right', size='5%', pad=0.05)
-    kwargs = {'format': '%#3.4e'}
+    kwargs = {'format': '%#d'}
     clb = fig.colorbar(C, cax=cax, orientation='vertical', **kwargs)
     clb.set_label(z['label'])
 
@@ -2036,6 +2050,14 @@ def profile(input, grid, output, z, stride=50, axis=None, save=True, use_p=True,
         ax.plot(x, y*unit, 'k-', alpha=0.5, lw=1.0,
                     path_effects=[pe.Stroke(linewidth=1.5, foreground=color), pe.Normal()])
 
+        # if use_p:
+        #     for jj in [2561]:
+        #         ax.plot(z['value'][jj ,:,0],output.Pressure[jj,:,0]/1e5,'r--',zorder=111)
+        #         col_lon.append(grid.lon[jj])
+        #         col_lat.append(grid.lat[jj])
+        #         col_lor.append('r')
+        # else:
+        #     ax.plot(z['value'][1995,:,0],grid.Altitude,'r--',zorder=111)
         rp, = ax.plot(x[np.int(np.floor(grid.nv / 2))], y[np.int(np.floor(grid.nv / 2))] * unit, 'k+', ms=5, alpha=0.5)
         gp, = ax.plot(x[np.int(np.floor(grid.nv * 0.75))], y[np.int(np.floor(grid.nv * 0.75))] * unit, 'k*', ms=5, alpha=0.5)
 
@@ -2043,7 +2065,7 @@ def profile(input, grid, output, z, stride=50, axis=None, save=True, use_p=True,
         ax.set_yscale("log")
 
     # add an insert showing the position of
-    inset_pos = [0.8, 0.2, 0.18, 0.18]
+    inset_pos = [0.8, 0.7, 0.18, 0.18]
     ax_inset = ax.inset_axes(inset_pos)
     ax_inset.scatter(col_lon, col_lat, c=col_lor, s=1.0)
     ax_inset.tick_params(axis='both',
@@ -2390,6 +2412,7 @@ def RTbalanceTS(input, grid, output):
     plt.plot(output.time, np.sum(olr,axis=0), 'rs', linestyle='--',label='OLR')
     #plt.plot(output.time, output.OLR_tot, 'rs', linestyle='--',label='OLR')
 
+    # print('ASR = %e, OLR = %e, ratio = %e'%(np.sum(asr,axis=0)[0],np.sum(olr,axis=0)[0],np.sum(olr,axis=0)[0]/np.sum(asr,axis=0)[0]))
     plt.xlabel('Time (days)')
     plt.ylabel('Global integrated power (W)')
     plt.legend(loc='upper right')
