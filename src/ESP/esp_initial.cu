@@ -533,29 +533,6 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                         it++;
                     }
-                    if (i == 0) {
-                        double hs, dpdz, rhog;
-                        if (lev == 0) {
-                            dpdz = (pressure_h[i * nv + lev] - sim.P_Ref) / dz;
-                            rhog = sim.Gravit * (Rho_h[i * nv + lev] * r_int + rho_L * l_int);
-                        }
-                        else {
-                            dpdz = (pressure_h[i * nv + lev] - pressure_h[i * nv + lev - 1]) / dz;
-                            rhog =
-                                sim.Gravit
-                                * (Rho_h[i * nv + lev] * r_int + Rho_h[i * nv + lev - 1] * l_int);
-                        }
-                        hs = dpdz + rhog;
-                        // printf("%d, %f, %f, %#.15g, %#.15g,%#.15g,%#.15g, %#.15g\n",
-                        //        lev,
-                        //        Altitude_h[lev],
-                        //        dz,
-                        //        pressure_h[i * nv + lev],
-                        //        Rho_h[i * nv + lev],
-                        //        dpdz,
-                        //        rhog,
-                        //        hs);
-                    }
                 }
             }
             else {
