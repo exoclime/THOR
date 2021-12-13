@@ -260,28 +260,6 @@ __global__ void dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
     }
 }
 
-// Description: Ray's dry convective adjustment scheme
-//
-//
-//
-// Known limitations: None
-//
-// Known issues: None.
-//
-//
-// If you use this code please cite the following reference:
-//
-//       [1] ...
-//
-// Current Code Owners: Noti Pascal Andreas (pascal-andreas.noti@unibe.ch)
-//                      
-//
-// History:
-// Version Date       Comment
-// ======= ====       =======
-// 1.0     10/12/2021 Released version (PANoti)
-//
-////////////////////////////////////////////////////////////////////////
 
 __device__ void bezier_altitude_interpolation_dry_conv(int id, int nlay, int iter, double* xi, double* yi, double x, double &y) {
 

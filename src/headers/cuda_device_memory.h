@@ -7,8 +7,22 @@
 #include <vector>
 
 #include <algorithm>
+#include <stdexcept>
 
 using std::vector;
+
+// **********************************************************************************************************
+// Helper function for debug
+template<class T> std::shared_ptr<T[]> get_cuda_data(T* device_ptr, size_t size) {
+    std::shared_ptr<T[]> host_mem = std::shared_ptr<T[]>(new T[size]);
+
+    cudaError_t ret =
+        cudaMemcpy(host_mem.get(), device_ptr, size * sizeof(T), cudaMemcpyDeviceToHost);
+
+
+    return host_mem;
+}
+// **********************************************************************************************************
 
 // class for memory manager storage, to be able to store multiple template
 // instantiations
@@ -110,6 +124,10 @@ public:
         return device_ptr;
     };
 
+    T*& ptr_ref() {
+        return device_ptr;
+    };
+
     T* operator*() {
         return device_ptr;
     };
@@ -148,15 +166,22 @@ public:
         get_host_data_ptr();
 
         bool out = fetch_to_host();
-
+        if (!out) {
+            printf("fetch_to_host failed\n");
+            // Throw exception on failure, makes it easier to find what call failed
+            throw std::runtime_error("fetch_to_host failed\n");
+        }
         return host_ptr;
     }
 
     // zero out device memory
     bool zero() {
-
-        cudaError_t ret = cudaMemset(device_ptr, 0, sizeof(T) * size);
-        return ret == cudaSuccess;
+        if (device_ptr != nullptr && size > 0) {
+            cudaError_t ret = cudaMemset(device_ptr, 0, sizeof(T) * size);
+            return ret == cudaSuccess;
+        }
+        else
+            return true;
     };
 
     // copy data from device to local member array
@@ -181,6 +206,13 @@ public:
     bool put(std::unique_ptr<T[]>& data_ptr) {
         cudaError_t ret =
             cudaMemcpy(device_ptr, &(data_ptr[0]), size * sizeof(T), cudaMemcpyHostToDevice);
+        return ret == cudaSuccess;
+    };
+
+    // copy data from local array passed as argument to device
+    bool put(T* data_ptr) {
+        cudaError_t ret =
+            cudaMemcpy(device_ptr, data_ptr, size * sizeof(T), cudaMemcpyHostToDevice);
         return ret == cudaSuccess;
     };
 

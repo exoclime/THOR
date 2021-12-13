@@ -1,3 +1,5 @@
+%------ code by Joao Mendonca ---------------------------------------------
+
 function mjolnir
 
 format long;

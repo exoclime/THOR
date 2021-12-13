@@ -110,7 +110,6 @@ void sigint_handler(int sig) {
 }
 
 // To clean up at exit in all conditions (like when calling exit(EXIT_FAILURE)
-// and when exiting at end of main.
 void exit_handler() {
     // Clean up device memory
     cuda_device_memory_manager::get_instance().deallocate();
@@ -366,6 +365,8 @@ int main(int argc, char** argv) {
     string initial_conditions = "initialfilename.h5";
     config_reader.append_config_var(
         "initial", initial_conditions, string(initial_conditions_default));
+    config_reader.append_config_var(
+        "soft_adjustment", sim.soft_adjustment, soft_adjustment_default);
 
     // Benchmark test
     string core_benchmark_str("HeldSuarez");
@@ -374,8 +375,7 @@ int main(int argc, char** argv) {
 
     config_reader.append_config_var("conv_adj", sim.conv_adj, conv_adj_default);
     config_reader.append_config_var("conv_adj_iter", sim.conv_adj_iter, conv_adj_iter_default);
-    config_reader.append_config_var(
-        "soft_adjustment", sim.soft_adjustment, soft_adjustment_default);
+    config_reader.append_config_var("soft_adjustment", sim.soft_adjustment, soft_adjustment_default);
 
     int GPU_ID_N = 0;
     config_reader.append_config_var("GPU_ID_N", GPU_ID_N, GPU_ID_N_default);
@@ -436,7 +436,9 @@ int main(int argc, char** argv) {
 
     // vertical grid refinement in lower atmos (for turbulent BL)
     bool vert_refined = false;
+    //int  n_bl_layers  = 9;
     config_reader.append_config_var("vert_refined", vert_refined, vert_refined_default);
+    //config_reader.append_config_var("n_bl_layers", n_bl_layers, n_bl_layers_default);
     double transition_altitude = 1000; //height of transition from exponential to linear spacing
     double lowest_layer_thickness =
         2; //height of first interface above surface (thickness of lowest layer)
@@ -445,18 +447,6 @@ int main(int argc, char** argv) {
     config_reader.append_config_var(
         "lowest_layer_thickness", lowest_layer_thickness, lowest_layer_thickness_default);
 
-    // vertical grid refinement that is denser around fractional height
-    // designed by Pascal Noti
-    bool vert_dense_around = false;
-    config_reader.append_config_var(
-        "vert_dense_around", vert_dense_around, vert_dense_around_default);
-    double frac_height_dense = 0.7; //fractional height of increased density
-    double a_dense           = 1;   //shape parameter
-    double b_dense           = 6;   //shape parameter
-    config_reader.append_config_var(
-        "frac_height_dense", frac_height_dense, frac_height_dense_default);
-    config_reader.append_config_var("a_dense", a_dense, a_dense_default);
-    config_reader.append_config_var("b_dense", b_dense, b_dense_default);
 
     bool surface_config = false; // use solid/liquid surface at altitude 0
     config_reader.append_config_var("surface", surface_config, surface_config);
@@ -588,18 +578,13 @@ int main(int argc, char** argv) {
     }
 
     if (sim.HyDiffOrder <= 2 || sim.HyDiffOrder % 2) {
-        log::printf("Bad value for HyDiffOrder! Must be multiple of 2 greater than/equal to 4.\n");
+        log::printf("Bad value for HyDiffOrder! Must be multiple of 2 greater than/equal to 4.");
         config_OK = false;
     }
 
     if (sim.VertHyDiffOrder <= 2 || sim.VertHyDiffOrder % 2) {
         log::printf(
-            "Bad value for VertHyDiffOrder! Must be multiple of 2 greater than/equal to 4.\n");
-        config_OK = false;
-    }
-
-    if (vert_refined && vert_dense_around) {
-        log::printf("Cannot set both vert_refined and vert_dense_around!\n");
+            "Bad value for VertHyDiffOrder! Must be multiple of 2 greater than/equal to 4.");
         config_OK = false;
     }
 
@@ -652,6 +637,12 @@ int main(int argc, char** argv) {
         init_PT_profile = ISOTHERMAL;
         config_OK &= true;
     }
+    
+    else if (init_PT_profile_str == "parmentier") {
+        init_PT_profile = PARMENTIER;
+        config_OK &= true;
+    }
+    
     else if (init_PT_profile_str == "guillot") {
         init_PT_profile = GUILLOT;
         config_OK &= true;
@@ -1000,10 +991,6 @@ int main(int argc, char** argv) {
             "Capabilities: %d (compiled with SM=%d).\n", device_major_minor_number, DEVICE_SM);
     }
 
-    // Register clean up function for exit
-    // takes care of freeing cuda memory in case we catch an error and bail out with exit(EXIT_FAILURE)
-    atexit(exit_handler);
-
     int max_count = 0;
     //
     //  Make the icosahedral grid
@@ -1019,12 +1006,7 @@ int main(int argc, char** argv) {
                  &max_count,
                  vert_refined,
                  lowest_layer_thickness,
-                 transition_altitude,
-                 vert_dense_around,
-                 frac_height_dense,
-                 a_dense,
-                 b_dense,
-                 output_path);
+                 transition_altitude);
 
     //  Define object X.
     int point_num_temp = Grid.point_num;
@@ -1162,9 +1144,6 @@ int main(int argc, char** argv) {
     log::printf("   Rd     = %f J/(Kg K)\n", sim.Rd);
     log::printf("   Cp     = %f J/(Kg K)\n", sim.Cp);
     log::printf("   Tmean  = %f K\n", sim.Tmean);
-    // surface parameters
-    log::printf("   Surface          = %s.\n", surface_config ? "true" : "false");
-    log::printf("   Surface Heat Capacity       = %f J/K/m^2.\n", Csurf_config);
     //
     //  Numerical Methods
     log::printf("\n");
@@ -1177,45 +1156,15 @@ int main(int argc, char** argv) {
     log::printf("   Resolution      = %f deg.\n",
                 (180 / M_PI) * sqrt(2 * M_PI / 5) / pow(2, glevel));
     log::printf("   Vertical layers = %d.\n", Grid.nv);
-    log::printf("   Top altitude    = %g. m\n", sim.Top_altitude);
     log::printf("   ********** \n");
     log::printf("   Split-Explicit / HE-VI \n");
     log::printf("   FV = Central finite volume \n");
     log::printf("   Time integration =  %d s.\n", nsmax * timestep);
     log::printf("   Large time-step  =  %d s.\n", timestep);
     log::printf("   Start time       =  %f s.\n", simulation_start_time);
-    log::printf("   Non-Hydro        =  %s.\n", sim.NonHydro ? "true" : "false");
-    log::printf("   Deep Model       =  %s.\n", sim.DeepModel ? "true" : "false");
-    log::printf("   Convective adj.  =  %s.\n", sim.conv_adj ? "true" : "false");
-
-    log::printf("   ********** \n");
-    log::printf("   Numerical diffusion\n");
-    log::printf("   Hyperdiffusion (horizontal)   = %s.\n", sim.HyDiff ? "true" : "false");
-    log::printf("   Hyperdiffusion (horiz) order  = %d.\n", sim.HyDiffOrder);
-    log::printf("   Hyperdiffusion (horiz) coeff. = %g.\n", sim.Diffc);
-    log::printf("   Hyperdiffusion (vertical)     = %s.\n", sim.VertHyDiff ? "true" : "false");
-    log::printf("   Hyperdiffusion (vert) order   = %d.\n", sim.VertHyDiffOrder);
-    log::printf("   Hyperdiffusion (vert) coeff.  = %g.\n", sim.Diffc_v);
-    log::printf("   3D Divergence damping         = %s.\n", sim.DivDampP ? "true" : "false");
-    log::printf("   3D Div damping coeff.         = %g.\n", sim.DivDampc);
-
-    log::printf("   ********** \n");
-    log::printf("   Sponge layer\n");
-    log::printf("   Rayleigh drag sponge layer       = %s.\n",
-                sim.RayleighSponge ? "true" : "false");
-    log::printf("   Rayleigh sponge strength (horiz) = %g.\n", X.Ruv_sponge);
-    log::printf("   Rayleigh sponge strength (vert)  = %g.\n", X.Rw_sponge);
-    log::printf("   Rayleigh sponge latitude bins    = %d.\n", X.nlat_bins);
-    log::printf("   Rayleigh sponge start height     = %f.\n", X.ns_ray_sponge);
-    log::printf("   Damp to zonal mean (horiz/vert)  = (%s/%s).\n",
-                X.damp_uv_to_mean ? "true" : "false",
-                X.damp_w_to_mean ? "true" : "false");
-
-    log::printf("   Diffusive sponge layer (horiz)   = %s.\n", sim.DiffSponge ? "true" : "false");
-    log::printf("   Diff Sponge (horiz) order        = %d.\n", X.order_diff_sponge);
-    log::printf("   Diff sponge strength             = %g.\n", X.Dv_sponge);
-    log::printf("   Diff sponge start height         = %f.\n", X.ns_diff_sponge);
-
+    // surface parameters
+    log::printf("   Surface          = %s.\n", surface_config ? "true" : "false");
+    log::printf("   Surface Heat Capacity       = %f J/K/m^2.\n", Csurf_config);
 
     log::printf("    \n");
 
@@ -1285,6 +1234,9 @@ int main(int argc, char** argv) {
         log::printf("Error: cannot handle SIGINT\n"); // Should not happen
     }
 
+    // Register clean up function for exit
+    atexit(exit_handler);
+
     //
     //  Writes initial conditions
     double simulation_time = simulation_start_time;
@@ -1340,8 +1292,6 @@ int main(int argc, char** argv) {
 
     // Start timer
     iteration_timer ittimer(step_idx, nsmax);
-
-    double elapsed_time = 0.0;
 
     //
     //  Main loop. nstep is the current step of the integration and nsmax the maximum
@@ -1424,6 +1374,7 @@ int main(int argc, char** argv) {
         // Timing information
         double      mean_delta_per_step = 0.0;
         double      this_step_delta     = 0.0;
+        double      elapsed_time        = 0.0;
         double      time_left           = 0.0;
         std::time_t end_time;
 
@@ -1520,9 +1471,8 @@ int main(int argc, char** argv) {
     //
     //  Prints the duration of the integration.
     long finishTime = clock();
-    log::printf("\n\n Integration time = %f seconds\n\n", elapsed_time);
-    // old method, just in case
-    // log::printf("\n\n Integration time = %f seconds\n\n", double((finishTime-startTime))/double(CLOCKS_PER_SEC));
+    log::printf("\n\n Integration time = %f seconds\n\n",
+                double((finishTime - startTime)) / double(CLOCKS_PER_SEC));
 
     //
     //  Checks for errors in the device.

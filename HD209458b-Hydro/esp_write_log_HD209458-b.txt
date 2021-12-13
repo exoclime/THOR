@@ -1,2 +1,0 @@
-#step_number	file_number	filename
-0	0	esp_output_HD209458-b_0.h5

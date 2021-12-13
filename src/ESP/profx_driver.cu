@@ -85,8 +85,6 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
     if (sim.out_interm_momentum) {
         cudaMemcpy(
             Mh_start_dt_d, Mh_d, point_num * nv * 3 * sizeof(double), cudaMemcpyDeviceToDevice);
-        cudaMemcpy(
-            Rho_start_dt_d, Rho_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToDevice);
     }
 
     Recompute_W<<<NB, NTH>>>(
@@ -237,16 +235,16 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
 #endif
 
     if (sim.conv_adj) {
-        if (current_step > 50) {
+        if (current_step > 100) {
 
             cudaDeviceSynchronize();
-        
+
             bool ray_mode = true;
-        
+
             if (ray_mode) {
-        
+
                 
-        
+
                 ray_dry_conv_adj<<<NBRT, NTH>>>(pressure_d,    // Pressure [Pa]
                                                 pressureh_d,   // mid-point pressure [Pa]
                                                 dT_conv_d,
@@ -264,10 +262,10 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
                                                 sim.soft_adjustment,
                                                 point_num, // Number of columns
                                                 nv);       // number of vertical layers
-        
+
                  
             } else {   
-        
+
                 dry_conv_adj<<<NBRT, NTH>>>(pressure_d,    // Pressure [Pa]
                                             pressureh_d,   // mid-point pressure [Pa]
                                             temperature_d, // Temperature [K]
@@ -286,7 +284,6 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
                                             nv);       // number of vertical layers
             }
         }
-        
     }
 
     BENCH_POINT_I(current_step,
@@ -425,7 +422,7 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
     cudaDeviceSynchronize();
 
     //apply heating here if gcm_off = true
-    if (sim.gcm_off == true) { //need to skip this step if testing dry conv alone
+    if (sim.gcm_off == true) {
         apply_heating<<<NB, NTH>>>(
             temperature_d, profx_Qheat_d, Rho_d, Cp_d, Rd_d, timestep, point_num);
         cudaDeviceSynchronize();
@@ -440,7 +437,6 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
                                                             point_num,
                                                             nv,
                                                             surface);
-        //Compute_pressure<<<NB, NTH>>>(pressure_d, temperature_d, Rho_d, Rd_d, point_num);
     }
     else {
         Compute_pressure<<<NB, NTH>>>(pressure_d, temperature_d, Rho_d, Rd_d, point_num);
@@ -470,7 +466,6 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
 
     if (sim.out_interm_momentum) {
         cudaMemcpy(Mh_profx_d, Mh_d, point_num * nv * 3 * sizeof(double), cudaMemcpyDeviceToDevice);
-        cudaMemcpy(Rho_profx_d, Rho_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToDevice);
     }
 }
 
@@ -635,6 +630,3 @@ __host__ void ESP::update_mean_outputs(int n_since_out) {
                              n_since_out,
                              point_num);
 }
-
-
-

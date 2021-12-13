@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+
+#---- code by Russell Deitrick ------------------------------------------------
+
 import numpy as np
 import matplotlib.pyplot as plt
 import hamarr as ham
@@ -53,9 +56,9 @@ if ntsi > nts:
 
 # resultsf = args.file[0]
 if args.simulation_ID[0] == 'auto':
-    outname = spr.check_output('ls '+resultsf+'/esp_output_*_0.h5',shell=True)
+    outname = spr.check_output('ls ' + resultsf + '/esp_output_planet_*.h5', shell=True)
     file0 = outname.decode().split(sep='/')[-1]
-    simulation_ID = file0.split(sep='_')[2]
+    simulation_ID = file0.split(sep='_')[3].split(sep='.')[0]
 else:
     simulation_ID = args.simulation_ID[0]
 

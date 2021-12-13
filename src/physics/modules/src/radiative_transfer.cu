@@ -771,6 +771,7 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
             run           = true;
         }
     }
+
     if (spindown_start_step > -1 && spindown_stop_step > -1) {
         if ((nstep >= spindown_start_step) && (nstep <= spindown_stop_step)) {
             double x = (double)(nstep - spindown_start_step)
@@ -1417,3 +1418,4 @@ void radiative_transfer::RTSetup(double Tstar_,
     
     //cuda_check_status_or_exit(__FILE__, __LINE__);
 }
+

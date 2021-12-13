@@ -1,1 +1,0 @@
-#current_step	simulation_time	total_bytes	free_bytes	elapsed_time	time_left	mean_delta_per_step	end_time

@@ -88,7 +88,10 @@ __host__ Icogrid::Icogrid(bool   sprd,        // Spring dynamics option
                           double A,            // Planet radius [m]
                           double Top_altitude, // Top model's domain [m]
                           bool   sponge,
-                          int *  max_count) {
+                          int *  max_count,
+                          bool   vert_refined,
+                          double lowest_layer_thickness,
+                          double transition_altitude) {
 
     log::printf("\n\n Building icosahedral grid!");
 
@@ -209,7 +212,19 @@ __host__ Icogrid::Icogrid(bool   sprd,        // Spring dynamics option
     //  Set the Altitudes
     Altitude  = (double *)malloc(nv * sizeof(double));
     Altitudeh = (double *)malloc(nvi * sizeof(double));
-    set_altitudes(Altitude, Altitudeh, Top_altitude, nv);
+
+    bool vert_densed = true;
+    if (vert_densed) {
+        set_altitudes_densed_around(nvi, 0.7, 1, 6, Top_altitude, Altitude, Altitudeh);
+
+    } else if (vert_refined) {
+        // set_altitudes_refined(Altitude, Altitudeh, Top_altitude, nv, n_bl_layers);
+        set_altitudes_softplus(
+            Altitude, Altitudeh, Top_altitude, lowest_layer_thickness, transition_altitude, nv);
+    }
+    else {
+        set_altitudes_uniform(Altitude, Altitudeh, Top_altitude, nv);
+    }
 
     //  Converting to spherical coordinates.
     lonlat = (double *)malloc(2 * point_num * sizeof(double));
@@ -1855,7 +1870,10 @@ void Icogrid::relocate_centres(int *   point_local,
     }
 }
 
-void Icogrid::set_altitudes(double *Altitude, double *Altitudeh, double Top_altitude, int nv) {
+void Icogrid::set_altitudes_uniform(double *Altitude,
+                                    double *Altitudeh,
+                                    double  Top_altitude,
+                                    int     nv) {
 
     //
     //  Description:
@@ -1873,8 +1891,166 @@ void Icogrid::set_altitudes(double *Altitude, double *Altitudeh, double Top_alti
     Altitudeh[0]    = 0.0;
     for (int lev = 0; lev < nv; lev++)
         Altitudeh[lev + 1] = Altitudeh[lev] + res_vert;
-    for (int lev = 0; lev < nv; lev++)
+    for (int lev = 0; lev < nv; lev++) {
         Altitude[lev] = (Altitudeh[lev] + Altitudeh[lev + 1]) / 2.0;
+        // printf("Vertical layer, half-layer %d = %f %f\n", lev, Altitude[lev], Altitudeh[lev + 1]);
+    }
+}
+
+void Icogrid::set_altitudes_refined(double *Altitude,
+                                    double *Altitudeh,
+                                    double  Top_altitude,
+                                    int     nv,
+                                    int     n_bl_layers) {
+
+    //
+    //  Description:
+    //
+    //  Sets the layers and interfaces altitudes with refinement in the lower atmosphere.
+    //  Useful for turbulent boundary layers of terrestrial planets
+    //  The first n_bl_layers are logarithmically spaced (coefficients are ad hoc)
+    //  Above that, the remaining layers are uniformly spaced
+    //  Algorithm written by Pierre Auclair-Desrotours
+    //
+    //  Input:  - nv - Number of vertical layers.
+    //          - top_altitude - Altitude of the top model domain.
+    //
+    //  Output: - Altitude  - Layers altitudes.
+    //          - Altitudeh - Interfaces altitudes.
+    //
+    int    ntrans  = n_bl_layers + 2;
+    double xup     = nv * 1.0 / ntrans;
+    double zup     = Top_altitude;
+    double a       = -4.4161; //These numbers are completely ad hoc.
+    double b       = 12.925;  //May need to be adjusted depending on performance, &c
+    double c       = -10.614;
+    double err_tar = 1.0E-8;
+
+    // stitch the two domains together (log and linear regions)
+    // solve for intersection via secant method
+    int    nitmax = 100, j = 0;
+    double x1 = 0.5;
+    double x2 = 1.0;
+    double f1 = exp(a * pow(x1, 2) + b * x1 + c) * (1 + (xup - x1) * (2 * a * x1 + b)) - 1;
+    double f2 = exp(a * pow(x2, 2) + b * x2 + c) * (1 + (xup - x2) * (2 * a * x2 + b)) - 1;
+    double xnew, fnew, err = 1.0, xbl, xh, d, k;
+    int    levbl, levh;
+
+    while (j < nitmax && err > err_tar) {
+        xnew = (x1 * f2 - x2 * f1) / (f2 - f1);
+        fnew = exp(a * pow(xnew, 2) + b * xnew + c) * (1 + (xup - xnew) * (2 * a * xnew + b)) - 1;
+        err  = fabs(xnew - x2);
+        x1   = x2;
+        x2   = xnew;
+        f1   = f2;
+        f2   = fnew;
+        j++;
+    }
+
+    xbl   = x2;
+    levbl = floor(xbl * ntrans);
+    d     = (2 * a * xbl + b) * exp(a * pow(xbl, 2) + b * xbl + c);
+    k     = 1 - d * xup;
+
+    Altitudeh[0] = 0.0;
+    for (int lev = 0; lev < nv; lev++) {
+        levh = lev + 1;
+        xh   = levh * 1.0 / ntrans;
+        if (levh > levbl) {
+            Altitudeh[levh] = zup * (d * xh + k);
+        }
+        else {
+            Altitudeh[levh] = zup * exp(a * pow(xh, 2) + b * xh + c);
+        }
+    }
+    for (int lev = 0; lev < nv; lev++) {
+        Altitude[lev] = (Altitudeh[lev] + Altitudeh[lev + 1]) / 2.0;
+        // printf("Vertical layer, half-layer %d = %f %f\n", lev, Altitude[lev], Altitudeh[lev + 1]);
+    }
+}
+
+void Icogrid::set_altitudes_softplus(double *Altitude,
+                                     double *Altitudeh,
+                                     double  Top_altitude,
+                                     double  lowest_layer_thickness,
+                                     double  transition_altitude,
+                                     int     nv) {
+
+
+    //
+    //  Description:
+    //
+    //  Sets the layers and interfaces altitudes using softplus function
+    //  (exponential below transition_altitude, linear above)
+    //
+    //  Input:  - nv - Number of vertical layers.
+    //          - top_altitude - Altitude of the top model domain.
+    //          - lowest_layer_thickness - Thickness of lowest layer
+    //          - transition_altitude - Transition b/w exponential and linear
+    //
+    //  Output: - Altitude  - Layers altitudes.
+    //          - Altitudeh - Interfaces altitudes.
+    //
+
+    //parameters controlling shape of softplus function
+    double alpha, k, xbl, x1;
+    x1 = 1.0 / nv; // fractional index of first layer top
+    // Calculate sharpness and amplitude to match top, bottom, transition altitude
+    alpha = transition_altitude / log(2);
+    k = log((exp(lowest_layer_thickness / alpha) - 1) / (exp(Top_altitude / alpha) - 1)) / (x1 - 1);
+    xbl = -log(exp(lowest_layer_thickness / alpha) - 1) / k + x1; //centering the function
+
+    double x     = 0;
+    Altitudeh[0] = 0.0;
+    for (int lev = 0; lev < nv; lev++) { //interfaces
+        x += x1;                         //next fractional index of layer
+        Altitudeh[lev + 1] = alpha * log(1 + exp(k * (x - xbl)));
+    }
+    for (int lev = 0; lev < nv; lev++) { //centers of layers
+        Altitude[lev] = (Altitudeh[lev] + Altitudeh[lev + 1]) / 2.0;
+    }
+    printf("stop here");
+}
+
+void Icogrid::set_altitudes_densed_around(  int nvi, 
+                                            double f_height, 
+                                            double a, 
+                                            double b,
+                                            double Top_altitude,
+                                            double *Altitude,
+                                            double *Altitudeh){
+   
+    double c, d;
+    double y[nvi];
+    double base;
+    
+    
+    c = f_height*(nvi-1)/2.0 + 1.0/3.0*b/a + (nvi-1)/4.0;
+   
+    d = 1.0/2.0;
+    
+    for (int i = 0; i < nvi; i++){
+        
+        y[i] =  a*pow(((double)i-c),3) +
+                b*pow(((double)i-d),2);
+    }
+    base = sqrt(pow(y[0],2));
+    
+    for (int i = 0; i < nvi; i++){
+        y[i] =  y[i] + base;
+    }
+    
+    for (int i = 0; i < nvi; i++){
+         y[i] =  y[i] / y[nvi-1];
+    }
+
+    for (int lev = 0; lev < nvi; lev++) { //interfaces
+        Altitudeh[lev] = y[lev] * Top_altitude;
+    }
+    for (int lev = 0; lev < (nvi-1); lev++) { //centers of layers
+        Altitude[lev] = (Altitudeh[lev] + Altitudeh[lev + 1]) / 2.0;
+    }
+    
 }
 
 

@@ -2,35 +2,34 @@
 # config format version
 config_version = 1
 
-#  HD 209458 b - Attempt with semi-grey approach
+# WASP-43b with grey RT and sponge layer (Mendonca+ 2018)
 
 
 #-- Time stepping and output options -----------------------------------------#
 # number of steps
-num_steps = 216000
+num_steps = 288000
 
 # length of timesteps in seconds
 timestep = 300
 
 # output
 # output every n steps
-n_out = 10000
+n_out = 28800
 
 # write to log file at a different cadence from n_out
 custom_log_n_out = false
 # how often to write to log file (if above = true)
-log_n_out = 1000
+log_n_out = 2880
 
 # output directory (relative to current working directory)
 # defaults to 'results'
-results_path = HD209458b-Hydro
+results_path = picket_fence_wasp43b_hydro
 
 # output global diagnostics (energy, mass, momentum, entropy)
 globdiag = true
 
 # output global diagnostics (to text file) at a different cadence from n_out
 custom_global_n_out = false
-
 # how often to output global diag to text (if above = true)
 global_n_out = 1000
 
@@ -40,39 +39,39 @@ output_mean = true
 
 #-- Planetary parameters -----------------------------------------------------#
 # name of simulation for output files
-simulation_ID = HD209458-b
+simulation_ID = wasp43b_hydro
 
 # Radius [m]
-radius = 98658960.0
+radius = 72427000.0
 
 # Rotation rate [rad s^-1]
-rotation_rate = 2.063e-05
+rotation_rate = 9.09E-5
 
 # Gravitational acceleration [m/s^2]
-gravitation = 8.981 # 9.36 # 
+gravitation = 47.39
 
 # Gas constant [J/(Kg K)]
-Rd = 3714.0
+Rd = 3714
 
 # Specific heat capacities [J/(Kg K)]
-Cp = 13000.0
+Cp = 13000
 
-# Mean atmospheric temperature [K] - tried = Teq
-Tmean = 1500.0 #1478.82 #1530.0
+# Mean atmospheric temperature [K]
+Tmean = 1800.0
 
-# Reference surface pressure [Pa] - 1e8 = 1000 bar 2.2e7 = 220 bar
-P_ref = 10000000.0
+# Reference surface pressure [Pa]
+P_ref = 1e8 #1e8
 
 
 #-- Grid options -------------------------------------------------------------#
 # Altitude of the top of the model domain [m]
-Top_altitude = 0.8e7
+Top_altitude = 2.45e6 
 
 # Horizontal resolution level.
-glevel = 4
+glevel = 5
 
 # Number of vertical layers
-vlevel = 20
+vlevel = 40
 
 # Spring dynamics
 spring_dynamics = true
@@ -81,13 +80,13 @@ spring_dynamics = true
 spring_beta = 1.15
 
 # use grid refinement in vertical for lower atmos
-#vert_refined = false
+vert_refined = false
 
 #lowest layer thickness (used with vert_refined = true) (meters)
-#lowest_layer_thickness = 2
+lowest_layer_thickness = 2
 
 #altitude to transition to linear spacing (used with vert_refined=true) (meters)
-#transition_altitude = 1000
+transition_altitude = 1000
 
 
 #-- Model options ------------------------------------------------------------#
@@ -116,7 +115,7 @@ initial = ifile/esp_initial.h5
 #    this can be omitted by setting f_lw = 1
 
 # Lee comment - generally try guillot first then if that fails try isothermal
-init_PT_profile = guillot
+init_PT_profile = parmentier
 
 # Core benchmark tests
 # Held-Suarez test for Earth == HeldSuarez
@@ -140,10 +139,8 @@ thermo_equation = entropy
 
 # ultrahot atmosphere options (hydrogen only)
 # under development!!
-
 # heating due to H/H2 chemisty ('none', 'quasi_eql', or 'relax_chem')
 ultrahot_heating = none
-
 # variable thermodynamics due to H/H2 chem ('none', 'vary_R_CP', or 'full' )
 ultrahot_thermo = none
 
@@ -151,24 +148,30 @@ ultrahot_thermo = none
 # Hyper-diffusion
 HyDiff  =    true
 
-# Vertical Hyper-diffusion
-VertHyDiff  =    false
+# Order of hyperdiffusion operator (4,6,8,...)
+HyDiffOrder = 6
 
 # Divergence-damping
 DivDampP =    true
 
 # Strength of diffusion
-Diffc = 0.015 #0.015 #0.25
+Diffc = 0.0025 #0.015
 
 # Strength of divergence damping
-DivDampc = 0.015 #0.015
+DivDampc = 0.01 #0.015
+
+# Add vertical terms to hyperdiffusion (6th order)
+VertHyDiff = true
+
+# Strength of vertical hyperdiffusion
+Diffc_v = 0.001
 
 #########################################################
 
 
 #-- Sponge layer (Rayleigh drag or diffusive sponge) ----------------------#
 # use sponge layer (Rayleigh drag) at top of atmosphere?
-RayleighSponge = false
+RayleighSponge = true
 
 # use temperature sponge layer (Rayleigh drag) at top of atmosphere?
 # (not well tested!)
@@ -183,11 +186,11 @@ damp_w_to_mean = true
 nlat_bins = 20
 
 # bottom of rayleigh sponge layer (fractional height)
-ns_ray_sponge = 0.75
+ns_ray_sponge = 0.8
 
 # strength of rayleigh sponge layer (1/damping time)
 # horizontal component
-Ruv_sponge = 1e-4
+Ruv_sponge = 1e-3
 # vertical component
 Rw_sponge = 1e-4
 
@@ -201,13 +204,13 @@ raysp_calc_mode = imp
 DiffSponge = true
 
 # strength of diffusive sponge layer (unitless)
-Dv_sponge = 0.005 #0.005
+Dv_sponge = 0.01 #0.005
 
 # bottom of diffusive sponge layer (fractional height)
-ns_diff_sponge = 0.75
+ns_diff_sponge = 0.8
 
 # order of diffusion operator in diff sponge (2 or 4)
-order_diff_sponge = 2
+order_diff_sponge = 4
 
 
 #-- Radiative transfer (gray) options (core_benchmark = NoBenchmark) -------------------#
@@ -215,56 +218,54 @@ order_diff_sponge = 2
 radiative_transfer = true
 
 # stellar temperature (K)
-Tstar =  	6092.0
+Tstar = 4300 #4520
+
+# stellar metalicity [Fe/H]
+MetStar =  	0.0
 
 # orbital distance or semi-major axis (au)
-planet_star_dist = 0.04747
+planet_star_dist = 0.01525
 
 # radius of host star (R_sun)
-radius_star = 1.203
+radius_star = 0.667
 
 # bond albedo of planet
-albedo = 0.0
+albedo = 0.18
 
 # diff_ang = 1/(diffusivity factor) for lw radiation
 diff_ang = 0.5
 
 # power law index of unmixed absorbers (lw and sw)
-# Lee comment -  n_lw = 1 = well mixed and constant with pressure
-# tau_lw = f_lw * (kappa_lw/g) * P/P_ref
-#          + (1-f_lw) * (kappa_lw/g) * (P/P_ref)^n_lw
+# optical depth at P_ref is: tau_lw = (kappa_lw/(f_lw*g)) * P_ref
 # n_lw = 2 approximations collision-induced absorption
 # n_lw = 4 approximations water-vapor in Earth troposph.
 n_lw = 2
 
-# tau_sw = (kappa_sw/g) * (P/P_ref)^n_sw
+# optical depth at P_ref is: tau_sw = (kappa_sw/g) * (P_ref)
 n_sw = 1
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # These params are also used if init_PT_profile = guillot
 # grey opacity of thermal wavelengths
-kappa_lw = 0.001 #0.001
+kappa_lw = 0.0025
 
-# grey opacity of incoming stellar flux -  see python code
-kappa_sw = 0.0006135528 #0.00078
+# grey opacity of incoming stellar flux
+kappa_sw = 0.00125
 
-# strength of unmixed absorbers in lw - see python code
-f_lw = 1.0
+# strength of unmixed absorbers in lw
+f_lw = 0.5
 
-# temperature of internal heat flux (bottom boundary) (K) - can be set arbitrary or by 'Thorngren expression' - see python code
-Tint =571.0 #5.670374419 #571
-
+# temperature of internal heat flux (bottom boundary) (K)
+Tint = 550.87
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 # add sin(lat)^2 dependence to tau lw (advanced)
 latf_lw = false
-
 # opacity at poles (lw)
-kappa_lw_pole = 0.0025 #0.001
+kappa_lw_pole = 0.0025
 
 # include surface heating
 surface = false
-
 # heat capacity of surface
 Csurf = 1e7
 
@@ -295,7 +296,6 @@ sync_rot = true
 # longitude of periastron (relative to equinox) (deg)
 # (stupid Earth convention applies)
 #longp = 0
-
 #########################################################
 # spin up and spin down start and stop. Set to negative value to ignore and run at full power
 # spins up/down with a multiplication factor following a sine from 0 to 1 from
@@ -306,20 +306,18 @@ sync_rot = true
 #dgrt_spindown_stop = -1
 
 #########################################################
-
-
 #-- Boundary layer options (core_benchmark = NoBenchmark) --------------------#
 boundary_layer = false
 
-# type of boundary layer drag
+# type of boundary layer drag ('RayleighHS' or 'LocalMixL')
 bl_type = RayleighHS
 
-# strength of drag
+# strength of drag (bl_type = RayleighHS)
 #surf_drag = 1.157407e-5
 
 # boundary layer sigma (drag exist at this % of surface pressure and above)
+# (bl_type = RayleighHS)
 #bl_sigma = 0.7
-
 
 # surface roughness length (meters) (bl_type = LocalMixL)
 #z_rough = 3.21e-5
@@ -338,11 +336,11 @@ bl_type = RayleighHS
 #-- Hot Jupiter chemistry ----------------------------------------------------#
 # chemical relaxation model from Mendonca+ 2018(b)
 # contains species CH4, CO, H2O, CO2, NH3
-#chemistry = false
+chemistry = true
 
 # the files below contain the time scales and equilibrium values (from VULCAN)
-#chem_time_file = src/physics/modules/ifile/solar_chem_time.txt
-#chem_fEQ_file = src/physics/modules/ifile/solar_fEQ_THOR.txt
+chem_time_file = src/physics/modules/ifile/solar_chem_time.txt
+chem_fEQ_file = src/physics/modules/ifile/solar_fEQ_THOR.txt
 
 
 #-- Device options -----------------------------------------------------------#
