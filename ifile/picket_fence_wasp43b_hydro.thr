@@ -220,7 +220,7 @@ radiative_transfer = true
 # stellar temperature (K)
 Tstar = 4300 #4520
 
-# stellar metalicity [Fe/H]
+# stellar metalicity [Fe/H] (for picket-fence scheme essential)
 MetStar =  	0.0
 
 # orbital distance or semi-major axis (au)
