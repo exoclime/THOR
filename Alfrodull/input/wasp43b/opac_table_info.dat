@@ -1,0 +1,59 @@
+
+                                O P A C I T Y   I N F O R M A T I O N
+                                ====================================
+
+                                This is an opacity table produced from HELIOS-K standard output.
+
+                                /// D A T A   S T R U C T U R E ///
+
+                                Each H5 file stores the following datasets.
+
+                                "pressures":                        pressure values used for calculation of the opacities
+
+                                "temperatures":                     temperature values used for calculation of the opacities
+
+                                "wavelengths":                      wavelengths
+                                
+                                "meanmolmass":                      the mean molecular mass (also called weight) per temperature 
+                                                                    and pressure in the format:
+                                                                    meanmolmass[Press, Temp] = mu[p + n_p * t], where where n_p is the length of 
+                                                                    the pressure list and Press = pressures[p] and Temp = temperatures[t].
+
+                                "kpoints":                          opacity values in the format: 
+                                                                    opacity[Lambda, Press, Temp] = kpoints[l + n_l*p + n_l*n_p*t],
+                                                                    where n_* the length of the according list and * = l, p, t are the indices
+                                                                    in the according lists, e.g. Temp = temperatures[t],
+                                                                    Lambda = wavelengths[l], etc.
+
+                                "weighted Rayleigh cross-sections": Rayleigh scattering cross sections for H2, H, He, H2O, CO2 weighted by their volume mixing ratio in the format:
+                                                                    Rayleigh cross section[Lambda, Press, Temp] = cross_rayleigh[l + n_l*p + n_l*n_p*t],
+                                                                    where Lambda = wavelengths[l], etc.
+                                                                    
+                                "pure H2 Rayleigh cross-sections":  Rayleigh scattering cross sections for H2 per wavelength in the format:
+                                                                    Rayleigh cross section[Lambda] = cross_rayleigh[l],
+                                                                    where Lambda = wavelengths[l].
+                                                                    
+                                "pure H Rayleigh cross-sections":   Rayleigh scattering cross sections for H per wavelength in the format:
+                                                                    Rayleigh cross section[Lambda] = cross_rayleigh[l],
+                                                                    where Lambda = wavelengths[l].
+                                                                    
+                                "pure He Rayleigh cross-sections":  Rayleigh scattering cross sections for He per wavelength in the format:
+                                                                    Rayleigh cross section[Lambda] = cross_rayleigh[l],
+                                                                    where Lambda = wavelengths[l].
+                                                                    
+                                "pure CO2 Rayleigh cross-sections": Rayleigh scattering cross sections for CO2 per wavelength in the format:
+                                                                    Rayleigh cross section[Lambda] = cross_rayleigh[l],
+                                                                    where Lambda = wavelengths[l].
+                                                                    
+                                "pure H2O Rayleigh cross-sections": Rayleigh scattering cross sections for H2O per wavelength, temperature and 
+                                                                    pressure in the format:
+                                                                    Rayleigh cross section[Lambda, Press, Temp] = cross_rayleigh[l + n_l*p + n_l*n_p*t],
+                                                                    where Lambda = wavelengths[l], etc.
+                                                
+                                "included species":                 List of included opacity sources
+                                
+                                "FastChem path":                    Path to FastChem output used for the chemical abundances
+
+                                >>>> All quantities are in cgs-units. The opacity is given in [cm^2 g^-1] and the cross sections in [cm^2]. <<<<
+
+                                
