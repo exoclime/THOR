@@ -240,7 +240,6 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
         cudaDeviceSynchronize();
 
         dry_conv_adj<<<NBRT, NTH>>>(pressure_d,    // Pressure [Pa]
-                                    pressureh_d,   // mid-point pressure [Pa]
                                     temperature_d, // Temperature [K]
                                     profx_Qheat_d,
                                     pt_d,        // Pot temperature [K]
@@ -393,7 +392,7 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
     cudaDeviceSynchronize();
 
     //apply heating here if gcm_off = true
-    if (sim.gcm_off == true) {
+    if (sim.gcm_off == true) { //need to skip this step if testing dry conv alone
         apply_heating<<<NB, NTH>>>(
             temperature_d, profx_Qheat_d, Rho_d, Cp_d, Rd_d, timestep, point_num);
         cudaDeviceSynchronize();

@@ -200,6 +200,7 @@ class output_new:
             outputs['F_up_TOA_spectrum'] = 'spectrum'
             # outputs['alf_stellar_spectrum'] = 'incoming_spectrum'
             outputs['lambda_wave'] = 'wavelength'
+            outputs['lambda_deltawave'] = 'delta_wavelength'
 
         if input.BL:
             if (input.BL_type >= 1):
@@ -208,10 +209,7 @@ class output_new:
                 outputs['KM'] = 'KM'
                 # outputs['CM'] = 'CM'
                 outputs['CH'] = 'CH'
-            # if (input.BL_type == 1):
-            #     # outputs['RiB'] = 'RiB'
-            #     outputs['bl_top_height'] = 'bl_top_height'
-            #     outputs['bl_top_lev'] = 'bl_top_lev'
+                outputs['F_sens'] = 'F_sens'
 
         # calc volume element
         Atot = input.A**2
@@ -285,6 +283,8 @@ class output_new:
                         outputs['g0_band'] = 'g0_band'
                     if 'F_dir_band' in openh5.keys():
                         outputs['F_dir_band'] = 'F_dir_band'
+                    if 'contr_func_band' in openh5.keys():
+                        outputs['contr_func_band'] = 'contr_func_band'
                     if 'alf_spectrum' in openh5.keys():  #backwards compat.
                         outputs['alf_spectrum'] = 'incoming_spectrum'
                     elif 'alf_stellar_spectrum' in openh5.keys():
@@ -373,6 +373,8 @@ class output_new:
                         self.g0_band = np.reshape(data, (grid.point_num,grid.nv,-1,tlen))
                     elif key == 'F_dir_band':
                         self.F_dir_band = np.reshape(data,(grid.point_num,grid.nv+1,-1,tlen))
+                    elif key == 'contr_func_band':
+                        self.contr_func_band = np.reshape(data,(grid.point_num,grid.nv,-1,tlen))
                     elif key == 'Etotal' or key == 'Entropy' or key == 'AngMomz':
                         data = np.reshape(data,(grid.point_num,grid.nv,tlen))/self.Vol0[:,:,None]
                         setattr(self, key, data)
@@ -956,6 +958,7 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
                 source['KM'] = output.KM[:,:-1,0] + (output.KM[:,1:,0]-output.KM[:,:-1,0])*interpz[None,:]
                 source['CM'] = output.CM[:,0]
                 source['CH'] = output.CH[:,0]
+                source['F_sens'] = output.F_sens[:,0]
 
             # calculate zonal and meridional velocity (special step for Mh)
             source['U'] = (-source['Mh'][0]*np.sin(grid.lon[:,None])+\
@@ -1191,7 +1194,9 @@ def maketable(x, y, z, xname, yname, zname, resultsf, fname):
     f.close()
 
 
-def vertical_lat(input, grid, output, rg, sigmaref, z, slice=['default'], save=True, axis=None, csp=500, wind_vectors=False, use_p=True, clevs=[40], clabel_format='%#.3g', cmap_center=False, cover_color='w'):
+def vertical_lat(input, grid, output, rg, sigmaref, z, slice=['default'], save=True,
+                 axis=None, csp=500, wind_vectors=False, use_p=True, clevs=[40],
+                 clabel_format='%#.3g', cmap_center=False, cover_color='w',cbar=True):
     # generic pressure/latitude plot function
 
     # Set the reference pressure
@@ -1331,12 +1336,13 @@ def vertical_lat(input, grid, output, rg, sigmaref, z, slice=['default'], save=T
     fig.set_tight_layout(True)
 
     if cmap_center:
-        vmin = -1*np.max(np.abs(clevs[:1]))
-        vmax = np.max(np.abs(clevs[:1]))
+        vmin = -1*np.max(np.abs(clevs[:2]))
+        vmax = np.max(np.abs(clevs[:2]))
     else:
         vmin = None
         vmax = None
-    C = ax.contourf(latp * 180 / np.pi, ycoord, zvals, clevels, cmap=z['cmap'], vmin =vmin,vmax=vmax)
+    C = ax.contourf(latp * 180 / np.pi, ycoord, zvals, clevels, cmap=z['cmap'], vmin =vmin, vmax=vmax)
+    print('min = %g, max = %g'%(np.nanmin(zvals),np.nanmax(zvals)))
 
     if wind_vectors == True:
         vspacing = np.int(np.shape(rg.Latitude)[0] / 10)
@@ -1360,11 +1366,12 @@ def vertical_lat(input, grid, output, rg, sigmaref, z, slice=['default'], save=T
         ax.quiver(latq.ravel(), preq.ravel() / 1e5, Vq, Wq, color='0.5')
 
     divider = make_axes_locatable(ax)
-    cax = divider.append_axes('right', size='5%', pad=0.05)
-    kwargs = {'format': clabel_format}
-    #clb = plt.colorbar(C, extend='both', ax=ax)
-    clb = fig.colorbar(C, cax=cax, extend='both', **kwargs)
-    clb.set_label(z['label'])
+    if cbar==True:
+        cax = divider.append_axes('right', size='5%', pad=0.05)
+        kwargs = {'format': clabel_format}
+        #clb = plt.colorbar(C, extend='both', ax=ax)
+        clb = fig.colorbar(C, cax=cax, extend='both', **kwargs)
+        clb.set_label(z['label'])
 
     if isinstance(csp, list) or isinstance(csp, tuple):
         levp = csp
@@ -1378,7 +1385,7 @@ def vertical_lat(input, grid, output, rg, sigmaref, z, slice=['default'], save=T
                 levp = np.arange(np.ceil(np.nanmin(Zonallt[:, hrange[0]]) / csp) * csp, np.floor(np.nanmax(Zonallt[:, hrange[0]]) / csp) * csp, csp)
 
     c2 = ax.contour(latp * 180 / np.pi, ycoord, zvals, levels=levp, colors=cover_color, linewidths=1)
-    ax.clabel(c2, inline=True, fontsize=6, fmt='%d', use_clabeltext=True)
+    ax.clabel(c2, inline=True, fontsize=6, fmt=clabel_format, use_clabeltext=True)
     for cc in C.collections:
         cc.set_edgecolor("face")  # fixes a stupid bug in matplotlib 2.0
     # ax.invert_yaxis()
@@ -1438,7 +1445,7 @@ def vertical_lat(input, grid, output, rg, sigmaref, z, slice=['default'], save=T
     return pfile
 
 
-def vertical_lon(input, grid, output, rg, sigmaref, z, slice='default', save=True, axis=None, csp=500, wind_vectors=False, use_p=True, clevs=[40]):
+def vertical_lon(input, grid, output, rg, sigmaref, z, slice=['default'], save=True, axis=None, csp=500, wind_vectors=False, use_p=True, clevs=[40]):
     # generic pressure/longitude plot function
 
     # Set the reference pressure
@@ -1678,7 +1685,9 @@ def vertical_lon(input, grid, output, rg, sigmaref, z, slice='default', save=Tru
     return pfile
 
 
-def horizontal_lev(input, grid, output, rg, Plev, z, save=True, axis=False, wind_vectors=False, use_p=True, clevs=[40]):
+def horizontal_lev(input, grid, output, rg, Plev, z, save=True, axis=False,
+                   wind_vectors=False, use_p=True, clevs=[40], cbar = True,
+                   wind_key_loc=[0.85,-0.1], wind_key_max='default',cmap_center=False):
     # Set the latitude-longitude grid.
     loni, lati = np.meshgrid(rg.Longitude[:], rg.Latitude[:])
 
@@ -1789,11 +1798,19 @@ def horizontal_lev(input, grid, output, rg, Plev, z, save=True, axis=False, wind
 
     fig.set_tight_layout(True)
 
-    if z['llswap']:
-        C = ax.contourf(latp, lonp, zlevt.T, clevels, cmap=z['cmap'])
+    if cmap_center:
+        vmin = -1*np.max(np.abs(clevs[:2]))
+        vmax = np.max(np.abs(clevs[:2]))
     else:
-        C = ax.contourf(lonp, latp, zlevt, clevels, cmap=z['cmap'])
+        vmin = None
+        vmax = None
 
+    if z['llswap']:
+        C = ax.contourf(latp, lonp, zlevt.T, clevels, cmap=z['cmap'], vmin =vmin, vmax=vmax)
+    else:
+        C = ax.contourf(lonp, latp, zlevt, clevels, cmap=z['cmap'], vmin =vmin, vmax=vmax)
+
+    print(np.min(zlevt),np.max(zlevt))
     for cc in C.collections:
         cc.set_edgecolor("face")  # fixes a stupid bug in matplotlib 2.0
 
@@ -1813,18 +1830,24 @@ def horizontal_lev(input, grid, output, rg, Plev, z, save=True, axis=False, wind
         V = Viii[::spacing, ::spacing].ravel()
         lonq = loni[::spacing, ::spacing].ravel()
         latq = lati[::spacing, ::spacing].ravel()
+        if wind_key_max == 'default':
+            umax = np.max(np.sqrt(U**2 + V**2))
+        else:
+            umax = wind_key_max
         del Uiii, Viii
         if z['llswap']:
-            q = ax.quiver(latq, lonq, V, U, color='0.5')
+            q = ax.quiver(latq, lonq, V, U, color='0.8',scale=10*umax)
         else:
-            q = ax.quiver(lonq, latq, U, V, color='0.5')
-        ax.quiverkey(q, X=0.85, Y=-0.1, U=np.max(np.sqrt(U**2 + V**2)), label='%#.2f m/s' % np.max(np.sqrt(U**2 + V**2)), labelpos='E')
+            q = ax.quiver(lonq, latq, U, V, color='0.8',scale=10*umax)
+        if wind_key_loc:
+            ax.quiverkey(q, X=wind_key_loc[0], Y=wind_key_loc[1], U=umax, label='%#.2f m/s' % umax, labelpos='E')
 
     divider = make_axes_locatable(ax)
-    cax = divider.append_axes('right', size='5%', pad=0.05)
-    kwargs = {'format': '%#d'}
-    clb = fig.colorbar(C, cax=cax, orientation='vertical', **kwargs)
-    clb.set_label(z['label'])
+    if cbar == True:
+        cax = divider.append_axes('right', size='5%', pad=0.05)
+        kwargs = {'format': '%#d'}
+        clb = fig.colorbar(C, cax=cax, orientation='vertical', **kwargs)
+        clb.set_label(z['label'])
 
 
     pfile = None
@@ -1873,7 +1896,10 @@ def CurlF(fr, flat, flon, lat_range, lon_range, Altitude, A):
     return curlFz, curlFlat, curlFlon
 
 
-def streamf_moc_plot(input, grid, output, rg, sigmaref, save=True, axis=False, wind_vectors=False, mt=False, plog=True, clevs=[40]):
+def streamf_moc_plot(input, grid, output, rg, sigmaref, save=True, axis=False,
+                     cmap = 'viridis', wind_vectors=False, mt=False, plog=True,
+                     clevs=[40],csp=1e12,clabel_format='%e',cmap_center=False,
+                     cover_color='k',cbar=True,clabel=True):
     # special plotting function for the mass streamfunction
 
     # Set the reference pressure
@@ -1890,7 +1916,7 @@ def streamf_moc_plot(input, grid, output, rg, sigmaref, save=True, axis=False, w
     else:
         Vavglt = np.nanmean(rg.V[:, :, :, 0], axis=1)
         if wind_vectors == True:
-            Wavglt = np.nanmean(rg.V[:, :, :, 0], axis=1)
+            Wavglt = np.nanmean(rg.W[:, :, :, 0], axis=1)
 
     sf = np.zeros_like(Vavglt)
     arg = 2 * np.pi * input.A * np.cos(rg.Latitude[:, None] * np.pi / 180) / input.Gravit * Vavglt
@@ -1908,17 +1934,27 @@ def streamf_moc_plot(input, grid, output, rg, sigmaref, save=True, axis=False, w
     # Contour plot
     if len(clevs) == 1:
         clevels = np.int(clevs[0])
+        cscale = np.floor(np.log10(np.nanmax(np.abs(sf[:,prange[0]]))))
     elif len(clevs) == 3:
-        clevels = np.linspace(np.int(clevs[0]), np.int(clevs[1]), np.int(clevs[2]))
+        cscale = np.floor(np.log10(np.nanmax(np.abs(clevs[:2]))))
+        clevels = np.linspace(clevs[0]/(10**cscale), clevs[1]/(10**cscale), clevs[2])
     else:
         raise IOError("clevs not valid!")
 
+    if cmap_center:
+        vmin = -1*np.max(np.abs(clevs[:2]))/(10**cscale)
+        vmax = np.max(np.abs(clevs[:2]))/(10**cscale)
+    else:
+        vmin = None
+        vmax = None
+
     if isinstance(axis, axes.SubplotBase):
-        C = axis.contourf(rg.Latitude[:], rg.Pressure[prange[0]] / 1e5, sf[:, prange[0]].T, clevels, cmap='viridis')
+        C = axis.contourf(rg.Latitude[:], rg.Pressure[prange[0]] / 1e5, sf[:, prange[0]].T/(10**cscale), clevels, cmap=cmap, vmin =vmin,vmax=vmax)
         ax = axis
+        fig = plt.gcf()
     elif axis == False:
         plt.figure(figsize=(5, 4))
-        C = plt.contourf(rg.Latitude[:], rg.Pressure[prange[0]] / 1e5, sf[:, prange[0]].T, clevels, cmap='viridis')
+        C = plt.contourf(rg.Latitude[:], rg.Pressure[prange[0]] / 1e5, sf[:, prange[0]].T/(10**cscale), clevels, cmap=cmap, vmin =vmin,vmax=vmax)
 
         ax = plt.gca()
     else:
@@ -1941,12 +1977,30 @@ def streamf_moc_plot(input, grid, output, rg, sigmaref, save=True, axis=False, w
         plt.quiver(latq.ravel(), preq.ravel() / 1e5, Vq, Wq, color='0.5')
 
     ax.invert_yaxis()
-    c2 = ax.contour(rg.Latitude[:], rg.Pressure[:] / 1e5, sf.T, levels=[0.0], colors='w', linewidths=1)
-    clb = plt.colorbar(C)
-    clb.set_label(r'Eulerian streamfunction (kg s$^{-1}$)')
+
+    if isinstance(csp, list) or isinstance(csp, tuple):
+        levp = csp
+    else:
+        if csp == 'match':
+            levp = 40
+        else:
+            levp = np.arange(np.ceil(np.nanmin(sf[:, prange[0]])/(10**cscale) / csp) * csp, (np.floor(np.nanmax(sf[:, prange[0]])/(10**cscale) / csp)+1) * csp, csp)
+
+    c2 = ax.contour(rg.Latitude[:], rg.Pressure[:] / 1e5, sf.T/(10**cscale), levels=levp, colors=cover_color, linewidths=1)
+    ax.clabel(c2, inline=True, fontsize=6, fmt='%#.1f', use_clabeltext=True)
+
+    if cbar:
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes('right', size='5%', pad=0.05)
+        kwargs = {'format': clabel_format}
+        #clb = plt.colorbar(C, extend='both', ax=ax)
+        clb = plt.colorbar(C, cax=cax, extend='both', **kwargs)
+        if clabel:
+            clb.set_label(r'Streamfunction (10$^{%d}$ kg s$^{-1}$)'%cscale)
+
     if plog == True:
         ax.set_yscale("log")
-    ax.set_xlabel('Latitude (deg)')
+    ax.set_xlabel('Latitude (degrees)')
     ax.set_ylabel('Pressure (bar)')
     # ax.plot(rg.Latitude[:,0],np.zeros_like(rg.Latitude[:,0])+np.max(output.Pressure[:,grid.nv-1,:])/1e5,'r--')
     # if np.min(rg.Pressure[prange[0],0]) < np.max(output.Pressure[:,grid.nv-1,:]):
@@ -1968,7 +2022,7 @@ def streamf_moc_plot(input, grid, output, rg, sigmaref, save=True, axis=False, w
 
     if mt == True:
         fname = 'streamf_ver_i%d_l%d.dat' % (output.ntsi, output.nts)
-        maketable(latp * 180 / np.pi, rg.Pressure[prange[0]] / 1e5, Zonallt[:, prange[0]],
+        maketable(rg.Latitude, rg.Pressure[prange[0]] / 1e5, sf[:, prange[0]],
                   'Latitude(d)', 'Pressure(bar)', 'streamfunc', input.resultsf, fname)
     return pfile
 
@@ -2085,6 +2139,7 @@ def profile(input, grid, output, z, stride=50, axis=None, save=True, use_p=True,
     ax.set_title('Time = %#.3f - %#.3f days' % (output.time[0], output.time[-1]))
     ax.get_xaxis().get_major_formatter().set_useOffset(False)
     ax.tick_params(axis='x', labelrotation=45 )
+    #ax.set(xscale='log')
 
     ax.grid(True)
     pfile = None
@@ -2516,4 +2571,194 @@ def spectrum(input, grid, output, z, stride=20, axis=None, save=True):
         plt.close()
         pfile = str(pfile)
 
+    return pfile
+
+def streamf_walker_plot(input, grid, output, rg, sigmaref, save=True, axis=False,
+                        cmap = 'viridis', wind_vectors=False, mt=False, plog=True,
+                        clevs=[40],csp=1e12,clabel_format='%e',cmap_center=False,
+                        cover_color='k',cbar=True,clabel=True, slice=['default']):
+    # special plotting function for the mass streamfunction
+
+    # Set the reference pressure
+    Pref = input.P_Ref * sigmaref
+    d_sig = np.size(sigmaref)
+    tsp = output.nts - output.ntsi + 1
+
+    if not isinstance(slice, list):
+        raise IOError("'slice' argument must be a list")
+    if slice[0] == 'default':
+        slice = [-5, 5]
+    else:
+        slice = [np.float(slice[0]),np.float(slice[1])]
+
+    lat =  rg.Latitude
+    lon = rg.Longitude
+    if len(slice) == 2:
+        # Set the latitude-longitude grid
+        if slice[1] - slice[0] > 180:
+            raise IOError("'slice' cannot exceed a range of 180 degrees")
+        if slice[1] < slice[0]:
+            raise IOError("'slice' values must be arranged (small, large) because I am too lazy to code it better")
+
+        mask_ind = np.logical_and(lat >= slice[0], lat <= slice[1])
+
+        if tsp > 1:
+            Uavgl = np.nanmean(rg.U[mask_ind[:],:,:,:]*np.cos(lat[mask_ind[:]]*np.pi/180)[:,None,None,None], axis=0)
+            Uavglt = np.nanmean(Uavgl, axis=2)
+            if wind_vectors == True:
+                Wavgl = np.nanmean(rg.W[mask_ind[:],:,:,:]*np.cos(lat[mask_ind[:]]*np.pi/180)[:,None,None,None], axis=1)
+                Wavglt = np.nanmean(Wavgl, axis=2)
+        else:
+            Uavglt = np.nanmean(rg.U[:, :, :, 0][mask_ind[:], :, :] * np.cos(lat[mask_ind[:]] * np.pi / 180)[:, None, None], axis=1)
+            if wind_vectors == True:
+                Wavglt = np.nanmean(rg.W[:, :, :, 0][mask_ind[:], :, :] * np.cos(lat[mask_ind[:]] * np.pi / 180)[:, None, None], axis=1)
+
+    elif len(slice) == 1:
+        if slice[0] in lat:
+            Uavgl = rg.U[lat[:] == slice[0], :, :, :]
+            if wind_vectors == True:
+                Wavgl = rg.W[lat[:] == slice[0], :, :, :]
+        else:
+            Uavgl = np.zeros((1, len(lon), d_sig, tsp))
+            if wind_vectors == True:
+                Wavgl = np.zeros((1, len(lon), d_sig, tsp))
+            # interpolate to slice given
+            for t in tsp:
+                for lev in np.arange(d_sig):
+                    Uavgl[0, :, lev, tsp] = interp.griddata(np.vstack([lon, lat]).T, rg.U[:, :, lev, tsp], (lon, slice[0]))
+                    if wind_vectors == True:
+                        Wavgl[0, :, lev, tsp] = interp.griddata(np.vstack([lon, lat]).T, rg.W[:, :, lev, tsp], (lon, slice[0]))
+
+        # Averaging in time
+        if tsp > 1:
+            Uavglt = np.nanmean(Uavgl[0, :, :, :], axis=2)
+            del Uavgl
+            if wind_vectors == True:
+                Wavglt = np.nanmean(Wavgl[0, :, :, :], axis=2)
+                del Wl
+        else:
+            Uavglt = Uavgl[0, :, :, 0]
+            if wind_vectors == True:
+                Wavglt = Wavgl[0, :, :, 0]
+
+    else:
+        raise IOError("'slice' must have 1 or 2 values")
+
+    sf = np.zeros_like(Uavglt)
+    arg = 2 * np.pi * input.A / input.Gravit * Uavglt
+    for ilong in np.arange(np.shape(Uavglt)[0]):
+        for ilev in np.arange(np.shape(Uavglt)[1]):
+            if ilev == 0:
+                sf[ilong, -1] = arg[ilong, -1] * rg.Pressure[-1]
+            else:
+                sf[ilong, -(ilev + 1)] = np.trapz(arg[ilong, -1:-(ilev + 2):-1], x=rg.Pressure[-1:-(ilev + 2):-1][:])
+
+    # need to set desired pressure range (major PITA!)
+    # prange = np.where(np.logical_and(rg.Pressure>=np.min(Pref),rg.Pressure<=np.max(Pref)))
+    prange = np.where(rg.Pressure[:] >= np.min(Pref))
+
+    # Contour plot
+    if len(clevs) == 1:
+        clevels = np.int(clevs[0])
+        cscale = np.floor(np.log10(np.nanmax(np.abs(sf[:,prange[0]]))))
+    elif len(clevs) == 3:
+        cscale = np.floor(np.log10(np.nanmax(np.abs(clevs[:2]))))
+        clevels = np.linspace(clevs[0]/(10**cscale), clevs[1]/(10**cscale), clevs[2])
+    else:
+        raise IOError("clevs not valid!")
+
+    if cmap_center:
+        vmin = -1*np.max(np.abs(clevs[:2]))/(10**cscale)
+        vmax = np.max(np.abs(clevs[:2]))/(10**cscale)
+    else:
+        vmin = None
+        vmax = None
+
+    if isinstance(axis, axes.SubplotBase):
+        C = axis.contourf(rg.Longitude[:], rg.Pressure[prange[0]] / 1e5, sf[:, prange[0]].T/(10**cscale), clevels, cmap=cmap, vmin =vmin,vmax=vmax)
+        ax = axis
+        fig = plt.gcf()
+    elif axis == False:
+        plt.figure(figsize=(5, 4))
+        C = plt.contourf(rg.Longitude[:], rg.Pressure[prange[0]] / 1e5, sf[:, prange[0]].T/(10**cscale), clevels, cmap=cmap, vmin =vmin,vmax=vmax)
+
+        ax = plt.gca()
+    else:
+        raise IOError("'axis = {}' but {} is not an axes.SubplotBase instance".format(axis, axis))
+
+    for cc in C.collections:
+        cc.set_edgecolor("face")  # fixes a stupid bug in matplotlib 2.0
+
+    if wind_vectors == True:
+        vspacing = np.int(np.shape(rg.Longitude)[0] / 10)
+        wspacing = np.int(np.shape(rg.Pressure)[0] / 10)
+        Ult = Uavglt[:, prange[0]]
+        Wlt = Wavglt[:, prange[0]]
+        Uq = Ult[::vspacing, ::wspacing].ravel()
+        Wq = Wlt[::vspacing, ::wspacing].ravel()
+        #preq = rg.Pressure[:,0][::spacing,::spacing].ravel()
+        #latq = lati[::spacing,::spacing].ravel()
+        longq, preq = np.meshgrid(rg.Longitude[::vspacing], rg.Pressure[::wspacing][prange[0]])
+        del Ult, Wlt
+        plt.quiver(longq.ravel(), preq.ravel() / 1e5, Uq, Wq, color='0.5')
+
+    ax.invert_yaxis()
+
+    if isinstance(csp, list) or isinstance(csp, tuple):
+        levp = csp
+    else:
+        if csp == 'match':
+            levp = 40
+        else:
+            levp = np.arange(np.ceil(np.nanmin(sf[:, prange[0]])/(10**cscale) / csp) * csp, (np.floor(np.nanmax(sf[:, prange[0]])/(10**cscale) / csp)+1) * csp, csp)
+
+    c2 = ax.contour(rg.Longitude[:], rg.Pressure[:] / 1e5, sf.T/(10**cscale), levels=levp, colors=cover_color, linewidths=1)
+    ax.clabel(c2, inline=True, fontsize=6, fmt='%#.1f', use_clabeltext=True)
+
+    if cbar:
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes('right', size='5%', pad=0.05)
+        kwargs = {'format': clabel_format}
+        #clb = plt.colorbar(C, extend='both', ax=ax)
+        clb = plt.colorbar(C, cax=cax, extend='both', **kwargs)
+        if clabel:
+            clb.set_label(r'Streamfunction (10$^{%d}$ kg s$^{-1}$)'%cscale)
+
+    if plog == True:
+        ax.set_yscale("log")
+    ax.set_xlabel('Longitude (degrees)')
+    ax.set_ylabel('Pressure (bar)')
+    # ax.plot(rg.Latitude[:,0],np.zeros_like(rg.Latitude[:,0])+np.max(output.Pressure[:,grid.nv-1,:])/1e5,'r--')
+    # if np.min(rg.Pressure[prange[0],0]) < np.max(output.Pressure[:,grid.nv-1,:]):
+    ax.set_ylim(np.max(rg.Pressure[prange[0]]) / 1e5, np.min(rg.Pressure[prange[0]]) / 1e5)
+
+    # else:
+    #     ax.set_ylim(np.max(rg.Pressure[prange[0],0])/1e5,np.max(output.Pressure[:,grid.nv-1,:])/1e5)
+    # ax.set_title('Time = %#.1f-%#.1f days' % (output.time[0], output.time[-1]), fontsize=10)
+    if len(slice) == 2:
+        ax.set_title('Time = %#.3f-%#.3f days, Lat = (%#.3f,%#.3f)' % (output.time[0], output.time[-1], slice[0], slice[1]), fontsize=10)
+    else:
+        ax.set_title('Time = %#.3f-%#.3f days, Lat = (%#.3f,)' % (output.time[0], output.time[-1], slice[0]), fontsize=10)
+
+    if not os.path.exists(input.resultsf + '/figures'):
+        os.mkdir(input.resultsf + '/figures')
+    plt.tight_layout()
+    pfile = None
+    if save == True:
+        # pfile = input.resultsf + '/figures/streamf_ver_i%d_l%d.pdf' % (output.ntsi, output.nts)
+        if len(slice) == 2:
+            fname = '%s_ver_i%d_l%d_lat%#.2f-%#.2f' % ('streamf', output.ntsi, output.nts, slice[0], slice[1])
+            pfile = input.resultsf + '/figures/' + fname.replace(".", "+") + '.pdf'
+        else:
+            fname = '%s_ver_i%d_l%d_lat%#.2f' % ('streamf', output.ntsi, output.nts, slice[0])
+            pfile = input.resultsf + '/figures/' + fname.replace(".", "+") + '.pdf'
+        plt.savefig(pfile)
+        plt.close()
+
+        pfile = str(pfile)
+
+    if mt == True:
+        fname = 'streamf_ver_i%d_l%d.dat' % (output.ntsi, output.nts)
+        maketable(rg.Longitude, rg.Pressure[prange[0]] / 1e5, sf[:, prange[0]],
+                  'Longitude(d)', 'Pressure(bar)', 'streamfunc', input.resultsf, fname)
     return pfile

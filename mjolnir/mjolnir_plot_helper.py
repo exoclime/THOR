@@ -248,7 +248,7 @@ def make_plot(args, save=True, axis=None):
         if use_p:
             rg.load(['V','W'])
             sigmaref = ham.Get_Prange(input, grid, rg, args, xtype='lat', use_p=use_p)
-            pfile = call_plot('stream',ham.streamf_moc_plot,input, grid, output, rg, sigmaref, mt=maketable, plog=plog, clevs=args.clevels, save=save)
+            pfile = call_plot('stream',ham.streamf_moc_plot,input, grid, output, rg, sigmaref, mt=maketable, plog=plog, clevs=args.clevels, save=save,csp=0.5)
         else:
             pfile = "'stream' plot type requires -vc pressure; plot not created"
             print(pfile)
