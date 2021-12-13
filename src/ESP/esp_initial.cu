@@ -371,6 +371,7 @@ ESP::alloc_data(bool globdiag, bool output_mean, bool out_interm_momentum, bool 
     cudaMalloc((void **)&diffw_d, nv * point_num * sizeof(double));
     cudaMalloc((void **)&diffrh_d, nv * point_num * sizeof(double));
     cudaMalloc((void **)&diff_d, 6 * nv * point_num * sizeof(double));
+    cudaMalloc((void **)&diff_sponge_d, 6 * nv * point_num * sizeof(double));
     cudaMalloc((void **)&divg_Mh_d, 3 * nv * point_num * sizeof(double));
 
     cudaMalloc((void **)&Kdh2_d, nv * sizeof(double));
@@ -742,6 +743,19 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         pressure_h[i * nv + lev] / (sim.Rd * temperature_h[i * nv + lev]);
                 }
             }
+            { //hack to test diffusion scheme
+                double lat, lon, phi0 = 0, lambda0 = 0, r, v, rhoU;
+                lat  = lonlat_h[i * 2 + 1];
+                lon  = lonlat_h[i * 2];
+                r    = acos(sin(phi0) * sin(lat) + cos(phi0) * cos(lat) * cos(lon - lambda0));
+                v    = 0.0;
+                rhoU = v * r;
+                for (int lev = 0; lev < nv; lev++) {
+                    Mh_h[i * 3 * nv + 3 * lev + 0] = rhoU * (-sin(lon));
+                    Mh_h[i * 3 * nv + 3 * lev + 1] = rhoU * cos(lon);
+                    Mh_h[i * 3 * nv + 3 * lev + 2] = 0.0;
+                }
+            }
         }
         if (core_benchmark == JET_STEADY) {
             //  Number of threads per block.
@@ -782,6 +796,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 pressure_h, pressure_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
             cudaMemcpy(Rho_h, Rho_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToHost);
         }
+
 
         simulation_start_time = 0.0;
     } //end if rest
@@ -961,14 +976,18 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
             else {
                 ksponge = 0;
             }
-            if (order_diff_sponge == 2) {
-                Kdh2_h[lev] = ksponge * pow(dbar, 2.) / timestep_dyn;
-            }
-            else if (order_diff_sponge == 4) {
-                Kdh4_h[lev] += ksponge * pow(dbar, 4.) / timestep_dyn;
-            }
+            Kdh2_h[lev] = ksponge * pow(dbar, 1.0 * order_diff_sponge) / timestep_dyn;
+            // if (order_diff_sponge == 2) {
+            //     Kdh2_h[lev] = ksponge * pow(dbar, 2.) / timestep_dyn;
+            // }
+            // else if (order_diff_sponge == 4) {
+            //     Kdh4_h[lev] += ksponge * pow(dbar, 4.) / timestep_dyn;
+            // }
         }
     }
+    printf("Khyp4 = %g\n", Kdh4_h[nv - 1]);
+    printf("Khyp2 = %g\n", Kdh2_h[nv - 1]);
+
 
     //  Diffusion
     //  Vertical
@@ -1077,6 +1096,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
     cudaMemset(diffw_d, 0, sizeof(double) * nv * point_num);
     cudaMemset(diffrh_d, 0, sizeof(double) * nv * point_num);
     cudaMemset(diff_d, 0, sizeof(double) * 6 * nv * point_num);
+    if (sim.DiffSponge)
+        cudaMemset(diff_sponge_d, 0, sizeof(double) * 6 * nv * point_num);
     cudaMemset(divg_Mh_d, 0, sizeof(double) * 3 * nv * point_num);
 
     cudaMemset(diffprv_d, 0, sizeof(double) * nv * point_num);

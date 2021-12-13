@@ -150,7 +150,7 @@ HyDiff  =  false
 DivDampP =   true
 
 # Strength of diffusion
-Diffc = 0.02
+Diffc = 0.0
 
 # Strength of divergence damping
 DivDampc = 0.02

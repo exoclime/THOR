@@ -305,8 +305,9 @@ public:
     double *diffwv_d;
     double *diffrv_d;
 
-    double *diff_d;  //temporary array for diffusion calculation
-    double *diff2_d; //second temp array for diff (vertical)
+    double *diff_d;        //temporary array for diffusion calculation
+    double *diff_sponge_d; //temporary array for diffusive sponge calculation
+    double *diff2_d;       //second temp array for diff (vertical)
     // double *diffv_d1;
     // double *diffv_d2;
     double *divg_Mh_d;

@@ -57,6 +57,7 @@ __global__ void Diffusion_Op(double* diffmh_d,
                              double* diffrh_d,
                              double* diffpr_d,
                              double* diff_d,
+                             double* diff_sponge_d,
                              double* Mh_d,
                              double* Rho_d,
                              double* temperature_d,
@@ -74,7 +75,7 @@ __global__ void Diffusion_Op(double* diffmh_d,
                              double* Cp_d,
                              int*    maps_d,
                              int     nl_region,
-                             bool    firststep,
+                             bool    stepnum,
                              bool    laststep,
                              bool    DeepModel,
                              bool    DiffSponge,
@@ -179,7 +180,7 @@ __global__ void Diffusion_Op(double* diffmh_d,
     //     }
     // }
 
-    if (firststep) {
+    if (stepnum == 0) {
         // first time thru, arg is fluid property
         if (var == 0)
             a_s[ir] = Rho_d[id * nv + lev];
@@ -215,7 +216,7 @@ __global__ void Diffusion_Op(double* diffmh_d,
         a_s[ir] = diff_d[id * nv * 6 + lev * 6 + var];
     }
     // we want the velocities, not the momentum
-    if (var >= 1 && var <= 4 && firststep)
+    if (var >= 1 && var <= 4 && stepnum == 0)
         a_s[ir] = a_s[ir] / Rho_s[ir];
 
     ///////////////////////////////
@@ -252,7 +253,7 @@ __global__ void Diffusion_Op(double* diffmh_d,
             //         }
             //     }
             // }
-            if (firststep) {
+            if (stepnum == 0) {
                 if (var == 0)
                     a_s[ir2] = Rho_d[igh * nv + lev];
                 else if (var == 1)
@@ -284,7 +285,7 @@ __global__ void Diffusion_Op(double* diffmh_d,
             else {
                 a_s[ir2] = diff_d[igh * nv * 6 + lev * 6 + var];
             }
-            if (var >= 1 && var <= 4 && firststep)
+            if (var >= 1 && var <= 4 && stepnum == 0)
                 a_s[ir2] = a_s[ir2] / Rho_s[ir2];
         }
         else
@@ -444,36 +445,53 @@ __global__ void Diffusion_Op(double* diffmh_d,
             break;
     }
 
+    if (DiffSponge) {
+        if (stepnum == order_diff_sponge / 2 - 1) {
+            if (var == 1) {
+                diff_sponge_d[id * nv * 6 + lev * 6 + var] =
+                    Rho_d[id * nv + lev] * Kdh2_d[lev] * diff_d[id * nv * 6 + lev * 6 + var];
+            }
+            if (var == 2) {
+                diff_sponge_d[id * nv * 6 + lev * 6 + var] =
+                    Rho_d[id * nv + lev] * Kdh2_d[lev] * diff_d[id * nv * 6 + lev * 6 + var];
+            }
+            if (var == 3) {
+                diff_sponge_d[id * nv * 6 + lev * 6 + var] =
+                    Rho_d[id * nv + lev] * Kdh2_d[lev] * diff_d[id * nv * 6 + lev * 6 + var];
+            }
+            if (var == 4) {
+                diff_sponge_d[id * nv * 6 + lev * 6 + var] =
+                    Rho_d[id * nv + lev] * Kdh2_d[lev] * diff_d[id * nv * 6 + lev * 6 + var];
+            }
+        }
+    }
+
     if (laststep) {
         if (var == 0) {
             diffrh_d[id * nv + lev] = lap;
         }
         if (var == 1) {
             diffmh_d[id * nv * 3 + lev * 3 + 0] = lap;
-            if (DiffSponge && order_diff_sponge == 2) {
-                diffmh_d[id * nv * 3 + lev * 3 + 0] +=
-                    Rho_d[id * nv + lev] * Kdh2_d[lev] * diff_d[id * nv * 6 + lev * 6 + var];
+            if (DiffSponge) {
+                diffmh_d[id * nv * 3 + lev * 3 + 0] += diff_sponge_d[id * nv * 6 + lev * 6 + var];
             }
         }
         if (var == 2) {
             diffmh_d[id * nv * 3 + lev * 3 + 1] = lap;
-            if (DiffSponge && order_diff_sponge == 2) {
-                diffmh_d[id * nv * 3 + lev * 3 + 1] +=
-                    Rho_d[id * nv + lev] * Kdh2_d[lev] * diff_d[id * nv * 6 + lev * 6 + var];
+            if (DiffSponge) {
+                diffmh_d[id * nv * 3 + lev * 3 + 1] += diff_sponge_d[id * nv * 6 + lev * 6 + var];
             }
         }
         if (var == 3) {
             diffmh_d[id * nv * 3 + lev * 3 + 2] = lap;
-            if (DiffSponge && order_diff_sponge == 2) {
-                diffmh_d[id * nv * 3 + lev * 3 + 2] +=
-                    Rho_d[id * nv + lev] * Kdh2_d[lev] * diff_d[id * nv * 6 + lev * 6 + var];
+            if (DiffSponge) {
+                diffmh_d[id * nv * 3 + lev * 3 + 2] += diff_sponge_d[id * nv * 6 + lev * 6 + var];
             }
         }
         if (var == 4) {
             diffw_d[id * nv + lev] = lap;
-            if (DiffSponge && order_diff_sponge == 2) {
-                diffw_d[id * nv + lev] +=
-                    Rho_d[id * nv + lev] * Kdh2_d[lev] * diff_d[id * nv * 6 + lev * 6 + var];
+            if (DiffSponge) {
+                diffw_d[id * nv + lev] += diff_sponge_d[id * nv * 6 + lev * 6 + var];
             }
         }
         if (var == 5)
@@ -490,6 +508,7 @@ __global__ void Diffusion_Op_Poles(double* diffmh_d,
                                    double* diffrh_d,
                                    double* diffpr_d,
                                    double* diff_d,
+                                   double* diff_sponge_d,
                                    double* Mh_d,
                                    double* Rho_d,
                                    double* temperature_d,
@@ -508,7 +527,7 @@ __global__ void Diffusion_Op_Poles(double* diffmh_d,
                                    double* Cp_d,
                                    int*    local_d,
                                    int     num,
-                                   bool    firststep,
+                                   int     stepnum,
                                    bool    laststep,
                                    bool    DeepModel,
                                    bool    DiffSponge,
@@ -629,7 +648,7 @@ __global__ void Diffusion_Op_Poles(double* diffmh_d,
     //         }
     //     }
     // }
-    if (firststep) {
+    if (stepnum == 0) {
         if (var == 0) {
             a_p[0] = Rho_p[0];
             for (int i = 1; i < 6; i++)
@@ -780,35 +799,54 @@ __global__ void Diffusion_Op_Poles(double* diffmh_d,
                 + (lapz1 + lapz2) * nvecoa_p[k * 3 + 2])
                * vdiff;
     }
+
+    if (DiffSponge) {
+        if (stepnum == order_diff_sponge / 2 - 1) {
+            if (var == 1) {
+                diff_sponge_d[id * nv * 6 + lev * 6 + var] =
+                    Rho_d[id * nv + lev] * Kdh2_d[lev] * diff_d[id * nv * 6 + lev * 6 + var];
+            }
+            if (var == 2) {
+                diff_sponge_d[id * nv * 6 + lev * 6 + var] =
+                    Rho_d[id * nv + lev] * Kdh2_d[lev] * diff_d[id * nv * 6 + lev * 6 + var];
+            }
+            if (var == 3) {
+                diff_sponge_d[id * nv * 6 + lev * 6 + var] =
+                    Rho_d[id * nv + lev] * Kdh2_d[lev] * diff_d[id * nv * 6 + lev * 6 + var];
+            }
+            if (var == 4) {
+                diff_sponge_d[id * nv * 6 + lev * 6 + var] =
+                    Rho_d[id * nv + lev] * Kdh2_d[lev] * diff_d[id * nv * 6 + lev * 6 + var];
+            }
+        }
+    }
+
     if (laststep) {
         if (var == 0)
             diffrh_d[id * nv + lev] = lap;
         if (var == 1) {
             diffmh_d[id * 3 * nv + lev * 3 + 0] = lap;
-            if (DiffSponge && order_diff_sponge == 2) {
-                diffmh_d[id * nv * 3 + lev * 3 + 0] +=
-                    Rho_d[id * nv + lev] * Kdh2_d[lev] * diff_d[id * nv * 6 + lev * 6 + var];
+            if (DiffSponge) {
+                diffmh_d[id * nv * 3 + lev * 3 + 0] += diff_sponge_d[id * nv * 6 + lev * 6 + var];
             }
         }
         if (var == 2) {
             diffmh_d[id * 3 * nv + lev * 3 + 1] = lap;
-            if (DiffSponge && order_diff_sponge == 2) {
-                diffmh_d[id * nv * 3 + lev * 3 + 1] +=
-                    Rho_d[id * nv + lev] * Kdh2_d[lev] * diff_d[id * nv * 6 + lev * 6 + var];
+            if (DiffSponge) {
+                diffmh_d[id * nv * 3 + lev * 3 + 1] += diff_sponge_d[id * nv * 6 + lev * 6 + var];
             }
         }
         if (var == 3) {
             diffmh_d[id * 3 * nv + lev * 3 + 2] = lap;
-            if (DiffSponge && order_diff_sponge == 2) {
-                diffmh_d[id * nv * 3 + lev * 3 + 2] +=
-                    Rho_d[id * nv + lev] * Kdh2_d[lev] * diff_d[id * nv * 6 + lev * 6 + var];
+            if (DiffSponge) {
+                diffmh_d[id * nv * 3 + lev * 3 + 2] += diff_sponge_d[id * nv * 6 + lev * 6 + var];
             }
         }
         if (var == 4) {
             diffw_d[id * nv + lev] = lap;
-            if (DiffSponge && order_diff_sponge == 2) {
+            if (DiffSponge) {
                 diffw_d[id * nv + lev] +=
-                    Rho_d[id * nv + lev] * Kdh2_d[lev] * diff_d[id * nv * 6 + lev * 6 + var];
+                    Rho_d[id * nv + lev] * Kdh2_d[lev] * diff_sponge_d[id * nv * 6 + lev * 6 + var];
             }
         }
         if (var == 5)
