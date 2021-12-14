@@ -236,6 +236,9 @@ bool radiative_transfer::initialise_memory(const ESP &              esp,
 
     
 
+    
+    }
+
     return true;
 }
 
@@ -546,7 +549,7 @@ void PF_text_file_to_array(std::string name ,double *array, int Nlength){
     // according to the coefficents and equations in:
     // Parmentier & Menou (2014) and Parmentier et al. (2015)
     // NOTE: This does not calculate the opacity - call k_Ross_Freedman for that
-    void gam_Parmentier(int nCol, int nLev, double *Teff, int table_num, double *gam_V, double *Beta_V,
+void gam_Parmentier(int nCol, int nLev, double *Teff, int table_num, double *gam_V, double *Beta_V,
     double *Beta, double *gam_1, double *gam_2 , double *gam_P) {
     // dependcies
     //// pow from math
@@ -1026,11 +1029,8 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                 lw_down_g__dff_e,
                 Gp__dff_l,
                 Bp__dff_l,
-
                 rt1Dmode,
-                sim.DeepModel                                        
-
-                );
+                sim.DeepModel);
 
 
 
