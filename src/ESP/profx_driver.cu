@@ -85,6 +85,8 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
     if (sim.out_interm_momentum) {
         cudaMemcpy(
             Mh_start_dt_d, Mh_d, point_num * nv * 3 * sizeof(double), cudaMemcpyDeviceToDevice);
+        cudaMemcpy(
+            Rho_start_dt_d, Rho_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToDevice);
     }
 
     Recompute_W<<<NB, NTH>>>(
@@ -234,57 +236,57 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
     }
 #endif
 
-    if (sim.conv_adj) {
-        if (current_step > 30 ) {
+if (sim.conv_adj) {
+    if (current_step > 30 ) {
 
-            cudaDeviceSynchronize();
+        cudaDeviceSynchronize();
 
-            bool ray_mode = true;
+        bool ray_mode = true;
 
-            if (ray_mode) {
+        if (ray_mode) {
 
-                
+            
 
-                ray_dry_conv_adj<<<NBRT, NTH>>>(pressure_d,    // Pressure [Pa]
-                                                pressureh_d,   // mid-point pressure [Pa]
-                                                dT_conv_d,
-                                                temperature_d, // Temperature [K]
-                                                profx_Qheat_d,
-                                                pt_d,          // Pot temperature [K]
-                                                Rho_d,         // Density [m^3/kg]
-                                                Cp_d,          // Specific heat capacity [J/kg/K]
-                                                Rd_d,          // Gas constant [J/kg/K]
-                                                sim.Gravit,    // Gravity [m/s^2]
-                                                Altitude_d,    // Altitudes of the layers
-                                                Altitudeh_d,   // Altitudes of the interfaces
-                                                timestep,      // time step [s]
-                                                sim.conv_adj_iter,
-                                                sim.soft_adjustment,
-                                                point_num, // Number of columns
-                                                nv);       // number of vertical layers
-
-                 
-            } else {   
-
-                dry_conv_adj<<<NBRT, NTH>>>(pressure_d,    // Pressure [Pa]
+            ray_dry_conv_adj<<<NBRT, NTH>>>(pressure_d,    // Pressure [Pa]
                                             pressureh_d,   // mid-point pressure [Pa]
+                                            dT_conv_d,
                                             temperature_d, // Temperature [K]
                                             profx_Qheat_d,
-                                            pt_d,        // Pot temperature [K]
-                                            Rho_d,       // Density [m^3/kg]
-                                            Cp_d,        // Specific heat capacity [J/kg/K]
-                                            Rd_d,        // Gas constant [J/kg/K]
-                                            sim.Gravit,  // Gravity [m/s^2]
-                                            Altitude_d,  // Altitudes of the layers
-                                            Altitudeh_d, // Altitudes of the interfaces
-                                            timestep,
+                                            pt_d,          // Pot temperature [K]
+                                            Rho_d,         // Density [m^3/kg]
+                                            Cp_d,          // Specific heat capacity [J/kg/K]
+                                            Rd_d,          // Gas constant [J/kg/K]
+                                            sim.Gravit,    // Gravity [m/s^2]
+                                            Altitude_d,    // Altitudes of the layers
+                                            Altitudeh_d,   // Altitudes of the interfaces
+                                            timestep,      // time step [s]
                                             sim.conv_adj_iter,
                                             sim.soft_adjustment,
                                             point_num, // Number of columns
                                             nv);       // number of vertical layers
-            }
+
+             
+        } else {   
+
+            dry_conv_adj<<<NBRT, NTH>>>(pressure_d,    // Pressure [Pa]
+                                        pressureh_d,   // mid-point pressure [Pa]
+                                        temperature_d, // Temperature [K]
+                                        profx_Qheat_d,
+                                        pt_d,        // Pot temperature [K]
+                                        Rho_d,       // Density [m^3/kg]
+                                        Cp_d,        // Specific heat capacity [J/kg/K]
+                                        Rd_d,        // Gas constant [J/kg/K]
+                                        sim.Gravit,  // Gravity [m/s^2]
+                                        Altitude_d,  // Altitudes of the layers
+                                        Altitudeh_d, // Altitudes of the interfaces
+                                        timestep,
+                                        sim.conv_adj_iter,
+                                        sim.soft_adjustment,
+                                        point_num, // Number of columns
+                                        nv);       // number of vertical layers
         }
     }
+}
 
     BENCH_POINT_I(current_step,
                   "dry_conv_adj ",
@@ -422,7 +424,7 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
     cudaDeviceSynchronize();
 
     //apply heating here if gcm_off = true
-    if (sim.gcm_off == true) {
+    if (sim.gcm_off == true) { //need to skip this step if testing dry conv alone
         apply_heating<<<NB, NTH>>>(
             temperature_d, profx_Qheat_d, Rho_d, Cp_d, Rd_d, timestep, point_num);
         cudaDeviceSynchronize();
@@ -437,6 +439,7 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
                                                             point_num,
                                                             nv,
                                                             surface);
+        //Compute_pressure<<<NB, NTH>>>(pressure_d, temperature_d, Rho_d, Rd_d, point_num);
     }
     else {
         Compute_pressure<<<NB, NTH>>>(pressure_d, temperature_d, Rho_d, Rd_d, point_num);
@@ -466,6 +469,7 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
 
     if (sim.out_interm_momentum) {
         cudaMemcpy(Mh_profx_d, Mh_d, point_num * nv * 3 * sizeof(double), cudaMemcpyDeviceToDevice);
+        cudaMemcpy(Rho_profx_d, Rho_d, point_num * nv * sizeof(double), cudaMemcpyDeviceToDevice);
     }
 }
 
