@@ -269,21 +269,20 @@ if (sim.conv_adj) {
         } else {   
 
             dry_conv_adj<<<NBRT, NTH>>>(pressure_d,    // Pressure [Pa]
-                                        pressureh_d,   // mid-point pressure [Pa]
-                                        temperature_d, // Temperature [K]
-                                        profx_Qheat_d,
-                                        pt_d,        // Pot temperature [K]
-                                        Rho_d,       // Density [m^3/kg]
-                                        Cp_d,        // Specific heat capacity [J/kg/K]
-                                        Rd_d,        // Gas constant [J/kg/K]
-                                        sim.Gravit,  // Gravity [m/s^2]
-                                        Altitude_d,  // Altitudes of the layers
-                                        Altitudeh_d, // Altitudes of the interfaces
-                                        timestep,
-                                        sim.conv_adj_iter,
-                                        sim.soft_adjustment,
-                                        point_num, // Number of columns
-                                        nv);       // number of vertical layers
+                                            temperature_d, // Temperature [K]
+                                            profx_Qheat_d,
+                                            pt_d,        // Pot temperature [K]
+                                            Rho_d,       // Density [m^3/kg]
+                                            Cp_d,        // Specific heat capacity [J/kg/K]
+                                            Rd_d,        // Gas constant [J/kg/K]
+                                            sim.Gravit,  // Gravity [m/s^2]
+                                            Altitude_d,  // Altitudes of the layers
+                                            Altitudeh_d, // Altitudes of the interfaces
+                                            timestep,
+                                            sim.conv_adj_iter,
+                                            sim.soft_adjustment,
+                                            point_num, // Number of columns
+                                            nv);       // number of vertical layers
         }
     }
 }
