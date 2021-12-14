@@ -322,7 +322,7 @@ __global__ void ray_dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
                              double  Gravit,        // Gravity [m/s^2]
                              double *Altitude_d,    // Altitudes of the layers
                              double *Altitudeh_d,   // Altitudes of the interfaces
-                             double timestep,       // time step [s]
+                             double time_step,       // time step [s]
                              int conv_adj_iter, // number of iterations of entire algorithm allowed
                              bool soft_adjust,
                              int num,           // Number of columns
@@ -362,7 +362,7 @@ __global__ void ray_dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
             int itermax2 = 5;
             const double small = 1e-6;
             double const euler = 2.71828182845904523536028;
-            double dT_factor =  timestep;
+            double dT_factor =  time_step;
 
             // work variables
             int i;
@@ -458,7 +458,7 @@ __global__ void ray_dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
 
                             dT_conv_d[id * nv + i] = dT_conv_d[id * nv + i - 1] * pfact;
 
-                            //Temperature_d[id * nv + i] =  Temperature_d[id * nv + i] + ((d_T - Temperature_d[id * nv + i]) / timestep);
+                            //Temperature_d[id * nv + i] =  Temperature_d[id * nv + i] + ((d_T - Temperature_d[id * nv + i]) / time_step);
 
                             did_adj = true;
                         }
@@ -494,7 +494,7 @@ __global__ void ray_dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
 
                             dT_conv_d[id * nv + i] = dT_conv_d[id * nv + i - 1] * pfact;
 
-                            //Temperature_d[id * nv + i] =  Temperature_d[id * nv + i] + ((d_T - Temperature_d[id * nv + i]) / timestep);
+                            //Temperature_d[id * nv + i] =  Temperature_d[id * nv + i] + ((d_T - Temperature_d[id * nv + i]) / time_step);
 
                             did_adj = true;
                         }
@@ -522,7 +522,7 @@ __global__ void ray_dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
 
 
                         profx_Qheat_d[id * nv + lev] += (dT_conv_d[id * nv + i] - Temperature_d[id * nv + i])  /
-                            (timestep);
+                            (time_step);
 
                         //does not repeat
                     }
@@ -531,7 +531,7 @@ __global__ void ray_dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
                     for (i = 0; i <nv; i++){ 
                         Temperature_d[id * nv + i] = Temperature_d[id * nv + i] +
                             dT_factor * (dT_conv_d[id * nv + i] - Temperature_d[id * nv + i])  /
-                            (itermax1 * timestep);
+                            (itermax1 * time_step);
                         
                     }
 
@@ -567,7 +567,7 @@ __global__ void ray_dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
                                     ) -
                                 Pressure_d[id * nv + i]
                             ) /
-                            (timestep * itermax1) ;
+                            (time_step * itermax1) ;
 
                         */
                         
