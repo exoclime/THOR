@@ -241,7 +241,7 @@ if (sim.conv_adj) {
 
         cudaDeviceSynchronize();
 
-        bool ray_mode = false;
+        bool ray_mode = true;
 
         if (ray_mode) {
 
