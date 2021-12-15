@@ -732,11 +732,9 @@ int main(int argc, char** argv) {
     }
 
     if (sim.DiffSponge) {
-        if (order_diff_sponge == 2 || order_diff_sponge == 4) {
-            config_OK &= true;
-        }
-        else {
-            log::printf("order_diff_sponge config option can only be 2 or 4\n");
+        if (order_diff_sponge > sim.HyDiffOrder || order_diff_sponge % 2) {
+            log::printf(
+                "order_diff_sponge config option must be <= HyDiffOrder and a multiple of 2\n");
             config_OK &= false;
         }
     }
@@ -981,7 +979,7 @@ int main(int argc, char** argv) {
     // Register clean up function for exit
     // takes care of freeing cuda memory in case we catch an error and bail out with exit(EXIT_FAILURE)
     atexit(exit_handler);
-    
+
     int max_count = 0;
     //
     //  Make the icosahedral grid
@@ -1050,6 +1048,7 @@ int main(int argc, char** argv) {
           sim.output_mean,
           sim.out_interm_momentum,
           sim.output_diffusion,
+          sim.DiffSponge,
           init_PT_profile,
           Tint,
           kappa_lw,
