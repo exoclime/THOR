@@ -425,81 +425,207 @@ __host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
                                                boundary_flux_d,
                                                energy_equation,
                                                sim.HyDiffOrder);
+        // Pasci insert
+        
 
+        cudaDeviceSynchronize();
+
+        BENCH_POINT_I_S(current_step,
+                        rk,
+                        "Diffusion_Op2",
+                        (),
+                        ("diffmh_d", "diffw_d", "diffrh_d", "diffpr_d", "diff_d"))
+
+        if (sim.VertHyDiff) { //sixth-order vertical hyperdiffusion
+            cudaMemset(diff_d, 0, sizeof(double) * 6 * point_num * nv);
+            cudaMemset(diff2_d, 0, sizeof(double) * 6 * point_num * nv);
+
+            vertical_diff<<<NBALL0, NTH>>>(diffmv_d,  //
+                                           diffwv_d,  //
+                                           diffrv_d,  //
+                                           diffprv_d, //
+                                           diff_d,
+                                           diff2_d,
+                                           Mhk_d,         //
+                                           Rhok_d,        //
+                                           temperature_d, //
+                                           Wk_d,          //
+                                           Kdv6_d,        //
+                                           Altitude_d,    //
+                                           Altitudeh_d,
+                                           sim.A,  //
+                                           sim.Rd, //
+                                           sim.VertHyDiffOrder,
+                                           sim.DeepModel,
+                                           point_num,
+                                           nv);
+
+            // vertical_diff_joao<40><<<NBALL0, NTH>>>(diffmv_d,      //
+            //                                         diffwv_d,      //
+            //                                         diffrv_d,      //
+            //                                         diffprv_d,     //
+            //                                         Mhk_d,         //
+            //                                         Rhok_d,        //
+            //                                         temperature_d, //
+            //                                         Wk_d,          //
+            //                                         Kdv6_d,        //
+            //                                         Altitude_d,    //
+            //                                         Altitudeh_d,
+            //                                         sim.A,  //
+            //                                         sim.Rd, //
+            //                                         sim.DeepModel,
+            //                                         point_num);
             cudaDeviceSynchronize();
-
-            BENCH_POINT_I_S(current_step,
-                            rk,
-                            "Diffusion_Op2",
-                            (),
-                            ("diffmh_d", "diffw_d", "diffrh_d", "diffpr_d", "diff_d"))
-
-            if (sim.VertHyDiff) { //sixth-order vertical hyperdiffusion
-                cudaMemset(diff_d, 0, sizeof(double) * 6 * point_num * nv);
-                cudaMemset(diff2_d, 0, sizeof(double) * 6 * point_num * nv);
-
-                vertical_diff<<<NBALL0, NTH>>>(diffmv_d,  //
-                                               diffwv_d,  //
-                                               diffrv_d,  //
-                                               diffprv_d, //
-                                               diff_d,
-                                               diff2_d,
-                                               Mhk_d,         //
-                                               Rhok_d,        //
-                                               temperature_d, //
-                                               Wk_d,          //
-                                               Kdv6_d,        //
-                                               Altitude_d,    //
-                                               Altitudeh_d,
-                                               sim.A,  //
-                                               sim.Rd, //
-                                               sim.VertHyDiffOrder,
-                                               sim.DeepModel,
-                                               point_num,
-                                               nv);
-
-                // vertical_diff_joao<40><<<NBALL0, NTH>>>(diffmv_d,      //
-                //                                         diffwv_d,      //
-                //                                         diffrv_d,      //
-                //                                         diffprv_d,     //
-                //                                         Mhk_d,         //
-                //                                         Rhok_d,        //
-                //                                         temperature_d, //
-                //                                         Wk_d,          //
-                //                                         Kdv6_d,        //
-                //                                         Altitude_d,    //
-                //                                         Altitudeh_d,
-                //                                         sim.A,  //
-                //                                         sim.Rd, //
-                //                                         sim.DeepModel,
-                //                                         point_num);
-                cudaDeviceSynchronize();
-            }
-
-            Correct_Horizontal<<<NBALL1, NTH>>>(diffmh_d, diffmv_d, func_r_d, point_num);
-
-            cudaDeviceSynchronize();
-
-            BENCH_POINT_I_S(
-                current_step, rk, "Correct_Horizontal", (), ("diffmh_d", "diffmv_d", "func_r_d"))
         }
 
-        if (phy_modules_execute)
-            phy_modules_dyn_core_loop_slow_modes(*this, sim, current_step, times);
+        Correct_Horizontal<<<NBALL1, NTH>>>(diffmh_d, diffmv_d, func_r_d, point_num);
 
-        BENCH_POINT_I_S_PHY(current_step,
-                            rk,
-                            "DivDamp",
-                            (),
-                            ("Rhos_d",
-                             "Rhok_d",
-                             "Mhs_d",
-                             "Mhk_d",
-                             "Whs_d",
-                             "Whk_d",
-                             "pressures_d",
-                             "pressurek_d",
-                             "pressure_d"))
+        cudaDeviceSynchronize();
+
+        BENCH_POINT_I_S(
+            current_step, rk, "Correct_Horizontal", (), ("diffmh_d", "diffmv_d", "func_r_d"))
+    }
+
+    if (phy_modules_execute)
+        phy_modules_dyn_core_loop_slow_modes(*this, sim, current_step, times);
+
+    BENCH_POINT_I_S_PHY(current_step,
+                        rk,
+                        "DivDamp",
+                        (),
+                        ("Rhos_d",
+                         "Rhok_d",
+                         "Mhs_d",
+                         "Mhk_d",
+                         "Whs_d",
+                         "Whk_d",
+                         "pressures_d",
+                         "pressurek_d",
+                         "pressure_d"))
+    
+    bool increased_damping_for_100_days = 1;
+    if (increased_damping_for_100_days == 1) {
+        
+
+        if (current_step<100) {
+
+            // pascicode
+
+            
+            double Diffc_intitial_factor = 1.0;
+            double DivDampc_intitial_factor = 10.0;
+            double Diffc_v_intitial_factor = 10.0;
+
+            printf("changed Diffc in the first 100 time steps by a factor of %e for PARMENTIER \n",Diffc_intitial_factor);
+            printf("changed DivDampc in the first 100 time steps by a factor of %e for PARMENTIER \n",DivDampc_intitial_factor);
+            printf("changed Diffc_v in the first 100 time steps by a factor of %e for PARMENTIER \n",Diffc_v_intitial_factor);
+
+            //  Diffusion
+            //  Horizontal
+            double *Kdhz_h, *Kdh4_h;
+            Kdhz_h = new double[nv]; // horizontal divergence damping strength
+            Kdh4_h = new double[nv]; // horizontal diffusion strength
+                                    // if (sim.DiffSponge) {
+            double  n, ksponge;
+            double *Kdh2_h;
+            Kdh2_h = new double[nv];
+            for (int lev = 0; lev < nv; lev++) {
+                double dbar = sqrt(2 * M_PI / 5) * sim.A / (pow(2, glevel));
+                Kdh4_h[lev] = (Diffc_intitial_factor*sim.Diffc) * pow(dbar, 1.0 * sim.HyDiffOrder)
+                            / timestep; // * Altitude_h[lev]/sim.Top_altitude;
+                Kdhz_h[lev] =
+                    (DivDampc_intitial_factor*sim.DivDampc) * pow(dbar, 4.) / timestep; // * Altitude_h[lev]/sim.Top_altitude;
+                if (sim.DiffSponge) {
+                    double n = Altitude_h[lev] / sim.Top_altitude;
+                    if (n > ns_diff_sponge) {
+                        ksponge = Dv_sponge
+                                * pow(sin(0.5 * M_PI * (n - ns_diff_sponge) / (1.0 - ns_diff_sponge)), 2);
+                    }
+                    else {
+                        ksponge = 0;
+                    }
+                    if (order_diff_sponge == 2) {
+                        Kdh2_h[lev] = ksponge * pow(dbar, 2.) / timestep;
+                    }
+                    else if (order_diff_sponge == 4) {
+                        Kdh4_h[lev] += ksponge * pow(dbar, 4.) / timestep;
+                    }
+                }
+            }
+
+            //  Diffusion
+            //  Vertical
+            double *Kdvz_h, *Kdv6_h;
+            Kdvz_h = new double[nv]; // vertical divergence damping strength
+            Kdv6_h = new double[nv]; // vertical diffusion strength
+            for (int lev = 0; lev < nv; lev++) {
+                //      Diffusion constant.
+                double dz   = Altitudeh_h[lev + 1] - Altitudeh_h[lev];
+                Kdv6_h[lev] = Diffc_v_intitial_factor * sim.Diffc_v * pow(dz, 1.0 * sim.VertHyDiffOrder) / timestep;
+                Kdvz_h[lev] = 0.0; //not used (yet? perhaps in future)
+            }
+
+            cudaMemcpy(Kdhz_d, Kdhz_h, nv * sizeof(double), cudaMemcpyHostToDevice);
+            cudaMemcpy(Kdh4_d, Kdh4_h, nv * sizeof(double), cudaMemcpyHostToDevice);
+            cudaMemcpy(Kdv6_d, Kdv6_h, nv * sizeof(double), cudaMemcpyHostToDevice);
+
+        }
+        if (current_step==100) {
+            
+            //  Diffusion
+            //  Horizontal
+            double *Kdhz_h, *Kdh4_h;
+            Kdhz_h = new double[nv]; // horizontal divergence damping strength
+            Kdh4_h = new double[nv]; // horizontal diffusion strength
+                                    // if (sim.DiffSponge) {
+            double  n, ksponge;
+            double *Kdh2_h;
+            Kdh2_h = new double[nv];
+            for (int lev = 0; lev < nv; lev++) {
+                double dbar = sqrt(2 * M_PI / 5) * sim.A / (pow(2, glevel));
+                Kdh4_h[lev] = (sim.Diffc) * pow(dbar, 1.0 * sim.HyDiffOrder)
+                            / timestep; // * Altitude_h[lev]/sim.Top_altitude;
+                Kdhz_h[lev] =
+                    (sim.DivDampc) * pow(dbar, 4.) / timestep; // * Altitude_h[lev]/sim.Top_altitude;
+                if (sim.DiffSponge) {
+                    double n = Altitude_h[lev] / sim.Top_altitude;
+                    if (n > ns_diff_sponge) {
+                        ksponge = Dv_sponge
+                                * pow(sin(0.5 * M_PI * (n - ns_diff_sponge) / (1.0 - ns_diff_sponge)), 2);
+                    }
+                    else {
+                        ksponge = 0;
+                    }
+                    if (order_diff_sponge == 2) {
+                        Kdh2_h[lev] = ksponge * pow(dbar, 2.) / timestep;
+                    }
+                    else if (order_diff_sponge == 4) {
+                        Kdh4_h[lev] += ksponge * pow(dbar, 4.) / timestep;
+                    }
+                }
+            }
+
+            //  Diffusion
+            //  Vertical
+            double *Kdvz_h, *Kdv6_h;
+            Kdvz_h = new double[nv]; // vertical divergence damping strength
+            Kdv6_h = new double[nv]; // vertical diffusion strength
+            for (int lev = 0; lev < nv; lev++) {
+                //      Diffusion constant.
+                double dz   = Altitudeh_h[lev + 1] - Altitudeh_h[lev];
+                Kdv6_h[lev] = sim.Diffc_v * pow(dz, 1.0 * sim.VertHyDiffOrder) / timestep;
+                Kdvz_h[lev] = 0.0; //not used (yet? perhaps in future)
+            }
+
+            cudaMemcpy(Kdhz_d, Kdhz_h, nv * sizeof(double), cudaMemcpyHostToDevice);
+            cudaMemcpy(Kdh4_d, Kdh4_h, nv * sizeof(double), cudaMemcpyHostToDevice);
+            cudaMemcpy(Kdv6_d, Kdv6_h, nv * sizeof(double), cudaMemcpyHostToDevice);
+        }
+
+    }
+    
+
+
         //
         //      Divergence damping
         cudaMemset(DivM_d, 0, sizeof(double) * point_num * 3 * nv);
