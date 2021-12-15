@@ -475,14 +475,14 @@ __global__ void Diffusion_Op(double* diffmh_d,
         }
     }
 
-    if (id == 0 && var < 4 && stepnum < 3) {
-        printf("%d %g\n", stepnum, lap);
-    }
+    // if (id == 0 && var < 4 && stepnum < 3) {
+    //     printf("%d %g\n", stepnum, lap);
+    // }
 
     if (laststep) {
-        if (id == 0 && var == 1) {
-            printf("%d %g %g\n", stepnum, lap, sdiff);
-        }
+        // if (id == 0 && var == 1) {
+        //     printf("%d %g %g\n", stepnum, lap, sdiff);
+        // }
         if (var == 0) {
             diffrh_d[id * nv + lev] = lap;
         }
@@ -515,9 +515,9 @@ __global__ void Diffusion_Op(double* diffmh_d,
     }
     else {
         diff_d[id * nv * 6 + lev * 6 + var] = lap;
-        if (id == 0 && var == 1) {
-            printf("%d %g\n", stepnum, lap);
-        }
+        // if (id == 0 && var == 1) {
+        //     printf("%d %g\n", stepnum, lap);
+        // }
     }
 }
 
@@ -887,9 +887,9 @@ __global__ void Correct_Horizontal(double* diffmh_d, double* diffmv_d, double* f
 
     if (id < num) {
         double dmhr, dmvr;
-        if (id == 0) {
-            printf("%g\n", diffmh_d[id * nv * 3 + lev * 3 + 0]);
-        }
+        // if (id == 0) {
+        //     printf("%g\n", diffmh_d[id * nv * 3 + lev * 3 + 0]);
+        // }
 
         dmhr = func_r_d[id * 3 + 0] * diffmh_d[id * nv * 3 + lev * 3 + 0]
                + func_r_d[id * 3 + 1] * diffmh_d[id * nv * 3 + lev * 3 + 1]
@@ -900,9 +900,9 @@ __global__ void Correct_Horizontal(double* diffmh_d, double* diffmv_d, double* f
         diffmh_d[id * nv * 3 + lev * 3 + 2] += -func_r_d[id * 3 + 2] * dmhr;
 
 
-        if (id == 0) {
-            printf("%g\n", diffmh_d[id * nv * 3 + lev * 3 + 0]);
-        }
+        // if (id == 0) {
+        //     printf("%g\n", diffmh_d[id * nv * 3 + lev * 3 + 0]);
+        // }
 
         dmvr = func_r_d[id * 3 + 0] * diffmv_d[id * nv * 3 + lev * 3 + 0]
                + func_r_d[id * 3 + 1] * diffmv_d[id * nv * 3 + lev * 3 + 1]

@@ -46,7 +46,7 @@
 
 // benchmarking
 // if defined run benchmark functions?
-#define BENCHMARKING
+// #define BENCHMARKING
 
 // ***************************************
 // * binary comparison
@@ -63,7 +63,7 @@
 // #define BENCH_COMPARE_EPSILON_VALUE 1e-14
 // ***************************************
 // * check for NaNs
-#define BENCH_NAN_CHECK
+// #define BENCH_NAN_CHECK
 // * below adds checks on device functions (useful for device memory bugs)
 // #define BENCH_CHECK_LAST_CUDA_ERROR
 

@@ -748,19 +748,19 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         pressure_h[i * nv + lev] / (sim.Rd * temperature_h[i * nv + lev]);
                 }
             }
-            { //hack to test diffusion scheme
-                double lat, lon, phi0 = 0, lambda0 = 0, r, v, rhoU;
-                lat  = lonlat_h[i * 2 + 1];
-                lon  = lonlat_h[i * 2];
-                r    = acos(sin(phi0) * sin(lat) + cos(phi0) * cos(lat) * cos(lon - lambda0));
-                v    = 1.0;
-                rhoU = v * r;
-                for (int lev = 0; lev < nv; lev++) {
-                    Mh_h[i * 3 * nv + 3 * lev + 0] = rhoU * (-sin(lon));
-                    Mh_h[i * 3 * nv + 3 * lev + 1] = rhoU * cos(lon);
-                    Mh_h[i * 3 * nv + 3 * lev + 2] = 0.0;
-                }
-            }
+            // { //hack to test diffusion scheme
+            //     double lat, lon, phi0 = 0, lambda0 = 0, r, v, rhoU;
+            //     lat  = lonlat_h[i * 2 + 1];
+            //     lon  = lonlat_h[i * 2];
+            //     r    = acos(sin(phi0) * sin(lat) + cos(phi0) * cos(lat) * cos(lon - lambda0));
+            //     v    = 1.0;
+            //     rhoU = v * r;
+            //     for (int lev = 0; lev < nv; lev++) {
+            //         Mh_h[i * 3 * nv + 3 * lev + 0] = rhoU * (-sin(lon));
+            //         Mh_h[i * 3 * nv + 3 * lev + 1] = rhoU * cos(lon);
+            //         Mh_h[i * 3 * nv + 3 * lev + 2] = 0.0;
+            //     }
+            // }
         }
         if (core_benchmark == JET_STEADY) {
             //  Number of threads per block.
@@ -989,9 +989,6 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
             }
         }
     }
-    printf("Khyp4 = %g\n", Kdh4_h[nv - 1]);
-    printf("Khyp2 = %g\n", Kdh2_h[nv - 1]);
-
 
     //  Diffusion
     //  Vertical
