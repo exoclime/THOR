@@ -75,7 +75,7 @@ __global__ void Diffusion_Op(double* diffmh_d,
                              double* Cp_d,
                              int*    maps_d,
                              int     nl_region,
-                             bool    stepnum,
+                             int     stepnum,
                              bool    laststep,
                              bool    DeepModel,
                              bool    DiffSponge,
@@ -103,7 +103,7 @@ __global__ void Diffusion_Op(double* diffmh_d,
     double AT1, AT2;
     // double o3 = 1.0 / 3.0;
     // double o6 = 1.0 / 6.0;
-    double lap, lap1, lap2, lap3, lap4, lap5, lap6;
+    double lap = 0, lap1, lap2, lap3, lap4, lap5, lap6;
     double lapx1, lapx2, lapy1, lapy2, lapz1, lapz2;
     // double dmhz, dmhr;
 
@@ -345,18 +345,18 @@ __global__ void Diffusion_Op(double* diffmh_d,
             pt3 = (y + 2) * nhl + x + 2;
         }
 
-        if (laststep) {
-            // if (var == 0) {
-            vdiff = 0.5 * rscale * sdiff;
-            // }
-            // else {
-            //     vdiff = 0.5 * rscale
-            //             * (2.0 * Rho_s[ir] + Rho_s[pt1] + 2.0 * Rho_s[pt2] + Rho_s[pt3]) * o6
-            //             * sdiff;
-            // }
-        }
-        else
-            vdiff = 0.5 * rscale;
+        // if (laststep) {
+        //     // if (var == 0) {
+        //     vdiff = 0.5 * rscale * sdiff;
+        //     // }
+        //     // else {
+        //     //     vdiff = 0.5 * rscale
+        //     //             * (2.0 * Rho_s[ir] + Rho_s[pt1] + 2.0 * Rho_s[pt2] + Rho_s[pt3]) * o6
+        //     //             * sdiff;
+        //     // }
+        // }
+        // else
+        vdiff = 0.5 * rscale;
 
         if (j == 0) {
             // lapi are the values 'a_s' the gradient will operate on and INCLUDE the
@@ -440,57 +440,73 @@ __global__ void Diffusion_Op(double* diffmh_d,
                 + (lapy1 + lapy2) * nvecoa_d[id * 6 * 3 + j * 3 + 1]
                 + (lapz1 + lapz2) * nvecoa_d[id * 6 * 3 + j * 3 + 2])
                * vdiff;
-
+        // if (id == 0 && var == 1 && j == 4) {
+        //     printf("%d %d  %g\n", stepnum, j, lap);
+        // }
         if (pent_ind && j == 4)
             break;
     }
 
-    if (DiffSponge) {
-        if (stepnum == order_diff_sponge / 2 - 1) {
+    if (laststep)
+        lap *= sdiff;
+
+    if (DiffSponge && order_diff_sponge != HyDiffOrder) {
+        if (stepnum == order_diff_sponge / 2) {
             if (var == 1) {
-                diff_sponge_d[id * nv * 6 + lev * 6 + var] =
-                    Rho_d[id * nv + lev] * Kdh2_d[lev] * diff_d[id * nv * 6 + lev * 6 + var];
+                diff_sponge_d[id * nv * 6 + lev * 6 + var] = pow(-1.0, order_diff_sponge / 2 + 1)
+                                                             * Rho_d[id * nv + lev] * Kdh2_d[lev]
+                                                             * diff_d[id * nv * 6 + lev * 6 + var];
             }
             if (var == 2) {
-                diff_sponge_d[id * nv * 6 + lev * 6 + var] =
-                    Rho_d[id * nv + lev] * Kdh2_d[lev] * diff_d[id * nv * 6 + lev * 6 + var];
+                diff_sponge_d[id * nv * 6 + lev * 6 + var] = pow(-1.0, order_diff_sponge / 2 + 1)
+                                                             * Rho_d[id * nv + lev] * Kdh2_d[lev]
+                                                             * diff_d[id * nv * 6 + lev * 6 + var];
             }
             if (var == 3) {
-                diff_sponge_d[id * nv * 6 + lev * 6 + var] =
-                    Rho_d[id * nv + lev] * Kdh2_d[lev] * diff_d[id * nv * 6 + lev * 6 + var];
+                diff_sponge_d[id * nv * 6 + lev * 6 + var] = pow(-1.0, order_diff_sponge / 2 + 1)
+                                                             * Rho_d[id * nv + lev] * Kdh2_d[lev]
+                                                             * diff_d[id * nv * 6 + lev * 6 + var];
             }
             if (var == 4) {
-                diff_sponge_d[id * nv * 6 + lev * 6 + var] =
-                    Rho_d[id * nv + lev] * Kdh2_d[lev] * diff_d[id * nv * 6 + lev * 6 + var];
+                diff_sponge_d[id * nv * 6 + lev * 6 + var] = pow(-1.0, order_diff_sponge / 2 + 1)
+                                                             * Rho_d[id * nv + lev] * Kdh2_d[lev]
+                                                             * diff_d[id * nv * 6 + lev * 6 + var];
             }
         }
     }
 
+    if (id == 0 && var < 4 && stepnum < 3) {
+        printf("%d %g\n", stepnum, lap);
+    }
+
     if (laststep) {
+        if (id == 0 && var == 1) {
+            printf("%d %g %g\n", stepnum, lap, sdiff);
+        }
         if (var == 0) {
             diffrh_d[id * nv + lev] = lap;
         }
         if (var == 1) {
             diffmh_d[id * nv * 3 + lev * 3 + 0] = lap;
-            if (DiffSponge) {
+            if (DiffSponge && order_diff_sponge != HyDiffOrder) {
                 diffmh_d[id * nv * 3 + lev * 3 + 0] += diff_sponge_d[id * nv * 6 + lev * 6 + var];
             }
         }
         if (var == 2) {
             diffmh_d[id * nv * 3 + lev * 3 + 1] = lap;
-            if (DiffSponge) {
+            if (DiffSponge && order_diff_sponge != HyDiffOrder) {
                 diffmh_d[id * nv * 3 + lev * 3 + 1] += diff_sponge_d[id * nv * 6 + lev * 6 + var];
             }
         }
         if (var == 3) {
             diffmh_d[id * nv * 3 + lev * 3 + 2] = lap;
-            if (DiffSponge) {
+            if (DiffSponge && order_diff_sponge != HyDiffOrder) {
                 diffmh_d[id * nv * 3 + lev * 3 + 2] += diff_sponge_d[id * nv * 6 + lev * 6 + var];
             }
         }
         if (var == 4) {
             diffw_d[id * nv + lev] = lap;
-            if (DiffSponge) {
+            if (DiffSponge && order_diff_sponge != HyDiffOrder) {
                 diffw_d[id * nv + lev] += diff_sponge_d[id * nv * 6 + lev * 6 + var];
             }
         }
@@ -499,6 +515,9 @@ __global__ void Diffusion_Op(double* diffmh_d,
     }
     else {
         diff_d[id * nv * 6 + lev * 6 + var] = lap;
+        if (id == 0 && var == 1) {
+            printf("%d %g\n", stepnum, lap);
+        }
     }
 }
 
@@ -727,17 +746,17 @@ __global__ void Diffusion_Op_Poles(double* diffmh_d,
         kp1   = (k + 1) % 5;
         kp2   = (k + 2) % 5;
 
-        if (laststep) {
-            // if (var == 0) {
-            vdiff = 0.5 * sdiff * rscale;
-            // }
-            // else {
-            //     vdiff = 0.5 * sdiff * rscale
-            //             * (2.0 * Rho_p[0] + Rho_p[j] + 2.0 * Rho_p[jp1] + Rho_p[jp2]) * o6;
-            // }
-        }
-        else
-            vdiff = 0.5 * rscale;
+        // if (laststep) {
+        //     // if (var == 0) {
+        //     vdiff = 0.5 * sdiff * rscale;
+        //     // }
+        //     // else {
+        //     //     vdiff = 0.5 * sdiff * rscale
+        //     //             * (2.0 * Rho_p[0] + Rho_p[j] + 2.0 * Rho_p[jp1] + Rho_p[jp2]) * o6;
+        //     // }
+        // }
+        // else
+        vdiff = 0.5 * rscale;
 
         if (k == 0) {
             AT1   = rscale / areasTr_p[k];
@@ -800,57 +819,60 @@ __global__ void Diffusion_Op_Poles(double* diffmh_d,
                * vdiff;
     }
 
-    if (DiffSponge) {
-        if (stepnum == order_diff_sponge / 2 - 1) {
+    if (DiffSponge && order_diff_sponge != HyDiffOrder) {
+        if (stepnum == order_diff_sponge / 2) {
             if (var == 1) {
-                diff_sponge_d[id * nv * 6 + lev * 6 + var] =
-                    Rho_d[id * nv + lev] * Kdh2_d[lev] * diff_d[id * nv * 6 + lev * 6 + var];
+                diff_sponge_d[id * nv * 6 + lev * 6 + var] = pow(-1.0, order_diff_sponge / 2 + 1)
+                                                             * Rho_d[id * nv + lev] * Kdh2_d[lev]
+                                                             * diff_d[id * nv * 6 + lev * 6 + var];
             }
             if (var == 2) {
-                diff_sponge_d[id * nv * 6 + lev * 6 + var] =
-                    Rho_d[id * nv + lev] * Kdh2_d[lev] * diff_d[id * nv * 6 + lev * 6 + var];
+                diff_sponge_d[id * nv * 6 + lev * 6 + var] = pow(-1.0, order_diff_sponge / 2 + 1)
+                                                             * Rho_d[id * nv + lev] * Kdh2_d[lev]
+                                                             * diff_d[id * nv * 6 + lev * 6 + var];
             }
             if (var == 3) {
-                diff_sponge_d[id * nv * 6 + lev * 6 + var] =
-                    Rho_d[id * nv + lev] * Kdh2_d[lev] * diff_d[id * nv * 6 + lev * 6 + var];
+                diff_sponge_d[id * nv * 6 + lev * 6 + var] = pow(-1.0, order_diff_sponge / 2 + 1)
+                                                             * Rho_d[id * nv + lev] * Kdh2_d[lev]
+                                                             * diff_d[id * nv * 6 + lev * 6 + var];
             }
             if (var == 4) {
-                diff_sponge_d[id * nv * 6 + lev * 6 + var] =
-                    Rho_d[id * nv + lev] * Kdh2_d[lev] * diff_d[id * nv * 6 + lev * 6 + var];
+                diff_sponge_d[id * nv * 6 + lev * 6 + var] = pow(-1.0, order_diff_sponge / 2 + 1)
+                                                             * Rho_d[id * nv + lev] * Kdh2_d[lev]
+                                                             * diff_d[id * nv * 6 + lev * 6 + var];
             }
         }
     }
 
     if (laststep) {
         if (var == 0)
-            diffrh_d[id * nv + lev] = lap;
+            diffrh_d[id * nv + lev] = sdiff * lap;
         if (var == 1) {
-            diffmh_d[id * 3 * nv + lev * 3 + 0] = lap;
-            if (DiffSponge) {
+            diffmh_d[id * 3 * nv + lev * 3 + 0] = sdiff * lap;
+            if (DiffSponge && order_diff_sponge != HyDiffOrder) {
                 diffmh_d[id * nv * 3 + lev * 3 + 0] += diff_sponge_d[id * nv * 6 + lev * 6 + var];
             }
         }
         if (var == 2) {
-            diffmh_d[id * 3 * nv + lev * 3 + 1] = lap;
-            if (DiffSponge) {
+            diffmh_d[id * 3 * nv + lev * 3 + 1] = sdiff * lap;
+            if (DiffSponge && order_diff_sponge != HyDiffOrder) {
                 diffmh_d[id * nv * 3 + lev * 3 + 1] += diff_sponge_d[id * nv * 6 + lev * 6 + var];
             }
         }
         if (var == 3) {
-            diffmh_d[id * 3 * nv + lev * 3 + 2] = lap;
-            if (DiffSponge) {
+            diffmh_d[id * 3 * nv + lev * 3 + 2] = sdiff * lap;
+            if (DiffSponge && order_diff_sponge != HyDiffOrder) {
                 diffmh_d[id * nv * 3 + lev * 3 + 2] += diff_sponge_d[id * nv * 6 + lev * 6 + var];
             }
         }
         if (var == 4) {
-            diffw_d[id * nv + lev] = lap;
-            if (DiffSponge) {
-                diffw_d[id * nv + lev] +=
-                    Rho_d[id * nv + lev] * Kdh2_d[lev] * diff_sponge_d[id * nv * 6 + lev * 6 + var];
+            diffw_d[id * nv + lev] = sdiff * lap;
+            if (DiffSponge && order_diff_sponge != HyDiffOrder) {
+                diffw_d[id * nv + lev] += diff_sponge_d[id * nv * 6 + lev * 6 + var];
             }
         }
         if (var == 5)
-            diffpr_d[id * nv + lev] = lap;
+            diffpr_d[id * nv + lev] = sdiff * lap;
     }
     else {
         diff_d[id * nv * 6 + lev * 6 + var] = lap;
@@ -865,6 +887,10 @@ __global__ void Correct_Horizontal(double* diffmh_d, double* diffmv_d, double* f
 
     if (id < num) {
         double dmhr, dmvr;
+        if (id == 0) {
+            printf("%g\n", diffmh_d[id * nv * 3 + lev * 3 + 0]);
+        }
+
         dmhr = func_r_d[id * 3 + 0] * diffmh_d[id * nv * 3 + lev * 3 + 0]
                + func_r_d[id * 3 + 1] * diffmh_d[id * nv * 3 + lev * 3 + 1]
                + func_r_d[id * 3 + 2] * diffmh_d[id * nv * 3 + lev * 3 + 2];
@@ -872,6 +898,11 @@ __global__ void Correct_Horizontal(double* diffmh_d, double* diffmv_d, double* f
         diffmh_d[id * nv * 3 + lev * 3 + 0] += -func_r_d[id * 3 + 0] * dmhr;
         diffmh_d[id * nv * 3 + lev * 3 + 1] += -func_r_d[id * 3 + 1] * dmhr;
         diffmh_d[id * nv * 3 + lev * 3 + 2] += -func_r_d[id * 3 + 2] * dmhr;
+
+
+        if (id == 0) {
+            printf("%g\n", diffmh_d[id * nv * 3 + lev * 3 + 0]);
+        }
 
         dmvr = func_r_d[id * 3 + 0] * diffmv_d[id * nv * 3 + lev * 3 + 0]
                + func_r_d[id * 3 + 1] * diffmv_d[id * nv * 3 + lev * 3 + 1]

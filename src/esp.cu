@@ -1048,6 +1048,7 @@ int main(int argc, char** argv) {
           sim.output_mean,
           sim.out_interm_momentum,
           sim.output_diffusion,
+          sim.DiffSponge,
           init_PT_profile,
           Tint,
           kappa_lw,

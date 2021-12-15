@@ -492,7 +492,7 @@ __global__ void Density_Pressure_Eqs(double *      pressure_d,
 
 
     // Updates density
-    nflxr_s[iri] += dwdz; //hack to test mass conservation
+    nflxr_s[iri] += dwdz;
     Rho_d[id * nv + lev] +=
         (SlowRho_d[id * nv + lev] - nflxr_s[iri]) * dt; //density deviation at time tau+dtau
 

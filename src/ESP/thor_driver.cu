@@ -88,8 +88,8 @@ __host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
     dim3 NBALL1((point_num / NTH) + 1, nv, 1); //Number of blocks to execute on all grid points
 
     //  Number of Small steps
-    double ns_totald = 6; // Maximum number of small steps in a large step (double ).
-    int    ns_totali = 6; // Maximum number of small steps in a large step (integer).
+    double ns_totald = 1; // Maximum number of small steps in a large step (double ).
+    int    ns_totali = 1; // Maximum number of small steps in a large step (integer).
     int    ns_it;         // Number of small steps in each large step.
     double times;         // Sub-timestep.
 
@@ -127,7 +127,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
                    "W_d" /*, "tracer_d", "tracers_d", "tracerk_d"*/));
 
     //  Loop for large time integration.
-    for (int rk = 0; rk < 3; rk++) {
+    for (int rk = 0; rk < 1; rk++) {
         //      Local variables to define the length (times) and the number of the small steps (ns_it).
         if (rk == 0)
             ns_it = 1;
@@ -280,6 +280,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
 
             cudaDeviceSynchronize();
             // bool firststep;
+            int stepnum = 0;
             for (int ihyp = 0; ihyp < sim.HyDiffOrder / 2 - 1; ihyp++) {
                 // if (ihyp == 0)
                 //     firststep = 1;
@@ -309,8 +310,8 @@ __host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
                                                   Cp_d,
                                                   maps_d,
                                                   nl_region,
-                                                  ihyp,
-                                                  0,
+                                                  stepnum,
+                                                  false,
                                                   sim.DeepModel,
                                                   sim.DiffSponge,
                                                   order_diff_sponge,
@@ -344,8 +345,8 @@ __host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
                                                    Cp_d,
                                                    point_local_d,
                                                    point_num,
-                                                   ihyp,
-                                                   0,
+                                                   stepnum,
+                                                   false,
                                                    sim.DeepModel,
                                                    sim.DiffSponge,
                                                    order_diff_sponge,
@@ -354,6 +355,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
                                                    energy_equation,
                                                    sim.HyDiffOrder);
                 cudaDeviceSynchronize();
+                stepnum += 1;
             }
 
             BENCH_POINT_I_S(current_step, rk, "Diffusion_Op1", (), ("diff_d"))
@@ -386,8 +388,8 @@ __host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
                                               Cp_d,
                                               maps_d,
                                               nl_region,
-                                              0,
-                                              1,
+                                              stepnum,
+                                              true,
                                               sim.DeepModel,
                                               sim.DiffSponge,
                                               order_diff_sponge,
@@ -420,8 +422,8 @@ __host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
                                                Cp_d,
                                                point_local_d,
                                                point_num,
-                                               0,
-                                               1,
+                                               stepnum,
+                                               true,
                                                sim.DeepModel,
                                                sim.DiffSponge,
                                                order_diff_sponge,

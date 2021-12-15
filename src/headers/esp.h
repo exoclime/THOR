@@ -409,6 +409,7 @@ public:
         bool                  output_mean,
         bool                  out_interm_momentum,
         bool                  output_diffusion,
+        bool                  DiffSponge,
         init_PT_profile_types init_PT_profile_,
         double                Tint_,
         double                kappa_lw_,
@@ -424,7 +425,7 @@ public:
 
     ~ESP();
 
-    void alloc_data(bool, bool, bool, bool);
+    void alloc_data(bool, bool, bool, bool, bool);
 
     bool initial_values(const std::string &initial_conditions_filename,
                         const std::string &planet_filename,

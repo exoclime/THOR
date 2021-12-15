@@ -107,6 +107,7 @@ __host__ ESP::ESP(int *                 point_local_,
                   bool                  output_mean,
                   bool                  out_interm_momentum,
                   bool                  output_diffusion,
+                  bool                  DiffSponge,
                   init_PT_profile_types init_PT_profile_,
                   double                Tint_,
                   double                kappa_lw_,
@@ -192,11 +193,14 @@ __host__ ESP::ESP(int *                 point_local_,
     Csurf = Csurf_config;
     //
     //  Allocate Data
-    alloc_data(globdiag, output_mean, out_interm_momentum, output_diffusion);
+    alloc_data(globdiag, output_mean, out_interm_momentum, output_diffusion, DiffSponge);
 }
 
-__host__ void
-ESP::alloc_data(bool globdiag, bool output_mean, bool out_interm_momentum, bool output_diffusion) {
+__host__ void ESP::alloc_data(bool globdiag,
+                              bool output_mean,
+                              bool out_interm_momentum,
+                              bool output_diffusion,
+                              bool DiffSponge) {
 
     //
     //  Description:
@@ -371,7 +375,8 @@ ESP::alloc_data(bool globdiag, bool output_mean, bool out_interm_momentum, bool 
     cudaMalloc((void **)&diffw_d, nv * point_num * sizeof(double));
     cudaMalloc((void **)&diffrh_d, nv * point_num * sizeof(double));
     cudaMalloc((void **)&diff_d, 6 * nv * point_num * sizeof(double));
-    cudaMalloc((void **)&diff_sponge_d, 6 * nv * point_num * sizeof(double));
+    if (DiffSponge)
+        cudaMalloc((void **)&diff_sponge_d, 6 * nv * point_num * sizeof(double));
     cudaMalloc((void **)&divg_Mh_d, 3 * nv * point_num * sizeof(double));
 
     cudaMalloc((void **)&Kdh2_d, nv * sizeof(double));
@@ -748,7 +753,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 lat  = lonlat_h[i * 2 + 1];
                 lon  = lonlat_h[i * 2];
                 r    = acos(sin(phi0) * sin(lat) + cos(phi0) * cos(lat) * cos(lon - lambda0));
-                v    = 0.0;
+                v    = 1.0;
                 rhoU = v * r;
                 for (int lev = 0; lev < nv; lev++) {
                     Mh_h[i * 3 * nv + 3 * lev + 0] = rhoU * (-sin(lon));
@@ -976,13 +981,12 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
             else {
                 ksponge = 0;
             }
-            Kdh2_h[lev] = ksponge * pow(dbar, 1.0 * order_diff_sponge) / timestep_dyn;
-            // if (order_diff_sponge == 2) {
-            //     Kdh2_h[lev] = ksponge * pow(dbar, 2.) / timestep_dyn;
-            // }
-            // else if (order_diff_sponge == 4) {
-            //     Kdh4_h[lev] += ksponge * pow(dbar, 4.) / timestep_dyn;
-            // }
+            if (order_diff_sponge == sim.HyDiffOrder) {
+                Kdh4_h[lev] += ksponge * pow(dbar, 1.0 * order_diff_sponge) / timestep_dyn;
+            }
+            else {
+                Kdh2_h[lev] = ksponge * pow(dbar, 1.0 * order_diff_sponge) / timestep_dyn;
+            }
         }
     }
     printf("Khyp4 = %g\n", Kdh4_h[nv - 1]);
