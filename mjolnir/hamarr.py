@@ -842,7 +842,7 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
             if input.surface:
                 surf = 1
                 extrap_low = (grid.Altitudeh[0] - grid.Altitude[1]) / (grid.Altitude[0] - grid.Altitude[1])
-            
+
         else:
             surf = 0
 
@@ -1381,9 +1381,9 @@ def vertical_lat(input, grid, output, rg, sigmaref, z, slice=['default'], save=T
             levp = 40
         else:
             if use_p:
-                levp = np.arange(np.ceil(np.nanmin(Zonallt[:, prange[0]]) / csp) * csp, np.floor(np.nanmax(Zonallt[:, prange[0]]) / csp) * csp, csp)
+                levp = np.arange(np.ceil(np.nanmin(Zonallt[:, prange[0]]) / csp) * csp, np.floor(np.nanmax(Zonallt[:, prange[0]]) / csp) * csp + csp, csp)
             else:
-                levp = np.arange(np.ceil(np.nanmin(Zonallt[:, hrange[0]]) / csp) * csp, np.floor(np.nanmax(Zonallt[:, hrange[0]]) / csp) * csp, csp)
+                levp = np.arange(np.ceil(np.nanmin(Zonallt[:, hrange[0]]) / csp) * csp, np.floor(np.nanmax(Zonallt[:, hrange[0]]) / csp) * csp + csp, csp)
 
     c2 = ax.contour(latp * 180 / np.pi, ycoord, zvals, levels=levp, colors=cover_color, linewidths=1)
     ax.clabel(c2, inline=True, fontsize=6, fmt=clabel_format, use_clabeltext=True)
@@ -1688,7 +1688,8 @@ def vertical_lon(input, grid, output, rg, sigmaref, z, slice=['default'], save=T
 
 def horizontal_lev(input, grid, output, rg, Plev, z, save=True, axis=False,
                    wind_vectors=False, use_p=True, clevs=[40], cbar = True,
-                   wind_key_loc=[0.85,-0.1], wind_key_max='default',cmap_center=False):
+                   wind_key_loc=[0.85,-0.1], wind_key_max='default',cmap_center=False,
+                   clabel_format='%#.3g',wind_color='0.8'):
     # Set the latitude-longitude grid.
     loni, lati = np.meshgrid(rg.Longitude[:], rg.Latitude[:])
 
@@ -1780,7 +1781,7 @@ def horizontal_lev(input, grid, output, rg, Plev, z, save=True, axis=False,
     if len(clevs) == 1:
         clevels = np.int(clevs[0])
     elif len(clevs) == 3:
-        clevels = np.linspace(np.int(clevs[0]), np.int(clevs[1]), np.int(clevs[2]))
+        clevels = np.linspace(clevs[0], clevs[1], np.int(clevs[2]))
     else:
         raise IOError("clevs not valid!")
     # clevels = np.linspace(900,1470,58)
@@ -1837,16 +1838,16 @@ def horizontal_lev(input, grid, output, rg, Plev, z, save=True, axis=False,
             umax = wind_key_max
         del Uiii, Viii
         if z['llswap']:
-            q = ax.quiver(latq, lonq, V, U, color='0.8',scale=10*umax)
+            q = ax.quiver(latq, lonq, V, U, color=wind_color,scale=10*umax)
         else:
-            q = ax.quiver(lonq, latq, U, V, color='0.8',scale=10*umax)
+            q = ax.quiver(lonq, latq, U, V, color=wind_color,scale=10*umax)
         if wind_key_loc:
             ax.quiverkey(q, X=wind_key_loc[0], Y=wind_key_loc[1], U=umax, label='%#.2f m/s' % umax, labelpos='E')
 
     divider = make_axes_locatable(ax)
     if cbar == True:
         cax = divider.append_axes('right', size='5%', pad=0.05)
-        kwargs = {'format': '%#d'}
+        kwargs = {'format': clabel_format}
         clb = fig.colorbar(C, cax=cax, orientation='vertical', **kwargs)
         clb.set_label(z['label'])
 
@@ -1960,6 +1961,8 @@ def streamf_moc_plot(input, grid, output, rg, sigmaref, save=True, axis=False,
         ax = plt.gca()
     else:
         raise IOError("'axis = {}' but {} is not an axes.SubplotBase instance".format(axis, axis))
+
+    print(np.nanmin(sf[:, prange[0]].T/(10**cscale)),np.nanmax(sf[:, prange[0]].T/(10**cscale)))
 
     for cc in C.collections:
         cc.set_edgecolor("face")  # fixes a stupid bug in matplotlib 2.0

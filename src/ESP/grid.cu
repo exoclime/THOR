@@ -2056,7 +2056,6 @@ void Icogrid::set_altitudes_softplus(double *Altitude,
     for (int lev = 0; lev < nv; lev++) { //centers of layers
         Altitude[lev] = (Altitudeh[lev] + Altitudeh[lev + 1]) / 2.0;
     }
-    printf("stop here");
 }
 
 
