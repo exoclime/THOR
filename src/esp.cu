@@ -366,6 +366,8 @@ int main(int argc, char** argv) {
     string initial_conditions = "initialfilename.h5";
     config_reader.append_config_var(
         "initial", initial_conditions, string(initial_conditions_default));
+    config_reader.append_config_var(
+        "soft_adjustment", sim.soft_adjustment, soft_adjustment_default);
 
     // Benchmark test
     string core_benchmark_str("HeldSuarez");
@@ -413,6 +415,13 @@ int main(int argc, char** argv) {
     config_reader.append_config_var("kappa_sw", kappa_sw, kappa_sw_default);
     config_reader.append_config_var("f_lw", f_lw, f_lw_default);
     config_reader.append_config_var("bv_freq", bv_freq, bv_freq_default);
+
+    // additional settings for parmentier profile (default values are not implemented)
+    double MetStar = 0.0, Tstar = 5000.0, radius_star = 1.203, planet_star_dist = 0.04747;
+    config_reader.append_config_var("MetStar", MetStar, Tint_default);
+    config_reader.append_config_var("Tstar", Tstar, kappa_lw_default);
+    config_reader.append_config_var("radius_star", radius_star, kappa_sw_default);
+    config_reader.append_config_var("planet_star_dist", planet_star_dist, f_lw_default);
 
     // ultrahot thermodynamics
     string uh_thermo_str("none");
@@ -630,6 +639,12 @@ int main(int argc, char** argv) {
         init_PT_profile = ISOTHERMAL;
         config_OK &= true;
     }
+    
+    else if (init_PT_profile_str == "parmentier") {
+        init_PT_profile = PARMENTIER;
+        config_OK &= true;
+    }
+    
     else if (init_PT_profile_str == "guillot") {
         init_PT_profile = GUILLOT;
         config_OK &= true;
@@ -1061,6 +1076,10 @@ int main(int argc, char** argv) {
           thermo_equation,
           surface_config,
           Csurf_config,
+          MetStar,
+          Tstar,
+          radius_star,
+          planet_star_dist,
           insolation);
 
     USE_BENCHMARK();
@@ -1254,6 +1273,9 @@ int main(int argc, char** argv) {
     if (sigaction(SIGINT, &sigint_action, NULL) == -1) {
         log::printf("Error: cannot handle SIGINT\n"); // Should not happen
     }
+
+    // Register clean up function for exit
+    atexit(exit_handler);
 
     //
     //  Writes initial conditions

@@ -207,6 +207,20 @@ public:
     double  Csurf;
     double *dTsurf_dt_d; // store change in temp to update all at once in profx
 
+    // variables for initial parmentier conditions (by Noti Pascal)
+    double MetStar;
+    double Tstar;
+    double radius_star;
+    double planet_star_dist;
+
+    // inititial conditions parmentier
+    double *init_altitude_parmentier;
+    double *init_temperature_parmentier;
+    double *init_pressure_parmentier ;
+    double *init_Rd_parmentier ;
+
+    double *dT_conv_d;
+
     ///////////////////////////
     //  Device
     int *point_local_d;
@@ -419,6 +433,10 @@ public:
         thermo_equation_types thermo_equation_,
         bool                  surface_config,
         double                Csurf_config,
+        double                MetStar_,
+        double                Tstar_,
+        double                radius_star_,
+        double                planet_star_dist_,
         Insolation &          insolation_);
 
     ~ESP();

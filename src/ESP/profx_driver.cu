@@ -236,25 +236,56 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
     }
 #endif
 
-    if (sim.conv_adj) {
+if (sim.conv_adj) {
+    if (current_step > 30 ) {
+
         cudaDeviceSynchronize();
 
-        dry_conv_adj<<<NBRT, NTH>>>(pressure_d,    // Pressure [Pa]
-                                    temperature_d, // Temperature [K]
-                                    profx_Qheat_d,
-                                    pt_d,        // Pot temperature [K]
-                                    Rho_d,       // Density [m^3/kg]
-                                    Cp_d,        // Specific heat capacity [J/kg/K]
-                                    Rd_d,        // Gas constant [J/kg/K]
-                                    sim.Gravit,  // Gravity [m/s^2]
-                                    Altitude_d,  // Altitudes of the layers
-                                    Altitudeh_d, // Altitudes of the interfaces
-                                    timestep,
-                                    sim.conv_adj_iter,
-                                    sim.soft_adjustment,
-                                    point_num, // Number of columns
-                                    nv);       // number of vertical layers
+        bool ray_mode = true;
+
+        if (ray_mode) {
+
+            
+
+            ray_dry_conv_adj<<<NBRT, NTH>>>(pressure_d,    // Pressure [Pa]
+                                            pressureh_d,   // mid-point pressure [Pa]
+                                            dT_conv_d,
+                                            temperature_d, // Temperature [K]
+                                            profx_Qheat_d,
+                                            pt_d,          // Pot temperature [K]
+                                            Rho_d,         // Density [m^3/kg]
+                                            Cp_d,          // Specific heat capacity [J/kg/K]
+                                            Rd_d,          // Gas constant [J/kg/K]
+                                            sim.Gravit,    // Gravity [m/s^2]
+                                            Altitude_d,    // Altitudes of the layers
+                                            Altitudeh_d,   // Altitudes of the interfaces
+                                            timestep,      // time step [s]
+                                            sim.conv_adj_iter,
+                                            sim.soft_adjustment,
+                                            point_num, // Number of columns
+                                            nv);       // number of vertical layers
+
+             
+        } else {   
+
+            dry_conv_adj<<<NBRT, NTH>>>(pressure_d,    // Pressure [Pa]
+                                            temperature_d, // Temperature [K]
+                                            profx_Qheat_d,
+                                            pt_d,        // Pot temperature [K]
+                                            Rho_d,       // Density [m^3/kg]
+                                            Cp_d,        // Specific heat capacity [J/kg/K]
+                                            Rd_d,        // Gas constant [J/kg/K]
+                                            sim.Gravit,  // Gravity [m/s^2]
+                                            Altitude_d,  // Altitudes of the layers
+                                            Altitudeh_d, // Altitudes of the interfaces
+                                            timestep,
+                                            sim.conv_adj_iter,
+                                            sim.soft_adjustment,
+                                            point_num, // Number of columns
+                                            nv);       // number of vertical layers
+        }
     }
+}
 
     BENCH_POINT_I(current_step,
                   "dry_conv_adj ",
