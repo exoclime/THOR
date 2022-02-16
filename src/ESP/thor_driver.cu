@@ -67,7 +67,7 @@
 #include "diagnostics.h"
 #include "phy_modules.h"
 
-__host__ void ESP::Thor(const SimulationSetup &sim, kernel_diagnostics &diag) {
+__host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
     const int NTH = 256;
 
     // Vertical Eq only works on vertical stack of data, can run independently, only uses shared
@@ -154,15 +154,15 @@ __host__ void ESP::Thor(const SimulationSetup &sim, kernel_diagnostics &diag) {
 
         // Updates: Adv_d, v_d
 
-        Compute_Advec_Cori1<LN, LN><<<NB, NT>>>((double3 *)Adv_d,
-                                                (double3 *)v_d,
-                                                (double3 *)Mhk_d,
-                                                (double3 *)div_d,
+        Compute_Advec_Cori1<LN, LN><<<NB, NT>>>((double3*)Adv_d,
+                                                (double3*)v_d,
+                                                (double3*)Mhk_d,
+                                                (double3*)div_d,
                                                 Wk_d,
                                                 Rhok_d,
                                                 Altitude_d,
                                                 sim.A,
-                                                (double3 *)func_r_d,
+                                                (double3*)func_r_d,
                                                 maps_d,
                                                 nl_region,
                                                 sim.DeepModel);
@@ -425,8 +425,6 @@ __host__ void ESP::Thor(const SimulationSetup &sim, kernel_diagnostics &diag) {
                                                boundary_flux_d,
                                                energy_equation,
                                                sim.HyDiffOrder);
-            // Pasci insert
-
 
             cudaDeviceSynchronize();
 

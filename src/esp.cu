@@ -366,8 +366,6 @@ int main(int argc, char** argv) {
     string initial_conditions = "initialfilename.h5";
     config_reader.append_config_var(
         "initial", initial_conditions, string(initial_conditions_default));
-    config_reader.append_config_var(
-        "soft_adjustment", sim.soft_adjustment, soft_adjustment_default);
 
     // Benchmark test
     string core_benchmark_str("HeldSuarez");
@@ -639,12 +637,12 @@ int main(int argc, char** argv) {
         init_PT_profile = ISOTHERMAL;
         config_OK &= true;
     }
-    
+
     else if (init_PT_profile_str == "parmentier") {
         init_PT_profile = PARMENTIER;
         config_OK &= true;
     }
-    
+
     else if (init_PT_profile_str == "guillot") {
         init_PT_profile = GUILLOT;
         config_OK &= true;
@@ -996,7 +994,7 @@ int main(int argc, char** argv) {
     // Register clean up function for exit
     // takes care of freeing cuda memory in case we catch an error and bail out with exit(EXIT_FAILURE)
     atexit(exit_handler);
-    
+
     int max_count = 0;
     //
     //  Make the icosahedral grid
