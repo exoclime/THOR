@@ -184,10 +184,6 @@ class output_new:
         #     outputs['Mh_start_dt'] = 'Mh_start_dt'
         #     outputs['Mh_profx'] = 'Mh_profx'
 
-        if input.out_interm_momentum:
-            outputs['Mh_start_dt'] = 'Mh_start_dt'
-            outputs['Mh_profx'] = 'Mh_profx'
-
         if input.RT:
             outputs['tau'] = 'tau'  #have to be careful about slicing this (sw = ::2, lw = 1::2)
             outputs['flw_up'] = 'flw_up'
@@ -900,7 +896,7 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
                       'W': (output.Wh[:, :-1, 0] + (output.Wh[:, 1:, 0] - output.Wh[:, :-1, 0]) * interpz[None, :]) / output.Rho[:, :, 0],
                       'Rho': output.Rho[:, :, 0],
                       'Mh': output.Mh[:, :, :, 0],
-                      'diffmh': output.diffmh[:, :, :, 0],
+                      # 'diffmh': output.diffmh[:, :, :, 0],
                       'Pressure': output.Pressure[:, :, 0],
                       'Rd': output.Rd[:, :, 0],
                       'Cp': output.Cp[:, :, 0],
