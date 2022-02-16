@@ -71,6 +71,8 @@
 #define ns_diff_sponge_default 0.75 // Lowest level of sponge layer
 #define Dv_sponge_default 0.01      // Maximum diff damping (top of model)
 #define order_diff_sponge_default 2 // order of diffusive sponge
+// number of days to use increased damping of all types
+#define increased_damping_for_n_steps_default 0
 
 #define shrink_sponge_default false // shrink sponge layer after some time
 #define t_shrink_default 144000     // shrink sponge after this many time steps

@@ -304,6 +304,10 @@ int main(int argc, char** argv) {
     config_reader.append_config_var(
         "VertHyDiffOrder", sim.VertHyDiffOrder, VertHyDiffOrder_default);
 
+    // damp more heavily for first n steps. Introduced by Pascal Noti
+    config_reader.append_config_var("increased_damping_for_n_steps",
+                                    sim.increased_damping_for_n_steps,
+                                    increased_damping_for_n_steps_default);
 
     // Model options
     config_reader.append_config_var("NonHydro", sim.NonHydro, NonHydro_default);
