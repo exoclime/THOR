@@ -187,10 +187,10 @@ __host__ ESP::ESP(int *                 point_local_,
     f_lw     = f_lw_;
     bv_freq  = bv_freq_;
 
-    MetStar             = MetStar_;
-    Tstar               = Tstar_;
-    radius_star         = radius_star_;
-    planet_star_dist    = planet_star_dist_;
+    MetStar          = MetStar_;
+    Tstar            = Tstar_;
+    radius_star      = radius_star_;
+    planet_star_dist = planet_star_dist_;
 
     // Set the physics module execute state for the rest of the lifetime of ESP object
     // only execute physics modules when no benchmarks are enabled
@@ -266,11 +266,11 @@ ESP::alloc_data(bool globdiag, bool output_mean, bool out_interm_momentum, bool 
     cudaMalloc((void **)&boundary_flux_d, 6 * point_num * nv * sizeof(double));
 
     // inititial conditions parmentier
-    if (init_PT_profile == PARMENTIER){
-        init_altitude_parmentier = (double *)malloc(1000 * sizeof(double));
+    if (init_PT_profile == PARMENTIER) {
+        init_altitude_parmentier    = (double *)malloc(1000 * sizeof(double));
         init_temperature_parmentier = (double *)malloc(1000 * sizeof(double));
-        init_pressure_parmentier = (double *)malloc(1000 * sizeof(double));
-        init_Rd_parmentier = (double *)malloc(1000 * sizeof(double));
+        init_pressure_parmentier    = (double *)malloc(1000 * sizeof(double));
+        init_Rd_parmentier          = (double *)malloc(1000 * sizeof(double));
     }
 
     //  Allocate data in device
@@ -306,7 +306,7 @@ ESP::alloc_data(bool globdiag, bool output_mean, bool out_interm_momentum, bool 
 
     // ray dry convective adjustment
     bool ray_dry_conv_adj = true;
-    if (ray_dry_conv_adj == true){
+    if (ray_dry_conv_adj == true) {
         cudaMalloc((void **)&dT_conv_d, nv * point_num * sizeof(double));
     }
 
@@ -559,53 +559,58 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         it++;
                     }
                 }
-            } else if (init_PT_profile == PARMENTIER){
+            }
+            else if (init_PT_profile == PARMENTIER) {
 
-            
+
                 //
-                //          Initial conditions for parmentier 
-                //          radiative transfer and layering accroding 
-                    //          to Parmentier & Menou (2014) and Parmentier et al. (2015)
+                //          Initial conditions for parmentier
+                //          radiative transfer and layering accroding
+                //          to Parmentier & Menou (2014) and Parmentier et al. (2015)
 
-                //          taking initial conditions for a guillot profile to start 
-                    //             simulating parmentier profile
+                //          taking initial conditions for a guillot profile to start
+                //             simulating parmentier profile
 
-                printf(" init_PT_profile == PARMENTIER \n" );
+                printf(" init_PT_profile == PARMENTIER \n");
 
                 int table_num;
                 table_num = 2;
-                double  Tirr, Teff, AB;
-                mu =  1.0 / sqrt(3.0);               
+                double Tirr;
+                // double Teff, AB;
+                mu = 1.0 / sqrt(3.0);
 
-                
 
                 if (ultrahot_thermo != NO_UH_THERMO) {
                     table_num = 1;
-                } else {
+                }
+                else {
                     table_num = 2;
                 }
 
-               
 
                 //printf(" before Tirr and Parmentier \n");
-                Tirr = Tstar * pow((radius_star*696340000) / (planet_star_dist*149597870700) ,0.5);
+                Tirr =
+                    Tstar * pow((radius_star * 696340000) / (planet_star_dist * 149597870700), 0.5);
 
                 double OpaTableTemperature__h[1060];
-                text_file_to_array("src/physics/modules/src/OpaTableTemperature.txt" , OpaTableTemperature__h, 1060);
+                text_file_to_array("src/physics/modules/src/OpaTableTemperature.txt",
+                                   OpaTableTemperature__h,
+                                   1060);
                 double OpaTablePressure__h[1060];
-                text_file_to_array("src/physics/modules/src/OpaTablePressure.txt" , OpaTablePressure__h, 1060);
+                text_file_to_array(
+                    "src/physics/modules/src/OpaTablePressure.txt", OpaTablePressure__h, 1060);
                 double OpaTableKappa__h[1060];
-                text_file_to_array("src/physics/modules/src/OpaTableKappa.txt" , OpaTableKappa__h, 1060);
+                text_file_to_array(
+                    "src/physics/modules/src/OpaTableKappa.txt", OpaTableKappa__h, 1060);
 
-                int init_nv = 1000;
-                double const euler = 2.71828182845904523536028;
-                double altitude_from_P_ref;
-                double molecular_weight = 2.316; // / 1e3;
-                double scale_height = sim.Tmean * sim.Rd / (molecular_weight * sim.Gravit);
-                double meanT = 0.0;
+                int          init_nv = 1000;
+                double const euler   = 2.71828182845904523536028;
+                double       altitude_from_P_ref;
+                double       molecular_weight = 2.316; // / 1e3;
+                double       scale_height = sim.Tmean * sim.Rd / (molecular_weight * sim.Gravit);
+                double       meanT        = 0.0;
 
-                
-                
+
                 /*
                 double init_altitude_parmentier[init_nv] = {0.0};
                 double init_temperature_parmentier[init_nv] = {0.0};
@@ -613,69 +618,63 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 double init_Rd_parmentier[init_nv] = {0.0};
                 */
 
-                
 
                 for (int level = 0; level < init_nv; level++) {
 
-                    init_pressure_parmentier[level] = sim.P_Ref*pow(euler,
-                                                                        -(  
-                                                                            20 *
-                                                                            //(Altitude_h[nv - 1] - Altitude_h[0]) *
-                                                                            ( 
-                                                                                (double)(level + 1.0) / 1000
-                                                                            ) //  /
-                                                                            //scale_height
-                                                                        )
-                                                                    );
+                    init_pressure_parmentier[level] =
+                        sim.P_Ref
+                        * pow(euler,
+                              -(20 *
+                                //(Altitude_h[nv - 1] - Altitude_h[0]) *
+                                ((double)(level + 1.0) / 1000) //  /
+                                //scale_height
+                                ));
                     init_Rd_parmentier[level] = sim.Rd;
-
                 }
 
                 if (isnan(MetStar)) {
                     MetStar = 0.0;
                 }
 
-                
-                
-                Parmentier_IC_1D(init_nv, init_pressure_parmentier, Tint, mu, Tirr, sim.Gravit, init_temperature_parmentier, table_num, MetStar);
-                //Parmentier_bilinear_interpolation_IC(i, nv, pressure_h, Tint, mu, Tirr,
-                        //OpaTableTemperature__h, OpaTablePressure__h, OpaTableKappa__h, sim.Gravit, temperature_h, table_num, MetStar);
 
-                IC_adiabat_correction(init_nv, init_temperature_parmentier, init_pressure_parmentier, sim.Gravit);
-                
-                double pressure_diff = 0.0;
-                double bolzmann_const = 1.380649e-23;
-                int max_iter = 10;
+                Parmentier_IC_1D(init_nv,
+                                 init_pressure_parmentier,
+                                 Tint,
+                                 mu,
+                                 Tirr,
+                                 sim.Gravit,
+                                 init_temperature_parmentier,
+                                 table_num,
+                                 MetStar);
+                //Parmentier_bilinear_interpolation_IC(i, nv, pressure_h, Tint, mu, Tirr,
+                //OpaTableTemperature__h, OpaTablePressure__h, OpaTableKappa__h, sim.Gravit, temperature_h, table_num, MetStar);
+
+                IC_adiabat_correction(
+                    init_nv, init_temperature_parmentier, init_pressure_parmentier, sim.Gravit);
+
+                // double pressure_diff  = 0.0;
+                // double bolzmann_const = 1.380649e-23;
+                // int    max_iter       = 10;
 
 
                 for (int lev = 0; lev < init_nv; lev++) {
 
                     meanT += init_temperature_parmentier[lev];
-
                 }
                 meanT = meanT / init_nv;
-                
-                
-                
-                
 
 
                 //Hypsometric equation
                 init_altitude_parmentier[0] = 0.0;
                 for (int level = 1; level < init_nv; level++) {
-                    init_altitude_parmentier[level] =   sim.Rd *
-                                                        0.5 * (init_temperature_parmentier[level - 1] + init_temperature_parmentier[level]) *
-                                                        (
-                                                            log(
-                                                                init_pressure_parmentier[level - 1] / 
-                                                                init_pressure_parmentier[level]
-                                                                ) /
-                                                            log(euler)
-                                                        ) /
-                                                        (sim.Gravit) + 
-                                                        init_altitude_parmentier[level - 1]
-                                                        ;
-
+                    init_altitude_parmentier[level] = sim.Rd * 0.5
+                                                          * (init_temperature_parmentier[level - 1]
+                                                             + init_temperature_parmentier[level])
+                                                          * (log(init_pressure_parmentier[level - 1]
+                                                                 / init_pressure_parmentier[level])
+                                                             / log(euler))
+                                                          / (sim.Gravit)
+                                                      + init_altitude_parmentier[level - 1];
                 }
 
                 printf(" Tirr = %e \n", Tirr);
@@ -685,47 +684,53 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 printf(" Tstar = %e \n", Tstar);
                 printf(" scale_height = %e \n", scale_height);
                 printf(" meanT = %e \n", meanT);
-                printf(" init_temperature_parmentier[%d] = %e \n", 0,  init_temperature_parmentier[0]);
-                printf(" init_temperature_parmentier[%d] = %e \n", init_nv-1,  init_temperature_parmentier[init_nv-1]);
-                printf(" init_pressure_parmentier[%d] = %e \n", 0,  init_pressure_parmentier[0]);
-                printf(" init_pressure_parmentier[%d] = %e \n", init_nv-1,  init_pressure_parmentier[init_nv-1]);
-                printf(" init_altitude_parmentier[%d] = %e \n", 0,  init_altitude_parmentier[0]);
-                printf(" init_altitude_parmentier[%d] = %e \n", init_nv-1,  init_altitude_parmentier[init_nv-1]);
+                printf(
+                    " init_temperature_parmentier[%d] = %e \n", 0, init_temperature_parmentier[0]);
+                printf(" init_temperature_parmentier[%d] = %e \n",
+                       init_nv - 1,
+                       init_temperature_parmentier[init_nv - 1]);
+                printf(" init_pressure_parmentier[%d] = %e \n", 0, init_pressure_parmentier[0]);
+                printf(" init_pressure_parmentier[%d] = %e \n",
+                       init_nv - 1,
+                       init_pressure_parmentier[init_nv - 1]);
+                printf(" init_altitude_parmentier[%d] = %e \n", 0, init_altitude_parmentier[0]);
+                printf(" init_altitude_parmentier[%d] = %e \n",
+                       init_nv - 1,
+                       init_altitude_parmentier[init_nv - 1]);
 
 
                 for (int level = 0; level < nv; level++) {
                     altitude_from_P_ref = Altitude_h[level] - Altitude_h[0];
-                    linear_interpolation_fit(init_nv, altitude_from_P_ref, init_altitude_parmentier,
-                        init_temperature_parmentier,  temperature_h[level]);
+                    linear_interpolation_fit(init_nv,
+                                             altitude_from_P_ref,
+                                             init_altitude_parmentier,
+                                             init_temperature_parmentier,
+                                             temperature_h[level]);
                 }
 
-                
 
-                
                 for (int lev = 0; lev < nv; lev++) {
-                    
+
                     Rd_h[i * nv + lev] = sim.Rd;
                     Cp_h[i * nv + lev] = sim.Cp;
                 }
 
-                double dz, f, df;
+                //double dz, f, df;
 
                 pressure_h[i * nv + 0] = sim.P_Ref;
 
 
                 for (int level = 1; level < nv; level++) {
-                    pressure_h[i * nv + level] = pressure_h[i * nv + level - 1] *
-                        pow(euler,
-                            -sim.Gravit/
-                                (
-                                    0.5*(Rd_h[level - 1] + Rd_h[level]) * 
-                                    0.5*(temperature_h[level -1] + temperature_h[level])
-                                ) *
-                                (Altitude_h[level] - Altitude_h[level-1])
-                            );
+                    pressure_h[i * nv + level] =
+                        pressure_h[i * nv + level - 1]
+                        * pow(euler,
+                              -sim.Gravit
+                                  / (0.5 * (Rd_h[level - 1] + Rd_h[level]) * 0.5
+                                     * (temperature_h[level - 1] + temperature_h[level]))
+                                  * (Altitude_h[level] - Altitude_h[level - 1]));
                 }
-                
-                
+
+
                 /*
                 for (int level = 1; level < nv; level++) {
                     pressure_h[i * nv + level] = pressure_h[i * nv + level-1];
@@ -741,84 +746,68 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         pressure_h[i * nv + level] = pressure_h[i * nv + level] - f / df;
                         it++;
                     }
-                   
+
                 }
                 */
 
-                
-
-                
 
                 for (int lev = 0; lev < nv; lev++) {
                     if (ultrahot_thermo != NO_UH_THERMO) {
                         chi_H              = chi_H_equilibrium(GibbsT,
-                                                GibbsdG,
-                                                GibbsN,
-                                                temperature_h[i * nv + lev],
-                                                pressure_h[i * nv + lev]);
+                                                  GibbsdG,
+                                                  GibbsN,
+                                                  temperature_h[i * nv + lev],
+                                                  pressure_h[i * nv + lev]);
                         Rd_h[i * nv + lev] = Rd_from_chi_H(chi_H);
                     }
                     else {
                         Rd_h[i * nv + lev] = sim.Rd;
-                    } 
+                    }
                     if (ultrahot_thermo != NO_UH_THERMO) {
                         Cp_h[i * nv + lev] = Cp_from_chi_H(chi_H, temperature_h[i * nv + lev]);
                     }
                     else {
                         Cp_h[i * nv + lev] = sim.Cp;
-                    }   
+                    }
                 }
 
 
-                
-
-                  
-
-                
-                
-
-                for (int j = 0; j < nv; j++)
-                {
-                    if (pressure_h[i * nv + j] < 0.0)
-                    {                
-                        printf("before adiabat_correction temperature_h[i] is negative at level %d \n", j);
-                        
+                for (int j = 0; j < nv; j++) {
+                    if (pressure_h[i * nv + j] < 0.0) {
+                        printf(
+                            "before adiabat_correction temperature_h[i] is negative at level %d \n",
+                            j);
                     }
-                    if (pressure_h[i * nv + j] == 0.0)
-                    {                
-                        printf("before adiabat_correction temperature_h[i] is zero at level %d \n", j);
+                    if (pressure_h[i * nv + j] == 0.0) {
+                        printf("before adiabat_correction temperature_h[i] is zero at level %d \n",
+                               j);
                     }
-                    
-                    if (isnan(pressure_h[i * nv + j]))
-                    {                
-                        printf("before adiabat_correction temperature_h[i] is NaN at level %d  \n", j);
-                        
+
+                    if (isnan(pressure_h[i * nv + j])) {
+                        printf("before adiabat_correction temperature_h[i] is NaN at level %d  \n",
+                               j);
                     }
 
                     //temperature_h[i * nv + j] = 0.80*temperature_h[i * nv + j] ;
-
                 }
 
-                for (int j = 0; j < nv; j++)
-                {
-                    if (temperature_h[i * nv + j] < 0.0)
-                    {                
-                        printf("before adiabat_correction temperature_h[i] is negative at level %d \n", j);
-                        
+                for (int j = 0; j < nv; j++) {
+                    if (temperature_h[i * nv + j] < 0.0) {
+                        printf(
+                            "before adiabat_correction temperature_h[i] is negative at level %d \n",
+                            j);
                     }
-                    if (temperature_h[i * nv + j] == 0.0)
-                    {                
-                        printf("before adiabat_correction temperature_h[i] is zero at level %d \n", j);
+                    if (temperature_h[i * nv + j] == 0.0) {
+                        printf("before adiabat_correction temperature_h[i] is zero at level %d \n",
+                               j);
                     }
-                    
-                    if (isnan(temperature_h[i * nv + j]))
-                    {                
-                        printf("before adiabat_correction temperature_h[i] is NaN at level %d  \n", j);
-                        
+
+                    if (isnan(temperature_h[i * nv + j])) {
+                        printf("before adiabat_correction temperature_h[i] is NaN at level %d  \n",
+                               j);
                     }
 
                     //temperature_h[i * nv + j] = 0.80*temperature_h[i * nv + j] ;
-
                 }
 
                 printf("Altitude_h[0] = %e  \n", Altitude_h[0]);
@@ -829,14 +818,10 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 //bottum_up_adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit, Cp_h, Altitude_h, Cp_h, Rd_h,sim.P_Ref);
                 //adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
 
-                
-
-
-                    
-                
 
                 ///// end of parmentier TP profile procedure
-            } else {
+            }
+            else {
                 //
                 //          Initial conditions for a non-isothermal Atmosphere
                 //
@@ -868,9 +853,9 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         else {
                             Rd_L = sim.Rd;
                         }
-                        P_L = sim.P_Ref;
-                        T_L = temperature_h[i * nv + lev];
-                        dz  = Altitude_h[0];
+                        P_L   = sim.P_Ref;
+                        T_L   = temperature_h[i * nv + lev];
+                        dz    = Altitude_h[0];
                         l_int = 0.5;
                         r_int = 0.5;
                     }
@@ -884,9 +869,9 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                         else {
                             Rd_L = Rd_h[i * nv + lev - 1];
                         }
-                        P_L = pressure_h[i * nv + lev - 1];
-                        T_L = temperature_h[i * nv + lev - 1];
-                        dz  = Altitude_h[lev] - Altitude_h[lev - 1];
+                        P_L   = pressure_h[i * nv + lev - 1];
+                        T_L   = temperature_h[i * nv + lev - 1];
+                        dz    = Altitude_h[lev] - Altitude_h[lev - 1];
                         l_int = (Altitude_h[lev] - Altitudeh_h[lev]) / dz;
                         r_int = (Altitudeh_h[lev] - Altitude_h[lev - 1]) / dz;
                     }
@@ -911,12 +896,12 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                         // works better to get hs balance
                         f = (pressure_h[i * nv + lev] - P_L) / dz
-                        + sim.Gravit / Rd_h[i * nv + lev]
-                              * (pressure_h[i * nv + lev] * r_int / temperature_h[i * nv + lev]
-                                 + P_L * l_int / T_L);
+                            + sim.Gravit / Rd_h[i * nv + lev]
+                                  * (pressure_h[i * nv + lev] * r_int / temperature_h[i * nv + lev]
+                                     + P_L * l_int / T_L);
                         df = 1.0 / dz
                              + sim.Gravit * r_int
-                               / (Rd_h[i * nv + lev] * temperature_h[i * nv + lev]);
+                                   / (Rd_h[i * nv + lev] * temperature_h[i * nv + lev]);
                         pressure_h[i * nv + lev] = pressure_h[i * nv + lev] - f / df;
                         if (init_PT_profile == ISOTHERMAL) {
                             temperature_h[i * nv + lev] = sim.Tmean;
@@ -1048,11 +1033,11 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
         // copy initial condition from the first column to all other columns
         for (int i = 1; i < point_num; i++) {
             for (int lev = 0; lev < nv; lev++) {
-                Rho_h[i * nv + lev] = Rho_h[0 * nv + lev];
-                temperature_h[i * nv + lev] =  temperature_h[0 * nv + lev];
-                pressure_h[i * nv + lev] = pressure_h[0 * nv + lev];
-                Cp_h[i * nv + lev] =  Cp_h[0 * nv + lev];
-                Rd_h[i * nv + lev] = Rd_h[0 * nv + lev];
+                Rho_h[i * nv + lev]         = Rho_h[0 * nv + lev];
+                temperature_h[i * nv + lev] = temperature_h[0 * nv + lev];
+                pressure_h[i * nv + lev]    = pressure_h[0 * nv + lev];
+                Cp_h[i * nv + lev]          = Cp_h[0 * nv + lev];
+                Rd_h[i * nv + lev]          = Rd_h[0 * nv + lev];
                 //              Momentum [kg/m3 m/s]
                 Mh_h[i * 3 * nv + 3 * lev + 0] = 0.0;
                 Mh_h[i * 3 * nv + 3 * lev + 1] = 0.0;
@@ -1062,11 +1047,9 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                 Wh_h[i * (nv + 1) + lev] = 0.0; // Layers interface.
             }
             Wh_h[i * (nv + 1) + nv] = 0.0;
-            if (surface) { 
+            if (surface) {
                 Tsurface_h[i] = Tsurface_h[0];
             }
-           
-            
         }
 
         if (core_benchmark == JET_STEADY) {
@@ -1645,14 +1628,14 @@ __host__ ESP::~ESP() {
 
     // inititial conditions parmentier
 
-    if (init_PT_profile == PARMENTIER){
+    if (init_PT_profile == PARMENTIER) {
         free(init_altitude_parmentier);
         free(init_temperature_parmentier);
         free(init_pressure_parmentier);
         free(init_Rd_parmentier);
     }
     bool ray_dry_conv_adj = true;
-    if (ray_dry_conv_adj == true){
+    if (ray_dry_conv_adj == true) {
         cudaFree(dT_conv_d);
     }
 
