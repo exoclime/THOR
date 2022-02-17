@@ -46,7 +46,7 @@
 
 // benchmarking
 // if defined run benchmark functions?
-#define BENCHMARKING
+// #define BENCHMARKING
 
 // ***************************************
 // * binary comparison
