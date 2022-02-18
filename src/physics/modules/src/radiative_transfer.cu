@@ -775,13 +775,12 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
     bool run      = true;
     Qheat_scaling = 1.0;
 
-    if (nstep == 1) {
-
-        spinup_start_step = 0;
-        spinup_stop_step  = 864000 / time_step;
-        run               = false;
-    }
-
+    // if (nstep == 1) {
+    //
+    //     spinup_start_step = 0;
+    //     spinup_stop_step  = 864000 / time_step;
+    //     run               = false;
+    // }
 
     if (spinup_start_step > -1 && spinup_stop_step > -1) {
         if (nstep < spinup_start_step) // before spinup
