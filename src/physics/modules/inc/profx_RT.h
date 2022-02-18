@@ -565,7 +565,9 @@ __global__ void rtm_dual_band(double *pressure_d,
             if (isnan(profx_Qheat_d[id * nv + lev])) {
                 printf("stop here");
             }
-            // }
+            if (id == 0) {
+                printf("%g\n", profx_Qheat_d[id * nv + lev]);
+            }
         }
     }
 }
