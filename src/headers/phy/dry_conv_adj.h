@@ -69,8 +69,6 @@ __global__ void dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
     //
 
     int         id = blockIdx.x * blockDim.x + threadIdx.x;
-    if (id == 0)
-        printf("hourdin conv adj go\n");
 
     // stability threshold
     double      stable = 0.0;
@@ -286,8 +284,6 @@ ray_dry_conv_adj(double *Pressure_d,  // Pressure [Pa]
 
     int id = blockIdx.x * blockDim.x + threadIdx.x;
 
-    if (id == 0)
-        printf("rayph conv adj go\n");
     // Local arrays
     // double      theta[nv];
     // double      ph[nv + 1];
