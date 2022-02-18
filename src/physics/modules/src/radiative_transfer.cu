@@ -1408,8 +1408,6 @@ void radiative_transfer::RTSetup(double Tstar_,
     planet_star_dist = planet_star_dist_;
     radius_star      = radius_star_;
 
-    printf("RT: Tstar, Rstar, a = (%g, %g, %g)\n", Tstar, radius_star, planet_star_dist);
-
     diff_ang = diff_ang_;
     // Tint             = Tint_;
     albedo = albedo_;

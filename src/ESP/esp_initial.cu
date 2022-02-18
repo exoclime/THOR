@@ -194,8 +194,6 @@ __host__ ESP::ESP(int *                 point_local_,
     radius_star      = radius_star_ * R_SUN;
     planet_star_dist = planet_star_dist_ * AU;
 
-    printf("ESP: Tstar, Rstar, a = (%g, %g, %g)\n", Tstar, radius_star, planet_star_dist);
-
     // Set the physics module execute state for the rest of the lifetime of ESP object
     // only execute physics modules when no benchmarks are enabled
     if (core_benchmark == NO_BENCHMARK) {
