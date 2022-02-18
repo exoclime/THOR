@@ -1402,7 +1402,7 @@ void radiative_transfer::RTSetup(double Tstar_,
                                  bool   rt1Dmode_,
                                  double Tmean) {
 
-    double bc = 5.6703744191844314e-08; // Stefan–Boltzmann constant [W m−2 K−4]
+    // double bc = 5.6703744191844314e-08; // Stefan–Boltzmann constant [W m−2 K−4]
 
     Tstar            = Tstar_;
     planet_star_dist = planet_star_dist_;
@@ -1424,7 +1424,7 @@ void radiative_transfer::RTSetup(double Tstar_,
     // f_lw             = f_lw_;
 
     double resc_flx = pow(radius_star / planet_star_dist, 2.0);
-    incflx          = resc_flx * bc * Tstar * Tstar * Tstar * Tstar;
+    incflx          = resc_flx * SIGMA_SB * Tstar * Tstar * Tstar * Tstar;
 
     rt1Dmode = rt1Dmode_;
 
