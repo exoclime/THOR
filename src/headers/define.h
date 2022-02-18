@@ -120,6 +120,7 @@
 // (repeats entire algorithm if > 1)
 #define conv_adj_iter_default 1
 #define soft_adjustment_default false
+#define conv_adj_type_default "hourdin"
 // true = soft adjustment: calculate tendencies due to convection, forward to dyn core
 // false = hard adjustment: force profiles to neutral during profx step
 
@@ -162,3 +163,5 @@ enum uh_heating_types { NO_UH_HEATING = 0, QUASI_EQL = 1, RELAX_CHEM = 2 };
 enum raysp_calc_mode_types { IMP = 0, EXP1 = 1, EXP3 = 2 };
 
 enum thermo_equation_types { ENTROPY = 0, ENERGY = 1 }; //might add pressure?
+
+enum conv_adj_types { HOURDIN = 0, RAYPH = 1 };

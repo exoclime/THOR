@@ -62,7 +62,7 @@
 #include "simulation_setup.h"
 
 #include "dyn/phy_modules_device.h"
-
+#include "physical_constants.h"
 
 // forward declaration of Insolation used only as reference
 // to break circuilar dependency of insolation.h and esp.h
@@ -216,8 +216,8 @@ public:
     // inititial conditions parmentier
     double *init_altitude_parmentier;
     double *init_temperature_parmentier;
-    double *init_pressure_parmentier ;
-    double *init_Rd_parmentier ;
+    double *init_pressure_parmentier;
+    double *init_Rd_parmentier;
 
     double *dT_conv_d;
 
@@ -437,7 +437,8 @@ public:
         double                Tstar_,
         double                radius_star_,
         double                planet_star_dist_,
-        Insolation &          insolation_);
+        Insolation &          insolation_,
+        conv_adj_types        conv_adj_type_);
 
     ~ESP();
 
@@ -639,6 +640,8 @@ private:
 
     uh_thermo_types  ultrahot_thermo;
     uh_heating_types ultrahot_heating;
+
+    conv_adj_types conv_adj_type;
 
     thermo_equation_types thermo_equation;
 

@@ -124,7 +124,8 @@ __host__ ESP::ESP(int *                 point_local_,
                   double                Tstar_,
                   double                radius_star_,
                   double                planet_star_dist_,
-                  Insolation &          insolation_) :
+                  Insolation &          insolation_,
+                  conv_adj_types        conv_adj_type_) :
     nl_region(nl_region_),
     nr(nr_),
     point_num(point_num_),
@@ -146,7 +147,8 @@ __host__ ESP::ESP(int *                 point_local_,
     thermo_equation(thermo_equation_),
     shrink_sponge(shrink_sponge_),
     surface(surface_config),
-    insolation(insolation_) {
+    insolation(insolation_),
+    conv_adj_type(conv_adj_type_) {
 
     point_local_h = point_local_;
     maps_h        = maps_;
@@ -189,8 +191,10 @@ __host__ ESP::ESP(int *                 point_local_,
 
     MetStar          = MetStar_;
     Tstar            = Tstar_;
-    radius_star      = radius_star_;
-    planet_star_dist = planet_star_dist_;
+    radius_star      = radius_star_ * R_SUN;
+    planet_star_dist = planet_star_dist_ * AU;
+
+    printf("ESP: Tstar, Rstar, a = (%g, %g, %g)\n", Tstar, radius_star, planet_star_dist);
 
     // Set the physics module execute state for the rest of the lifetime of ESP object
     // only execute physics modules when no benchmarks are enabled
@@ -589,8 +593,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
 
                 //printf(" before Tirr and Parmentier \n");
-                Tirr =
-                    Tstar * pow((radius_star * 696340000) / (planet_star_dist * 149597870700), 0.5);
+                Tirr = Tstar * pow((radius_star) / (planet_star_dist), 0.5);
 
                 double OpaTableTemperature__h[1060];
                 text_file_to_array("src/physics/modules/src/OpaTableTemperature.txt",
@@ -677,24 +680,24 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                                                       + init_altitude_parmentier[level - 1];
                 }
 
-                printf(" Tirr = %e \n", Tirr);
-                printf(" Tint = %e \n", Tint);
-                printf(" radius_star = %e \n", radius_star);
-                printf(" planet_star_dist = %e \n", planet_star_dist);
-                printf(" Tstar = %e \n", Tstar);
-                printf(" scale_height = %e \n", scale_height);
-                printf(" meanT = %e \n", meanT);
+                printf(" Tirr = %e K \n", Tirr);
+                printf(" Tint = %e K \n", Tint);
+                printf(" radius_star = %e R_SUN\n", (radius_star / R_SUN));
+                printf(" planet_star_dist = %e AU\n", (planet_star_dist / AU));
+                printf(" Tstar = %e K\n", Tstar);
+                printf(" scale_height = %e m\n", scale_height);
+                printf(" meanT = %e K\n", meanT);
                 printf(
-                    " init_temperature_parmentier[%d] = %e \n", 0, init_temperature_parmentier[0]);
-                printf(" init_temperature_parmentier[%d] = %e \n",
+                    " init_temperature_parmentier[%d] = %e K\n", 0, init_temperature_parmentier[0]);
+                printf(" init_temperature_parmentier[%d] = %e K\n",
                        init_nv - 1,
                        init_temperature_parmentier[init_nv - 1]);
-                printf(" init_pressure_parmentier[%d] = %e \n", 0, init_pressure_parmentier[0]);
-                printf(" init_pressure_parmentier[%d] = %e \n",
+                printf(" init_pressure_parmentier[%d] = %e K\n", 0, init_pressure_parmentier[0]);
+                printf(" init_pressure_parmentier[%d] = %e K\n",
                        init_nv - 1,
                        init_pressure_parmentier[init_nv - 1]);
-                printf(" init_altitude_parmentier[%d] = %e \n", 0, init_altitude_parmentier[0]);
-                printf(" init_altitude_parmentier[%d] = %e \n",
+                printf(" init_altitude_parmentier[%d] = %e K\n", 0, init_altitude_parmentier[0]);
+                printf(" init_altitude_parmentier[%d] = %e K\n",
                        init_nv - 1,
                        init_altitude_parmentier[init_nv - 1]);
 
@@ -810,7 +813,7 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
                     //temperature_h[i * nv + j] = 0.80*temperature_h[i * nv + j] ;
                 }
 
-                printf("Altitude_h[0] = %e  \n", Altitude_h[0]);
+                printf("Altitude_h[0] = %e m\n", Altitude_h[0]);
 
                 //printf(" before adiabat_correction \n");
                 //adiabat_correction(i, nv, temperature_h, pressure_h, sim.Gravit);
