@@ -316,6 +316,7 @@ __global__ void Density_Pressure_Eqs(double *      pressure_d,
     double aux, r, p;
     double altht, althl;
     double Cv;
+    double dr2dz;
 
 
     int ir = 0; // index in region
@@ -399,18 +400,21 @@ __global__ void Density_Pressure_Eqs(double *      pressure_d,
     altht = Altitudeh_d[lev + 1];
     althl = Altitudeh_d[lev];
 
+    dz = altht - althl;
     if (DeepModel) {
         alt    = Altitude_d[lev];
         r2p    = pow(altht + A, 2.0);
         r2m    = pow(alt + A, 2.0);
         r2l    = pow(althl + A, 2.0);
         rscale = A / (alt + A);
+        dr2dz  = (pow(altht + A, 3.0) - pow(althl + A, 3.0)) / 3.0;
     }
     else {
         r2p    = 1.0;
         r2m    = 1.0;
         r2l    = 1.0;
         rscale = 1.0;
+        dr2dz  = r2m * dz;
     }
 
     nflxr_s[iri]  = 0.0;
@@ -478,8 +482,8 @@ __global__ void Density_Pressure_Eqs(double *      pressure_d,
 
     // uses thomas algorithm computed vertical velocities in dyn/thor_vertical_int.h :: vertical_eq
     // wht/whl and wht/whl2 -> can have big error
-    dz     = altht - althl;
-    dwdz   = (wht * r2p - whl * r2l) / (dz * r2m);
+
+    dwdz   = (wht * r2p - whl * r2l) / (dr2dz);
     dwptdz = (wht2 * pht * r2p - whl2 * phl * r2l) / (dz * r2m);
 
     // the errors can sometimes make aux become negative and cause issues later
