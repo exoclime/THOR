@@ -71,6 +71,8 @@
 #define ns_diff_sponge_default 0.75 // Lowest level of sponge layer
 #define Dv_sponge_default 0.01      // Maximum diff damping (top of model)
 #define order_diff_sponge_default 2 // order of diffusive sponge
+// number of days to use increased damping of all types
+#define increased_damping_for_n_steps_default 0
 
 #define shrink_sponge_default false // shrink sponge layer after some time
 #define t_shrink_default 144000     // shrink sponge after this many time steps
@@ -118,6 +120,7 @@
 // (repeats entire algorithm if > 1)
 #define conv_adj_iter_default 1
 #define soft_adjustment_default false
+#define conv_adj_type_default "hourdin"
 // true = soft adjustment: calculate tendencies due to convection, forward to dyn core
 // false = hard adjustment: force profiles to neutral during profx step
 
@@ -150,7 +153,8 @@ enum benchmark_types {
     GWAVE_TEST           = 7
 };
 
-enum init_PT_profile_types { ISOTHERMAL = 0, GUILLOT = 1, CONSTBV = 2 };
+
+enum init_PT_profile_types { ISOTHERMAL = 0, GUILLOT = 1, CONSTBV = 2, PARMENTIER = 3 };
 
 enum uh_thermo_types { NO_UH_THERMO = 0, VARY_R_CP = 1, FULL = 2 };
 
@@ -159,3 +163,5 @@ enum uh_heating_types { NO_UH_HEATING = 0, QUASI_EQL = 1, RELAX_CHEM = 2 };
 enum raysp_calc_mode_types { IMP = 0, EXP1 = 1, EXP3 = 2 };
 
 enum thermo_equation_types { ENTROPY = 0, ENERGY = 1 }; //might add pressure?
+
+enum conv_adj_types { HOURDIN = 0, RAYPH = 1 };

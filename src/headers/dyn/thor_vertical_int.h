@@ -102,7 +102,7 @@ __global__ void Vertical_Eq(double *      Whs_d,
     // double Cv = Cp - Rd;
     double C0;
     double xi, xim, xip;
-    double intt, intl, inttm;
+    double intt, intl, inttm; //, intlm;
     double dSpdz, dPdz;
     double rhohs;
     double aa, bb; // <- thomas alg vars

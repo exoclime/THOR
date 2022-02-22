@@ -90,6 +90,9 @@ public:
     bool NonHydro; // Turn on/off non-hydrostatic.
     bool globdiag; // calc/output globdiag quantities
 
+    int increased_damping_for_n_steps; //increase all forms of damping for first n steps
+
+
     // top sponge layer master switches
     bool RayleighSponge;  // Use sponge layer (rayleigh drag)?
     bool RayleighSpongeT; // include thermal term in sponge layer?
