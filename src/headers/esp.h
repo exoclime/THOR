@@ -62,7 +62,7 @@
 #include "simulation_setup.h"
 
 #include "dyn/phy_modules_device.h"
-
+#include "physical_constants.h"
 
 // forward declaration of Insolation used only as reference
 // to break circuilar dependency of insolation.h and esp.h
@@ -207,6 +207,20 @@ public:
     double  Csurf;
     double *dTsurf_dt_d; // store change in temp to update all at once in profx
 
+    // variables for initial parmentier conditions (by Noti Pascal)
+    double MetStar;
+    double Tstar;
+    double radius_star;
+    double planet_star_dist;
+
+    // inititial conditions parmentier
+    double *init_altitude_parmentier;
+    double *init_temperature_parmentier;
+    double *init_pressure_parmentier;
+    double *init_Rd_parmentier;
+
+    double *dT_conv_d;
+
     ///////////////////////////
     //  Device
     int *point_local_d;
@@ -305,8 +319,9 @@ public:
     double *diffwv_d;
     double *diffrv_d;
 
-    double *diff_d;  //temporary array for diffusion calculation
-    double *diff2_d; //second temp array for diff (vertical)
+    double *diff_d;        //temporary array for diffusion calculation
+    double *diff_sponge_d; //temporary array for diffusive sponge calculation
+    double *diff2_d;       //second temp array for diff (vertical)
     // double *diffv_d1;
     // double *diffv_d2;
     double *divg_Mh_d;
@@ -408,6 +423,7 @@ public:
         bool                  output_mean,
         bool                  out_interm_momentum,
         bool                  output_diffusion,
+        bool                  DiffSponge,
         init_PT_profile_types init_PT_profile_,
         double                Tint_,
         double                kappa_lw_,
@@ -419,11 +435,16 @@ public:
         thermo_equation_types thermo_equation_,
         bool                  surface_config,
         double                Csurf_config,
-        Insolation &          insolation_);
+        double                MetStar_,
+        double                Tstar_,
+        double                radius_star_,
+        double                planet_star_dist_,
+        Insolation &          insolation_,
+        conv_adj_types        conv_adj_type_);
 
     ~ESP();
 
-    void alloc_data(bool, bool, bool, bool);
+    void alloc_data(bool, bool, bool, bool, bool);
 
     bool initial_values(const std::string &initial_conditions_filename,
                         const std::string &planet_filename,
@@ -621,6 +642,8 @@ private:
 
     uh_thermo_types  ultrahot_thermo;
     uh_heating_types ultrahot_heating;
+
+    conv_adj_types conv_adj_type;
 
     thermo_equation_types thermo_equation;
 

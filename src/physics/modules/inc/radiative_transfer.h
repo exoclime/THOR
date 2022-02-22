@@ -46,37 +46,41 @@
 
 #include "phy_module_base.h"
 
+#define rt_type_default "DualbandGray"
+
+enum radiative_transfer_types { DUALBANDGRAY = 0, PICKETFENCE = 1 };
+
 class radiative_transfer : public phy_module_base
 {
 public:
     radiative_transfer();
     ~radiative_transfer();
 
-    bool initialise_memory(const ESP &esp, device_RK_array_manager &phy_modules_core_arrays);
-    bool initial_conditions(const ESP &esp, const SimulationSetup &sim, storage *s);
+    bool initialise_memory(const ESP& esp, device_RK_array_manager& phy_modules_core_arrays);
+    bool initial_conditions(const ESP& esp, const SimulationSetup& sim, storage* s);
 
-    bool phy_loop(ESP &                  esp,
-                  const SimulationSetup &sim,
-                  kernel_diagnostics &   diag,
+    bool phy_loop(ESP&                   esp,
+                  const SimulationSetup& sim,
+                  kernel_diagnostics&    diag,
                   int                    nstep, // Step number
                   double                 time_step);            // Time-step [s]
 
-    bool store(const ESP &esp, storage &s);
+    bool store(const ESP& esp, storage& s);
 
-    bool store_init(storage &s);
+    bool store_init(storage& s);
 
-    bool configure(config_file &config_reader);
+    bool configure(config_file& config_reader);
 
     virtual bool free_memory();
 
     void print_config();
 
-    void set_qheat_scaling(const double &scaling) {
+    void set_qheat_scaling(const double& scaling) {
         Qheat_scaling = scaling;
     };
 
     // DEBUG: hack, for debug printout in Alf.
-    double *get_debug_qheat_device_ptr() {
+    double* get_debug_qheat_device_ptr() {
         return qheat_d;
     };
 
@@ -86,6 +90,9 @@ public:
 private:
     // Scaling of Qheat, for slow ramp up or ramp down.
     double Qheat_scaling = 1.0;
+
+    radiative_transfer_types rt_type;
+    string                   rt_type_str;
 
     // Config options
     double Tstar_config            = 4520;  // Star effective temperature [K]
@@ -128,40 +135,106 @@ private:
 
     bool rt1Dmode;
     // double  Csurf;
-    double *surf_flux_d;
+    double* surf_flux_d;
 
 
     double incflx;
     //  Arrays used in RT code
-    double *fsw_up_d;
-    double *fsw_dn_d;
-    double *flw_up_d;
-    double *flw_dn_d;
-    double *tau_d;
+    double* fsw_up_d;
+    double* fsw_dn_d;
+    double* flw_up_d;
+    double* flw_dn_d;
+    double* tau_d;
 
-    double *tau_h;
-    double *fsw_up_h;
-    double *fsw_dn_h;
-    double *flw_up_h;
-    double *flw_dn_h;
+    double* tau_h;
+    double* fsw_up_h;
+    double* fsw_dn_h;
+    double* flw_up_h;
+    double* flw_dn_h;
 
-    double *insol_h;
-    double *insol_d;
-    double *insol_ann_h;
-    double *insol_ann_d;
+    double* insol_h;
+    double* insol_d;
+    double* insol_ann_h;
+    double* insol_ann_d;
 
-    double *qheat_d;
-    double *qheat_h;
+    double* qheat_d;
+    double* qheat_h;
 
-    double *ASR_d;
-    double *OLR_d;
+    double* ASR_d;
+    double* OLR_d;
+
+
+    // picket-fence scheme
+
+    double* gam_P;
+    double* gam_V__h;
+    double* Beta_V__h;
+    double* Beta__h;
+    double* gam_1__h;
+    double* gam_2__h;
+    double* k_IR_2__h;
+    double* k_V_3__h;
+    double* net_F_h;
+    double* AB__h;
+    double* Teff;
+
+    double* OpaTableTemperature__h;
+    double* OpaTablePressure__h;
+    double* OpaTableKappa__h;
+
+    double  metalicity = 0;
+    double* k_IR_2_nv_d;
+    double* k_V_3_nv_d;
+    double* gam_V_3_d;
+    double* gam_1_d;
+    double* gam_2_d;
+    double* Beta_V_3_d;
+    double* Beta_2_d;
+    double* net_F_nvi_d;
+    double* AB_d;
+
+    double* OpaTableTemperature_d;
+    double* OpaTablePressure_d;
+    double* OpaTableKappa_d;
+
+    double* lw_net__h;
+    double* sw_net__h;
+    double* dtau;
+
+    //Kitzman working variables
+    double* tau_Ve__df_e;
+    double* tau_IRe__df_e;
+    double* Te__df_e;
+    double* be__df_e;
+    double* sw_down__df_e;
+    double* sw_down_b__df_e;
+    double* sw_up__df_e;
+    double* lw_down__df_e;
+    double* lw_down_b__df_e;
+    double* lw_up__df_e;
+    double* lw_up_b__df_e;
+    double* lw_net__df_e;
+    double* sw_net__df_e;
+
+    // lw_grey_updown_linear working variables
+    double* dtau__dff_l;
+    double* del__dff_l;
+    double* edel__dff_l;
+    double* e0i__dff_l;
+    double* e1i__dff_l;
+    double* Am__dff_l;
+    double* Bm__dff_l;
+    double* lw_up_g__dff_e;
+    double* lw_down_g__dff_e;
+    double* Gp__dff_l;
+    double* Bp__dff_l;
 
 
     //  These arrays are for temporary usage in RT code
-    double *dtemp;
-    double *phtemp;
-    double *ttemp;
-    double *thtemp;
+    double* dtemp;
+    double* phtemp;
+    double* ttemp;
+    double* thtemp;
     void    RTSetup(double Tstar_,
                     double planet_star_dist_,
                     double radius_star_,

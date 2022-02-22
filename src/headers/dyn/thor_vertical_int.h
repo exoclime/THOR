@@ -102,7 +102,7 @@ __global__ void Vertical_Eq(double *      Whs_d,
     // double Cv = Cp - Rd;
     double C0;
     double xi, xim, xip;
-    double intt, intl, inttm, intlm;
+    double intt, intl, inttm; //, intlm;
     double dSpdz, dPdz;
     double rhohs;
     double aa, bb; // <- thomas alg vars
@@ -191,7 +191,7 @@ __global__ void Vertical_Eq(double *      Whs_d,
                 xim = alth;
                 xip = altht;
 
-                intt = -(xi - xip) * dzp * dzh;
+                // intt = -(xi - xip) * dzp * dzh;
                 intl = (xi - xim) * dzp * dzh;
 
                 xi  = altl;
@@ -199,20 +199,20 @@ __global__ void Vertical_Eq(double *      Whs_d,
                 xip = alth;
 
                 inttm = -(xi - xip) * dzm * dzh;
-                intlm = (xi - xim) * dzm * dzh;
+                // intlm = (xi - xim) * dzm * dzh;
 
                 // get g*Cv/Rd and Cv/Rd/dt^2 at the current interface
                 CRdd = (CRddl * (alt - alth) + CRddu * (alth - altl)) / (alt - altl);
                 GCoR = (GCoRl * (alt - alth) + GCoRu * (alth - altl)) / (alt - altl);
 
-                cc[threadIdx.x * nvi + lev] = -dzph * or2 * hp - intt * (gp + GCoR - tor3 * hp);
+                cc[threadIdx.x * nvi + lev] = -dzph * or2 * hp - inttm * (gp + GCoR - tor3 * hp);
 
                 if (NonHydro)
                     bb = CRdd + (dzph + dzmh) * or2 * h + (intl - inttm) * (g + GCoR - tor3 * h);
                 else
                     bb = (dzph + dzmh) * or2 * h + (intl - inttm) * (g + GCoR - tor3 * h);
 
-                aa = -dzmh * or2 * hm + intlm * (gm + GCoR - tor3 * hm);
+                aa = -dzmh * or2 * hm + intl * (gm + GCoR - tor3 * hm);
 
                 dSpdz = (Sp - Spl) * dzh;
                 dPdz  = (p - pl) * dzh;
@@ -279,7 +279,7 @@ __global__ void Vertical_Eq(double *      Whs_d,
                 xim = alth;
                 xip = altht;
 
-                intt = -(xi - xip) * dzp * dzh;
+                // intt = -(xi - xip) * dzp * dzh;
                 intl = (xi - xim) * dzp * dzh;
 
                 xi  = altl;
@@ -288,20 +288,20 @@ __global__ void Vertical_Eq(double *      Whs_d,
 
                 // compute coefficients aa, bb, cc of thomas algorithm original matrix
                 inttm = -(xi - xip) * dzm * dzh;
-                intlm = (xi - xim) * dzm * dzh;
+                // intlm = (xi - xim) * dzm * dzh;
 
                 // get g*Cv/Rd and Cv/Rd/dt^2 at the current interface
                 CRdd = (CRddl * (alt - alth) + CRddu * (alth - altl)) / (alt - altl);
                 GCoR = (GCoRl * (alt - alth) + GCoRu * (alth - altl)) / (alt - altl);
 
-                cc[threadIdx.x * nvi + lev] = -dzph * hp - intt * (gp + GCoR);
+                cc[threadIdx.x * nvi + lev] = -dzph * hp - inttm * (gp + GCoR);
 
                 if (NonHydro)
                     bb = CRdd + (dzph + dzmh) * h + (intl - inttm) * (g + GCoR);
                 else
                     bb = (dzph + dzmh) * h + (intl - inttm) * (g + GCoR);
 
-                aa = -dzmh * hm + intlm * (gm + GCoR);
+                aa = -dzmh * hm + intl * (gm + GCoR);
                 // end of coefficients computation
 
                 dSpdz = (Sp - Spl) * dzh;
