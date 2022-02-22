@@ -304,6 +304,10 @@ int main(int argc, char** argv) {
     config_reader.append_config_var(
         "VertHyDiffOrder", sim.VertHyDiffOrder, VertHyDiffOrder_default);
 
+    // damp more heavily for first n steps. Introduced by Pascal Noti
+    config_reader.append_config_var("increased_damping_for_n_steps",
+                                    sim.increased_damping_for_n_steps,
+                                    increased_damping_for_n_steps_default);
 
     // Model options
     config_reader.append_config_var("NonHydro", sim.NonHydro, NonHydro_default);
@@ -376,6 +380,9 @@ int main(int argc, char** argv) {
     config_reader.append_config_var("conv_adj_iter", sim.conv_adj_iter, conv_adj_iter_default);
     config_reader.append_config_var(
         "soft_adjustment", sim.soft_adjustment, soft_adjustment_default);
+    string conv_adj_type_str("hourdin");
+    config_reader.append_config_var(
+        "conv_adj_type", conv_adj_type_str, string(conv_adj_type_default));
 
     int GPU_ID_N = 0;
     config_reader.append_config_var("GPU_ID_N", GPU_ID_N, GPU_ID_N_default);
@@ -413,6 +420,13 @@ int main(int argc, char** argv) {
     config_reader.append_config_var("kappa_sw", kappa_sw, kappa_sw_default);
     config_reader.append_config_var("f_lw", f_lw, f_lw_default);
     config_reader.append_config_var("bv_freq", bv_freq, bv_freq_default);
+
+    // additional settings for parmentier profile (default values are not implemented)
+    double MetStar = 0.0, Tstar = 5000.0, radius_star = 1.203, planet_star_dist = 0.04747;
+    config_reader.append_config_var("MetStar", MetStar, Tint_default);
+    config_reader.append_config_var("Tstar", Tstar, kappa_lw_default);
+    config_reader.append_config_var("radius_star", radius_star, kappa_sw_default);
+    config_reader.append_config_var("planet_star_dist", planet_star_dist, f_lw_default);
 
     // ultrahot thermodynamics
     string uh_thermo_str("none");
@@ -630,6 +644,10 @@ int main(int argc, char** argv) {
         init_PT_profile = ISOTHERMAL;
         config_OK &= true;
     }
+    else if (init_PT_profile_str == "parmentier") {
+        init_PT_profile = PARMENTIER;
+        config_OK &= true;
+    }
     else if (init_PT_profile_str == "guillot") {
         init_PT_profile = GUILLOT;
         config_OK &= true;
@@ -641,6 +659,21 @@ int main(int argc, char** argv) {
     else {
         log::printf("init_PT_profile config item not recognised: [%s]\n",
                     init_PT_profile_str.c_str());
+        config_OK &= false;
+    }
+
+    conv_adj_types conv_adj_type = HOURDIN;
+
+    if (conv_adj_type_str == "hourdin" || conv_adj_type_str == "Hourdin") {
+        conv_adj_type = HOURDIN;
+        config_OK &= true;
+    }
+    else if (conv_adj_type_str == "rayph" || conv_adj_type_str == "RayPH") {
+        conv_adj_type = RAYPH;
+        config_OK &= true;
+    }
+    else {
+        log::printf("conv_adj_type config item not recognised: [%s]\n", conv_adj_type_str.c_str());
         config_OK &= false;
     }
 
@@ -981,7 +1014,7 @@ int main(int argc, char** argv) {
     // Register clean up function for exit
     // takes care of freeing cuda memory in case we catch an error and bail out with exit(EXIT_FAILURE)
     atexit(exit_handler);
-    
+
     int max_count = 0;
     //
     //  Make the icosahedral grid
@@ -1061,7 +1094,12 @@ int main(int argc, char** argv) {
           thermo_equation,
           surface_config,
           Csurf_config,
-          insolation);
+          MetStar,
+          Tstar,
+          radius_star,
+          planet_star_dist,
+          insolation,
+          conv_adj_type);
 
     USE_BENCHMARK();
 
@@ -1157,6 +1195,7 @@ int main(int argc, char** argv) {
     log::printf("   Non-Hydro        =  %s.\n", sim.NonHydro ? "true" : "false");
     log::printf("   Deep Model       =  %s.\n", sim.DeepModel ? "true" : "false");
     log::printf("   Convective adj.  =  %s.\n", sim.conv_adj ? "true" : "false");
+    log::printf("   Conv adj type    =  %s.\n", conv_adj_type_str.c_str());
 
     log::printf("   ********** \n");
     log::printf("   Numerical diffusion\n");
@@ -1254,6 +1293,9 @@ int main(int argc, char** argv) {
     if (sigaction(SIGINT, &sigint_action, NULL) == -1) {
         log::printf("Error: cannot handle SIGINT\n"); // Should not happen
     }
+
+    // Register clean up function for exit
+    atexit(exit_handler);
 
     //
     //  Writes initial conditions

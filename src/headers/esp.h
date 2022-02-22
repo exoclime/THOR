@@ -62,7 +62,7 @@
 #include "simulation_setup.h"
 
 #include "dyn/phy_modules_device.h"
-
+#include "physical_constants.h"
 
 // forward declaration of Insolation used only as reference
 // to break circuilar dependency of insolation.h and esp.h
@@ -206,6 +206,20 @@ public:
     double *Tsurface_h;
     double  Csurf;
     double *dTsurf_dt_d; // store change in temp to update all at once in profx
+
+    // variables for initial parmentier conditions (by Noti Pascal)
+    double MetStar;
+    double Tstar;
+    double radius_star;
+    double planet_star_dist;
+
+    // inititial conditions parmentier
+    double *init_altitude_parmentier;
+    double *init_temperature_parmentier;
+    double *init_pressure_parmentier;
+    double *init_Rd_parmentier;
+
+    double *dT_conv_d;
 
     ///////////////////////////
     //  Device
@@ -419,7 +433,12 @@ public:
         thermo_equation_types thermo_equation_,
         bool                  surface_config,
         double                Csurf_config,
-        Insolation &          insolation_);
+        double                MetStar_,
+        double                Tstar_,
+        double                radius_star_,
+        double                planet_star_dist_,
+        Insolation &          insolation_,
+        conv_adj_types        conv_adj_type_);
 
     ~ESP();
 
@@ -621,6 +640,8 @@ private:
 
     uh_thermo_types  ultrahot_thermo;
     uh_heating_types ultrahot_heating;
+
+    conv_adj_types conv_adj_type;
 
     thermo_equation_types thermo_equation;
 
