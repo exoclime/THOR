@@ -68,8 +68,8 @@ void radiative_transfer::print_config() {
     // basic star-planet properties
     log::printf("    rt_type                     = %s \n", rt_type_str.c_str());
     log::printf("    Tstar                       = %f K.\n", Tstar);
-    log::printf("    Orbital distance            = %f au.\n", planet_star_dist / AU);
-    log::printf("    Radius of host star         = %f R_sun.\n", radius_star / R_SUN);
+    log::printf("    Orbital distance            = %f au.\n", planet_star_dist / AU_th);
+    log::printf("    Radius of host star         = %f R_sun.\n", radius_star / R_SUN_th);
     log::printf("    1.0/Diffusivity factor      = %f.\n", diff_ang_config);
     // log::printf("    Internal flux temperature   = %f K.\n", Tint_config);
     log::printf("    Bond albedo                 = %f.\n", albedo_config);
@@ -828,7 +828,7 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
 
             Tirr = Tstar * pow((radius_star) / (planet_star_dist), 0.5);
 
-            F0_h = SIGMA_SB * pow(Tirr, 4.0);
+            F0_h = SIGMA_SB_th * pow(Tirr, 4.0);
 
             for (int c = 0; c < esp.point_num; c++) {
                 // Parmentier opacity profile parameters - first get Bond albedo
@@ -1346,9 +1346,11 @@ bool radiative_transfer::store_init(storage &s) {
     if (rt_type == PICKETFENCE) {
         s.append_value(Tstar, "/Tstar", "K", "Temperature of host star");
         // s.append_value(Tint, "/Tint", "K", "Temperature of interior heat flux");
-        s.append_value(
-            planet_star_dist / AU, "/planet_star_dist", "au", "distance b/w host star and planet");
-        s.append_value(radius_star / R_SUN, "/radius_star", "R_sun", "radius of host star");
+        s.append_value(planet_star_dist / AU_th,
+                       "/planet_star_dist",
+                       "au",
+                       "distance b/w host star and planet");
+        s.append_value(radius_star / R_SUN_th, "/radius_star", "R_sun", "radius of host star");
 
         s.append_value(albedo, "/albedo", "-", "bond albedo of planet");
         //  s.append_value(kappa_sw, "/kappa_sw", "-", "gray opacity of shortwave");
@@ -1364,9 +1366,11 @@ bool radiative_transfer::store_init(storage &s) {
     else {
         s.append_value(Tstar, "/Tstar", "K", "Temperature of host star");
         // s.append_value(Tint, "/Tint", "K", "Temperature of interior heat flux");
-        s.append_value(
-            planet_star_dist / AU, "/planet_star_dist", "au", "distance b/w host star and planet");
-        s.append_value(radius_star / R_SUN, "/radius_star", "R_sun", "radius of host star");
+        s.append_value(planet_star_dist / AU_th,
+                       "/planet_star_dist",
+                       "au",
+                       "distance b/w host star and planet");
+        s.append_value(radius_star / R_SUN_th, "/radius_star", "R_sun", "radius of host star");
         s.append_value(diff_ang, "/diff_ang", "-", "diffusivity factor");
         s.append_value(albedo, "/albedo", "-", "bond albedo of planet");
         //  s.append_value(kappa_sw, "/kappa_sw", "-", "gray opacity of shortwave");
@@ -1424,7 +1428,7 @@ void radiative_transfer::RTSetup(double Tstar_,
     // f_lw             = f_lw_;
 
     double resc_flx = pow(radius_star / planet_star_dist, 2.0);
-    incflx          = resc_flx * SIGMA_SB * Tstar * Tstar * Tstar * Tstar;
+    incflx          = resc_flx * SIGMA_SB_th * Tstar * Tstar * Tstar * Tstar;
 
     rt1Dmode = rt1Dmode_;
 

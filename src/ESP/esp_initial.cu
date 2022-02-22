@@ -191,8 +191,8 @@ __host__ ESP::ESP(int *                 point_local_,
 
     MetStar          = MetStar_;
     Tstar            = Tstar_;
-    radius_star      = radius_star_ * R_SUN;
-    planet_star_dist = planet_star_dist_ * AU;
+    radius_star      = radius_star_ * R_SUN_th;
+    planet_star_dist = planet_star_dist_ * AU_th;
 
     // Set the physics module execute state for the rest of the lifetime of ESP object
     // only execute physics modules when no benchmarks are enabled
@@ -680,8 +680,8 @@ __host__ bool ESP::initial_values(const std::string &initial_conditions_filename
 
                 printf(" Tirr = %e K \n", Tirr);
                 printf(" Tint = %e K \n", Tint);
-                printf(" radius_star = %e R_SUN\n", (radius_star / R_SUN));
-                printf(" planet_star_dist = %e AU\n", (planet_star_dist / AU));
+                printf(" radius_star = %e R_SUN_th\n", (radius_star / R_SUN_th));
+                printf(" planet_star_dist = %e AU_th\n", (planet_star_dist / AU_th));
                 printf(" Tstar = %e K\n", Tstar);
                 printf(" scale_height = %e m\n", scale_height);
                 printf(" meanT = %e K\n", meanT);
