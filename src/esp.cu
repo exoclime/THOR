@@ -1195,7 +1195,7 @@ int main(int argc, char** argv) {
     log::printf("   Non-Hydro        =  %s.\n", sim.NonHydro ? "true" : "false");
     log::printf("   Deep Model       =  %s.\n", sim.DeepModel ? "true" : "false");
     log::printf("   Convective adj.  =  %s.\n", sim.conv_adj ? "true" : "false");
-    log::printf("   Conv ajd type    =  %s.\n", conv_adj_type_str.c_str());
+    log::printf("   Conv adj type    =  %s.\n", conv_adj_type_str.c_str());
 
     log::printf("   ********** \n");
     log::printf("   Numerical diffusion\n");
