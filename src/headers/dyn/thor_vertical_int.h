@@ -191,7 +191,7 @@ __global__ void Vertical_Eq(double *      Whs_d,
                 xim = alth;
                 xip = altht;
 
-                intt = -(xi - xip) * dzp * dzh;
+                // intt = -(xi - xip) * dzp * dzh;
                 intl = (xi - xim) * dzp * dzh;
 
                 xi  = altl;
@@ -279,7 +279,7 @@ __global__ void Vertical_Eq(double *      Whs_d,
                 xim = alth;
                 xip = altht;
 
-                intt = -(xi - xip) * dzp * dzh;
+                // intt = -(xi - xip) * dzp * dzh;
                 intl = (xi - xim) * dzp * dzh;
 
                 xi  = altl;

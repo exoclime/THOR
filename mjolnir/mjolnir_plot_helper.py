@@ -60,7 +60,7 @@ def make_plot(args, save=True, axis=None):
              'w0prof', 'g0prof', 'spectrum',
              'phase','all','eddyKE','eddyMomMerid','eddyTempMerid','eddyTempVar',
              'Etotlev','AngMomlev', 'Entropylev','Kdiffprof', 'RiB','BLheight',
-             'RTbalance','Riprof','RTbalanceTS','tradprof']
+             'RTbalance','Riprof','RTbalanceTS','tradprof','taulwprof','Fsens']
 
     rg_needed = ['Tver', 'Tlonver', 'uver', 'ulonver', 'vver', 'wver', 'wlonver', 'Tulev', 'PTver', 'PTlonver', 'ulev', 'PVver', 'PVlev',
                  'RVlev', 'stream', 'tracer', 'Tsurf', 'insol', 'massf', 'pause_rg',
@@ -68,7 +68,7 @@ def make_plot(args, save=True, axis=None):
                  'TSfuptot', 'TSfdowntot', 'TSfnet', 'TSqheat',
                  'DGfuptot', 'DGfdowntot', 'DGfnet', 'DGqheat',
                  'all','eddyKE','eddyMomMerid','eddyTempMerid','eddyTempVar',
-                  'Etotlev', 'AngMomlev', 'Entropylev','RiB','BLheight',]  # these types need regrid
+                  'Etotlev', 'AngMomlev', 'Entropylev','RiB','BLheight','Fsens']  # these types need regrid
 
     openrg = 0
 
@@ -408,6 +408,16 @@ def make_plot(args, save=True, axis=None):
         z = {'value': rg.Tsurface, 'label': r'Surface Temperature (K)', 'name': 'Tsurf',
              'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
         pfile = call_plot('Tsurf',ham.horizontal_lev,input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
+        plots_created.append(pfile)
+
+    if ('Fsens' in pview or 'all' in pview) and (input.BL):
+        if not hasattr(rg, "F_sens"):
+            raise ValueError("'F_sens' not available in regrid file")
+        rg.load(['F_sens'])
+        PR_LV = np.max(output.Pressure)  # not important here
+        z = {'value': rg.F_sens, 'label': r'Surface heat flux (W m$^{-2}$)', 'name': 'Fsens',
+             'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
+        pfile = call_plot('Fsens',ham.horizontal_lev,input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
         plots_created.append(pfile)
 
     if ('DGfuptot' in pview or 'all' in pview) and input.RT:
@@ -801,6 +811,16 @@ def make_plot(args, save=True, axis=None):
         z = {'value': Ri, 'label': r'gradient Ri', 'name': 'Ri'}
         pfile = call_plot('Ri',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis, use_p=False)
         plots_created.append(pfile)
+
+    if ('taulwprof' in pview or 'all' in pview) and input.RT:
+        output.load_reshape(grid,['tau'])
+        # dz = (grid.Altitudeh[1:]-grid.Altitudeh[:-1])
+        # tau_lw = np.trapz(output.tau_lw[:,::-1,:],x=grid.Altitudeh[None,::-1,None],axis=1)
+        tau_lw = np.cumsum(output.tau_lw[:,::-1,:],axis=1)
+        z = {'value': tau_lw[:,::-1,:], 'label': r'$\tau_{LW}$', 'name': 'tau_lw'}
+        pfile = call_plot('tau_lw',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
+        plots_created.append(pfile)
+
 
     # --- Global diagnostics -----------------------------------
     if 'cons' in pview:  # RD: needs some work!
