@@ -67,7 +67,7 @@
 #include "diagnostics.h"
 #include "phy_modules.h"
 
-__host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
+__host__ void ESP::Thor(const SimulationSetup &sim, kernel_diagnostics &diag) {
     const int NTH = 256;
 
     // Vertical Eq only works on vertical stack of data, can run independently, only uses shared
@@ -154,15 +154,15 @@ __host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
 
         // Updates: Adv_d, v_d
 
-        Compute_Advec_Cori1<LN, LN><<<NB, NT>>>((double3*)Adv_d,
-                                                (double3*)v_d,
-                                                (double3*)Mhk_d,
-                                                (double3*)div_d,
+        Compute_Advec_Cori1<LN, LN><<<NB, NT>>>((double3 *)Adv_d,
+                                                (double3 *)v_d,
+                                                (double3 *)Mhk_d,
+                                                (double3 *)div_d,
                                                 Wk_d,
                                                 Rhok_d,
                                                 Altitude_d,
                                                 sim.A,
-                                                (double3*)func_r_d,
+                                                (double3 *)func_r_d,
                                                 maps_d,
                                                 nl_region,
                                                 sim.DeepModel);
@@ -277,22 +277,169 @@ __host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
         cudaMemset(SlowRho_d, 0, sizeof(double) * point_num * nv);
         cudaMemset(Slowpressure_d, 0, sizeof(double) * point_num * nv);
 
+        // bool increased_damping_for_100_days = 1;
+        if (sim.increased_damping_for_n_steps) {
+            // if (current_step < sim.increased_damping_for_n_steps) {
+            if (current_step == 1) {
+                // pascicode
+
+                double Diffc_initial_factor    = 1.0;
+                double DivDampc_initial_factor = 10.0;
+                double Diffc_v_initial_factor  = 10.0;
+
+                printf(
+                    "changed Diffc in the first %d time steps by a factor of %g for PARMENTIER \n",
+                    sim.increased_damping_for_n_steps,
+                    Diffc_initial_factor);
+                printf("changed DivDampc in the first %d time steps by a factor of %g for "
+                       "PARMENTIER \n",
+                       sim.increased_damping_for_n_steps,
+                       DivDampc_initial_factor);
+                printf("changed Diffc_v in the first %d time steps by a factor of %g for "
+                       "PARMENTIER \n",
+                       sim.increased_damping_for_n_steps,
+                       Diffc_v_initial_factor);
+
+                //  Diffusion
+                //  Horizontal
+                double *Kdhz_h, *Kdh4_h;
+                Kdhz_h = new double[nv]; // horizontal divergence damping strength
+                Kdh4_h = new double[nv]; // horizontal diffusion strength
+                                         // if (sim.DiffSponge) {
+                double  n, ksponge;
+                double *Kdh2_h;
+                Kdh2_h = new double[nv];
+                for (int lev = 0; lev < nv; lev++) {
+                    double dbar = sqrt(2 * M_PI / 5) * sim.A / (pow(2, glevel));
+                    Kdh4_h[lev] = (Diffc_initial_factor * sim.Diffc)
+                                  * pow(dbar, 1.0 * sim.HyDiffOrder)
+                                  / timestep; // * Altitude_h[lev]/sim.Top_altitude;
+                    Kdhz_h[lev] = (DivDampc_initial_factor * sim.DivDampc) * pow(dbar, 4.)
+                                  / timestep; // * Altitude_h[lev]/sim.Top_altitude;
+                    if (sim.DiffSponge) {
+                        n = Altitude_h[lev] / sim.Top_altitude;
+                        if (n > ns_diff_sponge) {
+                            ksponge = Dv_sponge
+                                      * pow(sin(0.5 * M_PI * (n - ns_diff_sponge)
+                                                / (1.0 - ns_diff_sponge)),
+                                            2);
+                        }
+                        else {
+                            ksponge = 0;
+                        }
+                        if (order_diff_sponge == 2) {
+                            Kdh2_h[lev] = ksponge * pow(dbar, 2.) / timestep;
+                        }
+                        else if (order_diff_sponge == 4) {
+                            Kdh4_h[lev] += ksponge * pow(dbar, 4.) / timestep;
+                        }
+                    }
+                }
+
+                //  Diffusion
+                //  Vertical
+                double *Kdvz_h, *Kdv6_h;
+                Kdvz_h = new double[nv]; // vertical divergence damping strength
+                Kdv6_h = new double[nv]; // vertical diffusion strength
+                for (int lev = 0; lev < nv; lev++) {
+                    //      Diffusion constant.
+                    double dz   = Altitudeh_h[lev + 1] - Altitudeh_h[lev];
+                    Kdv6_h[lev] = Diffc_v_initial_factor * sim.Diffc_v
+                                  * pow(dz, 1.0 * sim.VertHyDiffOrder) / timestep;
+                    Kdvz_h[lev] = 0.0; //not used (yet? perhaps in future)
+                }
+
+                cudaMemcpy(Kdhz_d, Kdhz_h, nv * sizeof(double), cudaMemcpyHostToDevice);
+                cudaMemcpy(Kdh4_d, Kdh4_h, nv * sizeof(double), cudaMemcpyHostToDevice);
+                cudaMemcpy(Kdv6_d, Kdv6_h, nv * sizeof(double), cudaMemcpyHostToDevice);
+            }
+            else if (current_step <= sim.increased_damping_for_n_steps) {
+                double Diffc_initial_factor    = 1.0;
+                double DivDampc_initial_factor = 10.0;
+                double Diffc_v_initial_factor  = 10.0;
+
+                printf(
+                    "changed Diffc in the first %d time steps by a factor of %g for PARMENTIER \n",
+                    sim.increased_damping_for_n_steps,
+                    Diffc_initial_factor);
+                printf("changed DivDampc in the first %d time steps by a factor of %g for "
+                       "PARMENTIER \n",
+                       sim.increased_damping_for_n_steps,
+                       DivDampc_initial_factor);
+                printf("changed Diffc_v in the first %d time steps by a factor of %g for "
+                       "PARMENTIER \n",
+                       sim.increased_damping_for_n_steps,
+                       Diffc_v_initial_factor);
+            }
+            if (current_step == sim.increased_damping_for_n_steps + 1) {
+
+                //  Diffusion
+                //  Horizontal
+                double *Kdhz_h, *Kdh4_h;
+                Kdhz_h = new double[nv]; // horizontal divergence damping strength
+                Kdh4_h = new double[nv]; // horizontal diffusion strength
+                                         // if (sim.DiffSponge) {
+                double  n, ksponge;
+                double *Kdh2_h;
+                Kdh2_h = new double[nv];
+                for (int lev = 0; lev < nv; lev++) {
+                    double dbar = sqrt(2 * M_PI / 5) * sim.A / (pow(2, glevel));
+                    Kdh4_h[lev] = (sim.Diffc) * pow(dbar, 1.0 * sim.HyDiffOrder)
+                                  / timestep; // * Altitude_h[lev]/sim.Top_altitude;
+                    Kdhz_h[lev] = (sim.DivDampc) * pow(dbar, 4.)
+                                  / timestep; // * Altitude_h[lev]/sim.Top_altitude;
+                    if (sim.DiffSponge) {
+                        n = Altitude_h[lev] / sim.Top_altitude;
+                        if (n > ns_diff_sponge) {
+                            ksponge = Dv_sponge
+                                      * pow(sin(0.5 * M_PI * (n - ns_diff_sponge)
+                                                / (1.0 - ns_diff_sponge)),
+                                            2);
+                        }
+                        else {
+                            ksponge = 0;
+                        }
+                        if (order_diff_sponge == 2) {
+                            Kdh2_h[lev] = ksponge * pow(dbar, 2.) / timestep;
+                        }
+                        else if (order_diff_sponge == 4) {
+                            Kdh4_h[lev] += ksponge * pow(dbar, 4.) / timestep;
+                        }
+                    }
+                }
+
+
+                //  Diffusion
+                //  Vertical
+                double *Kdvz_h, *Kdv6_h;
+                Kdvz_h = new double[nv]; // vertical divergence damping strength
+                Kdv6_h = new double[nv]; // vertical diffusion strength
+                for (int lev = 0; lev < nv; lev++) {
+                    //      Diffusion constant.
+                    double dz   = Altitudeh_h[lev + 1] - Altitudeh_h[lev];
+                    Kdv6_h[lev] = sim.Diffc_v * pow(dz, 1.0 * sim.VertHyDiffOrder) / timestep;
+                    Kdvz_h[lev] = 0.0; //not used (yet? perhaps in future)
+                }
+
+                cudaMemcpy(Kdhz_d, Kdhz_h, nv * sizeof(double), cudaMemcpyHostToDevice);
+                cudaMemcpy(Kdh4_d, Kdh4_h, nv * sizeof(double), cudaMemcpyHostToDevice);
+                cudaMemcpy(Kdv6_d, Kdv6_h, nv * sizeof(double), cudaMemcpyHostToDevice);
+            }
+        }
+
         if (sim.HyDiff) {
             cudaMemset(diff_d, 0, sizeof(double) * 6 * point_num * nv);
 
             cudaDeviceSynchronize();
-            bool firststep;
+            int stepnum = 0;
             for (int ihyp = 0; ihyp < sim.HyDiffOrder / 2 - 1; ihyp++) {
-                if (ihyp == 0)
-                    firststep = 1;
-                else
-                    firststep = 0;
                 //Updates: diffmh_d, diffw_d, diffrh_d, diffpr_d, diff_d
                 Diffusion_Op<LN, LN><<<NBD, NT>>>(diffmh_d,
                                                   diffw_d,
                                                   diffrh_d,
                                                   diffpr_d,
                                                   diff_d,
+                                                  diff_sponge_d,
                                                   Mhk_d,
                                                   Rhok_d,
                                                   temperature_d,
@@ -310,8 +457,8 @@ __host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
                                                   Cp_d,
                                                   maps_d,
                                                   nl_region,
-                                                  firststep,
-                                                  0,
+                                                  stepnum,
+                                                  false,
                                                   sim.DeepModel,
                                                   sim.DiffSponge,
                                                   order_diff_sponge,
@@ -326,6 +473,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
                                                    diffrh_d,
                                                    diffpr_d,
                                                    diff_d,
+                                                   diff_sponge_d,
                                                    Mhk_d,
                                                    Rhok_d,
                                                    temperature_d,
@@ -344,8 +492,8 @@ __host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
                                                    Cp_d,
                                                    point_local_d,
                                                    point_num,
-                                                   firststep,
-                                                   0,
+                                                   stepnum,
+                                                   false,
                                                    sim.DeepModel,
                                                    sim.DiffSponge,
                                                    order_diff_sponge,
@@ -354,6 +502,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
                                                    energy_equation,
                                                    sim.HyDiffOrder);
                 cudaDeviceSynchronize();
+                stepnum += 1;
             }
 
             BENCH_POINT_I_S(current_step, rk, "Diffusion_Op1", (), ("diff_d"))
@@ -368,6 +517,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
                                               diffrh_d,
                                               diffpr_d,
                                               diff_d,
+                                              diff_sponge_d,
                                               Mhk_d,
                                               Rhok_d,
                                               temperature_d,
@@ -385,8 +535,8 @@ __host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
                                               Cp_d,
                                               maps_d,
                                               nl_region,
-                                              0,
-                                              1,
+                                              stepnum,
+                                              true,
                                               sim.DeepModel,
                                               sim.DiffSponge,
                                               order_diff_sponge,
@@ -400,6 +550,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
                                                diffrh_d,
                                                diffpr_d,
                                                diff_d,
+                                               diff_sponge_d,
                                                Mhk_d,
                                                Rhok_d,
                                                temperature_d,
@@ -418,8 +569,8 @@ __host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
                                                Cp_d,
                                                point_local_d,
                                                point_num,
-                                               0,
-                                               1,
+                                               stepnum,
+                                               true,
                                                sim.DeepModel,
                                                sim.DiffSponge,
                                                order_diff_sponge,
@@ -502,6 +653,7 @@ __host__ void ESP::Thor(const SimulationSetup& sim, kernel_diagnostics& diag) {
                              "pressures_d",
                              "pressurek_d",
                              "pressure_d"))
+
         //
         //      Divergence damping
         cudaMemset(DivM_d, 0, sizeof(double) * point_num * 3 * nv);

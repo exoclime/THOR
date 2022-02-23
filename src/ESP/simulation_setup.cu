@@ -75,8 +75,9 @@ SimulationSetup::SimulationSetup() {
     Diffc        = 0.009973;   // Strength of diffusion
     DivDampc     = Diffc;
 
-    HyDiff   = true;
-    DivDampP = true;
+    HyDiff                        = true;
+    DivDampP                      = true;
+    increased_damping_for_n_steps = 0;
 
     NonHydro        = true;
     DeepModel       = true;

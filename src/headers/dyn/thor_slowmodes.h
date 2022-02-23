@@ -101,6 +101,7 @@ __global__ void Compute_Slow_Modes(double *SlowMh_d,
     double alt, altl;
     double r2p, r2m, r2l;
     double rscale;
+    double dr2dz;
 
     double advr, advrl;
     double advx, advy, advz;
@@ -227,17 +228,20 @@ __global__ void Compute_Slow_Modes(double *SlowMh_d,
         }
     }
 
+    dz = altht - althl;
     if (DeepModel) {
         r2p    = pow(altht + A, 2.0);
         r2m    = pow(alt + A, 2.0);
         r2l    = pow(althl + A, 2.0);
         rscale = A / (alt + A);
+        dr2dz  = (pow(altht + A, 3.0) - pow(althl + A, 3.0)) / 3;
     }
     else {
         r2p    = 1.0;
         r2m    = 1.0;
         r2l    = 1.0;
         rscale = 1.0;
+        dr2dz  = r2m * dz;
     }
 
     nflxr_s[iri] = 0.0;
@@ -287,8 +291,8 @@ __global__ void Compute_Slow_Modes(double *SlowMh_d,
         hhl = hh_d[id * (nv + 1) + lev];
         hht = hh_d[id * (nv + 1) + lev + 1];
     }
-    dz    = altht - althl;
-    dwdz  = (wht * r2p - whl * r2l) / (dz * r2m);
+
+    dwdz  = (wht * r2p - whl * r2l) / (dr2dz);
     dwhdz = (wht * r2p * hht - whl * r2l * hhl) / (dz * r2m);
 
     //Mh
@@ -355,7 +359,7 @@ __global__ void Compute_Slow_Modes(double *SlowMh_d,
     }
 
     // Rho
-    nflxr_s[iri] += dwdz;
+    nflxr_s[iri] += dwdz; //hack to test mass conservation
     SlowRho_d[id * nv + lev] = -nflxr_s[iri] + diffrh_d[id * nv + lev] + diffrv_d[id * nv + lev];
 
     // pressure

@@ -230,7 +230,7 @@ Dv_sponge = 0.01
 # bottom of diffusive sponge layer (fractional height)
 ns_diff_sponge = 0.75
 
-# order of diffusion operator in diff sponge (2 or 4)
+# order of diffusion operator in diff sponge (multiple of 2 <= HyDiffOrder)
 order_diff_sponge = 2
 
 #-- Radiative transfer (double gray and two streams ) common options -------------------#
