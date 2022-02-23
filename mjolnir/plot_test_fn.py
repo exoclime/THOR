@@ -1,6 +1,13 @@
 #---- Runs through a subset of simulations to test functionality of plot code -
 #---- code by Russell Deitrick ------------------------------------------------
 
+# to do: add a sync rot with pbl case
+#        add hd 189 w/ and w/o full g
+#        add W43 w/ HELIOS
+#        clean up (delete unused output files or don't output at all)
+#        put all in ifile/repo_benchmarks/
+#        create script to run all
+
 import subprocess as sub
 import mjolnir_plot_helper as mph
 import argparse
