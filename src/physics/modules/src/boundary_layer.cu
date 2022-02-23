@@ -206,7 +206,9 @@ bool boundary_layer::phy_loop(ESP &                  esp,
                                 bl_sigma,
                                 sim.Gravit,
                                 time_step,
-                                esp.point_num);
+                                sim.A,
+                                esp.point_num,
+                                sim.GravHeightVar);
     }
     else if (bl_type == LOCALMIXL) {
         CalcGradRi<<<NBi, NTH>>>(esp.pressure_d,
@@ -234,8 +236,10 @@ bool boundary_layer::phy_loop(ESP &                  esp,
                                  asl_transition_height,
                                  abl_asym_len,
                                  free_asym_len,
+                                 sim.A,
                                  esp.point_num,
-                                 esp.nv);
+                                 esp.nv,
+                                 sim.GravHeightVar);
 
         cudaDeviceSynchronize();
 
@@ -442,7 +446,9 @@ __global__ void rayleighHS(double *Mh_d,
                            double  bl_sigma,
                            double  Gravit,
                            double  time_step,
-                           int     num) {
+                           double  A,
+                           int     num,
+                           bool    GravHeightVar) {
 
     int id  = blockIdx.x * blockDim.x + threadIdx.x;
     int nv  = gridDim.y;
@@ -457,8 +463,15 @@ __global__ void rayleighHS(double *Mh_d,
         double psm1;
 
         //      Calculates surface pressure
-        psm1 = pressure_d[id * nv + 1]
-               - Rho_d[id * nv + 0] * Gravit * (-Altitude_d[0] - Altitude_d[1]);
+        if (GravHeightVar) {
+            psm1 = pressure_d[id * nv + 1]
+                   - Rho_d[id * nv + 0] * Gravit * pow(A / (A + Altitude_d[0]), 2)
+                         * (-Altitude_d[0] - Altitude_d[1]);
+        }
+        else {
+            psm1 = pressure_d[id * nv + 1]
+                   - Rho_d[id * nv + 0] * Gravit * (-Altitude_d[0] - Altitude_d[1]);
+        }
         ps = 0.5 * (pressure_d[id * nv + 0] + psm1);
 
         pre   = pressure_d[id * nv + lev];
@@ -812,8 +825,10 @@ __global__ void CalcGradRi(double *pressure_d,
                            double  asl_transition_height,
                            double  abl_asym_len,
                            double  free_asym_len,
+                           double  A,
                            int     num,
-                           int     nv) {
+                           int     nv,
+                           bool    GravHeightVar) {
 
     //gradient richardson number at interfaces
     //also calculate KH, KM, CM, CH directly here
@@ -853,9 +868,16 @@ __global__ void CalcGradRi(double *pressure_d,
                 RiGrad_d[id * nvi + lev] = LARGERiB;
             }
             else {
-                RiGrad_d[id * nvi + lev] = Gravit / pt_d[id * nv + lev]
-                                           * (pt_d[id * nv + lev] - pt_surf_d[id])
-                                           / (Altitude_d[lev]) / shear2;
+                if (GravHeightVar) {
+                    RiGrad_d[id * nvi + lev] =
+                        Gravit * pow(A / (A + Altitude_d[lev]), 2) / pt_d[id * nv + lev]
+                        * (pt_d[id * nv + lev] - pt_surf_d[id]) / (Altitude_d[lev]) / shear2;
+                }
+                else {
+                    RiGrad_d[id * nvi + lev] = Gravit / pt_d[id * nv + lev]
+                                               * (pt_d[id * nv + lev] - pt_surf_d[id])
+                                               / (Altitude_d[lev]) / shear2;
+                }
             }
             CN = pow(KVONKARMAN / log((Altitude_d[lev] + z_rough) / z_rough), 2);
             if (RiGrad_d[id * nvi + lev] < 0) {
@@ -916,8 +938,17 @@ __global__ void CalcGradRi(double *pressure_d,
                 RiGrad_d[id * nvi + lev] = LARGERiB;
             }
             else {
-                RiGrad_d[id * nvi + lev] = Gravit / pt_int * (pt_d[id * nv + lev] - pt_below)
-                                           / (Altitude_d[lev] - Altitude_d[lev - 1]) / shear2;
+                if (GravHeightVar) {
+                    RiGrad_d[id * nvi + lev] = Gravit * 0.5
+                                               * (pow(A / (A + Altitude_d[lev]), 2)
+                                                  + pow(A / (A + Altitude_d[lev - 1]), 2))
+                                               / pt_int * (pt_d[id * nv + lev] - pt_below)
+                                               / (Altitude_d[lev] - Altitude_d[lev - 1]) / shear2;
+                }
+                else {
+                    RiGrad_d[id * nvi + lev] = Gravit / pt_int * (pt_d[id * nv + lev] - pt_below)
+                                               / (Altitude_d[lev] - Altitude_d[lev - 1]) / shear2;
+                }
             }
 
             //asymptotic length scale (constant in BL, decays to lower constant in free atmosphere)

@@ -1077,7 +1077,8 @@ bool radiative_transfer::phy_loop(ESP &                  esp,
                                          Qheat_scaling,
                                          sim.gcm_off,
                                          rt1Dmode,
-                                         sim.DeepModel);
+                                         sim.DeepModel,
+                                         sim.GravHeightVar);
         }
 
 

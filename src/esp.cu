@@ -271,6 +271,7 @@ int main(int argc, char** argv) {
     config_reader.append_config_var("radius", sim.A, sim.A);
     config_reader.append_config_var("rotation_rate", sim.Omega, sim.Omega);
     config_reader.append_config_var("gravitation", sim.Gravit, sim.Gravit);
+    config_reader.append_config_var("GravHeightVar", sim.GravHeightVar, GravHeightVar_default);
     config_reader.append_config_var("Rd", sim.Rd, sim.Rd);
     config_reader.append_config_var("Cp", sim.Cp, sim.Cp);
     config_reader.append_config_var("Tmean", sim.Tmean, sim.Tmean);
@@ -1166,6 +1167,7 @@ int main(int argc, char** argv) {
     log::printf("   Radius = %f m\n", sim.A);
     log::printf("   Omega  = %f s-1\n", sim.Omega);
     log::printf("   Gravit = %f m/s2\n", sim.Gravit);
+    log::printf("   GravHeightVar = %s\n", sim.GravHeightVar ? "true" : "false");
     log::printf("   Rd     = %f J/(Kg K)\n", sim.Rd);
     log::printf("   Cp     = %f J/(Kg K)\n", sim.Cp);
     log::printf("   Tmean  = %f K\n", sim.Tmean);

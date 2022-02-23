@@ -90,6 +90,7 @@
 #define output_mean_default true          // output mean quantities
 #define out_interm_momentum_default false // output intermediate momentum
 #define output_diffusion_default false    // output diffusion operators
+#define GravHeightVar_default false       // Vary gravity with height
 
 // Initial conditions
 #define rest_default true                                 // Starting from rest

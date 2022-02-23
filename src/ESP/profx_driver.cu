@@ -266,7 +266,8 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
         }
         else {
 
-            dry_conv_adj<<<NBRT, NTH>>>(pressure_d,    // Pressure [Pa]
+            dry_conv_adj<<<NBRT, NTH>>>(pressure_d, // Pressure [Pa]
+                                        pressureh_d,
                                         temperature_d, // Temperature [K]
                                         profx_Qheat_d,
                                         pt_d,        // Pot temperature [K]
@@ -277,10 +278,12 @@ __host__ void ESP::ProfX(const SimulationSetup& sim,
                                         Altitude_d,  // Altitudes of the layers
                                         Altitudeh_d, // Altitudes of the interfaces
                                         timestep,
+                                        sim.A,
                                         sim.conv_adj_iter,
                                         sim.soft_adjustment,
                                         point_num, // Number of columns
-                                        nv);       // number of vertical layers
+                                        nv,
+                                        sim.GravHeightVar); // number of vertical layers
         }
         // }
     }

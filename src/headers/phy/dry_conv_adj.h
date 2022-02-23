@@ -47,7 +47,8 @@
 #include <math.h>
 
 
-__global__ void dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
+__global__ void dry_conv_adj(double *Pressure_d, // Pressure [Pa]
+                             double *Pressureh_d,
                              double *Temperature_d, // Temperature [K]
                              double *profx_Qheat_d,
                              double *pt_d,        // Potential temperature [K]
@@ -58,33 +59,87 @@ __global__ void dry_conv_adj(double *Pressure_d,    // Pressure [Pa]
                              double *Altitude_d,  // Altitudes of the layers
                              double *Altitudeh_d, // Altitudes of the interfaces
                              double  time_step,
+                             double  A,
                              int  conv_adj_iter, // number of iterations of entire algorithm allowed
                              bool soft_adjust,
                              int  num, // Number of columns
-                             int  nv) { // Vertical levels
+                             int  nv,  // Vertical levels
+                             bool GravHeightVar) {
     //
     //  Description: Mixes entropy vertically on statically unstable columns
     //
 
     //
 
-    int         id = blockIdx.x * blockDim.x + threadIdx.x;
+    int id = blockIdx.x * blockDim.x + threadIdx.x;
 
     // stability threshold
-    double      stable = 0.0;
+    double stable = 0.0;
 
-    double      ps, psm;
+    double ps, psm;
+    double pp, ptop;
+
+    double xi, xip, xim, a, b;
 
     if (id < num) {
 
         int  iter   = 0;
         bool repeat = true; //will repeat entire
         while ((repeat == true) && (iter < conv_adj_iter)) {
-
-            psm = Pressure_d[id * nv + 1]
-                  + (Pressure_d[id * nv + 1] - Pressure_d[id * nv + 0])
-                        / (Altitude_d[1] - Altitude_d[0]) * (-Altitude_d[0] - Altitude_d[1]);
-            ps = 0.5 * (Pressure_d[id * nv + 0] + psm);
+            // for (iter = 0; iter < ITERMAX; iter++) {
+            // calculate pressure at the interfaces
+            for (int lev = 0; lev <= nv; lev++) {
+                if (lev == 0) {
+                    // extrapolate to lower boundary
+                    if (GravHeightVar) {
+                        psm = Pressure_d[id * nv + 1]
+                              - Rho_d[id * nv + 0] * Gravit * pow(A / (A + Altitude_d[0]), 2)
+                                    * (-Altitude_d[0] - Altitude_d[1]);
+                        // psm = Pressure_d[id * nv + 1]
+                        //       - Rho_d[id * nv + 0] * Gravit * (-Altitude_d[0] - Altitude_d[1]);
+                    }
+                    else {
+                        psm = Pressure_d[id * nv + 1]
+                              - Rho_d[id * nv + 0] * Gravit * (-Altitude_d[0] - Altitude_d[1]);
+                    }
+                    ps                             = 0.5 * (Pressure_d[id * nv + 0] + psm);
+                    Pressureh_d[id * (nv + 1) + 0] = ps;
+                }
+                else if (lev == nv) {
+                    // extrapolate to top boundary
+                    if (GravHeightVar) {
+                        pp =
+                            Pressure_d[id * nv + nv - 2]
+                            - Rho_d[id * nv + nv - 1] * Gravit
+                                  * pow(A / (A + Altitude_d[nv - 1]), 2)
+                                  * (2 * Altitudeh_d[nv] - Altitude_d[nv - 1] - Altitude_d[nv - 2]);
+                        // pp =
+                        //     Pressure_d[id * nv + nv - 2]
+                        //     - Rho_d[id * nv + nv - 1] * Gravit
+                        //           * (2 * Altitudeh_d[nv] - Altitude_d[nv - 1] - Altitude_d[nv - 2]);
+                    }
+                    else {
+                        pp =
+                            Pressure_d[id * nv + nv - 2]
+                            - Rho_d[id * nv + nv - 1] * Gravit
+                                  * (2 * Altitudeh_d[nv] - Altitude_d[nv - 1] - Altitude_d[nv - 2]);
+                    }
+                    if (pp < 0)
+                        pp = 0; //prevents pressure from going negative
+                    ptop                             = 0.5 * (Pressure_d[id * nv + nv - 1] + pp);
+                    Pressureh_d[id * (nv + 1) + lev] = ptop;
+                }
+                else {
+                    // interpolation between layers
+                    xi  = Altitudeh_d[lev];
+                    xim = Altitude_d[lev - 1];
+                    xip = Altitude_d[lev];
+                    a   = (xi - xip) / (xim - xip);
+                    b   = (xi - xim) / (xip - xim);
+                    Pressureh_d[id * (nv + 1) + lev] =
+                        Pressure_d[id * nv + lev - 1] * a + Pressure_d[id * nv + lev] * b;
+                }
+            }
 
             // Compute Potential Temperature
             for (int lev = 0; lev < nv; lev++) {

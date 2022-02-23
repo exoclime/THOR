@@ -287,6 +287,7 @@ __global__ void Density_Pressure_Eqs(double *      pressure_d,
                                      int           nl_region,
                                      bool          DeepModel,
                                      bool          energy_equation,
+                                     bool          GravHeightVar,
                                      unsigned int *diagnostics_flag,
                                      diag_data *   diagnostics_data) {
     // This function is one of the tricky part in the algorithm.
@@ -511,11 +512,21 @@ __global__ void Density_Pressure_Eqs(double *      pressure_d,
             / (Altitudeh_d[lev + 1] - Altitudeh_d[lev]);
 
         //new potential + kinetic energy using newest momenta and density
-        Epot_kin = (Rho_d[id * nv + lev] + Rhok_d[id * nv + lev]) * Gravit * Altitude_d[lev]
-                   + 0.5
-                         * (pow(v1_s[ir * 3 + 0], 2) + pow(v1_s[ir * 3 + 1], 2)
-                            + pow(v1_s[ir * 3 + 2], 2) + pow(w, 2))
-                         / (Rho_d[id * nv + lev] + Rhok_d[id * nv + lev]);
+        if (GravHeightVar) {
+            Epot_kin = (Rho_d[id * nv + lev] + Rhok_d[id * nv + lev]) * Gravit
+                           * pow(A / (A + Altitude_d[lev]), 2) * Altitude_d[lev]
+                       + 0.5
+                             * (pow(v1_s[ir * 3 + 0], 2) + pow(v1_s[ir * 3 + 1], 2)
+                                + pow(v1_s[ir * 3 + 2], 2) + pow(w, 2))
+                             / (Rho_d[id * nv + lev] + Rhok_d[id * nv + lev]);
+        }
+        else {
+            Epot_kin = (Rho_d[id * nv + lev] + Rhok_d[id * nv + lev]) * Gravit * Altitude_d[lev]
+                       + 0.5
+                             * (pow(v1_s[ir * 3 + 0], 2) + pow(v1_s[ir * 3 + 1], 2)
+                                + pow(v1_s[ir * 3 + 2], 2) + pow(w, 2))
+                             / (Rho_d[id * nv + lev] + Rhok_d[id * nv + lev]);
+        }
         //pressure perturbation
         pressure_d[id * nv + lev] =
             Rd_d[id * nv + lev] / Cv * (aux - Epot_kin) - pressurek_d[id * nv + lev];
@@ -599,6 +610,7 @@ __global__ void Density_Pressure_Eqs_Poles(double *      pressure_d,
                                            int           nv,
                                            bool          DeepModel,
                                            bool          energy_equation,
+                                           bool          GravHeightVar,
                                            unsigned int *diagnostics_flag,
                                            diag_data *   diagnostics_data) {
 
@@ -752,11 +764,22 @@ __global__ void Density_Pressure_Eqs_Poles(double *      pressure_d,
                     / (Altitudeh_d[lev + 1] - Altitudeh_d[lev]);
 
                 //new potential + kinetic energy using newest momenta and density
-                Epot_kin = (Rho_d[id * nv + lev] + Rhok_d[id * nv + lev]) * Gravit * Altitude_d[lev]
-                           + 0.5
-                                 * (pow(v1_p[0 * 3 + 0], 2) + pow(v1_p[0 * 3 + 1], 2)
-                                    + pow(v1_p[0 * 3 + 2], 2) + pow(w, 2))
-                                 / (Rho_d[id * nv + lev] + Rhok_d[id * nv + lev]);
+                if (GravHeightVar) {
+                    Epot_kin = (Rho_d[id * nv + lev] + Rhok_d[id * nv + lev]) * Gravit
+                                   * pow(A / (A + Altitude_d[lev]), 2) * Altitude_d[lev]
+                               + 0.5
+                                     * (pow(v1_p[0 * 3 + 0], 2) + pow(v1_p[0 * 3 + 1], 2)
+                                        + pow(v1_p[0 * 3 + 2], 2) + pow(w, 2))
+                                     / (Rho_d[id * nv + lev] + Rhok_d[id * nv + lev]);
+                }
+                else {
+                    Epot_kin =
+                        (Rho_d[id * nv + lev] + Rhok_d[id * nv + lev]) * Gravit * Altitude_d[lev]
+                        + 0.5
+                              * (pow(v1_p[0 * 3 + 0], 2) + pow(v1_p[0 * 3 + 1], 2)
+                                 + pow(v1_p[0 * 3 + 2], 2) + pow(w, 2))
+                              / (Rho_d[id * nv + lev] + Rhok_d[id * nv + lev]);
+                }
                 //pressure perturbation
                 pressure_d[id * nv + lev] =
                     Rd_d[id * nv + lev] / Cv * (aux - Epot_kin) - pressurek_d[id * nv + lev];

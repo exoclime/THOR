@@ -65,6 +65,7 @@ public:
     double A;
     double Omega;
     double Gravit;
+    bool   GravHeightVar;
 
     ////////////////
     // ATMOSPHERE //
