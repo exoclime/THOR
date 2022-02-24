@@ -7,6 +7,7 @@
 #        clean up (delete unused output files or don't output at all)
 #        put all in ifile/repo_benchmarks/
 #        create script to run all
+#        plots for HS test
 
 import subprocess as sub
 import mjolnir_plot_helper as mph
@@ -71,8 +72,6 @@ tests.append(check_m_time(f'{sim_path.__str__()}/pgrid_9_54_1/regrid_Earth_54.h5
 sub.run([f'mjolnir -i 54 -f {sim_path.__str__()} Tver uver Tlonver'],shell=True,stdout=sub_stdout)
 tests.append(check_m_time(f'{sim_path.__str__()}/figures/temperature_p_ver_i54_l54_lat-90+00-90+00.pdf',60))
 
-# tidal earth to test rotations, etc
-
 # Earth RT sim (check Tsurface, insolation)
 sim_path = simulations_path / 'earth_rt_dc_g5'
 ### regrid (check propagation of overwrite flag to pgrid and unmask flag)
@@ -128,6 +127,18 @@ plots = mph.make_plot(args)
 for p in plots:   # move to destination folder for easy viewing
     moveit(p,prefix,fig_destination)
     tests.append(check_m_time(f'{fig_destination.__str__()}/{prefix}_{p.split("/")[-1]}',60))
+
+
+#hd189 w/ constant g and variable g
+
+
+#sync rot pbl case
+
+
+#wasp43b w/ Alfrodull
+
+
+
 
 print('\n'+G+"---"*20)
 print("PLOT TEST FUNCTION REPORT")
