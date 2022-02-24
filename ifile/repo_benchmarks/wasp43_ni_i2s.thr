@@ -2,8 +2,6 @@
 # config format version
 config_version = 1
 
-# WASP-43b with grey RT and sponge layer (Mendonca+ 2018)
-
 
 #-- Time stepping and output options -----------------------------------------#
 # number of steps

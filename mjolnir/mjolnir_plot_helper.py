@@ -248,7 +248,9 @@ def make_plot(args, save=True, axis=None):
         if use_p:
             rg.load(['V','W'])
             sigmaref = ham.Get_Prange(input, grid, rg, args, xtype='lat', use_p=use_p)
-            pfile = call_plot('stream',ham.streamf_moc_plot,input, grid, output, rg, sigmaref, mt=maketable, plog=plog, clevs=args.clevels, save=save,csp=0.5)
+            pfile = call_plot('stream',ham.streamf_moc_plot,input, grid, output,
+                                rg, sigmaref, mt=maketable, plog=plog,
+                                clevs=args.clevels, save=save,csp=1)
         else:
             pfile = "'stream' plot type requires -vc pressure; plot not created"
             print(pfile)
@@ -411,14 +413,16 @@ def make_plot(args, save=True, axis=None):
         plots_created.append(pfile)
 
     if ('Fsens' in pview or 'all' in pview) and (input.BL):
-        if not hasattr(rg, "F_sens"):
-            raise ValueError("'F_sens' not available in regrid file")
-        rg.load(['F_sens'])
-        PR_LV = np.max(output.Pressure)  # not important here
-        z = {'value': rg.F_sens, 'label': r'Surface heat flux (W m$^{-2}$)', 'name': 'Fsens',
-             'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
-        pfile = call_plot('Fsens',ham.horizontal_lev,input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
-        plots_created.append(pfile)
+        if hasattr(rg, "F_sens"):
+            # raise ValueError("'F_sens' not available in regrid file")
+            rg.load(['F_sens'])
+            PR_LV = np.max(output.Pressure)  # not important here
+            z = {'value': rg.F_sens, 'label': r'Surface heat flux (W m$^{-2}$)', 'name': 'Fsens',
+                 'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
+            pfile = call_plot('Fsens',ham.horizontal_lev,input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
+            plots_created.append(pfile)
+        else:
+            print('Warning: "F_sens" not available in regrid file')
 
     if ('DGfuptot' in pview or 'all' in pview) and input.RT:
         # Averaged temperature and wind field (longitude vs latitude)
@@ -739,14 +743,14 @@ def make_plot(args, save=True, axis=None):
         pfile = call_plot('qheatprof',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
         plots_created.append(pfile)
 
-    if ('tradprof' in pview or 'all' in pview):
-        output.load_reshape(grid,['qheat','Pressure','Cp','Rd'])
-        qheat = output.qheat
-        dpdt = output.Rd/(output.Cp-output.Rd)*qheat
-        trad = output.Pressure/dpdt
-        z = {'value': np.log10(np.abs(trad)), 'label': r'log(Radiative time scale (s))', 'name': 'tradprof'}
-        pfile = call_plot('tradprof',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
-        plots_created.append(pfile)
+    # if ('tradprof' in pview or 'all' in pview):
+    #     output.load_reshape(grid,['qheat','Pressure','Cp','Rd'])
+    #     qheat = output.qheat
+    #     dpdt = output.Rd/(output.Cp-output.Rd)*qheat
+    #     trad = output.Pressure/dpdt
+    #     z = {'value': np.log10(np.abs(trad)), 'label': r'log(Radiative time scale (s))', 'name': 'tradprof'}
+    #     pfile = call_plot('tradprof',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
+    #     plots_created.append(pfile)
 
     # need a trick to make these work for axis = None (command line plotting)
     if ('w0prof' in pview or 'all' in pview) and input.TSRT: # and input.has_w0_g0:
