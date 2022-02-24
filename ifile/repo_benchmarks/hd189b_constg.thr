@@ -2,19 +2,19 @@
 # config format version
 config_version = 1
 
-# earth RT comparison to held-suarez
+# HD189733b with grey RT and sponge layer
 
 
 #-- Time stepping and output options -----------------------------------------#
 # number of steps
-num_steps = 207360
+num_steps = 288000
 
 # length of timesteps in seconds
-timestep = 500
+timestep = 150
 
 # output
 # output every n steps
-n_out = 207360
+n_out = 9600
 
 # write to log file at a different cadence from n_out
 custom_log_n_out = false
@@ -23,7 +23,7 @@ log_n_out = 1000
 
 # output directory (relative to current working directory)
 # defaults to 'results'
-results_path = simulations/repo_benchmarks/earth_rt_dc_g5
+results_path = simulations/repo_benchmarks/hd189b_constg
 
 # output global diagnostics (energy, mass, momentum, entropy)
 globdiag = true
@@ -39,39 +39,40 @@ output_mean = true
 
 #-- Planetary parameters -----------------------------------------------------#
 # name of simulation for output files
-simulation_ID = Earth
+simulation_ID = hd189b
 
 # Radius [m]
-radius = 6371000.0
+radius = 79698540
 
 # Rotation rate [rad s^-1]
-rotation_rate = 7.292E-5
+rotation_rate = 3.279E-5
 
 # Gravitational acceleration [m/s^2]
-gravitation = 9.8
+gravitation = 21.4
+GravHeightVar = false
 
-# Gas constant [J/(Kg K)] (R_univ/mean_molecular_mass)
-Rd = 287.0
+# Gas constant [J/(Kg K)]
+Rd = 3779
 
 # Specific heat capacities [J/(Kg K)]
-Cp = 1005.0
+Cp = 13226.82
 
 # Mean atmospheric temperature [K]
-Tmean = 300.0
+Tmean = 1600.0
 
-# Reference surface pressure [Pa] (pressure at bottom of model)
-P_ref = 100000.0
+# Reference surface pressure [Pa]
+P_ref = 22000000.0
 
 
 #-- Grid options -------------------------------------------------------------#
 # Altitude of the top of the model domain [m]
-Top_altitude = 36000.0
+Top_altitude = 3.6e6
 
 # Horizontal resolution level.
-glevel = 5
+glevel = 4
 
 # Number of vertical layers
-vlevel = 32
+vlevel = 40
 
 # Spring dynamics
 spring_dynamics = true
@@ -79,21 +80,35 @@ spring_dynamics = true
 # Parameter beta for spring dynamics
 spring_beta = 1.15
 
-# use grid refinement in vertical for lower atmos
-vert_refined = false
 
-#lowest layer thickness (used with vert_refined = true) (meters)
-lowest_layer_thickness = 2
+## diffusion ############################################
+# Hyper-diffusion
+HyDiff  =    true
 
-#altitude to transition to linear spacing (used with vert_refined=true) (meters)
-transition_altitude = 1000
+# Divergence-damping
+DivDampP =    true
+
+# Strength of diffusion
+Diffc = 0.009973
+# Order of hyperdiffusion operator (4,6,8,...)
+HyDiffOrder = 4
+
+DivDampc = 0.009973
+
+# Add vertical terms to hyperdiffusion (6th order)
+VertHyDiff = false
+# Strength of vertical hyperdiffusion
+Diffc_v = 0
+# Order of vertical hyperdiffusion operator (4,6,8,...)
+VertHyDiffOrder = 6
+#########################################################
 
 
 #-- Model options ------------------------------------------------------------#
 # Non-hydrostatic parameter
 NonHydro = true
 
-# Deep atmosphere (scale quantities for altitude + radius)
+# Deep atmosphere
 DeepModel = true
 
 # Initial conditions
@@ -102,26 +117,13 @@ rest = true
 # initial conditions file, used if rest is set to false
 # (path relative to current working directory)
 # defaults to 'ifile/esp_initial.h5'
-# 'planet' file must be present with name a la 'ifile/esp_initial_planet.h5'
-initial = ifile/esp_initial.h5
-
-# initial temperature-pressure profile (isothermal or guillot)
-# overridden if rest = false !
-# if isothermal: T = Tmean
-# if guillot: equations 27 (Guillot 2010)
-#    with Teq = Tmean and mu* = 0.5
-#    also uses the gray RT params Tint, kappa_lw, kappa_sw, f_lw
-#    includes the collision-induced absorption approx. from Heng+ 2011
-#    this can be omitted by setting f_lw = 1
-init_PT_profile = isothermal
+initial = /mnt/disk1/simulations_old/v2paper_rerun/hd189_nh_spng_rt_core/esp_output_hd189b_806.h5
 
 # Core benchmark tests
 # Held-Suarez test for Earth == HeldSuarez
 # Benchmark test for shallow hot Jupiter == ShallowHotJupiter
 # Benchmark test for deep hot Jupiter == DeepHotJupiter
 # Benchmark test for tidally locked Earth == TidallyLockedEarth
-# Acoustic wave test = AcousticTest
-# Gravity wave test = GWaveTest
 # No benchmark test == NoBenchmark (model is then forced with grey RT by default)
 core_benchmark = NoBenchmark
 
@@ -132,34 +134,10 @@ gcm_off = false
 # enable convective adjustment scheme
 conv_adj = true
 
-# type of thermodynamic equation = "entropy" (ready) or "energy" (in development!!)
-thermo_equation = entropy
 
-# ultrahot atmosphere options (hydrogen only)
-# under development!!
-# heating due to H/H2 chemisty ('none', 'quasi_eql', or 'relax_chem')
-ultrahot_heating = none
-# variable thermodynamics due to H/H2 chem ('none', 'vary_R_CP', or 'full' )
-ultrahot_thermo = none
-
-## diffusion ############################################
-# Hyper-diffusion
-HyDiff  =    true
-
-# Divergence-damping
-DivDampP =    true
-
-# Strength of diffusion
-Diffc = 0.0048
-
-# Strength of divergence damping
-DivDampc = 0.0048
-#########################################################
-
-
-#-- Sponge layer (Rayleigh drag or diffusive sponge) ----------------------#
+#-- Sponge layer (Rayleigh drag) ---------------------------------------------#
 # use sponge layer (Rayleigh drag) at top of atmosphere?
-RayleighSponge = false
+RayleighSponge = true
 
 # use temperature sponge layer (Rayleigh drag) at top of atmosphere?
 # (not well tested!)
@@ -201,57 +179,52 @@ ns_diff_sponge = 0.75
 order_diff_sponge = 2
 
 
-#-- Radiative transfer options (core_benchmark = NoBenchmark) --------------------------#
 ## RT parameters #######################################
 radiative_transfer = true
 
 # stellar temperature (k)
-Tstar = 5777.279
-#tuned to give solar constant at 1 au
+Tstar = 4875
 
 # orbital distance or semi-major axis (au)
-planet_star_dist = 1
+planet_star_dist = 0.03099
 
 # radius of host star (R_sun)
-radius_star = 1
+radius_star = 0.805
 
 # bond albedo of planet
-albedo = 0.3135
+albedo = 0.18
 
-# diffusivity factor
-diff_ang = 1
+# diff_ang = 1/(diffusivity factor) for lw radiation
+diff_ang = 0.5
 
 # power law index of unmixed absorbers (lw and sw)
 # optical depth at P_ref is: tau_lw = (kappa_lw/(f_lw*g)) * P_ref
 # n_lw = 2 approximations collision-induced absorption
 # n_lw = 4 approximations water-vapor in Earth troposph.
-n_lw = 4
-
-# optical depth at P_ref is: tau_sw = (kappa_sw/g) * (P_ref)
-n_sw = 2
+n_lw = 2
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # These params are also used if init_PT_profile = guillot
 # grey opacity of thermal wavelengths
-kappa_lw = 5.88e-5
+kappa_lw = 0.0025
 
 # grey opacity of incoming stellar flux
-kappa_sw = 1.96e-5
+kappa_sw = 0.00125
 
 # strength of unmixed absorbers in lw
-f_lw = 0.1
+f_lw = 0.5
 
 # temperature of internal heat flux (bottom boundary) (K)
-Tint = 0
+Tint = 100
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 # add sin(lat)^2 dependence to tau lw (advanced)
-latf_lw = true
+latf_lw = false
 # opacity at poles (lw)
-kappa_lw_pole = 1.47e-5
+kappa_lw_pole = 0.0025
 
 # include surface heating
-surface = true
+surface = false
 # heat capacity of surface
 Csurf = 1e7
 
@@ -262,54 +235,27 @@ rt1Dmode = false
 
 ## insolation (orbit + spin-state) parameters ###########
 # synchronous rotation (tidally-locking at 1:1)
-sync_rot = false
+sync_rot = true
 
 # mean motion of orbit (if sync_rot=false and ecc>0) (rad/s)
-mean_motion = 1.98e-7
+#mean_motion = 1.98e-7
 
 # initial substellar longitude (deg)
-alpha_i = 0
+#alpha_i = 0
 
 # initial orbital position (deg)
-true_long_i = 0
+#true_long_i = 0
 
 # eccentricity of orbit
-ecc = 0
+#ecc = 0
 
 # obliquity (axial-tilt) (deg)
-obliquity = 0
+#obliquity = 0
 
 # longitude of periastron (relative to equinox) (deg)
 # (stupid Earth convention applies)
-longp = 0
+#longp = 0
 #########################################################
-
-
-#-- Boundary layer options (core_benchmark = NoBenchmark) --------------------------#
-boundary_layer = true
-
-# type of boundary layer drag ('RayleighHS' or 'LocalMixL')
-bl_type = RayleighHS
-
-# strength of drag (bl_type = RayleighHS)
-#surf_drag = 1.157407e-5
-
-# boundary layer sigma (drag exist at this % of surface pressure and above)
-# (bl_type = RayleighHS)
-#bl_sigma = 0.7
-
-# surface roughness length (meters) (bl_type = LocalMixL)
-#z_rough = 3.21e-5
-
-# asymptotic scale length (ASL) for BL (meters) (bl_type = LocalMixL)
-#abl_asym_len = 150
-
-# asymptotic scale length (ASL) for free atmos (meters) (bl_type = LocalMixL)
-#free_asym_len = 30
-
-# height to transition from BL to free atmos for ASL (meters) (bl_type = LocalMixL)
-# set to -1 to use abl_asym_len in entire atmosphere
-#asl_transition_height = -1
 
 
 #-- Device options -----------------------------------------------------------#

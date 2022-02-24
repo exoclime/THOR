@@ -7,14 +7,14 @@ config_version = 1
 
 #-- Time stepping and output options -----------------------------------------#
 # number of steps
-num_steps = 4320000
+num_steps = 288000
 
 # length of timesteps in seconds
-timestep = 100
+timestep = 150
 
 # output
 # output every n steps
-n_out = 17280
+n_out = 9600
 
 # write to log file at a different cadence from n_out
 custom_log_n_out = false
@@ -23,7 +23,7 @@ log_n_out = 1000
 
 # output directory (relative to current working directory)
 # defaults to 'results'
-results_path = hd189_nh_g5_fullg
+results_path = simulations/repo_benchmarks/hd189b_fullg
 
 # output global diagnostics (energy, mass, momentum, entropy)
 globdiag = true
@@ -69,7 +69,7 @@ P_ref = 22000000.0
 Top_altitude = 3.6e6
 
 # Horizontal resolution level.
-glevel = 5
+glevel = 4
 
 # Number of vertical layers
 vlevel = 40

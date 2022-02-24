@@ -23,7 +23,7 @@ log_n_out = 1000
 
 # output directory (relative to current working directory)
 # defaults to 'results'
-results_path = new_a-d_comp/rot_exp_pp18bar_F1_r0
+results_path = simulations/repo_benchmarks/sync_rot_pbl_test
 
 # output global diagnostics (energy, mass, momentum, entropy)
 globdiag = true
