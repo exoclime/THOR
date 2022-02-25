@@ -444,9 +444,7 @@ int main(int argc, char** argv) {
 
     // vertical grid refinement in lower atmos (for turbulent BL)
     bool vert_refined = false;
-    //int  n_bl_layers  = 9;
     config_reader.append_config_var("vert_refined", vert_refined, vert_refined_default);
-    //config_reader.append_config_var("n_bl_layers", n_bl_layers, n_bl_layers_default);
     double transition_altitude = 1000; //height of transition from exponential to linear spacing
     double lowest_layer_thickness =
         2; //height of first interface above surface (thickness of lowest layer)
@@ -455,6 +453,18 @@ int main(int argc, char** argv) {
     config_reader.append_config_var(
         "lowest_layer_thickness", lowest_layer_thickness, lowest_layer_thickness_default);
 
+    // vertical grid refinement that is denser around fractional height
+    // designed by Pascal Noti
+    bool vert_dense_around = false;
+    config_reader.append_config_var(
+        "vert_dense_around", vert_dense_around, vert_dense_around_default);
+    double frac_height_dense = 0.7; //fractional height of increased density
+    double a_dense           = 1;   //shape parameter
+    double b_dense           = 6;   //shape parameter
+    config_reader.append_config_var(
+        "frac_height_dense", frac_height_dense, frac_height_dense_default);
+    config_reader.append_config_var("a_dense", a_dense, a_dense_default);
+    config_reader.append_config_var("b_dense", b_dense, b_dense_default);
 
     bool surface_config = false; // use solid/liquid surface at altitude 0
     config_reader.append_config_var("surface", surface_config, surface_config);
@@ -586,13 +596,18 @@ int main(int argc, char** argv) {
     }
 
     if (sim.HyDiffOrder <= 2 || sim.HyDiffOrder % 2) {
-        log::printf("Bad value for HyDiffOrder! Must be multiple of 2 greater than/equal to 4.");
+        log::printf("Bad value for HyDiffOrder! Must be multiple of 2 greater than/equal to 4.\n");
         config_OK = false;
     }
 
     if (sim.VertHyDiffOrder <= 2 || sim.VertHyDiffOrder % 2) {
         log::printf(
-            "Bad value for VertHyDiffOrder! Must be multiple of 2 greater than/equal to 4.");
+            "Bad value for VertHyDiffOrder! Must be multiple of 2 greater than/equal to 4.\n");
+        config_OK = false;
+    }
+
+    if (vert_refined && vert_dense_around) {
+        log::printf("Cannot set both vert_refined and vert_dense_around!\n");
         config_OK = false;
     }
 
@@ -1030,6 +1045,10 @@ int main(int argc, char** argv) {
                  vert_refined,
                  lowest_layer_thickness,
                  transition_altitude,
+                 vert_dense_around,
+                 frac_height_dense,
+                 a_dense,
+                 b_dense,
                  output_path);
 
     //  Define object X.

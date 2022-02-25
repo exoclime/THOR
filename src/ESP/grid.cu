@@ -94,6 +94,10 @@ __host__ Icogrid::Icogrid(bool               sprd,        // Spring dynamics opt
                           bool               vert_refined,
                           double             lowest_layer_thickness,
                           double             transition_altitude,
+                          bool               vert_dense_around,
+                          double             frac_height_dense,
+                          double             a_dense,
+                          double             b_dense,
                           const std::string &output_path) {
 
     bool read_from_file = false;
@@ -257,7 +261,12 @@ __host__ Icogrid::Icogrid(bool               sprd,        // Spring dynamics opt
     //  Set the Altitudes
     Altitude  = (double *)malloc(nv * sizeof(double));
     Altitudeh = (double *)malloc(nvi * sizeof(double));
-    if (vert_refined) {
+
+    if (vert_dense_around) { //new grid refinement by Pascal Noti
+        set_altitudes_dense_around(
+            Altitude, Altitudeh, Top_altitude, frac_height_dense, a_dense, b_dense, nvi);
+    }
+    else if (vert_refined) {
         // set_altitudes_refined(Altitude, Altitudeh, Top_altitude, nv, n_bl_layers);
         set_altitudes_softplus(
             Altitude, Altitudeh, Top_altitude, lowest_layer_thickness, transition_altitude, nv);
@@ -2054,6 +2063,46 @@ void Icogrid::set_altitudes_softplus(double *Altitude,
         Altitudeh[lev + 1] = alpha * log(1 + exp(k * (x - xbl)));
     }
     for (int lev = 0; lev < nv; lev++) { //centers of layers
+        Altitude[lev] = (Altitudeh[lev] + Altitudeh[lev + 1]) / 2.0;
+    }
+}
+
+void Icogrid::set_altitudes_dense_around(double *Altitude,
+                                         double *Altitudeh,
+                                         double  Top_altitude,
+                                         double  f_height,
+                                         double  a,
+                                         double  b,
+                                         int     nvi) {
+
+    double c, d;
+    double y[nvi];
+    double base;
+
+    // altitude grid designed by Pascal Noti
+    // denser layers near a user set value (ideally, around photosphere)
+
+    c = f_height * (nvi - 1) / 2.0 + 1.0 / 3.0 * b / a + (nvi - 1) / 4.0;
+
+    d = 1.0 / 2.0;
+
+    for (int i = 0; i < nvi; i++) {
+        y[i] = a * pow(((double)i - c), 3) + b * pow(((double)i - d), 2);
+    }
+    base = sqrt(pow(y[0], 2));
+
+    for (int i = 0; i < nvi; i++) {
+        y[i] = y[i] + base;
+    }
+
+    for (int i = 0; i < nvi; i++) {
+        y[i] = y[i] / y[nvi - 1];
+    }
+
+    for (int lev = 0; lev < nvi; lev++) { //interfaces
+        Altitudeh[lev] = y[lev] * Top_altitude;
+    }
+    for (int lev = 0; lev < (nvi - 1); lev++) { //centers of layers
         Altitude[lev] = (Altitudeh[lev] + Altitudeh[lev + 1]) / 2.0;
     }
 }

@@ -143,6 +143,11 @@
 #define transition_altitude_default 1000.0
 #define lowest_layer_thickness_default 2.0
 
+#define vert_dense_around_default false
+#define frac_height_dense_default 0.7
+#define a_dense_default 1.0
+#define b_dense_default 6.0
+
 enum benchmark_types {
     NO_BENCHMARK         = 0,
     HELD_SUAREZ          = 1,
