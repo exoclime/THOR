@@ -60,7 +60,7 @@ def make_plot(args, save=True, axis=None):
              'w0prof', 'g0prof', 'spectrum',
              'phase','all','eddyKE','eddyMomMerid','eddyTempMerid','eddyTempVar',
              'Etotlev','AngMomlev', 'Entropylev','Kdiffprof', 'RiB','BLheight',
-             'RTbalance','Riprof','RTbalanceTS','tradprof','taulwprof','Fsens']
+             'RTbalance','Riprof','RTbalanceTS','tradprof','taulwprof','Fsens', 'Kdiffver']
 
     rg_needed = ['Tver', 'Tlonver', 'uver', 'ulonver', 'vver', 'wver', 'wlonver', 'Tulev', 'PTver', 'PTlonver', 'ulev', 'PVver', 'PVlev',
                  'RVlev', 'stream', 'tracer', 'Tsurf', 'insol', 'massf', 'pause_rg',
@@ -68,7 +68,7 @@ def make_plot(args, save=True, axis=None):
                  'TSfuptot', 'TSfdowntot', 'TSfnet', 'TSqheat',
                  'DGfuptot', 'DGfdowntot', 'DGfnet', 'DGqheat',
                  'all','eddyKE','eddyMomMerid','eddyTempMerid','eddyTempVar',
-                  'Etotlev', 'AngMomlev', 'Entropylev','RiB','BLheight','Fsens']  # these types need regrid
+                  'Etotlev', 'AngMomlev', 'Entropylev','RiB','BLheight','Fsens','Kdiffver']  # these types need regrid
 
     openrg = 0
 
@@ -248,7 +248,9 @@ def make_plot(args, save=True, axis=None):
         if use_p:
             rg.load(['V','W'])
             sigmaref = ham.Get_Prange(input, grid, rg, args, xtype='lat', use_p=use_p)
-            pfile = call_plot('stream',ham.streamf_moc_plot,input, grid, output, rg, sigmaref, mt=maketable, plog=plog, clevs=args.clevels, save=save,csp=0.5)
+            pfile = call_plot('stream',ham.streamf_moc_plot,input, grid, output,
+                                rg, sigmaref, mt=maketable, plog=plog,
+                                clevs=args.clevels, save=save,csp=1)
         else:
             pfile = "'stream' plot type requires -vc pressure; plot not created"
             print(pfile)
@@ -267,6 +269,20 @@ def make_plot(args, save=True, axis=None):
         else:
             pfile = "'massf' plot type requires -vc height; plot not created"
             print(pfile)
+        plots_created.append(pfile)
+
+    if ('Kdiffver' in pview or 'all' in pview) and input.BL and (input.BL_type == 1 or input.BL_type == 2):
+        rg.load(['KH','KM'])
+        z = {'value': rg.KH, 'label': r'boundary layer K$_H$ (m$^2$ s$^{-1}$)', 'name': 'KHver',
+             'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'plog': plog}
+        sigmaref = ham.Get_Prange(input, grid, rg, args, xtype='lat', use_p=use_p)
+        pfile = call_plot('KHver',ham.vertical_lat,input, grid, output, rg, sigmaref, z, slice=args.slice, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
+        plots_created.append(pfile)
+
+        z = {'value': rg.KM, 'label': r'boundary layer K$_M$ (m$^2$ s$^{-1}$)', 'name': 'KMver',
+            'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'plog': plog}
+        sigmaref = ham.Get_Prange(input, grid, rg, args, xtype='lat', use_p=use_p)
+        pfile = call_plot('KMver',ham.vertical_lat,input, grid, output, rg, sigmaref, z, slice=args.slice, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
         plots_created.append(pfile)
 
     if 'eddyKE' in pview or 'all' in pview:
@@ -297,7 +313,7 @@ def make_plot(args, save=True, axis=None):
         Tprime = rg.Temperature - np.mean(rg.Temperature,axis=1)[:,None,:,:]
         vprime = rg.V - np.mean(rg.V,axis=1)[:,None,:,:]
         eddyTemp = Tprime*vprime
-        z = {'value': eddyTemp, 'label': r'Merid. Eddy temp. flux (K m$ s$^{-1}$)', 'name': 'eddyTemp','cmap': 'magma',
+        z = {'value': eddyTemp, 'label': r'Merid. Eddy temp. flux (K m s$^{-1}$)', 'name': 'eddyTemp','cmap': 'magma',
             'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'plog': plog}
         sigmaref = ham.Get_Prange(input, grid, rg, args, xtype='lat', use_p=use_p)
         pfile = call_plot('eddyTempMerid',ham.vertical_lat,input, grid, output, rg, sigmaref, z, slice=args.slice, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
@@ -411,14 +427,16 @@ def make_plot(args, save=True, axis=None):
         plots_created.append(pfile)
 
     if ('Fsens' in pview or 'all' in pview) and (input.BL):
-        if not hasattr(rg, "F_sens"):
-            raise ValueError("'F_sens' not available in regrid file")
-        rg.load(['F_sens'])
-        PR_LV = np.max(output.Pressure)  # not important here
-        z = {'value': rg.F_sens, 'label': r'Surface heat flux (W m$^{-2}$)', 'name': 'Fsens',
-             'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
-        pfile = call_plot('Fsens',ham.horizontal_lev,input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
-        plots_created.append(pfile)
+        if hasattr(rg, "F_sens"):
+            # raise ValueError("'F_sens' not available in regrid file")
+            rg.load(['F_sens'])
+            PR_LV = np.max(output.Pressure)  # not important here
+            z = {'value': rg.F_sens, 'label': r'Surface heat flux (W m$^{-2}$)', 'name': 'Fsens',
+                 'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'llswap': args.latlonswap}
+            pfile = call_plot('Fsens',ham.horizontal_lev,input, grid, output, rg, PR_LV, z, wind_vectors=True, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
+            plots_created.append(pfile)
+        else:
+            print('Warning: "F_sens" not available in regrid file')
 
     if ('DGfuptot' in pview or 'all' in pview) and input.RT:
         # Averaged temperature and wind field (longitude vs latitude)
@@ -739,14 +757,14 @@ def make_plot(args, save=True, axis=None):
         pfile = call_plot('qheatprof',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
         plots_created.append(pfile)
 
-    if ('tradprof' in pview or 'all' in pview):
-        output.load_reshape(grid,['qheat','Pressure','Cp','Rd'])
-        qheat = output.qheat
-        dpdt = output.Rd/(output.Cp-output.Rd)*qheat
-        trad = output.Pressure/dpdt
-        z = {'value': np.log10(np.abs(trad)), 'label': r'log(Radiative time scale (s))', 'name': 'tradprof'}
-        pfile = call_plot('tradprof',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
-        plots_created.append(pfile)
+    # if ('tradprof' in pview or 'all' in pview):
+    #     output.load_reshape(grid,['qheat','Pressure','Cp','Rd'])
+    #     qheat = output.qheat
+    #     dpdt = output.Rd/(output.Cp-output.Rd)*qheat
+    #     trad = output.Pressure/dpdt
+    #     z = {'value': np.log10(np.abs(trad)), 'label': r'log(Radiative time scale (s))', 'name': 'tradprof'}
+    #     pfile = call_plot('tradprof',ham.profile,input, grid, output, z, stride=20, save=save, axis=axis)
+    #     plots_created.append(pfile)
 
     # need a trick to make these work for axis = None (command line plotting)
     if ('w0prof' in pview or 'all' in pview) and input.TSRT: # and input.has_w0_g0:

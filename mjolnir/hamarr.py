@@ -1045,7 +1045,7 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
             # need to make sure the arrays are contiguous
             x = np.ascontiguousarray(interm['Pressure'][:, :, ::-1].ravel())
             xnew = np.ascontiguousarray(Pref[::-1])
-
+            
             for key in dest.keys():
                 if np.shape(interm[key]) == (d_lon[0], d_lon[1]):
                     # 2D field (e.g., insolation)
@@ -1901,7 +1901,7 @@ def CurlF(fr, flat, flon, lat_range, lon_range, Altitude, A):
 
 def streamf_moc_plot(input, grid, output, rg, sigmaref, save=True, axis=False,
                      cmap = 'viridis', wind_vectors=False, mt=False, plog=True,
-                     clevs=[40],csp=1e12,clabel_format='%e',cmap_center=False,
+                     clevs=[40],csp=1e12,clabel_format='%#.2f',cmap_center=False,
                      cover_color='k',cbar=True,clabel=True):
     # special plotting function for the mass streamfunction
 

@@ -309,11 +309,72 @@ slow_set = [
                                         'esp_output_Wasp43b_4.h5',
                                         'esp_output_Wasp43b_5.h5' ]}},
 ]
+
+# full set of repository benchmarks, should take a few days to run
+repo_benchmarks = [
+    # Held-Suarez test
+    {'name': 'earth_hs',
+     'base_ifile': 'ifile/repo_benchmarks/earth_hstest.thr',
+     'command_options': [],
+     'override': {},
+     'status': 0,
+     'compare_func': None,
+     'compare_params': None},
+
+    {'name': 'earth_rt_dc_g5',
+     'base_ifile': 'ifile/repo_benchmarks/earth_rt_dc_g5.thr',
+     'command_options': [],
+     'override': {},
+     'status': 0,
+     'compare_func': None,
+     'compare_params': None},
+
+    {'name': 'hd189b_constg',
+      'base_ifile': 'ifile/repo_benchmarks/hd189b_constg.thr',
+      'command_options': [],
+      'override': {},
+      'status': 0,
+      'compare_func': None,
+      'compare_params': None},
+
+     {'name': 'hd189b_fullg',
+       'base_ifile': 'ifile/repo_benchmarks/hd189b_fullg.thr',
+       'command_options': [],
+       'override': {},
+       'status': 0,
+       'compare_func': None,
+       'compare_params': None},
+
+      {'name': 'sync_rot_pbl_test',
+        'base_ifile': 'ifile/repo_benchmarks/sync_rot_pbl_test.thr',
+        'command_options': [],
+        'override': {},
+        'status': 0,
+        'compare_func': None,
+        'compare_params': None},
+
+     {'name': 'wasp43_ni_i2s',
+      'base_ifile': 'ifile/repo_benchmarks/wasp43_ni_i2s.thr',
+      'command_options': [],
+      'override': {},
+      'status': 0,
+      'compare_func': None,
+      'compare_params': None},
+
+     {'name': 'wasp43b_ex',
+       'base_ifile': 'ifile/repo_benchmarks/wasp43b_ex.thr',
+       'command_options': [],
+       'override': {},
+       'status': 0,
+       'compare_func': None,
+       'compare_params': None},
+]
 ######################################################################
 # the simulation sets we can choose from
 simulation_sets = {'slow': slow_set,
                    'fast': fast_set,
-                   'grid': grid_and_startup_set}
+                   'grid': grid_and_startup_set,
+                   'repo_benchmarks': repo_benchmarks}
 
 run_set = simulation_sets[run_set_sel]
 

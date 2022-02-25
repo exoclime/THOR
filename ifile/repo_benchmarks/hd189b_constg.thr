@@ -1,0 +1,263 @@
+# config file for THOR
+# config format version
+config_version = 1
+
+# HD189733b with grey RT and sponge layer
+
+
+#-- Time stepping and output options -----------------------------------------#
+# number of steps
+num_steps = 288000
+
+# length of timesteps in seconds
+timestep = 150
+
+# output
+# output every n steps
+n_out = 9600
+
+# write to log file at a different cadence from n_out
+custom_log_n_out = false
+# how often to write to log file (if above = true)
+log_n_out = 1000
+
+# output directory (relative to current working directory)
+# defaults to 'results'
+results_path = simulations/repo_benchmarks/hd189b_constg
+
+# output global diagnostics (energy, mass, momentum, entropy)
+globdiag = true
+
+# output global diagnostics (to text file) at a different cadence from n_out
+custom_global_n_out = false
+# how often to output global diag to text (if above = true)
+global_n_out = 1000
+
+# output time mean quantities (averaged over interval between outputs)
+output_mean = true
+
+
+#-- Planetary parameters -----------------------------------------------------#
+# name of simulation for output files
+simulation_ID = hd189b
+
+# Radius [m]
+radius = 79698540
+
+# Rotation rate [rad s^-1]
+rotation_rate = 3.279E-5
+
+# Gravitational acceleration [m/s^2]
+gravitation = 21.4
+GravHeightVar = false
+
+# Gas constant [J/(Kg K)]
+Rd = 3779
+
+# Specific heat capacities [J/(Kg K)]
+Cp = 13226.82
+
+# Mean atmospheric temperature [K]
+Tmean = 1600.0
+
+# Reference surface pressure [Pa]
+P_ref = 22000000.0
+
+
+#-- Grid options -------------------------------------------------------------#
+# Altitude of the top of the model domain [m]
+Top_altitude = 3.6e6
+
+# Horizontal resolution level.
+glevel = 4
+
+# Number of vertical layers
+vlevel = 40
+
+# Spring dynamics
+spring_dynamics = true
+
+# Parameter beta for spring dynamics
+spring_beta = 1.15
+
+
+## diffusion ############################################
+# Hyper-diffusion
+HyDiff  =    true
+
+# Divergence-damping
+DivDampP =    true
+
+# Strength of diffusion
+Diffc = 0.009973
+# Order of hyperdiffusion operator (4,6,8,...)
+HyDiffOrder = 4
+
+DivDampc = 0.009973
+
+# Add vertical terms to hyperdiffusion (6th order)
+VertHyDiff = false
+# Strength of vertical hyperdiffusion
+Diffc_v = 0
+# Order of vertical hyperdiffusion operator (4,6,8,...)
+VertHyDiffOrder = 6
+#########################################################
+
+
+#-- Model options ------------------------------------------------------------#
+# Non-hydrostatic parameter
+NonHydro = true
+
+# Deep atmosphere
+DeepModel = true
+
+# Initial conditions
+rest = true
+
+# initial conditions file, used if rest is set to false
+# (path relative to current working directory)
+# defaults to 'ifile/esp_initial.h5'
+initial = /mnt/disk1/simulations_old/v2paper_rerun/hd189_nh_spng_rt_core/esp_output_hd189b_806.h5
+
+# Core benchmark tests
+# Held-Suarez test for Earth == HeldSuarez
+# Benchmark test for shallow hot Jupiter == ShallowHotJupiter
+# Benchmark test for deep hot Jupiter == DeepHotJupiter
+# Benchmark test for tidally locked Earth == TidallyLockedEarth
+# No benchmark test == NoBenchmark (model is then forced with grey RT by default)
+core_benchmark = NoBenchmark
+
+# Switch off dynamical core (gcm)
+# This is useful for testing/debugging physics modules
+gcm_off = false
+
+# enable convective adjustment scheme
+conv_adj = true
+
+
+#-- Sponge layer (Rayleigh drag) ---------------------------------------------#
+# use sponge layer (Rayleigh drag) at top of atmosphere?
+RayleighSponge = true
+
+# use temperature sponge layer (Rayleigh drag) at top of atmosphere?
+# (not well tested!)
+RayleighSpongeT = false
+
+# if true, damp to zonal mean (i.e., damp eddy component) (rayleigh sponge)
+# if false, damp to zero
+damp_uv_to_mean = true
+damp_w_to_mean = true
+
+# latitude bins for rayleigh sponge (zonal mean is calculated over these)
+nlat_bins = 20
+
+# bottom of rayleigh sponge layer (fractional height)
+ns_ray_sponge = 0.75
+
+# strength of rayleigh sponge layer (1/damping time)
+# horizontal component
+Ruv_sponge = 1e-4
+# vertical component
+Rw_sponge = 1e-4
+
+# Technical setting: change how rayleigh sponge is applied
+# imp = implicitly update momentum in profx, averages computed once per dt
+# exp1 = explicitly add damping to slow modes, averages computed once per dt
+# exp3 = explicitly add damping to slow modes, averages computed 3x per dt
+raysp_calc_mode = imp
+
+# use diffusive sponge layer at top of atmosphere? (in development!!)
+DiffSponge = false
+
+# strength of diffusive sponge layer (unitless)
+Dv_sponge = 0.005
+
+# bottom of diffusive sponge layer (fractional height)
+ns_diff_sponge = 0.75
+
+# order of diffusion operator in diff sponge (2 or 4)
+order_diff_sponge = 2
+
+
+## RT parameters #######################################
+radiative_transfer = true
+
+# stellar temperature (k)
+Tstar = 4875
+
+# orbital distance or semi-major axis (au)
+planet_star_dist = 0.03099
+
+# radius of host star (R_sun)
+radius_star = 0.805
+
+# bond albedo of planet
+albedo = 0.18
+
+# diff_ang = 1/(diffusivity factor) for lw radiation
+diff_ang = 0.5
+
+# power law index of unmixed absorbers (lw and sw)
+# optical depth at P_ref is: tau_lw = (kappa_lw/(f_lw*g)) * P_ref
+# n_lw = 2 approximations collision-induced absorption
+# n_lw = 4 approximations water-vapor in Earth troposph.
+n_lw = 2
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# These params are also used if init_PT_profile = guillot
+# grey opacity of thermal wavelengths
+kappa_lw = 0.0025
+
+# grey opacity of incoming stellar flux
+kappa_sw = 0.00125
+
+# strength of unmixed absorbers in lw
+f_lw = 0.5
+
+# temperature of internal heat flux (bottom boundary) (K)
+Tint = 100
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+# add sin(lat)^2 dependence to tau lw (advanced)
+latf_lw = false
+# opacity at poles (lw)
+kappa_lw_pole = 0.0025
+
+# include surface heating
+surface = false
+# heat capacity of surface
+Csurf = 1e7
+
+# run gray RT code without GCM, every column identical zenith angle (experimental!)
+rt1Dmode = false
+
+#########################################################
+
+## insolation (orbit + spin-state) parameters ###########
+# synchronous rotation (tidally-locking at 1:1)
+sync_rot = true
+
+# mean motion of orbit (if sync_rot=false and ecc>0) (rad/s)
+#mean_motion = 1.98e-7
+
+# initial substellar longitude (deg)
+#alpha_i = 0
+
+# initial orbital position (deg)
+#true_long_i = 0
+
+# eccentricity of orbit
+#ecc = 0
+
+# obliquity (axial-tilt) (deg)
+#obliquity = 0
+
+# longitude of periastron (relative to equinox) (deg)
+# (stupid Earth convention applies)
+#longp = 0
+#########################################################
+
+
+#-- Device options -----------------------------------------------------------#
+# GPU ID number
+GPU_ID_N = 0
