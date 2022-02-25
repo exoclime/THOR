@@ -164,7 +164,7 @@ args = mph.mjol_args(sim_path.__str__())
 args.initial_file = [59]
 args.last_file = [60]
 args.vcoord = ['height']  #check height plotting/files
-args.lev = [1e6]
+args.horizontal_lev = [1e3]
 args.pview = ['uver','ulonver','Tulev','qheat','tracer']
 plots = mph.make_plot(args)
 for p in plots:   # move to destination folder for easy viewing
