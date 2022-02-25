@@ -217,15 +217,56 @@ for p in plots:   # move to destination folder for easy viewing
 #-------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------
-
 #sync rot pbl case
+sim_path = simulations_path / 'sync_rot_pbl_test'
 
+fig_destination = fig_destination_parent / 'sync_rot_pbl_test'
+prefix = 'sync_rot_pbl'
+sub.run([f'regrid -i 10 -l 60 {sim_path.__str__()} -rot -rot-ang 0 -90'],
+        shell=True,stdout=sub_stdout)
 
+args = mph.mjol_args(sim_path.__str__())
+args.initial_file = [10]
+args.last_file = [60]
+args.horizontal_lev = [160]
+args.no_pressure_log = True
+args.pview = ['vver','wver','Kdiffver','Tulev','Tver','PTver','Fsens','Tsurf','stream']
+plots = mph.make_plot(args)
+for p in plots:   # move to destination folder for easy viewing
+    moveit(p,prefix,fig_destination)
+    tests.append(check_m_time(
+                f'{fig_destination.__str__()}/{prefix}_{p.split("/")[-1]}',60))
+
+args.horizontal_lev = [20]
+args.pview = ['Tulev']
+plots = mph.make_plot(args)
+for p in plots:   # move to destination folder for easy viewing
+    moveit(p,prefix,fig_destination)
+    tests.append(check_m_time(
+                f'{fig_destination.__str__()}/{prefix}_{p.split("/")[-1]}',60))
+#-------------------------------------------------------------------------------
+
+#-------------------------------------------------------------------------------
 #wasp43b w/ Alfrodull
+sim_path = simulations_path / 'wasp43_ni_i2s'
 
+fig_destination = fig_destination_parent / 'WASP43b_HELIOS'
+prefix = 'wasp43b_helios'
 
+args = mph.mjol_args(sim_path.__str__())
+args.initial_file = [1]
+args.last_file = [1]
+args.horizontal_lev = [100]
+args.pview = ['uver','Tver','Tulev','TSfluxprof','TSfdirprof','TSqheatprof','qheatprof']
+plots = mph.make_plot(args)
+for p in plots:   # move to destination folder for easy viewing
+    moveit(p,prefix,fig_destination)
+    tests.append(check_m_time(
+                f'{fig_destination.__str__()}/{prefix}_{p.split("/")[-1]}',60))
 
+#-------------------------------------------------------------------------------
 
+#-------------------------------------------------------------------------------
 print('\n'+G+"---"*20)
 print("PLOT TEST FUNCTION REPORT")
 print("---"*20+W+'\n')
