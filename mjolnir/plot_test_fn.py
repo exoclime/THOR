@@ -27,8 +27,9 @@ parser = argparse.ArgumentParser()
 parser.add_argument('month_tag', nargs=1, help='Destination folder for figures (recommend using MonthYear like Jun2020)')
 args = parser.parse_args()
 
-month_tag = 'Jun2020'  #change this to mandatory argument
-simulations_path = Path('/media/deitrick/cupcake_of_science/thor_simulations/simulations/repo_benchmarks')
+# month_tag = 'Feb2022'  #change this to mandatory argument
+month_tag = args.month_tag[0]
+simulations_path = Path('testing/repo_benchmarks')
 fig_destination_parent = Path('repo_benchmark_figures/'+month_tag)
 
 sub_stdout = None
@@ -110,20 +111,20 @@ for p in plots:
 sim_path = simulations_path / 'earth_rt_dc_g5'
 
 ### regrid (check propagation of overwrite flag to pgrid and unmask flag)
-sub.run([f'regrid -i 60 -l 60 {sim_path.__str__()} -w -unmask'],
+sub.run([f'regrid -i 1 -l 1 {sim_path.__str__()} -w -unmask'],
         shell=True,stdout=sub_stdout)
 #verify overwrite propagation
 tests.append(check_m_time(
-            f'{sim_path.__str__()}/pgrid_60_60_1.txt',60))
+            f'{sim_path.__str__()}/pgrid_1_1_1.txt',60))
 tests.append(check_m_time(
-            f'{sim_path.__str__()}/pgrid_60_60_1/regrid_Earth_60.h5',60))
+            f'{sim_path.__str__()}/pgrid_1_1_1/regrid_Earth_1.h5',60))
 
 ### check mjolnir plot helper thingie
 fig_destination = fig_destination_parent / 'EarthRT_example'
 prefix = 'earth_rt_unmask'
 args = mph.mjol_args(sim_path.__str__())
-args.initial_file = [60]
-args.last_file = [60]
+args.initial_file = [1]
+args.last_file = [1]
 args.pview = ['all']
 plots = mph.make_plot(args)
 for p in plots:   # move to destination folder for easy viewing
@@ -136,7 +137,7 @@ for p in plots:   # move to destination folder for easy viewing
                 f'{fig_destination.__str__()}/{prefix}_{p.split("/")[-1]}',60))
 
 ### remove regrid file, test mjolnir executes regrid, no unmask flag
-os.remove(f'{sim_path.__str__()}/pgrid_60_60_1/regrid_Earth_60.h5')
+os.remove(f'{sim_path.__str__()}/pgrid_1_1_1/regrid_Earth_1.h5')
 prefix = 'earth_rt_mask'
 args.pview = ['Tver', 'stream']
 args.no_pressure_log = True
@@ -146,12 +147,12 @@ for p in plots:   # move to destination folder for easy viewing
 tests.append(check_m_time(
                 f'{fig_destination.__str__()}/{prefix}_{p.split("/")[-1]}',60))
 tests.append(check_m_time(
-                f'{sim_path.__str__()}/pgrid_60_60_1/regrid_Earth_60.h5',60))
+                f'{sim_path.__str__()}/pgrid_1_1_1/regrid_Earth_1.h5',60))
 #-------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------
 # Wasp 43 b sim
-sim_path = simulations_path / 'wasp43b_example'
+sim_path = simulations_path / 'wasp43b_ex'
 
 ### force regrid
 sub.run([f'regrid -i 59 -l 60 {sim_path.__str__()} -w'],shell=True,
@@ -164,7 +165,7 @@ args = mph.mjol_args(sim_path.__str__())
 args.initial_file = [59]
 args.last_file = [60]
 args.vcoord = ['height']  #check height plotting/files
-args.lev = [1e6]
+args.horizontal_lev = [1e3]
 args.pview = ['uver','ulonver','Tulev','qheat','tracer']
 plots = mph.make_plot(args)
 for p in plots:   # move to destination folder for easy viewing
@@ -182,8 +183,40 @@ for p in plots:   # move to destination folder for easy viewing
                 f'{fig_destination.__str__()}/{prefix}_{p.split("/")[-1]}',60))
 #-------------------------------------------------------------------------------
 
+#-------------------------------------------------------------------------------
 #hd189 w/ constant g and variable g
+sim_path = simulations_path / 'hd189b_constg'
 
+fig_destination = fig_destination_parent / 'HD189733b_constg'
+prefix = 'hd189b_constg'
+args = mph.mjol_args(sim_path.__str__())
+args.initial_file = [30]
+args.last_file = [30]
+args.horizontal_lev = [10]
+args.pview = ['uver', 'Tver', 'Tulev']
+plots = mph.make_plot(args)
+for p in plots:   # move to destination folder for easy viewing
+    moveit(p,prefix,fig_destination)
+    tests.append(check_m_time(
+                f'{fig_destination.__str__()}/{prefix}_{p.split("/")[-1]}',60))
+
+sim_path = simulations_path / 'hd189b_fullg'
+
+fig_destination = fig_destination_parent / 'HD189733b_fullg'
+prefix = 'hd189b_fullg'
+args = mph.mjol_args(sim_path.__str__())
+args.initial_file = [30]
+args.last_file = [30]
+args.horizontal_lev = [10]
+args.pview = ['uver', 'Tver', 'Tulev']
+plots = mph.make_plot(args)
+for p in plots:   # move to destination folder for easy viewing
+    moveit(p,prefix,fig_destination)
+    tests.append(check_m_time(
+                f'{fig_destination.__str__()}/{prefix}_{p.split("/")[-1]}',60))
+#-------------------------------------------------------------------------------
+
+#-------------------------------------------------------------------------------
 
 #sync rot pbl case
 
