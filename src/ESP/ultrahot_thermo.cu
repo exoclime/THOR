@@ -155,6 +155,9 @@ __host__ double guillot_T(double pressure,
                   + mu / gamma0 * (1.0 - exp(-gamma0 * tau / mu))
                   + 2 * (eps - 1) * mu / (gamma0 * kappa_sw * x0)
                         * (mu - (mu + gamma0 * tau) * exp(-gamma0 * tau / mu)));
+    if (isnan(T4)) {
+        printf("Error: NaN found in Guillot profile used in initial conditions!\n");
+    }
     return pow(T4, 0.25);
 }
 

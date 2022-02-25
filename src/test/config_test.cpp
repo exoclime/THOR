@@ -73,7 +73,9 @@ int main() {
                     "\t# undefined, check default value\n"
                     "double1 = 1.0\n"
                     "double2 = -3.14e19\n"
-                    "double3 = 1242E+32\n";
+                    "double3 = 1242E+32\n"
+                    "multivar = 42.0\n";
+
 
     int           i = 1;
     istringstream iss(config);
@@ -118,6 +120,11 @@ int main() {
     string def_string("wrong");
     cf.append_config_var("def_string", def_string, string("default"));
 
+    // test multiple variables attached to one config
+    double multivar1 = -5.2;
+    cf.append_config_var("multivar", multivar1, 2.18);
+    double multivar2 = -18.5;
+    cf.append_config_var("multivar", multivar2, 7.32);
 
     cout << "start parsing" << endl << endl;
 
@@ -139,6 +146,8 @@ int main() {
     success &= test_val<int>("def_int", def_int, 42);
     success &= test_val<double>("def_double", def_double, 2.18);
     success &= test_val<string>("def_string", def_string, string("default"));
+    success &= test_val<double>("multivar1", multivar1, 42.0);
+    success &= test_val<double>("multivar2", multivar2, 42.0);
 
     if (success)
         cout << "Test PASS" << endl;

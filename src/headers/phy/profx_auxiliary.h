@@ -106,6 +106,28 @@ Compute_pressure(double *pressure_d, double *temperature_d, double *Rho_d, doubl
     }
 }
 
+__global__ void
+Recompute_W(double *W_d, double *Wh_d, double *Altitude_d, double *Altitudeh_d, int num) {
+
+    int id  = blockIdx.x * blockDim.x + threadIdx.x;
+    int nv  = gridDim.y;
+    int lev = blockIdx.y;
+
+    if (id < num) {
+        double xi, xim, xip, whl, wht, intt, intl;
+        whl = Wh_d[id * (nv + 1) + lev];
+        wht = Wh_d[id * (nv + 1) + lev + 1];
+
+        xi  = Altitude_d[lev];
+        xim = Altitudeh_d[lev];
+        xip = Altitudeh_d[lev + 1];
+
+        intt = (xi - xip) / (xim - xip);
+        intl = (xi - xim) / (xip - xim);
+
+        W_d[id * nv + lev] = whl * intt + wht * intl;
+    }
+}
 
 __global__ void isnan_check(double *array, int width, int height, bool *check) {
 
@@ -132,4 +154,69 @@ __global__ void isnan_check(double *array, int width, int height, bool *check) {
 //       printf("id = %d, lev = %d, t = %f\n",i,0,t[i*nv]);
 //     }
 //   }
-// }
+//
+
+__global__ void apply_heating(double *temperature_d,
+                              double *profx_Qheat_d,
+                              double *Rho_d,
+                              double *Cp_d,
+                              double *Rd_d,
+                              double  timestep,
+                              int     num) {
+    //updates temperature from Qheat in the case that gcm_off = true
+    int id  = blockIdx.x * blockDim.x + threadIdx.x;
+    int nv  = gridDim.y;
+    int lev = blockIdx.y;
+
+    if (id < num) {
+        temperature_d[id * nv + lev] += 1.0 / (Cp_d[id * nv + lev] - Rd_d[id * nv + lev])
+                                        * profx_Qheat_d[id * nv + lev] / Rho_d[id * nv + lev]
+                                        * timestep;
+        if (temperature_d[id * nv + lev] < 0)
+            temperature_d[id * nv + lev] = 0.0;
+        if (isnan(temperature_d[id * nv + lev])) {
+            printf("check\n");
+        }
+    }
+}
+
+__global__ void Compute_pressure_density_hydrostatic(double *pressure_d,
+                                                     double *Rho_d,
+                                                     double *temperature_d,
+                                                     double *Tsurface_d,
+                                                     double *Rd_d,
+                                                     double *Altitude_d,
+                                                     double  P_Ref,
+                                                     double  Gravit,
+                                                     int     num,
+                                                     int     nv,
+                                                     bool    surface) {
+    int id = blockIdx.x * blockDim.x + threadIdx.x;
+
+    // Computes absolute pressure and density for gcm_off mode (preserving hydrostasy, but not mass)
+    if (id < num) {
+        //holds the bottom at P_Ref
+        if (surface) {
+            pressure_d[id * nv + 0] =
+                P_Ref * (1.0 / (Altitude_d[0]) - Gravit / (Rd_d[id * nv + 0] * 2 * Tsurface_d[id]))
+                / (1.0 / (Altitude_d[0])
+                   + Gravit / (Rd_d[id * nv + 0] * 2 * temperature_d[id * nv + 0]));
+        }
+        else { //bottom temperature = temp of lowest layer, so p = P_Ref
+            pressure_d[id * nv + 0] = P_Ref;
+        }
+        Rho_d[id * nv + 0] =
+            pressure_d[id * nv + 0] / Rd_d[id * nv + 0] / temperature_d[id * nv + 0];
+
+        for (int lev = 1; lev < nv; lev++) {
+            pressure_d[id * nv + lev] =
+                pressure_d[id * nv + lev - 1]
+                * (1.0 / (Altitude_d[lev] - Altitude_d[lev - 1])
+                   - Gravit / (Rd_d[id * nv + lev - 1] * 2 * temperature_d[id * nv + lev - 1]))
+                / (1.0 / (Altitude_d[lev] - Altitude_d[lev - 1])
+                   + Gravit / (Rd_d[id * nv + lev] * 2 * temperature_d[id * nv + lev]));
+            Rho_d[id * nv + lev] =
+                pressure_d[id * nv + lev] / Rd_d[id * nv + lev] / temperature_d[id * nv + lev];
+        }
+    }
+}

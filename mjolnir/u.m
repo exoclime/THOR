@@ -1,7 +1,9 @@
+%------ code by Joao Mendonca ---------------------------------------------
+
 function u(Mh, Rho, Pressure, lon, lat, num, tsp, ps0, nv, sigmaref)
 
 format long
- 
+
 % Set the reference pressure.
 Pref = ps0*sigmaref;
 d_sig = size(sigmaref);
@@ -27,12 +29,12 @@ for t = 1:tsp
         for lev = 1:nv
             ZonalMii(lev) = (Mh(1,i,lev,t) * (-sin(lon(i))) +...
                              Mh(2,i,lev,t) * ( cos(lon(i))) +...
-                             Mh(3,i,lev,t) * (0))/Rho(i,lev,t);        
+                             Mh(3,i,lev,t) * (0))/Rho(i,lev,t);
         end
         % Interpolate atmospheric column to the reference pressure.
         aux = interp1(sigma, ZonalMii, Pref,'PCHIP');
         for lev = 1:d_sig(2)
-            ZonalMi(i,lev) = aux(lev); 
+            ZonalMi(i,lev) = aux(lev);
         end
     end
     % Convert icosahedral grid into lon-lat grid
@@ -40,7 +42,7 @@ for t = 1:tsp
         ZonalM(:,:,lev,t) = griddata(lon,lat, ZonalMi(:,lev), loni, lati,'nearest');
     end
 end
-    
+
 clear zonalMii ZonalMi;
 
 % Initialize arrays
@@ -49,7 +51,7 @@ ZonalMl  = zeros(d_z(1), d_sig(2), tsp);
 ZonalMlt = zeros(d_z(1), d_sig(2));
 
 % Averaging in time and longitude.
-if(tsp>1) 
+if(tsp>1)
     for j = 1:d_z(1)
         for lev = 1:d_sig(2)
             for t = 1:d_z(4)
@@ -70,7 +72,7 @@ else
             ZonalMlt(j,lev) = mean(ZonalM(j,:,lev));
         end
     end
-    clear ZonalM;  
+    clear ZonalM;
 end
 
 %%%%%%%%%%%%%%%%%
@@ -88,7 +90,7 @@ colormap(jet);
 caxis([-10 30]);
 set(h,'ytick',[-10:5:30]);
 set(gca,'YTick',[0:100:1000])
-set(gca,'XTick',[-80:20:80]) 
+set(gca,'XTick',[-80:20:80])
 set(get(gca,'XLabel'),'String','Latitude (deg)','FontSize',20);
 set(gca,'YDir','reverse');
 set(get(gca,'YLabel'),'String','Pressure (mba)','FontSize',20);

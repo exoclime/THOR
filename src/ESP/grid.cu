@@ -62,7 +62,9 @@
 
 #include "grid.h"
 #include "log_writer.h"
+#include "storage.h"
 #include "vector_operations.h"
+#include <limits>
 
 // some helper local functions
 inline double3 normproj(const double3 &v1, const double3 &v2) {
@@ -80,15 +82,30 @@ inline double3 normproj(const double3 &v1, const double3 &v2) {
 }
 
 
-__host__ Icogrid::Icogrid(bool   sprd,        // Spring dynamics option
-                          double spring_beta, // Parameter beta for spring dynamics
-                          int    glevel,      // Horizontal resolution level
-                          int    vlevel,      // Number of vertical layers
-                          int    nlat,
-                          double A,            // Planet radius [m]
-                          double Top_altitude, // Top model's domain [m]
-                          bool   sponge,
-                          int *  max_count) {
+__host__ Icogrid::Icogrid(bool               sprd,        // Spring dynamics option
+                          double             spring_beta, // Parameter beta for spring dynamics
+                          int                glevel,      // Horizontal resolution level
+                          int                vlevel,      // Number of vertical layers
+                          int                nlat,
+                          double             A,            // Planet radius [m]
+                          double             Top_altitude, // Top model's domain [m]
+                          bool               sponge,
+                          int *              max_count,
+                          bool               vert_refined,
+                          double             lowest_layer_thickness,
+                          double             transition_altitude,
+                          bool               vert_dense_around,
+                          double             frac_height_dense,
+                          double             a_dense,
+                          double             b_dense,
+                          const std::string &output_path) {
+
+    bool read_from_file = false;
+    char FILE_NAME1[512];
+    sprintf(FILE_NAME1, "%s/aux_grid_constructs.h5", output_path.c_str());
+    if (path_exists(FILE_NAME1)) {
+        read_from_file = true;
+    }
 
     log::printf("\n\n Building icosahedral grid!");
 
@@ -124,56 +141,91 @@ __host__ Icogrid::Icogrid(bool   sprd,        // Spring dynamics option
     nr           = (point_num - 2) / nl2;               //
 
     //  Compute standard grid.
-    point_xyz = (double *)malloc(3 * point_num * sizeof(double));
-    pent_ind  = (int *)malloc(12 * sizeof(int));
-    sphere_ico(
-        point_xyz, glevel, n_region, nl_region, nl2, kxl, nfaces, pent_ind, divide_face, point_num);
-
-    //  Finds the closest neighbors of each point.
+    point_xyz   = (double *)malloc(3 * point_num * sizeof(double));
+    pent_ind    = (int *)malloc(12 * sizeof(int));
     point_local = (int *)malloc(6 * point_num * sizeof(int));
-    neighbors_indx(point_local, point_xyz, pent_ind, point_num);
+    halo        = (int *)malloc(10 * nfaces * 4 * nlhalo * sizeof(int));
+    maps        = (int *)malloc((nl_region + 2) * (nl_region + 2) * nr * sizeof(int));
+    point_xyzq  = (double *)malloc(6 * 3 * point_num * sizeof(double));
 
-    //  Reorder neighbors in the clockwise order.
-    reorder_neighbors_indx(point_local, point_xyz, pent_ind, point_num);
-
-    //  Generate halos.
-    nh   = 10 * nfaces * 4 * nlhalo;
-    halo = (int *)malloc(10 * nfaces * 4 * nlhalo * sizeof(int));
-    generate_halos(halo, point_local, n_region, divide_face);
-
-    //  Reorder neighbors consistent with the rhombi.
-    reorder_neighbors_indx_rhombi(
-        point_local, halo, pent_ind, nl_region, nl2, nr, nlhalo, point_num);
-
-    //  Finds the closest neighbors at the pole.
-    neighbors_indx_pl(point_local, point_xyz, pent_ind, point_num);
-
-    //  Reorder neighbors in the clockwise order at the pole.
-    reorder_neighbors_indx_pl(point_local, point_xyz, pent_ind, point_num);
-
-    //  Produce rhombus' maps.
-    maps = (int *)malloc((nl_region + 2) * (nl_region + 2) * nr * sizeof(int));
-    produce_maps(maps, halo, nr, nl_region);
-
-    //  Smooths the grid applying the spring dynamic method.
-    if (sprd) {
-        // Applies spring dynamics.
-        spring_dynamics(point_local, pent_ind, glevel, spring_beta, point_xyz, point_num);
-
-        //  Finds the q points.
-        point_xyzq = (double *)malloc(6 * 3 * point_num * sizeof(double));
-
-        find_qpoints(point_local, point_xyzq, point_xyz, pent_ind, point_num);
-
-        // Fixes the position of the centroids.
-        relocate_centres(point_local, point_xyzq, point_xyz, pent_ind, point_num);
+    if (read_from_file) {
+        storage s(FILE_NAME1, true);
+        printf("\n\n Fetching grid construction data from file %s \n\n", FILE_NAME1);
+        bool load_OK = true;
+        load_OK &= s.read_table_to_ptr("/point_xyz", point_xyz, 3 * point_num);
+        load_OK &= s.read_table_to_ptr("/point_xyzq", point_xyzq, 6 * 3 * point_num);
+        load_OK &= s.read_table_to_ptr("/pent_ind", pent_ind, 12);
+        load_OK &= s.read_table_to_ptr("/point_local", point_local, 6 * point_num);
+        load_OK &= s.read_table_to_ptr("/halo", halo, 10 * nfaces * 4 * nlhalo);
+        load_OK &= s.read_table_to_ptr("/maps", maps, (nl_region + 2) * (nl_region + 2) * nr);
+        if (!load_OK) {
+            log::printf("Error reloading grid construction data from file %s\n", FILE_NAME1);
+            exit(EXIT_FAILURE);
+        }
     }
     else {
-        //      Finds the q points.
-        point_xyzq = (double *)malloc(6 * 3 * point_num * sizeof(double));
-        find_qpoints(point_local, point_xyzq, point_xyz, pent_ind, point_num);
-    }
+        storage s(FILE_NAME1);
 
+        sphere_ico(point_xyz,
+                   glevel,
+                   n_region,
+                   nl_region,
+                   nl2,
+                   kxl,
+                   nfaces,
+                   pent_ind,
+                   divide_face,
+                   point_num);
+
+
+        //  Finds the closest neighbors of each point.
+        neighbors_indx(point_local, point_xyz, pent_ind, point_num);
+
+        //  Reorder neighbors in the clockwise order.
+        reorder_neighbors_indx(point_local, point_xyz, pent_ind, point_num);
+
+        //  Generate halos.
+        nh = 10 * nfaces * 4 * nlhalo; //might be deprecated
+        generate_halos(halo, point_local, n_region, divide_face);
+
+        //  Reorder neighbors consistent with the rhombi.
+        reorder_neighbors_indx_rhombi(
+            point_local, halo, pent_ind, nl_region, nl2, nr, nlhalo, point_num);
+
+        //  Finds the closest neighbors at the pole.
+        neighbors_indx_pl(point_local, point_xyz, pent_ind, point_num);
+
+        //  Reorder neighbors in the clockwise order at the pole.
+        reorder_neighbors_indx_pl(point_local, point_xyz, pent_ind, point_num);
+
+        //  Produce rhombus' maps.
+        produce_maps(maps, halo, nr, nl_region);
+
+        //  Smooths the grid applying the spring dynamic method.
+        if (sprd) {
+            // Applies spring dynamics.
+            spring_dynamics(point_local, pent_ind, glevel, spring_beta, point_xyz, point_num);
+
+            //  Finds the q points.
+            find_qpoints(point_local, point_xyzq, point_xyz, pent_ind, point_num);
+
+            // Fixes the position of the centroids.
+            relocate_centres(point_local, point_xyzq, point_xyz, pent_ind, point_num);
+        }
+        else {
+            //      Finds the q points.
+            find_qpoints(point_local, point_xyzq, point_xyz, pent_ind, point_num);
+        }
+        //write point_xyzq, point_xyz
+        s.append_table(point_local, 6 * point_num, "/point_local", "-", "Neighbors indices");
+        s.append_table(point_xyz, 3 * point_num, "/point_xyz", "-", "Vector locations of centers");
+        s.append_table(
+            point_xyzq, 6 * 3 * point_num, "/point_xyzq", "-", "Vector locations of vertices");
+        s.append_table(pent_ind, 12, "/pent_ind", "-", "Indices of pentagons");
+        s.append_table(
+            halo, 10 * nfaces * 4 * nlhalo, "/halo", "-", "Halo locations for each rhombus");
+        s.append_table(maps, (nl_region + 2) * (nl_region + 2) * nr, "/maps", "-", "Rhombus maps");
+    }
     //  Recompute cartesians points for the new radius.
     correct_xyz_points(A, point_xyzq, point_xyz, pent_ind, point_num);
 
@@ -209,7 +261,19 @@ __host__ Icogrid::Icogrid(bool   sprd,        // Spring dynamics option
     //  Set the Altitudes
     Altitude  = (double *)malloc(nv * sizeof(double));
     Altitudeh = (double *)malloc(nvi * sizeof(double));
-    set_altitudes(Altitude, Altitudeh, Top_altitude, nv);
+
+    if (vert_dense_around) { //new grid refinement by Pascal Noti
+        set_altitudes_dense_around(
+            Altitude, Altitudeh, Top_altitude, frac_height_dense, a_dense, b_dense, nvi);
+    }
+    else if (vert_refined) {
+        // set_altitudes_refined(Altitude, Altitudeh, Top_altitude, nv, n_bl_layers);
+        set_altitudes_softplus(
+            Altitude, Altitudeh, Top_altitude, lowest_layer_thickness, transition_altitude, nv);
+    }
+    else {
+        set_altitudes_uniform(Altitude, Altitudeh, Top_altitude, nv);
+    }
 
     //  Converting to spherical coordinates.
     lonlat = (double *)malloc(2 * point_num * sizeof(double));
@@ -226,6 +290,7 @@ __host__ Icogrid::Icogrid(bool   sprd,        // Spring dynamics option
     //  Computes the vertical curl operator.
     curlz = (double *)malloc(7 * 3 * point_num * sizeof(double));
     curlz_operator(areasT, areas, curlz, mvec, pent_ind, point_num);
+
 
     //  Computes zonal mean for sponge layer operations
     if (sponge == true) {
@@ -1855,7 +1920,10 @@ void Icogrid::relocate_centres(int *   point_local,
     }
 }
 
-void Icogrid::set_altitudes(double *Altitude, double *Altitudeh, double Top_altitude, int nv) {
+void Icogrid::set_altitudes_uniform(double *Altitude,
+                                    double *Altitudeh,
+                                    double  Top_altitude,
+                                    int     nv) {
 
     //
     //  Description:
@@ -1873,8 +1941,170 @@ void Icogrid::set_altitudes(double *Altitude, double *Altitudeh, double Top_alti
     Altitudeh[0]    = 0.0;
     for (int lev = 0; lev < nv; lev++)
         Altitudeh[lev + 1] = Altitudeh[lev] + res_vert;
-    for (int lev = 0; lev < nv; lev++)
+    for (int lev = 0; lev < nv; lev++) {
         Altitude[lev] = (Altitudeh[lev] + Altitudeh[lev + 1]) / 2.0;
+        // printf("Vertical layer, half-layer %d = %f %f\n", lev, Altitude[lev], Altitudeh[lev + 1]);
+    }
+}
+
+void Icogrid::set_altitudes_refined(double *Altitude,
+                                    double *Altitudeh,
+                                    double  Top_altitude,
+                                    int     nv,
+                                    int     n_bl_layers) {
+
+    //
+    //  Description:
+    //
+    //  Sets the layers and interfaces altitudes with refinement in the lower atmosphere.
+    //  Useful for turbulent boundary layers of terrestrial planets
+    //  The first n_bl_layers are logarithmically spaced (coefficients are ad hoc)
+    //  Above that, the remaining layers are uniformly spaced
+    //  Algorithm written by Pierre Auclair-Desrotours
+    //
+    //  Input:  - nv - Number of vertical layers.
+    //          - top_altitude - Altitude of the top model domain.
+    //
+    //  Output: - Altitude  - Layers altitudes.
+    //          - Altitudeh - Interfaces altitudes.
+    //
+    int    ntrans  = n_bl_layers + 2;
+    double xup     = nv * 1.0 / ntrans;
+    double zup     = Top_altitude;
+    double a       = -4.4161; //These numbers are completely ad hoc.
+    double b       = 12.925;  //May need to be adjusted depending on performance, &c
+    double c       = -10.614;
+    double err_tar = 1.0E-8;
+
+    // stitch the two domains together (log and linear regions)
+    // solve for intersection via secant method
+    int    nitmax = 100, j = 0;
+    double x1 = 0.5;
+    double x2 = 1.0;
+    double f1 = exp(a * pow(x1, 2) + b * x1 + c) * (1 + (xup - x1) * (2 * a * x1 + b)) - 1;
+    double f2 = exp(a * pow(x2, 2) + b * x2 + c) * (1 + (xup - x2) * (2 * a * x2 + b)) - 1;
+    double xnew, fnew, err = 1.0, xbl, xh, d, k;
+    int    levbl, levh;
+
+    while (j < nitmax && err > err_tar) {
+        xnew = (x1 * f2 - x2 * f1) / (f2 - f1);
+        fnew = exp(a * pow(xnew, 2) + b * xnew + c) * (1 + (xup - xnew) * (2 * a * xnew + b)) - 1;
+        err  = fabs(xnew - x2);
+        x1   = x2;
+        x2   = xnew;
+        f1   = f2;
+        f2   = fnew;
+        j++;
+    }
+
+    xbl   = x2;
+    levbl = floor(xbl * ntrans);
+    d     = (2 * a * xbl + b) * exp(a * pow(xbl, 2) + b * xbl + c);
+    k     = 1 - d * xup;
+
+    Altitudeh[0] = 0.0;
+    for (int lev = 0; lev < nv; lev++) {
+        levh = lev + 1;
+        xh   = levh * 1.0 / ntrans;
+        if (levh > levbl) {
+            Altitudeh[levh] = zup * (d * xh + k);
+        }
+        else {
+            Altitudeh[levh] = zup * exp(a * pow(xh, 2) + b * xh + c);
+        }
+    }
+    for (int lev = 0; lev < nv; lev++) {
+        Altitude[lev] = (Altitudeh[lev] + Altitudeh[lev + 1]) / 2.0;
+        // printf("Vertical layer, half-layer %d = %f %f\n", lev, Altitude[lev], Altitudeh[lev + 1]);
+    }
+}
+
+void Icogrid::set_altitudes_softplus(double *Altitude,
+                                     double *Altitudeh,
+                                     double  Top_altitude,
+                                     double  lowest_layer_thickness,
+                                     double  transition_altitude,
+                                     int     nv) {
+
+
+    //
+    //  Description:
+    //
+    //  Sets the layers and interfaces altitudes using softplus function
+    //  (exponential below transition_altitude, linear above)
+    //
+    //  Input:  - nv - Number of vertical layers.
+    //          - top_altitude - Altitude of the top model domain.
+    //          - lowest_layer_thickness - Thickness of lowest layer
+    //          - transition_altitude - Transition b/w exponential and linear
+    //
+    //  Output: - Altitude  - Layers altitudes.
+    //          - Altitudeh - Interfaces altitudes.
+    //
+
+    //parameters controlling shape of softplus function
+    double alpha, k, xbl, x1;
+    x1 = 1.0 / nv; // fractional index of first layer top
+    // Calculate sharpness and amplitude to match top, bottom, transition altitude
+    alpha = transition_altitude / log(2);
+    if (isinf(exp(Top_altitude / alpha))) {
+        alpha = Top_altitude / log(std::numeric_limits<double>::max());
+        printf("Warning: transition altitude of %f too small, setting to %f\n",
+               transition_altitude,
+               alpha * log(2));
+    }
+    k = log((exp(lowest_layer_thickness / alpha) - 1) / (exp(Top_altitude / alpha) - 1)) / (x1 - 1);
+    xbl = -log(exp(lowest_layer_thickness / alpha) - 1) / k + x1; //centering the function
+
+    double x     = 0;
+    Altitudeh[0] = 0.0;
+    for (int lev = 0; lev < nv; lev++) { //interfaces
+        x += x1;                         //next fractional index of layer
+        Altitudeh[lev + 1] = alpha * log(1 + exp(k * (x - xbl)));
+    }
+    for (int lev = 0; lev < nv; lev++) { //centers of layers
+        Altitude[lev] = (Altitudeh[lev] + Altitudeh[lev + 1]) / 2.0;
+    }
+}
+
+void Icogrid::set_altitudes_dense_around(double *Altitude,
+                                         double *Altitudeh,
+                                         double  Top_altitude,
+                                         double  f_height,
+                                         double  a,
+                                         double  b,
+                                         int     nvi) {
+
+    double c, d;
+    double y[nvi];
+    double base;
+
+    // altitude grid designed by Pascal Noti
+    // denser layers near a user set value (ideally, around photosphere)
+
+    c = f_height * (nvi - 1) / 2.0 + 1.0 / 3.0 * b / a + (nvi - 1) / 4.0;
+
+    d = 1.0 / 2.0;
+
+    for (int i = 0; i < nvi; i++) {
+        y[i] = a * pow(((double)i - c), 3) + b * pow(((double)i - d), 2);
+    }
+    base = sqrt(pow(y[0], 2));
+
+    for (int i = 0; i < nvi; i++) {
+        y[i] = y[i] + base;
+    }
+
+    for (int i = 0; i < nvi; i++) {
+        y[i] = y[i] / y[nvi - 1];
+    }
+
+    for (int lev = 0; lev < nvi; lev++) { //interfaces
+        Altitudeh[lev] = y[lev] * Top_altitude;
+    }
+    for (int lev = 0; lev < (nvi - 1); lev++) { //centers of layers
+        Altitude[lev] = (Altitudeh[lev] + Altitudeh[lev + 1]) / 2.0;
+    }
 }
 
 

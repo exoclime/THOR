@@ -71,18 +71,26 @@
 #define ns_diff_sponge_default 0.75 // Lowest level of sponge layer
 #define Dv_sponge_default 0.01      // Maximum diff damping (top of model)
 #define order_diff_sponge_default 2 // order of diffusive sponge
+// number of days to use increased damping of all types
+#define increased_damping_for_n_steps_default 0
 
 #define shrink_sponge_default false // shrink sponge layer after some time
 #define t_shrink_default 144000     // shrink sponge after this many time steps
 
 // Diffusion
-#define HyDiff_default true   // Hyper-diffusion
-#define DivDampP_default true // Divergence-damping
+#define HyDiff_default true // Hyper-diffusion
+#define HyDiffOrder_default 4
+#define DivDampP_default true    // Divergence-damping
+#define VertHyDiff_default false // Vertical Hyper-diffusion
+#define VertHyDiffOrder_default 6
 
 // Model options
-#define NonHydro_default true    // Non-hydrostatic parameter
-#define DeepModel_default true   // Deep atmosphere
-#define output_mean_default true // output mean quantities
+#define NonHydro_default true             // Non-hydrostatic parameter
+#define DeepModel_default true            // Deep atmosphere
+#define output_mean_default true          // output mean quantities
+#define out_interm_momentum_default false // output intermediate momentum
+#define output_diffusion_default false    // output diffusion operators
+#define GravHeightVar_default false       // Vary gravity with height
 
 // Initial conditions
 #define rest_default true                                 // Starting from rest
@@ -103,11 +111,19 @@
 
 #define output_path_default "results" // Output directory
 
-#define gcm_off_default false //turns off fluid dynamical core for debugging physics
+#define gcm_off_default false       //turns off fluid dynamical core for debugging physics
+#define single_column_default false //run physics on only 1 vertical column for debugging physics
 
 #define globdiag_default false //output energy, mass, angular momentum, etc
 
 #define conv_adj_default false // use convective adjustment scheme
+// number of times to execute per time step
+// (repeats entire algorithm if > 1)
+#define conv_adj_iter_default 1
+#define soft_adjustment_default false
+#define conv_adj_type_default "hourdin"
+// true = soft adjustment: calculate tendencies due to convection, forward to dyn core
+// false = hard adjustment: force profiles to neutral during profx step
 
 #define init_PT_profile_default "isothermal"
 #define kappa_lw_default 0.002 // m^2 kg^-1
@@ -122,6 +138,16 @@
 
 #define thermo_equation_default "entropy"
 
+#define vert_refined_default false
+
+#define transition_altitude_default 1000.0
+#define lowest_layer_thickness_default 2.0
+
+#define vert_dense_around_default false
+#define frac_height_dense_default 0.7
+#define a_dense_default 1.0
+#define b_dense_default 6.0
+
 enum benchmark_types {
     NO_BENCHMARK         = 0,
     HELD_SUAREZ          = 1,
@@ -133,7 +159,8 @@ enum benchmark_types {
     GWAVE_TEST           = 7
 };
 
-enum init_PT_profile_types { ISOTHERMAL = 0, GUILLOT = 1, CONSTBV = 2 };
+
+enum init_PT_profile_types { ISOTHERMAL = 0, GUILLOT = 1, CONSTBV = 2, PARMENTIER = 3 };
 
 enum uh_thermo_types { NO_UH_THERMO = 0, VARY_R_CP = 1, FULL = 2 };
 
@@ -142,3 +169,5 @@ enum uh_heating_types { NO_UH_HEATING = 0, QUASI_EQL = 1, RELAX_CHEM = 2 };
 enum raysp_calc_mode_types { IMP = 0, EXP1 = 1, EXP3 = 2 };
 
 enum thermo_equation_types { ENTROPY = 0, ENERGY = 1 }; //might add pressure?
+
+enum conv_adj_types { HOURDIN = 0, RAYPH = 1 };

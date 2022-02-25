@@ -45,29 +45,36 @@
 // 1.0     16/08/2017 Released version  (JM)
 //
 ////////////////////////////////////////////////////////////////////////
-__global__ void Vertical_Eq(double *Whs_d,
-                            double *Ws_d,
-                            double *pressures_d,
-                            double *h_d,
-                            double *hh_d,
-                            double *Rhos_d,
-                            double *gtil_d,
-                            double *gtilh_d,
-                            double *Sp_d,
-                            double *Sd_d,
-                            double *Srh_d,
-                            double *Cp_d,
-                            double *Rd_d,
-                            double  deltat,
-                            double  Gravit,
-                            double *Altitude_d,
-                            double *Altitudeh_d,
-                            double  A,
-                            bool    NonHydro,
-                            int     num,
-                            int     nv,
-                            int     nvi,
-                            bool    DeepModel) {
+
+#include "debug.h"
+#include "diagnostics.h"
+
+__global__ void Vertical_Eq(double *      Whs_d,
+                            double *      Ws_d,
+                            double *      pressures_d,
+                            double *      h_d,
+                            double *      hh_d,
+                            double *      Rhos_d,
+                            double *      gtil_d,
+                            double *      gtilh_d,
+                            double *      Sp_d,
+                            double *      Sd_d,
+                            double *      Srh_d,
+                            double *      Cp_d,
+                            double *      Rd_d,
+                            double        deltat,
+                            double        Gravit,
+                            double *      Altitude_d,
+                            double *      Altitudeh_d,
+                            double        A,
+                            bool          NonHydro,
+                            int           num,
+                            int           nv,
+                            int           nvi,
+                            bool          DeepModel,
+                            bool          GravHeightVar,
+                            unsigned int *diagnostics_flag,
+                            diag_data *   diagnostics_data) {
 
     //
     //  Integration-> y'' = c3 y' + c2 y + c1
@@ -86,16 +93,20 @@ __global__ void Vertical_Eq(double *Whs_d,
     extern __shared__ double mem_shared[];
 
 
-    double *cc = (double *)mem_shared;
-    double *dd = (double *)&mem_shared[blockDim.x * nvi];
+    // Use thomas algorithm to solve vertical equations.
+    // This computes the aa, bb, cc, dd values in the loop.
+    // cc and dd are stored, and UPDATED by the "modify in place" thomas algorithm.
+    // To avoid storing aa and bb, they are recomputed on the fly.
+    double *cc = (double *)mem_shared;                    // <- thomas alg vars
+    double *dd = (double *)&mem_shared[blockDim.x * nvi]; // <- thomas alg vars
 
     // double Cv = Cp - Rd;
     double C0;
     double xi, xim, xip;
-    double intt, intl, inttm, intlm;
+    double intt, intl, inttm; //, intlm;
     double dSpdz, dPdz;
     double rhohs;
-    double aa, bb;
+    double aa, bb; // <- thomas alg vars
     double t;
     double althl, alth, altht;
     double alt, altl;
@@ -109,7 +120,32 @@ __global__ void Vertical_Eq(double *Whs_d,
     double or2;
     double tor3;
 
+    // For thomas algorithm to be stable, |aa| + |cc| < |bb|, the matrix must be
+    // diagonaly dominant and symetric positive definite
+
     if (id < num) {
+
+#ifdef DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_RESULT
+        // diagnosis check of thomas computation result
+        // redo the matrix operation in the reverse order
+        // here, we store the original matrix value
+        // inefficient, do not use in production, only for debug.
+        double *aa_check = new double[nvi];
+        double *bb_check = new double[nvi];
+        double *cc_check = new double[nvi];
+        double *dd_check = new double[nvi];
+#endif // DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_RESULT
+
+#if defined(DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_DIAG_DOM) \
+    || defined(DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_RESULT)
+        // those seem to not be used, they are on boundaries
+        diagnostics_data[id * nvi + 0].flag  = 0;
+        diagnostics_data[id * nvi + 0].data  = make_double4(0.0, 0.0, 0.0, 0.0);
+        diagnostics_data[id * nvi + nv].flag = 0;
+        diagnostics_data[id * nvi + nv].data = make_double4(0.0, 0.0, 0.0, 0.0);
+#endif // defined(DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_DIAG_DOM) || defined(DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_RESULT)
+
+
         for (int lev = 1; lev < nv; lev++) {
             if (lev == 1) { // Fetch data for first layer
                 altht = Altitudeh_d[lev + 1];
@@ -135,9 +171,19 @@ __global__ void Vertical_Eq(double *Whs_d,
                         / (Rd_d[id * nv + lev - 1] * deltat * deltat);
                 CRddu = (Cp_d[id * nv + lev] - Rd_d[id * nv + lev])
                         / (Rd_d[id * nv + lev] * deltat * deltat);
-                GCoRl = Gravit * (Cp_d[id * nv + lev - 1] - Rd_d[id * nv + lev - 1])
-                        / Rd_d[id * nv + lev - 1];
-                GCoRu = Gravit * (Cp_d[id * nv + lev] - Rd_d[id * nv + lev]) / Rd_d[id * nv + lev];
+                if (GravHeightVar) {
+                    GCoRl = Gravit * pow(A / (A + altl), 2)
+                            * (Cp_d[id * nv + lev - 1] - Rd_d[id * nv + lev - 1])
+                            / Rd_d[id * nv + lev - 1];
+                    GCoRu = Gravit * pow(A / (A + alt), 2)
+                            * (Cp_d[id * nv + lev] - Rd_d[id * nv + lev]) / Rd_d[id * nv + lev];
+                }
+                else {
+                    GCoRl = Gravit * (Cp_d[id * nv + lev - 1] - Rd_d[id * nv + lev - 1])
+                            / Rd_d[id * nv + lev - 1];
+                    GCoRu =
+                        Gravit * (Cp_d[id * nv + lev] - Rd_d[id * nv + lev]) / Rd_d[id * nv + lev];
+                }
             }
             if (DeepModel) {
                 double dzp  = 1.0 / (altht - alth);
@@ -156,7 +202,7 @@ __global__ void Vertical_Eq(double *Whs_d,
                 xim = alth;
                 xip = altht;
 
-                intt = -(xi - xip) * dzp * dzh;
+                // intt = -(xi - xip) * dzp * dzh;
                 intl = (xi - xim) * dzp * dzh;
 
                 xi  = altl;
@@ -164,20 +210,20 @@ __global__ void Vertical_Eq(double *Whs_d,
                 xip = alth;
 
                 inttm = -(xi - xip) * dzm * dzh;
-                intlm = (xi - xim) * dzm * dzh;
+                // intlm = (xi - xim) * dzm * dzh;
 
                 // get g*Cv/Rd and Cv/Rd/dt^2 at the current interface
                 CRdd = (CRddl * (alt - alth) + CRddu * (alth - altl)) / (alt - altl);
                 GCoR = (GCoRl * (alt - alth) + GCoRu * (alth - altl)) / (alt - altl);
 
-                cc[threadIdx.x * nvi + lev] = -dzph * or2 * hp - intt * (gp + GCoR - tor3 * hp);
+                cc[threadIdx.x * nvi + lev] = -dzph * or2 * hp - inttm * (gp + GCoR - tor3 * hp);
 
                 if (NonHydro)
                     bb = CRdd + (dzph + dzmh) * or2 * h + (intl - inttm) * (g + GCoR - tor3 * h);
                 else
                     bb = (dzph + dzmh) * or2 * h + (intl - inttm) * (g + GCoR - tor3 * h);
 
-                aa = -dzmh * or2 * hm + intlm * (gm + GCoR - tor3 * hm);
+                aa = -dzmh * or2 * hm + intl * (gm + GCoR - tor3 * hm);
 
                 dSpdz = (Sp - Spl) * dzh;
                 dPdz  = (p - pl) * dzh;
@@ -193,16 +239,34 @@ __global__ void Vertical_Eq(double *Whs_d,
                 Sdh   = Sdl * intt + Sd * intl;
 
                 if (!NonHydro) {
-                    C0 =
-                        (pow(deltat, 2.0) * dSpdz + pow(deltat, 2.0) * Gravit * Sdh
-                         + Gravit * deltat * rhohs + deltat * dPdz - deltat * Srh_d[id * nvi + lev])
-                        * (CRdd);
+                    if (GravHeightVar) {
+                        C0 = (pow(deltat, 2.0) * dSpdz
+                              + pow(deltat, 2.0) * Gravit * pow(A / (A + alt), 2) * Sdh
+                              + Gravit * pow(A / (A + alt), 2) * deltat * rhohs + deltat * dPdz
+                              - deltat * Srh_d[id * nvi + lev])
+                             * (CRdd);
+                    }
+                    else {
+                        C0 = (pow(deltat, 2.0) * dSpdz + pow(deltat, 2.0) * Gravit * Sdh
+                              + Gravit * deltat * rhohs + deltat * dPdz
+                              - deltat * Srh_d[id * nvi + lev])
+                             * (CRdd);
+                    }
                 }
                 else {
-                    C0 = (-Whs_d[id * nvi + lev] + pow(deltat, 2.0) * dSpdz
-                          + pow(deltat, 2.0) * Gravit * Sdh + Gravit * deltat * rhohs
-                          + deltat * dPdz - deltat * Srh_d[id * nvi + lev])
-                         * (CRdd);
+                    if (GravHeightVar) {
+                        C0 = (-Whs_d[id * nvi + lev] + pow(deltat, 2.0) * dSpdz
+                              + pow(deltat, 2.0) * Gravit * pow(A / (A + alt), 2) * Sdh
+                              + Gravit * pow(A / (A + alt), 2) * deltat * rhohs + deltat * dPdz
+                              - deltat * Srh_d[id * nvi + lev])
+                             * (CRdd);
+                    }
+                    else {
+                        C0 = (-Whs_d[id * nvi + lev] + pow(deltat, 2.0) * dSpdz
+                              + pow(deltat, 2.0) * Gravit * Sdh + Gravit * deltat * rhohs
+                              + deltat * dPdz - deltat * Srh_d[id * nvi + lev])
+                             * (CRdd);
+                    }
                 }
 
                 if (lev < nv - 1) { // Fetch the data for next layer
@@ -229,8 +293,15 @@ __global__ void Vertical_Eq(double *Whs_d,
                     CRddu = (Cp_d[id * nv + lev + 1] - Rd_d[id * nv + lev + 1])
                             / (Rd_d[id * nv + lev + 1] * deltat * deltat);
                     GCoRl = GCoRu;
-                    GCoRu = Gravit * (Cp_d[id * nv + lev + 1] - Rd_d[id * nv + lev + 1])
-                            / Rd_d[id * nv + lev + 1];
+                    if (GravHeightVar) {
+                        GCoRu = Gravit * pow(A / (A + alt), 2)
+                                * (Cp_d[id * nv + lev + 1] - Rd_d[id * nv + lev + 1])
+                                / Rd_d[id * nv + lev + 1];
+                    }
+                    else {
+                        GCoRu = Gravit * (Cp_d[id * nv + lev + 1] - Rd_d[id * nv + lev + 1])
+                                / Rd_d[id * nv + lev + 1];
+                    }
                 }
             }
             else { // DeepModel == false
@@ -244,28 +315,30 @@ __global__ void Vertical_Eq(double *Whs_d,
                 xim = alth;
                 xip = altht;
 
-                intt = -(xi - xip) * dzp * dzh;
+                // intt = -(xi - xip) * dzp * dzh;
                 intl = (xi - xim) * dzp * dzh;
 
                 xi  = altl;
                 xim = althl;
                 xip = alth;
 
+                // compute coefficients aa, bb, cc of thomas algorithm original matrix
                 inttm = -(xi - xip) * dzm * dzh;
-                intlm = (xi - xim) * dzm * dzh;
+                // intlm = (xi - xim) * dzm * dzh;
 
                 // get g*Cv/Rd and Cv/Rd/dt^2 at the current interface
                 CRdd = (CRddl * (alt - alth) + CRddu * (alth - altl)) / (alt - altl);
                 GCoR = (GCoRl * (alt - alth) + GCoRu * (alth - altl)) / (alt - altl);
 
-                cc[threadIdx.x * nvi + lev] = -dzph * hp - intt * (gp + GCoR);
+                cc[threadIdx.x * nvi + lev] = -dzph * hp - inttm * (gp + GCoR);
 
                 if (NonHydro)
                     bb = CRdd + (dzph + dzmh) * h + (intl - inttm) * (g + GCoR);
                 else
                     bb = (dzph + dzmh) * h + (intl - inttm) * (g + GCoR);
 
-                aa = -dzmh * hm + intlm * (gm + GCoR);
+                aa = -dzmh * hm + intl * (gm + GCoR);
+                // end of coefficients computation
 
                 dSpdz = (Sp - Spl) * dzh;
                 dPdz  = (p - pl) * dzh;
@@ -281,16 +354,34 @@ __global__ void Vertical_Eq(double *Whs_d,
                 Sdh   = Sdl * intt + Sd * intl;
 
                 if (!NonHydro) {
-                    C0 =
-                        (pow(deltat, 2.0) * dSpdz + pow(deltat, 2.0) * Gravit * Sdh
-                         + Gravit * deltat * rhohs + deltat * dPdz - deltat * Srh_d[id * nvi + lev])
-                        * (CRdd);
+                    if (GravHeightVar) {
+                        C0 = (pow(deltat, 2.0) * dSpdz
+                              + pow(deltat, 2.0) * Gravit * pow(A / (A + alt), 2) * Sdh
+                              + Gravit * pow(A / (A + alt), 2) * deltat * rhohs + deltat * dPdz
+                              - deltat * Srh_d[id * nvi + lev])
+                             * (CRdd);
+                    }
+                    else {
+                        C0 = (pow(deltat, 2.0) * dSpdz + pow(deltat, 2.0) * Gravit * Sdh
+                              + Gravit * deltat * rhohs + deltat * dPdz
+                              - deltat * Srh_d[id * nvi + lev])
+                             * (CRdd);
+                    }
                 }
                 else {
-                    C0 = (-Whs_d[id * nvi + lev] + pow(deltat, 2.0) * dSpdz
-                          + pow(deltat, 2.0) * Gravit * Sdh + Gravit * deltat * rhohs
-                          + deltat * dPdz - deltat * Srh_d[id * nvi + lev])
-                         * (CRdd);
+                    if (GravHeightVar) {
+                        C0 = (-Whs_d[id * nvi + lev] + pow(deltat, 2.0) * dSpdz
+                              + pow(deltat, 2.0) * Gravit * pow(A / (A + alt), 2) * Sdh
+                              + Gravit * pow(A / (A + alt), 2) * deltat * rhohs + deltat * dPdz
+                              - deltat * Srh_d[id * nvi + lev])
+                             * (CRdd);
+                    }
+                    else {
+                        C0 = (-Whs_d[id * nvi + lev] + pow(deltat, 2.0) * dSpdz
+                              + pow(deltat, 2.0) * Gravit * Sdh + Gravit * deltat * rhohs
+                              + deltat * dPdz - deltat * Srh_d[id * nvi + lev])
+                             * (CRdd);
+                    }
                 }
                 if (lev < nv - 1) { // Fetch data for the next layer
                     althl = alth;
@@ -316,34 +407,122 @@ __global__ void Vertical_Eq(double *Whs_d,
                     CRddu = (Cp_d[id * nv + lev + 1] - Rd_d[id * nv + lev + 1])
                             / (Rd_d[id * nv + lev + 1] * deltat * deltat);
                     GCoRl = GCoRu;
-                    GCoRu = Gravit * (Cp_d[id * nv + lev + 1] - Rd_d[id * nv + lev + 1])
-                            / Rd_d[id * nv + lev + 1];
+                    if (GravHeightVar) {
+                        GCoRu = Gravit * pow(A / (A + alt), 2)
+                                * (Cp_d[id * nv + lev + 1] - Rd_d[id * nv + lev + 1])
+                                / Rd_d[id * nv + lev + 1];
+                    }
+                    else {
+                        GCoRu = Gravit * (Cp_d[id * nv + lev + 1] - Rd_d[id * nv + lev + 1])
+                                / Rd_d[id * nv + lev + 1];
+                    }
                 }
             } // End of if (DeepModel) physics computation
 
+#if defined(DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_DIAG_DOM) \
+    || defined(DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_RESULT)
+            // reset current value
+            diagnostics_data[id * nvi + lev].flag = 0;
+            diagnostics_data[id * nvi + lev].data = make_double4(0.0, 0.0, 0.0, 0.0);
+#endif // defined(DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_DIAG_DOM) || defined(DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_RESULT)
 
+#ifdef DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_DIAG_DOM
+            {
+                // check that matrix is diagonaly dominant
+                double cc_s = cc[threadIdx.x * nvi + lev];
+
+                if (!(fabs(bb) >= THOMAS_DIAG_DOM_FACTOR * (fabs(aa) + fabs(cc_s)))) {
+
+                    atomicOr(diagnostics_flag, THOMAS_NOT_DD);
+                    diagnostics_data[id * nvi + lev].flag = THOMAS_NOT_DD;
+
+#    ifndef DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_RESULT
+                    double sum = cc_s + bb + aa;
+                    // only store if we don't also store the result afterwards
+                    diagnostics_data[id * nvi + lev].data.x = aa;
+                    diagnostics_data[id * nvi + lev].data.y = bb;
+                    diagnostics_data[id * nvi + lev].data.z = cc_s;
+                    diagnostics_data[id * nvi + lev].data.w = sum;
+#    endif // DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_RESULT
+                }
+            }
+#endif // DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_DIAG_DOM
+
+            // Compute dd coefficient of thomas algorithm
             dd[threadIdx.x * nvi + lev] = -C0;
+
+
+#ifdef DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_RESULT
+            // Store the values for verification
+            aa_check[lev] = aa;
+            bb_check[lev] = bb;
+            cc_check[lev] = cc[threadIdx.x * nvi + lev];
+            dd_check[lev] = dd[threadIdx.x * nvi + lev];
+#endif // DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_RESULT
+
+            // "modify in place" computation of thomas algorithm
             if (lev == 1) {
                 cc[threadIdx.x * nvi + 1] = cc[threadIdx.x * nvi + 1] / bb;
                 dd[threadIdx.x * nvi + 1] = dd[threadIdx.x * nvi + 1] / bb;
             }
             else {
+                // as the previous iteration value is not stored, it's recomputed here
                 t = 1.0 / (bb - cc[threadIdx.x * nvi + lev - 1] * aa);
                 cc[threadIdx.x * nvi + lev] *= t;
                 dd[threadIdx.x * nvi + lev] =
                     (dd[threadIdx.x * nvi + lev] - dd[threadIdx.x * nvi + lev - 1] * aa) * t;
             }
         } //end of loop over levels
+          // end of thomass algorithm
         Whs_d[id * nvi + nv]     = 0.0;
         Whs_d[id * nvi]          = 0.0;
         Whs_d[id * nvi + nv - 1] = dd[threadIdx.x * nvi + nv - 1];
         // Whs_d[id * nvi + nv - 1] = 0.0;
-        // Updates vertical momentum
+        // Updates vertical momentum from output of thomas algorithm.
         for (int lev = nvi - 2; lev > 0; lev--)
             Whs_d[id * nvi + lev] = (-cc[threadIdx.x * nvi + lev] * Whs_d[id * nvi + lev + 1]
                                      + dd[threadIdx.x * nvi + lev]);
-        // Whs_d[id * nvi + lev] = 0.0;
+            // Whs_d[id * nvi + lev] = 0.0;
 
+
+#ifdef DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_RESULT
+        // here we check the result of the thomas algorithm
+
+        // boundaries
+        aa_check[0]  = 0.0;
+        bb_check[0]  = 0.0;
+        cc_check[0]  = 0.0;
+        dd_check[0]  = 0.0;
+        aa_check[nv] = 0.0;
+        bb_check[nv] = 0.0;
+        cc_check[nv] = 0.0;
+        dd_check[nv] = 0.0;
+
+        double epsilon = 1e-8;
+        for (int lev = 1; lev < nvi; lev++) {
+            if (lev == 1) {
+                // no check, boundary
+            }
+            else if (lev == nv) {
+                // no check, boundary
+            }
+            else {
+                double dd_out = aa_check[lev] * Whs_d[id * nvi + (lev - 1)]
+                                + bb_check[lev] * Whs_d[id * nvi + lev]
+                                + cc_check[lev] * Whs_d[id * nvi + (lev + 1)];
+                bool ineq = ((dd_check[lev] == 0.0) && (fabs(dd_out - dd_check[lev]) > epsilon))
+                            || ((dd_check[lev] != 0.0)
+                                && (fabs((dd_out - dd_check[lev]) / dd_check[lev]) > epsilon));
+
+                if (ineq) {
+                    atomicOr(diagnostics_flag, THOMAS_BAD_SOLUTION);
+                    diagnostics_data[id * nvi + lev].flag |= THOMAS_BAD_SOLUTION;
+                    diagnostics_data[id * nvi + lev].data.x = dd_out;
+                    diagnostics_data[id * nvi + lev].data.y = dd_check[lev];
+                }
+            }
+        }
+#endif // DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_RESULT
         for (int lev = 0; lev < nv; lev++) {
 
             if (lev == 0) {
@@ -368,6 +547,18 @@ __global__ void Vertical_Eq(double *Whs_d,
                 wht   = Whs_d[id * (nv + 1) + lev + 2];
             }
         }
+
+
+#ifdef DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_RESULT
+        // diagnosis check of thomas computation result
+        // redo the matrix operation in the reverse order
+        // here, we store the original matrix value
+        // inefficient, do not use in production, only for debug.
+        delete[] aa_check;
+        delete[] bb_check;
+        delete[] cc_check;
+        delete[] dd_check;
+#endif // DIAG_CHECK_THOR_VERTICAL_INT_THOMAS_RESULT
     }
 }
 

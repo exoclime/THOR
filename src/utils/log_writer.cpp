@@ -202,7 +202,7 @@ int log_writer::prepare_globdiag_file(bool append) {
 
 
     return 0;
-};
+}
 
 
 void log_writer::output_globdiag(int    current_step,
@@ -266,7 +266,7 @@ int log_writer::prepare_diagnostics_file(bool append) {
 
 
     return 0;
-};
+}
 
 
 void log_writer::output_diagnostics(int         current_step,

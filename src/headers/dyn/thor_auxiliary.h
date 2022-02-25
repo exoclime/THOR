@@ -75,10 +75,12 @@ __global__ void Compute_Temperature_H_Pt_Geff(double *temperature_d,
                                               double *Rd_d,
                                               double *Altitude_d,
                                               double *Altitudeh_d,
+                                              double  A,
                                               int     num,
                                               int     nv,
                                               bool    calcT,
-                                              bool    energy_equation) {
+                                              bool    energy_equation,
+                                              bool    GravHeightVar) {
 
     //
     //  Description: Computes temperature, internal energy, potential temperature and effective gravity.
@@ -140,7 +142,12 @@ __global__ void Compute_Temperature_H_Pt_Geff(double *temperature_d,
 
                 if (energy_equation) {
                     //calculate energies needed later for total energy equation
-                    ep                          = Gravit * Altitude_d[lev];
+                    if (GravHeightVar) {
+                        ep = Gravit * pow(A / (A + Altitude_d[lev]), 2) * Altitude_d[lev];
+                    }
+                    else {
+                        ep = Gravit * Altitude_d[lev];
+                    }
                     epotential_d[id * nv + lev] = ep;
                     ek                          = 0.5
                          * (Mh_d[id * nv * 3 + lev * 3 + 0] * Mh_d[id * nv * 3 + lev * 3 + 0]
@@ -161,7 +168,15 @@ __global__ void Compute_Temperature_H_Pt_Geff(double *temperature_d,
                 extr = (-alt - Altitude_d[lev + 1]) / (Altitude_d[lev + 1] - alt);
                 hh_d[id * (nv + 1) + 0] = h;
 
-                pl   = pressure_d[id * nv + 1] - rho * Gravit * (-alt - Altitude_d[1]);
+                if (GravHeightVar) { //density and gravity defined at center of layer 0
+                    pl = pressure_d[id * nv + 1]
+                         - rho * Gravit * pow(A / (A + Altitude_d[0]), 2) * (-alt - Altitude_d[1]);
+                    // pl = pressure_d[id * nv + 1] - rho * Gravit * (-alt - Altitude_d[1]);
+                }
+                else {
+                    pl = pressure_d[id * nv + 1] - rho * Gravit * (-alt - Altitude_d[1]);
+                }
+
                 rhol = Rho_d[id * nv + 1] + (Rho_d[id * nv + 1] - rho) * extr;
                 rhoh = 0.5 * (rho + rhol);
 
@@ -177,8 +192,17 @@ __global__ void Compute_Temperature_H_Pt_Geff(double *temperature_d,
                 CvoCp                    = Cv / Cp_d[id * nv + lev - 1];
                 hh_d[id * (nv + 1) + nv] = h;
 
-                pp = pressure_d[id * nv + nv - 2]
-                     - rho * Gravit * (2 * Altitudeh_d[nv] - alt - Altitude_d[nv - 2]);
+                if (GravHeightVar) {
+                    pp = pressure_d[id * nv + nv - 2]
+                         - rho * Gravit * pow(A / (A + Altitude_d[lev]), 2)
+                               * (2 * Altitudeh_d[nv] - alt - Altitude_d[nv - 2]);
+                    // pp = pressure_d[id * nv + nv - 2]
+                    //      - rho * Gravit * (2 * Altitudeh_d[nv] - alt - Altitude_d[nv - 2]);
+                }
+                else {
+                    pp = pressure_d[id * nv + nv - 2]
+                         - rho * Gravit * (2 * Altitudeh_d[nv] - alt - Altitude_d[nv - 2]);
+                }
                 if (pp < 0)
                     pp = 0;
                 rhop = Rho_d[id * nv + nv - 2]
@@ -186,8 +210,16 @@ __global__ void Compute_Temperature_H_Pt_Geff(double *temperature_d,
                 rhoh = 0.5 * (rho + rhop);
 
                 if (energy_equation) {
-                    epotentialh_d[id * (nv + 1) + nv] = Gravit * Altitudeh_d[nv];
-                    epotentialh_d[id * (nv + 1) + 0]  = Gravit * Altitudeh_d[0];
+                    if (GravHeightVar) {
+                        epotentialh_d[id * (nv + 1) + nv] =
+                            Gravit * pow(A / (A + Altitudeh_d[nv]), 2) * Altitudeh_d[nv];
+                        epotentialh_d[id * (nv + 1) + 0] =
+                            Gravit * pow(A / (A + Altitudeh_d[0]), 2) * Altitudeh_d[0];
+                    }
+                    else {
+                        epotentialh_d[id * (nv + 1) + nv] = Gravit * Altitudeh_d[nv];
+                        epotentialh_d[id * (nv + 1) + 0]  = Gravit * Altitudeh_d[0];
+                    }
                     ekinetich_d[id * (nv + 1) + nv] =
                         ekinetic_d[id * nv + nv - 2]
                         + (ekinetic_d[id * nv + nv - 1] - ekinetic_d[id * nv + nv - 2]) * extr;
@@ -206,9 +238,19 @@ __global__ void Compute_Temperature_H_Pt_Geff(double *temperature_d,
                                                      / (Altitude_d[1] - Altitude_d[0]);
                 }
                 dz = 2.0 * (Altitudeh_d[nv] - Altitude_d[nv - 1]);
-                pp = pressure_d[id * nv + nv - 2]
-                     - Rho_d[id * nv + nv - 1] * Gravit
-                           * (2 * Altitudeh_d[nv] - Altitude_d[nv - 1] - Altitude_d[nv - 2]);
+                if (GravHeightVar) {
+                    pp = pressure_d[id * nv + nv - 2]
+                         - Rho_d[id * nv + nv - 1] * Gravit * pow(A / (A + Altitude_d[nv - 1]), 2)
+                               * (2 * Altitudeh_d[nv] - Altitude_d[nv - 1] - Altitude_d[nv - 2]);
+                    // pp = pressure_d[id * nv + nv - 2]
+                    //      - Rho_d[id * nv + nv - 1] * Gravit
+                    //            * (2 * Altitudeh_d[nv] - Altitude_d[nv - 1] - Altitude_d[nv - 2]);
+                }
+                else {
+                    pp = pressure_d[id * nv + nv - 2]
+                         - Rho_d[id * nv + nv - 1] * Gravit
+                               * (2 * Altitudeh_d[nv] - Altitude_d[nv - 1] - Altitude_d[nv - 2]);
+                }
                 dpdz = (pp - pressure_d[id * nv + nv - 1]) / dz;
 
                 gtilh_d[id * (nv + 1) + nv] = -(1.0 / rhoh) * dpdz;
@@ -473,6 +515,9 @@ __global__ void UpdateRK2(double *M_d,
             intl = (xi - xim) / (xip - xim);
 
             Wk_d[id * nv + lev] = whl * intt + wht * intl;
+            // if (id == 0) {
+            //     printf("%d %.15e %.15e %.15e\n", lev, intt, intl, Wk_d[id * nv + lev]);
+            // }
             if (lev < nv - 1) {
                 althl = altht;
                 altht = Altitudeh_d[lev + 2];

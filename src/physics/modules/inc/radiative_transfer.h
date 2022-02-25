@@ -46,42 +46,53 @@
 
 #include "phy_module_base.h"
 
+#define rt_type_default "DualbandGray"
+
+enum radiative_transfer_types { DUALBANDGRAY = 0, PICKETFENCE = 1 };
+
 class radiative_transfer : public phy_module_base
 {
 public:
     radiative_transfer();
     ~radiative_transfer();
 
-    bool initialise_memory(const ESP &esp, device_RK_array_manager &phy_modules_core_arrays);
-    bool initial_conditions(const ESP &esp, const SimulationSetup &sim, storage *s);
+    bool initialise_memory(const ESP& esp, device_RK_array_manager& phy_modules_core_arrays);
+    bool initial_conditions(const ESP& esp, const SimulationSetup& sim, storage* s);
 
-    bool phy_loop(ESP &                  esp,
-                  const SimulationSetup &sim,
+    bool phy_loop(ESP&                   esp,
+                  const SimulationSetup& sim,
+                  kernel_diagnostics&    diag,
                   int                    nstep, // Step number
                   double                 time_step);            // Time-step [s]
 
-    bool store(const ESP &esp, storage &s);
+    bool store(const ESP& esp, storage& s);
 
-    bool store_init(storage &s);
+    bool store_init(storage& s);
 
-    bool configure(config_file &config_reader);
+    bool configure(config_file& config_reader);
 
     virtual bool free_memory();
 
     void print_config();
 
-    void set_qheat_scaling(const double &scaling) {
+    void set_qheat_scaling(const double& scaling) {
         Qheat_scaling = scaling;
     };
 
     // DEBUG: hack, for debug printout in Alf.
-    double *get_debug_qheat_device_ptr() {
+    double* get_debug_qheat_device_ptr() {
         return qheat_d;
     };
+
+    double OLR_tot;
+    double ASR_tot;
 
 private:
     // Scaling of Qheat, for slow ramp up or ramp down.
     double Qheat_scaling = 1.0;
+
+    radiative_transfer_types rt_type;
+    string                   rt_type_str;
 
     // Config options
     double Tstar_config            = 4520;  // Star effective temperature [K]
@@ -98,84 +109,132 @@ private:
     double n_sw_config          = 1.0;   // power law dependence for mixed/unmixed absorbers in SW
     // double f_lw_config       = 0.5;    // fraction of taulw in well-mixed absorber
 
+    // double Csurf_config    = 1e7;   // heat capacity of surface (J K^-1 m^-2)
+    bool rt1Dmode_config = false; // 1D mode=all columns are irradiated identically
 
-    bool   sync_rot_config    = true;     // is planet syncronously rotating?
-    double mean_motion_config = 1.991e-7; // orbital mean motion (rad/s)
-    double true_long_i_config = 0;        // initial true longitude of planet (rad)
-    double ecc_config         = 0;        // orbital eccentricity
-    double obliquity_config   = 0;        // obliquity (tilt of spin axis) (rad)
-    double alpha_i_config     = 0;        // initial right asc of host star (relative to long = 0)
-    double longp_config       = 0;        // longitude of periastron (rad)
+    int spinup_start_step = -1;
+    int spinup_stop_step  = -1;
 
-    bool   surface_config  = false; // use solid/liquid surface at altitude 0
-    double Csurf_config    = 1e7;   // heat capacity of surface (J K^-1 m^-2)
-    bool   rt1Dmode_config = false; // 1D mode=all columns are irradiated identically
-
+    int spindown_start_step = -1;
+    int spindown_stop_step  = -1;
     // Rad trans
     double Tstar            = 4520;  // Star effective temperature [K]
     double planet_star_dist = 0.015; // Planet-star distance [au]
     double radius_star      = 0.667; // Star radius [Rsun]
     double diff_ang         = 0.5;   // Diffusivity factor: 0.5-1.0
     // double Tint   = 0; // Lower boundary temperature: upward flux coming from the planet's interior
-    double albedo = 0.18;   // Bond albedo
-    double tausw  = 532.0;  // Absorption coefficient for the shortwaves
-    double taulw  = 1064.0; // Absorption coefficient for the longwaves
-    double taulw_pole;
+    double albedo   = 0.18;  // Bond albedo
+    double kappa_sw = 0.001; // Absorption coefficient for the shortwaves
+    double kappa_lw = 0.002; // Absorption coefficient for the longwaves
+    double kappa_lw_pole;
     // double kappa_lw_pole = 0.002;
     bool   latf_lw = false;
     double n_lw    = 2.0; // power law dependence for unmixed absorbers in LW
     double n_sw    = 1.0; // power law dependence for mixed/unmixed absorbers in SW
     // double f_lw       = 0.5; // fraction of taulw in well-mixed absorber
 
-    bool    rt1Dmode;
-    bool    surface;
-    double  Csurf;
-    double *surf_flux_d;
-    double *Tsurface_d;
-    double *Tsurface_h;
+    bool rt1Dmode;
+    // double  Csurf;
+    double* surf_flux_d;
+
 
     double incflx;
     //  Arrays used in RT code
-    double *fsw_up_d;
-    double *fsw_dn_d;
-    double *flw_up_d;
-    double *flw_dn_d;
-    double *tau_d;
+    double* fsw_up_d;
+    double* fsw_dn_d;
+    double* flw_up_d;
+    double* flw_dn_d;
+    double* tau_d;
 
-    double *tau_h;
-    double *fsw_up_h;
-    double *fsw_dn_h;
-    double *flw_up_h;
-    double *flw_dn_h;
+    double* tau_h;
+    double* fsw_up_h;
+    double* fsw_dn_h;
+    double* flw_up_h;
+    double* flw_dn_h;
 
-    // orbit/insolation properties
-    bool   sync_rot       = true;     // is planet syncronously rotating?
-    double mean_motion    = 1.991e-7; // orbital mean motion (rad/s)
-    double mean_anomaly_i = 0;        // initial mean anomaly at start (rad)
-    double mean_anomaly   = 0;        // current mean anomaly of planet (rad)
-    double true_long_i    = 0;        // initial true longitude of planet (rad)
-    double ecc            = 0;        // orbital eccentricity
-    double obliquity      = 0;        // obliquity (tilt of spin axis) (rad)
-    double r_orb          = 1;        // orbital distance/semi-major axis
-    double sin_decl       = 0;        // declination of host star (relative to equator)
-    double cos_decl       = 1;
-    double alpha_i        = 0; // initial right asc of host star (relative to long = 0)
-    double alpha          = 0; // right asc of host star (relative to long = 0)
-    double longp          = 0; // longitude of periastron (rad)
+    double* insol_h;
+    double* insol_d;
+    double* insol_ann_h;
+    double* insol_ann_d;
 
-    double *insol_h;
-    double *insol_d;
-    double *insol_ann_h;
-    double *insol_ann_d;
+    double* qheat_d;
+    double* qheat_h;
 
-    double *qheat_d;
-    double *qheat_h;
+    double* ASR_d;
+    double* OLR_d;
+
+
+    // picket-fence scheme
+
+    double* gam_P;
+    double* gam_V__h;
+    double* Beta_V__h;
+    double* Beta__h;
+    double* gam_1__h;
+    double* gam_2__h;
+    double* k_IR_2__h;
+    double* k_V_3__h;
+    double* net_F_h;
+    double* AB__h;
+    double* Teff;
+
+    double* OpaTableTemperature__h;
+    double* OpaTablePressure__h;
+    double* OpaTableKappa__h;
+
+    double  metalicity = 0;
+    double* k_IR_2_nv_d;
+    double* k_V_3_nv_d;
+    double* gam_V_3_d;
+    double* gam_1_d;
+    double* gam_2_d;
+    double* Beta_V_3_d;
+    double* Beta_2_d;
+    double* net_F_nvi_d;
+    double* AB_d;
+
+    double* OpaTableTemperature_d;
+    double* OpaTablePressure_d;
+    double* OpaTableKappa_d;
+
+    double* lw_net__h;
+    double* sw_net__h;
+    double* dtau;
+
+    //Kitzman working variables
+    double* tau_Ve__df_e;
+    double* tau_IRe__df_e;
+    double* Te__df_e;
+    double* be__df_e;
+    double* sw_down__df_e;
+    double* sw_down_b__df_e;
+    double* sw_up__df_e;
+    double* lw_down__df_e;
+    double* lw_down_b__df_e;
+    double* lw_up__df_e;
+    double* lw_up_b__df_e;
+    double* lw_net__df_e;
+    double* sw_net__df_e;
+
+    // lw_grey_updown_linear working variables
+    double* dtau__dff_l;
+    double* del__dff_l;
+    double* edel__dff_l;
+    double* e0i__dff_l;
+    double* e1i__dff_l;
+    double* Am__dff_l;
+    double* Bm__dff_l;
+    double* lw_up_g__dff_e;
+    double* lw_down_g__dff_e;
+    double* Gp__dff_l;
+    double* Bp__dff_l;
+
 
     //  These arrays are for temporary usage in RT code
-    double *dtemp;
-    double *phtemp;
-    double *ttemp;
-    double *thtemp;
+    double* dtemp;
+    double* phtemp;
+    double* ttemp;
+    double* thtemp;
     void    RTSetup(double Tstar_,
                     double planet_star_dist_,
                     double radius_star_,
@@ -190,19 +249,6 @@ private:
                     double n_lw_,
                     double n_sw_,
                     double f_lw,
-                    bool   sync_rot_,
-                    double mean_motion_,
-                    double true_long_i_,
-                    double longp_,
-                    double ecc_,
-                    double alpha_i_,
-                    double obliquity_,
-                    double Omega,
-                    bool   surface,
-                    double Csurf,
                     bool   rt1Dmode,
-                    double Tmean,
-                    int    point_num);
-
-    void update_spin_orbit(double time, double Omega);
+                    double Tmean);
 };

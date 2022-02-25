@@ -44,7 +44,6 @@ parser.add_argument("-i", "--initial_file", nargs=1, default=[10], type=int, hel
 parser.add_argument("-l", "--last_file", nargs=1, default=['init'], type=int, help='Last file id number (integer)')
 parser.add_argument("-lev", "--horizontal_lev", nargs=1, default=[2.5e2], help='Horizonal level to plot in temperature/velocity/vorticity field (mbar or km)')
 parser.add_argument("-vtop", "--vertical_top", nargs=1, default=['default'], help='Location of top of plot (vertical type) in mbar (pressure) or fractional height (height)')
-parser.add_argument("-slay", "--split_layer", nargs=1, default=['no_split'], help='Split conserved quantities into weather and deep layers at this pressure')
 parser.add_argument("-coord", "--coordinate_sys", nargs=1, default=['icoh'], help='For KE spectrum, use either icoh grid or llp grid')
 parser.add_argument("-ladj", "--lmax_adjust", nargs=1, default=[0], help='For KE spectrum, icoh grid, adjust number of wave numbers to fit')
 parser.add_argument("-slice", "--slice", nargs='+', default=['default'], help='Plot a long/lat slice or average over all values')

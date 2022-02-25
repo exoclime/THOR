@@ -79,6 +79,15 @@ spring_dynamics = true
 # Parameter beta for spring dynamics
 spring_beta = 1.15
 
+# use grid refinement in vertical for lower atmos
+vert_refined = false
+
+#lowest layer thickness (used with vert_refined = true) (meters)
+lowest_layer_thickness = 2
+
+#altitude to transition to linear spacing (used with vert_refined=true) (meters)
+transition_altitude = 1000
+
 
 #-- Model options ------------------------------------------------------------#
 # Non-hydrostatic parameter
@@ -212,13 +221,12 @@ albedo = 0.3
 diff_ang = 0.5
 
 # power law index of unmixed absorbers (lw and sw)
-# tau_lw = f_lw * (kappa_lw/g) * P/P_ref
-#          + (1-f_lw) * (kappa_lw/g) * (P/P_ref)^n_lw
+# optical depth at P_ref is: tau_lw = (kappa_lw/(f_lw*g)) * P_ref
 # n_lw = 2 approximations collision-induced absorption
 # n_lw = 4 approximations water-vapor in Earth troposph.
 n_lw = 4
 
-# tau_sw = (kappa_sw/g) * (P/P_ref)^n_sw
+# optical depth at P_ref is: tau_sw = (kappa_sw/g) * (P_ref)
 n_sw = 2
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -279,14 +287,28 @@ sync_rot = true
 #-- Boundary layer options (core_benchmark = NoBenchmark) --------------------#
 boundary_layer = false
 
-# type of boundary layer drag
+# type of boundary layer drag ('RayleighHS' or 'LocalMixL')
 bl_type = RayleighHS
 
-# strength of drag
+# strength of drag (bl_type = RayleighHS)
 #surf_drag = 1.157407e-5
 
 # boundary layer sigma (drag exist at this % of surface pressure and above)
+# (bl_type = RayleighHS)
 #bl_sigma = 0.7
+
+# surface roughness length (meters) (bl_type = LocalMixL)
+#z_rough = 3.21e-5
+
+# asymptotic scale length (ASL) for BL (meters) (bl_type = LocalMixL)
+#abl_asym_len = 150
+
+# asymptotic scale length (ASL) for free atmos (meters) (bl_type = LocalMixL)
+#free_asym_len = 30
+
+# height to transition from BL to free atmos for ASL (meters) (bl_type = LocalMixL)
+# set to -1 to use abl_asym_len in entire atmosphere
+#asl_transition_height = -1
 
 
 #-- Device options -----------------------------------------------------------#
