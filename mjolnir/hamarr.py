@@ -1046,6 +1046,8 @@ def regrid(resultsf, simID, ntsi, nts, pgrid_ref='auto', overwrite=False, comp=4
             x = np.ascontiguousarray(interm['Pressure'][:, :, ::-1].ravel())
             xnew = np.ascontiguousarray(Pref[::-1])
 
+            pmask = (Pref[None, None, :] >
+                       interm['Psurf'][:, :, None])
             for key in dest.keys():
                 if np.shape(interm[key]) == (d_lon[0], d_lon[1]):
                     # 2D field (e.g., insolation)

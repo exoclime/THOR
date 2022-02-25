@@ -60,7 +60,7 @@ def make_plot(args, save=True, axis=None):
              'w0prof', 'g0prof', 'spectrum',
              'phase','all','eddyKE','eddyMomMerid','eddyTempMerid','eddyTempVar',
              'Etotlev','AngMomlev', 'Entropylev','Kdiffprof', 'RiB','BLheight',
-             'RTbalance','Riprof','RTbalanceTS','tradprof','taulwprof','Fsens']
+             'RTbalance','Riprof','RTbalanceTS','tradprof','taulwprof','Fsens', 'Kdiffver']
 
     rg_needed = ['Tver', 'Tlonver', 'uver', 'ulonver', 'vver', 'wver', 'wlonver', 'Tulev', 'PTver', 'PTlonver', 'ulev', 'PVver', 'PVlev',
                  'RVlev', 'stream', 'tracer', 'Tsurf', 'insol', 'massf', 'pause_rg',
@@ -68,7 +68,7 @@ def make_plot(args, save=True, axis=None):
                  'TSfuptot', 'TSfdowntot', 'TSfnet', 'TSqheat',
                  'DGfuptot', 'DGfdowntot', 'DGfnet', 'DGqheat',
                  'all','eddyKE','eddyMomMerid','eddyTempMerid','eddyTempVar',
-                  'Etotlev', 'AngMomlev', 'Entropylev','RiB','BLheight','Fsens']  # these types need regrid
+                  'Etotlev', 'AngMomlev', 'Entropylev','RiB','BLheight','Fsens','Kdiffver']  # these types need regrid
 
     openrg = 0
 
@@ -269,6 +269,20 @@ def make_plot(args, save=True, axis=None):
         else:
             pfile = "'massf' plot type requires -vc height; plot not created"
             print(pfile)
+        plots_created.append(pfile)
+
+    if ('Kdiffver' in pview or 'all' in pview) and input.BL and (input.BL_type == 1 or input.BL_type == 2):
+        rg.load(['KH','KM'])
+        z = {'value': rg.KH, 'label': r'boundary layer K$_H$ (m$^2$ s$^{-1}$)', 'name': 'KHver',
+             'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'plog': plog}
+        sigmaref = ham.Get_Prange(input, grid, rg, args, xtype='lat', use_p=use_p)
+        pfile = call_plot('KHver',ham.vertical_lat,input, grid, output, rg, sigmaref, z, slice=args.slice, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
+        plots_created.append(pfile)
+
+        z = {'value': rg.KM, 'label': r'boundary layer K$_M$ (m$^2$ s$^{-1}$)', 'name': 'KMver',
+            'cmap': 'magma', 'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'plog': plog}
+        sigmaref = ham.Get_Prange(input, grid, rg, args, xtype='lat', use_p=use_p)
+        pfile = call_plot('KMver',ham.vertical_lat,input, grid, output, rg, sigmaref, z, slice=args.slice, use_p=use_p, clevs=args.clevels, save=save, axis=axis)
         plots_created.append(pfile)
 
     if 'eddyKE' in pview or 'all' in pview:
