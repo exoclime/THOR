@@ -299,7 +299,7 @@ def make_plot(args, save=True, axis=None):
         Tprime = rg.Temperature - np.mean(rg.Temperature,axis=1)[:,None,:,:]
         vprime = rg.V - np.mean(rg.V,axis=1)[:,None,:,:]
         eddyTemp = Tprime*vprime
-        z = {'value': eddyTemp, 'label': r'Merid. Eddy temp. flux (K m$ s$^{-1}$)', 'name': 'eddyTemp','cmap': 'magma',
+        z = {'value': eddyTemp, 'label': r'Merid. Eddy temp. flux (K m s$^{-1}$)', 'name': 'eddyTemp','cmap': 'magma',
             'lat': rg.Latitude, 'lon': rg.Longitude, 'mt': maketable, 'plog': plog}
         sigmaref = ham.Get_Prange(input, grid, rg, args, xtype='lat', use_p=use_p)
         pfile = call_plot('eddyTempMerid',ham.vertical_lat,input, grid, output, rg, sigmaref, z, slice=args.slice, use_p=use_p, clevs=args.clevels, save=save, axis=axis)

@@ -23,7 +23,11 @@ import time
 #   global diagnostics
 #   specify options: slice, mt, clevs, vtop, stride (pgrid only? add to mjolnir?)
 
-month_tag = 'Jun2020'
+parser = argparse.ArgumentParser()
+parser.add_argument('month_tag', nargs=1, help='Destination folder for figures (recommend using MonthYear like Jun2020)')
+args = parser.parse_args()
+
+month_tag = 'Jun2020'  #change this to mandatory argument
 simulations_path = Path('/media/deitrick/cupcake_of_science/thor_simulations/simulations/repo_benchmarks')
 fig_destination_parent = Path('repo_benchmark_figures/'+month_tag)
 
